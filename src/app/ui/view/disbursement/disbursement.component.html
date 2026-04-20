@@ -4,14 +4,22 @@
 <div *ngIf="viewMode === 'DASHBOARD'" class="min-h-screen bg-gray-50 font-sans">
 
   <!-- ── Page Header ─────────────────────────────────────── -->
-  <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Disbursements</h1>
-      <p class="text-lg text-gray-500 mt-0.5">Manage and execute approved payout requests</p>
+  <div class="bg-white border-b border-gray-200 px-8 py-10 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="w-20 h-20 rounded-2xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+        <i class="fa-solid fa-money-bill-transfer text-4xl"></i>
+      </div>
+      <div>
+        <h1 class="text-5xl font-extrabold text-gray-900 tracking-tight leading-none">Disbursements</h1>
+        <p class="text-2xl text-gray-500 font-semibold mt-3 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-customBlue"></i>
+          Manage and execute approved payout requests
+        </p>
+      </div>
     </div>
     <button (click)="exportTable()"
-            class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white text-lg font-semibold rounded-xl hover:bg-customBlueHover transition-all shadow-sm">
-      <i class="pi pi-download text-lg"></i> Export Report
+            class="flex items-center gap-4 px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white text-xl font-black rounded-xl transition-all shadow-md shadow-customBlue/10 active:scale-95 transform hover:-translate-y-1">
+      <i class="fa-solid fa-file-export text-2xl"></i> Export Report
     </button>
   </div>
 
@@ -21,210 +29,208 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
       <!-- Card 1: Total Disbursement today -->
-      <div (click)="setCardFilter('TODAY')" [ngClass]="activeCardFilter === 'TODAY' ? 'ring-2 ring-[#2E6276]' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
-        <!-- Background glows -->
-        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(46,98,118,0.25);"></div>
-        
-        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
-          <div class="flex justify-between items-start mb-6">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(46,98,118,0.08); color: #2E6276;">
-              <i class="pi pi-calendar text-xl font-bold"></i>
+      <div (click)="setCardFilter('TODAY')" [ngClass]="activeCardFilter === 'TODAY' ? 'ring-2 ring-customBlue' : ''" 
+        class="bg-white rounded-2xl cursor-pointer shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="p-8 relative z-10">
+          <div class="flex justify-between items-start mb-8">
+            <div class="w-14 h-14 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+              <i class="fa-solid fa-calendar-star text-3xl"></i>
             </div>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-gray-50 text-gray-400">Total Today</span>
+            <span class="inline-flex items-center px-4 py-1 rounded-full text-lg font-black uppercase tracking-widest bg-gray-50 text-gray-400">Activity Today</span>
           </div>
-          <div>
-            <p class="text-lg font-bold text-gray-500 mb-2">Disbursements Today</p>
-            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">₦{{ totalDisbursedAmountToday | number }}</h3>
-          </div>
+          <p class="text-xl font-bold text-gray-500 mb-2 uppercase tracking-tight">Total Disbursed</p>
+          <h3 class="text-5xl font-black text-gray-900 tracking-tighter">₦{{ totalDisbursedAmountToday | number }}</h3>
         </div>
-        <!-- Accent bar -->
-        <div class="absolute bottom-0 left-0 h-1 w-full transition-all duration-300 opacity-80 group-hover:opacity-100" style="background-color: #2E6276;"></div>
+        <div class="absolute bottom-0 left-0 h-1.5 w-full bg-customBlue transition-all opacity-70 group-hover:opacity-100"></div>
       </div>
 
       <!-- Card 2: Pending Disbursement -->
-      <div (click)="setCardFilter('PENDING')" [ngClass]="activeCardFilter === 'PENDING' ? 'ring-2 ring-yellow-500' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(234,179,8,0.25);"></div>
-        
-        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
-          <div class="flex justify-between items-start mb-6">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(234,179,8,0.08); color: #EAB308;">
-              <i class="pi pi-clock text-xl font-bold"></i>
+      <div (click)="setCardFilter('PENDING')" [ngClass]="activeCardFilter === 'PENDING' ? 'ring-2 ring-amber-500' : ''" 
+        class="bg-white rounded-2xl cursor-pointer shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="p-8 relative z-10">
+          <div class="flex justify-between items-start mb-8">
+            <div class="w-14 h-14 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-inner">
+              <i class="fa-solid fa-hourglass-half text-3xl"></i>
             </div>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-yellow-50 text-yellow-600">Pending</span>
+            <span class="inline-flex items-center px-4 py-1 rounded-full text-lg font-black uppercase tracking-widest bg-amber-50 text-amber-600">Attention</span>
           </div>
-          <div>
-            <p class="text-lg font-bold text-gray-500 mb-2">Awaiting Action</p>
-            <div class="flex items-end gap-2">
-              <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">{{ filteredTransactions.length }}</h3>
-              <p class="text-lg font-bold text-gray-400 mb-1 pb-0.5">(₦{{ totalPendingValue | number }})</p>
-            </div>
+          <p class="text-xl font-bold text-gray-500 mb-2 uppercase tracking-tight">Awaiting Action</p>
+          <div class="flex items-baseline gap-3">
+            <h3 class="text-5xl font-black text-gray-900 tracking-tighter">{{ filteredTransactions.length }}</h3>
+            <p class="text-xl font-bold text-gray-400">Registry Items</p>
           </div>
         </div>
-        <div class="absolute bottom-0 left-0 h-1 w-full bg-yellow-500 transition-all duration-300 opacity-80 group-hover:opacity-100"></div>
+        <div class="absolute bottom-0 left-0 h-1.5 w-full bg-amber-500 transition-all opacity-70 group-hover:opacity-100"></div>
       </div>
 
       <!-- Card 3: Approved Disbursement -->
-      <div (click)="setCardFilter('APPROVED')" [ngClass]="activeCardFilter === 'APPROVED' ? 'ring-2 ring-[#2EB270]' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(46,178,112,0.25);"></div>
-        
-        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
-          <div class="flex justify-between items-start mb-6">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(46,178,112,0.08); color: #2EB270;">
-              <i class="pi pi-check-circle text-xl font-bold"></i>
+      <div (click)="setCardFilter('APPROVED')" [ngClass]="activeCardFilter === 'APPROVED' ? 'ring-2 ring-customGreen' : ''" 
+        class="bg-white rounded-2xl cursor-pointer shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="p-8 relative z-10">
+          <div class="flex justify-between items-start mb-8">
+            <div class="w-14 h-14 rounded-xl bg-customGreen/10 flex items-center justify-center text-customGreen shadow-inner">
+              <i class="fa-solid fa-circle-check text-3xl"></i>
             </div>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-green-50 text-green-600">Approved</span>
+            <span class="inline-flex items-center px-4 py-1 rounded-full text-lg font-black uppercase tracking-widest bg-green-50 text-green-600">Validated</span>
           </div>
-          <div>
-            <p class="text-lg font-bold text-gray-500 mb-2">Ready for Payout</p>
-            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">{{ approvedDisbursements }}</h3>
-          </div>
+          <p class="text-xl font-bold text-gray-500 mb-2 uppercase tracking-tight">Ready for Payout</p>
+          <h3 class="text-5xl font-black text-gray-900 tracking-tighter">{{ approvedDisbursements }}</h3>
         </div>
-        <div class="absolute bottom-0 left-0 h-1 w-full transition-all duration-300 opacity-80 group-hover:opacity-100" style="background-color: #2EB270;"></div>
+        <div class="absolute bottom-0 left-0 h-1.5 w-full bg-customGreen transition-all opacity-70 group-hover:opacity-100"></div>
       </div>
 
       <!-- Card 4: Failed Transactions -->
-      <div (click)="setCardFilter('FAILED')" [ngClass]="activeCardFilter === 'FAILED' ? 'ring-2 ring-red-500' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
-        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(239,68,68,0.25);"></div>
-        
-        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
-          <div class="flex justify-between items-start mb-6">
-            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(239,68,68,0.08); color: #EF4444;">
-              <i class="pi pi-times-circle text-xl font-bold"></i>
+      <div (click)="setCardFilter('FAILED')" [ngClass]="activeCardFilter === 'FAILED' ? 'ring-2 ring-red-500' : ''" 
+        class="bg-white rounded-2xl cursor-pointer shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="p-8 relative z-10">
+          <div class="flex justify-between items-start mb-8">
+            <div class="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center text-red-500 shadow-inner">
+              <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
             </div>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-red-50 text-red-600">Failed</span>
+            <span class="inline-flex items-center px-4 py-1 rounded-full text-lg font-black uppercase tracking-widest bg-red-50 text-red-600">Critical</span>
           </div>
-          <div>
-            <p class="text-lg font-bold text-gray-500 mb-2">Requires Review</p>
-            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">0</h3>
-          </div>
+          <p class="text-xl font-bold text-gray-500 mb-2 uppercase tracking-tight">Requires Review</p>
+          <h3 class="text-5xl font-black text-gray-900 tracking-tighter">0</h3>
         </div>
-        <div class="absolute bottom-0 left-0 h-1 w-full bg-red-500 transition-all duration-300 opacity-80 group-hover:opacity-100"></div>
+        <div class="absolute bottom-0 left-0 h-1.5 w-full bg-red-500 transition-all opacity-70 group-hover:opacity-100"></div>
       </div>
 
     </div>
 
     <!-- ── Filter & Action Bar ─────────────────────────────── -->
-    <div class="flex items-center justify-between bg-[#F8F9FA] px-6 py-4 rounded-t-2xl border border-gray-200 shadow-sm gap-4 mt-6">
-      <div class="flex flex-wrap items-center gap-6 text-lg font-black uppercase tracking-widest text-gray-500">
-        <!-- Source Module Filter -->
-        <div class="flex flex-col gap-2">
-          <span>Source Module</span>
-          <select [(ngModel)]="selectedSourceModule" (change)="filterTransactions()" class="bg-[#EAECEF] border-none text-gray-800 font-bold px-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none appearance-none min-w-[160px] cursor-pointer">
-            <option value="">All Modules</option>
+    <div class="flex items-center justify-between bg-white px-8 py-6 rounded-t-xl border border-gray-200 shadow-sm gap-6 mt-10">
+      <div class="flex flex-wrap items-center gap-8 text-lg font-black uppercase tracking-widest text-gray-400">
+        
+        <!-- Module Filter -->
+        <div class="flex flex-col gap-3">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-cubes text-customBlue"></i> Module</span>
+          <select [(ngModel)]="selectedSourceModule" (change)="filterTransactions()" 
+            class="bg-gray-50 border-2 border-gray-100 text-gray-800 font-bold px-6 py-3 rounded-xl focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue outline-none min-w-[200px] cursor-pointer shadow-sm transition-all">
+            <option value="">All Flow Modules</option>
             <option value="HR">HR</option>
             <option value="Hospitality">Hospitality</option>
             <option value="Expense">Expense</option>
             <option value="Marketplace">Marketplace</option>
           </select>
         </div>
+
         <!-- Type Filter -->
-        <div class="flex flex-col gap-2">
-          <span>Type</span>
-          <select class="bg-[#EAECEF] border-none text-gray-800 font-bold px-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none appearance-none min-w-[160px] cursor-pointer">
-            <option value="">All Types</option>
+        <div class="flex flex-col gap-3">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-tags text-customBlue"></i> Type</span>
+          <select class="bg-gray-50 border-2 border-gray-100 text-gray-800 font-bold px-6 py-3 rounded-xl focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue outline-none min-w-[200px] cursor-pointer shadow-sm transition-all">
+            <option value="">All Account Types</option>
             <option value="Salary">Salary</option>
             <option value="Vendor">Vendor</option>
             <option value="Loan">Loan</option>
           </select>
         </div>
+
         <!-- Date Range -->
-        <div class="flex flex-col gap-2">
-          <span>Date Range</span>
-          <div class="relative">
-            <i class="pi pi-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-            <input type="text" placeholder="Oct 01 - Oct 31" class="bg-[#EAECEF] border-none text-gray-800 font-bold pl-10 pr-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none min-w-[190px] cursor-pointer">
+        <div class="flex flex-col gap-3">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-calendar-range text-customBlue"></i> Date Range</span>
+          <div class="relative group">
+            <i class="fa-solid fa-calendar-days absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-customBlue"></i>
+            <input type="text" placeholder="Oct 01 - Oct 31" 
+              class="bg-gray-50 border-2 border-gray-100 text-gray-800 font-bold pl-12 pr-6 py-3 rounded-xl focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue outline-none min-w-[240px] shadow-sm transition-all">
           </div>
         </div>
       </div>
       
-      <div class="flex items-center gap-4 mt-3">
-        <button class="flex items-center gap-2 px-5 py-2.5 bg-transparent border border-gray-200 text-customGreen font-bold rounded-lg hover:bg-white transition-all text-lg shadow-sm" style="color: #2E6276;">
-          <i class="pi pi-filter"></i> Advanced Filters
+      <div class="flex items-center gap-5 mt-6 px-2">
+        <button class="flex items-center gap-3 px-8 py-4 bg-white border-2 border-gray-100 text-gray-700 font-black rounded-xl hover:text-customBlue hover:border-customBlue/30 transition-all text-xl shadow-sm">
+          <i class="fa-solid fa-sliders"></i> Advanced
         </button>
-        <button class="flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-lg bg-customGreen hover:bg-customGreenHover transition-all text-lg shadow-md">
-          <i class="pi pi-check-circle"></i> Bulk Approve
+        <button class="flex items-center gap-4 px-8 py-4 text-white font-black rounded-xl bg-customBlue hover:bg-customBlueHover transition-all text-xl shadow-md shadow-customBlue/10 transform active:scale-95">
+          <i class="fa-solid fa-check-double"></i> Bulk Approve
         </button>
       </div>
     </div>
 
     <!-- ── Table Section ─────────────────────────────────── -->
-    <div class="bg-gray-100 border-x border-b border-gray-200 rounded-b-2xl overflow-hidden pb-4">
-      <div class="overflow-x-auto bg-[#EAECEF] rounded-lg mx-6 mt-4">
-        <table class="w-full text-lg">
+    <div class="bg-gray-50 border-x border-b border-gray-200 rounded-b-xl overflow-hidden pb-8">
+      <div class="overflow-x-auto bg-white rounded-xl mx-8 mt-8 border border-gray-200 shadow-sm">
+        <table class="w-full text-xl">
           <thead>
-            <tr class="bg-customGreen text-white border-b border-customGreenHover">
-              <th class="px-6 py-5 text-left w-12 shrink-0">
-                <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" class="w-4 h-4 rounded text-customGreen cursor-pointer border-gray-300 shadow-sm accent-customGreen">
+            <tr class="bg-customBlue text-white border-b border-customBlueHover">
+              <th class="px-8 py-6 text-left w-16 shrink-0">
+                <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" class="w-6 h-6 rounded text-customBlue cursor-pointer border-gray-300 shadow-sm accent-customBlue">
               </th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Application ID</th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Source Module</th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Type</th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Amount</th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Date Submitted</th>
-              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Status</th>
-              <th class="px-6 py-5 text-center text-lg font-black uppercase tracking-widest whitespace-nowrap">Actions</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-solid fa-fingerprint mr-2 opacity-70"></i> Application ID</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-solid fa-layer-group mr-2 opacity-70"></i> Module</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-solid fa-tag mr-2 opacity-70"></i> Type</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-solid fa-money-bill-wave mr-2 opacity-70"></i> Amount</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-regular fa-calendar-check mr-2 opacity-70"></i> Date</th>
+              <th class="px-8 py-6 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="fa-solid fa-shield-halved mr-2 opacity-70"></i> Status</th>
+              <th class="px-8 py-6 text-center text-xl font-bold uppercase tracking-widest whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-300">
+          <tbody class="divide-y divide-gray-100">
             <tr *ngFor="let trx of filteredTransactions"
-                class="group hover:bg-[#F8F9FA] transition-colors cursor-pointer bg-white">
+                (click)="openBatchReview(trx)"
+                class="hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 group ledger-row">
               
               <!-- Checkbox -->
-              <td class="px-6 py-5 whitespace-nowrap w-12" (click)="$event.stopPropagation()">
-                <input type="checkbox" [checked]="selectedTransactions.has(trx.id)" (change)="toggleSelection(trx.id)" class="w-4 h-4 rounded text-customGreen cursor-pointer border-gray-300 shadow-sm accent-customGreen">
+              <td class="px-8 py-6 w-16" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedTransactions.has(trx.id)" (change)="toggleSelection(trx.id)" 
+                  class="w-6 h-6 rounded text-customBlue cursor-pointer border-gray-300 shadow-sm accent-customBlue transition-all transform group-hover:scale-110">
               </td>
 
               <!-- App ID -->
-              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
-                <p class="font-bold text-gray-900 text-lg">#APP-<br>{{ trx.transactionReference || (trx.id + 90000) }}</p>
+              <td class="px-8 py-6">
+                <span class="font-mono text-xl font-black text-customBlue bg-customBlue/5 px-4 py-2 rounded-lg group-hover:bg-customBlue group-hover:text-white transition-colors border border-customBlue/10 shadow-sm">
+                  #APP-{{ trx.transactionReference || (trx.id + 90000) }}
+                </span>
               </td>
 
-              <!-- Source Module -->
-              <td class="px-6 py-5" (click)="openBatchReview(trx)">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-lg font-bold uppercase tracking-wide"
-                      [ngClass]="getCategoryColor(trx.sourceModule)">
-                  <i class="pi text-lg font-bold" [ngClass]="{'pi-users': trx.sourceModule === 'HR', 'pi-home': trx.sourceModule === 'HOSPITALITY', 'pi-wrench': trx.sourceModule === 'EXPENSE', 'pi-box': trx.sourceModule === 'MARKETPLACE'}"></i>
+              <!-- Module -->
+              <td class="px-8 py-6">
+                <span class="text-lg font-black px-6 py-2 rounded-full shadow-sm tracking-widest border-2 transition-all hover:scale-105 inline-block" 
+                  [ngClass]="getModuleBadgeClass(trx.sourceModule)">
                   {{ trx.sourceModule }}
                 </span>
               </td>
 
               <!-- Type -->
-              <td class="px-6 py-5" (click)="openBatchReview(trx)">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-lg font-black uppercase tracking-wider bg-[#E5E7EB] text-gray-800 shadow-sm">
+              <td class="px-8 py-6">
+                <span class="text-lg font-black px-4 py-1.5 rounded-lg bg-gray-100 text-gray-600 uppercase tracking-widest shadow-sm">
                   {{ (trx.sourceModule === 'HR' ? 'SALARY' : (trx.sourceModule === 'EXPENSE' ? 'LOAN' : 'VENDOR')) }}
                 </span>
               </td>
 
               <!-- Amount -->
-              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
-                <p class="text-lg font-black text-gray-900 tracking-tight">₦{{ trx.amount | number: '1.2-2' }}</p>
+              <td class="px-8 py-6">
+                <p class="text-2xl font-black text-gray-900 tracking-tighter">₦{{ trx.amount | number: '1.2-2' }}</p>
+                <!-- <p class="text-lg text-gray-400 font-bold uppercase tracking-widest">Gross Value</p> -->
               </td>
 
               <!-- Date Submitted -->
-              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
-                <p class="text-lg font-semibold text-gray-600">
-                   {{ trx.transactionDate | date:'MMM dd,' }}<br>
-                   {{ trx.transactionDate | date:'yyyy' }}
-                </p>
+              <td class="px-8 py-6">
+                <div class="flex flex-col">
+                  <span class="text-xl font-bold text-gray-800">{{ trx.transactionDate | date:'dd MMM yyyy' }}</span>
+                  <!-- <span class="text-lg font-bold text-gray-400 uppercase tracking-wide">Submission</span> -->
+                </div>
               </td>
 
               <!-- Status -->
-              <td class="px-6 py-5" (click)="openBatchReview(trx)">
-                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-lg font-black text-center tracking-wide whitespace-nowrap"
-                      [ngClass]="trx.Status === 'APPROVED' ? 'bg-[#E3F2E1] text-[#2E7A3D]' : 
-                                (trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW' ? 'bg-[#E8EEFD] text-[#3451B2]' : 
-                                (trx.Status === 'DISBURSED' ? 'bg-[#E0F2FE] text-[#0369A1]' : 'bg-[#FADBD8] text-[#932724]'))">
-                  <span *ngIf="trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW'">Awaiting<br>Review</span>
-                  <span *ngIf="trx.Status === 'APPROVED'">Approved</span>
-                  <span *ngIf="trx.Status === 'DISBURSED'">Disbursed</span>
-                  <span *ngIf="trx.Status === 'REJECTED'">Urgent<br>Review</span>
-                </span>
+              <td class="px-8 py-6">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full animate-pulse"
+                    [ngClass]="trx.Status === 'APPROVED' ? 'bg-customGreen' : 
+                               (trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW' ? 'bg-customBlue' : 
+                               (trx.Status === 'DISBURSED' ? 'bg-sky-500' : 'bg-red-500'))"></span>
+                  <span class="text-lg font-black uppercase tracking-widest"
+                    [ngClass]="trx.Status === 'APPROVED' ? 'text-customGreen' : 
+                                (trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW' ? 'text-customBlue' : 
+                                (trx.Status === 'DISBURSED' ? 'text-sky-600' : 'text-red-600'))">
+                    {{ trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW' ? 'In Review' : trx.Status }}
+                  </span>
+                </div>
               </td>
 
               <!-- Actions -->
-              <td class="px-6 py-5 text-center" (click)="openBatchReview(trx); $event.stopPropagation()">
-                <button class="text-lg font-bold text-customGreen hover:text-customGreenHover transition-colors whitespace-nowrap leading-tight text-center tracking-wider">
-                  View<br>Details
+              <td class="px-8 py-6 text-center">
+                <button class="w-12 h-12 rounded-xl bg-gray-50 text-gray-400 hover:bg-customBlue hover:text-white transition-all shadow-sm flex items-center justify-center mx-auto border border-gray-100 transform group-hover:rotate-12">
+                  <i class="fa-solid fa-arrow-right-to-bracket text-xl"></i>
                 </button>
               </td>
             </tr>
@@ -256,14 +262,16 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10">
        
        <!-- Chart Card -->
-       <div class="lg:col-span-2 bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-          <div class="flex items-start justify-between mb-8">
+       <div class="lg:col-span-2 bg-white rounded-2xl p-10 border border-gray-100 shadow-sm transition-all hover:shadow-md">
+          <div class="flex items-start justify-between mb-10">
              <div>
-                <h3 class="text-xl font-bold text-gray-900 tracking-tight">Disbursements by Source</h3>
-                <p class="text-lg font-medium text-gray-500 mt-1">Distribution of funds allocated per module</p>
+                <h3 class="text-3xl font-black text-gray-900 tracking-tight">Disbursement Analytics</h3>
+                <p class="text-xl font-bold text-gray-400 mt-2 flex items-center gap-2">
+                  <i class="fa-solid fa-chart-area text-customBlue"></i> Allocation per registry module
+                </p>
              </div>
-             <button class="bg-[#E9EEF2] hover:bg-gray-200 text-gray-700 font-bold text-lg px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
-                Last 30 Days <i class="pi pi-angle-down"></i>
+             <button class="bg-gray-50 border-2 border-gray-100 hover:border-customBlue/30 text-gray-700 font-bold text-lg px-6 py-3 rounded-xl transition-all flex items-center gap-3 shadow-sm">
+                <span>Last 30 Working Days</span> <i class="fa-solid fa-chevron-down text-customBlue"></i>
              </button>
           </div>
           
@@ -286,41 +294,41 @@
        </div>
 
        <!-- Audit Feed -->
-       <div class="bg-[#EAEFF4] rounded-2xl p-8 shadow-sm">
-          <div class="flex flex-row items-center justify-between mb-8">
-            <h3 class="text-lg font-bold tracking-widest uppercase text-gray-800">Audit Trail</h3>
-            <button class="text-gray-500 hover:text-gray-800"><i class="pi pi-ellipsis-v text-lg"></i></button>
+       <div class="bg-gray-50 rounded-2xl p-10 shadow-inner border border-gray-200/50">
+          <div class="flex flex-row items-center justify-between mb-10">
+            <h3 class="text-xl font-black tracking-widest uppercase text-gray-400">System Audit Trail</h3>
+            <button class="w-10 h-10 rounded-full hover:bg-white hover:text-customBlue transition-all text-gray-400 flex items-center justify-center"><i class="fa-solid fa-ellipsis-vertical text-xl"></i></button>
           </div>
           
-          <div class="relative pl-6 space-y-8 border-l border-[#D1D9E1]">
+          <div class="relative pl-8 space-y-10 border-l-2 border-gray-200">
              
              <!-- Item 1 -->
              <div class="relative">
-                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#5252E8] ring-[4px] ring-[#EAEFF4]"></div>
+                <div class="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-customBlue ring-[6px] ring-gray-50 border-2 border-white shadow-sm"></div>
                 <div>
-                   <p class="text-lg font-bold text-gray-900 leading-tight">Batch #829 Approved</p>
-                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">David Chen released $142,000 for Vendor Payments</p>
-                   <p class="text-lg font-semibold text-gray-400 mt-2">14 minutes ago</p>
+                   <p class="text-xl font-black text-gray-900 leading-tight">Batch #829 Approved</p>
+                   <p class="text-lg font-bold text-gray-500 mt-1 leading-snug">David Chen released funds for Vendor Payments</p>
+                   <p class="text-lg font-black text-customBlue/50 mt-2 uppercase tracking-widest">14 minutes ago</p>
                 </div>
              </div>
              
              <!-- Item 2 -->
              <div class="relative">
-                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#8A56D0] ring-[4px] ring-[#EAEFF4]"></div>
+                <div class="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-purple-500 ring-[6px] ring-gray-50 border-2 border-white shadow-sm"></div>
                 <div>
-                   <p class="text-lg font-bold text-gray-900 leading-tight">Payroll Scheduled</p>
-                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">Automated trigger for October Month-End cycle</p>
-                   <p class="text-lg font-semibold text-gray-400 mt-2">2 hours ago</p>
+                   <p class="text-xl font-black text-gray-900 leading-tight">Payroll Scheduled</p>
+                   <p class="text-lg font-bold text-gray-500 mt-1 leading-snug">Automated trigger for October Month-End cycle</p>
+                   <p class="text-lg font-black text-purple-400 mt-2 uppercase tracking-widest">2 hours ago</p>
                 </div>
              </div>
              
              <!-- Item 3 -->
              <div class="relative">
-                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#D95B58] ring-[4px] ring-[#EAEFF4]"></div>
+                <div class="absolute -left-[42px] top-1.5 w-5 h-5 rounded-full bg-red-500 ring-[6px] ring-gray-50 border-2 border-white shadow-sm"></div>
                 <div>
-                   <p class="text-lg font-bold text-gray-900 leading-tight">Flagged Disbursement</p>
-                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">System detected duplicate entry in Expenses module</p>
-                   <p class="text-lg font-semibold text-gray-400 mt-2">5 hours ago</p>
+                   <p class="text-xl font-black text-gray-900 leading-tight">Flagged Disbursement</p>
+                   <p class="text-lg font-bold text-gray-500 mt-1 leading-snug">System detected duplicate entry in Expenses</p>
+                   <p class="text-lg font-black text-red-400 mt-2 uppercase tracking-widest">5 hours ago</p>
                 </div>
              </div>
 
@@ -351,122 +359,131 @@
     <div class="w-full max-w-[55rem] bg-[#f8fbff] h-full shadow-2xl flex flex-col transform transition-transform border-l border-gray-200" (click)="$event.stopPropagation()" style="animation: slideInRight 0.3s ease-out;">
       
       <!-- Header -->
-      <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 shrink-0">
-        <div>
-          <div class="flex items-center gap-3 mb-1">
-            <i class="pi pi-briefcase text-gray-500 text-lg"></i>
-            <span class="text-gray-500 text-sm font-bold uppercase tracking-widest">BATCH REVIEW</span>
+      <div class="px-8 py-8 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 shrink-0">
+        <div class="flex items-center gap-5">
+          <div class="w-14 h-14 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+            <i class="fa-solid fa-list-check text-2xl"></i>
           </div>
-          <h2 class="text-2xl font-black text-gray-900 leading-tight">Batch #APP-{{ selectedTransaction.transactionReference || (selectedTransaction.id + 90000) }}</h2>
+          <div>
+            <div class="flex items-center gap-3">
+              <span class="text-gray-400 text-lg font-black uppercase tracking-[0.2em]">Batch Inspection</span>
+            </div>
+            <h2 class="text-3xl font-black text-gray-900 leading-none mt-1">#APP-{{ selectedTransaction.transactionReference || (selectedTransaction.id + 90000) }}</h2>
+          </div>
         </div>
-        <button (click)="closeBatchReview()" class="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-800 hover:bg-gray-50 transition-colors bg-white shadow-sm shrink-0">
-          <i class="pi pi-times text-lg"></i>
+        <button (click)="closeBatchReview()" class="w-12 h-12 rounded-xl border-2 border-gray-100 flex items-center justify-center text-gray-400 hover:text-customBlue hover:bg-customBlue/5 transition-all bg-white shadow-sm shrink-0 active:scale-95">
+          <i class="fa-solid fa-xmark text-2xl"></i>
         </button>
       </div>
 
       <!-- Scrollable Content -->
       <div class="flex-1 overflow-y-auto p-8 space-y-7">
         
-        <!-- Status & Meta -->
-        <div class="flex flex-wrap items-center gap-3 text-gray-500 text-base font-medium">
-          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm"
-                [ngClass]="getCategoryColor(selectedTransaction.sourceModule)">
+        <!-- Module & Meta -->
+        <div class="flex flex-wrap items-center gap-5 text-gray-500 text-lg font-bold">
+          <span class="inline-flex items-center px-6 py-2 rounded-full text-lg font-black uppercase tracking-widest shadow-sm border-2 transition-transform hover:scale-105"
+                [ngClass]="getModuleBadgeClass(selectedTransaction.sourceModule)">
             {{ selectedTransaction.sourceModule }}
           </span>
-          <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-          <span class="text-gray-700">Created by <strong>{{ selectedTransaction.createdBy }}</strong></span>
-          <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-          <div class="px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 shadow-sm border whitespace-nowrap text-xs bg-white"
-               [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'text-green-700 border-green-200' : (selectedTransaction.Status === 'DISBURSED' ? 'text-blue-700 border-blue-200' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'text-[#3451B2] border-blue-200' : 'text-red-700 border-red-200'))">
-            <i class="pi text-sm" [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'pi-check-circle' : (selectedTransaction.Status === 'DISBURSED' ? 'pi-send' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'pi-clock' : 'pi-ban'))"></i>
-            {{ selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'AWAITING REVIEW' : selectedTransaction.Status }}
+          <span class="w-2 h-2 rounded-full bg-gray-200"></span>
+          <span class="text-gray-400 uppercase tracking-widest">Initiator: <strong class="text-gray-700 ml-1">{{ selectedTransaction.createdBy }}</strong></span>
+          <span class="w-2 h-2 rounded-full bg-gray-200"></span>
+          <div class="px-5 py-2 rounded-full font-black flex items-center gap-2 shadow-sm border border-gray-100 bg-white"
+               [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'text-customGreen italic' : (selectedTransaction.Status === 'DISBURSED' ? 'text-sky-600' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'text-customBlue' : 'text-red-600'))">
+            <i class="fa-solid" [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'fa-circle-check' : (selectedTransaction.Status === 'DISBURSED' ? 'fa-paper-plane' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'fa-clock-rotate-left' : 'fa-circle-exclamation'))"></i>
+            {{ selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'AWAITING APPROVAL' : selectedTransaction.Status }}
           </div>
         </div>
 
         <!-- 3 Info Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <!-- Total Amount -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center sm:col-span-2">
-            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-1">TOTAL AMOUNT</p>
-            <p class="text-4xl font-black text-gray-900 tracking-tight">₦{{ selectedTransaction.amount | number:'1.2-2' }}</p>
-            <div class="flex items-center gap-2 text-[#4051a6] font-bold text-sm mt-3 leading-tight">
-               <i class="pi pi-info-circle text-lg"></i> Funds Verified in Settlement A/C
+          <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm flex flex-col justify-center sm:col-span-2 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-customBlue/5 rounded-full -mr-16 -mt-16 blur-xl group-hover:bg-customBlue/10 transition-colors"></div>
+            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-1">AGGREGATE VALUE</p>
+            <p class="text-5xl font-black text-gray-900 tracking-tighter">₦{{ selectedTransaction.amount | number:'1.2-2' }}</p>
+            <div class="flex items-center gap-2 text-customGreen font-black text-xl mt-4 leading-tight">
+               <i class="fa-solid fa-circle-check text-2xl"></i> Transaction Node Verified
             </div>
           </div>
           
           <!-- Line Items -->
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-center">
-            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-1">LINE ITEMS</p>
-            <p class="text-3xl font-black text-gray-900 tracking-tight">{{ selectedLineItems.length || 142 }}</p>
+          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center">
+            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-1">ACCOUNT NODES</p>
+            <p class="text-4xl font-black text-gray-900 tracking-tighter">{{ selectedLineItems.length || 142 }}</p>
           </div>
           
           <!-- Internal Approvals -->
-          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-center">
-            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-3">INTERNAL APPROVALS</p>
-            <div class="flex items-center gap-3">
-               <div class="flex -space-x-2">
-                 <div class="w-8 h-8 rounded-full bg-blue-900 border-2 border-white flex items-center justify-center text-white font-bold text-xs z-20">JD</div>
-                 <div class="w-8 h-8 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center text-white font-bold text-xs z-10">SC</div>
+          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center">
+            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-3">INTERNAL CONSENSUS</p>
+            <div class="flex items-center gap-4">
+               <div class="flex -space-x-3">
+                 <div class="w-10 h-10 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center text-white font-black text-sm z-20 shadow-sm">JD</div>
+                 <div class="w-10 h-10 rounded-full bg-customBlue border-2 border-white flex items-center justify-center text-white font-black text-sm z-10 shadow-sm">SC</div>
                </div>
-               <p class="text-gray-600 font-bold text-sm">3 of 4 Req.</p>
+               <p class="text-gray-600 font-black text-lg">3 of 4 Sig.</p>
             </div>
           </div>
         </div>
         
         <!-- Table Wrapper -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div class="bg-[#EEF2F6] px-6 py-4 flex items-center justify-between border-b border-gray-200">
-            <h3 class="font-bold text-gray-800 text-lg tracking-tight">Line Items</h3>
+        <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-inner">
+          <div class="bg-white/50 px-8 py-5 flex items-center justify-between border-b border-gray-100">
+            <h3 class="font-black text-gray-400 text-lg uppercase tracking-[0.2em]">Transaction Registry Nodes</h3>
           </div>
           
-          <div class="overflow-x-auto">
-            <table class="w-full text-left whitespace-nowrap">
-              <thead>
-                <tr class="border-b border-gray-100 bg-gray-50/50">
-                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">RECIPIENT</th>
-                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">DESTINATION ACCOUNT</th>
-                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs text-right">AMOUNT</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-50">
-                <tr *ngFor="let item of selectedLineItems; let i = index" class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-3">
-                    <div class="flex items-center gap-3">
-                      <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 font-black flex items-center justify-center text-sm shadow-inner">{{ item.recipient.substring(0,2).toUpperCase() }}</div>
-                      <div>
-                        <p class="font-black text-gray-900 text-base leading-tight">{{ item.recipient }}</p>
-                        <p class="text-xs text-gray-400 font-bold mt-0.5">{{ item.role }}</p>
+          <div class="p-4">
+            <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+              <table class="w-full text-left">
+                <thead>
+                  <tr class="bg-customBlue text-white border-b border-customBlueHover">
+                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest">RECIPIENT</th>
+                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest">DESTINATION</th>
+                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest text-right">VALUE</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xl">
+                  <tr *ngFor="let item of selectedLineItems; let i = index" class="hover:bg-gray-50 transition-colors group">
+                    <td class="px-8 py-6">
+                      <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 rounded-xl bg-customBlue/5 text-customBlue font-black flex items-center justify-center shadow-inner group-hover:bg-customBlue group-hover:text-white transition-all">{{ item.recipient.substring(0,2).toUpperCase() }}</div>
+                        <div>
+                          <p class="font-black text-gray-900 leading-none">{{ item.recipient }}</p>
+                          <p class="text-lg text-gray-400 font-bold mt-1 uppercase tracking-wide">{{ item.role }}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-3">
-                    <p class="font-black text-gray-900 text-sm">{{ item.bank || 'Bank Name' }}</p>
-                    <p class="text-xs text-gray-400 font-mono font-bold">{{ item.account || '0000000000' }}</p>
-                  </td>
-                  <td class="px-6 py-3 font-black text-gray-900 text-right text-lg">₦{{ item.amount | number:'1.2-2' }}</td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td class="px-8 py-6">
+                      <p class="font-black text-gray-800 tracking-tight leading-none">{{ item.bank || 'Bank Name' }}</p>
+                      <p class="text-lg text-gray-400 font-mono font-bold mt-1">{{ item.account || '0000000000' }}</p>
+                    </td>
+                    <td class="px-8 py-6 font-black text-gray-900 text-right text-2xl tracking-tighter">₦{{ item.amount | number:'1.2-2' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="py-4 flex justify-center bg-white border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
-             <button class="text-[#4051a6] font-black text-xs tracking-widest uppercase">
-               VIEW ALL ITEMS <i class="pi pi-angle-down ml-1"></i>
+
+          <div class="py-6 flex justify-center bg-gray-50/50 hover:bg-white transition-all cursor-pointer border-t border-gray-100 group">
+             <button class="text-customBlue font-black text-lg tracking-[0.15em] uppercase flex items-center gap-2 group-hover:translate-y-0.5 transition-transform">
+               VIEW ALL <i class="fa-solid fa-chevron-down text-sm"></i>
              </button>
           </div>
         </div>
         
         <!-- Approval Comments -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col relative">
-          <div class="flex gap-2 mb-4">
-            <div class="w-7 h-7 rounded-lg bg-[#EEF2F6] text-[#4051a6] flex items-center justify-center shrink-0">
-               <i class="pi pi-comments text-sm"></i>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col relative overflow-hidden group">
+          <div class="absolute top-0 left-0 w-2 h-full bg-gray-50 group-focus-within:bg-customBlue transition-colors"></div>
+          <div class="flex gap-4 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-gray-50 text-customBlue flex items-center justify-center shrink-0 shadow-inner">
+               <i class="fa-solid fa-note-sticky text-xl"></i>
             </div>
-            <h3 class="font-bold text-gray-900 text-lg tracking-tight mt-0.5">Internal Notes</h3>
+            <h3 class="font-black text-gray-900 text-2xl tracking-tight mt-1">Notes</h3>
           </div>
-          <textarea class="w-full bg-[#f8fbff] border border-blue-100 rounded-xl p-4 text-gray-800 font-medium min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all text-base resize-none shadow-inner" placeholder="Reason for approval or rejection..."></textarea>
-          <div class="flex items-center justify-between mt-4">
-            <button class="text-gray-400 hover:text-[#4051a6] font-bold flex items-center gap-2 transition-colors text-sm">
-              <i class="pi pi-paperclip text-lg"></i> Attach Document
+          <textarea class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl p-6 text-gray-800 font-bold min-h-[140px] focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all text-xl resize-none shadow-inner placeholder:text-gray-300" placeholder="Specify final disbursement rationale or compliance notes..."></textarea>
+          <div class="flex items-center justify-between mt-6">
+            <button class="text-gray-400 hover:text-customBlue font-black flex items-center gap-2 transition-all text-lg uppercase tracking-widest">
+              <i class="fa-solid fa-paperclip text-xl"></i> Add Attachments
             </button>
           </div>
         </div>
@@ -474,23 +491,23 @@
       </div>
       
       <!-- Footer Button Area -->
-      <div class="px-8 py-5 bg-white border-t border-gray-200 flex flex-wrap sm:flex-nowrap justify-between gap-4 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
-         <div class="flex gap-3">
-            <button class="px-5 py-3.5 rounded-xl border-2 border-gray-100 bg-white text-[#4051a6] font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm text-base">
-              <i class="pi pi-download text-lg"></i>
+      <div class="px-8 py-8 bg-white border-t border-gray-200 flex flex-wrap sm:flex-nowrap justify-between gap-6 z-10 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] shrink-0">
+         <div class="flex gap-4">
+            <button class="w-16 h-16 rounded-xl border-2 border-gray-100 bg-white text-gray-400 hover:text-customBlue hover:border-customBlue/30 font-black flex items-center justify-center transition-all shadow-sm active:scale-95">
+              <i class="fa-solid fa-download text-2xl"></i>
             </button>
-            <button class="px-5 py-3.5 rounded-xl border-2 border-[#FADBD8] bg-white text-[#C0392B] font-bold flex items-center gap-2 hover:bg-red-50 transition-colors shadow-sm text-base">
-              <i class="pi pi-ban text-lg"></i> Reject
+            <button class="px-8 h-16 rounded-xl border-2 border-red-50 bg-white text-red-500 font-black flex items-center gap-3 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm active:scale-95 text-xl uppercase tracking-widest">
+              <i class="fa-solid fa-ban text-2xl"></i> Halt Batch
             </button>
          </div>
          <button *ngIf="selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW'" 
                 (click)="openApproveConfirm()"
-                class="px-8 py-3.5 rounded-xl text-white font-bold flex items-center gap-2 transition-all shadow-md active:scale-95 text-base w-full sm:w-auto justify-center bg-[#4051a6] hover:bg-[#32408c]">
-          <i class="pi pi-check-circle text-lg"></i> Approve Batch
+                class="px-12 h-16 rounded-xl text-white font-black flex items-center gap-4 transition-all shadow-lg shadow-customBlue/20 active:scale-95 text-2xl w-full sm:w-auto justify-center bg-customBlue hover:bg-customBlueHover transform hover:-translate-y-1">
+          <i class="fa-solid fa-circle-check text-2xl"></i> Approve for Payout
          </button>
          <button *ngIf="selectedTransaction.Status === 'APPROVED'" (click)="proceedToPayment()" 
-                 class="px-8 py-3.5 rounded-xl text-white font-black flex items-center gap-3 transition-all shadow-md active:scale-95 text-base w-full sm:w-auto justify-center bg-customGreen hover:bg-customGreenHover">
-           Proceed to Payout <i class="pi pi-arrow-right text-lg"></i>
+                 class="px-12 h-16 rounded-xl text-white font-black flex items-center gap-4 transition-all shadow-lg shadow-customGreen/20 active:scale-95 text-2xl w-full sm:w-auto justify-center bg-customGreen hover:bg-customGreenHover transform hover:-translate-y-1">
+           Authorize Disbursement <i class="fa-solid fa-arrow-right-long text-2xl"></i>
          </button>
       </div>
 
@@ -498,21 +515,21 @@
   </div>
 
   <!-- Approve Confirmation Modal -->
-  <div *ngIf="isApproveConfirmOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" style="animation: fadeIn 0.2s ease-out;">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-transform" style="animation: scaleIn 0.2s ease-out;">
+  <div *ngIf="isApproveConfirmOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-6">
+    <div class="bg-white rounded-3xl shadow-3xl w-full max-w-lg p-12 transform transition-transform" style="animation: scaleIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);">
       <div class="flex flex-col items-center text-center">
-        <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
-          <i class="pi pi-check-circle text-3xl text-green-500"></i>
+        <div class="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center mb-8 shadow-inner">
+          <i class="fa-solid fa-circle-check text-5xl text-customGreen"></i>
         </div>
-        <h3 class="text-2xl font-black text-gray-900 mb-2">Confirm Approval</h3>
-        <p class="text-gray-500 text-lg mb-8">Are you sure you want to approve Batch #APP-{{ selectedTransaction?.transactionReference || (selectedTransaction?.id ? selectedTransaction!.id + 90000 : '') }}? This will mark it as ready for payout.</p>
+        <h3 class="text-4xl font-black text-gray-900 mb-3 tracking-tight">Authorize Batch</h3>
+        <p class="text-xl text-gray-500 font-bold mb-10 leading-relaxed italic">"Are you certain you wish to release Batch #APP-{{ selectedTransaction?.transactionReference || (selectedTransaction?.id ? selectedTransaction!.id + 90000 : '') }} into the payout pipeline?"</p>
         
-        <div class="flex w-full gap-3">
-          <button (click)="closeApproveConfirm()" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors">
-            Cancel
+        <div class="flex w-full gap-4">
+          <button (click)="closeApproveConfirm()" class="flex-1 py-5 rounded-xl border-2 border-gray-100 text-gray-400 font-black text-xl hover:bg-gray-50 transition-all uppercase tracking-widest">
+            Halt
           </button>
-          <button (click)="confirmApproval()" class="flex-1 py-3 rounded-xl bg-customGreen text-white font-black hover:bg-customGreenHover transition-colors shadow-md">
-            Yes, Approve
+          <button (click)="confirmApproval()" class="flex-1 py-5 rounded-xl bg-customGreen text-white font-black text-xl hover:bg-customGreenHover transition-all shadow-xl shadow-customGreen/10 uppercase tracking-widest transform active:scale-95 hover:-translate-y-1">
+            Proceed
           </button>
         </div>
       </div>
@@ -535,51 +552,57 @@
      style="animation: fadeIn 0.3s ease-out;">
 
   <!-- ── Execution Top Bar ───────────────────────────────── -->
-  <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center gap-5">
-    <button (click)="backToDashboard()"
-            class="w-12 h-12 rounded-2xl border-2 border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all shrink-0">
-      <i class="pi pi-arrow-left text-xl"></i>
-    </button>
-    <div>
-      <h1 class="text-2xl font-black text-gray-900 tracking-tight">Execute Payout</h1>
-      <p class="text-lg text-gray-400 font-semibold mt-0.5 font-mono">{{ selectedTransaction.transactionReference }}</p>
+  <div class="bg-white border-b border-gray-200 px-8 py-10 flex items-center justify-between shadow-sm sticky top-0 z-30">
+    <div class="flex items-center gap-6">
+      <button (click)="backToDashboard()"
+              class="w-16 h-16 rounded-xl border-2 border-gray-100 flex items-center justify-center text-gray-400 hover:text-customBlue hover:bg-customBlue/5 transition-all shrink-0 active:scale-95 shadow-sm">
+        <i class="fa-solid fa-arrow-left text-2xl"></i>
+      </button>
+      <div>
+        <h1 class="text-5xl font-extrabold text-gray-900 tracking-tight leading-none">Execute Payout</h1>
+        <p class="text-2xl text-customBlue font-black mt-3 flex items-center gap-2 underline underline-offset-8 decoration-customBlue/20">
+          <i class="fa-solid fa-fingerprint"></i> {{ selectedTransaction.transactionReference }}
+        </p>
+      </div>
     </div>
 
     <!-- ── Big Step Tracker ─────────────────────────────── -->
-    <div class="ml-auto flex items-center gap-6">
+    <div class="flex items-center gap-10 bg-gray-50 px-10 py-5 rounded-2xl border border-gray-100 shadow-inner">
       <!-- Step 1 -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
-             [ngClass]="currentStep > 1 ? 'bg-green-500 text-white' : currentStep === 1 ? 'text-white' : 'bg-gray-100 text-gray-400'"
-             [ngStyle]="currentStep === 1 ? {'background-color': '#2E6276'} : {}">
-          <i *ngIf="currentStep > 1" class="pi pi-check"></i>
-          <span *ngIf="currentStep <= 1">1</span>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl text-xl font-black flex items-center justify-center transition-all shadow-md transform"
+             [ngClass]="currentStep > 1 ? 'bg-customGreen text-white rotate-12' : currentStep === 1 ? 'bg-customBlue text-white scale-110 shadow-customBlue/20' : 'bg-white text-gray-300 border-2 border-gray-100'">
+          <i *ngIf="currentStep > 1" class="fa-solid fa-check"></i>
+          <span *ngIf="currentStep <= 1">01</span>
         </div>
-        <span class="text-base font-bold hidden sm:block"
-              [ngClass]="currentStep >= 1 ? 'text-gray-800' : 'text-gray-300'">Review</span>
+        <span class="text-xl font-black uppercase tracking-widest hidden lg:block"
+              [ngClass]="currentStep >= 1 ? 'text-gray-900' : 'text-gray-300'">Review</span>
       </div>
-      <div class="w-12 h-0.5 rounded-full" [ngClass]="currentStep > 1 ? 'bg-green-400' : 'bg-gray-200'"></div>
+      <div class="w-16 h-1 rounded-full bg-gray-200 overflow-hidden relative">
+        <div class="absolute h-full bg-customGreen transition-all duration-500" [style.width]="currentStep > 1 ? '100%' : '0%'"></div>
+      </div>
       <!-- Step 2 -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
-             [ngClass]="currentStep > 2 ? 'bg-green-500 text-white' : currentStep === 2 ? 'text-white' : 'bg-gray-100 text-gray-400'"
-             [ngStyle]="currentStep === 2 ? {'background-color': '#2E6276'} : {}">
-          <i *ngIf="currentStep > 2" class="pi pi-check"></i>
-          <span *ngIf="currentStep <= 2">2</span>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl text-xl font-black flex items-center justify-center transition-all shadow-md"
+             [ngClass]="currentStep > 2 ? 'bg-customGreen text-white rotate-12' : currentStep === 2 ? 'bg-customBlue text-white scale-110 shadow-customBlue/20' : 'bg-white text-gray-300 border-2 border-gray-100'">
+          <i *ngIf="currentStep > 2" class="fa-solid fa-check"></i>
+          <span *ngIf="currentStep <= 2">02</span>
         </div>
-        <span class="text-base font-bold hidden sm:block"
-              [ngClass]="currentStep >= 2 ? 'text-gray-800' : 'text-gray-300'">Payment Method</span>
+        <span class="text-xl font-black uppercase tracking-widest hidden lg:block"
+              [ngClass]="currentStep >= 2 ? 'text-gray-900' : 'text-gray-300'">Funding</span>
       </div>
-      <div class="w-12 h-0.5 rounded-full" [ngClass]="currentStep > 2 ? 'bg-green-400' : 'bg-gray-200'"></div>
+      <div class="w-16 h-1 rounded-full bg-gray-200 overflow-hidden relative">
+        <div class="absolute h-full bg-customGreen transition-all duration-500" [style.width]="currentStep > 2 ? '100%' : '0%'"></div>
+      </div>
       <!-- Step 3 -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
-             [ngClass]="currentStep === 3 ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'">
-          <i *ngIf="currentStep === 3" class="pi pi-check"></i>
-          <span *ngIf="currentStep !== 3">3</span>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl text-xl font-black flex items-center justify-center transition-all shadow-md"
+             [ngClass]="currentStep === 3 ? 'bg-customGreen text-white scale-110 rotate-12 shadow-customGreen/20' : 'bg-white text-gray-300 border-2 border-gray-100'">
+          <i *ngIf="currentStep === 3" class="fa-solid fa-flag-checkered"></i>
+          <span *ngIf="currentStep !== 3">03</span>
         </div>
-        <span class="text-base font-bold hidden sm:block"
-              [ngClass]="currentStep === 3 ? 'text-gray-800' : 'text-gray-300'">Done</span>
+        <span class="text-xl font-black uppercase tracking-widest hidden lg:block"
+              [ngClass]="currentStep === 3 ? 'text-gray-900' : 'text-gray-300'">Finalize</span>
       </div>
     </div>
   </div>
@@ -596,95 +619,105 @@
     <!-- ─────────────────────────────────────────────────── -->
     <!-- STEP 2: Payment Method & Destination Account        -->
     <!-- ─────────────────────────────────────────────────── -->
-    <div *ngIf="currentStep === 2" class="max-w-2xl mx-auto space-y-7" style="animation: fadeInUp 0.3s ease-out;">
+    <div *ngIf="currentStep === 2" class="max-w-4xl mx-auto space-y-10" style="animation: fadeInUp 0.4s ease-out;">
 
-      <div>
-        <h3 class="text-2xl font-black text-gray-900">Payment Method</h3>
-        <p class="text-base text-gray-500 mt-1">Select one funding source for this payout.</p>
+      <div class="text-center">
+        <h3 class="text-4xl font-black text-gray-900 tracking-tight">Select Funding Matrix</h3>
+        <p class="text-2xl text-gray-500 mt-2 font-semibold">Allocate a single settlement source for this payout batch.</p>
       </div>
 
       <!-- Source Cards (single-select radio) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div *ngFor="let acc of fundingAccounts"
              (click)="selectedSourceId = acc.id"
-             class="rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg active:scale-[0.98]"
-             [ngClass]="selectedSourceId === acc.id ? 'shadow-xl' : 'border-gray-100 bg-white'"
-             [ngStyle]="selectedSourceId === acc.id ? {'border-color': '#2E6276', 'background-color': 'rgba(46,98,118,0.04)'} : {}">
+             class="rounded-2xl border-2 p-8 cursor-pointer transition-all hover:shadow-2xl active:scale-[0.98] relative group"
+             [ngClass]="selectedSourceId === acc.id ? 'shadow-xl border-customBlue bg-customBlue/5' : 'border-gray-100 bg-white hover:border-customBlue/20'">
 
           <!-- Top Row: icon + radio dot -->
-          <div class="flex items-start justify-between mb-5">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
-                 [ngClass]="selectedSourceId === acc.id ? 'text-white' : 'bg-gray-100 text-gray-400'"
-                 [ngStyle]="selectedSourceId === acc.id ? {'background-color': '#2E6276'} : {}">
-              <i class="pi text-xl" [ngClass]="acc.type === 'BANK' ? 'pi-building' : 'pi-wallet'"></i>
+          <div class="flex items-start justify-between mb-8">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all shadow-inner"
+                 [ngClass]="selectedSourceId === acc.id ? 'bg-customBlue text-white scale-110' : 'bg-gray-50 text-gray-400'">
+              <i class="fa-solid text-2xl" [ngClass]="acc.type === 'BANK' ? 'fa-building-columns' : 'fa-wallet'"></i>
             </div>
             <!-- Radio button -->
-            <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all"
-                 [ngClass]="selectedSourceId !== acc.id ? 'border-gray-200' : 'text-white'"
-                 [ngStyle]="selectedSourceId === acc.id ? {'background-color': '#2E6276', 'border-color': '#2E6276'} : {}">
-              <div *ngIf="selectedSourceId === acc.id" class="w-3 h-3 bg-white rounded-full"></div>
+            <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all"
+                 [ngClass]="selectedSourceId !== acc.id ? 'border-gray-200' : 'bg-customBlue border-customBlue text-white'">
+              <div *ngIf="selectedSourceId === acc.id" class="w-3.5 h-3.5 bg-white rounded-full"></div>
             </div>
           </div>
 
-          <p class="text-lg font-black text-gray-900 leading-tight">{{ acc.name }}</p>
-          <p class="text-lg text-gray-400 font-semibold mt-1 mb-4">{{ acc.bankName }} · <span class="font-mono">{{ acc.number }}</span></p>
-          <div class="flex items-center justify-between pt-4 border-t border-gray-50">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-lg font-bold uppercase tracking-wider"
+          <p class="text-2xl font-black text-gray-900 leading-none">{{ acc.name }}</p>
+          <p class="text-xl text-gray-400 font-black mt-2 mb-6 uppercase tracking-widest">{{ acc.bankName }} · <span class="font-mono text-customBlue">{{ acc.number }}</span></p>
+          <div class="flex items-center justify-between pt-6 border-t border-gray-100">
+            <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-lg font-black uppercase tracking-[0.14em]"
                   [ngClass]="acc.type === 'BANK' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'">
-              <i class="pi text-lg" [ngClass]="acc.type === 'BANK' ? 'pi-credit-card' : 'pi-tag'"></i>
+              <i class="fa-solid" [ngClass]="acc.type === 'BANK' ? 'fa-building-shield' : 'fa-vault'"></i>
               {{ acc.type }}
             </span>
-            <span class="text-base font-black text-gray-900">₦{{ acc.balance | number }}</span>
+            <span class="text-2xl font-black text-gray-900 tracking-tighter">₦{{ acc.balance | number }}</span>
           </div>
         </div>
       </div>
 
       <!-- Destination Account Form -->
-      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-7 space-y-6">
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-xl p-10 space-y-10 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-4 h-full bg-gray-50 group-focus-within:bg-customBlue transition-colors"></div>
         <div>
-          <h4 class="text-lg font-black text-gray-900 mb-1">Destination Account</h4>
-          <p class="text-lg text-gray-400 font-medium">Enter the beneficiary's bank details for this payment.</p>
+          <h4 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+             <i class="fa-solid fa-people-arrows text-customBlue"></i> Destination Integrity
+          </h4>
+          <p class="text-xl text-gray-500 font-bold mt-2">Validate beneficiary bank details for this automated transfer.</p>
         </div>
 
-        <div>
-          <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Bank Name</label>
-          <input type="text" [(ngModel)]="destBank" placeholder="e.g. Access Bank"
-                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-semibold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="space-y-8">
           <div>
-            <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Account Number</label>
-            <input type="text" [(ngModel)]="destAccountNumber" placeholder="e.g. 0123456789" maxlength="10"
-                   class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-mono font-bold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all tracking-widest">
+            <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Target Institution</label>
+            <div class="relative">
+              <i class="fa-solid fa-building absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+              <input type="text" [(ngModel)]="destBank" placeholder="Specify recipient bank (e.g. Zenith Bank PLC)"
+                     class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-6 py-5 text-xl font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+            </div>
           </div>
-          <div>
-            <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Account Name</label>
-            <input type="text" [(ngModel)]="destAccountName" placeholder="e.g. John Smith"
-                   class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-semibold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div>
+              <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Account Reference</label>
+              <div class="relative">
+                <i class="fa-solid fa-hashtag absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                <input type="text" [(ngModel)]="destAccountNumber" placeholder="10 Digits" maxlength="10"
+                       class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-6 py-5 text-xl font-mono font-black tracking-[0.2em] text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+              </div>
+            </div>
+            <div>
+              <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Certified Name</label>
+              <div class="relative">
+                <i class="fa-solid fa-id-card absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                <input type="text" [(ngModel)]="destAccountName" placeholder="Recipient Legal Name"
+                       class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-6 py-5 text-xl font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Info Banner -->
-      <div class="p-5 rounded-2xl border flex gap-4 text-base font-medium"
-           style="background-color: rgba(46,98,118,0.05); border-color: rgba(46,98,118,0.15); color: #2E6276;">
-        <i class="pi pi-info-circle text-xl mt-0.5 shrink-0"></i>
-        <span>The selected account will be debited. Ensure the destination details are correct before proceeding — this action cannot be reversed.</span>
+      <div class="p-8 rounded-2xl border-2 flex gap-5 text-xl font-bold bg-customBlue/5 border-customBlue/10 text-customBlue shadow-sm">
+        <i class="fa-solid fa-circle-info text-2xl mt-1 shrink-0"></i>
+        <span>Security Note: This payout will trigger an immutable ledger entry. Please ensure all destination credentials have been dual-verified before final authorization.</span>
       </div>
 
       <!-- Footer -->
-      <div class="flex gap-4">
-        <button (click)="prevStep()" class="flex-none w-16 py-5 border-2 border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center">
-          <i class="pi pi-arrow-left text-xl"></i>
+      <div class="flex gap-6 h-20">
+        <button (click)="prevStep()" class="flex-none w-20 border-2 border-gray-100 text-gray-400 font-black rounded-xl hover:text-customBlue hover:border-customBlue/30 transition-all flex items-center justify-center bg-white shadow-sm active:scale-95">
+          <i class="fa-solid fa-arrow-left-long text-3xl"></i>
         </button>
         <button (click)="confirmPayout()"
                 [disabled]="isProcessing || !selectedSourceId || !destAccountNumber || !destAccountName"
-                class="flex-1 py-5 text-white font-black rounded-2xl transition-all text-base shadow-xl flex items-center justify-center gap-3 disabled:opacity-40 active:scale-95"
-                style="background-color: #2E6276;">
-          <i *ngIf="isProcessing" class="pi pi-spinner pi-spin text-lg"></i>
-          <i *ngIf="!isProcessing" class="pi pi-lock text-lg"></i>
-          <span>{{ isProcessing ? 'Authorising Payout…' : 'Confirm & Authorise' }}</span>
+                class="flex-1 text-white font-black rounded-xl transition-all text-2xl shadow-xl shadow-customBlue/20 flex items-center justify-center gap-4 disabled:opacity-40 active:scale-95 group relative overflow-hidden bg-customBlue hover:bg-customBlueHover shadow-md transform hover:-translate-y-1"
+                >
+          <i *ngIf="isProcessing" class="fa-solid fa-spinner fa-spin text-2xl"></i>
+          <i *ngIf="!isProcessing" class="fa-solid fa-shield-halved text-2xl group-hover:rotate-12 transition-transform"></i>
+          <span>{{ isProcessing ? 'AUTHORISING PROTOCOL…' : 'AUTHORIZE & DISBURSE' }}</span>
         </button>
       </div>
     </div>
@@ -694,51 +727,61 @@
     <!-- STEP 3: Success                                     -->
     <!-- ─────────────────────────────────────────────────── -->
     <div *ngIf="currentStep === 3"
-         class="max-w-xl mx-auto flex flex-col items-center text-center py-16 space-y-8"
-         style="animation: scaleIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);">
+         class="max-w-3xl mx-auto flex flex-col items-center text-center py-20 space-y-10"
+         style="animation: scaleIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);">
 
-      <div class="w-32 h-32 rounded-full flex items-center justify-center shadow-2xl"
-           style="background: linear-gradient(135deg, #2EB270, #1a8a52); box-shadow: 0 24px 64px rgba(46,178,112,0.35);">
-        <i class="pi pi-check text-6xl text-white font-black"></i>
+      <div class="w-40 h-40 rounded-full flex items-center justify-center shadow-3xl relative"
+           style="background: linear-gradient(135deg, #2EB270, #1a8a52); box-shadow: 0 40px 80px rgba(46,178,112,0.3);">
+        <i class="fa-solid fa-check text-7xl text-white font-black animate-bounce"></i>
+        <div class="absolute inset-0 rounded-full animate-ping bg-green-400 opacity-20"></div>
       </div>
 
       <div>
-        <h2 class="text-4xl font-black text-gray-900">Payout Authorised!</h2>
-        <p class="text-gray-500 mt-3 text-lg font-medium">The payment has been executed and the ledger updated.</p>
+        <h2 class="text-6xl font-black text-gray-900 tracking-tighter">Payout Dispatched!</h2>
+        <p class="text-gray-500 mt-4 text-2xl font-bold flex items-center justify-center gap-3">
+          <i class="fa-solid fa-circle-nodes text-customGreen"></i> The registry has been updated successfully.
+        </p>
       </div>
 
       <!-- Receipt Card -->
-      <div class="w-full bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 text-left">
-        <div class="px-7 py-5 flex justify-between items-center">
-          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Reference</span>
-          <span class="text-base font-bold text-gray-900 font-mono">#PAY-{{ selectedTransaction.transactionReference }}</span>
+      <div class="w-full bg-white rounded-3xl border-2 border-gray-100 shadow-2xl divide-y divide-gray-50 text-left overflow-hidden">
+        <div class="px-10 py-6 flex justify-between items-center group">
+          <span class="text-lg font-black text-gray-400 uppercase tracking-[0.2em]">Manifest Ref.</span>
+          <span class="text-xl font-black text-customBlue font-mono bg-customBlue/5 px-4 py-1 rounded-lg">#PAY-{{ selectedTransaction.transactionReference }}</span>
         </div>
-        <div class="px-7 py-5 flex justify-between items-center">
-          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Beneficiary</span>
-          <span class="text-base font-bold text-gray-900">{{ selectedTransaction.createdBy }}</span>
+        <div class="px-10 py-6 flex justify-between items-center">
+          <span class="text-lg font-black text-gray-400 uppercase tracking-[0.2em]">Asset Recipient</span>
+          <span class="text-xl font-black text-gray-900 underline decoration-customBlue/20">{{ selectedTransaction.createdBy }}</span>
         </div>
-        <div class="px-7 py-5 flex justify-between items-center">
-          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Destination</span>
+        <div class="px-10 py-8 flex justify-between items-center bg-gray-50/50">
+          <span class="text-lg font-black text-gray-400 uppercase tracking-[0.2em]">Target Node</span>
           <div class="text-right">
-            <p class="text-base font-bold text-gray-900">{{ destAccountName || '—' }}</p>
-            <p class="text-lg text-gray-400 font-mono">{{ destBank }} · {{ destAccountNumber }}</p>
+            <p class="text-xl font-black text-gray-900">{{ destAccountName || '—' }}</p>
+            <p class="text-lg text-gray-500 font-mono font-bold">{{ destBank }} · <span class="text-customBlue">{{ destAccountNumber }}</span></p>
           </div>
         </div>
-        <div class="px-7 py-5 flex justify-between items-center">
-          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Funded From</span>
-          <span class="text-base font-bold text-gray-900">{{ selectedFundingNames }}</span>
+        <div class="px-10 py-6 flex justify-between items-center">
+          <span class="text-lg font-black text-gray-400 uppercase tracking-[0.2em]">Funding Matrix</span>
+          <span class="text-xl font-black text-gray-900 select-all cursor-copy">{{ selectedFundingNames }}</span>
         </div>
-        <div class="px-7 py-6 flex justify-between items-center">
-          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Amount Disbursed</span>
-          <span class="text-2xl font-black" style="color:#2EB270;">₦{{ selectedTransaction.amount | number }} <span class="text-base font-bold opacity-60">NGN</span></span>
+        <div class="px-10 py-10 flex justify-between items-center bg-white">
+          <span class="text-xl font-black text-gray-900 uppercase tracking-[0.2em]">Disbursed Value</span>
+          <div class="text-right">
+            <span class="text-5xl font-black tracking-tighter text-customGreen italic">₦{{ selectedTransaction.amount | number }}</span>
+            <p class="text-lg font-black text-gray-400 mt-1">NIGERIAN NAIRA (NGN)</p>
+          </div>
         </div>
       </div>
 
-      <button (click)="backToDashboard()"
-              class="w-full py-6 text-white font-black text-lg rounded-2xl shadow-2xl transition-all active:scale-95"
-              style="background: linear-gradient(135deg, #2E6276, #1a3d4f);">
-        Back to Dashboard
-      </button>
+      <div class="flex flex-col w-full gap-5">
+        <button (click)="backToDashboard()"
+                class="w-full h-20 text-white font-black text-2xl rounded-2xl shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-4 bg-customBlue hover:bg-customBlueHover shadow-customBlue/20 transform hover:-translate-y-1">
+          <i class="fa-solid fa-house-chimney-window"></i> Return to Registry
+        </button>
+        <button class="text-gray-400 hover:text-customBlue font-black text-lg uppercase tracking-widest transition-colors py-4">
+           <i class="fa-solid fa-print mr-2"></i> Print Confirmation Receipt
+        </button>
+      </div>
     </div>
 
   </div>

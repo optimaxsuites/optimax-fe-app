@@ -56,6 +56,34 @@ export enum DisbursementStatus {
   FAILED = 'FAILED'
 }
 
+export enum AdvancedPaymentMethod {
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  CARD = 'CARD',
+  CASH = 'CASH',
+  PAYROLL_DEDUCTION = 'PAYROLL_DEDUCTION',
+  MOBILE_MONEY = 'MOBILE_MONEY',
+  OTHER = 'OTHER'
+}
+
+export enum AdvancedPaymentSubtype {
+  PRINCIPAL_REPAYMENT = 'PRINCIPAL_REPAYMENT',
+  INTEREST_REPAYMENT = 'INTEREST_REPAYMENT',
+  LATE_FEE = 'LATE_FEE'
+}
+
+export enum AdvancedPaymentRecordStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID'
+}
+
+export interface EmployeesDTO {
+  id: number;
+  idNumber: string;
+  fullName: string;
+  bankName?: string;
+  accountNumber?: string;
+}
+
 export interface UserDTO {
   id: number;
   username: string;
@@ -73,17 +101,22 @@ export interface AccountDTO {
   active: boolean;
   createdBy?: UserDTO;
   createdAt: Date;
+  selected?: boolean; // UI helper
+  balance?: number; // UI helper
+  bankBalance?: number; // UI helper
 }
 
 export interface AccountMappingDTO {
   id: number;
   sourceModule: SourceModule;
   eventType: string;
-  debitAccountId: number;
-  creditAccountId: number;
+  debitAccount: AccountDTO; // Expanded for GET
+  creditAccount: AccountDTO; // Expanded for GET
+  debitAccountId?: number; // For POST/PUT
+  creditAccountId?: number; // For POST/PUT
   description?: string;
   createdBy?: UserDTO;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface AccountingTransactionDTO {
@@ -92,91 +125,21 @@ export interface AccountingTransactionDTO {
   sourceModule: SourceModule;
   amount: number;
   currency: string;
-  Status: TransactionReviewStatus;
-  AccountID: AccountDTO;
+  status: TransactionReviewStatus;
+  Status?: TransactionReviewStatus; // Legacy alias
+  reviewStatus?: TransactionReviewStatus; // Template alias
+  account: AccountDTO; // Name changed to match JSON 'account'
+  AccountID?: any; // Legacy alias
+  accountId?: number; // For POST/PUT
+  debitAmount?: number; // UI display helper
+  creditAmount?: number; // UI display helper
   externalReference?: string;
   description?: string;
-  transactionDate: Date;
-  createdBy: string;
+  transactionDate: string | Date;
+  date?: string | Date; // Template alias
+  createdBy: UserDTO | any;
+  createdAt: string | Date;
   approvedBy?: string;
-  createdAt: Date;
-}
-
-export interface TransactionReviewDTO {
-  id: number;
-  transactionId: AccountingTransactionDTO;
-  reviewerId: UserDTO;
-  reviewStatus: TransactionReviewStatus;
-  comments?: string;
-  reviewedAt: Date;
-  createdBy: string;
-}
-
-export interface JournalEntryDTO {
-  id: number;
-  entryNumber: number;
-  transactionId: AccountingTransactionDTO;
-  entryDate: Date;
-  description?: string;
-  status: JournalEntryStatus;
-  createdAt: Date;
-}
-
-export interface JournalEntryLineDTO {
-  id: number;
-  journalEntryId: JournalEntryDTO;
-  accountId: AccountDTO;
-  debitAmount: number;
-  creditAmount: number;
-  description?: string;
-  createdBy: string;
-}
-
-export interface BankTransactionDTO {
-  id: number;
-  bankAccountId: AccountDTO;
-  externalReference?: string;
-  amount: number;
-  currency: string;
-  transactionType: BankTransactionType;
-  transactionDate: Date;
-  description?: string;
-  reconciled: boolean;
-  source: string;
-  createdBy: string;
-  createdAt: Date;
-}
-
-export interface BankReconciliationDTO {
-  id: number;
-  bankAccountId: AccountDTO;
-  statementDate: Date;
-  openingBalance: number;
-  closingBalance: number;
-  status: ReconciliationStatus;
-  createdBy: string;
-  createdAt: Date;
-}
-
-export interface BankReconciliationLineDTO {
-  id: number;
-  reconciliationId: BankReconciliationDTO;
-  bankTransactionId: BankTransactionDTO;
-  journalEntryId: JournalEntryLineDTO;
-  matchedAmount: number;
-  status: ReconciliationStatus;
-  createdBy: string;
-}
-
-export interface BankConnectionDTO {
-  id: string;
-  providerName: string;
-  apiKey: string;
-  secretKey: string;
-  webhookUrl: string;
-  active: boolean;
-  createdBy: string;
-  createdAt: Date;
 }
 
 export interface DisbursementDTO {
@@ -186,7 +149,140 @@ export interface DisbursementDTO {
   status: DisbursementStatus;
   disbursedFrom: 'CASH' | 'ACCOUNT';
   monifyReference?: string;
-  disbursedAt?: Date;
-  createdBy: string;
-  createdAt: Date;
+  disbursedAt?: Date | string;
+  createdBy: string | UserDTO;
+  createdAt: Date | string;
+}
+
+export interface JournalEntryDTO {
+  id: number;
+  entryNumber: number;
+  transaction: AccountingTransactionDTO; // Expanded
+  transactionId?: number; // For POST/PUT
+  entryDate: string;
+  description?: string;
+  status: JournalEntryStatus;
+  createdAt: string;
+}
+
+export interface JournalEntryLineDTO {
+  id: number;
+  journalEntry: JournalEntryDTO; // Expanded
+  journalEntryId?: number; // For POST/PUT
+  account: AccountDTO; // Expanded
+  accountId?: number; // For POST/PUT
+  debitAmount: number;
+  creditAmount: number;
+  description?: string;
+  createdBy: UserDTO;
+}
+
+export interface LedgerEntryDTO {
+  id: number;
+  account: AccountDTO; // Expanded
+  accountId?: number; // For POST/PUT
+  journalEntryLine: JournalEntryLineDTO; // Expanded
+  journalEntryLineId?: number; // For POST/PUT
+  debit: number;
+  credit: number;
+  balanceAfter: number;
+  balance?: number; // Template alias
+  description?: string; // Template alias
+  currencyCode: string;
+  entryDate: string;
+  date?: string; // Template alias
+  // Flattened from nested transaction — populated at runtime via mapping
+  transactionReference?: string;
+  sourceModule?: string;
+  createdAt: string;
+}
+
+export interface AccountingEventDTO {
+  id?: number;
+  sourceModule: SourceModule;
+  eventType: string;
+  amount: number;
+  currency: string;
+  reference: string;
+  description: string;
+  transactionDate: string;
+  metadata?: any;
+}
+
+export interface PaginationResult<T> {
+  content: T[];
+  totalSize: number;
+  page: number;
+  size: number;
+}
+
+// ── Integration Models for Loan Management ───────────────
+
+export interface AdvancedLoanDisbursementConfirmationDTO {
+  id: number;
+  loanId: any; // Ideally AdvancedLoanDTO from HR module
+  disbursedAmount: number;
+  disbursementConfirmedAt: Date;
+  disbursementConfirmedBy: UserDTO;
+  disburserInstructionReference: string;
+  disbursementReference: string;
+  paymentMethod: AdvancedPaymentMethod;
+  notes?: string;
+}
+
+export interface AdvancedPaymentRecordDTO {
+  id: number;
+  paymentType: AdvancedPaymentSubtype;
+  loanId: any;
+  installmentNumber: number;
+  amount: number;
+  principalApplied: number;
+  interestApplied: number;
+  lateFeeApplied: number;
+  remainingBalance: number;
+  paymentMethod: AdvancedPaymentMethod;
+  paymentReference: string;
+  accountBankName: string;
+  paidIntoAccount: string;
+  paidFromAccount: EmployeesDTO;
+  paidAt: Date;
+  recordedBy: UserDTO;
+  recordedAt: Date;
+  status: AdvancedPaymentRecordStatus;
+  notes?: string;
+}
+
+export interface CooperativeLoanDisbursementConfirmationDTO {
+  id: number;
+  loanId: any;
+  disbursedAmount: number;
+  disbursementConfirmedAt: Date;
+  disbursementConfirmedBy: UserDTO;
+  disbursementInstructionReference: string;
+  disbursementReference: string;
+  paymentMethod: AdvancedPaymentMethod;
+  notes?: string;
+}
+
+export interface CooperativePaymentRecordDTO {
+  id: number;
+  paymentType: any; // CooperativePaymentSubtype
+  membershipId: any;
+  loanId: any;
+  installmentNumber: number;
+  groupId: any;
+  amount: number;
+  principalApplied: number;
+  interestApplied: number;
+  lateFeeApplied: number;
+  remainingBalance: number;
+  paymentMethod: AdvancedPaymentMethod;
+  paymentReference: string;
+  paidIntoAccount: any;
+  paidFromAccount: EmployeesDTO;
+  paidAt: Date;
+  recordedBy: UserDTO;
+  recordedAt: Date;
+  status: any;
+  notes?: string;
 }

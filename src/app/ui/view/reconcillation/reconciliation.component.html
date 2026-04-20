@@ -24,12 +24,12 @@
           </div>
           <button (click)="loadTransactions()"
             class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center gap-2">
-            <span><i class="fa-solid fa-arrows-rotate"></i></span>
+            <span><i class="pi pi-refresh"></i></span>
             Fetch Data
           </button>
           <button (click)="exportReport()"
             class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium flex items-center gap-2 shadow-sm">
-            <span><i class="fa-solid fa-download"></i></span>
+            <span><i class="pi pi-download"></i></span>
             Export
           </button>
         </div>
@@ -53,7 +53,7 @@
               <option *ngFor="let acc of accounts" [ngValue]="acc">{{ acc.name }}</option>
             </select>
             <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-              <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+              <i class="pi pi-chevron-down text-gray-400 text-xs"></i>
             </div>
           </div>
         </div>
@@ -125,10 +125,10 @@
                     <button *ngIf="tx.status !== 'Matched'" (click)="matchTransaction(tx)"
                       class="text-teal-600 hover:text-teal-800 hover:bg-teal-50 p-1.5 rounded transition-colors"
                       title="Match">
-                      <i class="fa-solid fa-link"></i>
+                      <i class="pi pi-link"></i>
                     </button>
                     <span *ngIf="tx.status === 'Matched'" class="text-green-600"><i
-                        class="fa-solid fa-check"></i></span>
+                        class="pi pi-check"></i></span>
                   </td>
                 </tr>
               </tbody>
@@ -222,7 +222,7 @@
                   <button *ngIf="tx.status !== 'Matched'" (click)="matchTransaction(tx)"
                     class="text-teal-600 hover:text-teal-800 hover:bg-teal-50 p-1.5 rounded transition-colors"
                     title="Match">
-                    <i class="fa-solid fa-link"></i>
+                    <i class="pi pi-link"></i>
                   </button>
                 </td>
               </tr>
@@ -278,7 +278,7 @@
       <div class="p-6">
         <div class="flex items-start space-x-4 mb-6">
           <div class="p-3 bg-teal-50 rounded-full flex-shrink-0">
-            <span class="text-teal-600 text-xl"><i class="fa-solid fa-link"></i></span>
+            <span class="text-teal-600 text-xl"><i class="pi pi-link"></i></span>
           </div>
           <div>
             <h4 class="text-lg font-medium text-gray-900 mb-2">Confirm Match</h4>
@@ -315,13 +315,13 @@
 
           <button (click)="confirmMatch()"
             class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
-            <span><i class="fa-solid fa-check"></i></span>
+            <span><i class="pi pi-check"></i></span>
             Okay, Match
           </button>
 
           <button (click)="bypassMatch()"
             class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
-            <span><i class="fa-solid fa-flag"></i></span>
+            <span><i class="pi pi-flag"></i></span>
             Flag
           </button>
         </div>

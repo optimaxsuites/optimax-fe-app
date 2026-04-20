@@ -83,27 +83,25 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr *ngFor="let account of paginatedAccounts" class="transition-colors"
-              [class.bg-gray-50]="account.type === 'Header'" [class.hover:bg-blue-50]="account.type !== 'Header'">
+            <tr *ngFor="let account of paginatedAccounts" class="transition-colors hover:bg-blue-50">
               <td class="px-4 py-4">
                 <input type="checkbox" [(ngModel)]="account.selected" (change)="onAccountSelectionChange()"
                   class="w-4 h-4 text-customBlue bg-white border-gray-300 rounded focus:ring-customBlue focus:ring-2" />
               </td>
-              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.code }}</td>
-              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.name }}</td>
+              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.accountCode }}</td>
+              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.accountName }}</td>
               <td class="px-6 py-4">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold" [ngClass]="{
-                        'bg-blue-100 text-blue-800': account.type === 'Asset',
-                        'bg-red-100 text-red-800': account.type === 'Liability',
-                        'bg-green-100 text-green-800': account.type === 'Income',
-                        'bg-yellow-100 text-yellow-800': account.type === 'Expense',
-                        'bg-purple-100 text-purple-800': account.type === 'Equity',
-                        'bg-gray-200 text-gray-800': account.type === 'Header'
+                        'bg-blue-100 text-blue-800': account.accountType === 'ASSET',
+                        'bg-red-100 text-red-800': account.accountType === 'LIABILITY',
+                        'bg-green-100 text-green-800': account.accountType === 'INCOME',
+                        'bg-yellow-100 text-yellow-800': account.accountType === 'EXPENSE',
+                        'bg-purple-100 text-purple-800': account.accountType === 'EQUITY'
                       }">
-                  {{ account.type }}
+                  {{ account.accountType }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-600">{{ account.details || '-' }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ account.description || '-' }}</td>
               <td class="px-6 py-4 text-sm font-semibold text-right text-gray-900">{{ account.balance |
                 currency:'NGN':'symbol-narrow' }}</td>
               <td class="px-6 py-4 text-sm font-semibold text-right text-gray-900">{{ account.bankBalance |
@@ -209,14 +207,14 @@
           <!-- Code -->
           <div>
             <label for="code" class="text-sm font-semibold text-gray-700 mb-2 block">Account Code</label>
-            <input id="code" type="text" [(ngModel)]="newAccount.code" placeholder="Enter account code"
+            <input id="code" type="number" [(ngModel)]="newAccount.accountCode" placeholder="Enter account code"
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
           </div>
 
           <!-- Name -->
           <div>
             <label for="name" class="text-sm font-semibold text-gray-700 mb-2 block">Account Name</label>
-            <input id="name" type="text" [(ngModel)]="newAccount.name" placeholder="Enter account name"
+            <input id="name" type="text" [(ngModel)]="newAccount.accountName" placeholder="Enter account name"
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
           </div>
 
@@ -226,7 +224,7 @@
             <div class="relative">
               <button (click)="toggleTypeDropdown()"
                 class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:border-customBlue transition-colors flex items-center justify-between text-sm font-medium text-gray-700">
-                <span>{{newAccount.type || 'Select an account type'}}</span>
+                <span>{{newAccount.accountType || 'Select an account type'}}</span>
                 <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="showTypeDropdown"
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -237,9 +235,9 @@
                 class="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-1">
                 <button *ngFor="let type of accountTypes" (click)="selectType(type.value)"
                   class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
-                  [class.bg-customBlue]="newAccount.type === type.value"
-                  [class.text-white]="newAccount.type === type.value"
-                  [class.font-semibold]="newAccount.type === type.value">
+                  [class.bg-customBlue]="newAccount.accountType === type.value"
+                  [class.text-white]="newAccount.accountType === type.value"
+                  [class.font-semibold]="newAccount.accountType === type.value">
                   {{ type.label }}
                 </button>
               </div>
@@ -263,7 +261,7 @@
           <!-- Details -->
           <div class="md:col-span-2">
             <label for="details" class="text-sm font-semibold text-gray-700 mb-2 block">Details (Optional)</label>
-            <textarea id="details" [(ngModel)]="newAccount.details" placeholder="Enter account details..." rows="3"
+            <textarea id="details" [(ngModel)]="newAccount.description" placeholder="Enter account details..." rows="3"
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm resize-none"></textarea>
           </div>
         </div>
@@ -290,7 +288,7 @@
       <!-- Sidebar Header -->
       <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between z-10">
         <div>
-          <h3 class="text-xl font-bold text-gray-900">{{ selectedAccount?.name }} - Register</h3>
+          <h3 class="text-xl font-bold text-gray-900">{{ selectedAccount?.accountName }} - Register</h3>
           <p class="text-sm text-gray-600 mt-1">
             <span class="font-medium">Current Balance:</span>
             <span class="font-semibold text-customBlue">{{ selectedAccount?.balance | currency:'NGN':'symbol-narrow'

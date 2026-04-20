@@ -74,7 +74,8 @@ import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-mo
 import { AddQuotationItemComponent } from './ui/view/add-quotation-item/add-quotation-item.component';
 import { AddShippingDetailsComponent } from './ui/view/add-shipping-details/add-shipping-details.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 import { TransactionsComponent } from './ui/view/transactions/transactions.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
 import { AccountingReportsComponent } from './ui/view/accounting-reports/accounting-reports.component';
@@ -118,6 +119,9 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { ConfirmationService } from 'primeng/api';
 import { PdfViewerWrapperModule } from './ui/sharedComponent/view/pdf-viewer-wrapper/pdf-viewer-wrapper.module';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
+import { GeneralLedgerComponent } from './ui/view/general-ledger/general-ledger.component';
+import { ToastComponent } from './ui/sharedComponent/view/toast/toast.component';
+import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 
 @NgModule({
   declarations: [
@@ -163,7 +167,10 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     AddQuotationItemComponent,
     AddShippingDetailsComponent,
     TransactionsComponent,
-    DisbursementComponent
+    DisbursementComponent,
+    GeneralLedgerComponent,
+    ToastComponent,
+    AccountingQueueComponent
   ],
   imports: [
     BrowserModule,
@@ -236,7 +243,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     MessageService,
     ConfirmationService,
     { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
-    JwtHelperService
+    JwtHelperService,
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],
   bootstrap: [AppComponent],
 })

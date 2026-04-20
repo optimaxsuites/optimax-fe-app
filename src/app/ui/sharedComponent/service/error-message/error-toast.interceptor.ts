@@ -7,7 +7,7 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { ToastService } from '../../../../services/toast.service';
 import { ErrorMessageService } from './error-message.service';
 
 export const SUPPRESS_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
@@ -15,7 +15,7 @@ export const SUPPRESS_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 @Injectable()
 export class ErrorToastInterceptor implements HttpInterceptor {
   constructor(
-    private messageService: MessageService,
+    private toastService: ToastService,
     private errorMessageService: ErrorMessageService
   ) {}
 
@@ -28,13 +28,7 @@ export class ErrorToastInterceptor implements HttpInterceptor {
             'Something went wrong. Please try again.'
           );
 
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail,
-            key: 'global',
-            life: 4000,
-          });
+          this.toastService.error(detail);
         }
 
         return throwError(() => error);
