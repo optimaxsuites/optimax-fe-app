@@ -1,5 +1,5 @@
-# stages:
-#     - update_subtrees
+stages:
+    - update_subtrees
 
 # update_subtrees:
 #     stage: update_subtrees

@@ -409,8 +409,8 @@ export class CommunicationComponent
         if (dm.dmChannelId) this.subscribeToDmChannel(dm);
       }
     };
-    client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
-    client.onWebSocketError = (err) => console.error('WS ERROR:', err);
+    client.onStompError = (frame: any) => console.error('STOMP ERROR:', frame);
+    client.onWebSocketError = (err: any) => console.error('WS ERROR:', err);
     client.activate();
   }
 
