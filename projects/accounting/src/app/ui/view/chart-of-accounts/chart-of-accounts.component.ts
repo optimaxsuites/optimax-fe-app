@@ -1,141 +1,92 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmationService } from 'primeng/api';
-import { AuthenticationService } from '../../sharedComponent/service/auth-service/authentication.service';
-import { DeletedRecordsService } from '../../sharedComponent/service/deleted-records/deleted-records.service';
-
-interface Account {
-  code: string;
-  name: string;
-  type: string;
-  details: string;
-  balance: number;
-  bankBalance: number;
-  selected?: boolean;
-}
+import { AccountDTO, AccountType, PaginationResult } from '../../domain/accounting.dto';
+import { AccountingService } from '../../../services/accounting.service';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-chart-of-accounts',
   templateUrl: './chart-of-accounts.component.html',
   styleUrl: './chart-of-accounts.component.scss'
 })
-export class ChartOfAccountsComponent {
-  accounts: Account[] = [
-    { code: '1010', name: 'Cash', type: 'Asset', details: 'Physical cash on hand', balance: 10000, bankBalance: 0, selected: false },
-    { code: '1020', name: 'Bank Accounts', type: 'Asset', details: '', balance: 0, bankBalance: 84750, selected: false },
-    { code: '1030', name: 'Accounts Receivable', type: 'Asset', details: '', balance: 0, bankBalance: 0, selected: false },
-    { code: '2010', name: 'Accounts Payable', type: 'Liability', details: '', balance: 0, bankBalance: 0, selected: false },
-    { code: '3010', name: 'POS Sales', type: 'Income', details: '', balance: 0, bankBalance: 0, selected: false },
-    { code: '4010', name: 'Cost of Goods Sold (POS)', type: 'Expense', details: '', balance: 0, bankBalance: 0, selected: false },
-    { code: '5010', name: "Owner's Capital", type: 'Equity', details: '', balance: 0, bankBalance: 0, selected: false },
-  ];
-
-  selectedAccounts: any[] = [];
-  filteredAccounts: Account[] = [];
-  paginatedAccounts: Account[] = [];
+export class ChartOfAccountsComponent implements OnInit {
+  // Data
+  accounts: AccountDTO[] = [];
+  filteredAccounts: AccountDTO[] = [];
+  paginatedAccounts: AccountDTO[] = [];
+  
+  // Selection
+  selectedAccounts: AccountDTO[] = [];
+  
+  // State
+  loading = false;
   rows = 10;
   first = 0;
 
   // Add Account Modal
   showAddAccountModal = false;
   showTypeDropdown = false;
-  newAccount = {
-    code: '',
-    name: '',
-    type: '',
-    details: '',
-    balance: 0,
-    bankBalance: 0
+  newAccount: Partial<AccountDTO> = {
+    accountCode: 0,
+    accountName: '',
+    accountType: AccountType.ASSET,
+    description: '',
+    active: true,
+    currency: 'NGN'
   };
-  accountTypes = [
-    { label: 'Header', value: 'Header' },
-    { label: 'Asset', value: 'Asset' },
-    { label: 'Liability', value: 'Liability' },
-    { label: 'Income', value: 'Income' },
-    { label: 'Expense', value: 'Expense' },
-    { label: 'Equity', value: 'Equity' }
-  ];
+
+  accountTypes = Object.keys(AccountType).map(key => ({
+    label: key.charAt(0) + key.slice(1).toLowerCase(),
+    value: key
+  }));
 
   // View Register sidebar
   showRegisterSidebar = false;
-  selectedAccount: any = null;
+  selectedAccount: AccountDTO | null = null;
   accountTransactions: any[] = [];
 
   constructor(
     private router: Router,
     private confirmationService: ConfirmationService,
-    private deletedRecordsService: DeletedRecordsService,
-    private authService: AuthenticationService
+    private accountingService: AccountingService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit() {
-    this.filteredAccounts = [...this.accounts];
-    this.updatePaginatedAccounts();
+    this.loadAccounts();
+  }
+
+  loadAccounts() {
+    this.loading = true;
+    this.accountingService.getAccounts(0, 500).subscribe({ // Load larger set for local filtering
+      next: (data: PaginationResult<AccountDTO>) => {
+        this.accounts = (data.content || []).map(a => ({ ...a, selected: false }));
+        this.filteredAccounts = [...this.accounts];
+        this.updatePaginatedAccounts();
+        this.loading = false;
+      },
+      error: () => {
+        this.toastService.error('Failed to load chart of accounts');
+        this.loading = false;
+      }
+    });
   }
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value.toLowerCase();
     this.filteredAccounts = this.accounts.filter(account =>
-      account.code.toLowerCase().includes(filterValue) ||
-      account.name.toLowerCase().includes(filterValue) ||
-      account.type.toLowerCase().includes(filterValue) ||
-      (account.details && account.details.toLowerCase().includes(filterValue))
+      account.accountCode?.toString().includes(filterValue) ||
+      account.accountName?.toLowerCase().includes(filterValue) ||
+      account.accountType?.toLowerCase().includes(filterValue) ||
+      (account.description && account.description.toLowerCase().includes(filterValue))
     );
     this.first = 0;
     this.updatePaginatedAccounts();
   }
 
   updatePaginatedAccounts() {
-    const data = this.filteredAccounts.length ? this.filteredAccounts : this.accounts;
-    this.paginatedAccounts = data.slice(this.first, this.first + this.rows);
-  }
-
-  // Pagination methods
-  getCurrentPage(): number {
-    return Math.floor(this.first / this.rows) + 1;
-  }
-
-  getTotalPages(): number {
-    return Math.ceil(this.filteredAccounts.length / this.rows) || 1;
-  }
-
-  getPageStart(): number {
-    if (this.filteredAccounts.length === 0) return 0;
-    return this.first + 1;
-  }
-
-  getPageEnd(): number {
-    const end = this.first + this.rows;
-    return Math.min(end, this.filteredAccounts.length);
-  }
-
-  previousPage() {
-    if (this.first > 0) {
-      this.first -= this.rows;
-      this.updatePaginatedAccounts();
-    }
-  }
-
-  nextPage() {
-    if (this.first + this.rows < this.filteredAccounts.length) {
-      this.first += this.rows;
-      this.updatePaginatedAccounts();
-    }
-  }
-
-  onRowsChange() {
-    this.first = 0;
-    this.updatePaginatedAccounts();
-  }
-
-  // Type dropdown methods
-  toggleTypeDropdown() {
-    this.showTypeDropdown = !this.showTypeDropdown;
-  }
-
-  selectType(type: string) {
-    this.newAccount.type = type;
-    this.showTypeDropdown = false;
+    this.paginatedAccounts = this.filteredAccounts.slice(this.first, this.first + this.rows);
   }
 
   // Selection methods
@@ -150,94 +101,96 @@ export class ChartOfAccountsComponent {
   }
 
   getSelectedCount(): number {
-    return this.accounts.filter(a => a.selected).length;
+    return this.selectedAccounts.length;
+  }
+
+  // Pagination helpers
+  getCurrentPage(): number { return Math.floor(this.first / this.rows) + 1; }
+  getTotalPages(): number { return Math.ceil(this.filteredAccounts.length / this.rows) || 1; }
+  getPageStart(): number { return this.filteredAccounts.length === 0 ? 0 : this.first + 1; }
+  getPageEnd(): number { return Math.min(this.first + this.rows, this.filteredAccounts.length); }
+
+  previousPage() { if (this.first > 0) { this.first -= this.rows; this.updatePaginatedAccounts(); } }
+  nextPage() { if (this.first + this.rows < this.filteredAccounts.length) { this.first += this.rows; this.updatePaginatedAccounts(); } }
+  onRowsChange() { this.first = 0; this.updatePaginatedAccounts(); }
+
+  // Modal logic
+  toggleTypeDropdown() { this.showTypeDropdown = !this.showTypeDropdown; }
+  selectType(type: any) { this.newAccount.accountType = type; this.showTypeDropdown = false; }
+  
+  closeModalOnBackdrop(event: MouseEvent) {
+    if (event.target === event.currentTarget) this.showAddAccountModal = false;
+  }
+
+  addAccount() {
+    if (!this.newAccount.accountName || !this.newAccount.accountCode) {
+      this.toastService.warn('Account Name and Code are required');
+      return;
+    }
+    this.loading = true;
+    this.accountingService.createAccount(this.newAccount).subscribe({
+      next: () => {
+        this.toastService.success('Account created successfully');
+        this.showAddAccountModal = false;
+        this.loadAccounts();
+      },
+      error: () => {
+        this.toastService.error('Failed to create account');
+        this.loading = false;
+      }
+    });
   }
 
   deleteSelected() {
-    if (this.getSelectedCount() === 0) return;
-    
+    const count = this.getSelectedCount();
+    if (count === 0) return;
+
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.getSelectedCount()} selected account(s)?`,
+      message: `Are you sure you want to delete ${count} selected account(s)?`,
       header: 'Delete Confirmation',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        // Get current user
-        let username = 'Unknown User';
-        // Try getting from sessionStorage first as per auth service logic
-        const storedUser = sessionStorage.getItem('username');
-        if (storedUser) {
-             username = storedUser;
-        } else {
-            // Fallback to checking reg data if needed, or just keep 'Unknown User'
-            const regData = sessionStorage.getItem('userInfoRegData');
-            if(regData) {
-                try {
-                    const parsed = JSON.parse(regData);
-                    username = parsed.username || parsed.email || 'Unknown User';
-                } catch(e) {}
+        this.loading = true;
+        // In a real app, you'd use forkJoin for batch deletion
+        const accountsToDelete = this.selectedAccounts;
+        let deleted = 0;
+        accountsToDelete.forEach(acc => {
+          this.accountingService.deleteAccount(acc.id).subscribe({
+            next: () => {
+              deleted++;
+              if (deleted === count) {
+                this.toastService.success('Accounts retired successfully');
+                this.loadAccounts();
+              }
             }
-        }
-
-        // Process deletion
-        const accountsToDelete = this.accounts.filter(a => a.selected);
-        
-        accountsToDelete.forEach(account => {
-            this.deletedRecordsService.addRecord({
-                originalData: account,
-                deletedBy: username,
-                recordType: 'ChartOfAccounts',
-                reason: 'User deletion'
-            });
+          });
         });
+      }
+    });
+  }
 
-        this.accounts = this.accounts.filter(a => !a.selected);
-        this.filteredAccounts = [...this.accounts];
-        this.first = 0;
-        this.updatePaginatedAccounts();
+  viewRegister(account: AccountDTO) {
+    this.selectedAccount = account;
+    this.showRegisterSidebar = true;
+    this.loading = true;
+    this.accountingService.getLedgerEntries(0, 100, account.id).subscribe({
+      next: (data: PaginationResult<any>) => {
+        this.accountTransactions = (data.content || []).map(entry => ({
+          ...entry,
+          date: entry.entryDate,
+          description: entry.description || entry.journalEntryLine?.description || 'System Entry',
+          balance: entry.balanceAfter
+        }));
+        this.loading = false;
       },
-      reject: () => {
-        // Optional: handle rejection
+      error: () => {
+        this.toastService.error('Failed to load register');
+        this.loading = false;
       }
     });
   }
 
   viewDeletedRecords() {
     this.router.navigate(['/deleted-records']);
-  }
-
-  addAccount() {
-    this.accounts.push({ ...this.newAccount, selected: false });
-    this.showAddAccountModal = false;
-
-    this.newAccount = {
-      code: '',
-      name: '',
-      type: '',
-      details: '',
-      balance: 0,
-      bankBalance: 0
-    };
-    this.filteredAccounts = [...this.accounts];
-    this.updatePaginatedAccounts();
-  }
-
-  // Handle View Register button
-  viewRegister(account: any) {
-    this.selectedAccount = account;
-    this.showRegisterSidebar = true;
-
-    // In real app, fetch transactions from API.
-    // For now, mock transactions:
-    this.accountTransactions = [
-      { date: '2024-06-01', description: 'Opening Balance', debit: 10000, credit: 0, balance: 10000 },
-      { date: '2024-06-03', description: 'Sale', debit: 5000, credit: 0, balance: 15000 },
-      { date: '2024-06-05', description: 'Purchase Supplies', debit: 0, credit: 1000, balance: 14000 }
-    ];
-  }
-
-  closeModalOnBackdrop(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      this.showAddAccountModal = false;
-    }
   }
 }

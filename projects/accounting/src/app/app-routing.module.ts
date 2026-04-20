@@ -15,6 +15,7 @@ import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconci
 import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/reconciliation-kanban.component';
 import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
 import { GeneralTransactionsComponent } from './ui/view/general-transactions/general-transactions.component';
+import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 
 const routes: Routes = [
   {
@@ -53,6 +54,10 @@ const routes: Routes = [
   {
     path: 'general-transactions',
     component: GeneralTransactionsComponent
+  },
+  {
+    path: 'accounting-queue',
+    component: AccountingQueueComponent
   },
 
   { path: 'reports', component: AccountingReportsComponent },

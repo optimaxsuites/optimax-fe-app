@@ -1,0 +1,220 @@
+<div class="min-h-screen bg-gray-50 p-6 md:p-10 font-sans">
+  <div class="max-w-[1600px] mx-auto space-y-8">
+
+    <!-- ── Hero Header ── -->
+    <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
+            <i class="pi pi-history text-amber-600 text-xl"></i>
+          </div>
+          <h1 class="text-4xl font-black text-gray-900 tracking-tight">Accounting Queue</h1>
+        </div>
+        <p class="text-gray-500 font-semibold text-lg">
+          Review, approve and map incoming financial events before they flow into the ledger.
+        </p>
+      </div>
+
+      <!-- ── Stats Strip ── -->
+      <div class="flex items-center gap-4 flex-wrap relative z-10">
+        <div class="flex flex-col items-center bg-amber-50 px-6 py-3 rounded-2xl border border-amber-100">
+          <span class="text-2xl font-black text-amber-700">{{ pendingCount }}</span>
+          <span class="text-lg font-black text-amber-500 uppercase tracking-widest">Pending</span>
+        </div>
+        <div class="flex flex-col items-center bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100">
+          <span class="text-2xl font-black text-emerald-700">{{ approvedCount }}</span>
+          <span class="text-lg font-black text-emerald-500 uppercase tracking-widest">Approved</span>
+        </div>
+        <div class="flex flex-col items-center bg-rose-50 px-6 py-3 rounded-2xl border border-rose-100">
+          <span class="text-2xl font-black text-rose-700">{{ rejectedCount }}</span>
+          <span class="text-lg font-black text-rose-500 uppercase tracking-widest">Rejected</span>
+        </div>
+        <button (click)="loadEvents()"
+          class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-xl font-bold text-lg uppercase tracking-widest hover:bg-customBlueHover transition-all shadow-md shadow-customBlue/20 active:scale-95">
+          <i class="pi pi-refresh"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Table Card ── -->
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+
+      <!-- Loading State -->
+      <div *ngIf="loading" class="flex items-center justify-center py-32 gap-3">
+        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce"></div>
+        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce [animation-delay:-0.15s]"></div>
+        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce [animation-delay:-0.3s]"></div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading && events.length === 0"
+        class="flex flex-col items-center justify-center py-32 text-gray-400">
+        <i class="pi pi-inbox text-6xl opacity-20 mb-4"></i>
+        <p class="text-2xl font-black opacity-40 italic">No events in the queue</p>
+        <p class="text-lg font-medium mt-2">New accounting events will appear here once generated</p>
+      </div>
+
+      <!-- Table -->
+      <div *ngIf="!loading && events.length > 0" class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-customBlue text-left border-b border-gray-100">
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Reference</th>
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest text-nowrap">Source Module</th>
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Description</th>
+              <th class="px-6 py-5 text-right text-lg font-black text-white uppercase tracking-widest">Amount</th>
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Status</th>
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Suggested Debit</th>
+              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Suggested Credit</th>
+              <th class="px-6 py-5 text-right text-lg font-black text-white uppercase tracking-widest">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let ev of events"
+              class="hover:bg-gray-50/60 transition-all group"
+              [class.opacity-50]="ev.status === 'REJECTED'">
+
+              <!-- Reference -->
+              <td class="px-6 py-5">
+                <span class="font-mono font-black text-customBlue text-xl bg-customBlue/5 px-3 py-1 rounded-lg">
+                  {{ ev.reference || ('#EV-' + ev.id) }}
+                </span>
+              </td>
+
+              <!-- Source Module -->
+              <td class="px-6 py-5">
+                <span class="px-3 py-1 rounded-xl text-lg font-black tracking-widest uppercase" [ngClass]="getModuleBadge(ev.sourceModule)">
+                  {{ ev.sourceModule }}
+                </span>
+              </td>
+
+              <!-- Description -->
+              <td class="px-6 py-5">
+                <p class="text-xl font-bold text-gray-800 max-w-xs truncate">{{ ev.description || '—' }}</p>
+                <p class="text-lg text-gray-400 font-medium mt-0.5">{{ ev.eventType }}</p>
+              </td>
+
+              <!-- Amount -->
+              <td class="px-6 py-5 text-right">
+                <span class="text-lg font-black text-gray-900 italic">₦{{ ev.amount | number:'1.2-2' }}</span>
+              </td>
+
+              <!-- Status -->
+              <td class="px-6 py-5">
+                <span class="px-3 py-1 rounded-full text-lg font-black tracking-widest uppercase border"
+                  [ngClass]="getStatusClass(ev.status)">
+                  {{ ev.status }}
+                </span>
+              </td>
+
+              <!-- Suggested Debit -->
+              <td class="px-6 py-5">
+                <span *ngIf="ev.suggestedDebit" class="text-xl font-bold text-red-600">{{ ev.suggestedDebit }}</span>
+                <span *ngIf="!ev.suggestedDebit" class="text-gray-300 text-xl italic">—</span>
+              </td>
+
+              <!-- Suggested Credit -->
+              <td class="px-6 py-5">
+                <span *ngIf="ev.suggestedCredit" class="text-xl font-bold text-emerald-600">{{ ev.suggestedCredit }}</span>
+                <span *ngIf="!ev.suggestedCredit" class="text-gray-300 text-xl italic">—</span>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-6 py-5 border-l border-gray-50">
+                <div class="flex items-center justify-end gap-2">
+                  <!-- Approve -->
+                  <button *ngIf="ev.status !== 'APPROVED'" (click)="approveEvent(ev)"
+                    title="Approve"
+                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'REJECTED' || !ev.matchedMapping"
+                    class="p-2 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed">
+                    <i class="pi" [ngClass]="ev.status === 'PROCESSING' ? 'pi-spin pi-spinner' : 'pi-check-circle'"></i>
+                  </button>
+                  <!-- Edit -->
+                  <button (click)="openEdit(ev)"
+                    title="Edit"
+                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'APPROVED'"
+                    class="p-2 rounded-xl text-customBlue bg-customBlue/5 hover:bg-customBlue/10 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed">
+                    <i class="pi pi-pencil text-base"></i>
+                  </button>
+                  <!-- Reject -->
+                  <button *ngIf="ev.status !== 'REJECTED'" (click)="rejectEvent(ev)"
+                    title="Reject"
+                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'APPROVED'"
+                    class="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed">
+                    <i class="pi pi-times-circle text-base"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalRecords > 0" class="p-6 border-t border-gray-50 flex items-center justify-between">
+        <p class="text-gray-400 font-bold text-lg">
+          Showing {{ events.length }} of {{ totalRecords }} events
+        </p>
+        <p-paginator
+          [rows]="rows"
+          [totalRecords]="totalRecords"
+          [first]="first"
+          [rowsPerPageOptions]="[10, 20, 50]"
+          (onPageChange)="onPageChange($event)">
+        </p-paginator>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Edit Modal ── -->
+<div *ngIf="isEditOpen"
+  class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
+  <div class="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+
+    <div class="p-8 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-black text-gray-900 leading-none">Edit Queue Event</h2>
+        <p class="text-gray-400 font-bold mt-1 text-xs uppercase tracking-widest">{{ editingEvent?.reference }}</p>
+      </div>
+      <button (click)="isEditOpen = false" class="text-gray-400 hover:text-gray-900 transition-colors">
+        <i class="pi pi-times text-2xl"></i>
+      </button>
+    </div>
+
+    <div class="p-8 space-y-6" *ngIf="editingEvent">
+
+      <div>
+        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+        <input [(ngModel)]="editingEvent.description" type="text"
+          class="w-full bg-gray-100 border-none rounded-2xl px-5 py-3 font-bold text-gray-700 outline-none focus:ring-4 focus:ring-customBlue/10 transition-all">
+      </div>
+
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-black text-red-400 uppercase tracking-widest mb-2">Suggested Debit Account</label>
+          <input [(ngModel)]="editingEvent.suggestedDebit" type="text" placeholder="e.g. 6001 - Salaries"
+            class="w-full bg-red-50 border-2 border-red-100 rounded-2xl px-5 py-3 font-bold text-red-900 outline-none focus:ring-4 focus:ring-red-100 transition-all placeholder:text-red-300">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-emerald-400 uppercase tracking-widest mb-2">Suggested Credit Account</label>
+          <input [(ngModel)]="editingEvent.suggestedCredit" type="text" placeholder="e.g. 1001 - Cash"
+            class="w-full bg-emerald-50 border-2 border-emerald-100 rounded-2xl px-5 py-3 font-bold text-emerald-900 outline-none focus:ring-4 focus:ring-emerald-100 transition-all placeholder:text-emerald-300">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="p-8 bg-gray-50 flex items-center justify-end gap-4">
+      <button (click)="isEditOpen = false" class="text-gray-400 font-black uppercase tracking-widest text-sm hover:text-gray-900 transition-colors">
+        Cancel
+      </button>
+      <button (click)="saveEdit()"
+        class="bg-customBlue text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-customBlue/20 hover:scale-105 active:scale-95 transition-all">
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>

@@ -22,42 +22,70 @@ export class AuthInterceptor implements HttpInterceptor {
         ) {
             return next.handle(request);
         }
-        const accessToken = sessionStorage.getItem("Token");
-//  
 
-const host = window.location.hostname;
-const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-let tenantId = 'optimax'; 
+        const accessToken = 
+            sessionStorage.getItem("Token") || 
+            sessionStorage.getItem("accessToken") ||
+            sessionStorage.getItem("token") ||
+            localStorage.getItem("Token2") ||
+            localStorage.getItem("accessToken2") ||
+            localStorage.getItem("token");
 
-if (!isLocalhost) {
-  const parts = host.split('.');
-  tenantId = parts[0] || 'optimax';
-}
+        // Determine tenant ID from URL path or hostname
+        const url = window.location.pathname;
+        const host = window.location.hostname;
+        const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+        
+        // Extract UUID from path (mirroring Hospitality pattern)
+        const pathParts = url.split('/').filter(p => !!p);
+        let tenantIdFromUrl = '';
+        
+        if (pathParts.length > 0) {
+            const lastPart = pathParts[pathParts.length - 1];
+            // Check if it's a UUID (length > 20) or 'default'
+            if (lastPart === 'default' || lastPart.length > 20 || /^[a-f0-9-]{32,}$/.test(lastPart)) {
+                tenantIdFromUrl = lastPart;
+            }
+        }
 
-const defaultTenantEndpoints = ['/auth/register', '/auth/forgot-password'];
-const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
-  request.url.includes(url)
-);
+        const validPathTenant = (tenantIdFromUrl && tenantIdFromUrl !== 'default') ? tenantIdFromUrl.toLowerCase() : '';
+        
+        // Default to 'optimax'
+        let tenantId = 'optimax';
+        
+        if (validPathTenant) {
+            tenantId = validPathTenant;
+        } else if (!isLocalhost) {
+            const parts = host.split('.');
+            tenantId = (parts[0] || 'optimax').toLowerCase();
+        }
 
-let updatedRequest = request.clone({
-  setHeaders: {
-    'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
-  },
-});
+        const defaultTenantEndpoints = ['/auth/signin', '/auth/signup', '/auth/register', '/auth/forgot-password'];
+        const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
+            request.url.includes(url)
+        );
 
-if (accessToken) {
-  updatedRequest = updatedRequest.clone({
-    setHeaders: {
-      ...updatedRequest.headers.keys().reduce((acc, key) => {
-        acc[key] = updatedRequest.headers.get(key)!;
-        return acc;
-      }, {} as Record<string, string>),
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
+        // Always add X-Tenant-ID header
+        let updatedRequest = request.clone({
+            setHeaders: {
+                'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
+            },
+        });
 
-return next.handle(updatedRequest);
-  }
+        // Add Bearer token if available
+        if (accessToken) {
+            updatedRequest = updatedRequest.clone({
+                setHeaders: {
+                    ...updatedRequest.headers.keys().reduce((acc, key) => {
+                        acc[key] = updatedRequest.headers.get(key)!;
+                        return acc;
+                    }, {} as Record<string, string>),
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
+        }
+
+        return next.handle(updatedRequest);
+    }
 }
 

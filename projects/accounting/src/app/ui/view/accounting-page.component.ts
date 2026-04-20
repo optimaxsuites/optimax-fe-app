@@ -7,19 +7,22 @@ import { TransferFundsComponent } from './transfer-funds/transfer-funds.componen
 import { SalesReconciliationComponent } from './sales-reconciliation/sales-reconciliation.component';
 import { BankReconciliationComponent } from './bank-reconciliation/bank-reconciliation.component';
 import { DisbursementComponent } from './disbursement/disbursement.component';
+import { GeneralLedgerComponent } from './general-ledger/general-ledger.component';
+import { BookKeepingComponent } from './book-keeping/book-keeping.component';
+import { AccountingQueueComponent } from './accounting-queue/accounting-queue.component';
 
 export interface TabConfig {
   name: string;
   component: any;
-  icon?: string; // PrimeIcons class or Font Awesome class
+  icon?: string;
   hasDropdown?: boolean;
-  dropdownOptions?: DropdownOption[]; 
+  dropdownOptions?: DropdownOption[];
   role?: string
 }
 
 export interface DropdownOption {
-  label: string; 
-  action: string; 
+  label: string;
+  action: string;
   component: Type<any>;
 }
 
@@ -33,66 +36,45 @@ export class AccountingPageComponent {
 
   tabsConfig: TabConfig[] = [
       {
-        name: 'Transactions',
+        name: 'Operations Hub',
         component: TransactionsComponent,
-        icon: 'pi pi-list'
+        icon: 'pi pi-bolt'
       },
 
       {
         name: 'Journal Entries',
-        component: GeneralTransactionsComponent,
+        component: BookKeepingComponent,
         icon: 'pi pi-book'
-      },
-
-      {
-        name: 'Transfers',
-        component: TransferFundsComponent,
-        icon: 'pi pi-arrow-right-arrow-left'
       },
 
       {
         name: 'Chart of Accounts',
         component: ChartOfAccountsComponent,
-        icon: 'pi pi-chart-bar'
+        icon: 'pi pi-sitemap'
       },
+
       {
-        name: 'Bank Account Overview',
+        name: 'General Ledger',
+        component: GeneralLedgerComponent,
+        icon: 'pi pi-list'
+      },
+
+      {
+        name: 'Bank Accounts',
         component: BankAccountOverviewComponent,
         icon: 'pi pi-building'
       },
 
-      // {
-      //   name: 'Sales Reconciliation',
-      //   component: SalesReconciliationComponent,
-      //   icon: 'pi pi-dollar'
-      // },
-
-      // {
-      //   name: 'Bank Reconciliation',
-      //   component: BankReconciliationComponent,
-      //   icon: 'pi pi-briefcase'
-      // },
+      {
+        name: 'Payments',
+        component: DisbursementComponent,
+        icon: 'pi pi-wallet'
+      },
 
       {
-        name: 'Disbursement',
-        component: DisbursementComponent,
-        icon: 'pi pi-money-bill'
+        name: 'Accounting Queue',
+        component: AccountingQueueComponent,
+        icon: 'pi pi-inbox'
       }
-      // { name: 'Products', component: QuotationComponent },
-      // { name: 'Inventory', component: BookKeepingComponent },
-  
-      // {
-      //   name: 'Settings',
-      //   component: null,
-      //   hasDropdown: true,
-      //   dropdownOptions: [
-      //     { label: 'Configurations', action: 'configurations', component: ConfigurationComponent },
-      //     { label: 'Users', action: 'users', component: ManageUsersComponent }
-      //   ]
-      // }
     ];
-  // constructor( private dialogRef: MatDialog ){}
-  // openDialog(){
-  //   this.dialogRef.open(InvoiceModalComponent)
-  // }
 }

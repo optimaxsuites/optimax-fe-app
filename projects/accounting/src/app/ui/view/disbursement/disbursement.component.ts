@@ -129,7 +129,7 @@ export class DisbursementComponent implements OnInit {
         enabled: false
       },
       xaxis: {
-        categories: ["HR", "POS", "Expense", "Hospitality", "Marketplace"],
+        categories: ["HR", "POS", "EXPENSE", "HOSPITALITY", "MARKETPLACE"],
         axisBorder: { show: false },
         axisTicks: { show: false },
         labels: {
@@ -279,9 +279,9 @@ export class DisbursementComponent implements OnInit {
     
     // Mock line items based on amount to show varied data
     this.selectedLineItems = [
-      { recipient: 'Elena Hernandez', role: 'Senior Architect', account: '0123456789', bank: 'Access Bank', type: 'ACH', amount: trx.amount * 0.45 },
-      { recipient: 'Marcus Chen', role: 'Project Lead', account: '3024519921', bank: 'Guaranty Trust Bank', type: 'WIRE', amount: trx.amount * 0.35 },
-      { recipient: 'Sarah Jenkins', role: 'Junior Consultant', account: '0012398471', bank: 'Zenith Bank', type: 'ACH', amount: trx.amount * 0.20 }
+      { recipient: 'Elena Hernandez', account: '0123456789', bank: 'Access Bank', type: 'ACH', amount: trx.amount * 0.45 },
+      { recipient: 'Marcus Chen', account: '3024519921', bank: 'Guaranty Trust Bank', type: 'WIRE', amount: trx.amount * 0.35 },
+      { recipient: 'Sarah Jenkins', account: '0012398471', bank: 'Zenith Bank', type: 'ACH', amount: trx.amount * 0.20 }
     ];
 
     // Reset single-select and destination fields
@@ -356,17 +356,21 @@ export class DisbursementComponent implements OnInit {
   }
 
   // ── Helpers ──────────────────────────────────────────────
-  getCategoryColor(category: string): string {
+  getModuleBadgeClass(module: string): string {
     const map: Record<string, string> = {
-      'EXPENSE':     'bg-orange-100 text-orange-700',
-      'HR':          'bg-purple-100 text-purple-700',
-      'PROCUREMENT': 'bg-blue-100 text-blue-700',
-      'UTILITY':     'bg-yellow-100 text-yellow-700',
-      'MAINTENANCE': 'bg-teal-100 text-teal-700',
-      'HOSPITALITY': 'bg-indigo-100 text-indigo-700',
-      'SUPPLY CHAIN':'bg-gray-100 text-gray-700',
+      'POS':         'bg-blue-50 text-customBlue border-customBlue/20',
+      'HR':          'bg-purple-50 text-purple-700 border-purple-200',
+      'HOSPITALITY': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      'EXPENSE':     'bg-orange-50 text-orange-700 border-orange-200',
+      'MARKETPLACE': 'bg-teal-50 text-teal-700 border-teal-200',
+      'BANK':        'bg-teal-50 text-teal-700 border-teal-200',
+      'MANUAL':      'bg-gray-50 text-gray-700 border-gray-200',
     };
-    return map[category.toUpperCase()] || 'bg-gray-100 text-gray-600';
+    return map[module.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
+  }
+
+  getCategoryColor(category: string): string {
+    return this.getModuleBadgeClass(category);
   }
 
   /** Safely retrieves the bank/institution name from an AccountID object */
