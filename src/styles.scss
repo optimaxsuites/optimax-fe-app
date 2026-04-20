@@ -1,8 +1,13 @@
 // /* You can add global styles to this file, and also import other style files */
+/* PrimeNG FIRST */
+@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/primeng.min.css";
+@import "primeicons/primeicons.css";
 
-@import "../node_modules/primeng/resources/themes/lara-light-blue/theme.css";
-@import "../node_modules/primeng/resources/primeng.css";
-@import "../node_modules/primeicons/primeicons.css";
+/* THEN Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @import "@ng-select/ng-select/themes/default.theme.css";
 
@@ -109,3 +114,39 @@
 //   @apply accent-customBlue
 
 // }
+// .p-dropdown {
+//   @apply w-full;
+// }
+
+/* Dropdown container */
+.p-dropdown {
+  @apply w-full border border-gray-300 rounded-md h-11;
+}
+
+/* Dropdown panel */
+.p-dropdown-panel {
+  @apply border border-gray-300 rounded-md;
+}
+
+/* Items wrapper */
+.p-dropdown-items {
+  @apply border-0;
+}
+
+/* Each item */
+.p-dropdown-item {
+  @apply border-b border-gray-100;
+}
+
+/* Optional: remove last border line */
+.p-dropdown-item:last-child {
+  @apply border-b-0;
+}
+
+input {
+  @apply w-full rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition;
+}
+
+input:focus {
+  @apply border-emerald-500 ring-2 ring-emerald-100;
+}
