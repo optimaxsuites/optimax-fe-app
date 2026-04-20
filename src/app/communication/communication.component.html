@@ -2,373 +2,49 @@
   class="comm-shell flex overflow-hidden bg-white font-sans select-none"
   style="height: calc(100vh - 57px)"
   (click)="closeSearch(); dismissDelete()"
-  [class.resizing]="isResizingSidebar || isResizingThread"
+  [ngClass]="{ resizing: isResizingSidebar || isResizingThread }"
 >
   <!-- ══════════════════════════════════════  SIDEBAR  ══════════════════════════════════════ -->
-  <aside
-    class="flex flex-col bg-white border-r border-gray-200 overflow-hidden flex-shrink-0 relative"
+  <div
+    class="flex-shrink-0 relative overflow-hidden"
     [style.width.px]="sidebarWidth"
   >
-    <!-- Header -->
-    <div class="px-3 pt-4 pb-3 border-b border-gray-200 flex-shrink-0">
-      <div class="flex items-center gap-3 mb-4">
-        <div
-          class="w-9 h-9 rounded-xl bg-[#2e6276] flex items-center justify-center flex-shrink-0"
-        >
-          <svg
-            width="17"
-            height="17"
-            fill="none"
-            stroke="white"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1M7 8V6a2 2 0 012-2h9a2 2 0 012 2v6a2 2 0 01-2 2H9l-4 4V8z"
-            />
-          </svg>
-        </div>
-        <div>
-          <p
-            class="text-[15px] font-bold text-gray-900 leading-none tracking-tight"
-          >
-            OptimaX
-          </p>
-          <div class="flex items-center gap-1.5 mt-1">
-            <span
-              class="w-2 h-2 rounded-full bg-emerald-400 inline-block"
-            ></span>
-            <span class="text-[11px] text-gray-400 uppercase tracking-widest"
-              >Workspace</span
-            >
-          </div>
-        </div>
-      </div>
-      <!-- Search -->
-      <div class="relative" (click)="$event.stopPropagation()">
-        <div
-          class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg"
-        >
-          <svg
-            class="text-gray-400 flex-shrink-0"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            (ngModelChange)="onSearch()"
-            placeholder="Search…"
-            class="flex-1 bg-transparent border-0 outline-none text-[13px] text-gray-700 placeholder-gray-400 min-w-0"
-          />
-        </div>
-        <div
-          *ngIf="showSearch"
-          class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-72 overflow-y-auto"
-        >
-          <div
-            *ngIf="!searchResults.length"
-            class="px-4 py-3 text-[14px] text-gray-400"
-          >
-            No results found
-          </div>
-          <div
-            *ngFor="let r of searchResults"
-            class="px-4 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50"
-            (click)="jumpTo(r)"
-          >
-            <p class="text-[12px] font-semibold text-[#2e6276] mb-0.5">
-              #{{ r.channelName }}
-            </p>
-            <p class="text-[13px] text-gray-600 truncate">
-              {{ r.msg.content | slice: 0 : 60
-              }}{{ r.msg.content.length > 60 ? "…" : "" }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <nav class="flex-1 overflow-y-auto py-2 sidebar-scroll">
-      <!-- Threads -->
-      <div class="px-2 mb-1">
-        <button
-          (click)="setView('threads')"
-          class="sidebar-item flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-left"
-          [class.active]="activeView === 'threads'"
-        >
-          <svg
-            width="17"
-            height="17"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            class="flex-shrink-0"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-            />
-          </svg>
-          <span class="text-[14px]">Threads</span>
-        </button>
-      </div>
-      <div class="mx-3 my-2 h-px bg-gray-100"></div>
-
-      <!-- Channels -->
-      <div class="px-2 mb-1">
-        <div class="flex items-center justify-between pl-2 pr-1 mb-1 mt-1">
-          <span
-            class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
-            >Channels</span
-          >
-          <button
-            (click)="openCreateChannelModal()"
-            class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors"
-            title="New channel"
-          >
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
-        </div>
-        <div *ngIf="channelsLoading" class="mt-1 flex flex-col gap-1.5 px-1">
-          <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
-          <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-3/5"></div>
-        </div>
-        <div
-          *ngIf="channelsError && !channelsLoading"
-          class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg"
-        >
-          <span class="text-[13px] text-red-600">{{ channelsError }}</span>
-        </div>
-        <ng-container *ngIf="!channelsLoading">
-          <div
-            *ngIf="!channels.length && !channelsError"
-            class="px-2 py-3 text-[13px] text-gray-400 text-center"
-          >
-            No channels yet
-          </div>
-          <button
-            *ngFor="let ch of channels"
-            (click)="selectChannel(ch.id)"
-            class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
-            [class.active]="
-              activeChannelId === ch.id && activeView === 'channel'
-            "
-            [class.unread]="
-              ch.hasUnread &&
-              !(activeChannelId === ch.id && activeView === 'channel')
-            "
-          >
-            <span class="text-gray-400 flex-shrink-0 text-[14px] font-medium"
-              >#</span
-            >
-            <span class="flex-1 truncate text-[14px]">{{ ch.name }}</span>
-            <span
-              *ngIf="ch.channelType === 'PRIVATE'"
-              class="text-[10px] text-gray-400 flex-shrink-0"
-              ></span
-            >
-          </button>
-        </ng-container>
-      </div>
-      <div class="mx-3 my-2 h-px bg-gray-100"></div>
-
-      <!-- Direct Messages -->
-      <div class="px-2">
-        <div class="pl-2 mb-1 mt-1">
-          <span
-            class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
-            >Direct Messages</span
-          >
-        </div>
-        <div *ngIf="employeesLoading" class="flex flex-col gap-1.5 px-1 mt-1">
-          <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
-          <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
-          <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
-        </div>
-        <div
-          *ngIf="employeesError && !employeesLoading"
-          class="px-2 py-2 text-[12px] text-red-500"
-        >
-          {{ employeesError }}
-        </div>
-        <button
-          *ngFor="let dm of dmContacts"
-          (click)="selectDm(dm.id)"
-          class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left"
-          [class.active]="activeDmId === dm.id && activeView === 'dm'"
-          [class.unread]="
-            dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')
-          "
-        >
-          <div class="relative flex-shrink-0">
-            <img
-              *ngIf="dm.avatarUrl"
-              [src]="dm.avatarUrl"
-              alt=""
-              class="w-8 h-8 rounded-full object-cover"
-            />
-            <div
-              *ngIf="!dm.avatarUrl"
-              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
-              [style.background]="dm.avatarColor"
-            >
-              {{ dm.initials }}
-            </div>
-            <span
-              class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
-              [class.bg-emerald-400]="dm.online"
-              [class.bg-gray-300]="!dm.online"
-            ></span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <span class="truncate text-[14px] block leading-tight">{{
-              dm.shortName
-            }}</span>
-            <span
-              *ngIf="isUserTyping(dm.userId)"
-              class="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5"
-            >
-              <span class="typing-dots"
-                ><span></span><span></span><span></span
-              ></span>
-              typing
-            </span>
-          </div>
-        </button>
-      </div>
-    </nav>
-
-    <!-- User bar -->
-    <div
-      class="border-t border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0 bg-white"
-    >
-      <div class="relative flex-shrink-0">
-        <img
-          *ngIf="me.avatarUrl"
-          [src]="me.avatarUrl"
-          alt=""
-          class="w-9 h-9 rounded-full object-cover"
-        />
-        <div
-          *ngIf="!me.avatarUrl"
-          class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-bold bg-[#2e6276]"
-        >
-          {{ me.initials }}
-        </div>
-        <span
-          class="absolute -bottom-px -right-px w-3 h-3 rounded-full border-2 border-white bg-emerald-400"
-        ></span>
-      </div>
-      <div class="min-w-0 flex-1">
-        <p
-          class="text-[14px] font-semibold text-gray-800 leading-none truncate"
-        >
-          {{ me.shortName }}
-        </p>
-        <p class="text-[12px] text-emerald-500 mt-0.5">Active</p>
-      </div>
-      <!-- Sound toggle -->
-      <button
-        (click)="soundEnabled = !soundEnabled"
-        class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors flex-shrink-0"
-        [style.color]="soundEnabled ? '#2e6276' : '#9ca3af'"
-        [title]="soundEnabled ? 'Mute sounds' : 'Enable sounds'"
-      >
-        <svg
-          *ngIf="soundEnabled"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3m3 3l3-3M9 9H5.5A1.5 1.5 0 004 10.5v3A1.5 1.5 0 005.5 15H9l3 3V6L9 9z"
-          />
-        </svg>
-        <svg
-          *ngIf="!soundEnabled"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-          />
-        </svg>
-      </button>
-      <!-- Email compose shortcut -->
-      <button
-        (click)="openEmailModal()"
-        class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors flex-shrink-0"
-        title="Compose email"
-      >
-        <svg
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-      </button>
-    </div>
+    <app-channel-sidebar
+      [me]="me"
+      [channels]="channels"
+      [dmContacts]="dmContacts"
+      [activeChannelId]="activeChannelId"
+      [activeDmId]="activeDmId"
+      [activeView]="activeView"
+      [channelsLoading]="channelsLoading"
+      [channelsError]="channelsError"
+      [employeesLoading]="employeesLoading"
+      [employeesError]="employeesError"
+      [soundEnabled]="soundEnabled"
+      [searchQuery]="searchQuery"
+      [showSearch]="showSearch"
+      [searchResults]="searchResults"
+      (channelSelected)="selectChannel($event)"
+      (dmSelected)="selectDm($event)"
+      (viewSet)="setView($event)"
+      (createChannel)="openCreateChannelModal()"
+      (soundToggled)="soundEnabled = !soundEnabled"
+      (emailCompose)="openEmailModal()"
+      (searchQueryChange)="searchQuery = $event; onSearch()"
+      (searchExecuted)="onSearch()"
+      (searchClosed)="closeSearch()"
+      (jumpTo)="jumpTo($event)"
+    ></app-channel-sidebar>
+    <!-- Sidebar resize handle -->
     <div
       class="absolute right-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-gray-200 transition-colors z-10"
       (mousedown)="startResizeSidebar($event)"
     ></div>
-  </aside>
+  </div>
 
   <!-- ══════════════════════════════════════  MAIN  ══════════════════════════════════════ -->
   <main class="flex flex-1 overflow-hidden min-w-0">
+    <!-- ── Channel / DM view ─────────────────────────────────────────────── -->
     <ng-container *ngIf="activeView === 'channel' || activeView === 'dm'">
       <div class="flex flex-col flex-1 overflow-hidden min-w-0">
         <!-- Top bar -->
@@ -376,11 +52,25 @@
           class="flex items-center justify-between px-6 h-14 bg-white border-b border-gray-200 flex-shrink-0 gap-3"
         >
           <div class="flex items-center gap-3 min-w-0">
-            <span
-              *ngIf="activeView === 'channel'"
-              class="text-[#2e6276] font-bold text-xl leading-none"
-              >#</span
-            >
+            <!-- Channel icon -->
+            <ng-container *ngIf="activeView === 'channel' && activeChannel">
+              <svg
+                class="text-[#2e6276] flex-shrink-0"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                  [attr.d]="getChannelIconPath(activeChannel.name)"
+                />
+              </svg>
+            </ng-container>
+            <!-- DM avatar -->
             <ng-container *ngIf="activeView === 'dm' && activeDmContact">
               <div class="relative flex-shrink-0">
                 <img
@@ -398,8 +88,10 @@
                 </div>
                 <span
                   class="absolute -bottom-px -right-px w-2.5 h-2.5 rounded-full border-2 border-white"
-                  [class.bg-emerald-400]="activeDmContact.online"
-                  [class.bg-gray-300]="!activeDmContact.online"
+                  [ngClass]="{
+                    'bg-emerald-400': activeDmContact.online,
+                    'bg-gray-300': !activeDmContact.online,
+                  }"
                 ></span>
               </div>
             </ng-container>
@@ -423,31 +115,71 @@
             >
           </div>
 
+          <!-- Topbar actions -->
           <div class="flex items-center gap-2 flex-shrink-0">
-            <!-- DM email button -->
-            <button
-              *ngIf="activeView === 'dm' && activeDmContact"
-              (click)="openEmailModal(activeDmContact.fullName)"
-              class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 hover:border-[#2e6276]/30 transition-colors"
-              title="Send email"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <ng-container *ngIf="activeView === 'dm' && activeDmContact">
+              <button
+                (click)="openEmailModal(activeDmContact.fullName)"
+                class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                title="Send email"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              Email
-            </button>
-            <!-- Channel detail toggle -->
+                <svg
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  /></svg
+                >Email
+              </button>
+              <button
+                (click)="startCall('CALL')"
+                class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-colors"
+                title="Voice call"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  /></svg
+                >Call
+              </button>
+              <button
+                (click)="startCall('VIDEO_CALL')"
+                class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                title="Video call"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  /></svg
+                >Video
+              </button>
+            </ng-container>
+
             <button
               *ngIf="activeView === 'channel' && activeChannel"
               (click)="toggleChannelDetails()"
@@ -470,16 +202,15 @@
                   stroke-linejoin="round"
                   stroke-width="2"
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Details
+                /></svg
+              >Details
             </button>
-            <!-- Pinned pill -->
+
             <button
               *ngIf="pinnedMessages.length && activeView === 'channel'"
               (click)="togglePinnedPanel(); $event.stopPropagation()"
               class="pin-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors"
-              [class.active]="showPinnedPanel"
+              [ngClass]="{ active: showPinnedPanel }"
             >
               <svg
                 width="13"
@@ -506,924 +237,68 @@
           class="flex-1 overflow-y-auto px-5 py-5 bg-white"
           style="scrollbar-width: thin"
         >
-          <!-- Skeleton -->
-          <div *ngIf="messagesLoading" class="flex flex-col gap-5">
-            <div *ngFor="let i of [1, 2, 3, 4]" class="flex gap-4 px-3">
-              <div
-                class="w-10 h-10 rounded-full bg-gray-100 animate-pulse flex-shrink-0"
-              ></div>
-              <div class="flex-1 flex flex-col gap-2 pt-1">
-                <div class="h-3.5 bg-gray-100 animate-pulse rounded w-32"></div>
-                <div class="h-4 bg-gray-100 animate-pulse rounded w-full"></div>
-                <div class="h-4 bg-gray-100 animate-pulse rounded w-3/4"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty state -->
-          <div
-            *ngIf="!messagesLoading && !rawMessages.length"
-            class="flex flex-col items-center justify-center py-24 text-center"
-          >
-            <div
-              class="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-gray-300 mb-5"
-            >
-              <svg
-                width="28"
-                height="28"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </div>
-            <p class="text-[15px] font-semibold text-gray-600 mb-1.5">
-              <ng-container *ngIf="activeView === 'channel'"
-                >#{{ activeChannel?.name }}</ng-container
-              >
-              <ng-container *ngIf="activeView === 'dm'">{{
-                activeDmContact?.fullName
-              }}</ng-container>
-            </p>
-            <p class="text-[14px] text-gray-400 max-w-xs leading-relaxed">
-              <ng-container *ngIf="activeView === 'channel'">{{
-                activeChannel?.description || "Start the conversation."
-              }}</ng-container>
-              <ng-container *ngIf="activeView === 'dm'"
-                >Say hello to {{ activeDmContact?.fullName }}.</ng-container
-              >
-            </p>
-          </div>
-
-          <!-- Messages with day separators -->
-          <ng-container *ngIf="!messagesLoading">
-            <ng-container
-              *ngFor="let msg of rawMessages; let i = index; trackBy: trackById"
-            >
-              <!-- Day separator -->
-              <div
-                *ngIf="shouldShowDaySeparator(rawMessages, i)"
-                class="flex items-center gap-3 my-4"
-              >
-                <div class="flex-1 h-px bg-gray-100"></div>
-                <span
-                  class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1 bg-white rounded-full border border-gray-200"
-                >
-                  {{ getDayLabel(msg.sentAtRaw) || "Today" }}
-                </span>
-                <div class="flex-1 h-px bg-gray-100"></div>
-              </div>
-
-              <div *ngIf="msg.isSystem" class="flex items-center gap-3 my-4">
-                <div class="flex-1 h-px bg-gray-100"></div>
-                <span class="text-[12px] text-gray-400 italic px-2">{{
-                  msg.content
-                }}</span>
-                <div class="flex-1 h-px bg-gray-100"></div>
-              </div>
-
-              <div
-                *ngIf="!msg.isSystem"
-                [id]="'msg-' + msg.id"
-                class="msg-row group flex gap-4 px-3 py-3 rounded-xl mb-0.5 transition-all relative"
-                [class.thread-active]="activeThreadId === msg.id"
-                [class.flash]="isFlashing(msg.id)"
-                [class.opacity-40]="msg.deleting"
-                (click)="dismissDelete()"
-              >
-                <div
-                  *ngIf="msg.pinned"
-                  class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"
-                ></div>
-                <!-- Avatar -->
-                <div class="flex-shrink-0 mt-0.5">
-                  <img
-                    *ngIf="msg.avatarUrl"
-                    [src]="msg.avatarUrl"
-                    alt=""
-                    class="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div
-                    *ngIf="!msg.avatarUrl"
-                    class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
-                    [style.background]="msg.avatarColor"
-                  >
-                    {{ msg.initials }}
-                  </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-baseline gap-2.5 mb-1">
-                    <span class="text-[15px] font-medium text-gray-800">{{
-                      msg.author
-                    }}</span>
-                    <span
-                      *ngIf="msg.role"
-                      class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide bg-gray-100 px-2 py-0.5 rounded-md"
-                      >{{ msg.role }}</span
-                    >
-                    <span
-                      class="text-[12px] text-gray-400 cursor-default"
-                      [title]="
-                        msg.sentAtRaw
-                          ? parseServerDate(msg.sentAtRaw)?.toLocaleString() ||
-                            msg.time
-                          : msg.time
-                      "
-                      >{{ msg.time }}</span
-                    >
-                    <span
-                      *ngIf="msg.pinned"
-                      class="flex items-center gap-1 text-[12px] text-amber-500 font-semibold"
-                    >
-                      <svg
-                        width="10"
-                        height="10"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                        />
-                      </svg>
-                      Pinned
-                    </span>
-                    <span
-                      *ngIf="savingEdit && isEditing(msg.id)"
-                      class="text-[11px] text-[#2e6276] animate-pulse"
-                      >Saving…</span
-                    >
-                  </div>
-
-                  <!-- Inline edit -->
-                  <ng-container *ngIf="isEditing(msg.id); else normalContent">
-                    <div class="flex flex-col gap-2 mt-1">
-                      <textarea
-                        [(ngModel)]="editDraft"
-                        (keydown)="onEditKey($event, msg)"
-                        rows="2"
-                        [disabled]="savingEdit"
-                        class="w-full resize-none border border-[#2e6276]/40 rounded-xl px-3 py-2 text-[14px] text-gray-800 outline-none leading-relaxed focus:ring-2 focus:ring-[#2e6276]/20"
-                      ></textarea>
-                      <div class="flex items-center gap-2">
-                        <button
-                          (click)="saveEdit(msg)"
-                          [disabled]="savingEdit || !editDraft.trim()"
-                          class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2e6276] text-white text-[12px] font-semibold rounded-lg hover:bg-[#255264] disabled:opacity-50"
-                        >
-                          <svg
-                            *ngIf="!savingEdit"
-                            width="12"
-                            height="12"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2.5"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          <svg
-                            *ngIf="savingEdit"
-                            class="animate-spin"
-                            width="12"
-                            height="12"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              class="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              stroke-width="4"
-                            ></circle>
-                            <path
-                              class="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            ></path>
-                          </svg>
-                          Save
-                        </button>
-                        <button
-                          (click)="cancelEdit()"
-                          class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] font-medium rounded-lg hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                        <span class="text-[11px] text-gray-400"
-                          >Enter to save · Esc to cancel</span
-                        >
-                      </div>
-                    </div>
-                  </ng-container>
-
-                  <ng-template #normalContent>
-                    <p
-                      class="text-[15px] text-gray-700 leading-relaxed break-words"
-                    >
-                      {{ msg.content }}
-                    </p>
-                    <!-- Attachment -->
-                    <div
-                      *ngIf="msg.attachment"
-                      class="flex items-center gap-3 mt-3 p-3 bg-white border border-gray-200 rounded-xl w-fit max-w-sm"
-                    >
-                      <div
-                        class="w-9 h-9 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0"
-                      >
-                        <svg
-                          *ngIf="!msg.attachment.type?.startsWith('image')"
-                          class="text-[#2e6276]"
-                          width="15"
-                          height="15"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                          />
-                        </svg>
-                        <svg
-                          *ngIf="msg.attachment.type?.startsWith('image')"
-                          class="text-[#2e6276]"
-                          width="15"
-                          height="15"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="text-[14px] font-semibold text-gray-700 leading-tight truncate"
-                        >
-                          {{ msg.attachment.name }}
-                        </p>
-                        <p
-                          *ngIf="msg.attachment.size"
-                          class="text-[12px] text-gray-400 mt-0.5"
-                        >
-                          {{ msg.attachment.size }}
-                        </p>
-                      </div>
-                      <a
-                        *ngIf="msg.attachment.downloadUrl"
-                        href="#"
-                        (click)="downloadAttachment(msg.attachment, $event)"
-                        class="ml-auto flex-shrink-0 w-8 h-8 rounded-lg bg-[#2e6276]/10 hover:bg-[#2e6276]/20 flex items-center justify-center transition-colors"
-                        title="Download"
-                      >
-                        <svg
-                          class="text-[#2e6276]"
-                          width="13"
-                          height="13"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                          />
-                        </svg>
-                      </a>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="flex items-center gap-0 mt-2 flex-wrap">
-                      <!-- Reply (only for channels) -->
-                      <button
-                        *ngIf="activeView === 'channel'"
-                        (click)="openThread(msg, $event)"
-                        class="action-btn flex items-center gap-1.5"
-                        [class.action-active]="activeThreadId === msg.id"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                          />
-                        </svg>
-                        {{
-                          msg.replies.length
-                            ? msg.replies.length +
-                              " " +
-                              (msg.replies.length === 1 ? "reply" : "replies")
-                            : "Reply"
-                        }}
-                      </button>
-                      <!-- Like -->
-                      <button
-                        (click)="toggleLike(msg, $event)"
-                        class="action-btn flex items-center gap-1.5"
-                        [class.action-liked]="msg.liked"
-                        [class.opacity-60]="isReacting(msg.id)"
-                        [disabled]="isReacting(msg.id)"
-                      >
-                        <svg
-                          *ngIf="isReacting(msg.id)"
-                          class="animate-spin"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            class="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            stroke-width="4"
-                          ></circle>
-                          <path
-                            class="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          ></path>
-                        </svg>
-                        <svg
-                          *ngIf="!isReacting(msg.id)"
-                          width="14"
-                          height="14"
-                          [attr.fill]="msg.liked ? 'currentColor' : 'none'"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                          />
-                        </svg>
-                        {{ msg.likeCount || "" }}
-                      </button>
-                      <!-- Pin (channels only) -->
-                      <button
-                        *ngIf="activeView === 'channel'"
-                        (click)="togglePin(msg, $event)"
-                        class="action-btn flex items-center gap-1.5"
-                        [class.action-pinned]="msg.pinned"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          [attr.fill]="msg.pinned ? 'currentColor' : 'none'"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                          />
-                        </svg>
-                        {{ msg.pinned ? "Unpin" : "Pin" }}
-                      </button>
-                      <!-- Edit / Delete own messages -->
-                      <ng-container *ngIf="isOwnMessage(msg)">
-                        <button
-                          (click)="startEdit(msg, $event)"
-                          class="action-btn flex items-center gap-1.5"
-                          [class.action-active]="isEditing(msg.id)"
-                        >
-                          <svg
-                            width="13"
-                            height="13"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                          Edit
-                        </button>
-                        <div
-                          class="relative"
-                          (click)="$event.stopPropagation()"
-                        >
-                          <button
-                            (click)="requestDelete(msg, $event)"
-                            class="action-btn flex items-center gap-1.5 action-danger"
-                            [class.opacity-50]="isDeleting(msg.id)"
-                            [disabled]="isDeleting(msg.id)"
-                          >
-                            <svg
-                              *ngIf="!isDeleting(msg.id)"
-                              width="13"
-                              height="13"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            <svg
-                              *ngIf="isDeleting(msg.id)"
-                              class="animate-spin"
-                              width="13"
-                              height="13"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                              ></circle>
-                              <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                              ></path>
-                            </svg>
-                            Delete
-                          </button>
-                          <div
-                            *ngIf="confirmDeleteId === msg.id"
-                            class="absolute bottom-full left-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56"
-                          >
-                            <p
-                              class="text-[13px] font-semibold text-gray-800 mb-0.5"
-                            >
-                              Delete message?
-                            </p>
-                            <p
-                              class="text-[12px] text-gray-500 mb-3 leading-snug"
-                            >
-                              This cannot be undone.
-                            </p>
-                            <div class="flex gap-2">
-                              <button
-                                (click)="confirmDelete(msg, $event)"
-                                class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg"
-                              >
-                                Delete
-                              </button>
-                              <button
-                                (click)="dismissDelete()"
-                                class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </ng-container>
-                    </div>
-
-                    <!-- Thread preview -->
-                    <div
-                      *ngIf="
-                        msg.replies.length &&
-                        activeThreadId !== msg.id &&
-                        activeView === 'channel'
-                      "
-                      (click)="openThread(msg, $event)"
-                      class="flex items-center gap-2.5 mt-2.5 cursor-pointer group/thread"
-                    >
-                      <div class="flex -space-x-2">
-                        <div
-                          *ngFor="let r of getTopReplies(msg)"
-                          class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-[8px] font-bold"
-                          [style.background]="r.avatarColor"
-                        >
-                          {{ r.initials }}
-                        </div>
-                      </div>
-                      <span
-                        class="text-[13px] text-[#2e6276] font-semibold group-hover/thread:underline"
-                        >{{ msg.replies.length }}
-                        {{
-                          msg.replies.length === 1 ? "reply" : "replies"
-                        }}</span
-                      >
-                      <span class="text-[12px] text-gray-400"
-                        >Last reply
-                        {{ msg.replies[msg.replies.length - 1].time }}</span
-                      >
-                    </div>
-                  </ng-template>
-                </div>
-              </div>
-            </ng-container>
-          </ng-container>
-        </div>
-
-        <!-- Typing indicator -->
-        <div *ngIf="typingUsersLabel" class="px-6 pt-1 pb-0.5 flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="typing-dots inline-flex items-center gap-0.5"
-              ><span></span><span></span><span></span
-            ></span>
-            <span class="text-[12px] text-gray-500 italic">{{
-              typingUsersLabel
-            }}</span>
-          </div>
-        </div>
-
-        <!-- Pending attachment -->
-        <div *ngIf="pendingAttachment" class="px-5 pt-2 bg-white flex-shrink-0">
-          <div
-            class="flex items-center gap-2.5 px-4 py-2.5 bg-[#f0f7ff] border border-[#2e6276]/20 rounded-xl w-fit"
-          >
-            <svg
-              class="text-[#2e6276]"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-              />
-            </svg>
-            <span class="text-[13px] text-gray-700 font-medium">{{
-              pendingAttachment.name
-            }}</span>
-            <span class="text-[12px] text-gray-400">{{
-              pendingAttachment.size
-            }}</span>
-            <span
-              *ngIf="uploadingAttachment"
-              class="text-[11px] text-[#2e6276] font-medium animate-pulse"
-              >Uploading…</span
-            >
-            <button
-              (click)="removePendingAttachment()"
-              class="ml-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- AI Output -->
-        <div *ngIf="aiOutput.visible" class="mx-5 mb-3 flex-shrink-0">
-          <div
-            class="bg-white border border-[#2e6276]/20 rounded-2xl shadow-sm overflow-hidden"
-          >
-            <div
-              class="flex items-center justify-between px-4 py-2.5 bg-[#2e6276]/5 border-b border-[#2e6276]/10"
-            >
-              <div class="flex items-center gap-2">
-                <div
-                  *ngIf="aiOutput.loading"
-                  class="w-3.5 h-3.5 border-2 border-[#2e6276] border-t-transparent rounded-full animate-spin"
-                ></div>
-                <span class="text-[13px] font-semibold text-[#2e6276]">{{
-                  aiOutput.title
-                }}</span>
-                <span
-                  *ngIf="aiOutput.loading"
-                  class="text-[12px] text-gray-400 animate-pulse"
-                  >Processing…</span
-                >
-              </div>
-              <button
-                (click)="closeAiOutput()"
-                class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div
-              class="px-4 py-3 max-h-48 overflow-y-auto"
-              style="scrollbar-width: thin"
-            >
-              <pre
-                class="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap font-sans"
-                >{{
-                  aiOutput.loading ? "Working on it…" : aiOutput.content
-                }}</pre
-              >
-            </div>
-          </div>
-        </div>
-
-        <!-- AI Toolbar -->
-        <div *ngIf="showAiToolbar" class="px-5 pb-2 flex-shrink-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span
-              class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mr-1"
-              >AI</span
-            >
-            <button
-              (click)="aiRewrite()"
-              [disabled]="aiOutput.loading || !draft.trim()"
-              class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-              [class.opacity-40]="aiOutput.loading || !draft.trim()"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                /></svg
-              >Rewrite
-            </button>
-            <button
-              (click)="aiSubject()"
-              [disabled]="aiOutput.loading"
-              class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-              [class.opacity-40]="aiOutput.loading"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-                /></svg
-              >Subject
-            </button>
-            <button
-              (click)="aiSummarize()"
-              [disabled]="aiOutput.loading"
-              class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-              [class.opacity-40]="aiOutput.loading"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                /></svg
-              >Summarize
-            </button>
-            <button
-              (click)="voiceCompose()"
-              [disabled]="!voiceSupported"
-              class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-              [class.voice-active]="voiceListening"
-              [class.opacity-40]="!voiceSupported"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                />
-              </svg>
-              {{ voiceListening ? "Stop" : "Voice" }}
-            </button>
-            <button
-              (click)="openEmailModal()"
-              class="ai-tool-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
-            >
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                /></svg
-              >Email
-            </button>
-          </div>
+          <app-message-feed
+            [messages]="rawMessages"
+            [loading]="messagesLoading"
+            [activeView]="activeView"
+            [activeChannelName]="activeChannel?.name || ''"
+            [activeChannelDescription]="activeChannel?.description || ''"
+            [activeDmName]="activeDmContact?.fullName || ''"
+            [activeThreadId]="activeThreadId"
+            [confirmDeleteId]="confirmDeleteId"
+            [editingMessageId]="editingMessageId"
+            [editDraft]="editDraft"
+            [savingEdit]="savingEdit"
+            [reactingIds]="reactingIds"
+            [deletingIds]="deletingIds"
+            [myUserId]="me.userId"
+            [flashId]="getFlashId()"
+            (threadOpened)="openThread($event)"
+            (likeToggled)="toggleLike($event)"
+            (pinToggled)="togglePin($event)"
+            (editStarted)="startEdit($event)"
+            (editCancelled)="cancelEdit()"
+            (editSaved)="saveEdit($event)"
+            (editDraftChange)="editDraft = $event"
+            (deleteRequested)="requestDelete($event)"
+            (deleteConfirmed)="confirmDelete($event)"
+            (deleteDismissed)="dismissDelete()"
+            (attachmentDownload)="
+              downloadAttachment($event.attachment, $event.event)
+            "
+          ></app-message-feed>
         </div>
 
         <!-- Composer -->
-        <div class="px-5 pb-5 pt-2 flex-shrink-0 bg-white">
-          <div
-            class="composer-box border border-gray-200 rounded-2xl bg-white transition-all"
-          >
-            <div class="flex items-end gap-2 px-4 py-3">
-              <textarea
-                #composerEl
-                [(ngModel)]="draft"
-                [placeholder]="composerPlaceholder()"
-                (keydown)="onComposerKey($event, composerEl)"
-                (input)="onComposerInput(composerEl)"
-                rows="1"
-                class="flex-1 resize-none bg-transparent border-0 outline-none text-[15px] text-gray-800 placeholder-gray-400 py-0.5 leading-relaxed min-h-[26px] max-h-40"
-              ></textarea>
-              <input
-                #fileInput
-                type="file"
-                class="hidden"
-                (change)="onFileSelected($event)"
-              />
-              <button
-                (click)="toggleAiToolbar(); $event.stopPropagation()"
-                class="toolbar-btn flex-shrink-0 mb-0.5 relative"
-                [style.color]="showAiToolbar ? '#2e6276' : ''"
-                [style.background]="showAiToolbar ? 'rgba(46,98,118,0.08)' : ''"
-                title="AI tools"
-              >
-                <svg
-                  width="17"
-                  height="17"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  />
-                </svg>
-                <span
-                  *ngIf="showAiToolbar"
-                  class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
-                  style="background: #2e6276"
-                ></span>
-              </button>
-              <button
-                (click)="triggerFileInput()"
-                class="toolbar-btn flex-shrink-0 mb-0.5"
-                title="Attach file"
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                  />
-                </svg>
-              </button>
-              <button
-                (click)="sendMessage()"
-                class="send-btn flex-shrink-0 mb-0.5 w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                [class.ready]="draft.trim() || pendingAttachment"
-                [disabled]="sendingMessage"
-              >
-                <svg
-                  *ngIf="!sendingMessage"
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
-                <svg
-                  *ngIf="sendingMessage"
-                  class="animate-spin"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  ></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <p class="text-[12px] text-gray-400 mt-2 px-1 hidden sm:block">
-            <kbd
-              class="bg-white border text-gray-400 border-gray-200 px-1.5 py-0.5 rounded text-[11px]"
-              >Enter</kbd
-            >
-            send ·
-            <kbd
-              class="bg-white border text-gray-400 border-gray-200 px-1.5 py-0.5 rounded text-[11px]"
-              >Shift+Enter</kbd
-            >
-            new line
-          </p>
-        </div>
+        <app-message-composer
+          [draft]="draft"
+          [placeholder]="composerPlaceholder()"
+          [sendingMessage]="sendingMessage"
+          [uploadingAttachment]="uploadingAttachment"
+          [pendingAttachment]="pendingAttachment"
+          [showAiToolbar]="showAiToolbar"
+          [aiOutput]="aiOutput"
+          [voiceListening]="voiceListening"
+          [voiceSupported]="voiceSupported"
+          [typingUsersLabel]="typingUsersLabel"
+          (draftChange)="draft = $event"
+          (messageSent)="sendMessage()"
+          (fileSelected)="onFileSelected($event)"
+          (attachmentRemoved)="pendingFile = null; pendingAttachment = null"
+          (aiToolbarToggled)="toggleAiToolbar()"
+          (aiOutputClosed)="closeAiOutput()"
+          (aiRewrite)="aiRewrite()"
+          (aiSubject)="aiSubject()"
+          (aiSummarize)="aiSummarize()"
+          (voiceCompose)="voiceCompose()"
+          (emailCompose)="openEmailModal()"
+          (composerTyping)="onComposerTyping()"
+          (aiOutputUsed)="onAiOutputUsed($event)"
+        ></app-message-composer>
       </div>
     </ng-container>
 
-    <!-- Threads view -->
+    <!-- ── Threads view ───────────────────────────────────────────────────── -->
     <ng-container *ngIf="activeView === 'threads'">
       <div class="flex flex-col flex-1 overflow-hidden min-w-0 bg-white">
         <div
@@ -1452,7 +327,14 @@
             (click)="openThreadFromList(t.msg, $event)"
           >
             <div class="flex items-center gap-2.5 mb-2.5">
+              <img
+                *ngIf="t.msg.avatarUrl"
+                [src]="t.msg.avatarUrl"
+                alt=""
+                class="w-8 h-8 rounded-full object-cover flex-shrink-0"
+              />
               <div
+                *ngIf="!t.msg.avatarUrl"
                 class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
                 [style.background]="t.msg.avatarColor"
               >
@@ -1461,9 +343,9 @@
               <span class="text-[14px] font-medium text-gray-800">{{
                 t.msg.author
               }}</span>
-              <span class="text-[13px] font-semibold text-[#2e6276]"
-                >#{{ t.channelName }}</span
-              >
+              <span class="text-[13px] font-semibold text-[#2e6276]">{{
+                t.channelName
+              }}</span>
               <span class="text-[12px] text-gray-400 ml-auto">{{
                 t.msg.time
               }}</span>
@@ -1475,13 +357,21 @@
               class="flex items-center gap-2.5 pt-3 border-t border-gray-100"
             >
               <div class="flex -space-x-2">
-                <div
-                  *ngFor="let r of getTopReplies(t.msg)"
-                  class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-[8px] font-bold"
-                  [style.background]="r.avatarColor"
-                >
-                  {{ r.initials }}
-                </div>
+                <ng-container *ngFor="let r of t.msg.replies.slice(0, 2)">
+                  <img
+                    *ngIf="r.avatarUrl"
+                    [src]="r.avatarUrl"
+                    alt=""
+                    class="w-6 h-6 rounded-full object-cover border-2 border-white"
+                  />
+                  <div
+                    *ngIf="!r.avatarUrl"
+                    class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-[8px] font-bold"
+                    [style.background]="r.avatarColor"
+                  >
+                    {{ r.initials }}
+                  </div>
+                </ng-container>
               </div>
               <span class="text-[13px] font-semibold text-[#2e6276]"
                 >{{ t.msg.replies.length }}
@@ -1493,7 +383,7 @@
       </div>
     </ng-container>
 
-    <!-- ══════════════════════════════════════  RIGHT PANEL  ══════════════════════════════════════ -->
+    <!-- ── Right panel ────────────────────────────────────────────────────── -->
     <div
       class="flex flex-col border-l border-gray-200 bg-white flex-shrink-0 overflow-hidden transition-all duration-200 relative"
       [style.width.px]="rightPanelOpen ? threadPanelWidth : 0"
@@ -1504,1007 +394,96 @@
         (mousedown)="startResizeThread($event)"
       ></div>
 
-      <!-- Channel Details panel -->
-      <ng-container *ngIf="rightPanelMode === 'details' && activeChannel">
-        <div
-          class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0"
-        >
-          <h3 class="text-[16px] font-bold text-gray-800">Channel Details</h3>
-          <button (click)="toggleChannelDetails()" class="panel-close-btn">
-            <svg
-              width="13"
-              height="13"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <div
-          class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5"
-          style="scrollbar-width: thin"
-        >
-          <!-- Info -->
-          <div class="p-4 bg-white border border-gray-200 rounded-2xl">
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <p class="text-[18px] font-bold text-gray-900">
-                  #{{ activeChannel.name }}
-                </p>
-                <span
-                  class="text-[12px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block"
-                  [ngClass]="
-                    activeChannel.channelType === 'PUBLIC'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-gray-100 text-gray-600'
-                  "
-                >
-                  {{
-                    activeChannel.channelType === "PRIVATE"
-                      ? " Private"
-                      : " Public"
-                  }}
-                </span>
-              </div>
-              <button
-                *ngIf="isChannelOwner()"
-                (click)="openEditChannelModal(activeChannel, $event)"
-                class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                Edit
-              </button>
-            </div>
-            <p
-              *ngIf="activeChannel.description"
-              class="text-[14px] text-gray-600 leading-relaxed"
-            >
-              {{ activeChannel.description }}
-            </p>
-            <p
-              *ngIf="!activeChannel.description"
-              class="text-[14px] text-gray-400 italic"
-            >
-              No description set.
-            </p>
-          </div>
-
-          <!-- Members -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="text-[14px] font-semibold text-gray-700">
-                Members ({{ channelMembers.length }})
-              </h4>
-            </div>
-            <div *ngIf="channelMembersLoading" class="flex flex-col gap-2">
-              <div
-                *ngFor="let i of [1, 2, 3]"
-                class="h-10 bg-gray-100 rounded-xl animate-pulse"
-              ></div>
-            </div>
-            <div *ngIf="!channelMembersLoading" class="flex flex-col gap-2">
-              <div
-                *ngFor="let m of channelMembers"
-                class="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-xl"
-              >
-                <!-- FIX: colorFor exposed as component method -->
-                <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
-                  [style.background]="colorFor(m.userId)"
-                >
-                  {{ getMemberName(m.userId) | slice: 0 : 1 }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-[14px] font-medium text-gray-800 truncate">
-                    {{ getMemberName(m.userId) }}
-                  </p>
-                  <p class="text-[11px] text-gray-400">{{ m.role }}</p>
-                </div>
-                <button
-                  *ngIf="isChannelOwner() && m.userId !== me.userId"
-                  (click)="removeMemberFromChannel(m, $event)"
-                  class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
-                  title="Remove member"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2.5"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Add member (owner only) -->
-          <div *ngIf="isChannelOwner() && nonMembers.length">
-            <h4 class="text-[14px] font-semibold text-gray-700 mb-3">
-              Add Members
-            </h4>
-            <div
-              class="flex flex-col gap-1.5 max-h-52 overflow-y-auto"
-              style="scrollbar-width: thin"
-            >
-              <button
-                *ngFor="let emp of nonMembers"
-                (click)="addMemberToActiveChannel(emp.user!.userId)"
-                class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
-              >
-                <div
-                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
-                  [style.background]="getEmpAvatarColor(emp)"
-                >
-                  {{ getEmpInitials(emp) }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-[13px] font-medium text-gray-700 truncate">
-                    {{ getEmpName(emp) }}
-                  </p>
-                  <p class="text-[11px] text-gray-400 truncate">
-                    {{ emp.jobTitle }}
-                  </p>
-                </div>
-                <svg
-                  class="text-[#2e6276] flex-shrink-0"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2.5"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Leave / Delete channel -->
-          <div
-            class="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2"
-          >
-            <button
-              (click)="leaveActiveChannel()"
-              class="w-full flex items-center justify-center gap-2 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl text-[13px] font-semibold transition-colors border border-gray-200"
-            >
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              Leave Channel
-            </button>
-            <button
-              *ngIf="isChannelOwner()"
-              (click)="deleteActiveChannel()"
-              class="w-full flex items-center justify-center gap-2 py-2.5 text-red-500 hover:bg-red-50 rounded-xl text-[13px] font-semibold transition-colors border border-red-200"
-            >
-              <svg
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              Delete Channel
-            </button>
-          </div>
-        </div>
-      </ng-container>
-
-      <!-- Pinned panel -->
-      <ng-container *ngIf="rightPanelMode === 'pinned'">
-        <div
-          class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0"
-        >
-          <div class="flex items-center gap-2.5">
-            <svg
-              class="text-amber-500"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
-            <h3 class="text-[16px] font-bold text-gray-800">Pinned Messages</h3>
-            <span
-              class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[12px] font-semibold rounded-lg border border-amber-200"
-              >{{ pinnedMessages.length }}</span
-            >
-          </div>
-          <button (click)="closePinnedPanel()" class="panel-close-btn">
-            <svg
-              width="13"
-              height="13"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <div
-          class="flex-1 overflow-y-auto px-4 py-4"
-          style="scrollbar-width: thin"
-        >
-          <div *ngIf="!pinnedMessages.length" class="text-center py-12">
-            <p class="text-[14px] text-gray-400">No pinned messages.</p>
-          </div>
-          <div
-            *ngFor="let msg of pinnedMessages; trackBy: trackById"
-            class="pinned-card mb-3 p-4 rounded-2xl border border-gray-200 bg-white cursor-pointer transition-all"
-            (click)="
-              jumpTo({
-                msg: msg,
-                channelId: activeChannelId,
-                channelName: activeChannel?.name || '',
-              })
-            "
-          >
-            <div class="flex items-center gap-2.5 mb-2.5">
-              <div
-                class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
-                [style.background]="msg.avatarColor"
-              >
-                {{ msg.initials }}
-              </div>
-              <span
-                class="text-[14px] font-medium text-gray-800 flex-1 min-w-0 truncate"
-                >{{ msg.author }}</span
-              >
-              <span class="text-[12px] text-gray-400 flex-shrink-0">{{
-                msg.time
-              }}</span>
-            </div>
-            <p class="text-[14px] text-gray-700 leading-relaxed">
-              {{ msg.content }}
-            </p>
-            <div
-              class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100"
-            >
-              <button
-                (click)="togglePin(msg, $event)"
-                class="text-[13px] text-amber-500 hover:text-amber-700 font-semibold flex items-center gap-1.5"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                  /></svg
-                >Unpin
-              </button>
-              <button
-                (click)="openThread(msg, $event)"
-                class="text-[13px] text-[#2e6276] hover:text-[#255264] font-semibold"
-              >
-                {{
-                  msg.replies.length ? msg.replies.length + " replies" : "Reply"
-                }}
-                →
-              </button>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-
-      <!-- Thread panel -->
-      <ng-container *ngIf="rightPanelMode === 'thread' && activeThread">
-        <div
-          class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0"
-        >
-          <div class="flex items-center gap-2.5">
-            <svg
-              class="text-[#2e6276]"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-              />
-            </svg>
-            <h3 class="text-[16px] font-bold text-gray-800">Thread</h3>
-          </div>
-          <button (click)="closeThread()" class="panel-close-btn">
-            <svg
-              width="13"
-              height="13"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-        <div
-          #threadEl
-          class="flex-1 overflow-y-auto px-5 py-4"
-          style="scrollbar-width: thin"
-        >
-          <div
-            class="flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5"
-          >
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mt-0.5"
-              [style.background]="activeThread.avatarColor"
-            >
-              {{ activeThread.initials }}
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-baseline gap-2.5 mb-1.5">
-                <span class="text-[15px] font-medium text-gray-800">{{
-                  activeThread.author
-                }}</span
-                ><span class="text-[12px] text-gray-400">{{
-                  activeThread.time
-                }}</span>
-              </div>
-              <p class="text-[14px] text-gray-700 leading-relaxed">
-                {{ activeThread.content }}
-              </p>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 mb-4">
-            <div class="flex-1 h-px bg-gray-100"></div>
-            <span
-              class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider"
-              >{{ activeThread.replies.length }}
-              {{
-                activeThread.replies.length === 1 ? "reply" : "replies"
-              }}</span
-            >
-            <div class="flex-1 h-px bg-gray-100"></div>
-          </div>
-          <div *ngIf="!activeThread.replies.length" class="text-center py-8">
-            <p class="text-[14px] text-gray-400">
-              No replies yet. Be the first!
-            </p>
-          </div>
-          <div
-            *ngFor="let r of activeThread.replies; trackBy: trackById"
-            class="mb-4"
-          >
-            <div class="flex gap-3">
-              <div
-                class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
-                [style.background]="r.avatarColor"
-              >
-                {{ r.initials }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-baseline gap-2.5 mb-1">
-                  <span class="text-[14px] font-bold text-gray-800">{{
-                    r.author
-                  }}</span
-                  ><span class="text-[12px] text-gray-400">{{ r.time }}</span>
-                </div>
-                <p class="text-[14px] text-gray-600 leading-relaxed">
-                  {{ r.content }}
-                </p>
-                <button
-                  (click)="setThreadReplyTarget(r, $event)"
-                  class="mt-1.5 flex items-center gap-1 text-[12px] font-medium text-gray-400 transition-colors"
-                  [style.color]="
-                    activeThreadReplyToId === r.id ? '#2e6276' : ''
-                  "
-                >
-                  <svg
-                    width="11"
-                    height="11"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                    />
-                  </svg>
-                  {{ activeThreadReplyToId === r.id ? "Replying…" : "Reply" }}
-                  <span
-                    *ngIf="r.replies?.length"
-                    style="color: #2e6276"
-                    class="ml-1"
-                    >· {{ r.replies.length }}</span
-                  >
-                </button>
-                <div
-                  *ngIf="r.replies?.length"
-                  class="mt-3 pl-4 border-l-2 border-gray-100 flex flex-col gap-3"
-                >
-                  <div
-                    *ngFor="let r2 of r.replies; trackBy: trackById"
-                    class="flex gap-2.5"
-                  >
-                    <div
-                      class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
-                      [style.background]="r2.avatarColor"
-                    >
-                      {{ r2.initials }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-baseline gap-2 mb-0.5">
-                        <span class="text-[13px] font-bold text-gray-800">{{
-                          r2.author
-                        }}</span
-                        ><span class="text-[11px] text-gray-400">{{
-                          r2.time
-                        }}</span>
-                      </div>
-                      <p class="text-[13px] text-gray-600 leading-relaxed">
-                        {{ r2.content }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white">
-          <div
-            *ngIf="activeThreadReplyToId && activeThreadReplyTarget"
-            class="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#2e6276]/5 rounded-lg border border-[#2e6276]/10"
-          >
-            <svg
-              class="text-[#2e6276] flex-shrink-0"
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-              />
-            </svg>
-            <span class="text-[12px] text-[#2e6276] font-medium flex-1 truncate"
-              >Replying to {{ activeThreadReplyTarget.author }}</span
-            >
-            <button
-              (click)="clearThreadReplyTarget()"
-              class="text-gray-400 hover:text-gray-600 flex-shrink-0"
-            >
-              <svg
-                width="11"
-                height="11"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <div
-            class="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all"
-          >
-            <div
-              class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 bg-[#2e6276]"
-            >
-              {{ me.initials }}
-            </div>
-            <input
-              type="text"
-              [(ngModel)]="threadReplyDraft"
-              [placeholder]="
-                activeThreadReplyToId && activeThreadReplyTarget
-                  ? 'Reply to ' + activeThreadReplyTarget.author + '…'
-                  : 'Reply in thread…'
-              "
-              (keydown)="onThreadKey($event)"
-              class="flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
-            />
-            <button
-              (click)="sendReply()"
-              class="send-btn w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              [class.ready]="threadReplyDraft.trim()"
-              [disabled]="sendingReply"
-            >
-              <svg
-                *ngIf="!sendingReply"
-                width="13"
-                height="13"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
-              <svg
-                *ngIf="sendingReply"
-                class="animate-spin"
-                width="12"
-                height="12"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                ></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </ng-container>
+      <app-thread-panel
+        [mode]="rightPanelMode"
+        [activeThread]="activeThread"
+        [activeThreadReplyToId]="activeThreadReplyToId"
+        [activeThreadReplyTarget]="activeThreadReplyTarget"
+        [threadReplyDraft]="threadReplyDraft"
+        [sendingReply]="sendingReply"
+        [pinnedMessages]="pinnedMessages"
+        [activeChannel]="activeChannel || null"
+        [channelMembers]="channelMembers"
+        [channelMembersLoading]="channelMembersLoading"
+        [nonMembers]="nonMembers"
+        [myUserId]="me.userId"
+        [memberMenuOpen]="memberMenu.open"
+        [memberMenuUserId]="memberMenu.userId"
+        [getMemberAvatarUrl]="getMemberAvatarUrl"
+        [getMemberName]="getMemberName"
+        [colorFor]="colorFor"
+        [isUserOnline]="isUserOnline"
+        [getEmpName]="getEmpName"
+        [getEmpInitials]="getEmpInitials"
+        [getEmpAvatarColor]="getEmpAvatarColor"
+        [getEmpImageUrl]="getEmpImageUrl"
+        (threadClosed)="closeThread()"
+        (threadReplyDraftChange)="threadReplyDraft = $event"
+        (replyTargetSet)="setThreadReplyTarget($event)"
+        (replyTargetCleared)="clearThreadReplyTarget()"
+        (replySent)="sendReply()"
+        (pinnedPanelClosed)="closePinnedPanel()"
+        (pinnedJumpTo)="
+          jumpTo({
+            msg: $event,
+            channelId: activeChannelId,
+            channelName: activeChannel?.name || '',
+          })
+        "
+        (pinnedUnpin)="togglePin($event)"
+        (pinnedOpenThread)="openThread($event)"
+        (detailsClosed)="toggleChannelDetails()"
+        (editChannelClicked)="
+          activeChannel && openEditChannelModal(activeChannel, $event)
+        "
+        (memberMenuOpened)="openMemberMenu($event)"
+        (memberMenuClosed)="closeMemberMenu()"
+        (makeOwner)="makeChannelOwner($event)"
+        (removeMember)="removeMemberFromChannel($event)"
+        (addMember)="addMemberToActiveChannel($event)"
+        (leaveChannel)="leaveActiveChannel()"
+        (deleteChannel)="deleteActiveChannel()"
+      ></app-thread-panel>
     </div>
   </main>
 </div>
 
 <!-- ══════════════════════  CHANNEL MODAL  ══════════════════════ -->
-<div
-  *ngIf="channelModal.open"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4"
-  (click)="closeChannelModal()"
->
-  <div class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-  <div
-    class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md"
-    (click)="$event.stopPropagation()"
-  >
-    <div
-      class="flex items-center justify-between px-6 py-4 border-b border-gray-200"
-    >
-      <h2 class="text-[18px] font-bold text-gray-900">
-        {{ channelModal.mode === "create" ? "New Channel" : "Edit Channel" }}
-      </h2>
-      <button (click)="closeChannelModal()" class="panel-close-btn">
-        <svg
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    </div>
-    <div class="px-6 py-5 flex flex-col gap-4">
-      <div>
-        <label class="block text-[13px] font-semibold text-gray-700 mb-1.5"
-          >Channel Name <span class="text-red-500">*</span></label
-        >
-        <input
-          type="text"
-          [(ngModel)]="channelModal.name"
-          placeholder="e.g. general, announcements"
-          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
-        />
-      </div>
-      <div>
-        <label class="block text-[13px] font-semibold text-gray-700 mb-1.5"
-          >Description</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="channelModal.description"
-          placeholder="What's this channel about?"
-          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
-        />
-      </div>
-      <div>
-        <label class="block text-[13px] font-semibold text-gray-700 mb-1.5"
-          >Type</label
-        >
-        <div class="flex gap-3">
-          <!-- FIX: replaced [class.border-\[\#2e6276\]] etc. with [ngClass] -->
-          <button
-            (click)="channelModal.channelType = 'PUBLIC'"
-            class="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-colors"
-            [ngClass]="
-              channelModal.channelType === 'PUBLIC'
-                ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]'
-                : 'border-gray-200 text-gray-600'
-            "
-          >
-             Public
-          </button>
-          <button
-            (click)="channelModal.channelType = 'PRIVATE'"
-            class="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[13px] font-medium transition-colors"
-            [ngClass]="
-              channelModal.channelType === 'PRIVATE'
-                ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]'
-                : 'border-gray-200 text-gray-600'
-            "
-          >
-             Private
-          </button>
-        </div>
-      </div>
-      <!-- Member picker (create mode) -->
-      <div *ngIf="channelModal.mode === 'create' && modalEmployees.length">
-        <label class="block text-[13px] font-semibold text-gray-700 mb-2"
-          >Add Members (optional)</label
-        >
-        <div
-          class="max-h-40 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100"
-          style="scrollbar-width: thin"
-        >
-          <!-- FIX: replaced [class.bg-\[\#2e6276\]\/5] with [ngClass] -->
-          <button
-            *ngFor="let emp of modalEmployees"
-            (click)="toggleMemberInModal(emp.user!.userId)"
-            class="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
-            [ngClass]="
-              isMemberSelectedInModal(emp.user!.userId) ? 'bg-[#2e6276]/5' : ''
-            "
-          >
-            <div
-              class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
-              [style.background]="getEmpAvatarColor(emp)"
-            >
-              {{ getEmpInitials(emp) }}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-[13px] font-medium text-gray-800 truncate">
-                {{ getEmpName(emp) }}
-              </p>
-              <p class="text-[11px] text-gray-400 truncate">
-                {{ emp.jobTitle }}
-              </p>
-            </div>
-            <svg
-              *ngIf="isMemberSelectedInModal(emp.user!.userId)"
-              class="text-[#2e6276] flex-shrink-0"
-              width="14"
-              height="14"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-              />
-            </svg>
-          </button>
-        </div>
-        <p class="text-[12px] text-gray-400 mt-1.5">
-          {{ channelModal.selectedUserIds.length }} selected
-        </p>
-      </div>
-      <p *ngIf="channelModal.error" class="text-[13px] text-red-500">
-        {{ channelModal.error }}
-      </p>
-    </div>
-    <div class="px-6 pb-5 flex gap-3">
-      <button
-        (click)="closeChannelModal()"
-        class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-[14px] font-medium rounded-xl hover:bg-gray-50"
-      >
-        Cancel
-      </button>
-      <button
-        (click)="saveChannelModal()"
-        [disabled]="channelModal.saving || !channelModal.name.trim()"
-        class="flex-1 py-2.5 bg-[#2e6276] text-white text-[14px] font-semibold rounded-xl hover:bg-[#255264] disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        <svg
-          *ngIf="channelModal.saving"
-          class="animate-spin"
-          width="14"
-          height="14"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          ></path>
-        </svg>
-        {{
-          channelModal.saving
-            ? "Saving…"
-            : channelModal.mode === "create"
-              ? "Create Channel"
-              : "Save Changes"
-        }}
-      </button>
-    </div>
-  </div>
-</div>
+<app-channel-modal
+  [state]="channelModal"
+  [modalEmployees]="modalEmployees"
+  (closed)="closeChannelModal()"
+  (saved)="saveChannelModal()"
+  (nameChange)="onChannelModalNameChange($event)"
+  (descriptionChange)="onChannelModalDescChange($event)"
+  (channelTypeChange)="onChannelModalTypeChange($event)"
+  (memberToggled)="onChannelModalMemberToggle($event)"
+></app-channel-modal>
 
 <!-- ══════════════════════  EMAIL MODAL  ══════════════════════ -->
-<div
-  *ngIf="emailModal.open"
-  class="fixed inset-0 z-50 flex items-center justify-center p-4"
-  (click)="closeEmailModal()"
->
-  <div class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-  <div
-    class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg"
-    (click)="$event.stopPropagation()"
-  >
-    <div
-      class="flex items-center justify-between px-6 py-4 border-b border-gray-200"
-    >
-      <h2 class="text-[18px] font-bold text-gray-900">Compose Email</h2>
-      <button (click)="closeEmailModal()" class="panel-close-btn">
-        <svg
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    </div>
-    <div class="px-6 py-5 flex flex-col gap-4">
-      <div>
-        <label class="block text-[13px] font-semibold text-gray-700 mb-1.5"
-          >To</label
-        >
-        <input
-          type="email"
-          [(ngModel)]="emailModal.to"
-          placeholder="recipient@example.com"
-          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
-        />
-      </div>
-      <div>
-        <label class="block text-[13px] font-semibold text-gray-700 mb-1.5"
-          >Subject</label
-        >
-        <input
-          type="text"
-          [(ngModel)]="emailModal.subject"
-          placeholder="Email subject"
-          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
-        />
-      </div>
-      <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <label class="block text-[13px] font-semibold text-gray-700"
-            >Message</label
-          >
-          <button
-            (click)="composeEmailFromAi()"
-            [disabled]="emailModal.sending || !emailModal.body.trim()"
-            class="flex items-center gap-1.5 px-2.5 py-1 bg-[#2e6276]/10 text-[#2e6276] text-[11px] font-semibold rounded-lg hover:bg-[#2e6276]/15 disabled:opacity-40 transition-colors"
-          >
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-              />
-            </svg>
-            AI Improve
-          </button>
-        </div>
-        <textarea
-          [(ngModel)]="emailModal.body"
-          rows="6"
-          placeholder="Type your message here, or let AI compose it…"
-          class="w-full border border-gray-200 rounded-xl px-4 py-3 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10 resize-none"
-        ></textarea>
-      </div>
-      <div
-        *ngIf="emailModal.result"
-        class="px-4 py-3 rounded-xl text-[13px] font-medium"
-        [ngClass]="
-          emailModal.result.startsWith('✅')
-            ? 'bg-emerald-50 text-emerald-700'
-            : 'bg-red-50 text-red-600'
-        "
-      >
-        {{ emailModal.result }}
-      </div>
-    </div>
-    <div class="px-6 pb-5 flex gap-3">
-      <button
-        (click)="closeEmailModal()"
-        class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-[14px] font-medium rounded-xl hover:bg-gray-50"
-      >
-        Cancel
-      </button>
-      <button
-        (click)="sendEmailAction()"
-        [disabled]="
-          emailModal.sending || !emailModal.to.trim() || !emailModal.body.trim()
-        "
-        class="flex-1 py-2.5 bg-[#2e6276] text-white text-[14px] font-semibold rounded-xl hover:bg-[#255264] disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        <svg
-          *ngIf="emailModal.sending"
-          class="animate-spin"
-          width="14"
-          height="14"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          ></path>
-        </svg>
-        <svg
-          *ngIf="!emailModal.sending"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-          />
-        </svg>
-        {{ emailModal.sending ? "Sending…" : "Send Email" }}
-      </button>
-    </div>
-  </div>
-</div>
+<app-email-modal
+  [state]="emailModal"
+  (closed)="closeEmailModal()"
+  (sent)="sendEmailAction()"
+  (aiCompose)="composeEmailFromAi()"
+  (subjectChange)="emailModal.subject = $event"
+  (bodyChange)="emailModal.body = $event"
+  (toInputChange)="emailModal.toInput = $event"
+  (recipientAdded)="addEmailRecipient()"
+  (recipientRemoved)="removeEmailRecipient($event)"
+  (widthChange)="emailModal.width = $event"
+></app-email-modal>
+
+<!-- ══════════════════════  CALL MODAL  ══════════════════════ -->
+<app-call-modal
+  [state]="callModal"
+  [contactAvatarUrl]="activeDmContact?.avatarUrl"
+  (callEnded)="endCall()"
+  (muteToggled)="toggleMute()"
+  (videoToggled)="toggleVideo()"
+></app-call-modal>
 
 <style>
-  .sidebar-item {
-    color: #6b7280;
-  }
-  .sidebar-item:hover {
-    background: #f9fafb;
-    color: #374151;
-  }
-  .sidebar-item.active {
-    background: #eef6f9;
-    color: #2e6276;
-    font-weight: 600;
-  }
-  .sidebar-item.unread {
-    color: #111827;
-    font-weight: 700;
-  }
-  .sidebar-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .sidebar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
-    border-radius: 2px;
-  }
   .pin-pill {
     color: #92400e;
     background: #fef3c7;
@@ -2514,131 +493,6 @@
   .pin-pill.active {
     background: #fde68a;
     color: #78350f;
-  }
-  .msg-row:hover {
-    background: #f9fafb;
-  }
-  .msg-row.thread-active {
-    background: #f0f7ff;
-    border-left: 3px solid #2e6276;
-    padding-left: 10px;
-  }
-  .msg-row.flash {
-    animation: flash-fade 1.8s ease-out forwards;
-  }
-  @keyframes flash-fade {
-    0% {
-      background: #fef08a;
-    }
-    100% {
-      background: transparent;
-    }
-  }
-  .action-btn {
-    padding: 4px 10px;
-    border-radius: 8px;
-    color: #6b7280;
-    font-size: 13px;
-    font-weight: 500;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-  .action-btn:hover {
-    background: #f3f4f6;
-    color: #374151;
-  }
-  .action-btn.action-active {
-    color: #2e6276;
-    font-weight: 600;
-  }
-  .action-btn.action-liked {
-    color: #f43f5e;
-    font-weight: 600;
-  }
-  .action-btn.action-pinned {
-    color: #f59e0b;
-    font-weight: 600;
-  }
-  .action-btn.action-danger:hover {
-    background: #fef2f2;
-    color: #dc2626;
-  }
-  .composer-box:focus-within {
-    border-color: rgba(46, 98, 118, 0.4);
-    box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.07);
-  }
-  .toolbar-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-  .toolbar-btn:hover {
-    background: #f3f4f6;
-    color: #374151;
-  }
-  .send-btn {
-    background: #e5e7eb;
-    color: #9ca3af;
-  }
-  .send-btn.ready {
-    background: #2e6276;
-    color: #fff;
-  }
-  .send-btn.ready:hover {
-    background: #255264;
-  }
-  .panel-close-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-  .panel-close-btn:hover {
-    background: #f3f4f6;
-    color: #374151;
-  }
-  .pinned-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  }
-  .ai-tool-btn {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    color: #374151;
-  }
-  .ai-tool-btn:hover:not(:disabled) {
-    background: #eef6f9;
-    border-color: #2e6276;
-    color: #2e6276;
-  }
-  .ai-tool-btn.voice-active {
-    background: #fef2f2;
-    border-color: #f87171;
-    color: #dc2626;
-    animation: pulse-border 1s ease-in-out infinite;
-  }
-  @keyframes pulse-border {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3);
-    }
-    50% {
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-    }
   }
   .resizing * {
     cursor: col-resize !important;
@@ -2650,38 +504,6 @@
     }
     .comm-shell {
       flex-direction: column;
-    }
-  }
-  .typing-dots {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-  }
-  .typing-dots span {
-    display: inline-block;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #10b981;
-    opacity: 0.7;
-    animation: typing-bounce 1.2s ease-in-out infinite;
-  }
-  .typing-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  .typing-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-  @keyframes typing-bounce {
-    0%,
-    80%,
-    100% {
-      transform: translateY(0);
-      opacity: 0.5;
-    }
-    40% {
-      transform: translateY(-4px);
-      opacity: 1;
     }
   }
 </style>
