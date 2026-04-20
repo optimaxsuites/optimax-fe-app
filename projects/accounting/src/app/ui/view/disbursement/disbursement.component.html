@@ -1,0 +1,752 @@
+<!-- ============================================================ -->
+<!-- DISBURSEMENT DASHBOARD                                       -->
+<!-- ============================================================ -->
+<div *ngIf="viewMode === 'DASHBOARD'" class="min-h-screen bg-gray-50 font-sans">
+
+  <!-- ── Page Header ─────────────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Disbursements</h1>
+      <p class="text-lg text-gray-500 mt-0.5">Manage and execute approved payout requests</p>
+    </div>
+    <button (click)="exportTable()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white text-lg font-semibold rounded-xl hover:bg-customBlueHover transition-all shadow-sm">
+      <i class="pi pi-download text-lg"></i> Export Report
+    </button>
+  </div>
+
+  <div class="px-8 py-8 space-y-8">
+
+    <!-- ── Stat Cards ───────────────────────────────────── -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Card 1: Total Disbursement today -->
+      <div (click)="setCardFilter('TODAY')" [ngClass]="activeCardFilter === 'TODAY' ? 'ring-2 ring-[#2E6276]' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <!-- Background glows -->
+        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(46,98,118,0.25);"></div>
+        
+        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
+          <div class="flex justify-between items-start mb-6">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(46,98,118,0.08); color: #2E6276;">
+              <i class="pi pi-calendar text-xl font-bold"></i>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-gray-50 text-gray-400">Total Today</span>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-gray-500 mb-2">Disbursements Today</p>
+            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">₦{{ totalDisbursedAmountToday | number }}</h3>
+          </div>
+        </div>
+        <!-- Accent bar -->
+        <div class="absolute bottom-0 left-0 h-1 w-full transition-all duration-300 opacity-80 group-hover:opacity-100" style="background-color: #2E6276;"></div>
+      </div>
+
+      <!-- Card 2: Pending Disbursement -->
+      <div (click)="setCardFilter('PENDING')" [ngClass]="activeCardFilter === 'PENDING' ? 'ring-2 ring-yellow-500' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(234,179,8,0.25);"></div>
+        
+        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
+          <div class="flex justify-between items-start mb-6">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(234,179,8,0.08); color: #EAB308;">
+              <i class="pi pi-clock text-xl font-bold"></i>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-yellow-50 text-yellow-600">Pending</span>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-gray-500 mb-2">Awaiting Action</p>
+            <div class="flex items-end gap-2">
+              <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">{{ filteredTransactions.length }}</h3>
+              <p class="text-lg font-bold text-gray-400 mb-1 pb-0.5">(₦{{ totalPendingValue | number }})</p>
+            </div>
+          </div>
+        </div>
+        <div class="absolute bottom-0 left-0 h-1 w-full bg-yellow-500 transition-all duration-300 opacity-80 group-hover:opacity-100"></div>
+      </div>
+
+      <!-- Card 3: Approved Disbursement -->
+      <div (click)="setCardFilter('APPROVED')" [ngClass]="activeCardFilter === 'APPROVED' ? 'ring-2 ring-[#2EB270]' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(46,178,112,0.25);"></div>
+        
+        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
+          <div class="flex justify-between items-start mb-6">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(46,178,112,0.08); color: #2EB270;">
+              <i class="pi pi-check-circle text-xl font-bold"></i>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-green-50 text-green-600">Approved</span>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-gray-500 mb-2">Ready for Payout</p>
+            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">{{ approvedDisbursements }}</h3>
+          </div>
+        </div>
+        <div class="absolute bottom-0 left-0 h-1 w-full transition-all duration-300 opacity-80 group-hover:opacity-100" style="background-color: #2EB270;"></div>
+      </div>
+
+      <!-- Card 4: Failed Transactions -->
+      <div (click)="setCardFilter('FAILED')" [ngClass]="activeCardFilter === 'FAILED' ? 'ring-2 ring-red-500' : ''" class="bg-white rounded-2xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-gray-100 overflow-hidden relative group">
+        <div class="absolute -right-6 -top-6 w-32 h-32 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" style="background-color: rgba(239,68,68,0.25);"></div>
+        
+        <div class="p-6 relative z-10 flex flex-col justify-between h-full">
+          <div class="flex justify-between items-start mb-6">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm border border-gray-50/50" style="background-color: rgba(239,68,68,0.08); color: #EF4444;">
+              <i class="pi pi-times-circle text-xl font-bold"></i>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-lg font-bold uppercase tracking-wider bg-red-50 text-red-600">Failed</span>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-gray-500 mb-2">Requires Review</p>
+            <h3 class="text-4xl lg:text-5xl font-black text-gray-900 tracking-tight">0</h3>
+          </div>
+        </div>
+        <div class="absolute bottom-0 left-0 h-1 w-full bg-red-500 transition-all duration-300 opacity-80 group-hover:opacity-100"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Filter & Action Bar ─────────────────────────────── -->
+    <div class="flex items-center justify-between bg-[#F8F9FA] px-6 py-4 rounded-t-2xl border border-gray-200 shadow-sm gap-4 mt-6">
+      <div class="flex flex-wrap items-center gap-6 text-lg font-black uppercase tracking-widest text-gray-500">
+        <!-- Source Module Filter -->
+        <div class="flex flex-col gap-2">
+          <span>Source Module</span>
+          <select [(ngModel)]="selectedSourceModule" (change)="filterTransactions()" class="bg-[#EAECEF] border-none text-gray-800 font-bold px-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none appearance-none min-w-[160px] cursor-pointer">
+            <option value="">All Modules</option>
+            <option value="HR">HR</option>
+            <option value="Hospitality">Hospitality</option>
+            <option value="Expense">Expense</option>
+            <option value="Marketplace">Marketplace</option>
+          </select>
+        </div>
+        <!-- Type Filter -->
+        <div class="flex flex-col gap-2">
+          <span>Type</span>
+          <select class="bg-[#EAECEF] border-none text-gray-800 font-bold px-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none appearance-none min-w-[160px] cursor-pointer">
+            <option value="">All Types</option>
+            <option value="Salary">Salary</option>
+            <option value="Vendor">Vendor</option>
+            <option value="Loan">Loan</option>
+          </select>
+        </div>
+        <!-- Date Range -->
+        <div class="flex flex-col gap-2">
+          <span>Date Range</span>
+          <div class="relative">
+            <i class="pi pi-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" placeholder="Oct 01 - Oct 31" class="bg-[#EAECEF] border-none text-gray-800 font-bold pl-10 pr-4 py-2.5 rounded-lg focus:ring-0 focus:outline-none min-w-[190px] cursor-pointer">
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4 mt-3">
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-transparent border border-gray-200 text-customGreen font-bold rounded-lg hover:bg-white transition-all text-lg shadow-sm" style="color: #2E6276;">
+          <i class="pi pi-filter"></i> Advanced Filters
+        </button>
+        <button class="flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-lg bg-customGreen hover:bg-customGreenHover transition-all text-lg shadow-md">
+          <i class="pi pi-check-circle"></i> Bulk Approve
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Table Section ─────────────────────────────────── -->
+    <div class="bg-gray-100 border-x border-b border-gray-200 rounded-b-2xl overflow-hidden pb-4">
+      <div class="overflow-x-auto bg-[#EAECEF] rounded-lg mx-6 mt-4">
+        <table class="w-full text-lg">
+          <thead>
+            <tr class="bg-customGreen text-white border-b border-customGreenHover">
+              <th class="px-6 py-5 text-left w-12 shrink-0">
+                <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" class="w-4 h-4 rounded text-customGreen cursor-pointer border-gray-300 shadow-sm accent-customGreen">
+              </th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Application ID</th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Source Module</th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Type</th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Amount</th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Date Submitted</th>
+              <th class="px-6 py-5 text-left text-lg font-black uppercase tracking-widest whitespace-nowrap">Status</th>
+              <th class="px-6 py-5 text-center text-lg font-black uppercase tracking-widest whitespace-nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-300">
+            <tr *ngFor="let trx of filteredTransactions"
+                class="group hover:bg-[#F8F9FA] transition-colors cursor-pointer bg-white">
+              
+              <!-- Checkbox -->
+              <td class="px-6 py-5 whitespace-nowrap w-12" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedTransactions.has(trx.id)" (change)="toggleSelection(trx.id)" class="w-4 h-4 rounded text-customGreen cursor-pointer border-gray-300 shadow-sm accent-customGreen">
+              </td>
+
+              <!-- App ID -->
+              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
+                <p class="font-bold text-gray-900 text-lg">#APP-<br>{{ trx.transactionReference || (trx.id + 90000) }}</p>
+              </td>
+
+              <!-- Source Module -->
+              <td class="px-6 py-5" (click)="openBatchReview(trx)">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-lg font-bold uppercase tracking-wide"
+                      [ngClass]="getCategoryColor(trx.sourceModule)">
+                  <i class="pi text-lg font-bold" [ngClass]="{'pi-users': trx.sourceModule === 'HR', 'pi-home': trx.sourceModule === 'HOSPITALITY', 'pi-wrench': trx.sourceModule === 'EXPENSE', 'pi-box': trx.sourceModule === 'MARKETPLACE'}"></i>
+                  {{ trx.sourceModule }}
+                </span>
+              </td>
+
+              <!-- Type -->
+              <td class="px-6 py-5" (click)="openBatchReview(trx)">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-lg font-black uppercase tracking-wider bg-[#E5E7EB] text-gray-800 shadow-sm">
+                  {{ (trx.sourceModule === 'HR' ? 'SALARY' : (trx.sourceModule === 'EXPENSE' ? 'LOAN' : 'VENDOR')) }}
+                </span>
+              </td>
+
+              <!-- Amount -->
+              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
+                <p class="text-lg font-black text-gray-900 tracking-tight">₦{{ trx.amount | number: '1.2-2' }}</p>
+              </td>
+
+              <!-- Date Submitted -->
+              <td class="px-6 py-5 whitespace-nowrap" (click)="openBatchReview(trx)">
+                <p class="text-lg font-semibold text-gray-600">
+                   {{ trx.transactionDate | date:'MMM dd,' }}<br>
+                   {{ trx.transactionDate | date:'yyyy' }}
+                </p>
+              </td>
+
+              <!-- Status -->
+              <td class="px-6 py-5" (click)="openBatchReview(trx)">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-lg font-black text-center tracking-wide whitespace-nowrap"
+                      [ngClass]="trx.Status === 'APPROVED' ? 'bg-[#E3F2E1] text-[#2E7A3D]' : 
+                                (trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW' ? 'bg-[#E8EEFD] text-[#3451B2]' : 
+                                (trx.Status === 'DISBURSED' ? 'bg-[#E0F2FE] text-[#0369A1]' : 'bg-[#FADBD8] text-[#932724]'))">
+                  <span *ngIf="trx.Status === 'UNREVIEWED' || trx.Status === 'IN_REVIEW'">Awaiting<br>Review</span>
+                  <span *ngIf="trx.Status === 'APPROVED'">Approved</span>
+                  <span *ngIf="trx.Status === 'DISBURSED'">Disbursed</span>
+                  <span *ngIf="trx.Status === 'REJECTED'">Urgent<br>Review</span>
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-6 py-5 text-center" (click)="openBatchReview(trx); $event.stopPropagation()">
+                <button class="text-lg font-bold text-customGreen hover:text-customGreenHover transition-colors whitespace-nowrap leading-tight text-center tracking-wider">
+                  View<br>Details
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredTransactions.length === 0">
+              <td colspan="8" class="px-6 py-16 text-center bg-white rounded-b-lg">
+                <i class="pi pi-inbox text-4xl text-gray-300 block mb-3"></i>
+                <p class="font-semibold text-gray-500">No applications matching criteria</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Footer pagination -->
+      <div class="px-10 py-5 flex items-center justify-between w-full text-lg font-bold text-gray-500">
+         <span>Showing 1 to {{ filteredTransactions.length < 5 ? filteredTransactions.length : 5 }} of {{ allTransactions.length }} applications</span>
+         <div class="flex items-center gap-1.5">
+            <button class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center bg-transparent hover:bg-gray-200"><i class="pi pi-angle-left"></i></button>
+            <button class="w-8 h-8 rounded-md text-white flex items-center justify-center shadow-md border border-customGreenHover bg-customGreen">1</button>
+            <button class="w-8 h-8 rounded-md bg-transparent flex items-center justify-center hover:bg-gray-200 text-gray-700 font-bold">2</button>
+            <button class="w-8 h-8 rounded-md bg-transparent flex items-center justify-center hover:bg-gray-200 text-gray-700 font-bold">3</button>
+            <button class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center bg-transparent hover:bg-gray-200"><i class="pi pi-angle-right"></i></button>
+         </div>
+      </div>
+    </div>
+
+    <!-- ── Bottom Info Section (Chart & Audit) ────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10">
+       
+       <!-- Chart Card -->
+       <div class="lg:col-span-2 bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+          <div class="flex items-start justify-between mb-8">
+             <div>
+                <h3 class="text-xl font-bold text-gray-900 tracking-tight">Disbursements by Source</h3>
+                <p class="text-lg font-medium text-gray-500 mt-1">Distribution of funds allocated per module</p>
+             </div>
+             <button class="bg-[#E9EEF2] hover:bg-gray-200 text-gray-700 font-bold text-lg px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                Last 30 Days <i class="pi pi-angle-down"></i>
+             </button>
+          </div>
+          
+          <!-- ApexChart -->
+          <div class="mt-4 -ml-4">
+            <apx-chart
+              *ngIf="chartOptions"
+              [series]="chartOptions.series"
+              [chart]="chartOptions.chart"
+              [dataLabels]="chartOptions.dataLabels"
+              [plotOptions]="chartOptions.plotOptions"
+              [xaxis]="chartOptions.xaxis"
+              [yaxis]="chartOptions.yaxis"
+              [grid]="chartOptions.grid"
+              [fill]="chartOptions.fill"
+              [stroke]="chartOptions.stroke"
+              [colors]="chartOptions.colors"
+            ></apx-chart>
+          </div>
+       </div>
+
+       <!-- Audit Feed -->
+       <div class="bg-[#EAEFF4] rounded-2xl p-8 shadow-sm">
+          <div class="flex flex-row items-center justify-between mb-8">
+            <h3 class="text-lg font-bold tracking-widest uppercase text-gray-800">Audit Trail</h3>
+            <button class="text-gray-500 hover:text-gray-800"><i class="pi pi-ellipsis-v text-lg"></i></button>
+          </div>
+          
+          <div class="relative pl-6 space-y-8 border-l border-[#D1D9E1]">
+             
+             <!-- Item 1 -->
+             <div class="relative">
+                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#5252E8] ring-[4px] ring-[#EAEFF4]"></div>
+                <div>
+                   <p class="text-lg font-bold text-gray-900 leading-tight">Batch #829 Approved</p>
+                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">David Chen released $142,000 for Vendor Payments</p>
+                   <p class="text-lg font-semibold text-gray-400 mt-2">14 minutes ago</p>
+                </div>
+             </div>
+             
+             <!-- Item 2 -->
+             <div class="relative">
+                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#8A56D0] ring-[4px] ring-[#EAEFF4]"></div>
+                <div>
+                   <p class="text-lg font-bold text-gray-900 leading-tight">Payroll Scheduled</p>
+                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">Automated trigger for October Month-End cycle</p>
+                   <p class="text-lg font-semibold text-gray-400 mt-2">2 hours ago</p>
+                </div>
+             </div>
+             
+             <!-- Item 3 -->
+             <div class="relative">
+                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#D95B58] ring-[4px] ring-[#EAEFF4]"></div>
+                <div>
+                   <p class="text-lg font-bold text-gray-900 leading-tight">Flagged Disbursement</p>
+                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">System detected duplicate entry in Expenses module</p>
+                   <p class="text-lg font-semibold text-gray-400 mt-2">5 hours ago</p>
+                </div>
+             </div>
+
+             <!-- Item 4 -->
+             <div class="relative">
+                <div class="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#7F8B9B] ring-[4px] ring-[#EAEFF4]"></div>
+                <div>
+                   <p class="text-lg font-bold text-gray-900 leading-tight">New Entity Added</p>
+                   <p class="text-lg font-medium text-gray-500 mt-1 leading-snug">Sub-ledger created for West Coast Regional Office</p>
+                   <p class="text-lg font-semibold text-gray-400 mt-2">Yesterday</p>
+                </div>
+             </div>
+
+          </div>
+       </div>
+    </div>
+  </div>
+
+  <!-- Old Sidebar Overlay (Fallback) -->
+  <transaction-side-modal
+    *ngIf="isReviewModalOpen"
+    [transaction]="selectedSidebarTransaction"
+    (close)="closeSidebar()">
+  </transaction-side-modal>
+
+  <!-- Disbursement Batch Review Side Modal -->
+  <div *ngIf="isBatchReviewOpen && selectedTransaction" class="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-40 backdrop-blur-sm transition-opacity" (click)="closeBatchReview()">
+    <div class="w-full max-w-[55rem] bg-[#f8fbff] h-full shadow-2xl flex flex-col transform transition-transform border-l border-gray-200" (click)="$event.stopPropagation()" style="animation: slideInRight 0.3s ease-out;">
+      
+      <!-- Header -->
+      <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 shrink-0">
+        <div>
+          <div class="flex items-center gap-3 mb-1">
+            <i class="pi pi-briefcase text-gray-500 text-lg"></i>
+            <span class="text-gray-500 text-sm font-bold uppercase tracking-widest">BATCH REVIEW</span>
+          </div>
+          <h2 class="text-2xl font-black text-gray-900 leading-tight">Batch #APP-{{ selectedTransaction.transactionReference || (selectedTransaction.id + 90000) }}</h2>
+        </div>
+        <button (click)="closeBatchReview()" class="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-800 hover:bg-gray-50 transition-colors bg-white shadow-sm shrink-0">
+          <i class="pi pi-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Scrollable Content -->
+      <div class="flex-1 overflow-y-auto p-8 space-y-7">
+        
+        <!-- Status & Meta -->
+        <div class="flex flex-wrap items-center gap-3 text-gray-500 text-base font-medium">
+          <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm"
+                [ngClass]="getCategoryColor(selectedTransaction.sourceModule)">
+            {{ selectedTransaction.sourceModule }}
+          </span>
+          <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+          <span class="text-gray-700">Created by <strong>{{ selectedTransaction.createdBy }}</strong></span>
+          <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+          <div class="px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 shadow-sm border whitespace-nowrap text-xs bg-white"
+               [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'text-green-700 border-green-200' : (selectedTransaction.Status === 'DISBURSED' ? 'text-blue-700 border-blue-200' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'text-[#3451B2] border-blue-200' : 'text-red-700 border-red-200'))">
+            <i class="pi text-sm" [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'pi-check-circle' : (selectedTransaction.Status === 'DISBURSED' ? 'pi-send' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'pi-clock' : 'pi-ban'))"></i>
+            {{ selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'AWAITING REVIEW' : selectedTransaction.Status }}
+          </div>
+        </div>
+
+        <!-- 3 Info Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Total Amount -->
+          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center sm:col-span-2">
+            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-1">TOTAL AMOUNT</p>
+            <p class="text-4xl font-black text-gray-900 tracking-tight">₦{{ selectedTransaction.amount | number:'1.2-2' }}</p>
+            <div class="flex items-center gap-2 text-[#4051a6] font-bold text-sm mt-3 leading-tight">
+               <i class="pi pi-info-circle text-lg"></i> Funds Verified in Settlement A/C
+            </div>
+          </div>
+          
+          <!-- Line Items -->
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-center">
+            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-1">LINE ITEMS</p>
+            <p class="text-3xl font-black text-gray-900 tracking-tight">{{ selectedLineItems.length || 142 }}</p>
+          </div>
+          
+          <!-- Internal Approvals -->
+          <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col justify-center">
+            <p class="text-gray-400 font-bold text-xs tracking-widest uppercase mb-3">INTERNAL APPROVALS</p>
+            <div class="flex items-center gap-3">
+               <div class="flex -space-x-2">
+                 <div class="w-8 h-8 rounded-full bg-blue-900 border-2 border-white flex items-center justify-center text-white font-bold text-xs z-20">JD</div>
+                 <div class="w-8 h-8 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center text-white font-bold text-xs z-10">SC</div>
+               </div>
+               <p class="text-gray-600 font-bold text-sm">3 of 4 Req.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Table Wrapper -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="bg-[#EEF2F6] px-6 py-4 flex items-center justify-between border-b border-gray-200">
+            <h3 class="font-bold text-gray-800 text-lg tracking-tight">Line Items</h3>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-left whitespace-nowrap">
+              <thead>
+                <tr class="border-b border-gray-100 bg-gray-50/50">
+                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">RECIPIENT</th>
+                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs">DESTINATION ACCOUNT</th>
+                  <th class="px-6 py-3 font-bold text-white tracking-widest uppercase text-xs text-right">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr *ngFor="let item of selectedLineItems; let i = index" class="hover:bg-gray-50 transition-colors">
+                  <td class="px-6 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 font-black flex items-center justify-center text-sm shadow-inner">{{ item.recipient.substring(0,2).toUpperCase() }}</div>
+                      <div>
+                        <p class="font-black text-gray-900 text-base leading-tight">{{ item.recipient }}</p>
+                        <p class="text-xs text-gray-400 font-bold mt-0.5">{{ item.role }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-3">
+                    <p class="font-black text-gray-900 text-sm">{{ item.bank || 'Bank Name' }}</p>
+                    <p class="text-xs text-gray-400 font-mono font-bold">{{ item.account || '0000000000' }}</p>
+                  </td>
+                  <td class="px-6 py-3 font-black text-gray-900 text-right text-lg">₦{{ item.amount | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="py-4 flex justify-center bg-white border-t border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
+             <button class="text-[#4051a6] font-black text-xs tracking-widest uppercase">
+               VIEW ALL ITEMS <i class="pi pi-angle-down ml-1"></i>
+             </button>
+          </div>
+        </div>
+        
+        <!-- Approval Comments -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col relative">
+          <div class="flex gap-2 mb-4">
+            <div class="w-7 h-7 rounded-lg bg-[#EEF2F6] text-[#4051a6] flex items-center justify-center shrink-0">
+               <i class="pi pi-comments text-sm"></i>
+            </div>
+            <h3 class="font-bold text-gray-900 text-lg tracking-tight mt-0.5">Internal Notes</h3>
+          </div>
+          <textarea class="w-full bg-[#f8fbff] border border-blue-100 rounded-xl p-4 text-gray-800 font-medium min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all text-base resize-none shadow-inner" placeholder="Reason for approval or rejection..."></textarea>
+          <div class="flex items-center justify-between mt-4">
+            <button class="text-gray-400 hover:text-[#4051a6] font-bold flex items-center gap-2 transition-colors text-sm">
+              <i class="pi pi-paperclip text-lg"></i> Attach Document
+            </button>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Footer Button Area -->
+      <div class="px-8 py-5 bg-white border-t border-gray-200 flex flex-wrap sm:flex-nowrap justify-between gap-4 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
+         <div class="flex gap-3">
+            <button class="px-5 py-3.5 rounded-xl border-2 border-gray-100 bg-white text-[#4051a6] font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm text-base">
+              <i class="pi pi-download text-lg"></i>
+            </button>
+            <button class="px-5 py-3.5 rounded-xl border-2 border-[#FADBD8] bg-white text-[#C0392B] font-bold flex items-center gap-2 hover:bg-red-50 transition-colors shadow-sm text-base">
+              <i class="pi pi-ban text-lg"></i> Reject
+            </button>
+         </div>
+         <button *ngIf="selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW'" 
+                (click)="openApproveConfirm()"
+                class="px-8 py-3.5 rounded-xl text-white font-bold flex items-center gap-2 transition-all shadow-md active:scale-95 text-base w-full sm:w-auto justify-center bg-[#4051a6] hover:bg-[#32408c]">
+          <i class="pi pi-check-circle text-lg"></i> Approve Batch
+         </button>
+         <button *ngIf="selectedTransaction.Status === 'APPROVED'" (click)="proceedToPayment()" 
+                 class="px-8 py-3.5 rounded-xl text-white font-black flex items-center gap-3 transition-all shadow-md active:scale-95 text-base w-full sm:w-auto justify-center bg-customGreen hover:bg-customGreenHover">
+           Proceed to Payout <i class="pi pi-arrow-right text-lg"></i>
+         </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Approve Confirmation Modal -->
+  <div *ngIf="isApproveConfirmOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" style="animation: fadeIn 0.2s ease-out;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-transform" style="animation: scaleIn 0.2s ease-out;">
+      <div class="flex flex-col items-center text-center">
+        <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
+          <i class="pi pi-check-circle text-3xl text-green-500"></i>
+        </div>
+        <h3 class="text-2xl font-black text-gray-900 mb-2">Confirm Approval</h3>
+        <p class="text-gray-500 text-lg mb-8">Are you sure you want to approve Batch #APP-{{ selectedTransaction?.transactionReference || (selectedTransaction?.id ? selectedTransaction!.id + 90000 : '') }}? This will mark it as ready for payout.</p>
+        
+        <div class="flex w-full gap-3">
+          <button (click)="closeApproveConfirm()" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button (click)="confirmApproval()" class="flex-1 py-3 rounded-xl bg-customGreen text-white font-black hover:bg-customGreenHover transition-colors shadow-md">
+            Yes, Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+</style>
+
+
+<!-- ============================================================ -->
+<!-- PAYOUT EXECUTION COMPONENT (full-page takeover)             -->
+<!-- ============================================================ -->
+<div *ngIf="viewMode === 'EXECUTE' && selectedTransaction" class="min-h-screen bg-gray-50 font-sans flex flex-col"
+     style="animation: fadeIn 0.3s ease-out;">
+
+  <!-- ── Execution Top Bar ───────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center gap-5">
+    <button (click)="backToDashboard()"
+            class="w-12 h-12 rounded-2xl border-2 border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all shrink-0">
+      <i class="pi pi-arrow-left text-xl"></i>
+    </button>
+    <div>
+      <h1 class="text-2xl font-black text-gray-900 tracking-tight">Execute Payout</h1>
+      <p class="text-lg text-gray-400 font-semibold mt-0.5 font-mono">{{ selectedTransaction.transactionReference }}</p>
+    </div>
+
+    <!-- ── Big Step Tracker ─────────────────────────────── -->
+    <div class="ml-auto flex items-center gap-6">
+      <!-- Step 1 -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
+             [ngClass]="currentStep > 1 ? 'bg-green-500 text-white' : currentStep === 1 ? 'text-white' : 'bg-gray-100 text-gray-400'"
+             [ngStyle]="currentStep === 1 ? {'background-color': '#2E6276'} : {}">
+          <i *ngIf="currentStep > 1" class="pi pi-check"></i>
+          <span *ngIf="currentStep <= 1">1</span>
+        </div>
+        <span class="text-base font-bold hidden sm:block"
+              [ngClass]="currentStep >= 1 ? 'text-gray-800' : 'text-gray-300'">Review</span>
+      </div>
+      <div class="w-12 h-0.5 rounded-full" [ngClass]="currentStep > 1 ? 'bg-green-400' : 'bg-gray-200'"></div>
+      <!-- Step 2 -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
+             [ngClass]="currentStep > 2 ? 'bg-green-500 text-white' : currentStep === 2 ? 'text-white' : 'bg-gray-100 text-gray-400'"
+             [ngStyle]="currentStep === 2 ? {'background-color': '#2E6276'} : {}">
+          <i *ngIf="currentStep > 2" class="pi pi-check"></i>
+          <span *ngIf="currentStep <= 2">2</span>
+        </div>
+        <span class="text-base font-bold hidden sm:block"
+              [ngClass]="currentStep >= 2 ? 'text-gray-800' : 'text-gray-300'">Payment Method</span>
+      </div>
+      <div class="w-12 h-0.5 rounded-full" [ngClass]="currentStep > 2 ? 'bg-green-400' : 'bg-gray-200'"></div>
+      <!-- Step 3 -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full text-base font-black flex items-center justify-center transition-all"
+             [ngClass]="currentStep === 3 ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'">
+          <i *ngIf="currentStep === 3" class="pi pi-check"></i>
+          <span *ngIf="currentStep !== 3">3</span>
+        </div>
+        <span class="text-base font-bold hidden sm:block"
+              [ngClass]="currentStep === 3 ? 'text-gray-800' : 'text-gray-300'">Done</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Execution Body ───────────────────────────────────── -->
+  <div class="flex-1 px-8 py-10">
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- STEP 1: Review (Moved to Side Modal)                -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- Step 1 is now handled within the dashboard side modal. -->
+
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- STEP 2: Payment Method & Destination Account        -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 2" class="max-w-2xl mx-auto space-y-7" style="animation: fadeInUp 0.3s ease-out;">
+
+      <div>
+        <h3 class="text-2xl font-black text-gray-900">Payment Method</h3>
+        <p class="text-base text-gray-500 mt-1">Select one funding source for this payout.</p>
+      </div>
+
+      <!-- Source Cards (single-select radio) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div *ngFor="let acc of fundingAccounts"
+             (click)="selectedSourceId = acc.id"
+             class="rounded-2xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg active:scale-[0.98]"
+             [ngClass]="selectedSourceId === acc.id ? 'shadow-xl' : 'border-gray-100 bg-white'"
+             [ngStyle]="selectedSourceId === acc.id ? {'border-color': '#2E6276', 'background-color': 'rgba(46,98,118,0.04)'} : {}">
+
+          <!-- Top Row: icon + radio dot -->
+          <div class="flex items-start justify-between mb-5">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+                 [ngClass]="selectedSourceId === acc.id ? 'text-white' : 'bg-gray-100 text-gray-400'"
+                 [ngStyle]="selectedSourceId === acc.id ? {'background-color': '#2E6276'} : {}">
+              <i class="pi text-xl" [ngClass]="acc.type === 'BANK' ? 'pi-building' : 'pi-wallet'"></i>
+            </div>
+            <!-- Radio button -->
+            <div class="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all"
+                 [ngClass]="selectedSourceId !== acc.id ? 'border-gray-200' : 'text-white'"
+                 [ngStyle]="selectedSourceId === acc.id ? {'background-color': '#2E6276', 'border-color': '#2E6276'} : {}">
+              <div *ngIf="selectedSourceId === acc.id" class="w-3 h-3 bg-white rounded-full"></div>
+            </div>
+          </div>
+
+          <p class="text-lg font-black text-gray-900 leading-tight">{{ acc.name }}</p>
+          <p class="text-lg text-gray-400 font-semibold mt-1 mb-4">{{ acc.bankName }} · <span class="font-mono">{{ acc.number }}</span></p>
+          <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-lg font-bold uppercase tracking-wider"
+                  [ngClass]="acc.type === 'BANK' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'">
+              <i class="pi text-lg" [ngClass]="acc.type === 'BANK' ? 'pi-credit-card' : 'pi-tag'"></i>
+              {{ acc.type }}
+            </span>
+            <span class="text-base font-black text-gray-900">₦{{ acc.balance | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Destination Account Form -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-7 space-y-6">
+        <div>
+          <h4 class="text-lg font-black text-gray-900 mb-1">Destination Account</h4>
+          <p class="text-lg text-gray-400 font-medium">Enter the beneficiary's bank details for this payment.</p>
+        </div>
+
+        <div>
+          <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Bank Name</label>
+          <input type="text" [(ngModel)]="destBank" placeholder="e.g. Access Bank"
+                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-semibold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Account Number</label>
+            <input type="text" [(ngModel)]="destAccountNumber" placeholder="e.g. 0123456789" maxlength="10"
+                   class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-mono font-bold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all tracking-widest">
+          </div>
+          <div>
+            <label class="block text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Account Name</label>
+            <input type="text" [(ngModel)]="destAccountName" placeholder="e.g. John Smith"
+                   class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-5 py-4 text-base font-semibold text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all">
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Banner -->
+      <div class="p-5 rounded-2xl border flex gap-4 text-base font-medium"
+           style="background-color: rgba(46,98,118,0.05); border-color: rgba(46,98,118,0.15); color: #2E6276;">
+        <i class="pi pi-info-circle text-xl mt-0.5 shrink-0"></i>
+        <span>The selected account will be debited. Ensure the destination details are correct before proceeding — this action cannot be reversed.</span>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex gap-4">
+        <button (click)="prevStep()" class="flex-none w-16 py-5 border-2 border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center">
+          <i class="pi pi-arrow-left text-xl"></i>
+        </button>
+        <button (click)="confirmPayout()"
+                [disabled]="isProcessing || !selectedSourceId || !destAccountNumber || !destAccountName"
+                class="flex-1 py-5 text-white font-black rounded-2xl transition-all text-base shadow-xl flex items-center justify-center gap-3 disabled:opacity-40 active:scale-95"
+                style="background-color: #2E6276;">
+          <i *ngIf="isProcessing" class="pi pi-spinner pi-spin text-lg"></i>
+          <i *ngIf="!isProcessing" class="pi pi-lock text-lg"></i>
+          <span>{{ isProcessing ? 'Authorising Payout…' : 'Confirm & Authorise' }}</span>
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- STEP 3: Success                                     -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 3"
+         class="max-w-xl mx-auto flex flex-col items-center text-center py-16 space-y-8"
+         style="animation: scaleIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);">
+
+      <div class="w-32 h-32 rounded-full flex items-center justify-center shadow-2xl"
+           style="background: linear-gradient(135deg, #2EB270, #1a8a52); box-shadow: 0 24px 64px rgba(46,178,112,0.35);">
+        <i class="pi pi-check text-6xl text-white font-black"></i>
+      </div>
+
+      <div>
+        <h2 class="text-4xl font-black text-gray-900">Payout Authorised!</h2>
+        <p class="text-gray-500 mt-3 text-lg font-medium">The payment has been executed and the ledger updated.</p>
+      </div>
+
+      <!-- Receipt Card -->
+      <div class="w-full bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 text-left">
+        <div class="px-7 py-5 flex justify-between items-center">
+          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Reference</span>
+          <span class="text-base font-bold text-gray-900 font-mono">#PAY-{{ selectedTransaction.transactionReference }}</span>
+        </div>
+        <div class="px-7 py-5 flex justify-between items-center">
+          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Beneficiary</span>
+          <span class="text-base font-bold text-gray-900">{{ selectedTransaction.createdBy }}</span>
+        </div>
+        <div class="px-7 py-5 flex justify-between items-center">
+          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Destination</span>
+          <div class="text-right">
+            <p class="text-base font-bold text-gray-900">{{ destAccountName || '—' }}</p>
+            <p class="text-lg text-gray-400 font-mono">{{ destBank }} · {{ destAccountNumber }}</p>
+          </div>
+        </div>
+        <div class="px-7 py-5 flex justify-between items-center">
+          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Funded From</span>
+          <span class="text-base font-bold text-gray-900">{{ selectedFundingNames }}</span>
+        </div>
+        <div class="px-7 py-6 flex justify-between items-center">
+          <span class="text-lg font-bold text-gray-400 uppercase tracking-widest">Amount Disbursed</span>
+          <span class="text-2xl font-black" style="color:#2EB270;">₦{{ selectedTransaction.amount | number }} <span class="text-base font-bold opacity-60">NGN</span></span>
+        </div>
+      </div>
+
+      <button (click)="backToDashboard()"
+              class="w-full py-6 text-white font-black text-lg rounded-2xl shadow-2xl transition-all active:scale-95"
+              style="background: linear-gradient(135deg, #2E6276, #1a3d4f);">
+        Back to Dashboard
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  @keyframes fadeIn       { from{opacity:0}         to{opacity:1} }
+  @keyframes fadeInUp     { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scaleIn      { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+</style>
+

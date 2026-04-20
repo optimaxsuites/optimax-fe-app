@@ -1,0 +1,84 @@
+/* Standard Styles */
+.calendar-container { max-width: 500px; }
+.text-xs { font-size: 1rem; }
+.p-1 { padding: 4px; }
+.w-full { width: 100%; }
+
+/* Modal and Popup styles */
+.calendar-popup-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); display: flex;
+  justify-content: center; align-items: center; z-index: 1000;
+}
+.calendar-popup { background-color: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
+.calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.calendar-day div:hover { background-color: #f3f4f6; }
+
+/* Print Specific Styles */
+@media print {
+    /* Hide Everything by default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Hide sidebar, header, and buttons specifically */
+    app-sidebar, app-header, button, .no-print, nav, header, .sidebar {
+        display: none !important;
+    }
+
+    /* Make the print area visible */
+    #print-area, #printable-report, #print-area *, #printable-report * {
+        visibility: visible;
+    }
+
+    #print-area, #printable-report {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+        border: none;
+        background-color: white;
+    }
+
+    /* Fix grid layout for printing */
+    .grid { 
+        display: block !important; 
+        width: 100% !important;
+    }
+    .md\:grid-cols-4, .md\:grid-cols-2 { 
+        display: block !important; 
+        width: 100% !important;
+    }
+    
+    /* Ensure tables print properly */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: avoid;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+    }
+    
+    /* Print view specific alignment */
+    .print-view {
+        display: block !important;
+    }
+    
+    /* Remove colored backgrounds for cleaner print */
+    .bg-gray-50, .bg-blue-50, .bg-green-50, .bg-red-50 {
+        background-color: transparent !important;
+        border: 1px solid #eee;
+    }
+    
+    /* Fix spacing for print */
+    .print-content, .print-area {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+}

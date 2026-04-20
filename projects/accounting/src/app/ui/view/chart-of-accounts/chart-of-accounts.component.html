@@ -1,0 +1,346 @@
+<p-confirmDialog [style]="{width: '450px'}" [baseZIndex]="10000"
+  acceptButtonStyleClass="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium border-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm text-sm"
+  rejectButtonStyleClass="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm text-sm mr-3">
+</p-confirmDialog>
+<div class="min-h-screen bg-gray-50 p-6 md:p-8 lg:p-10">
+  <div class="w-full space-y-8">
+
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Chart of Accounts</h2>
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="px-5 py-3 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+              </path>
+            </svg>
+            <span>Run Report</span>
+          </button>
+          <button (click)="viewDeletedRecords()"
+            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+              </path>
+            </svg>
+            <span>Deleted Logs</span>
+          </button>
+          <button (click)="showAddAccountModal = true"
+            class="px-5 py-3 bg-customGreen hover:bg-customGreenHover text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Add Account</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Section -->
+    <section class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- Search and Pagination Header -->
+      <div class="p-8 border-b border-gray-200">
+        <div class="flex flex-col lg:flex-row justify-between gap-4">
+          <!-- Search Input -->
+          <div class="flex-1 max-w-md">
+            <label for="accountSearch"
+              class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">Search Accounts</label>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input id="accountSearch" type="text" (input)="applyFilter($event)"
+                placeholder="Search by code, name, or type..."
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-customBlue text-white">
+            <tr>
+              <th class="px-4 py-3 text-left">
+                <input type="checkbox" (change)="toggleSelectAll($event)"
+                  class="w-4 h-4 text-customBlue bg-white border-white rounded focus:ring-customBlue focus:ring-2" />
+              </th>
+              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Code</th>
+              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Name</th>
+              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Account Type
+              </th>
+              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Details</th>
+              <th class="px-8 py-4 text-right text-sm md:text-base font-semibold uppercase tracking-wide">Balance</th>
+              <th class="px-8 py-4 text-right text-sm md:text-base font-semibold uppercase tracking-wide">Bank Balance
+              </th>
+              <th class="px-8 py-4 text-center text-sm md:text-base font-semibold uppercase tracking-wide">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr *ngFor="let account of paginatedAccounts" class="transition-colors"
+              [class.bg-gray-50]="account.type === 'Header'" [class.hover:bg-blue-50]="account.type !== 'Header'">
+              <td class="px-4 py-4">
+                <input type="checkbox" [(ngModel)]="account.selected" (change)="onAccountSelectionChange()"
+                  class="w-4 h-4 text-customBlue bg-white border-gray-300 rounded focus:ring-customBlue focus:ring-2" />
+              </td>
+              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.code }}</td>
+              <td class="px-8 py-5 text-base md:text-lg font-medium text-gray-900">{{ account.name }}</td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold" [ngClass]="{
+                        'bg-blue-100 text-blue-800': account.type === 'Asset',
+                        'bg-red-100 text-red-800': account.type === 'Liability',
+                        'bg-green-100 text-green-800': account.type === 'Income',
+                        'bg-yellow-100 text-yellow-800': account.type === 'Expense',
+                        'bg-purple-100 text-purple-800': account.type === 'Equity',
+                        'bg-gray-200 text-gray-800': account.type === 'Header'
+                      }">
+                  {{ account.type }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ account.details || '-' }}</td>
+              <td class="px-6 py-4 text-sm font-semibold text-right text-gray-900">{{ account.balance |
+                currency:'NGN':'symbol-narrow' }}</td>
+              <td class="px-6 py-4 text-sm font-semibold text-right text-gray-900">{{ account.bankBalance |
+                currency:'NGN':'symbol-narrow' }}</td>
+              <td class="px-6 py-4 text-center">
+                <button (click)="viewRegister(account)"
+                  class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-medium transition-colors">
+                  View Register
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="paginatedAccounts.length === 0">
+              <td colspan="8" class="px-6 py-16 text-center">
+                <div class="flex flex-col items-center gap-3">
+                  <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                  </svg>
+                  <p class="text-gray-500 font-medium">No accounts found</p>
+                  <p class="text-sm text-gray-400">Try adjusting your search or add a new account</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer with Actions and Pagination -->
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <!-- Delete Button -->
+          <button (click)="deleteSelected()" [disabled]="getSelectedCount() === 0"
+            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+              </path>
+            </svg>
+            <span>Delete Selected ({{ getSelectedCount() }})</span>
+          </button>
+
+          <!-- Pagination -->
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-600">
+              Showing <span class="font-semibold">{{ getPageStart() }}</span> to <span class="font-semibold">{{
+                getPageEnd() }}</span> of <span class="font-semibold">{{ filteredAccounts.length }}</span>
+            </span>
+
+            <select [(ngModel)]="rows" (ngModelChange)="onRowsChange()"
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-customBlue focus:border-customBlue outline-none">
+              <option [value]="10">10 per page</option>
+              <option [value]="25">25 per page</option>
+              <option [value]="50">50 per page</option>
+            </select>
+
+            <div class="flex items-center gap-1">
+              <button (click)="previousPage()" [disabled]="first === 0"
+                class="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+              </button>
+
+              <span class="px-4 py-2 text-sm font-medium text-gray-700">
+                Page {{ getCurrentPage() }} of {{ getTotalPages() }}
+              </span>
+
+              <button (click)="nextPage()" [disabled]="first + rows >= filteredAccounts.length"
+                class="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Add Account Modal -->
+  <div *ngIf="showAddAccountModal"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    (click)="closeModalOnBackdrop($event)">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="text-xl font-bold text-gray-900">Add New Account</h3>
+        <button (click)="showAddAccountModal = false" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-6 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Code -->
+          <div>
+            <label for="code" class="text-sm font-semibold text-gray-700 mb-2 block">Account Code</label>
+            <input id="code" type="text" [(ngModel)]="newAccount.code" placeholder="Enter account code"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+          </div>
+
+          <!-- Name -->
+          <div>
+            <label for="name" class="text-sm font-semibold text-gray-700 mb-2 block">Account Name</label>
+            <input id="name" type="text" [(ngModel)]="newAccount.name" placeholder="Enter account name"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+          </div>
+
+          <!-- Type -->
+          <div class="md:col-span-2">
+            <label for="type" class="text-sm font-semibold text-gray-700 mb-2 block">Account Type</label>
+            <div class="relative">
+              <button (click)="toggleTypeDropdown()"
+                class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:border-customBlue transition-colors flex items-center justify-between text-sm font-medium text-gray-700">
+                <span>{{newAccount.type || 'Select an account type'}}</span>
+                <svg class="w-4 h-4 text-gray-400 transition-transform" [class.rotate-180]="showTypeDropdown"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+
+              <div *ngIf="showTypeDropdown"
+                class="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-1">
+                <button *ngFor="let type of accountTypes" (click)="selectType(type.value)"
+                  class="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors"
+                  [class.bg-customBlue]="newAccount.type === type.value"
+                  [class.text-white]="newAccount.type === type.value"
+                  [class.font-semibold]="newAccount.type === type.value">
+                  {{ type.label }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Register Balance -->
+          <div>
+            <label for="balance" class="text-sm font-semibold text-gray-700 mb-2 block">Opening Register Balance</label>
+            <input id="balance" type="number" [(ngModel)]="newAccount.balance" placeholder="0.00"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+          </div>
+
+          <!-- Bank Balance -->
+          <div>
+            <label for="bankBalance" class="text-sm font-semibold text-gray-700 mb-2 block">Opening Bank Balance</label>
+            <input id="bankBalance" type="number" [(ngModel)]="newAccount.bankBalance" placeholder="0.00"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+          </div>
+
+          <!-- Details -->
+          <div class="md:col-span-2">
+            <label for="details" class="text-sm font-semibold text-gray-700 mb-2 block">Details (Optional)</label>
+            <textarea id="details" [(ngModel)]="newAccount.details" placeholder="Enter account details..." rows="3"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 rounded-b-xl">
+        <button (click)="showAddAccountModal = false"
+          class="px-5 py-2.5 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
+          Cancel
+        </button>
+        <button (click)="addAccount()"
+          class="px-5 py-2.5 bg-customGreen hover:bg-customGreenHover text-white font-medium rounded-lg transition-colors shadow-sm">
+          Add Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Sidebar -->
+  <div *ngIf="showRegisterSidebar" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
+    (click)="showRegisterSidebar = false">
+    <div class="bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl" (click)="$event.stopPropagation()">
+      <!-- Sidebar Header -->
+      <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex items-center justify-between z-10">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">{{ selectedAccount?.name }} - Register</h3>
+          <p class="text-sm text-gray-600 mt-1">
+            <span class="font-medium">Current Balance:</span>
+            <span class="font-semibold text-customBlue">{{ selectedAccount?.balance | currency:'NGN':'symbol-narrow'
+              }}</span>
+          </p>
+        </div>
+        <button (click)="showRegisterSidebar = false" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Sidebar Content -->
+      <div class="p-6">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-100 border-b border-gray-200">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">Date</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">Description
+                </th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">Debit</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">Credit</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">Balance
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let tx of accountTransactions" class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 text-sm text-gray-700">{{ tx.date | date:'mediumDate' }}</td>
+                <td class="px-4 py-3 text-sm text-gray-900">{{ tx.description }}</td>
+                <td class="px-4 py-3 text-sm text-right font-semibold text-green-600">{{ tx.debit ? (tx.debit |
+                  currency:'NGN':'symbol-narrow') : '-' }}</td>
+                <td class="px-4 py-3 text-sm text-right font-semibold text-red-600">{{ tx.credit ? (tx.credit |
+                  currency:'NGN':'symbol-narrow') : '-' }}</td>
+                <td class="px-4 py-3 text-sm text-right font-bold text-gray-900">{{ tx.balance |
+                  currency:'NGN':'symbol-narrow' }}</td>
+              </tr>
+
+              <!-- Empty State -->
+              <tr *ngIf="accountTransactions.length === 0">
+                <td colspan="5" class="px-4 py-12 text-center">
+                  <p class="text-gray-500">No transactions found</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

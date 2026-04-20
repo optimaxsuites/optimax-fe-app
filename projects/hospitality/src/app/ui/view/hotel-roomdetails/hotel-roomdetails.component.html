@@ -1,0 +1,634 @@
+<div
+  *ngIf="
+    showDetails &&
+    room &&
+    detailedRoom &&
+    !openForm &&
+    !openMessage &&
+    !openBills &&
+    !openRoom &&
+    !openCheckinForm &&
+    !openNote &&
+    !openExtendStay
+  "
+  class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4"
+>
+  <div
+    class="bg-white/95 rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden animate-scaleIn border border-white/20 bg-gradient-to-br from-white to-gray-50"
+  >
+    <!-- Elegant Header -->
+    <div class="relative">
+      <div
+        class="h-40 bg-gradient-to-r from-blue-900 to-emerald-800 flex items-end p-6"
+      >
+        <div>
+          <h2 class="text-4xl font-bold text-white">
+            Room {{ detailedRoom.roomNumber }}
+          </h2>
+          <p class="text-xl mt-4 mb-6 text-white/90">
+            {{ getRoomTypeName(detailedRoom.roomType) }} -
+            {{ getRoomTypeDescription(detailedRoom.roomType) }}
+          </p>
+        </div>
+
+        <!-- Button Group (right-aligned) -->
+        <div class="absolute right-6 top-9 flex items-center gap-3">
+          <!-- Change Room Button (only shows when occupied) -->
+
+          <button
+            *ngIf="detailedRoom.roomStatus === 'OCCUPIED'"
+            (click)="navigateToChangeRoom()"
+            class="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-md transition-all duration-300 flex items-center gap-2 hover:from-teal-600 hover:to-emerald-700 active:scale-[0.98]"
+          >
+            <i class="pi pi-exchange text-lg"></i>
+            <span>Change Room</span>
+          </button>
+
+          <!-- Close Button -->
+          <button
+            (click)="closeModal()"
+            class="flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 text-white/90 hover:text-white bg-black/20 hover:bg-black/30 active:scale-95"
+          >
+            <i class="pi pi-times text-xl"></i>
+            <span class="sr-only">Close</span>
+            <span
+              class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              Close
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Badge -->
+      <div
+        [ngClass]="statusColors[detailedRoom.roomStatus]"
+        class="absolute -bottom-4 left-6 px-4 py-2 rounded-full shadow-md text-white font-bold flex items-center gap-2"
+      >
+        <i class="pi pi-circle-fill text-xs"></i>
+        {{ detailedRoom.roomStatus | titlecase }}
+      </div>
+    </div>
+
+    <!-- Dynamic Grid Layout -->
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-0 p-6 mt-8"
+      [ngClass]="{
+        'lg:grid-cols-5': isBooked || isOccupied,
+        'lg:grid-cols-4': !isBooked && !isOccupied
+      }"
+    >
+      <!-- Column 1: Room Information -->
+      <div class="p-6 border-r border-gray-200/50">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-blue-100/80 text-blue-600 p-3 rounded-xl">
+            <i class="pi pi-home text-2xl"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800">Room Information</h3>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Room Type
+            </p>
+            <p class="text-xl font-semibold text-gray-800 mt-1">
+              {{ getRoomTypeName(detailedRoom.roomType) }}
+            </p>
+          </div>
+
+          <div>
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Rate
+            </p>
+            <p class="text-xl font-semibold text-gray-800 mt-1">
+              {{
+                detailedRoom.rate | currency : "NGN" : "symbol" : "1.0-0"
+              }}/night
+            </p>
+          </div>
+
+          <div *ngIf="detailedRoom.floor">
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Floor
+            </p>
+            <p class="text-xl font-semibold text-gray-800 mt-1">
+              {{ detailedRoom.floor }}
+            </p>
+          </div>
+
+          <div *ngIf="detailedRoom.beds">
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Beds
+            </p>
+            <p class="text-xl font-semibold text-gray-800 mt-1">
+              {{ detailedRoom.beds }}
+              {{ detailedRoom.beds > 1 ? "beds" : "bed" }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Room Details -->
+      <div class="p-6 border-r border-gray-200/50">
+        <div class="space-y-4">
+          <div *ngIf="detailedRoom.maxOccupancy">
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Max Occupancy
+            </p>
+            <p class="text-xl font-semibold text-gray-800 mt-1">
+              {{ detailedRoom.maxOccupancy }} persons
+            </p>
+          </div>
+
+          <div *ngIf="detailedRoom.description">
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Description
+            </p>
+            <div class="bg-gray-100/50 p-3 rounded-lg">
+              <p class="text-gray-800 font-bold italic text-lg">
+                {{ detailedRoom.description }}
+              </p>
+            </div>
+          </div>
+
+          <div *ngIf="detailedRoom.amenities">
+            <p
+              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Amenities
+            </p>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span
+                *ngFor="let amenity of detailedRoom.amenities"
+                class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+              >
+                {{ amenity }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Guest/Status Info -->
+      <div class="p-6 border-r border-gray-200/50">
+        <ng-container *ngIf="isBooked || isOccupied; else statusInfo">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-green-100/80 text-green-600 p-3 rounded-xl">
+              <i class="pi pi-user text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">
+              {{ isBooked ? "Booking" : "Guest" }} Details
+            </h3>
+          </div>
+
+          <div class="space-y-4">
+            <div *ngIf="currentGuest">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Guest Name
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ getGuestFullName() }}
+              </p>
+            </div>
+
+            <div *ngIf="currentGuest">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Email
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1 break-all">
+                {{ currentGuest.email }}
+              </p>
+            </div>
+
+            <div *ngIf="currentGuest">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Phone
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ currentGuest.phone }}
+              </p>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #statusInfo>
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-amber-100/80 text-amber-600 p-3 rounded-xl">
+              <i class="pi pi-info-circle text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">Status Information</h3>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Status
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1 capitalize">
+                {{ detailedRoom.roomStatus }}
+              </p>
+            </div>
+
+            <div *ngIf="isAvailable">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Availability
+              </p>
+              <p class="text-xl font-semibold text-emerald-600 mt-1">
+                Ready for booking
+              </p>
+            </div>
+
+            <div *ngIf="isMaintenance">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Maintenance Notes
+              </p>
+              <div class="bg-gray-100/50 p-3 rounded-lg">
+                <p class="text-gray-800 italic font-bold text-lg">
+                  This room is currently under maintenance.
+                </p>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Column 4: Booking/Payment Info OR Maintenance Info -->
+      <div
+        class="p-6 border-r border-gray-200/50"
+        *ngIf="isBooked || isOccupied || isMaintenance"
+      >
+        <!-- For Booked or Occupied rooms -->
+        <ng-container *ngIf="isBooked || isOccupied">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-purple-100/80 text-purple-600 p-3 rounded-xl">
+              <i class="pi pi-calendar text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">Stay Details</h3>
+          </div>
+
+          <div class="space-y-4">
+            <div *ngIf="currentBooking">
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <p
+                    class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Check-in
+                  </p>
+                  <p class="text-xl font-semibold text-gray-800 mt-1">
+                    {{ currentBooking.checkinDate | date : "mediumDate" }}
+                  </p>
+                </div>
+                <div>
+                  <p
+                    class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Check-out
+                  </p>
+                  <p class="text-xl font-semibold text-gray-800 mt-1">
+                    {{ currentBooking.checkoutDate | date : "mediumDate" }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="currentBooking">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Guests
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ currentBooking.adults }} Adults
+                <span *ngIf="currentBooking.children" class="ml-2">
+                  • {{ currentBooking.children }} Children
+                </span>
+              </p>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- For Maintenance rooms -->
+        <ng-container *ngIf="isMaintenance">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-gray-100/80 text-gray-600 p-3 rounded-xl">
+              <i class="pi pi-wrench text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">
+              Maintenance Details
+            </h3>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Reason
+              </p>
+              <div class="bg-gray-100/50 p-3 rounded-lg">
+                <p class="text-gray-800 font-bold text-lg">
+                  {{
+                    maintenanceRequests[0].reasons ||
+                      "Room requires maintenance"
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <div *ngIf="maintenanceRequests[0].tasks.length">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Required Tasks
+              </p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span
+                  *ngFor="let task of maintenanceRequests[0].tasks"
+                  class="bg-gray-200 text-gray-800 px-2 py-1 rounded-full text-sm"
+                >
+                  {{ task }}
+                </span>
+              </div>
+            </div>
+
+            <div *ngIf="maintenanceRequests[0].startDate">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Started On
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ maintenanceRequests[0].startDate | date : "mediumDate" }}
+              </p>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Column 5: Payment & Requests -->
+      <div class="p-6" *ngIf="isBooked || isOccupied">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="bg-amber-100/80 text-amber-600 p-3 rounded-xl">
+            <i class="pi pi-credit-card text-2xl"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800">Payment & Requests</h3>
+        </div>
+
+        <div class="space-y-4">
+          <div *ngIf="currentBooking">
+            <p
+              class="text-xl font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Payment Info
+            </p>
+            <div class="space-y-1">
+              <p class="text-xl font-medium text-blue-600">
+                Total:
+                {{
+                  currentBooking.total | currency : "NGN" : "symbol" : "1.0-0"
+                }}
+              </p>
+              <p class="text-xl font-medium text-blue-600">
+                Paid:
+                {{
+                  currentBooking.payment | currency : "NGN" : "symbol" : "1.0-0"
+                }}
+              </p>
+              <p class="text-xl font-medium text-red-600">
+                Balance:
+                {{
+                  currentBooking.balanceAmount
+                    | currency : "NGN" : "symbol" : "1.0-0"
+                }}
+              </p>
+            </div>
+          </div>
+
+          <div *ngIf="currentBooking">
+            <p
+              class="text-xl font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Special Requests
+            </p>
+            <div class="bg-yellow-100/50 p-4 rounded-lg">
+              <p class="text-gray-700 italic text-lg">
+                "{{ currentBooking.specialRequests }}"
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="bg-gray-100/50 border-t border-gray-200/50 p-6">
+      <div class="flex flex-wrap justify-center gap-4">
+        <!-- Dirty Room Actions -->
+        <ng-container *ngIf="isDirty">
+          <button
+            (click)="onCompleteCleaning()"
+            class="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-green-700 hover:to-emerald-600"
+          >
+            <i class="pi pi-check"></i>
+            Mark as Cleaned
+          </button>
+        </ng-container>
+
+        <!-- Available Room Actions -->
+        <ng-container *ngIf="isAvailable">
+          <button
+            (click)="showBookingForm = true"
+            class="bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-emerald-700 hover:to-green-600"
+          >
+            <i class="pi pi-calendar-plus"></i>
+            Book Room
+          </button>
+
+          <button
+            (click)="openNote = true"
+            class="bg-gradient-to-r from-gray-600 to-slate-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-gray-700 hover:to-slate-600"
+          >
+            <i class="pi pi-wrench"></i>
+            Start Maintenance
+          </button>
+        </ng-container>
+
+        <!-- Booked Room Actions -->
+        <ng-container *ngIf="isBooked">
+          <button
+            (click)="navigateTocheck()"
+            class="bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-600"
+          >
+            <i class="pi pi-sign-in"></i>
+            Check-in Guest
+          </button>
+
+          <button
+            *ngIf="isBooked"
+            (click)="onCancelBooking()"
+            class="bg-gradient-to-r from-amber-600 to-orange-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-amber-700 hover:to-orange-600"
+          >
+            <i class="pi pi-times"></i>
+            Cancel Booking
+          </button>
+        </ng-container>
+
+        <!-- Occupied Room Actions -->
+        <ng-container *ngIf="isOccupied">
+          <button
+            (click)="navigateToMessage()"
+            class="bg-gradient-to-r from-red-600 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-red-700 hover:to-red-600"
+          >
+            <i class="pi pi-sign-out"></i>
+            Check-out Guest
+          </button>
+
+          <button
+            (click)="navigateToExtend()"
+            class="bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-600"
+          >
+            <i class="pi pi-clock"></i>
+            Extend Stay
+          </button>
+
+          <button
+            (click)="navigateToBills()"
+            class="bg-gradient-to-r from-green-600 to-green-800 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-green-700 hover:to-green-600"
+          >
+            <i class="pi pi-plus"></i>
+            Add Charges
+          </button> </ng-container
+        ><ng-container *ngIf="isMaintenance">
+          <button
+            (click)="onCompleteMaintenance()"
+            class="bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-600"
+          >
+            <i class="pi pi-check"></i>
+            Complete Maintenance
+          </button>
+
+          <button
+            (click)="openNote = true"
+            class="bg-gradient-to-r from-gray-600 to-slate-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-gray-700 hover:to-slate-600"
+          >
+            <i class="pi pi-pencil"></i>
+            Add Notes or View Notes
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Form Modal (single overlay) -->
+<div
+  *ngIf="showBookingForm && detailedRoom"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 max-h-[90vh] overflow-y-auto"
+>
+  <div
+    class="p-0 bg-transparent rounded-2xl w-full max-w-2xl mx-auto flex items-center justify-center"
+  >
+    <div class="w-full">
+      <app-hotel-form
+        [selectedRooms]="[detailedRoom]"
+        (closeForm)="closeBookingForm()"
+        (bookingComplete)="onBookingComplete($event)"
+      ></app-hotel-form>
+    </div>
+  </div>
+</div>
+
+<!-- <div *ngIf="openCheckinForm">
+  <app-hotel-checkinform
+    [selectedRoom]="selectedRoom!"
+    (checkinComplete)="onCheckinComplete($event)"
+    (back)="navigateTocheck()"
+  >
+  </app-hotel-checkinform>
+</div>  -->
+
+<!-- <div *ngIf="openMessage">
+  <app-hotel-message
+    [room]="detailedRoom!"
+    [showCheckout]="true"
+    (closeCheckout)="navigateToMessage()"
+    (checkoutComplete)="onCheckoutComplete($event)"
+  >
+  </app-hotel-message>
+</div> -->
+
+<div *ngIf="openBills">
+  <app-hotel-bills (back)="navigateToBills()"></app-hotel-bills>
+</div>
+
+<div *ngIf="openRoom">
+  <app-hotel-changeroom
+    [currentRoom]="(detailedRoom || room)!"
+    (back)="navigateToChangeRoom()"
+    (onChangeRoom)="handleRoomChange($event)"
+  ></app-hotel-changeroom>
+</div>
+
+<div *ngIf="openNote && detailedRoom">
+  <app-hotel-maintenancenote
+    [room]="{
+      id: detailedRoom.id,
+      number: detailedRoom.roomNumber,
+      type: getRoomTypeName(detailedRoom.roomType),
+      status: detailedRoom.roomStatus,
+      rate: detailedRoom.rate
+    }"
+    [maintenanceRequests]="maintenanceRequests"
+    (back)="openNote = false"
+    (maintenanceComplete)="onCompleteMaintenance()"
+  ></app-hotel-maintenancenote>
+</div>
+
+<!-- parent.component.html update for the dialog -->
+<!-- <p-dialog
+  [(visible)]="openExtendStay"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '700px', maxHeight: '90vh' }"
+  [baseZIndex]="1000"
+  styleClass="custom-dialog p-0"
+  [showHeader]="false"
+  contentStyleClass="p-0 flex flex-column"
+>
+  <app-hotel-extendstay
+    *ngIf="(detailedRoom || selectedRoom) !== null"
+    [selectedRoom]="(detailedRoom || selectedRoom)!"
+    (stayExtended)="onStayExtended($event)"
+    (back)="navigateToExtend()"
+    class="flex flex-column h-full"
+  >
+  </app-hotel-extendstay>
+</p-dialog> -->
+
+<p-toast position="top-right"></p-toast>

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "ERP-HR": {
+    "ERP-FE": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -24,51 +24,57 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/erp-hr",
+            
+            "allowedCommonJsDependencies": [
+              "apexcharts",
+              "@canvasjs/angular-charts",
+              "@canvasjs/charts"
+            ],
+            "outputPath": "dist/erp-fe",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              },
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
-              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "@angular/material/prebuilt-themes/purple-green.css",
               "src/styles.scss",
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "node_modules/ngx-toastr/toastr.css",
               "node_modules/primeng/resources/themes/saga-blue/theme.css",
               "node_modules/primeng/resources/primeng.min.css",
-              "node_modules/primeicons/primeicons.css",
-              "node_modules/leaflet/dist/leaflet.css"
+              "node_modules/primeicons/primeicons.css"
+
             ],
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
-              "node_modules/apexcharts/dist/apexcharts.min.js",
-              "node_modules/leaflet/dist/leaflet.js"
+              "node_modules/apexcharts/dist/apexcharts.min.js"
             ]
           },
           "configurations": {
-            "groupion": {
+            "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "15mb",
+                  "maximumError": "20mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kB",
-                  "maximumError": "4kB"
+                  "maximumWarning": "5mb",
+                  "maximumError": "10mb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -76,36 +82,49 @@
               "sourceMap": true
             }
           },
-          "defaultConfiguration": "groupion"
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "groupion": {
-              "buildTarget": "ERP-HR:build:groupion"
+            "production": {
+              "buildTarget": "ERP-FE:build:production"
             },
             "development": {
-              "buildTarget": "ERP-HR:build:development"
+              "buildTarget": "ERP-FE:build:development"
             }
           },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n"
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "buildTarget": "ERP-FE:build"
+          }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
+              "src/favicon.ico",
+              "src/assets",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest"
             ],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "@angular/material/prebuilt-themes/purple-green.css",
+              "src/styles.scss",
+                "node_modules/@fullcalendar/core/main.css",
+              "node_modules/@fullcalendar/daygrid/main.css"
+            ],
             "scripts": []
           }
         }
@@ -116,3 +135,5 @@
     "analytics": false
   }
 }
+
+

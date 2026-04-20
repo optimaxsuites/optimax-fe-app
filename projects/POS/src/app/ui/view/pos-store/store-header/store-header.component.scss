@@ -1,0 +1,93 @@
+// button {
+//   /* Variables */
+//   --button_radius: 0.75em;
+//   --button_color: #47e797;
+//   --button_outline_color: #05572e;
+//   font-size: 17px;
+//   font-weight: bold;
+//   border: none;
+//   cursor: pointer;
+//   border-radius: var(--button_radius);
+//   background: var(--button_outline_color);
+// }
+
+// .button_top {
+//   display: block;
+//   box-sizing: border-box;
+//   border: 2px solid var(--button_outline_color);
+//   border-radius: var(--button_radius);
+//   padding: 0.75em 1.5em;
+//   background: var(--button_color);
+//   color: var(--button_outline_color);
+//   transform: translateY(-0.2em);
+//   transition: transform 0.1s ease;
+// }
+
+// button:hover .button_top {
+//   /* Pull the button upwards when hovered */
+//   transform: translateY(-0.33em);
+// }
+
+// button:active .button_top {
+//   /* Push the button downwards when pressed */
+//   transform: translateY(0);
+// }
+.category-filter {
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%236B7280' d='M2 0L0 2h4zm0 5L0 3h4z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 0.75rem;
+  }
+  
+  select:focus {
+    border-color: #3B82F6;
+    ring: 2px;
+    ring-color: #3B82F6;
+  }
+}
+
+.powered-by {
+  color: #6B7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  
+  // Optional: Add a subtle background or border
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: #f9fafb;
+}
+
+// In your store-header.component.scss
+.business-name {
+  color: #10B981; // Your custom green color
+  font-weight: 700;
+  font-size: 1.5rem; // text-2xl equivalent
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+  
+  &:hover {
+    color: #059669; // Darker shade for hover
+  }
+}
+
+// For mobile
+.business-name-mobile {
+  color: #10B981;
+  font-weight: 700;
+  font-size: 1.25rem; // text-xl equivalent
+  cursor: pointer;
+}
+
+// Logo styling
+.store-logo {
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}

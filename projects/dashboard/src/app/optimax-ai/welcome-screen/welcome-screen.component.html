@@ -1,0 +1,65 @@
+<div class="flex-1 flex flex-col overflow-hidden bg-[#f0f4f7]">
+
+  <!-- Top bar -->
+  <div class="flex items-center justify-between px-6 py-3 border-b border-[#e2e8ed] bg-white shrink-0">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-[#eaf2f6] border border-[#2e6276]/20 flex items-center justify-center text-[#2e6276]">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+        </svg>
+      </div>
+      <span class="text-[12.5px] font-semibold text-[#2e4a5a]">OptimaXAI ERP Assistant</span>
+    </div>
+    <!-- Tone switcher -->
+    <div class="flex items-center gap-0 bg-[#f0f4f7] border border-[#e2e8ed] rounded-lg p-0.5">
+      <button (click)="toneChanged.emit('business')"
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border-0"
+        [ngClass]="tone === 'business' ? 'bg-white text-[#2e6276] shadow-sm' : 'bg-transparent text-[#a0b0bc]'">
+        Business
+      </button>
+      <button (click)="toneChanged.emit('casual')"
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border-0"
+        [ngClass]="tone === 'casual' ? 'bg-white text-[#2e6276] shadow-sm' : 'bg-transparent text-[#a0b0bc]'">
+        Casual
+      </button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="flex-1 flex flex-col items-center justify-center px-8 pb-6 overflow-y-auto">
+    <h1 class="text-[20px] font-bold text-[#1a2733] tracking-tight mb-1">How can I assist you today?</h1>
+    <p class="text-[12.5px] text-[#6b8898] mb-7 text-center max-w-md">
+      <span *ngIf="tone === 'business'">Your intelligent ERP assistant for HR, Accounting, POS, and Expense management.</span>
+      <span *ngIf="tone === 'casual'">Hey! Ask me anything about your business — payroll, sales, expenses, you name it</span>
+    </p>
+
+    <!-- Quick action cards -->
+    <div class="grid grid-cols-3 gap-2.5 w-full max-w-[640px] mb-7">
+      <button *ngFor="let action of quickActions"
+        (click)="actionSelected.emit(action)"
+        class="flex flex-col gap-2 px-4 py-3 rounded-xl border border-[#e2e8ed] bg-white text-left cursor-pointer transition-all hover:border-[#2e6276]/40 hover:shadow-[0_2px_12px_rgba(46,98,118,0.08)]">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-md bg-[#eaf2f6] border border-[#2e6276]/15 flex items-center justify-center text-[#2e6276]"
+            [innerHTML]="action.iconSvg"></div>
+          <span class="text-[11px] font-semibold text-[#2e4a5a]">{{ action.title }}</span>
+        </div>
+        <span class="text-[11px] text-[#a0b0bc] leading-relaxed">{{ action.description }}</span>
+      </button>
+    </div>
+
+    <!-- Welcome input — reuses <app-chat-input> -->
+    <div class="w-full max-w-[640px]">
+      <app-chat-input
+        [placeholder]="placeholder"
+        [tone]="tone"
+        [responseFormat]="responseFormat"
+        [formatOptions]="formatOptions"
+        (messageSent)="messageSent.emit($event)"
+        (toneChanged)="toneChanged.emit($event)"
+        (formatChanged)="formatChanged.emit($event)">
+      </app-chat-input>
+    </div>
+  </div>
+
+</div>
