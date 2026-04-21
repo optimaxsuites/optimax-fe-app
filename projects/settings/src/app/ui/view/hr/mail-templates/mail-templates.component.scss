@@ -302,21 +302,32 @@
 
 .subject-input-wrap {
   flex: 1;
+  min-width: 0;
 }
 
 .subject-input {
   width: 100%;
-  height: 38px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 8px 14px;
   font-size: 13px;
   color: #2E6276;
   background: transparent;
   border: none;
   outline: none;
   box-sizing: border-box;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: text;
 
-  &::placeholder { color: #9ca3af; }
   &:focus { background: #fafafa; }
+
+  &:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+  }
 }
 
 // ─── Placeholder Bar ──────────────────────────────────────────────────────────
@@ -515,4 +526,8 @@
   user-select: none; // Prevent text highlighting inside
   cursor: default;
   display: inline-block;
+}
+
+::ng-deep .subject-input .editor-placeholder-token {
+  vertical-align: middle;
 }

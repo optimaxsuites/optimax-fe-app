@@ -82,23 +82,7 @@
       </div>
     </div>
 
-    <!-- Subject Line -->
-    <div class="subject-row">
-      <label class="subject-label">Subject</label>
-      <div class="subject-input-wrap">
-       <input
-            type="text"
-            class="subject-input"
-            [(ngModel)]="selectedTemplate.subject"
-            placeholder="Email subject line..."
-            #subjectInput
-            (focus)="activeField = 'subject'; activeInputRef = subjectInput"
-            (click)="activeField = 'subject'; activeInputRef = subjectInput; handleSubjectClick($event)"
-            (drop)="onSubjectDrop($event)"
-            (dragover)="$event.preventDefault()" 
-            />
-      </div>
-    </div>
+  
 
     <!-- Placeholder Chips -->
     <div class="placeholder-bar">
@@ -115,6 +99,29 @@
           <i class="fas fa-grip-vertical drag-icon"></i>
           {{ field.label }}
         </div>
+      </div>
+    </div>
+
+      <!-- Subject Line -->
+    <div class="subject-row">
+      <label class="subject-label">Subject</label>
+      <div class="subject-input-wrap">
+        <div
+          #subjectEditor
+          class="subject-input"
+          contenteditable="true"
+          spellcheck="false"
+          data-placeholder="Email subject line..."
+          (focus)="onSubjectEditorFocus()"
+          (click)="onSubjectEditorClick($event)"
+          (keydown)="onSubjectEditorKeydown($event)"
+          (keyup)="onSubjectEditorKeyup()"
+          (mouseup)="onSubjectEditorMouseup()"
+          (input)="onSubjectEditorInput()"
+          (paste)="onSubjectEditorPaste($event)"
+          (drop)="onSubjectDrop($event)"
+          (dragover)="onSubjectDragOver($event)"
+        ></div>
       </div>
     </div>
 

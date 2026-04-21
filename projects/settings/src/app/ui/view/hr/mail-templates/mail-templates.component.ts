@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import Quill from 'quill';
@@ -42,6 +42,11 @@ Quill.register(PlaceholderBlot);
   styleUrl: './mail-templates.component.scss'
 })
 export class MailTemplatesComponent {
+  @ViewChild('subjectEditor')
+  set subjectEditor(element: ElementRef<HTMLElement> | undefined) {
+    this.subjectEditorRef = element ?? null;
+    this.syncSubjectEditorFromModel();
+  }
 
  
 // ─── Placeholder Fields ────────────────────────────────────────────────────
@@ -94,10 +99,12 @@ export class MailTemplatesComponent {
   // Quill editor instance reference
   private quillEditor: any = null;
   private quillRange: any = null;
+  private subjectEditorRef: ElementRef<HTMLElement> | null = null;
+  private subjectRange: Range | null = null;
+  private syncingSubjectEditor = false;
  
   // For subject field drop
   activeField: 'subject' | 'body' = 'body';
-  activeInputRef: HTMLInputElement | null = null;
  
   constructor(
     private confirmationService: ConfirmationService,
@@ -116,6 +123,8 @@ export class MailTemplatesComponent {
     this.selectedTemplate = { ...tpl };
     this.showPreview = false;
     this.activeField = 'body';
+    this.subjectRange = null;
+    setTimeout(() => this.syncSubjectEditorFromModel());
   }
  
   filterTemplates(): void {
@@ -240,55 +249,76 @@ export class MailTemplatesComponent {
   onDragStart(event: DragEvent, field: PlaceholderField): void {
     event.dataTransfer?.setData('text/plain', field.key);
   }
+
+  onSubjectDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.activeField = 'subject';
+  }
+
+  onSubjectEditorFocus(): void {
+    this.activeField = 'subject';
+    this.captureSubjectSelection();
+  }
+
+  onSubjectEditorClick(event: MouseEvent): void {
+    this.activeField = 'subject';
+
+    const target = event.target as HTMLElement | null;
+    if (this.isSubjectPlaceholderNode(target)) {
+      this.placeCaretAfterNode(target);
+      return;
+    }
+
+    this.captureSubjectSelection();
+  }
+
+  onSubjectEditorKeydown(event: KeyboardEvent): void {
+    this.activeField = 'subject';
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  }
+
+  onSubjectEditorKeyup(): void {
+    this.captureSubjectSelection();
+  }
+
+  onSubjectEditorMouseup(): void {
+    this.captureSubjectSelection();
+  }
+
+  onSubjectEditorInput(): void {
+    if (this.syncingSubjectEditor) return;
+
+    this.updateSubjectModelFromEditor();
+    this.captureSubjectSelection();
+  }
+
+  onSubjectEditorPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+
+    const text = event.clipboardData?.getData('text/plain');
+    if (!text) return;
+
+    this.insertTextIntoSubjectEditor(text.replace(/[\r\n]+/g, ' '));
+  }
  
   // ─── Insert Placeholder ───────────────────────────────────────────────────
  
   insertPlaceholder(field: PlaceholderField): void {
-    const token = `{{${field.key}}}`;
+    if (!this.selectedTemplate) return;
 
-    // 1. Handle Subject
-    if (this.activeField === 'subject' && this.activeInputRef) {
-      const el = this.activeInputRef;
-      const start = el.selectionStart ?? el.value.length;
-      const end = el.selectionEnd ?? el.value.length;
-      
-      this.selectedTemplate!.subject = 
-        el.value.slice(0, start) + token + el.value.slice(end);
-      
-      // Refocus and place cursor after the new token
-      setTimeout(() => {
-        el.focus();
-        el.setSelectionRange(start + token.length, start + token.length);
-      });
+    if (this.activeField === 'subject') {
+      this.insertPlaceholderIntoSubjectEditor(field.key);
       return;
     }
 
-    // 2. Default to Body (Quill)
     if (this.quillEditor) {
       const range = this.quillRange ?? this.quillEditor.getSelection(true) ?? { index: this.quillEditor.getLength(), length: 0 };
       this.insertAtQuillCursor(range, field.key);
     }
   }
-
-  handleSubjectClick(event: MouseEvent): void {
-  const el = event.target as HTMLInputElement;
-  const pos = el.selectionStart || 0;
-  const text = el.value;
-
-  const regex = /\{\{\w+\}\}/g;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    const start = match.index;
-    const end = regex.lastIndex;
-
-    // If cursor lands inside {{key}}, select the whole thing
-    if (pos > start && pos < end) {
-      el.setSelectionRange(start, end);
-      break;
-    }
-  }
-}
  
   private insertAtQuillCursor(range: any, key: string): void {
   const token = `{{${key}}}`;
@@ -298,10 +328,7 @@ export class MailTemplatesComponent {
   this.quillEditor.insertEmbed(index, 'placeholder', token, Quill.sources.USER);
   this.quillEditor.setSelection(index + 1, Quill.sources.SILENT);
 }
- setActiveField(field: 'subject' | 'body', ref: HTMLInputElement | null = null) {
-  this.activeField = field;
-  if (ref) this.activeInputRef = ref;
-}
+
   // ─── Preview ──────────────────────────────────────────────────────────────
  
   togglePreview(): void {
@@ -416,34 +443,228 @@ This offer is valid until: {{offerExpiryDate}}</p>
   }
 
   onSubjectDrop(event: DragEvent): void {
-  event.preventDefault();
-  const key = event.dataTransfer?.getData('text/plain');
-  if (!key || !this.selectedTemplate) return;
+    event.preventDefault();
 
-  const token = `{{${key}}}`;
-  const el = event.target as HTMLInputElement;
-  
-  // Find where the user dropped the text
-  const dropPos = this.getCursorPositionAtDrop(el, event);
-  
-  const currentSubject = this.selectedTemplate.subject || '';
-  this.selectedTemplate.subject = 
-    currentSubject.slice(0, dropPos) + token + currentSubject.slice(dropPos);
+    const key = event.dataTransfer?.getData('text/plain');
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!key || !this.selectedTemplate || !editor) return;
 
-  // Maintain focus and set cursor after the new token
-  setTimeout(() => {
-    el.focus();
-    el.setSelectionRange(dropPos + token.length, dropPos + token.length);
-  });
-}
+    this.activeField = 'subject';
+    editor.focus();
 
-// Helper to determine character index from drop coordinates
-private getCursorPositionAtDrop(el: HTMLInputElement, event: DragEvent): number {
-  // If the browser supports caretPositionFromPoint (modern standard)
-  if (document.caretRangeFromPoint) {
-    const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-    return range?.startOffset ?? el.value.length;
+    const range = this.getSubjectRangeFromPoint(event.clientX, event.clientY);
+    if (range) {
+      this.applySubjectRange(range);
+    } else {
+      this.placeCaretAtSubjectEnd();
+    }
+
+    this.insertPlaceholderIntoSubjectEditor(key);
   }
-  return el.value.length; // Fallback to end of string
-}
+
+  private insertPlaceholderIntoSubjectEditor(key: string): void {
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!editor || !this.selectedTemplate) return;
+
+    editor.focus();
+
+    const range = this.getStoredSubjectRange() ?? this.createCollapsedRangeAtEnd(editor);
+    const tokenNode = this.createSubjectPlaceholderNode(key);
+
+    range.deleteContents();
+    range.insertNode(tokenNode);
+    this.placeCaretAfterNode(tokenNode);
+    this.updateSubjectModelFromEditor();
+  }
+
+  private insertTextIntoSubjectEditor(text: string): void {
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!editor || !this.selectedTemplate) return;
+
+    editor.focus();
+
+    const range = this.getStoredSubjectRange() ?? this.createCollapsedRangeAtEnd(editor);
+    const textNode = document.createTextNode(text);
+
+    range.deleteContents();
+    range.insertNode(textNode);
+    this.placeCaretAfterNode(textNode);
+    this.updateSubjectModelFromEditor();
+  }
+
+  private syncSubjectEditorFromModel(): void {
+    const editor = this.subjectEditorRef?.nativeElement;
+    const subject = this.selectedTemplate?.subject ?? '';
+    if (!editor) return;
+
+    if (this.serializeSubjectContent(editor) === subject && editor.childNodes.length > 0) {
+      return;
+    }
+
+    this.syncingSubjectEditor = true;
+    editor.innerHTML = '';
+
+    const regex = /\{\{(\w+)\}\}/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(subject)) !== null) {
+      if (match.index > lastIndex) {
+        editor.appendChild(document.createTextNode(subject.slice(lastIndex, match.index)));
+      }
+
+      editor.appendChild(this.createSubjectPlaceholderNode(match[1]));
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < subject.length) {
+      editor.appendChild(document.createTextNode(subject.slice(lastIndex)));
+    }
+
+    this.syncingSubjectEditor = false;
+  }
+
+  private createSubjectPlaceholderNode(key: string): HTMLSpanElement {
+    const token = `{{${key}}}`;
+    const node = document.createElement('span');
+    node.className = 'editor-placeholder-token subject-placeholder-token';
+    node.setAttribute('contenteditable', 'false');
+    node.dataset['token'] = token;
+    node.dataset['key'] = key;
+    node.textContent = token;
+    return node;
+  }
+
+  private updateSubjectModelFromEditor(): void {
+    if (!this.selectedTemplate || !this.subjectEditorRef) return;
+    this.selectedTemplate.subject = this.serializeSubjectContent(this.subjectEditorRef.nativeElement);
+  }
+
+  private serializeSubjectContent(root: Node): string {
+    let value = '';
+
+    root.childNodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        value += node.textContent ?? '';
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+
+      const element = node as HTMLElement;
+      if (this.isSubjectPlaceholderNode(element)) {
+        value += element.dataset['token'] ?? element.textContent ?? '';
+        return;
+      }
+
+      value += this.serializeSubjectContent(element);
+    });
+
+    return value.replace(/\u00a0/g, ' ');
+  }
+
+  private captureSubjectSelection(): void {
+    const editor = this.subjectEditorRef?.nativeElement;
+    const selection = window.getSelection();
+    if (!editor || !selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (!this.isRangeInsideSubjectEditor(range, editor)) return;
+
+    this.subjectRange = range.cloneRange();
+  }
+
+  private getStoredSubjectRange(): Range | null {
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!editor) return null;
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const liveRange = selection.getRangeAt(0);
+      if (this.isRangeInsideSubjectEditor(liveRange, editor)) {
+        this.subjectRange = liveRange.cloneRange();
+        return liveRange.cloneRange();
+      }
+    }
+
+    if (this.subjectRange && this.isRangeInsideSubjectEditor(this.subjectRange, editor)) {
+      return this.subjectRange.cloneRange();
+    }
+
+    return null;
+  }
+
+  private getSubjectRangeFromPoint(clientX: number, clientY: number): Range | null {
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!editor) return null;
+
+    const doc = document as Document & {
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    };
+
+    let range: Range | null = null;
+
+    if (doc.caretRangeFromPoint) {
+      range = doc.caretRangeFromPoint(clientX, clientY);
+    } else if (doc.caretPositionFromPoint) {
+      const position = doc.caretPositionFromPoint(clientX, clientY);
+      if (position) {
+        range = document.createRange();
+        range.setStart(position.offsetNode, position.offset);
+        range.collapse(true);
+      }
+    }
+
+    if (!range || !this.isRangeInsideSubjectEditor(range, editor)) {
+      return this.createCollapsedRangeAtEnd(editor);
+    }
+
+    return range;
+  }
+
+  private placeCaretAfterNode(node: Node): void {
+    const range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    this.applySubjectRange(range);
+  }
+
+  private placeCaretAtSubjectEnd(): void {
+    const editor = this.subjectEditorRef?.nativeElement;
+    if (!editor) return;
+
+    this.applySubjectRange(this.createCollapsedRangeAtEnd(editor));
+  }
+
+  private applySubjectRange(range: Range): void {
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+    this.subjectRange = range.cloneRange();
+  }
+
+  private createCollapsedRangeAtEnd(editor: HTMLElement): Range {
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    return range;
+  }
+
+  private isRangeInsideSubjectEditor(range: Range, editor: HTMLElement): boolean {
+    return this.isNodeInsideSubjectEditor(range.startContainer, editor)
+      && this.isNodeInsideSubjectEditor(range.endContainer, editor);
+  }
+
+  private isNodeInsideSubjectEditor(node: Node | null, editor: HTMLElement): boolean {
+    return !!node && (node === editor || editor.contains(node));
+  }
+
+  private isSubjectPlaceholderNode(node: EventTarget | Node | null): node is HTMLElement {
+    return node instanceof HTMLElement && node.classList.contains('subject-placeholder-token');
+  }
 }
