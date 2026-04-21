@@ -7,6 +7,11 @@ import Quill from 'quill';
 export interface PlaceholderField {
   key: string;       // inserted as {{key}}
   label: string;     // shown on chip
+  source: 'db' | 'manual';
+  inputType: 'text' | 'email' | 'url' | 'date' | 'time' | 'datetime';
+  required: boolean;
+  appliesTo?: EmailTemplate['category'][];
+  helpText?: string;
 }
  
 export interface EmailTemplate {
@@ -15,6 +20,18 @@ export interface EmailTemplate {
   category: 'Interview' | 'Offer' | 'Rejection' | 'General' | 'Follow-up';
   subject: string;
   body: string;
+  customPlaceholders: PlaceholderField[];
+}
+
+export interface TemplatePlaceholderUsage {
+  key: string;
+  label: string;
+  source: PlaceholderField['source'];
+  inputType: PlaceholderField['inputType'];
+  required: boolean;
+  locations: Array<'subject' | 'body'>;
+  helpText?: string;
+  isKnown: boolean;
 }
 
 const MAIL_TEMPLATES_STORAGE_KEY = 'settings.hr.mailTemplates';
@@ -53,20 +70,78 @@ export class MailTemplatesComponent {
  
 // ─── Placeholder Fields ───────────────────────────────────────────────────
   placeholderFields: PlaceholderField[] = [
-    { key: 'candidateName',    label: 'Candidate Name'    },
-    { key: 'jobTitle',         label: 'Job Title'         },
-    { key: 'companyName',      label: 'Company Name'      },
-    { key: 'department',       label: 'Department'        },
-    { key: 'location',         label: 'Location'          },
-    { key: 'interviewDate',    label: 'Interview Date'    },
-    { key: 'interviewTime',    label: 'Interview Time'    },
-    { key: 'interviewLink',    label: 'Interview Link'    },
-    { key: 'interviewType',    label: 'Interview Type'    },
-    { key: 'recruiterName',    label: 'Recruiter Name'    },
-    { key: 'recruiterEmail',   label: 'Recruiter Email'   },
-    { key: 'deadlineDate',     label: 'Deadline Date'     },
-    { key: 'salaryRange',      label: 'Salary Range'      },
-    { key: 'offerExpiryDate',  label: 'Offer Expiry Date' },
+    {
+      key: 'candidateName',
+      label: 'Candidate Name',
+      source: 'db',
+      inputType: 'text',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Pulled from the selected candidate record.',
+    },
+    {
+      key: 'jobTitle',
+      label: 'Job Title',
+      source: 'db',
+      inputType: 'text',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Pulled from the related vacancy or application.',
+    },
+    {
+      key: 'companyName',
+      label: 'Company Name',
+      source: 'db',
+      inputType: 'text',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Resolved from company settings.',
+    },
+    {
+      key: 'department',
+      label: 'Department',
+      source: 'db',
+      inputType: 'text',
+      required: false,
+      appliesTo: ['Interview', 'Offer', 'General', 'Follow-up'],
+      helpText: 'Use when the vacancy has a department attached.',
+    },
+    {
+      key: 'location',
+      label: 'Location',
+      source: 'db',
+      inputType: 'text',
+      required: false,
+      appliesTo: ['Interview', 'Offer', 'General'],
+      helpText: 'Resolved from the vacancy or office data when available.',
+    },
+    {
+      key: 'recruiterName',
+      label: 'Recruiter Name',
+      source: 'db',
+      inputType: 'text',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Resolved from the logged-in recruiter or assigned owner.',
+    },
+    {
+      key: 'recruiterEmail',
+      label: 'Recruiter Email',
+      source: 'db',
+      inputType: 'email',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Resolved from the recruiter profile.',
+    },
+    {
+      key: 'salaryRange',
+      label: 'Salary Range',
+      source: 'db',
+      inputType: 'text',
+      required: false,
+      appliesTo: ['Offer'],
+      helpText: 'Resolved from offer details or compensation settings.',
+    },
   ];
  
   // Sample preview values — replace from context when sending
@@ -97,6 +172,8 @@ export class MailTemplatesComponent {
  
   templateSearch = '';
   showPreview = false;
+  customPlaceholderLabel = '';
+  templateFieldUsage: TemplatePlaceholderUsage[] = [];
  
   // Quill editor instance reference
   private quillEditor: any = null;
@@ -122,10 +199,11 @@ export class MailTemplatesComponent {
   // ─── Selection & Filtering ────────────────────────────────────────────────
  
   selectTemplate(tpl: EmailTemplate): void {
-    this.selectedTemplate = { ...tpl };
+    this.selectedTemplate = this.cloneTemplate(tpl);
     this.showPreview = false;
     this.activeField = 'body';
     this.subjectRange = null;
+    this.refreshTemplateFieldUsage();
     setTimeout(() => this.syncSubjectEditorFromModel());
   }
  
@@ -161,6 +239,7 @@ export class MailTemplatesComponent {
     category: 'General',
     subject: '',
     body: '',
+    customPlaceholders: [],
   };
   this.templates.unshift(newTpl);
   this.filteredTemplates = [...this.templates];
@@ -177,9 +256,9 @@ export class MailTemplatesComponent {
  
     const idx = this.templates.findIndex(t => t.id === this.selectedTemplate!.id);
     if (idx >= 0) {
-      this.templates[idx] = { ...this.selectedTemplate };
+      this.templates[idx] = this.cloneTemplate(this.selectedTemplate);
     } else {
-      this.templates.unshift({ ...this.selectedTemplate });
+      this.templates.unshift(this.cloneTemplate(this.selectedTemplate));
     }
     this.filteredTemplates = [...this.templates];
     this.persistTemplates();
@@ -296,6 +375,7 @@ export class MailTemplatesComponent {
     if (this.syncingSubjectEditor) return;
 
     this.updateSubjectModelFromEditor();
+    this.refreshTemplateFieldUsage();
     this.captureSubjectSelection();
   }
 
@@ -322,6 +402,73 @@ export class MailTemplatesComponent {
       const range = this.quillRange ?? this.quillEditor.getSelection(true) ?? { index: this.quillEditor.getLength(), length: 0 };
       this.insertAtQuillCursor(range, field.key);
     }
+  }
+
+  onBodyTemplateChange(): void {
+    this.refreshTemplateFieldUsage();
+  }
+
+  getAutoResolvedFields(): TemplatePlaceholderUsage[] {
+    return this.templateFieldUsage.filter((field) => field.source === 'db');
+  }
+
+  getManualFields(): TemplatePlaceholderUsage[] {
+    return this.templateFieldUsage.filter((field) => field.source === 'manual');
+  }
+
+  getFieldLocationLabel(field: TemplatePlaceholderUsage): string {
+    if (field.locations.length === 2) {
+      return 'Subject & Body';
+    }
+
+    return field.locations[0] === 'subject' ? 'Subject' : 'Body';
+  }
+
+  getFieldSourceLabel(field: PlaceholderField): string {
+    return field.source === 'db' ? 'Auto' : 'Send-time';
+  }
+
+  getBuiltInPlaceholderFields(): PlaceholderField[] {
+    return this.placeholderFields;
+  }
+
+  getCustomPlaceholderFields(): PlaceholderField[] {
+    return this.selectedTemplate?.customPlaceholders ?? [];
+  }
+
+  createCustomPlaceholder(): void {
+    if (!this.selectedTemplate) return;
+
+    const label = this.customPlaceholderLabel.trim();
+    if (!label) return;
+
+    const key = this.toPlaceholderKey(label);
+    if (!key) return;
+
+    const existingField = this.getPlaceholderField(key, this.selectedTemplate.category);
+    const customField = existingField ?? {
+      key,
+      label,
+      source: 'manual' as const,
+      inputType: 'text' as const,
+      required: true,
+      helpText: 'This custom field will be filled when the template is used.',
+    };
+
+    if (!existingField) {
+      const alreadyExists = this.selectedTemplate.customPlaceholders.some((field) => field.key === key);
+      if (!alreadyExists) {
+        this.selectedTemplate.customPlaceholders = [
+          ...this.selectedTemplate.customPlaceholders,
+          customField,
+        ];
+      }
+    }
+
+    this.refreshTemplateFieldUsage();
+    this.insertPlaceholder(customField);
+
+    this.customPlaceholderLabel = '';
   }
  
   private insertAtQuillCursor(range: any, key: string): void {
@@ -364,6 +511,7 @@ export class MailTemplatesComponent {
         name: 'Interview Invitation',
         category: 'Interview',
         subject: 'Interview Invitation – {{jobTitle}} at {{companyName}}',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>Thank you for applying for the <strong>{{jobTitle}}</strong> position at <strong>{{companyName}}</strong>. We were impressed with your application and would like to invite you to an interview.</p>
 <p><strong>Interview Details:</strong><br>
@@ -380,6 +528,7 @@ Link: {{interviewLink}}</p>
         name: 'Second Round Invite',
         category: 'Interview',
         subject: 'Second Interview – {{jobTitle}}',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>Following your initial interview for the <strong>{{jobTitle}}</strong> role, we are pleased to invite you to a second-round interview with our {{department}} team.</p>
 <p><strong>Details:</strong><br>
@@ -394,6 +543,7 @@ Location / Link: {{interviewLink}}</p>
         name: 'Job Offer Letter',
         category: 'Offer',
         subject: 'Job Offer – {{jobTitle}} at {{companyName}}',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>We are delighted to offer you the position of <strong>{{jobTitle}}</strong> within our {{department}} team at {{companyName}}, based in {{location}}.</p>
 <p><strong>Offer Summary:</strong><br>
@@ -409,6 +559,7 @@ This offer is valid until: {{offerExpiryDate}}</p>
         name: 'Application Rejection',
         category: 'Rejection',
         subject: 'Your Application for {{jobTitle}} at {{companyName}}',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>Thank you for taking the time to apply for the <strong>{{jobTitle}}</strong> position at {{companyName}} and for your patience during our review process.</p>
 <p>After careful consideration, we have decided to move forward with other candidates whose experience more closely matches our current requirements.</p>
@@ -421,6 +572,7 @@ This offer is valid until: {{offerExpiryDate}}</p>
         name: 'Post-Interview Follow-up',
         category: 'Follow-up',
         subject: 'Following Up – {{jobTitle}} Interview',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>Thank you for attending the interview for the <strong>{{jobTitle}}</strong> role. We enjoyed learning more about your background and experience.</p>
 <p>We are currently completing our review and aim to get back to you by <strong>{{deadlineDate}}</strong>. If you have any questions in the meantime, please feel free to reach out to {{recruiterName}} at {{recruiterEmail}}.</p>
@@ -432,6 +584,7 @@ This offer is valid until: {{offerExpiryDate}}</p>
         name: 'Request for Documents',
         category: 'General',
         subject: 'Document Request – {{jobTitle}} Application',
+        customPlaceholders: [],
         body: `<p>Dear {{candidateName}},</p>
 <p>As part of the application process for the <strong>{{jobTitle}}</strong> role at {{companyName}}, we kindly request you submit the following documents by <strong>{{deadlineDate}}</strong>:</p>
 <ul>
@@ -469,9 +622,10 @@ This offer is valid until: {{offerExpiryDate}}</p>
         && typeof template.category === 'string'
         && typeof template.subject === 'string'
         && typeof template.body === 'string'
+        && Array.isArray(template.customPlaceholders ?? [])
       );
 
-      return validTemplates;
+      return validTemplates.map((template) => this.normalizeTemplate(template));
     } catch {
       return this.getDefaultTemplates();
     }
@@ -490,6 +644,129 @@ This offer is valid until: {{offerExpiryDate}}</p>
     } catch {
       // Ignore storage quota / availability issues and keep the editor usable.
     }
+  }
+
+  private refreshTemplateFieldUsage(): void {
+    this.templateFieldUsage = this.selectedTemplate
+      ? this.extractTemplatePlaceholderUsage(this.selectedTemplate)
+      : [];
+  }
+
+  private extractTemplatePlaceholderUsage(template: EmailTemplate): TemplatePlaceholderUsage[] {
+    const locationsByKey = new Map<string, Set<'subject' | 'body'>>();
+    this.collectPlaceholdersFromText(template.subject, 'subject', locationsByKey);
+    this.collectPlaceholdersFromText(template.body, 'body', locationsByKey);
+
+    return Array.from(locationsByKey.entries()).map(([key, locations]) => {
+      const field = this.getPlaceholderField(key, template.category);
+
+      if (field) {
+        return {
+          key: field.key,
+          label: field.label,
+          source: field.source,
+          inputType: field.inputType,
+          required: field.required,
+          locations: Array.from(locations),
+          helpText: field.helpText,
+          isKnown: true,
+        };
+      }
+
+      return {
+        key,
+        label: this.formatPlaceholderLabel(key),
+        source: 'manual',
+        inputType: 'text',
+        required: true,
+        locations: Array.from(locations),
+        helpText: 'This custom placeholder will be filled when the template is used.',
+        isKnown: false,
+      };
+    });
+  }
+
+  private collectPlaceholdersFromText(
+    text: string,
+    location: 'subject' | 'body',
+    locationsByKey: Map<string, Set<'subject' | 'body'>>,
+  ): void {
+    const regex = /\{\{(\w+)\}\}/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      const key = match[1];
+
+      if (!locationsByKey.has(key)) {
+        locationsByKey.set(key, new Set());
+      }
+
+      locationsByKey.get(key)?.add(location);
+    }
+  }
+
+  private getPlaceholderField(
+    key: string,
+    category?: EmailTemplate['category'],
+  ): PlaceholderField | undefined {
+    const availableFields = [
+      ...this.placeholderFields,
+      ...(this.selectedTemplate?.customPlaceholders ?? []),
+    ];
+
+    return availableFields.find((field) =>
+      field.key === key
+      && (!category || !field.appliesTo?.length || field.appliesTo.includes(category))
+    );
+  }
+
+  private normalizeTemplate(template: EmailTemplate): EmailTemplate {
+    return {
+      ...template,
+      customPlaceholders: Array.isArray(template.customPlaceholders)
+        ? template.customPlaceholders.filter((field): field is PlaceholderField =>
+            !!field
+            && typeof field.key === 'string'
+            && typeof field.label === 'string'
+            && field.source === 'manual'
+            && typeof field.inputType === 'string'
+            && typeof field.required === 'boolean',
+          )
+        : [],
+    };
+  }
+
+  private cloneTemplate(template: EmailTemplate): EmailTemplate {
+    return {
+      ...template,
+      customPlaceholders: template.customPlaceholders.map((field) => ({ ...field })),
+    };
+  }
+
+  private formatPlaceholderLabel(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (value) => value.toUpperCase())
+      .trim();
+  }
+
+  private toPlaceholderKey(label: string): string {
+    const cleaned = label
+      .trim()
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .split(' ')
+      .filter(Boolean);
+
+    if (cleaned.length === 0) {
+      return '';
+    }
+
+    return cleaned
+      .map((part, index) => {
+        const lower = part.toLowerCase();
+        return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join('');
   }
 
   onSubjectDrop(event: DragEvent): void {
@@ -525,6 +802,7 @@ This offer is valid until: {{offerExpiryDate}}</p>
     range.insertNode(tokenNode);
     this.placeCaretAfterNode(tokenNode);
     this.updateSubjectModelFromEditor();
+    this.refreshTemplateFieldUsage();
   }
 
   private insertTextIntoSubjectEditor(text: string): void {
@@ -540,6 +818,7 @@ This offer is valid until: {{offerExpiryDate}}</p>
     range.insertNode(textNode);
     this.placeCaretAfterNode(textNode);
     this.updateSubjectModelFromEditor();
+    this.refreshTemplateFieldUsage();
   }
 
   private syncSubjectEditorFromModel(): void {

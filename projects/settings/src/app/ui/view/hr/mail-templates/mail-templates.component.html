@@ -89,7 +89,7 @@
       <span class="placeholder-bar__label">Insert field:</span>
       <div class="placeholder-chips">
         <div
-          *ngFor="let field of placeholderFields"
+          *ngFor="let field of getBuiltInPlaceholderFields()"
           class="placeholder-chip"
           draggable="true"
           (dragstart)="onDragStart($event, field)"
@@ -98,7 +98,34 @@
         >
           <i class="fas fa-grip-vertical drag-icon"></i>
           {{ field.label }}
+          <span class="placeholder-chip__source">{{ getFieldSourceLabel(field) }}</span>
         </div>
+      </div>
+      <div class="placeholder-chips" *ngIf="getCustomPlaceholderFields().length > 0">
+        <div
+          *ngFor="let field of getCustomPlaceholderFields()"
+          class="placeholder-chip placeholder-chip--manual"
+          draggable="true"
+          (dragstart)="onDragStart($event, field)"
+          (click)="insertPlaceholder(field)"
+          [title]="'Click or drag to insert ' + field.label"
+        >
+          <i class="fas fa-grip-vertical drag-icon"></i>
+          {{ field.label }}
+          <span class="placeholder-chip__source">{{ getFieldSourceLabel(field) }}</span>
+        </div>
+      </div>
+      <div class="custom-placeholder">
+        <input
+          type="text"
+          class="custom-placeholder__input"
+          [(ngModel)]="customPlaceholderLabel"
+          placeholder="Create send-time placeholder e.g. Interview Link"
+          (keydown.enter)="createCustomPlaceholder()"
+        />
+        <button class="custom-placeholder__button" type="button" (click)="createCustomPlaceholder()">
+          Add Placeholder
+        </button>
       </div>
     </div>
 
@@ -125,6 +152,34 @@
       </div>
     </div>
 
+    <div class="template-context" *ngIf="templateFieldUsage.length > 0">
+      <div class="template-context__group" *ngIf="getManualFields().length > 0">
+        <div class="template-context__header">
+          <span class="template-context__title">Fill When Using Template</span>
+          <span class="template-context__meta">These fields are not auto-mapped and should be entered at send time</span>
+        </div>
+        <div class="template-context__chips">
+          <div *ngFor="let field of getManualFields()" class="context-chip context-chip--manual">
+            <span class="context-chip__name">{{ field.label }}</span>
+            <span class="context-chip__meta">{{ getFieldLocationLabel(field) }} • {{ field.inputType }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="template-context__group" *ngIf="getAutoResolvedFields().length > 0">
+        <div class="template-context__header">
+          <span class="template-context__title">Auto-Filled From System</span>
+          <span class="template-context__meta">Expected from candidate, vacancy, recruiter, or settings data</span>
+        </div>
+        <div class="template-context__chips">
+          <div *ngFor="let field of getAutoResolvedFields()" class="context-chip context-chip--db">
+            <span class="context-chip__name">{{ field.label }}</span>
+            <span class="context-chip__meta">{{ getFieldLocationLabel(field) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Editor / Preview -->
     <div class="editor-body">
 
@@ -140,6 +195,7 @@
       <div *ngIf="!showPreview" class="editor-area">
         <p-editor
           [(ngModel)]="selectedTemplate.body"
+          (ngModelChange)="onBodyTemplateChange()"
           [style]="{ height: '420px', fontFamily: 'inherit' }"
           styleClass="template-p-editor"
           (onInit)="onEditorInit($event)"
