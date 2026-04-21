@@ -107,9 +107,9 @@
 <div class="p-6 bg-gray-50 rounded-lg min-h-[80vh]">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-700">
-      <span (click)="viewState = 'job-grid'" class="cursor-pointer hover:text-customBlue">Recruitment</span>
-      <span *ngIf="selectedJob"> / {{ selectedJob?.title }}</span>
-      <span *ngIf="selectedCandidate"> / {{ selectedCandidate?.firstname }} {{ selectedCandidate?.lastname }}</span>
+      <span (click)="viewState = 'job-grid'; selectedJob = null; selectedCandidate = null" class="cursor-pointer hover:text-customBlue">Recruitment</span>
+      <span (click)="viewState = 'applicant-list'; selectedCandidate = null" *ngIf="selectedJob" class="cursor-pointer hover:text-customBlue"> / {{ selectedJob?.title }}</span>
+      <span *ngIf="selectedCandidate" class="cursor-pointer hover:text-customBlue"> / {{ selectedCandidate?.firstname }} {{ selectedCandidate?.lastname }}</span>
 
     </h2>
   </div>
@@ -347,16 +347,19 @@
 </div>
 
 
-<p-dialog [(visible)]="showInviteModal" [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vh', 'max-height': '90vh', overflow: 'auto'}" >
+<p-dialog [(visible)]="showInviteModal" [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vw', 'max-height': '90vh', 'min-height': '35vh', overflow: 'auto'}" >
   
-  <div *ngIf="!isStepTwo">
-    <label class="block mb-2 font-semibold">Select a Template</label>
+  <div class="flex flex-col justify-between" *ngIf="!isStepTwo">
+    <div>
+   <label class="block mb-2 font-semibold">Select a Template</label>
     <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
                 optionLabel="name" placeholder="Choose a template..."
                 styleClass="w-full mb-4">
     </p-dropdown>
+    </div>
+ 
     
-    <div class="flex justify-end gap-2">
+    <div class="flex justify-end items-end gap-2">
       <button class="btn-secondary" (click)="showInviteModal = false">Cancel</button>
       <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
     </div>
