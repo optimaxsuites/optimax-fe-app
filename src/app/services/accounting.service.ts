@@ -31,7 +31,7 @@ export class AccountingService {
 
   // ── Charts of Accounts ────────────────────────────────
   getAccounts(page: number = 0, size: number = 10): Observable<PaginationResult<AccountDTO>> {
-    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<AccountDTO>>(`${this.baseUrl}/accounts`, { headers: this.getHeaders(), params });
   }
 
@@ -53,7 +53,7 @@ export class AccountingService {
 
   // ── Account Mappings ─────────────────────────────────
   getAccountMappings(page: number = 0, size: number = 10): Observable<PaginationResult<AccountMappingDTO>> {
-    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<AccountMappingDTO>>(`${this.baseUrl}/account-mappings`, { headers: this.getHeaders(), params });
   }
 
@@ -75,12 +75,12 @@ export class AccountingService {
 
   // ── Accounting Events ────────────────────────────────
   getEvents(page: number = 0, size: number = 10): Observable<PaginationResult<AccountingEventDTO>> {
-    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<AccountingEventDTO>>(`${this.baseUrl}/events`, { headers: this.getHeaders(), params });
   }
 
   getEventsBySource(source: string, page: number = 0, size: number = 10): Observable<PaginationResult<AccountingEventDTO>> {
-    const params = new HttpParams().set('sourceModule', source).set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('sourceModule', source).set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<AccountingEventDTO>>(`${this.baseUrl}/events/bySourceModule`, { headers: this.getHeaders(), params });
   }
 
@@ -94,7 +94,7 @@ export class AccountingService {
 
   // ── Transactions ─────────────────────────────────────
   getTransactions(page: number = 0, size: number = 10): Observable<PaginationResult<AccountingTransactionDTO>> {
-    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<AccountingTransactionDTO>>(`${this.baseUrl}/transactions`, { headers: this.getHeaders(), params });
   }
 
@@ -108,7 +108,7 @@ export class AccountingService {
 
   // ── Journal Entries ──────────────────────────────────
   getJournalEntries(page: number = 0, size: number = 10): Observable<PaginationResult<JournalEntryDTO>> {
-    const params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     return this.http.get<PaginationResult<JournalEntryDTO>>(`${this.baseUrl}/journal-entries`, { headers: this.getHeaders(), params });
   }
 
@@ -118,7 +118,7 @@ export class AccountingService {
 
   // ── Journal Entry Lines ───────────────────────────────
   getJournalLines(page: number = 0, size: number = 10, journalId?: number): Observable<PaginationResult<any>> {
-    let params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    let params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     if (journalId) params = params.set('journalEntryId', journalId.toString());
     return this.http.get<PaginationResult<any>>(`${this.baseUrl}/journal-entry-lines`, { headers: this.getHeaders(), params });
   }
@@ -129,7 +129,7 @@ export class AccountingService {
 
   // ── Ledger Entries ───────────────────────────────────
   getLedgerEntries(page: number = 0, size: number = 10, accountId?: number): Observable<PaginationResult<any>> {
-    let params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    let params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
     if (accountId) params = params.set('accountId', accountId.toString());
     return this.http.get<PaginationResult<any>>(`${this.baseUrl}/ledger-entries`, { headers: this.getHeaders(), params });
   }
@@ -138,74 +138,108 @@ export class AccountingService {
     return this.http.post<any>(`${this.baseUrl}/ledger-entries`, entry, { headers: this.getHeaders() });
   }
 
-  // ── MASTER FLOW ORCHESTRATOR 🧠 ──
-  // This implements the "Manual Orchestration" requested by the user
+  // ── MASTER FLOW ORCHESTRATOR 🧠 ──────────────────────────────────────────────
+  // Implements the full automation pipeline:
+  // Event → Transaction → Journal Entry → Journal Lines → Ledger Entries
   orchestrateEventExecution(event: AccountingEventDTO, mapping: AccountMappingDTO, createdBy: UserDTO): Observable<any> {
     const transactionDate = new Date().toISOString();
-    
-    // 1. Start by creating the transaction
+
+    // ── Extract rich metadata for meaningful descriptions ──
+    const meta = event.metadata || {};
+    const memberName    = meta.memberName || meta.accountName || meta.employeeName || meta.reference || event.reference;
+    const purpose       = meta.purpose     ? `[${meta.purpose}]` : '';
+    const paymentMethod = meta.modeOfPayment || meta.paymentMethod || '';
+    const groupName     = meta.groupName   ? ` | Group: ${meta.groupName}` : '';
+    const instructionRef = meta.instructionReference || event.reference;
+
+    const txDescription = [
+      event.description || event.eventType.replace(/_/g, ' '),
+      memberName ? `— ${memberName}` : '',
+      purpose,
+      paymentMethod ? `(${paymentMethod})` : '',
+      groupName
+    ].filter(Boolean).join(' ').trim();
+
+    const debitDescription  = `DR: ${txDescription}`;
+    const creditDescription = `CR: ${txDescription}`;
+
+    const debitAccountId  = mapping.debitAccountId  ?? mapping.debitAccount?.id;
+    const creditAccountId = mapping.creditAccountId ?? mapping.creditAccount?.id;
+
     return new Observable(observer => {
+      // Resolve the numeric user ID — backend expects a Long, not a full object
+      const createdById = createdBy?.id ?? createdBy?.userId ?? null;
+
+      // ── Step 1: Create Transaction ───────────────────────
       this.createTransaction({
-        transactionReference: event.reference,
-        sourceModule: event.sourceModule,
-        amount: event.amount,
-        currency: event.currency,
-        status: TransactionReviewStatus.APPROVED,
-        accountId: mapping.debitAccountId || mapping.debitAccount.id, // Target the primary account
-        description: event.description,
-        transactionDate: transactionDate,
-        createdBy: createdBy
+        transactionReference: instructionRef,
+        sourceModule:         event.sourceModule,
+        amount:               event.amount,
+        currency:             event.currency || 'NGN',
+        status:               TransactionReviewStatus.APPROVED,
+        accountId:            debitAccountId,
+        description:          txDescription,
+        transactionDate:      transactionDate,
+        createdBy:            createdById
       }).subscribe({
         next: (tx) => {
-          // 2. Create Journal Entry
+          // ── Step 2: Create Journal Entry ─────────────────
           this.createJournalEntry({
             transactionId: tx.id,
-            entryDate: transactionDate,
-            description: `Journal for ${tx.transactionReference}`,
-            status: JournalEntryStatus.POSTED,
-            // createdBy: createdBy // If JournalEntryDTO supports it
+            entryDate:     transactionDate,
+            description:   `Journal Entry: ${txDescription}`,
+            status:        JournalEntryStatus.POSTED
           }).subscribe({
             next: (journal) => {
-              // 3. Create Journal Lines (Debit & Credit)
+              // ── Step 3: Create Journal Lines (Debit & Credit) ──
               const debitLine = {
                 journalEntryId: journal.id,
-                accountId: mapping.debitAccountId || mapping.debitAccount.id,
-                debitAmount: event.amount,
-                creditAmount: 0,
-                description: `Debit: ${event.description}`,
-                createdBy: createdBy
+                accountId:      debitAccountId,
+                debitAmount:    event.amount,
+                creditAmount:   0,
+                description:    debitDescription,
+                createdBy:      createdById
               };
               const creditLine = {
                 journalEntryId: journal.id,
-                accountId: mapping.creditAccountId || mapping.creditAccount.id,
-                debitAmount: 0,
-                creditAmount: event.amount,
-                description: `Credit: ${event.description}`,
-                createdBy: createdBy
+                accountId:      creditAccountId,
+                debitAmount:    0,
+                creditAmount:   event.amount,
+                description:    creditDescription,
+                createdBy:      createdById
               };
 
-              this.createJournalLine(debitLine).subscribe();
-              this.createJournalLine(creditLine).subscribe();
+              this.createJournalLine(debitLine).subscribe({
+                next: () => {
+                  this.createJournalLine(creditLine).subscribe({
+                    next: () => {
+                      // ── Step 4: Post to Ledger ─────────────────────
+                      this.createLedgerEntry({
+                        accountId:    debitAccountId,
+                        debit:        event.amount,
+                        credit:       0,
+                        balanceAfter: 0,
+                        description:  debitDescription,
+                        entryDate:    transactionDate
+                      }).subscribe();
 
-              // 4. Post to Ledger (Simplified for orchestration demo)
-              this.createLedgerEntry({
-                accountId: debitLine.accountId,
-                debit: event.amount,
-                credit: 0,
-                balanceAfter: 0, // Should be calculated by server ideally
-                entryDate: transactionDate
-              }).subscribe();
+                      this.createLedgerEntry({
+                        accountId:    creditAccountId,
+                        debit:        0,
+                        credit:       event.amount,
+                        balanceAfter: 0,
+                        description:  creditDescription,
+                        entryDate:    transactionDate
+                      }).subscribe();
 
-              this.createLedgerEntry({
-                accountId: creditLine.accountId,
-                debit: 0,
-                credit: event.amount,
-                balanceAfter: 0,
-                entryDate: transactionDate
-              }).subscribe();
-
-              observer.next({ success: true, transaction: tx, journal: journal });
-              observer.complete();
+                      observer.next({ success: true, transaction: tx, journal: journal });
+                      observer.complete();
+                    },
+                    error: err => observer.error(err)
+                  });
+                },
+                error: err => observer.error(err)
+              });
             },
             error: err => observer.error(err)
           });

@@ -25,7 +25,7 @@ export class DeletedRecordsComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/accounting/chart-of-accounts']); // Adjust route as needed
+    window.history.back();
   }
 
   viewDetails(record: DeletedRecord) {

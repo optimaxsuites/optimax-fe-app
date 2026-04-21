@@ -86,8 +86,18 @@ export interface EmployeesDTO {
 
 export interface UserDTO {
   id: number;
+  fullname?: string;
   username: string;
   email: string;
+  userId?: number;
+  phoneNumber?: string;
+  clientType?: string;
+  gender?: string;
+  accountId?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
 }
 
 export interface AccountDTO {
@@ -95,12 +105,13 @@ export interface AccountDTO {
   accountCode: number;
   accountName: string;
   accountType: AccountType;
-  parentAccountId?: number;
+  parentAccount?: AccountDTO;
+  parentAccountId?: number; // For POST/PUT
   description?: string;
   currency: string;
   active: boolean;
-  createdBy?: UserDTO;
-  createdAt: Date;
+  createdBy?: UserDTO | number;
+  createdAt: Date | string;
   selected?: boolean; // UI helper
   balance?: number; // UI helper
   bankBalance?: number; // UI helper
@@ -200,13 +211,22 @@ export interface LedgerEntryDTO {
 export interface AccountingEventDTO {
   id?: number;
   sourceModule: SourceModule;
-  eventType: string;
+  eventType: string | any;
   amount: number;
   currency: string;
   reference: string;
   description: string;
   transactionDate: string;
   metadata?: any;
+}
+
+export enum AccountingEventType {
+  LOAN_DISBURSEMENT = 'LOAN_DISBURSEMENT',
+  PRINCIPLE_REPAYMENT = 'PRINCIPLE_REPAYMENT',
+  INTEREST_REPAYMENT = 'INTEREST_REPAYMENT',
+  LATE_FEE = 'LATE_FEE',
+  CONTRIBUTION = 'CONTRIBUTION',
+  PATRONAGE = 'PATRONAGE'
 }
 
 export interface PaginationResult<T> {
