@@ -274,8 +274,21 @@ export class CandidateComponent implements OnInit {
   }
  
   onSendInterview(candidate: Candidate): void {
-
-}
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    let prevInvites: any[] = [];
+    if (storedInvites) {
+      try {
+        prevInvites = JSON.parse(storedInvites) || [];
+      } catch {
+        prevInvites = [];
+      }
+    }
+    const body = {
+      job: this.selectedJob,
+      candidate: candidate,
+    }
+    localStorage.setItem('upcomingInvite', JSON.stringify([...prevInvites, body]));
+  }
  
   onRequestDocs(candidate: Candidate): void {
     // TODO: open request docs modal
