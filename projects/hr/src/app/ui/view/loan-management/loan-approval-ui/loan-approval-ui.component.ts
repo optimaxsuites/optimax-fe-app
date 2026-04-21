@@ -9,6 +9,7 @@ import { LoanApplication } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { RepaymentDayHelperService } from '../../../service/loan/repayment-day-helper.service';
+import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import {
   compareLoanSortValues,
@@ -25,6 +26,7 @@ interface LoanApprovalRow {
   employeeId: string | number;
   departmentDisplay: string;
   purposeDisplay: string;
+  purposeCode: string;
   overduePolicySummary: string;
   totalRepayable: number;
   statusClass: string;
@@ -37,6 +39,8 @@ interface LoanApprovalRow {
   styleUrls: ['./loan-approval-ui.component.scss']
 })
 export class LoanApprovalUiComponent implements OnInit, OnDestroy {
+    loanPurposes: LoanPurposeData[] = [];
+    purposeCodeToName: { [code: string]: string } = {};
   readonly pageSize = 20;
   currentPage = 1;
   searchTerm: string = '';
@@ -83,14 +87,61 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     private router: Router,
     private loanApplicationService: LoanApplicationService,
     private loanApprovalService: LoanApprovalService,
-    private repaymentDayHelper: RepaymentDayHelperService
+    private repaymentDayHelper: RepaymentDayHelperService,
+    private loanPurposeService: LoanPurposeService
   ) {}
 
   ngOnInit() {
     this.subscriptions.add(
       this.searchTermChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.applyFilters())
     );
-    this.loadApplications();
+    // Load all loan purposes first
+    this.loanPurposeService.getAllPurposes().subscribe({
+      next: (purposes) => {
+        this.loanPurposes = purposes;
+        this.purposeCodeToName = {};
+        for (const p of purposes) {
+          if (p.code) this.purposeCodeToName[p.code] = p.name;
+        }
+        // Now load applications
+        this.subscriptions.add(
+          this.loanApplicationService.getApplicationsObservable().subscribe({
+            next: (applications) => {
+              this.loanApplications = applications.map((loan) => ({
+                ...loan,
+                department: this.formatDepartmentDisplay(loan.department)
+              }));
+              this.applyFilters();
+              this.isLoading = false;
+            },
+            error: (error) => {
+              console.error('Error loading applications:', error);
+              this.isLoading = false;
+            }
+          })
+        );
+      },
+      error: (error) => {
+        console.error('Error loading loan purposes:', error);
+        // Still load applications even if purposes fail
+        this.subscriptions.add(
+          this.loanApplicationService.getApplicationsObservable().subscribe({
+            next: (applications) => {
+              this.loanApplications = applications.map((loan) => ({
+                ...loan,
+                department: this.formatDepartmentDisplay(loan.department)
+              }));
+              this.applyFilters();
+              this.isLoading = false;
+            },
+            error: (error) => {
+              console.error('Error loading applications:', error);
+              this.isLoading = false;
+            }
+          })
+        );
+      }
+    });
     this.setDefaultRepaymentStartDate();
   }
 
@@ -143,9 +194,10 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   loadApplications(): void {
+    // Manual refresh only: triggers backend reload and updates cache
     const loadProfiler = startLoanLoadProfiler('advance-loan-approval');
     this.isLoading = true;
-    this.loanApplicationService.getAllApplications().subscribe({
+    this.loanApplicationService.refreshApplications().subscribe({
       next: (applications) => {
         this.loanApplications = applications.map((loan) => ({
           ...loan,
@@ -220,13 +272,30 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   private buildLoanApprovalRow(loan: LoanApplication): LoanApprovalRow {
+    // Try to resolve both code and name, even if only one is present
+    let code = loan.purposeCode || '';
+    let name = loan.purpose || '';
+    // If only name is present, find code
+    if (!code && name && this.loanPurposes.length) {
+      const found = this.loanPurposes.find(p => p.name.toLowerCase() === name.toLowerCase());
+      if (found) code = found.code;
+    }
+    // If only code is present, find name
+    if (!name && code && this.loanPurposes.length) {
+      const found = this.loanPurposes.find(p => p.code === code);
+      if (found) name = found.name;
+    }
+    // Fallbacks
+    if (!code) code = 'N/A';
+    if (!name) name = 'N/A';
     return {
       loan,
       loanCode: formatAdvancedLoanCode(loan.loanCode || loan.id),
       fullName: loan.fullName || 'N/A',
       employeeId: loan.employeeId || 'N/A',
       departmentDisplay: this.formatDepartmentDisplay(loan.department),
-      purposeDisplay: this.formatPurposeDisplay(loan.purpose),
+      purposeDisplay: name,
+      purposeCode: code,
       overduePolicySummary: this.getOverduePolicySummary(loan),
       totalRepayable: this.getLoanTotalRepayable(loan),
       statusClass: this.getStatusClass(loan.status),
@@ -259,7 +328,6 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     const allowedStatuses = new Set([
       '',
       'PENDING',
-      'AWAITING_INTEREST_ACCEPTANCE',
       'APPROVED',
       'READY_FOR_DISBURSEMENT',
       'ACTIVE',
@@ -350,7 +418,6 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   getStatusClass(status: string | undefined): string {
   switch (status) {
     case 'PENDING': return 'status-pending';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
     case 'APPROVED': return 'status-approved';
     case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
     case 'ACTIVE': return 'status-active';
@@ -378,7 +445,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   get statusCounts() {
     return {
       pending: this.loanApplications.filter(loan => loan.status === 'PENDING').length,
-      awaitingInterestAcceptance: this.loanApplications.filter(loan => loan.status === 'AWAITING_INTEREST_ACCEPTANCE').length,
+      // removed awaitingInterestAcceptance
       approved: this.loanApplications.filter(loan => loan.status === 'APPROVED').length,
       readyForDisbursement: this.loanApplications.filter(loan => loan.status === 'READY_FOR_DISBURSEMENT').length,
       rejected: this.loanApplications.filter(loan => loan.status === 'REJECTED').length,
@@ -395,7 +462,6 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   get overviewCards(): Array<{ label: string; value: number; status: '' | 'PENDING' | 'AWAITING_INTEREST_ACCEPTANCE' | 'APPROVED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'SKIPPED' | 'OVERDUE' | 'PAUSED' | 'DEFAULTED' | 'REJECTED' | 'COMPLETED'; icon: string; tone: string; note: string }> {
     return [
       { label: 'Pending', value: this.statusCounts.pending, status: 'PENDING', icon: 'fa-hourglass-half', tone: 'pending', note: 'New requests awaiting review' },
-      { label: 'Awaiting Interest', value: this.statusCounts.awaitingInterestAcceptance, status: 'AWAITING_INTEREST_ACCEPTANCE', icon: 'fa-percent', tone: 'awaiting', note: 'Employees yet to accept proposals' },
       { label: 'Approved', value: this.statusCounts.approved, status: 'APPROVED', icon: 'fa-check-circle', tone: 'approved', note: 'Approved before disbursement prep' },
       { label: 'Ready To Disburse', value: this.statusCounts.readyForDisbursement, status: 'READY_FOR_DISBURSEMENT', icon: 'fa-hand-holding-dollar', tone: 'ready', note: 'Cleared for fund release' },
       { label: 'Active', value: this.statusCounts.active, status: 'ACTIVE', icon: 'fa-check-double', tone: 'active', note: 'Loans in repayment' },
@@ -451,40 +517,47 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   // Approval methods
   openApprovalModal(loan: LoanApplication): void {
     this.selectedLoanForApproval = loan;
-    if (loan.defaultInterestRate !== undefined && loan.defaultInterestRate !== null) {
-      this.proposedInterestRate = Number(loan.defaultInterestRate);
-    } else {
-      this.proposedInterestRate = Number(loan.interestRate || this.loanApprovalService.determineInterestRate(loan));
-    }
-    this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
-    this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
-    this.repaymentStartDate = loan.repaymentStartDate || this.getMinRepaymentDate();
-    this.proposedRepaymentDay = loan.repaymentDay || 0;
-    this.approvalNotes = '';
-    this.onRepaymentStartDateChange(this.repaymentStartDate);
-    this.showApprovalModal = true;
+    const codeToLookup = loan.purposeCode || loan.purpose;
+    this.loanPurposeService.getPurposeByCode(codeToLookup).subscribe((purpose: LoanPurposeData | null) => {
+      if (purpose && typeof purpose.defaultInterestRate === 'number') {
+        this.proposedInterestRate = Number(purpose.defaultInterestRate);
+        // Always set on the loan object for template binding
+        (this.selectedLoanForApproval as any).defaultInterestRate = Number(purpose.defaultInterestRate);
+      } else {
+        this.proposedInterestRate = 0;
+        (this.selectedLoanForApproval as any).defaultInterestRate = undefined;
+        this.messages = [
+          {
+            severity: 'error',
+            summary: 'Missing Interest Rate',
+            detail: 'No default interest rate is set for this loan purpose. Please set it in Loan Purpose Management before approving.'
+          }
+        ];
+        this.showApprovalModal = false;
+        return;
+      }
+      this.proposedLateFeePercentage = Number(loan.lateFeePercentage ?? 2);
+      this.proposedLateFeeGracePeriodDays = Number(loan.lateFeeGracePeriodDays ?? 15);
+      this.repaymentStartDate = loan.repaymentStartDate || this.getMinRepaymentDate();
+      this.proposedRepaymentDay = loan.repaymentDay || 0;
+      this.approvalNotes = '';
+      this.onRepaymentStartDateChange(this.repaymentStartDate);
+      this.showApprovalModal = true;
+    }, (err) => {
+      this.messages = [
+        {
+          severity: 'error',
+          summary: 'Purpose Lookup Failed',
+          detail: 'Could not find loan purpose for this application. Please check the loan purpose code.'
+        }
+      ];
+      this.showApprovalModal = false;
+    });
   }
 
   getEmployeeInterestRejectionComment(loan: LoanApplication | null | undefined): string {
-    if (!loan || loan.status !== 'AWAITING_INTEREST_ACCEPTANCE') {
-      return '';
-    }
-
-    const statusHistoryComment = [...(loan.statusHistory || [])]
-      .filter((entry) => entry.status === 'AWAITING_INTEREST_ACCEPTANCE' && !!entry.notes?.trim())
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())
-      .map((entry) => this.extractEmployeeInterestRejectionReason(entry.notes || ''))
-      .find(Boolean);
-
-    if (statusHistoryComment) {
-      return statusHistoryComment;
-    }
-
-    if (loan.interestAgreement?.status === 'DECLINED' && loan.interestAgreement.notes) {
-      return this.extractEmployeeInterestRejectionReason(loan.interestAgreement.notes);
-    }
-
-    return this.extractEmployeeInterestRejectionReason(loan.adminComment || '');
+    // No longer used: AWAITING_INTEREST_ACCEPTANCE logic removed
+    return '';
   }
 
   private extractEmployeeInterestRejectionReason(note: string): string {
@@ -515,11 +588,20 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
 
   submitApproval(): void {
     if (!this.selectedLoanForApproval) return;
-    
+    // Always use the fetched defaultInterestRate for approval
+    const rateToApprove = (this.selectedLoanForApproval as any).defaultInterestRate ?? this.proposedInterestRate;
+    if (typeof rateToApprove !== 'number' || rateToApprove <= 0) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Missing Interest Rate',
+        detail: 'No valid interest rate found. Please check Loan Purpose Management.'
+      }];
+      return;
+    }
     this.loanApprovalService.approveLoan(
       this.selectedLoanForApproval.id,
       this.approvalNotes,
-      this.proposedInterestRate,
+      rateToApprove,
       this.repaymentStartDate,
       this.proposedRepaymentDay,
       this.proposedLateFeePercentage,
@@ -529,7 +611,7 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
         this.messages = [{
           severity: 'success',
           summary: 'Loan Approved',
-          detail: `Loan approved with ${this.proposedInterestRate}% interest rate. Awaiting employee acceptance.`
+          detail: `Loan approved with default interest rate (${rateToApprove}%). No employee acceptance required.`
         }];
         this.closeApprovalModal();
         this.loadApplications();

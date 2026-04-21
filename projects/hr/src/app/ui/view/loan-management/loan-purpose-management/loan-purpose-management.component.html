@@ -183,9 +183,15 @@
           </div>
 
           <div class="form-group">
-            <label>Default Interest Rate (%) <span class="optional">(Optional)</span></label>
-            <input type="number" formControlName="defaultInterestRate" step="0.1" placeholder="Not required">
-            <div class="field-hint">Leave empty if interest is calculated separately</div>
+            <label>Default Interest Rate (%) <span class="required">*</span></label>
+            <input type="number" formControlName="defaultInterestRate" step="0.1" placeholder="Required">
+            <div class="error-message" *ngIf="purposeForm.get('defaultInterestRate')?.invalid && purposeForm.get('defaultInterestRate')?.touched">
+              <i class="fas fa-exclamation-circle"></i>
+              <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['required']">Default interest rate is required</span>
+              <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['min']">Interest rate cannot be negative</span>
+              <span *ngIf="purposeForm.get('defaultInterestRate')?.errors?.['max']">Interest rate cannot exceed 100%</span>
+            </div>
+            <div class="field-hint">Enter the default interest rate for this purpose</div>
           </div>
 
           <div class="checkbox-group">

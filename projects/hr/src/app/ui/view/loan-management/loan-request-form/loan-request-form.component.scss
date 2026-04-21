@@ -258,6 +258,7 @@
 
 /* ==================== IMPROVED FORM CONTROLS ==================== */
 
+
 .form-control {
   width: 100%;
   padding: 14px 16px;
@@ -268,6 +269,7 @@
   background: #ffffff;
   font-family: inherit;
   line-height: 1.5;
+  color: #1e293b !important; /* Ensure visible text color for all input fields */
 }
 
 /* Number input - keep arrows on the right (default behavior) */

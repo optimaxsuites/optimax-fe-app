@@ -59,7 +59,6 @@ type LoanLifecycleStage = {
 
 const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   { status: 'PENDING', fieldLabel: 'Applied On' },
-  { status: 'AWAITING_INTEREST_ACCEPTANCE', fieldLabel: 'Interest Proposal Sent On' },
   { status: 'APPROVED', fieldLabel: 'Approved On' },
   { status: 'READY_FOR_DISBURSEMENT', fieldLabel: 'Ready for Disbursement On' },
   { status: 'ACTIVE', fieldLabel: 'Disbursed On' },
@@ -176,14 +175,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         iconClass: 'fa-hourglass-half',
         accentClass: 'pending',
         filter: 'PENDING'
-      },
-      {
-        title: 'Awaiting Interest',
-        value: this.dashboardStats.awaitingInterestAcceptance,
-        note: 'Employees reviewing interest proposals',
-        iconClass: 'fa-percent',
-        accentClass: 'awaiting',
-        filter: 'AWAITING_INTEREST_ACCEPTANCE'
       },
       {
         title: 'Ready To Disburse',
@@ -381,7 +372,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.syncSelectedLoan();
     this.updateDashboardStats();
     this.applyFilter();
-    this.updateAlerts();
     this.updateRecentActivities();
   }
 
@@ -413,9 +403,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       loan.status === 'PENDING'
     ).length;
 
-    this.dashboardStats.awaitingInterestAcceptance = this.allLoans.filter(loan =>
-      loan.status === 'AWAITING_INTEREST_ACCEPTANCE'
-    ).length;
+    // removed awaitingInterestAcceptance
 
     this.dashboardStats.readyForDisbursement = this.allLoans.filter(loan =>
       loan.status === 'READY_FOR_DISBURSEMENT'
@@ -476,34 +464,9 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       overduePolicySummary: this.getOverduePolicySummary(loan),
       statusClass: this.getStatusClass(loan.status),
       statusLabel: this.getStatusDisplay(loan.status)
+      // removed Awaiting Interest card
+      // removed nextAlerts and overdueLoansCount logic
     };
-  }
-
-  updateAlerts(): void {
-    const nextAlerts: LoanDashboardAlert[] = [];
-
-    const overdueLoansCount = this.allLoans.filter(loan => this.isLoanOverdue(loan)).length;
-    if (overdueLoansCount > 0) {
-      nextAlerts.push({
-        level: 'danger',
-        message: `${overdueLoansCount} repayment account${overdueLoansCount > 1 ? 's are' : ' is'} overdue or in default watch. Immediate review is required.`
-      });
-    }
-
-    const pendingExposure = this.allLoans
-      .filter(loan => loan.status === 'PENDING')
-      .reduce((sum, loan) => sum + loan.amount, 0);
-    const estimatedFundPool = 10000000;
-    const availableFund = Math.max(estimatedFundPool - this.dashboardStats.totalBalance, 0);
-
-    if (availableFund < 1000000 || pendingExposure > availableFund) {
-      nextAlerts.push({
-        level: 'warning',
-        message: `Low advance loan fund buffer detected (est. available: ₦${availableFund.toLocaleString()}). Prioritize disbursements and approvals.`
-      });
-    }
-
-    this.alerts = nextAlerts;
   }
 
   updateRecentActivities(): void {
@@ -559,6 +522,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         });
       });
     });
+
 
     this.recentActivities = activities
       .sort((first, second) => new Date(second.occurredAt).getTime() - new Date(first.occurredAt).getTime())
@@ -638,7 +602,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
 
     if (loan.completedDate) {
-      return new Date(loan.completedDate).getTime() < Date.now();
+      return new Date(loan.completedDate ?? '').getTime() < Date.now();
     }
 
     return false;
@@ -826,8 +790,6 @@ getStatusClass(status: string | undefined): string {
     switch (status) {
       case 'PENDING':
         return this.getPreviewAppliedDate(loan);
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return this.getStatusHistoryByStatus(loan, 'AWAITING_INTEREST_ACCEPTANCE')?.changedAt || null;
       case 'APPROVED':
         return this.getPreviewApprovedDate(loan);
       case 'READY_FOR_DISBURSEMENT':
@@ -1113,26 +1075,24 @@ getStatusClass(status: string | undefined): string {
     switch (status) {
       case 'PENDING':
         return 1;
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 2;
       case 'APPROVED':
-        return 3;
+        return 2;
       case 'READY_FOR_DISBURSEMENT':
-        return 4;
+        return 3;
       case 'ACTIVE':
-        return 5;
+        return 4;
       case 'SKIPPED':
-        return 6;
+        return 5;
       case 'OVERDUE':
-        return 7;
+        return 6;
       case 'PAUSED':
-        return 8;
+        return 7;
       case 'DEFAULTED':
-        return 9;
+        return 8;
       case 'COMPLETED':
-        return 10;
+        return 9;
       case 'REJECTED':
-        return 11;
+        return 10;
       default:
         return 99;
     }
@@ -1180,9 +1140,7 @@ getStatusClass(status: string | undefined): string {
       return 'APPROVED';
     }
 
-    if (explicitStatus === 'AWAITING_INTEREST_ACCEPTANCE') {
-      return 'AWAITING_INTEREST_ACCEPTANCE';
-    }
+    // removed 'AWAITING_INTEREST_ACCEPTANCE'
 
     if (latestTimelineStatus && latestTimelineStatus !== 'PENDING') {
       return latestTimelineStatus;
@@ -1217,7 +1175,6 @@ getStatusClass(status: string | undefined): string {
 
   private resolveCurrentStatusActor(loan: LoanApplication): string {
     switch (loan.status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
       case 'APPROVED':
       case 'READY_FOR_DISBURSEMENT':
         return this.formatActor(loan.approvedBy);
@@ -1247,7 +1204,6 @@ getStatusClass(status: string | undefined): string {
 
     switch (normalizedStatus) {
       case 'PENDING':
-      case 'AWAITING_INTEREST_ACCEPTANCE':
       case 'APPROVED':
       case 'READY_FOR_DISBURSEMENT':
       case 'REJECTED':
@@ -1408,5 +1364,7 @@ getStatusClass(status: string | undefined): string {
   get approvedLoansCount(): number {
     return this.allLoans.filter(loan => loan.status === 'APPROVED').length;
   }
+
+  
 }
 

@@ -5,6 +5,7 @@ import { switchMap, map, catchError } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanStatusUpdate } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
 import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
+import { LoanPurposeService } from './loan-purpose.service';
 import {
   normalizeLoanRepaymentStartDate,
   readPersistedLoanLateFeeGracePeriodDays,
@@ -27,7 +28,8 @@ import {
 export class LoanApprovalService {
   constructor(
     private loanApplicationService: LoanApplicationService,
-    private interestAgreementService: AdvanceInterestAgreementService
+    private interestAgreementService: AdvanceInterestAgreementService,
+    private loanPurposeService: LoanPurposeService
   ) {}
 
   updateApplicationStatus(
@@ -125,14 +127,7 @@ export class LoanApprovalService {
         };
 
         switch (status) {
-          case 'AWAITING_INTEREST_ACCEPTANCE':
-            workingApplication.approvedDate = changedAt;
-            workingApplication.approvedBy = actingUserId;
-            persistLoanStatusActorName(workingApplication, 'APPROVED', actingUserId);
-            persistLoanStatusActorName(workingApplication, 'AWAITING_INTEREST_ACCEPTANCE', actingUserId);
-            this.ensureApprovalTerms(workingApplication);
-            this.recalculateApprovalTerms(workingApplication);
-            break;
+          // removed AWAITING_INTEREST_ACCEPTANCE
           case 'APPROVED':
             workingApplication.approvedDate = changedAt;
             workingApplication.approvedBy = actingUserId;
@@ -304,61 +299,26 @@ export class LoanApprovalService {
   }
 
   approveLoan(loanId: string | number, notes?: string, interestRate?: number, repaymentStartDate?: string, repaymentDay?: number, lateFeePercentage?: number, lateFeeGracePeriodDays?: number): Observable<LoanApplication> {
-    // Fetch the application to check for default interest
+    // Fetch the application and then the purpose to check for default interest
+    // Always approve directly, no more AWAITING_INTEREST_ACCEPTANCE
     return this.loanApplicationService.getApplicationById(String(loanId)).pipe(
       switchMap((application) => {
         if (!application) throw new Error('Application not found');
-        // Check if the selected purpose has a default interest rate
-        const hasDefaultInterest = !!application.purposeCode && application.purposeCode !== 'other' && typeof application.defaultInterestRate === 'number' && application.defaultInterestRate > 0;
-        const statusToSet = hasDefaultInterest ? 'APPROVED' : 'AWAITING_INTEREST_ACCEPTANCE';
-        const approvalNotes = hasDefaultInterest
-          ? `Loan auto-approved with default interest rate of ${application.defaultInterestRate}%.`
-          : (notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`);
-        const interestToSet = hasDefaultInterest ? application.defaultInterestRate : interestRate;
-
-        return this.updateApplicationStatus(loanId, {
-          status: statusToSet as LoanStatus,
-          notes: approvalNotes,
-          changedAt: new Date().toISOString(),
-          interestRate: interestToSet,
-          lateFeePercentage: lateFeePercentage,
-          lateFeeGracePeriodDays: lateFeeGracePeriodDays,
-          repaymentStartDate: repaymentStartDate,
-          repaymentDay: repaymentDay
-        } as any).pipe(
-          switchMap((loan) => {
-            // Only create interest agreement if NOT auto-approved
-            if (!hasDefaultInterest && loan && interestRate) {
-              return this.interestAgreementService.getAgreementByLoanId(Number(loan.id)).pipe(
-                switchMap((agreement) => {
-                  const agreementPayload = {
-                    loanId: loan.id,
-                    employeeId: loan.employeeId,
-                    proposedInterestRate: interestRate,
-                    agreementMethod: 'DASHBOARD' as const,
-                    notes: notes || `Proposed interest rate: ${interestRate}%. Awaiting employee acceptance.`
-                  };
-
-                  if (agreement?.id && agreement.status !== 'ACCEPTED') {
-                    return this.interestAgreementService.updateAgreement(agreement.id, {
-                      proposedInterestRate: agreementPayload.proposedInterestRate,
-                      status: 'PENDING',
-                      agreementMethod: agreementPayload.agreementMethod,
-                      notes: agreementPayload.notes
-                    }).pipe(map(() => loan));
-                  }
-
-                  return this.interestAgreementService.createAgreement(agreementPayload).pipe(
-                    map(() => loan)
-                  );
-                }),
-                catchError((error) => {
-                  console.error('Interest agreement sync failed after loan approval:', error);
-                  return of(loan);
-                })
-              );
-            }
-            return of(loan);
+        const purposeCode = application.purposeCode || application.purpose;
+        return this.loanPurposeService.getPurposeByCode(purposeCode).pipe(
+          switchMap((purpose) => {
+            const approvalNotes = `Loan auto-approved with default interest rate of ${purpose?.defaultInterestRate ?? interestRate}%.`;
+            const interestToSet = purpose?.defaultInterestRate ?? interestRate;
+            return this.updateApplicationStatus(loanId, {
+              status: 'APPROVED',
+              notes: approvalNotes,
+              changedAt: new Date().toISOString(),
+              interestRate: interestToSet,
+              lateFeePercentage: lateFeePercentage,
+              lateFeeGracePeriodDays: lateFeeGracePeriodDays,
+              repaymentStartDate: repaymentStartDate,
+              repaymentDay: repaymentDay
+            } as any);
           })
         );
       })
@@ -416,10 +376,10 @@ export class LoanApprovalService {
   }
 
   rejectInterestRate(loanId: string | number, reason: string): Observable<LoanApplication> {
-    console.log('Employee rejecting interest rate - keeping status as AWAITING_INTEREST_ACCEPTANCE for admin revision');
+    // removed AWAITING_INTEREST_ACCEPTANCE logic
     
     return this.updateApplicationStatus(loanId, {
-      status: 'AWAITING_INTEREST_ACCEPTANCE' as LoanStatus,
+      status: 'REJECTED',
       notes: `Employee rejected proposed interest rate. Reason: ${reason}. Admin review required before resubmission.`,
       changedAt: new Date().toISOString()
     }).pipe(

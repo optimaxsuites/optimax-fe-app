@@ -1,3 +1,4 @@
+
 @use '../loan-status-badges' as loanStatus;
 
 .status-badge, .status-pill {
@@ -6,7 +7,7 @@
   border-radius: 30px;
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   letter-spacing: 0.5px;
   min-width: 100px;
   text-align: center;
@@ -182,6 +183,7 @@
         max-width: 100%;
         white-space: normal;
         word-break: break-word;
+        /* text-transform: uppercase; */
 
         &.status-pending {
           background: #b87c00;
@@ -1839,4 +1841,14 @@
       grid-template-columns: 1fr;
     }
   }
+}
+
+// Style for immutable/read-only input fields in modals
+.immutable-field {
+  background: #f5f6fa !important;
+  color: #7a869a !important;
+  border: 1px dashed #bfc7d1 !important;
+  font-style: italic;
+  cursor: not-allowed;
+  opacity: 1;
 }

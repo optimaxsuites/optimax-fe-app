@@ -6,6 +6,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
 import { LoanApplication, StatusChange } from '../../../service/loan/loan.types';
+import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
@@ -35,7 +36,6 @@ type LoanLifecycleStage = {
 
 const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
   { status: 'PENDING', label: 'Pending', color: '#ffc107', notes: 'Loan application submitted', fieldLabel: 'Applied On' },
-  { status: 'AWAITING_INTEREST_ACCEPTANCE', label: 'Awaiting Employee Acceptance', color: '#eb9b3f', notes: 'Awaiting employee acceptance of the proposed interest rate', fieldLabel: 'Interest Proposal Sent On' },
   { status: 'APPROVED', label: 'Approved', color: '#4f7cff', notes: 'Loan approved', fieldLabel: 'Approved On' },
   { status: 'READY_FOR_DISBURSEMENT', label: 'Ready for Disbursement', color: '#0284c7', notes: 'Loan is ready for disbursement', fieldLabel: 'Ready for Disbursement On' },
   { status: 'ACTIVE', label: 'Active', color: '#17a2b8', notes: 'Loan disbursed', fieldLabel: 'Disbursed On' },
@@ -86,6 +86,8 @@ export class LoanDetailsComponent implements OnInit {
     { status: 'REJECTED' as LoanApplication['status'], value: 'REJECTED', label: 'Rejected', color: '#dc3545', notes: 'Loan rejected', fieldLabel: 'Rejected On' }
   ].map((stage) => ({ value: stage.status, label: stage.label, color: stage.color }));
 
+  loanPurposes: LoanPurposeData[] = [];
+
   constructor(
     private location: Location,
     private route: ActivatedRoute,
@@ -93,7 +95,8 @@ export class LoanDetailsComponent implements OnInit {
     private fb: FormBuilder,
     private loanApplicationService: LoanApplicationService,
     private loanApprovalService: LoanApprovalService,
-    private errorMessageService: ErrorMessageService
+    private errorMessageService: ErrorMessageService,
+    private loanPurposeService: LoanPurposeService
   ) {
     this.commentForm = this.fb.group({
       comment: ['', Validators.required],
@@ -106,10 +109,23 @@ export class LoanDetailsComponent implements OnInit {
   
   ngOnInit(): void {
     this.navigationSource = window.history.state?.source || 'approval';
-
-    this.route.params.subscribe(params => {
-      this.loanId = params['loanId'];
-      this.loadLoanDetails();
+    // Load all loan purposes first
+    this.loanPurposeService.getAllPurposes().subscribe({
+      next: (purposes) => {
+        this.loanPurposes = purposes;
+        this.route.params.subscribe(params => {
+          this.loanId = params['loanId'];
+          this.loadLoanDetails();
+        });
+      },
+      error: (error) => {
+        console.error('Error loading loan purposes:', error);
+        // Still load loan details even if purposes fail
+        this.route.params.subscribe(params => {
+          this.loanId = params['loanId'];
+          this.loadLoanDetails();
+        });
+      }
     });
   }
   
@@ -139,7 +155,26 @@ export class LoanDetailsComponent implements OnInit {
     this.loanApplicationService.getApplicationById(this.loanId).subscribe({
       next: (loan) => {
         if (loan) {
+          // Find matching loan purpose by code or name
+          let code = (loan.purposeCode || '').trim().toLowerCase();
+          let name = (loan.purpose || '').trim().toLowerCase();
+          if (code === 'n/a') code = '';
+          let matchedPurpose = this.loanPurposes.find(p => (p.code || '').trim().toLowerCase() === code);
+          if (!matchedPurpose && name) {
+            matchedPurpose = this.loanPurposes.find(p => (p.name || '').trim().toLowerCase() === name);
+          }
+          // If loan.interestRate is 0 or missing, set it to the matched defaultInterestRate
+          if (matchedPurpose && (!loan.interestRate || loan.interestRate === 0)) {
+            loan.interestRate = matchedPurpose.defaultInterestRate;
+          }
+          // If loan.purposeCode is missing or 'N/A', set it to the matched purpose's code
+          if (matchedPurpose && (!loan.purposeCode || loan.purposeCode.trim().toUpperCase() === 'N/A')) {
+            loan.purposeCode = matchedPurpose.code;
+          }
           this.loan = loan;
+          // Debug log for troubleshooting purpose code resolution
+          console.log('Loaded loan:', loan);
+          console.log('Loaded loanPurposes:', this.loanPurposes);
           this.updateStatusTimeline();
           this.isLoading = false;
           return;
@@ -200,8 +235,15 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    const statusOption = this.statusOptions.find(option => option.value === status);
-    return statusOption ? statusOption.label : this.toTitleCase(String(status || '').replace(/_/g, ' ').replace(/-/g, ' ')) || 'Unknown';
+    const statusUpper = String(status || '').toUpperCase();
+    const statusOption = this.statusOptions.find(option => String(option.value).toUpperCase() === statusUpper);
+    if (statusOption) return statusOption.label;
+    // Fallback: Properly title-case each word
+    return String(status || '')
+      .replace(/_/g, ' ')
+      .replace(/-/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
   }
 
   formatDate(date: string): string {
@@ -266,8 +308,6 @@ export class LoanDetailsComponent implements OnInit {
         return this.loan.completedDate || this.getStatusHistoryByStatus('COMPLETED')?.changedAt || '';
       case 'REJECTED':
         return this.loan.rejectedDate || this.getStatusHistoryByStatus('REJECTED')?.changedAt || '';
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-      case 'READY_FOR_DISBURSEMENT':
       default:
         return this.getStatusHistoryByStatus(status)?.changedAt || '';
     }
@@ -430,7 +470,7 @@ export class LoanDetailsComponent implements OnInit {
           this.messages = [{
             severity: 'success',
             summary: 'Loan Approved',
-            detail: `Loan approved with ${statusUpdate.interestRate}% interest rate. Awaiting employee acceptance.`
+            detail: `Loan approved with ${statusUpdate.interestRate}% interest rate.`
           }];
           this.closeCommentModal();
           this.loadLoanDetails();
@@ -496,25 +536,7 @@ export class LoanDetailsComponent implements OnInit {
   }
 
   getEmployeeInterestRejectionComment(): string {
-    if (!this.loan || this.loan.status !== 'AWAITING_INTEREST_ACCEPTANCE') {
-      return '';
-    }
-
-    const timelineComment = [...(this.loan.statusHistory || [])]
-      .filter((entry) => entry.status === 'AWAITING_INTEREST_ACCEPTANCE' && !!entry.notes?.trim())
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())
-      .map((entry) => this.extractEmployeeInterestRejectionReason(entry.notes || ''))
-      .find(Boolean);
-
-    if (timelineComment) {
-      return timelineComment;
-    }
-
-    if (this.loan.interestAgreement?.status === 'DECLINED' && this.loan.interestAgreement.notes) {
-      return this.extractEmployeeInterestRejectionReason(this.loan.interestAgreement.notes);
-    }
-
-    return this.extractEmployeeInterestRejectionReason(this.loan.adminComment || '');
+    return '';
   }
   
   rejectLoan(): void {
@@ -612,8 +634,56 @@ export class LoanDetailsComponent implements OnInit {
     }
   }
 
-  getPurposeDisplay(purpose?: string | null): string {
-    return this.toTitleCase((purpose || '').replace(/_/g, ' ')) || 'N/A';
+  getPurposeCodeDisplay(purposeCode?: string | null, purposeName?: string | null): string {
+    // Robustly resolve code from name if needed, using loaded purposes
+    let code = purposeCode || '';
+    let name = purposeName || '';
+    // Ignore 'N/A' as a valid code
+    if (code.trim().toUpperCase() === 'N/A') code = '';
+    if (!code && name && this.loanPurposes.length) {
+      const nameTrimmed = name.trim().toLowerCase();
+      const found = this.loanPurposes.find(p => p.name.trim().toLowerCase() === nameTrimmed);
+      if (found) code = found.code;
+    }
+    return code != null && code !== '' ? code : 'N/A';
+  }
+
+  getPurposeDisplay(purpose?: string | null, purposeCode?: string | null): string {
+    // Robustly resolve name from code if needed, using loaded purposes
+    let name = purpose || '';
+    let code = purposeCode || '';
+    // Ignore 'N/A' as a valid code
+    if (code.trim().toUpperCase() === 'N/A') code = '';
+    if (!name && code && this.loanPurposes.length) {
+      const codeTrimmed = code.trim();
+      const found = this.loanPurposes.find(p => p.code.trim() === codeTrimmed);
+      if (found) name = found.name;
+    }
+    return this.toTitleCase((name || '').replace(/_/g, ' ')) || 'N/A';
+  }
+
+    // Get the default interest rate for the resolved loan purpose
+  get resolvedPurposeDefaultInterestRate(): number | null {
+    if (!this.loan || !this.loanPurposes.length) return null;
+    let code = (this.loan.purposeCode || '').trim().toLowerCase();
+    let name = (this.loan.purpose || '').trim().toLowerCase();
+    if (code === 'n/a') code = '';
+    // Try to match by code or name, robustly
+    let found: LoanPurposeData | undefined = undefined;
+    if (code) {
+      found = this.loanPurposes.find(p => (p.code || '').trim().toLowerCase() === code);
+    }
+    if (!found && name) {
+      found = this.loanPurposes.find(p => (p.name || '').trim().toLowerCase() === name);
+    }
+    // Fallback: try to match any purpose where either code or name matches (robust)
+    if (!found && (code || name)) {
+      found = this.loanPurposes.find(p =>
+        ((p.code || '').trim().toLowerCase() === code) ||
+        ((p.name || '').trim().toLowerCase() === name)
+      );
+    }
+    return found && typeof found.defaultInterestRate === 'number' ? found.defaultInterestRate : null;
   }
 
   private toTitleCase(value: string): string {
@@ -625,30 +695,30 @@ export class LoanDetailsComponent implements OnInit {
       .join(' ');
   }
 
-  private extractEmployeeInterestRejectionReason(note: string): string {
-    const trimmedNote = String(note || '').trim();
-    if (!trimmedNote) {
-      return '';
-    }
+  // private extractEmployeeInterestRejectionReason(note: string): string {
+  //   const trimmedNote = String(note || '').trim();
+  //   if (!trimmedNote) {
+  //     return '';
+  //   }
 
-    const matchedReason = trimmedNote.match(/Employee rejected proposed interest rate\. Reason:\s*(.+?)(?:\.\s*Admin review required.*)?$/i);
-    if (matchedReason?.[1]) {
-      return matchedReason[1].trim();
-    }
+  //   const matchedReason = trimmedNote.match(/Employee rejected proposed interest rate\. Reason:\s*(.+?)(?:\.\s*Admin review required.*)?$/i);
+  //   if (matchedReason?.[1]) {
+  //     return matchedReason[1].trim();
+  //   }
 
-    if (/declined|rejected/i.test(trimmedNote)) {
-      return trimmedNote;
-    }
+  //   if (/declined|rejected/i.test(trimmedNote)) {
+  //     return trimmedNote;
+  //   }
 
-    return '';
-  }
+  //   return '';
+  // }
 
   private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
     const normalizedStatus = String(status || '').trim().toUpperCase();
     if (normalizedStatus === 'READY-FOR-DISBURSEMENT') {
       return 'READY_FOR_DISBURSEMENT';
     }
-    const validStatuses: LoanApplication['status'][] = ['PENDING', 'AWAITING_INTEREST_ACCEPTANCE', 'APPROVED', 'READY_FOR_DISBURSEMENT', 'REJECTED', 'ACTIVE', 'COMPLETED'];
+    const validStatuses: LoanApplication['status'][] = ['PENDING', 'APPROVED', 'READY_FOR_DISBURSEMENT', 'REJECTED', 'ACTIVE', 'COMPLETED'];
     return validStatuses.includes(normalizedStatus as LoanApplication['status']) ? normalizedStatus as LoanApplication['status'] : null;
   }
 
@@ -661,7 +731,7 @@ export class LoanDetailsComponent implements OnInit {
 
   private buildDerivedLifecycleEntries(loan: LoanApplication): StatusChange[] {
     const entries: StatusChange[] = [];
-    const includeApprovedEntry = loan.status !== 'AWAITING_INTEREST_ACCEPTANCE';
+    const includeApprovedEntry = true;
     const stageEntries: Array<StatusChange | null> = [
       this.buildLifecycleEntry('PENDING', loan.requestDate, resolveLoanEmployeeName(loan), 'Loan application submitted'),
       includeApprovedEntry

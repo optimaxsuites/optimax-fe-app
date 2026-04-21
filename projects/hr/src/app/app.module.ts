@@ -149,9 +149,8 @@ import { ProjectDetailComponent } from './ui/view/project/project-list/project-d
 import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
 import { MyProjectComponent } from './ui/view/project/my-project/my-project.component';
 import { MyProjectDetailComponent } from './ui/view/project/my-project/my-project-detail/my-project-detail.component';
-import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 import { CreateProjectComponent } from './ui/view/project/project-list/create-project/create-project.component';
-import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
+// import { SchedulesComponent } from './ui/view/scheduling/scheduling/schedules/schedules.component';
 import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -304,9 +303,8 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
     ProjectListComponent,
     MyProjectComponent,
     MyProjectDetailComponent,
-    MySchedulesComponent,
     CreateProjectComponent,
-    SchedulesComponent,
+    // SchedulesComponent,
     SchedulingComponent,
     AdminexportComponent,
     RepaymentScheduleViewComponent,

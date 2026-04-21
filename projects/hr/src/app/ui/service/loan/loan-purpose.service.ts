@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
 
+
 export interface LoanPurposeData {
   id?: number;
   name: string;
@@ -12,10 +13,11 @@ export interface LoanPurposeData {
   isActive: boolean;
   maxLoanAmount?: number | null;
   minLoanAmount?: number | null;
-  defaultInterestRate?: number | null;
+  defaultInterestRate: number; // Now required
   requiresDocumentation: boolean;
   documentationTypes: string[];
 }
+
 
 export interface CreatePurposePayload {
   name: string;
@@ -24,7 +26,7 @@ export interface CreatePurposePayload {
   isActive: boolean;
   maxLoanAmount?: number | null;
   minLoanAmount?: number | null;
-  defaultInterestRate?: number | null;
+  defaultInterestRate: number; // Now required
   requiresDocumentation: boolean;
   documentationTypes: string[];
 }
@@ -110,7 +112,10 @@ export class LoanPurposeService {
     
     if (payload.minLoanAmount != null) cleanPayload.minLoanAmount = payload.minLoanAmount;
     if (payload.maxLoanAmount != null) cleanPayload.maxLoanAmount = payload.maxLoanAmount;
-    if (payload.defaultInterestRate != null) cleanPayload.defaultInterestRate = payload.defaultInterestRate;
+    if (payload.defaultInterestRate == null || isNaN(payload.defaultInterestRate)) {
+      throw new Error('Default interest rate is required and must be a number');
+    }
+    cleanPayload.defaultInterestRate = payload.defaultInterestRate;
     
     return this.http.post<LoanPurposeData>(this.standardPurposeUrl, cleanPayload, {
       headers: { 

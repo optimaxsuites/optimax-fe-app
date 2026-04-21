@@ -266,8 +266,7 @@ export class LoanStatusNotificationService {
   private buildSubject(application: LoanApplication, previousStatus?: LoanStatus | null): string {
     const loanCode = application.loanCode || String(application.id || '');
     switch (application.status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return `Loan Update: interest proposal ready for ${loanCode}`;
+      // removed 'AWAITING_INTEREST_ACCEPTANCE'
       case 'APPROVED':
         return `Loan Update: ${loanCode} has been approved`;
       case 'READY_FOR_DISBURSEMENT':
@@ -345,8 +344,7 @@ export class LoanStatusNotificationService {
 
   private buildIntroCopy(status: LoanStatus, previousStatusLabel: string): string {
     switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return `Your loan request is now <strong>Awaiting Interest Acceptance</strong>. We have sent your proposed interest terms for review.`;
+      // removed 'AWAITING_INTEREST_ACCEPTANCE'
       case 'APPROVED':
         return `Your loan request has been <strong>approved</strong>${previousStatusLabel ? ` after moving from <strong>${previousStatusLabel}</strong>` : ''}.`;
       case 'READY_FOR_DISBURSEMENT':
@@ -376,8 +374,7 @@ export class LoanStatusNotificationService {
 
   private buildGuidanceCopy(status: LoanStatus): string {
     switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'Please log in to the HR portal to review and accept or reject the proposed interest rate.';
+      // removed 'AWAITING_INTEREST_ACCEPTANCE'
       case 'APPROVED':
         return 'Please log in to the HR portal to review the approved terms and monitor the next processing stage.';
       case 'READY_FOR_DISBURSEMENT':
@@ -420,8 +417,7 @@ export class LoanStatusNotificationService {
 
   private getStatusLabel(status: LoanStatus): string {
     switch (status) {
-      case 'AWAITING_INTEREST_ACCEPTANCE':
-        return 'Awaiting Interest Acceptance';
+      // removed 'AWAITING_INTEREST_ACCEPTANCE'
       case 'READY_FOR_DISBURSEMENT':
         return 'Ready for Disbursement';
       case 'PENDING':

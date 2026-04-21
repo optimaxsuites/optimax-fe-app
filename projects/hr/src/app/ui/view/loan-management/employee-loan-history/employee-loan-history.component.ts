@@ -51,12 +51,11 @@ export class EmployeeLoanHistoryComponent implements OnInit {
   statusFilter: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'AWAITING_INTEREST_ACCEPTANCE' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' = '';
   dateFrom: string = '';
   dateTo: string = '';
-  readonly statusOptions: Array<{ label: string; value: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'AWAITING_INTEREST_ACCEPTANCE' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' }> = [
+  readonly statusOptions: Array<{ label: string; value: '' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'READY_FOR_DISBURSEMENT' | 'ACTIVE' | 'COMPLETED' }> = [
     { label: 'All Statuses', value: '' },
     { label: 'Pending', value: 'PENDING' },
     { label: 'Approved', value: 'APPROVED' },
     { label: 'Rejected', value: 'REJECTED' },
-    { label: 'Awaiting Interest Acceptance', value: 'AWAITING_INTEREST_ACCEPTANCE' },
     { label: 'Ready for Disbursement', value: 'READY_FOR_DISBURSEMENT' },
     { label: 'Active', value: 'ACTIVE' },
     { label: 'Completed', value: 'COMPLETED' }
@@ -195,7 +194,6 @@ export class EmployeeLoanHistoryComponent implements OnInit {
     // Only allow valid status values
     const allowedStatuses: LoanApplication['status'][] = [
       'PENDING',
-      'AWAITING_INTEREST_ACCEPTANCE',
       'APPROVED',
       'READY_FOR_DISBURSEMENT',
       'REJECTED',

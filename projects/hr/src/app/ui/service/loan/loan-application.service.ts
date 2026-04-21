@@ -361,6 +361,7 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       department: incoming.department || existing.department,
       requestDate: incoming.requestDate || existing.requestDate,
       purpose: incoming.purpose || existing.purpose,
+      purposeCode: incoming.purposeCode || existing.purposeCode || '',
       amount: incoming.amount || existing.amount,
       repaymentAmount: incoming.repaymentAmount || existing.repaymentAmount,
       repaymentTime: incoming.repaymentTime || existing.repaymentTime,
@@ -421,6 +422,13 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     const normalizedPurpose = formData.purpose === 'other'
       ? formData.otherPurpose || 'Other'
       : formData.purpose;
+    // Find the selected purpose object if possible
+    let selectedPurposeCode = formData.purposeCode || '';
+    let selectedPurposeName = normalizedPurpose;
+    if (formData.purposeCode && Array.isArray((window as any).erpLoanPurposes)) {
+      const found = (window as any).erpLoanPurposes.find((p: any) => p.code === formData.purposeCode);
+      if (found) selectedPurposeName = found.name;
+    }
     const requestDate = formData.requestDate || createdApplication.requestDate || new Date().toISOString();
     const clientSubmissionKey = this.buildClientSubmissionKey({
       employeeId: Number(formData.employeeId || createdApplication.employeeId || 0),
@@ -442,7 +450,8 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       fullName: createdApplication.fullName || formData.employeeName || 'Employee',
       department: createdApplication.department || formData.department || '',
       amount: Number(formData.amount || createdApplication.amount || 0),
-      purpose: normalizedPurpose || createdApplication.purpose || '',
+      purpose: selectedPurposeName || normalizedPurpose || createdApplication.purpose || '',
+      purposeCode: selectedPurposeCode || formData.purposeCode || createdApplication.purposeCode || '',
       repaymentAmount: Number(formData.repaymentAmount || createdApplication.repaymentAmount || 0),
       repaymentTime: Number(formData.repaymentTime || createdApplication.repaymentTime || 0),
       repaymentStartDate: formData.repaymentStartDate || createdApplication.repaymentStartDate,

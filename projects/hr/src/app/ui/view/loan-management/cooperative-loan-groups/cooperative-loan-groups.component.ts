@@ -182,23 +182,23 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     
     this.cooperativeService.loadGroups().pipe(timeout(30000)).subscribe({
       next: (apiGroups: any[]) => {
-        console.log('✅ Groups loaded:', apiGroups?.length || 0);
+        console.log(' Groups loaded:', apiGroups?.length || 0);
         this.groups = (apiGroups || []).map((apiGroup: any) => this.mapApiGroupToCooperativeLoanGroup(apiGroup));
         this.isLoadingGroups = false;
         
         this.cooperativeService.getMembers().pipe(timeout(30000)).subscribe({
           next: (members: CooperativeMember[]) => {
-            console.log('✅ Members loaded:', members?.length || 0);
+            console.log(' Members loaded:', members?.length || 0);
             this.members = members || [];
             this.isLoadingMembers = false;
             
             this.cooperativeService.loadGroupMemberships().pipe(timeout(30000)).subscribe({
               next: () => {
-                console.log('✅ Memberships loaded');
+                console.log('Memberships loaded');
                 
                 this.employeeService.getAllEmployee().pipe(timeout(30000)).subscribe({
                   next: (employees: any[]) => {
-                    console.log('✅ Employees loaded:', employees?.length || 0);
+                    console.log('Employees loaded:', employees?.length || 0);
                     
                     this.employeeDirectory = (Array.isArray(employees) ? employees : [])
                       .map((employee: any) => this.mapEmployeeToInviteRow(employee))
@@ -213,7 +213,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
                     }
                     
                     this.isLoading = false;
-                    console.log('✅ ALL DATA LOADED SUCCESSFULLY');
+                    console.log('ALL DATA LOADED SUCCESSFULLY');
                   },
                   error: (error) => {
                     console.error('Failed to load employees:', error);
@@ -329,16 +329,16 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   public testApiConnectivity(): void {
     console.log('🔌 TESTING API CONNECTIVITY');
     this.cooperativeService.loadGroups().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('✅ Groups endpoint:', result?.length || 0, 'groups'),
-      error: (error) => console.error('❌ Groups endpoint FAILED:', error.status, error.message)
+      next: (result) => console.log('Groups endpoint:', result?.length || 0, 'groups'),
+      error: (error) => console.error('Groups endpoint FAILED:', error.status, error.message)
     });
     this.cooperativeService.getMembers().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('✅ Members endpoint:', result?.length || 0, 'members'),
-      error: (error) => console.error('❌ Members endpoint FAILED:', error.status, error.message)
+      next: (result) => console.log('Members endpoint:', result?.length || 0, 'members'),
+      error: (error) => console.error(' Members endpoint FAILED:', error.status, error.message)
     });
     this.employeeService.getAllEmployee().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('✅ Employees endpoint:', (result as any[])?.length || 0, 'employees'),
-      error: (error) => console.error('❌ Employees endpoint FAILED:', error.status, error.message)
+      next: (result) => console.log('Employees endpoint:', (result as any[])?.length || 0, 'employees'),
+      error: (error) => console.error('Employees endpoint FAILED:', error.status, error.message)
     });
   }
 

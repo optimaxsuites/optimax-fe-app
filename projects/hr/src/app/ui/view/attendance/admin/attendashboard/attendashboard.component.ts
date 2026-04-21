@@ -23,15 +23,11 @@ export class AttendashboardComponent implements OnInit{
   filteredAttendance: AttendanceTableRecord[] = [];
   currentFilters: any = {};
 
-  onDataChange(event: Event | { data: AttendanceTableRecord[]; filters: any }): void {
-    if (!('data' in event)) {
-      return;
-    }
-
-    this.filteredAttendance = event.data;
-    this.currentFilters = event.filters;
-    this.calculateDashboardData();
-  }
+  onDataChange(event: { data: AttendanceTableRecord[], filters:any }) {
+  this.filteredAttendance = event.data;
+  this.currentFilters = event.filters;
+  this.calculateDashboardData();
+}
   calculateDashboardData() {const data = this.filteredAttendance;
 
   const total = data.length;
