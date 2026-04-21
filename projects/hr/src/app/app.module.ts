@@ -221,6 +221,8 @@ import { CooperativePaymentModalComponent } from './ui/view/loan-management/coop
 import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
 
 import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management/cooperative-repayment-schedule/cooperative-repayment-schedule.component';
+import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
+import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 
 @NgModule({
   declarations: [
@@ -368,6 +370,8 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
     CooperativeLoanReportsComponent,
     CooperativeLoanDisbursementUiComponent,
     CooperativeMemberLoanHistoryComponent,
+    MyScheduleComponent,
+    MySchedulesComponent
   ],
   imports: [
     // BrowserModule,

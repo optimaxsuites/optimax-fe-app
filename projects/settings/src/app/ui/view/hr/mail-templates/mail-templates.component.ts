@@ -16,6 +16,8 @@ export interface EmailTemplate {
   subject: string;
   body: string;
 }
+
+const MAIL_TEMPLATES_STORAGE_KEY = 'settings.hr.mailTemplates';
  
 const Inline = Quill.import('blots/inline') as any;
 class PlaceholderBlot extends Inline {
@@ -49,7 +51,7 @@ export class MailTemplatesComponent {
   }
 
  
-// ─── Placeholder Fields ────────────────────────────────────────────────────
+// ─── Placeholder Fields ───────────────────────────────────────────────────
   placeholderFields: PlaceholderField[] = [
     { key: 'candidateName',    label: 'Candidate Name'    },
     { key: 'jobTitle',         label: 'Job Title'         },
@@ -113,7 +115,7 @@ export class MailTemplatesComponent {
   ) {}
  
   ngOnInit(): void {
-    this.templates = this.getDefaultTemplates();
+    this.templates = this.loadTemplates();
     this.filteredTemplates = [...this.templates];
   }
  
@@ -180,6 +182,7 @@ export class MailTemplatesComponent {
       this.templates.unshift({ ...this.selectedTemplate });
     }
     this.filteredTemplates = [...this.templates];
+    this.persistTemplates();
  
     this.messageService.add({
       severity: 'success',
@@ -198,6 +201,7 @@ export class MailTemplatesComponent {
       accept: () => {
         this.templates = this.templates.filter(t => t.id !== tpl.id);
         this.filteredTemplates = [...this.templates];
+        this.persistTemplates();
         if (this.selectedTemplate?.id === tpl.id) {
           this.selectedTemplate = null;
         }
@@ -440,6 +444,52 @@ This offer is valid until: {{offerExpiryDate}}</p>
 <p>Kind regards,<br>{{recruiterName}}<br>{{companyName}}</p>`,
       },
     ];
+  }
+
+  private loadTemplates(): EmailTemplate[] {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return this.getDefaultTemplates();
+    }
+
+    try {
+      const storedTemplates = window.localStorage.getItem(MAIL_TEMPLATES_STORAGE_KEY);
+      if (!storedTemplates) {
+        return this.getDefaultTemplates();
+      }
+
+      const parsedTemplates = JSON.parse(storedTemplates);
+      if (!Array.isArray(parsedTemplates)) {
+        return this.getDefaultTemplates();
+      }
+
+      const validTemplates = parsedTemplates.filter((template): template is EmailTemplate =>
+        !!template
+        && typeof template.id === 'string'
+        && typeof template.name === 'string'
+        && typeof template.category === 'string'
+        && typeof template.subject === 'string'
+        && typeof template.body === 'string'
+      );
+
+      return validTemplates;
+    } catch {
+      return this.getDefaultTemplates();
+    }
+  }
+
+  private persistTemplates(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        MAIL_TEMPLATES_STORAGE_KEY,
+        JSON.stringify(this.templates),
+      );
+    } catch {
+      // Ignore storage quota / availability issues and keep the editor usable.
+    }
   }
 
   onSubjectDrop(event: DragEvent): void {
