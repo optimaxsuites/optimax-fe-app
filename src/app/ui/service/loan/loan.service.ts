@@ -171,7 +171,7 @@ export class LoanService {
   updateAdvanceLoan(id: number, payload: any): Observable<AdvanceLoan> {
     const requestBody = Array.isArray(payload) ? payload[0] : payload;
     
-    // ✅ FIX: Ensure all status values are uppercase before sending to backend
+    // FIX: Ensure all status values are uppercase before sending to backend
     if (requestBody.statusHistory && Array.isArray(requestBody.statusHistory)) {
       requestBody.statusHistory = requestBody.statusHistory.map((entry: any) => {
         const allowedStatuses = [
@@ -201,7 +201,7 @@ export class LoanService {
       });
     }
     
-    // ✅ Also ensure root status is uppercase
+    //  Also ensure root status is uppercase
     if (requestBody.status) {
       requestBody.status = String(requestBody.status).toUpperCase();
     }
@@ -265,7 +265,8 @@ export class LoanService {
       repaymentDay: Number(formData.repaymentDay || 0) || null,
       modeOfPayment: formData.modeOfPayment,
       requestDate: formData.requestDate || new Date().toISOString(),
-      status: 'PENDING'
+      status: 'PENDING',
+      ...(formData.defaultInterestRate !== undefined ? { defaultInterestRate: formData.defaultInterestRate } : {})
     };
     
     console.log('Creating loan with payload:', payload);
@@ -439,12 +440,14 @@ export class LoanService {
       modeOfPayment: this.fromBackendPaymentMode(loan.modeOfPayment),
       status: normalizedStatus,
       purpose: loan.purpose || '',
+      purposeCode: loan.purposeCode || 'N/A',
       repaymentTime: Number(loan.repaymentTime || repaymentSchedule.length || 0),
       repaymentAmount: Number(loan.repaymentAmount || repaymentSchedule[0]?.totalAmount || 0),
       repaymentStartDate: normalizedRepaymentStartDate || undefined,
       repaymentDay: Number.isFinite(resolvedRepaymentDay) && resolvedRepaymentDay > 0 ? resolvedRepaymentDay : undefined,
       acknowledgment: true,
       interestRate,
+      // ...existing code...
       interestAgreement: loan.interestAgreement ? {
         id: Number(loan.interestAgreement.id || 0) || undefined,
         loanId: Number(loan.interestAgreement.loanId || loan.id || 0),
@@ -717,7 +720,7 @@ export class LoanService {
 
     if (normalizedApprovedDate) {
       const explicitApprovedDate = this.getPersistedStatusChangedAt(loan, 'APPROVED');
-      if (explicitApprovedDate || currentStatus !== 'AWAITING_INTEREST_ACCEPTANCE') {
+      if (explicitApprovedDate || currentStatus !== 'APPROVED') {
         entries.push({
           status: 'APPROVED',
           changedAt: explicitApprovedDate || normalizedApprovedDate,
@@ -725,16 +728,6 @@ export class LoanService {
           notes: this.getPersistedStatusNote(loan, 'APPROVED') || (currentStatus === 'APPROVED' && adminComment ? adminComment : 'Loan approved')
         });
       }
-    }
-
-    const persistedAwaitingInterestAcceptanceDate = this.getPersistedStatusChangedAt(loan, 'AWAITING_INTEREST_ACCEPTANCE');
-    if (persistedAwaitingInterestAcceptanceDate) {
-      entries.push({
-        status: 'AWAITING_INTEREST_ACCEPTANCE',
-        changedAt: persistedAwaitingInterestAcceptanceDate,
-        changedBy: this.getStatusActorDisplayName(loan, 'AWAITING_INTEREST_ACCEPTANCE', loan.approvedBy),
-        notes: this.getPersistedStatusNote(loan, 'AWAITING_INTEREST_ACCEPTANCE') || 'Interest proposal sent to employee'
-      });
     }
 
     const persistedReadyForDisbursementDate = this.getPersistedStatusChangedAt(loan, 'READY_FOR_DISBURSEMENT');
@@ -910,8 +903,7 @@ export class LoanService {
       ...appendedStatusHistory
     ]);
 
-    const carriesApprovalMetadata = application.status === 'AWAITING_INTEREST_ACCEPTANCE'
-      || application.status === 'APPROVED'
+    const carriesApprovalMetadata = application.status === 'APPROVED'
       || application.status === 'READY_FOR_DISBURSEMENT'
       || application.status === 'ACTIVE'
       || application.status === 'COMPLETED';
@@ -1010,7 +1002,6 @@ export class LoanService {
         .map((item: any) => {
           const allowedStatuses = [
             'PENDING',
-            'AWAITING_INTEREST_ACCEPTANCE',
             'APPROVED',
             'READY_FOR_DISBURSEMENT',
             'REJECTED',
@@ -1042,7 +1033,6 @@ export class LoanService {
         .filter((item: any) => {
           const allowedStatuses = [
             'PENDING',
-            'AWAITING_INTEREST_ACCEPTANCE',
             'APPROVED',
             'READY_FOR_DISBURSEMENT',
             'REJECTED',
@@ -1241,7 +1231,7 @@ export class LoanService {
   private resolveDisplayAmount(loan: AdvanceLoan, status: LoanApplication['status'], persistedRequestedAmount: number): number {
     const backendAmount = Number(loan.amount || 0);
     if (
-      (status === 'PENDING' || status === 'AWAITING_INTEREST_ACCEPTANCE') &&
+      status === 'PENDING' &&
       persistedRequestedAmount > 0 &&
       Math.abs(backendAmount - persistedRequestedAmount) <= 2
     ) {
@@ -1368,7 +1358,6 @@ export class LoanService {
       case 'READY-FOR-DISBURSEMENT':
       case 'ACTIVE':
       case 'COMPLETED':
-      case 'AWAITING_INTEREST_ACCEPTANCE':
       case 'SKIPPED':
       case 'OVERDUE':
       case 'DEFAULTED':

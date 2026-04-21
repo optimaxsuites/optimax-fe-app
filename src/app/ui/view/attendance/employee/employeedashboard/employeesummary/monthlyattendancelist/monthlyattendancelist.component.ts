@@ -1,6 +1,7 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { AttendancetableService } from '../../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../../domain/attendance/attendancetable.dto';
+import { UserSessionService } from '../../../../../../service/attendance/user-session.service';
 
 @Component({
   selector: 'app-monthlyattendancelist',
@@ -15,7 +16,9 @@ export class MonthlyattendancelistComponent implements OnInit {
 
   @Output() filteredDataChange = new EventEmitter<AttendanceTableRecord[]>();
 
-  constructor(private attendanceService: AttendancetableService) {}
+  constructor(private attendanceService: AttendancetableService,
+    private userSession: UserSessionService
+  ) {}
 
   ngOnInit(): void {
     this.setCurrentMonth();
@@ -28,8 +31,17 @@ export class MonthlyattendancelistComponent implements OnInit {
   }
 
   loadAttendance() {
+    const user = this.userSession.getCurrentUser();
+    if(user?.id) {
+      //use employee endpoint
+      this.attendanceService.fetchByEmployee(parseInt(user.id));
+    }
+    //suscribe to shared BehaviourSubject
     this.attendanceService.attendance$.subscribe(data => {
-      this.attendanceData = data;
+      //filter to only this employee's records since Behaviour Subject is shared
+      const userId = user?.id ?? '';
+      this.attendanceData = data.filter(r => r.id === userId);
+      
       this.applyMonthFilter();
     });
   }

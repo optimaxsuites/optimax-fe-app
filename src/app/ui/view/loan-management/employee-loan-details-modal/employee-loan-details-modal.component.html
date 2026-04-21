@@ -13,19 +13,6 @@
     <span>{{ feedbackMessage }}</span>
   </div>
 
-  <!-- Interest Rate Acceptance Banner -->
-  <div class="interest-action-banner" *ngIf="canReviewInterestProposal">
-    <div class="banner-content">
-      <i class="fas fa-percent"></i>
-      <div class="banner-text">
-        <h4>Interest Rate Proposal Ready</h4>
-        <p>Admin has proposed an interest rate of <strong>{{ getDisplayedInterestRate() }}%</strong> for your loan.</p>
-      </div>
-      <button class="btn-review-interest" (click)="openInterestAcceptanceModal()">
-        <i class="fas fa-check-circle"></i> Review & Accept/Reject
-      </button>
-    </div>
-  </div>
 
   <div class="summary-card">
     <div class="summary-copy">
@@ -92,6 +79,10 @@
         <div class="detail-row">
           <span class="row-label">Loan ID</span>
           <span class="row-value mono">{{ loan.loanCode }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="row-label">Purpose Code</span>
+          <span class="row-value mono">{{ loan.purposeCode || 'N/A' }}</span>
         </div>
         <div class="detail-row" *ngFor="let field of lifecycleStageFields">
           <span class="row-label">{{ field.label }}</span>
@@ -237,41 +228,6 @@
       </div>
     </div>
 
-    <div class="detail-group full interest-proposal-group" *ngIf="canReviewInterestProposal">
-      <div class="group-head">
-        <span class="group-icon review"><i class="fas fa-percent"></i></span>
-        <div>
-          <span class="group-label">Interest Proposal</span>
-          <h4>Review and Confirm the Proposed Terms</h4>
-        </div>
-      </div>
-      <div class="detail-list">
-        <div class="detail-row">
-          <span class="row-label">Proposed Interest Rate</span>
-          <span class="row-value strong">{{ getDisplayedInterestRate() }}%</span>
-        </div>
-        <div class="detail-row">
-          <span class="row-label">Loan Amount</span>
-          <span class="row-value money">{{ formatCurrency(loan.amount) }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="row-label">Repayment Period</span>
-          <span class="row-value">{{ loan.repaymentTime }} months</span>
-        </div>
-        <div class="detail-row">
-          <span class="row-label">Repayment Mode</span>
-          <span class="row-value">{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</span>
-        </div>
-      </div>
-      <div class="interest-proposal-actions">
-        <button class="btn-review-interest secondary" type="button" (click)="openInterestAcceptanceModal()">
-          <i class="fas fa-eye"></i> Review Proposal
-        </button>
-        <button class="btn-review-interest primary" type="button" (click)="acceptInterestRate()" [disabled]="isLoading">
-          <i class="fas fa-check-circle"></i> Accept Interest Rate
-        </button>
-      </div>
-    </div>
 
     <div class="detail-group full narrative-group purpose-group">
       <div class="group-head">
@@ -281,7 +237,10 @@
           <h4>Why You Requested This Loan</h4>
         </div>
       </div>
-      <p class="group-copy">{{ formatPurposeDisplay(loan.purpose) }}</p>
+      <p class="group-copy">
+        {{ formatPurposeDisplay(loan.purpose) }}
+        <span *ngIf="loan.purposeCode" class="purpose-code">(<strong>Code:</strong> {{ loan.purposeCode }})</span>
+      </p>
     </div>
 
     <div class="detail-group full timeline-group">
@@ -363,87 +322,3 @@
     </div>
   </div>
 </ng-template>
-
-<!-- Interest Acceptance Modal - Add *ngIf="loan" to protect from null -->
-<div class="modal-overlay" *ngIf="showInterestModal && loan" (click)="closeInterestModal()">
-  <div class="interest-modal-container" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h2><i class="fas fa-percent"></i> Review Interest Rate Proposal</h2>
-      <button class="close-btn" (click)="closeInterestModal()"><i class="fas fa-times"></i></button>
-    </div>
-    
-    <div class="modal-body">
-      <div class="feedback-banner inline-banner" *ngIf="feedbackMessage" [ngClass]="feedbackTone">
-        <i class="fas" [ngClass]="{
-          'fa-circle-check': feedbackTone === 'success',
-          'fa-circle-exclamation': feedbackTone === 'error',
-          'fa-circle-info': feedbackTone === 'info'
-        }"></i>
-        <span>{{ feedbackMessage }}</span>
-      </div>
-
-      <div class="proposal-card">
-        <div class="proposed-rate">
-          <span class="rate-label">Proposed Interest Rate</span>
-          <span class="rate-value">{{ getDisplayedInterestRate() }}%</span>
-        </div>
-        
-        <div class="loan-summary">
-          <div class="summary-row">
-            <span>Loan Amount:</span>
-            <strong>{{ formatCurrency(loan.amount) }}</strong>
-          </div>
-          <div class="summary-row">
-            <span>Repayment Period:</span>
-            <strong>{{ loan.repaymentTime }} months</strong>
-          </div>
-          <div class="summary-row">
-            <span>Repayment Mode:</span>
-            <strong>{{ formatPaymentModeDisplay(loan.modeOfPayment) }}</strong>
-          </div>
-        </div>
-
-        <div class="repayment-breakdown">
-          <h4>Estimated Repayment Breakdown</h4>
-          <div class="breakdown-item" *ngIf="loan.modeOfPayment === 'MONTHLY'">
-            <span>Estimated Monthly Repayment:</span>
-            <strong>{{ calculateMonthlyRepayment() | currency:'NGN':'symbol':'1.2-2' }}</strong>
-          </div>
-          <div class="breakdown-item">
-            <span>Total Interest Payable:</span>
-            <strong>{{ calculateTotalInterest() | currency:'NGN':'symbol':'1.2-2' }}</strong>
-          </div>
-          <div class="breakdown-item total">
-            <span>Total Repayable Amount:</span>
-            <strong>{{ calculateTotalRepayable() | currency:'NGN':'symbol':'1.2-2' }}</strong>
-          </div>
-        </div>
-
-        <div class="info-box">
-          <i class="fas fa-info-circle"></i>
-          <p>By accepting this interest rate, you agree to the loan terms. The loan will become active upon disbursement approval.</p>
-        </div>
-
-        <div class="rejection-section" *ngIf="showRejectionReason">
-          <label>Reason for Rejection <span class="required">*</span></label>
-          <textarea 
-            [(ngModel)]="rejectionReason" 
-            rows="3" 
-            placeholder="Please explain why you are rejecting the proposed interest rate..."
-            class="form-textarea"></textarea>
-          <p class="helper-text">Your feedback will be sent back to admin, who can revise the interest rate and resend it for your review.</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="modal-footer">
-      <button class="cancel-btn" (click)="closeInterestModal()" [disabled]="isLoading">Cancel</button>
-      <button class="reject-btn" (click)="rejectInterestRate()" [disabled]="isLoading">
-        <i class="fas fa-ban"></i> {{ showRejectionReason ? 'Submit Rejection' : 'Reject' }}
-      </button>
-      <button class="accept-btn" (click)="acceptInterestRate()" [disabled]="isLoading">
-        <i class="fas fa-check-circle"></i> Accept Interest Rate
-      </button>
-    </div>
-  </div>
-</div>

@@ -54,6 +54,10 @@ selectedLocation: { recordId: string; type: 'in' | 'out' } | null = null;
  
   ngOnInit(): void {
       this.startClosingWatcher();
+
+      //to load data fromAPI on init
+      this.attendancetableService.fetchAllRecords();
+
       this.attendancetableService.attendance$.subscribe(data => {
       this.attendance = data;
 
@@ -123,11 +127,18 @@ openAttendance(record: AttendanceTableRecord) {
 }
 
 openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
-  const location = type === 'in' 
+  const location = type === 'in'
   ? record.checkInLocation 
   : record.checkOutLocation;
 
   if (!location) return;
+
+  //guard since lat and long of location arent gotten from API
+  // Records loaded from API have lat: 0, lng: 0 — can't map those
+  if (location.lat === 0 && location.lng === 0) {
+    alert(`Location: ${location.address}\n(Map view not available for this record)`);
+    return;
+  }
 
   this.selectedLocation = { recordId: record.id, type };
   this.mapAddress = location.address;
@@ -222,7 +233,25 @@ filters: any = {};
 onFiltersChange(filters: any) {
   this.filters = filters;
 
-  const hasFilters =
+  const hasDateRange = filters.dateFrom && filters.dateTo;
+  const hasOtherFilters = filters.id || filters.employee || filters.department || filters.status;
+
+  if (!filters.dateFrom && !filters.dateTo && !hasOtherFilters) {
+    // No filters at all — reload fresh from API
+    this.attendancetableService.fetchAllRecords();
+    return;
+  }
+
+  if (hasDateRange) {
+    // Use the date range API endpoint, then apply remaining filters client-side
+    this.attendancetableService.fetchByDateRange(filters.dateFrom, filters.dateTo);
+    // applyFilters() will be triggered automatically by the attendance$ subscription
+  } else {
+    // No date range — filter client-side only
+    this.applyFilters();
+  }
+
+  /*const hasFilters =
     filters.dateFrom ||
     filters.dateTo ||
     filters.id ||
@@ -234,7 +263,7 @@ onFiltersChange(filters: any) {
     this.resetToToday();
   } else {
     this.applyFilters();
-  }
+  }*/
 }
 
 resetToToday() {

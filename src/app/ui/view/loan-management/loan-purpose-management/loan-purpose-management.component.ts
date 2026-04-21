@@ -60,7 +60,7 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
       isActive: [true],
       maxLoanAmount: [null, [Validators.min(0)]],
       minLoanAmount: [null, [Validators.min(0)]],
-      defaultInterestRate: [null, [Validators.min(0), Validators.max(100)]],
+      defaultInterestRate: [null, [Validators.required, Validators.min(0), Validators.max(100)]],
       requiresDocumentation: [false],
       documentationTypes: this.fb.array([])
     });

@@ -118,6 +118,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadEmployeeData();
+    // Only subscribe to loan updates once (cached, fast)
     this.setupLoanSubscription();
   }
 
@@ -289,11 +290,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadLoanData(): void {
+    // Manual refresh only: triggers backend reload and updates cache
     const loadProfiler = startLoanLoadProfiler('employee-loan-dashboard');
     this.isLoading = true;
-    this.loanApplicationService.getApplicationsByEmployeeId(this.employeeId, this.employeeName).subscribe({
+    this.loanApplicationService.refreshApplications().subscribe({
       next: (applications) => {
-        this.allLoans = this.sortLoansByRecent(applications);
+        // Filter for this employee after refresh
+        const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
+        this.allLoans = this.sortLoansByRecent(employeeLoans);
         this.syncSelectedLoanDetails();
         this.refreshPayableLoans();
         this.calculateLoanCounts();
@@ -427,9 +431,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       switch(loan.status) {
         case 'PENDING':
           this.loanCounts.pending++;
-          break;
-        case 'AWAITING_INTEREST_ACCEPTANCE':
-          this.loanCounts.awaitingInterestAcceptance++;
           break;
         case 'APPROVED':
           this.loanCounts.approved++;
@@ -653,7 +654,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 getStatusClass(status: string): string {
   switch(status) {
     case 'PENDING': return 'pending';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'awaiting_interest_acceptance';
     case 'APPROVED': return 'approved';
     case 'READY_FOR_DISBURSEMENT': return 'ready_for_disbursement';
     case 'ACTIVE': return 'active';

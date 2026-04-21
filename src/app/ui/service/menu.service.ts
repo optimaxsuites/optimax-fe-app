@@ -9,12 +9,12 @@ export class MenuService {
 
   constructor(public navigationLink: NavigationLinksService) {
     this.menuItems = [
-      // {
-      //   label: 'Dashboard',
-      //   route: this.navigationLink.getLink('dashboardLink'),
-      //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      //   icon: 'fas fa-tachometer-alt'
-      // },
+      {
+        label: 'Dashboard',
+        route: this.navigationLink.getLink('dashboardLink'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-tachometer-alt'
+      },
       {
         label: 'Employee Management',
         route: this.navigationLink.getLink('employeeManagementLink'),

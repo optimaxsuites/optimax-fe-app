@@ -115,13 +115,17 @@ export class LoanRequestFormComponent implements OnInit {
     purpose: ['', Validators.required],
     otherPurpose: [''],
     amount: ['', [Validators.required, Validators.min(10000), Validators.max(50000000)]],
-    repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(60)]],  // Make sure NOT disabled
+    repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(60)]],
     repaymentStartDate: ['', Validators.required],
-    repaymentDay: [{ value: '', disabled: false }],  // Enabled by default
+    repaymentDay: ['', [Validators.min(1), Validators.max(31)]],
     repaymentAmountAmount: [{ value: '', disabled: true }, [Validators.required]],
-    modeOfPayment: ['MONTHLY', Validators.required],  // Enabled, default value
+    modeOfPayment: ['MONTHLY', Validators.required],
     acknowledgment: [false, Validators.requiredTrue]
   });
+
+  // Always enable repaymentTime and repaymentDay
+  this.loanRequestForm.get('repaymentTime')?.enable();
+  this.loanRequestForm.get('repaymentDay')?.enable();
 
     // Add conditional validator for repaymentDay when mode is MONTHLY
     this.loanRequestForm.get('modeOfPayment')?.valueChanges.subscribe((mode) => {
@@ -150,20 +154,16 @@ export class LoanRequestFormComponent implements OnInit {
       this.updateAmountValidator();
 
       const selectedPurpose = this.loanPurposes.find(p => p.code === value);
-      
-      if (selectedPurpose && selectedPurpose.defaultInterestRate && selectedPurpose.defaultInterestRate > 0) {
-        if (!this.defaultInterestAcknowledged) {
-          this.pendingPurposeCode = value;
-          this.showInterestModal = true;
-          this.defaultInterestRate = selectedPurpose.defaultInterestRate;
-          this.loanRequestForm.patchValue({ purpose: '' }, { emitEvent: false });
-        }
-      } else if (!selectedPurpose?.defaultInterestRate) {
+      if (selectedPurpose) {
+        this.pendingPurposeCode = value;
+        this.showInterestModal = true;
+        this.defaultInterestRate = selectedPurpose.defaultInterestRate;
+        this.defaultInterestAcknowledged = false;
+        // Do NOT clear the purpose field here. Only clear if user rejects.
+      } else {
         this.showInterestModal = false;
         this.defaultInterestRate = null;
-        if (!selectedPurpose?.defaultInterestRate) {
-          this.defaultInterestAcknowledged = false;
-        }
+        this.defaultInterestAcknowledged = false;
       }
     });
   }
@@ -365,6 +365,10 @@ export class LoanRequestFormComponent implements OnInit {
   acceptInterestAndContinue(): void {
     if (this.defaultInterestAcknowledged && this.pendingPurposeCode) {
       this.loanRequestForm.patchValue({ purpose: this.pendingPurposeCode });
+      const purposeControl = this.loanRequestForm.get('purpose');
+      purposeControl?.markAsDirty();
+      purposeControl?.markAsTouched();
+      purposeControl?.updateValueAndValidity();
       this.showInterestModal = false;
       this.pendingPurposeCode = null;
       // Ensure fields are enabled
@@ -376,6 +380,9 @@ export class LoanRequestFormComponent implements OnInit {
   rejectInterestAndResetPurpose(): void {
     this.showInterestModal = false;
     this.defaultInterestAcknowledged = false;
+    if (this.pendingPurposeCode) {
+      this.loanRequestForm.patchValue({ purpose: '' });
+    }
     this.pendingPurposeCode = null;
     this.defaultInterestRate = null;
     // Ensure fields are enabled
@@ -402,7 +409,7 @@ export class LoanRequestFormComponent implements OnInit {
         'Please acknowledge the fixed interest rate for this loan purpose by checking the box and clicking "Accept & Continue".');
       return;
     }
-    
+
     if (this.loanRequestForm.valid) {
       this.isLoading = true;
 
@@ -423,20 +430,27 @@ export class LoanRequestFormComponent implements OnInit {
           }
 
           const selectedPurpose = this.loanPurposes.find(p => p.code === this.loanRequestForm.get('purpose')?.value);
-          
           const hasFixedInterest = !!(selectedPurpose?.defaultInterestRate && selectedPurpose.defaultInterestRate > 0);
-          // FIXED: Convert null to undefined using ternary or nullish coalescing
           const fixedInterestRate: number | undefined = hasFixedInterest 
             ? (selectedPurpose?.defaultInterestRate ?? undefined)
             : undefined;
-          
+
+          // Always use the selected purpose code from the dropdown, unless 'other' is selected
+          let normalizedPurposeCode = '';
+          if (this.showOtherPurpose) {
+            normalizedPurposeCode = 'other';
+          } else if (selectedPurpose) {
+            normalizedPurposeCode = selectedPurpose.code;
+          } else {
+            normalizedPurposeCode = String(this.loanRequestForm.get('purpose')?.value || '').trim();
+          }
+
           const normalizedPurpose = String(
             this.showOtherPurpose
               ? this.loanRequestForm.get('otherPurpose')?.value
               : (selectedPurpose?.name || this.loanRequestForm.get('purpose')?.value)
           ).trim();
-          const normalizedPurposeCode = String(this.showOtherPurpose ? 'other' : this.loanRequestForm.get('purpose')?.value || '').trim();
-          
+
           // Properly format the date to ISO format
           let normalizedRepaymentStartDate: string | undefined = undefined;
           const rawStartDate = this.loanRequestForm.get('repaymentStartDate')?.value;
@@ -446,9 +460,9 @@ export class LoanRequestFormComponent implements OnInit {
               normalizedRepaymentStartDate = date.toISOString();
             }
           }
-          
+
           const normalizedModeOfPayment = this.loanRequestForm.get('modeOfPayment')?.value;
-          
+
           let repaymentDay: number | undefined = undefined;
           if (normalizedModeOfPayment === 'MONTHLY') {
             const manualDay = Number(this.loanRequestForm.get('repaymentDay')?.value);
@@ -482,7 +496,6 @@ export class LoanRequestFormComponent implements OnInit {
             hasFixedInterest: hasFixedInterest,
             fixedInterestRate: fixedInterestRate,
             defaultInterestAcknowledged: this.defaultInterestAcknowledged,
-            // Ensure defaultInterestRate is set if present on the selected purpose
             ...(selectedPurpose?.defaultInterestRate ? { defaultInterestRate: selectedPurpose.defaultInterestRate } : {})
           };
 

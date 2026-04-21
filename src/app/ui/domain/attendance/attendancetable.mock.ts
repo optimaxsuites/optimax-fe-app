@@ -1,6 +1,6 @@
 import { AttendanceTableRecord } from "./attendancetable.dto";
 
-export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
+export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [] /*[
   {
     id: '1',
     employee: 'John Okafor',
@@ -8,7 +8,7 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     date: '2026-01-30',
     checkIn: '08:05',
     checkOut: '17:00',
-    checkInLocation: null,
+        checkInLocation: null,
     checkOutLocation: null,
     status: 'PRESENT',
     hours: 8.9
@@ -73,4 +73,4 @@ export const MOCK_ATTENDANCE: AttendanceTableRecord[] = [
     status: 'PRESENT',
     hours: 9
   }
-];
+];*/

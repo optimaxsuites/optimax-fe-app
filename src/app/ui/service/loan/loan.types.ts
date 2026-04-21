@@ -1,7 +1,6 @@
 // loan.types.ts
 export type LoanStatus =
   | 'PENDING'
-  | 'AWAITING_INTEREST_ACCEPTANCE'
   | 'APPROVED'
   | 'READY_FOR_DISBURSEMENT'
   | 'REJECTED'
@@ -238,4 +237,5 @@ export interface LoanApplicationFormData {
   hasFixedInterest?: boolean;
   fixedInterestRate?: number;
   defaultInterestAcknowledged?: boolean;
+  defaultInterestRate?: number;
 }

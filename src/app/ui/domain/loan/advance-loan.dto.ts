@@ -3,7 +3,6 @@
 
 export type AdvanceLoanStatus = 
   | 'PENDING' 
-  | 'AWAITING_INTEREST_ACCEPTANCE' 
   | 'APPROVED' 
   | 'READY_FOR_DISBURSEMENT'
   | 'REJECTED' 

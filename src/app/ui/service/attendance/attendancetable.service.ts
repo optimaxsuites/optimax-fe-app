@@ -1,17 +1,18 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
-import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
+//import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
 import { OfficeHoursService } from './office-hours.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment.prod';
+import { map } from 'rxjs/operators';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
 @Injectable({ providedIn: 'root' })
 export class AttendancetableService {
 
-  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>(MOCK_ATTENDANCE);
+  private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
   attendance$ = this.attendanceSubject.asObservable();
 
   getAttendance(filters?: any): Observable<AttendanceTableRecord[]> {
@@ -19,11 +20,11 @@ export class AttendancetableService {
   }
 
   private absentTimeout: any;
-private absentInterval: any;
-private apiRecordId: number | null = null;
+  private absentInterval: any;
+  private apiRecordId: number | null = null;
 
-constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
-  
+  constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
+    
   
   this.scheduleAbsentCheck();
 
@@ -40,12 +41,117 @@ private getAuthHeaders(): HttpHeaders {
              ?? sessionStorage.getItem('Token')
              ?? '';
 
-  return new HttpHeaders({ 
+  const tenantId = sessionStorage.getItem('tenantId')
+                ?? sessionStorage.getItem('X-Tenant-ID')
+                ?? 'default'; // check DevTools for the actual sessionStorage key
+
+  return new HttpHeaders({
     'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': tenantId
   });
 }
 
+private mapApiRecord(api: any): AttendanceTableRecord {
+  const emp = api.employeeId; // nested employee object
+
+  const fullName = emp
+    ? `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim()
+    : '';
+
+  const department = emp?.department?.name ?? '';
+
+  // Extract HH:mm:ss time from ISO string for display
+  const toTimeStr = (iso: string | null): string | null => {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleTimeString();
+    } catch {
+      return null;
+    }
+  };
+
+  // API stores location as plain string — wrap it for our DTO
+  const toLocation = (locStr: string | null) => {
+    if (!locStr) return null;
+    return { address: locStr, lat: 0, lng: 0 };
+  };
+
+  return {
+    id: emp?.id?.toString() ?? api.id?.toString(),
+    apiRecordId: api.id,
+    employee: fullName,
+    department,
+    date: api.attendanceDate ?? null,
+    checkIn: toTimeStr(api.checkIn),
+    checkOut: toTimeStr(api.checkOut),
+    checkInLocation: toLocation(api.checkInLocation),
+    checkOutLocation: toLocation(api.checkOutLocation),
+    status: api.status ?? 'ABSENT',
+    hours: api.hours ?? 0,
+    overrideOpen: api.overrideOpen ?? false,
+    overrideReason: api.overrideReason ?? '',
+    overriddenBy: api.overrideBy
+      ? { adminId: api.overrideBy.userId?.toString(), adminName: api.overrideBy.fullname }
+      : undefined,
+    appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS' ? 'office-hours' : 'shift',
+    appliedExpectedStart: api.appliedExpectedStart,
+    appliedExpectedEnd: api.appliedExpectedEnd,
+    appliedShiftName: api.appliedShiftName
+  };
+}
+
+// GET all records (admin table on load)
+fetchAllRecords(page: number = 1, size: number = 100): void {
+  this.http.get<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords?page=${page}&size=${size}`,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      this.attendanceSubject.next(mapped);
+    },
+    error: (err) => console.error('Failed to fetch attendance records:', err)
+  });
+}
+
+// GET by date range (admin filter)
+fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100): void {
+  this.http.get<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange?from=${from}&to=${to}&page=${page}&size=${size}`,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      this.attendanceSubject.next(mapped);
+    },
+    error: (err) => console.error('Failed to fetch records by date range:', err)
+  });
+}
+
+// GET by employee ID (employee monthly table)
+fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void {
+  this.http.get<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${employeeId}?page=${page}&size=${size}`,
+    { headers: this.getAuthHeaders() }
+  ).subscribe({
+    next: (res) => {
+      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      this.attendanceSubject.next(mapped);
+    },
+    error: (err) => console.error('Failed to fetch employee records:', err)
+  });
+}
+
+// GET single record by ID
+fetchRecordById(id: number): Observable<AttendanceTableRecord> {
+  return this.http.get<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
+    { headers: this.getAuthHeaders() }
+  ).pipe(
+    map((res: any) => this.mapApiRecord(res))
+  );
+}
 //POST
 /*postAttendanceRecord(payload: {
   employeeId: number;
@@ -635,10 +741,9 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
   this.attendanceSubject.next(data);
 }
 
-private registeredEmployees = [
-  { id: '001', name: 'Chrisha Okorocha', department: 'Engineering' }
-  //{ id: '002', name: 'John Doe', department: 'HR' }
-];
+
+// (empty ahhhh):
+private registeredEmployees: { id: string; name: string; department: string }[] = [];
 
 private lastAbsentRunDate: string | null = null;
 

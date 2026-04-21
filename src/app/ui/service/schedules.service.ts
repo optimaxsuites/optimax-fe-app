@@ -156,19 +156,19 @@ export class ShiftService {
     }
   ];
 
-  // ✅ Get all shifts
+  //  Get all shifts
   getAllShifts(): Shift[] {
     return this.shifts;
   }
 
-  // ✅ Get shift records (by employee or all)
+  // Get shift records (by employee or all)
   getShiftRecords(employeeId?: number): ShiftRecord[] {
     return employeeId
       ? this.shiftRecords.filter(r => r.employeeId === employeeId)
       : this.shiftRecords;
   }
 
-  // ✅ Clock in
+  // Clock in
   clockIn(employeeId: number): ShiftRecord | null {
     const today = new Date().toISOString().split('T')[0];
     const record = this.shiftRecords.find(r => r.employeeId === employeeId && r.date === today);
@@ -179,7 +179,7 @@ export class ShiftService {
     return record;
   }
 
-  // ✅ Clock out
+  // Clock out
   clockOut(employeeId: number): ShiftRecord | null {
     const today = new Date().toISOString().split('T')[0];
     const record = this.shiftRecords.find(r => r.employeeId === employeeId && r.date === today);
@@ -190,7 +190,7 @@ export class ShiftService {
     return record;
   }
 
-  // ✅ Add a new shift (auto-creates records for assigned employees)
+  //  Add a new shift (auto-creates records for assigned employees)
   addShift(shift: Shift, startDate: string, days: number = 7) {
     shift.id = this.shifts.length + 1;
     this.shifts.push(shift);
