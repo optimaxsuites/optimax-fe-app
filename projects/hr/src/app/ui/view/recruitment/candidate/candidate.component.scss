@@ -725,3 +725,241 @@
 .btn-navigate {
     @apply text-sm py-3 px-3 rounded-xl
 }
+
+/* =============================
+   Interview Invite Modal Styles
+   ============================= */
+
+/* Dialog container override */
+.p-dialog {
+  border-radius: 12px;
+  border: 0.5px solid #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.p-dialog .p-dialog-header {
+  padding: 20px 24px 16px;
+  background: #ffffff;
+  border-bottom: 0.5px solid #e2e8f0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.p-dialog .p-dialog-header .p-dialog-header-icon {
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.p-dialog .p-dialog-header .p-dialog-header-icon:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.p-dialog .p-dialog-content {
+  padding: 24px;
+  background: #ffffff;
+  color: #374151;
+}
+
+/* =============================
+   Step labels
+   ============================= */
+
+label.block {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 0.01em;
+}
+
+/* =============================
+   Dropdown
+   ============================= */
+
+.p-dropdown {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  margin-bottom: 20px;
+}
+
+.p-dropdown:hover {
+  border-color: #94a3b8;
+}
+
+.p-dropdown:not(.p-disabled).p-focus {
+  border-color: #2E6276;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  outline: none;
+}
+
+.p-dropdown .p-dropdown-label {
+  padding: 9px 12px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.p-dropdown .p-dropdown-label.p-placeholder {
+  color: #94a3b8;
+}
+
+.p-dropdown .p-dropdown-trigger {
+  color: #94a3b8;
+  width: 36px;
+}
+
+.p-dropdown-panel {
+  border-radius: 8px;
+  border: 0.5px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  font-size: 14px;
+  padding: 9px 14px;
+  color: #374151;
+  transition: background 0.1s;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 500;
+}
+
+/* =============================
+   Buttons
+   ============================= */
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.btn-primary {
+  background: #2E6276;
+  color: #ffffff;
+  border-color: #2E6276;
+}
+
+.btn-primary:hover:not([disabled]) {
+  background: #4291b1;
+  border-color: #4291b1;
+}
+
+.btn-primary:active:not([disabled]) {
+  transform: scale(0.98);
+}
+
+.btn-primary[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #374151;
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* =============================
+   Step two — fields
+   ============================= */
+
+h3.font-semibold {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 12px;
+}
+
+.text-gray-600 {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 4px;
+  display: block;
+}
+
+input[type="text"].w-full {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #374151;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+input[type="text"].w-full:hover {
+  border-color: #94a3b8;
+}
+
+input[type="text"].w-full:focus {
+  border-color: #2E6276;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: #ffffff;
+}
+
+/* =============================
+   Preview box
+   ============================= */
+
+.preview-box {
+  background: #f8fafc;
+  border: 0.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 4px;
+}
+
+.preview-box h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+  border-bottom: 0.5px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.preview-box div {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.65;
+}

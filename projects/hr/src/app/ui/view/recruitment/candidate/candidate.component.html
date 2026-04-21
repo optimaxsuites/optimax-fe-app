@@ -173,11 +173,11 @@
         </div>
       </div>
       <div class="detail-header__actions">
-        <button class="action-btn action-btn--invite" (click)="onSendInterview(selectedCandidate)">
+        <button class="action-btn action-btn--invite" (click)="onActionSelected('Interview Invite')">
         <i class="fas fa-calendar-check"></i> Interview Invite
         </button>
 
-        <button class="action-btn action-btn--reject" (click)="onReject(selectedCandidate)">
+        <button class="action-btn action-btn--reject" (click)="onActionSelected('Rejection')">
         <i class="fas fa-xmark"></i> Reject
         </button>
 
@@ -345,3 +345,43 @@
 
   </div>
 </div>
+
+
+<p-dialog [(visible)]="showInviteModal" [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vh', 'max-height': '90vh', overflow: 'auto'}" >
+  
+  <div *ngIf="!isStepTwo">
+    <label class="block mb-2 font-semibold">Select a Template</label>
+    <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
+                optionLabel="name" placeholder="Choose a template..."
+                styleClass="w-full mb-4">
+    </p-dropdown>
+    
+    <div class="flex justify-end gap-2">
+      <button class="btn-secondary" (click)="showInviteModal = false">Cancel</button>
+      <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
+    </div>
+  </div>
+
+  <div *ngIf="isStepTwo">
+    <div class="mb-4">
+      <h3 class="font-semibold mb-2">Required Information</h3>
+      <div *ngFor="let field of selectedInviteTemplate?.customPlaceholders" class="mb-3 w-96">
+        <label class="block text-sm text-gray-600">{{field.label}}</label>
+        <input type="text" [(ngModel)]="manualPlaceholderValues[field.key]" class="w-full p-2 border rounded">
+      </div>
+    </div>
+
+    <div class="preview-box p-4 bg-gray-50 rounded border">
+      <h4 class="font-bold border-b pb-1 mb-2">{{resolveFinalContent(selectedInviteTemplate?.subject || '')}}</h4>
+      <div class="text-wrap" [innerHTML]="resolveFinalContent(selectedInviteTemplate?.body || '')"></div>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button class="btn-secondary" (click)="isStepTwo = false">Back</button>
+      <button class="btn-primary disabled:cursor-not-allowed disabled:bg-customBlueHover" (click)="sendFinalMail()" [disabled]="sendLoading">
+        <span *ngIf="!sendLoading">Send</span>
+        <span *ngIf="sendLoading">Sending...</span>
+      </button>
+    </div>
+  </div>
+</p-dialog>

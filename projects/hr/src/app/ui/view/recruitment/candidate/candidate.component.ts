@@ -3,6 +3,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { MenuItem } from 'primeng/api';
+import { MailNotificationService } from '../../../service/mailNotification.service';
 
 export interface FormResponse {
   label: string;
@@ -37,6 +38,25 @@ export interface Candidate {
   formResponses: FormResponse[];
   documents: CandidateDocument[];
   aiVetting: AiVetting | null;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  category: 'Interview' | 'Offer' | 'Rejection' | 'General' | 'Follow-up';
+  subject: string;
+  body: string;
+  customPlaceholders: PlaceholderField[];
+}
+
+export interface PlaceholderField {
+  key: string;       // inserted as {{key}}
+  label: string;     // shown on chip
+  source: 'db' | 'manual';
+  inputType: 'text' | 'email' | 'url' | 'date' | 'time' | 'datetime';
+  required: boolean;
+  appliesTo?: EmailTemplate['category'][];
+  helpText?: string;
 }
 @Component({
   selector: 'app-candidate',
@@ -75,10 +95,21 @@ export class CandidateComponent implements OnInit {
     { key: 'ai',        label: 'AI Vetting'     },
   ];
    actionItems: MenuItem[] | undefined;
+   currentAction: string = '';
+   sendLoading: boolean = false;
+
+   templates: EmailTemplate[] = [];
+    selectedInviteTemplate: EmailTemplate | null = null;
+    showInviteModal: boolean = false;
+    isStepTwo: boolean = false; // Step 1: Select Template, Step 2: Fill & Preview
+    manualPlaceholderValues: Record<string, string> = {};
+
+    regData: any = {};
 
    constructor(
     private confirmationService: ConfirmationService,
-    private messageService: MessageService 
+    private messageService: MessageService,
+    private mailService: MailNotificationService
   ) {}
 
    ngOnInit(): void {
@@ -91,26 +122,32 @@ export class CandidateComponent implements OnInit {
       {
         label: 'Shortlist',
         icon: 'fas fa-bookmark',
-        command: () => this.onShortlist(this.selectedCandidate)
+        command: () => this.onActionSelected('Shortlist')
       },
       {
         label: 'Request Docs',
         icon: 'fas fa-file-arrow-up',
-        command: () => this.onRequestDocs(this.selectedCandidate)
+        command: () => this.onActionSelected('Request Docs')
       },
       { separator: true },
       {
         label: 'Send Offer',
         icon: 'fas fa-envelope-open-text',
-        command: () => this.onSendOffer(this.selectedCandidate)
+        command: () => this.onActionSelected('Send Offer')
       },
-      {
-        label: 'Reject',
-        icon: 'fas fa-xmark',
-        styleClass: 'text-danger', // Optional: highlight rejection in red
-        command: () => this.onReject(this.selectedCandidate)
-      }
+      // {
+      //   label: 'Reject',
+      //   icon: 'fas fa-xmark',
+      //   styleClass: 'text-danger', // Optional: highlight rejection in red
+      //   command: () => this.onActionSelected('Reject')
+      // }
     ];
+
+    const saved = localStorage.getItem('settings.hr.mailTemplates');
+    this.templates = saved ? JSON.parse(saved) : [];
+
+    const userPrimaryInfoRegData = localStorage.getItem('userPrimaryInfoRegData');
+    this.regData = userPrimaryInfoRegData ? JSON.parse(userPrimaryInfoRegData) : null;
 
     this.loadDummyData()
   }
@@ -122,7 +159,7 @@ export class CandidateComponent implements OnInit {
         id: 101,
         firstname: 'Rukayat',
         lastname: 'Morufu',
-        email: 'RM@example.com',
+        email: 'oluwadarequeensheba@gmail.com',
         formResponses: [
           { label: 'Years of Experience', value: '5 years' },
           { label: 'Current Role', value: 'Product Designer at Paystack' },
@@ -158,7 +195,7 @@ export class CandidateComponent implements OnInit {
         id: 102,
         firstname: 'Galadinma',
         lastname: 'Christabel',
-        email: 'GC@work.com',
+        email: 'damilola@centrifugegroup.com',
         formResponses: [
           { label: 'Years of Experience', value: '3 years' },
           { label: 'Current Role', value: 'UI Designer at Flutterwave' },
@@ -237,9 +274,8 @@ export class CandidateComponent implements OnInit {
   }
  
   onSendInterview(candidate: Candidate): void {
-    // TODO: open interview invite modal
-    console.log('Interview invite', candidate.id);
-  }
+
+}
  
   onRequestDocs(candidate: Candidate): void {
     // TODO: open request docs modal
@@ -276,6 +312,102 @@ export class CandidateComponent implements OnInit {
     if (score >= 75) return 'score--high';
     if (score >= 50) return 'score--medium';
     return 'score--low';
+  }
+
+  onActionSelected(action: string) {
+    this.currentAction = action;
+    this.showInviteModal = true;
+    this.isStepTwo = false;
+    this.selectedInviteTemplate = null;
+  }
+
+// 4. Methods to handle transitions
+  goToPreview() {
+    if (!this.selectedInviteTemplate) return;
+    
+    // Initialize manual values for 'manual' (send-time) placeholders
+    this.manualPlaceholderValues = {};
+    this.selectedInviteTemplate.customPlaceholders.forEach(p => {
+      this.manualPlaceholderValues[p.key] = '';
+    });
+    
+    this.isStepTwo = true;
+  }
+
+  // 5. Logic to resolve placeholders before sending
+  resolveFinalContent(text: string): string {
+    // Database values (auto-resolved)
+    const dbValues: Record<string, string> = {
+      candidateName: `${this.selectedCandidate.firstname} ${this.selectedCandidate.lastname}`,
+      jobTitle: this.selectedJob?.title || 'the position',
+      companyName: this.regData?.companyName || 'N/A', 
+      recruiterName: this.regData?.user?.username ||  'Recruiter',
+      recruiterEmail: this.regData?.user?.email || 'recruiter@company.com',
+      location: this.selectedJob?.location || 'Location'
+    };
+
+    const allValues = { ...dbValues, ...this.manualPlaceholderValues };
+
+    return text.replace(/\{\{(\w+)\}\}/g, (_, key) => allValues[key] || `{{${key}}}`);
+  }
+
+  sendFinalMail(){
+    console.log("sent")
+    this.sendLoading = true;
+
+    const body = {
+      name: this.selectedCandidate.firstname,
+      recieverEmail: this.selectedCandidate.email,
+      subject: this.resolveFinalContent(this.selectedInviteTemplate?.subject || ''),
+      body: this.resolveFinalContent(this.selectedInviteTemplate?.body || '')
+    }
+    this.mailService.sendMail(body).subscribe({
+      next: (res) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Invite sent successfully',
+          key: 'tl'
+        });
+        console.log("Invite sent successfully", res);
+
+        switch (this.currentAction) {
+          case 'Interview Invite':
+            this.onSendInterview(this.selectedCandidate);
+            break;
+          case 'Shortlist':
+            this.onShortlist(this.selectedCandidate);
+            break;
+          case 'Request Docs':
+            this.onRequestDocs(this.selectedCandidate);
+            break;
+          case 'Offer':
+            this.onSendOffer(this.selectedCandidate);
+            break;
+          case 'Rejection':
+            this.onReject(this.selectedCandidate);
+            break;
+          default:
+             break;
+        }
+
+          this.showInviteModal = false;
+          this.isStepTwo = false;
+          this.selectedInviteTemplate = null;
+          this.sendLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to send invite',
+          key: 'tl'
+        });
+        console.error("Error sending invite", err);
+        this.sendLoading = false;
+
+      }
+    })
   }
 
   // showCandidate: boolean = true;
