@@ -5,6 +5,15 @@ import { AccountDTO, AccountType, PaginationResult } from '../../domain/accounti
 import { AccountingService } from '../../../services/accounting.service';
 import { ToastService } from '../../../services/toast.service';
 
+/**
+ * Extended AccountDTO with visual/hierarchical properties
+ */
+export interface TreeAccountDTO extends AccountDTO {
+  children?: TreeAccountDTO[];
+  level?: number;
+  expanded?: boolean;
+}
+
 @Component({
   selector: 'app-chart-of-accounts',
   templateUrl: './chart-of-accounts.component.html',
@@ -12,15 +21,18 @@ import { ToastService } from '../../../services/toast.service';
 })
 export class ChartOfAccountsComponent implements OnInit {
   // Data
-  accounts: AccountDTO[] = [];
-  filteredAccounts: AccountDTO[] = [];
-  paginatedAccounts: AccountDTO[] = [];
+  accounts: TreeAccountDTO[] = [];
+  treeAccounts: TreeAccountDTO[] = []; // Root accounts with children
+  filteredAccounts: TreeAccountDTO[] = []; // Current display list (flattened roots)
+  paginatedAccounts: TreeAccountDTO[] = [];
   
   // Selection
-  selectedAccounts: AccountDTO[] = [];
+  selectedAccounts: TreeAccountDTO[] = [];
   
   // State
   loading = false;
+  expandedNodes: Set<number> = new Set();
+  searchTerm: string = '';
   rows = 10;
   first = 0;
 
@@ -31,6 +43,7 @@ export class ChartOfAccountsComponent implements OnInit {
     accountCode: 0,
     accountName: '',
     accountType: AccountType.ASSET,
+    parentAccountId: 0,
     description: '',
     active: true,
     currency: 'NGN'
@@ -59,11 +72,12 @@ export class ChartOfAccountsComponent implements OnInit {
 
   loadAccounts() {
     this.loading = true;
-    this.accountingService.getAccounts(0, 500).subscribe({ // Load larger set for local filtering
+    this.accountingService.getAccounts(0, 500).subscribe({
       next: (data: PaginationResult<AccountDTO>) => {
-        this.accounts = (data.content || []).map(a => ({ ...a, selected: false }));
-        this.filteredAccounts = [...this.accounts];
-        this.updatePaginatedAccounts();
+        const flatList = (data.content || []).map(a => ({ ...a, selected: false }));
+        this.accounts = flatList as TreeAccountDTO[];
+        this.updateAvailableParents(); // Initialize parents list
+        this.buildTree();
         this.loading = false;
       },
       error: () => {
@@ -73,20 +87,97 @@ export class ChartOfAccountsComponent implements OnInit {
     });
   }
 
-  applyFilter(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredAccounts = this.accounts.filter(account =>
-      account.accountCode?.toString().includes(filterValue) ||
-      account.accountName?.toLowerCase().includes(filterValue) ||
-      account.accountType?.toLowerCase().includes(filterValue) ||
-      (account.description && account.description.toLowerCase().includes(filterValue))
-    );
+  buildTree() {
+    const accountMap = new Map<number, TreeAccountDTO>();
+    this.accounts.forEach(acc => {
+      acc.children = [];
+      accountMap.set(acc.id, acc);
+    });
+
+    const roots: TreeAccountDTO[] = [];
+    this.accounts.forEach(acc => {
+      const parentId = acc.parentAccountId || (acc.parentAccount ? acc.parentAccount.id : 0);
+      if (parentId && accountMap.has(parentId)) {
+        const parent = accountMap.get(parentId)!;
+        parent.children = parent.children || [];
+        parent.children.push(acc);
+      } else {
+        roots.push(acc);
+      }
+    });
+
+    this.treeAccounts = roots;
+    this.applyFiltering();
+  }
+
+  toggleNode(account: TreeAccountDTO) {
+    if (this.expandedNodes.has(account.id)) {
+      this.expandedNodes.delete(account.id);
+    } else {
+      this.expandedNodes.add(account.id);
+    }
+    this.updatePaginatedAccounts();
+  }
+
+  applyFiltering() {
+    if (!this.searchTerm) {
+      this.filteredAccounts = [...this.treeAccounts];
+    } else {
+      const term = this.searchTerm.toLowerCase();
+      // Tree search: include matching nodes and their ancestors
+      const matches = new Set<number>();
+      
+      const checkNode = (node: TreeAccountDTO): boolean => {
+        const nodeMatches = 
+          node.accountCode?.toString().includes(term) ||
+          node.accountName?.toLowerCase().includes(term) ||
+          node.accountType?.toLowerCase().includes(term) ||
+          (node.description && node.description.toLowerCase().includes(term));
+        
+        let childMatches = false;
+        if (node.children) {
+          node.children.forEach(c => {
+            if (checkNode(c)) childMatches = true;
+          });
+        }
+
+        if (nodeMatches || childMatches) {
+          matches.add(node.id);
+          return true;
+        }
+        return false;
+      };
+
+      this.treeAccounts.forEach(root => checkNode(root));
+      
+      // Filter root list to only those that match or have matching descendants
+      this.filteredAccounts = this.treeAccounts.filter(root => matches.has(root.id));
+    }
     this.first = 0;
     this.updatePaginatedAccounts();
   }
 
+  applyFilter(event: Event) {
+    this.searchTerm = (event.target as HTMLInputElement).value;
+    this.applyFiltering();
+  }
+
   updatePaginatedAccounts() {
-    this.paginatedAccounts = this.filteredAccounts.slice(this.first, this.first + this.rows);
+    // Pagination happens on the filtered root accounts
+    const paginatedRoots = this.filteredAccounts.slice(this.first, this.first + this.rows);
+    
+    // Flatten the paginated root nodes into a list for the table rows, respecting expansion
+    const flattened: TreeAccountDTO[] = [];
+    const flatten = (node: TreeAccountDTO, level: number) => {
+      node.level = level;
+      flattened.push(node);
+      if (this.expandedNodes.has(node.id) && node.children && node.children.length > 0) {
+        node.children.forEach(child => flatten(child, level + 1));
+      }
+    };
+
+    paginatedRoots.forEach(root => flatten(root, 0));
+    this.paginatedAccounts = flattened;
   }
 
   // Selection methods
@@ -114,9 +205,24 @@ export class ChartOfAccountsComponent implements OnInit {
   nextPage() { if (this.first + this.rows < this.filteredAccounts.length) { this.first += this.rows; this.updatePaginatedAccounts(); } }
   onRowsChange() { this.first = 0; this.updatePaginatedAccounts(); }
 
+  availableParents: TreeAccountDTO[] = [];
+
+  // Logic to update available parents based on current selection
+  updateAvailableParents() {
+    this.availableParents = this.accounts.filter(acc => 
+      acc.accountType === this.newAccount.accountType && 
+      acc.id !== this.newAccount.id
+    );
+  }
+
   // Modal logic
   toggleTypeDropdown() { this.showTypeDropdown = !this.showTypeDropdown; }
-  selectType(type: any) { this.newAccount.accountType = type; this.showTypeDropdown = false; }
+  selectType(type: any) { 
+    this.newAccount.accountType = type; 
+    this.newAccount.parentAccountId = 0; 
+    this.updateAvailableParents(); // Update parent list when type changes
+    this.showTypeDropdown = false; 
+  }
   
   closeModalOnBackdrop(event: MouseEvent) {
     if (event.target === event.currentTarget) this.showAddAccountModal = false;
@@ -127,8 +233,20 @@ export class ChartOfAccountsComponent implements OnInit {
       this.toastService.warn('Account Name and Code are required');
       return;
     }
+    
     this.loading = true;
-    this.accountingService.createAccount(this.newAccount).subscribe({
+    
+    // Sanitize payload: If parentAccountId is 0, set to undefined to satisfy TS and omit from JSON
+    const payload = { 
+      ...this.newAccount,
+      parentAccountId: (this.newAccount.parentAccountId && this.newAccount.parentAccountId !== 0) 
+        ? this.newAccount.parentAccountId 
+        : undefined
+    };
+
+    console.log('[Optimax Diagnostic] Creating Account with payload:', payload);
+    
+    this.accountingService.createAccount(payload).subscribe({
       next: () => {
         this.toastService.success('Account created successfully');
         this.showAddAccountModal = false;

@@ -26,6 +26,24 @@ export class AccountingQueueComponent implements OnInit {
   rows = 10;
   totalRecords = 0;
 
+  // Filtering
+  searchTerm = '';
+  selectedType = '';
+  selectedModule = '';
+  selectedStatus = '';
+  
+  modules = ['POS', 'HR', 'HOSPITALITY', 'BANK', 'EXPENSE', 'MANUAL'];
+  statuses = ['UNPROCESSED', 'APPROVED', 'REJECTED', 'PROCESSING'];
+  
+  eventTypes = [
+    'LOAN_DISBURSEMENT',
+    'PRINCIPLE_REPAYMENT',
+    'INTEREST_REPAYMENT',
+    'LATE_FEE',
+    'CONTRIBUTION',
+    'PATRONAGE'
+  ];
+
   // Edit modal state
   isEditOpen = false;
   editingEvent: QueueEvent | null = null;
@@ -44,7 +62,7 @@ export class AccountingQueueComponent implements OnInit {
 
   loadEvents(): void {
     this.loading = true;
-    const page = Math.floor(this.first / this.rows) + 1; // API is 1-indexed for pages
+    const page = Math.floor(this.first / this.rows);
     this.accountingService.getEvents(page, this.rows).subscribe({
       next: (res: PaginationResult<AccountingEventDTO>) => {
         console.log('[Optimax Accounting] Events fetched successfully:', res);
@@ -119,6 +137,25 @@ export class AccountingQueueComponent implements OnInit {
     });
   }
 
+  get filteredEvents(): QueueEvent[] {
+    return this.events.filter(event => {
+      const matchesSearch = !this.searchTerm || 
+        (event.reference?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (event.description?.toLowerCase().includes(this.searchTerm.toLowerCase()));
+      
+      const matchesType = !this.selectedType || event.eventType === this.selectedType;
+      const matchesModule = !this.selectedModule || event.sourceModule === this.selectedModule;
+      const matchesStatus = !this.selectedStatus || event.status === this.selectedStatus;
+      
+      return matchesSearch && matchesType && matchesModule && matchesStatus;
+    });
+  }
+
+  formatLabel(val: string | undefined): string {
+    if (!val) return '';
+    return val.replace(/_/g, ' ');
+  }
+
   onPageChange(event: any): void {
     this.first = event.first;
     this.rows = event.rows;
@@ -126,10 +163,26 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   approveEvent(event: QueueEvent): void {
-    if (!event.matchedMapping) {
-      this.toastService.error('Cannot approve: No account mapping found for this event type.');
+    // Build mapping from current account suggestions on the event, if they exist
+    const debitAcc = this.resolveAccountByName(event.suggestedDebit);
+    const creditAcc = this.resolveAccountByName(event.suggestedCredit);
+
+    if (!debitAcc || !creditAcc) {
+      this.toastService.error('Cannot approve: Please assign both Debit and Credit accounts first.');
       return;
     }
+
+    // Build or use existing mapping
+    const mapping: AccountMappingDTO = event.matchedMapping || {
+      id: 0,
+      sourceModule: event.sourceModule,
+      eventType: event.eventType,
+      debitAccount: debitAcc,
+      creditAccount: creditAcc,
+      debitAccountId: debitAcc.id,
+      creditAccountId: creditAcc.id,
+      createdAt: new Date().toISOString()
+    };
 
     const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
     if (!userDataStr) {
@@ -140,16 +193,16 @@ export class AccountingQueueComponent implements OnInit {
     const createdBy = JSON.parse(userDataStr);
     event.status = 'PROCESSING';
 
-    this.accountingService.orchestrateEventExecution(event, event.matchedMapping, createdBy).subscribe({
+    this.accountingService.orchestrateEventExecution(event, mapping, createdBy).subscribe({
       next: (res) => {
         event.status = 'APPROVED';
-        this.toastService.success(`Event ${event.reference} successfully processed into Ledger`);
-        console.log('Orchestration result:', res);
+        this.toastService.success(`Event ${event.reference} successfully posted to the General Ledger`);
+        console.log('[Optimax Queue] Orchestration result:', res);
       },
       error: (err) => {
         event.status = 'UNPROCESSED';
         this.toastService.error(`Failed to process event ${event.reference}: ${err.message || 'Server error'}`);
-        console.error('Orchestration error:', err);
+        console.error('[Optimax Queue] Orchestration error:', err);
       }
     });
   }
@@ -166,12 +219,103 @@ export class AccountingQueueComponent implements OnInit {
 
   saveEdit(): void {
     if (!this.editingEvent) return;
-    const idx = this.events.findIndex(e => e.reference === this.editingEvent!.reference);
-    if (idx !== -1) {
-      this.events[idx] = { ...this.editingEvent };
+
+    const debitAcc  = this.resolveAccountByName(this.editingEvent.suggestedDebit);
+    const creditAcc = this.resolveAccountByName(this.editingEvent.suggestedCredit);
+
+    // Persist mapping rule to backend if we have valid accounts
+    if (debitAcc && creditAcc) {
+      const mappingPayload: Partial<AccountMappingDTO> = {
+        sourceModule: this.editingEvent.sourceModule,
+        eventType:    this.editingEvent.eventType,
+        debitAccountId:  debitAcc.id,
+        creditAccountId: creditAcc.id,
+        description: `Auto-mapped: ${this.editingEvent.eventType} via Queue Manager`
+      };
+
+      const existingMapping = this.editingEvent.matchedMapping;
+
+      if (existingMapping?.id) {
+        // Update existing rule
+        this.accountingService.updateAccountMapping(existingMapping.id, mappingPayload).subscribe({
+          next: (updated) => {
+            this.toastService.success('Account mapping rule updated successfully');
+            this.editingEvent!.matchedMapping = updated;
+            console.log('[Optimax Queue] Mapping updated:', updated);
+          },
+          error: (err) => {
+            this.toastService.error('Failed to update mapping rule. Changes saved locally only.');
+            console.error('[Optimax Queue] Mapping update error:', err);
+          }
+        });
+      } else {
+        // Create new rule
+        this.accountingService.createAccountMapping(mappingPayload).subscribe({
+          next: (created) => {
+            this.toastService.success('New account mapping rule saved successfully');
+            this.editingEvent!.matchedMapping = created;
+            console.log('[Optimax Queue] Mapping created:', created);
+          },
+          error: (err) => {
+            this.toastService.error('Failed to save mapping rule. Changes saved locally only.');
+            console.error('[Optimax Queue] Mapping create error:', err);
+          }
+        });
+      }
+    } else {
+      this.toastService.warn('Account mapping not saved — please select valid Debit and Credit accounts.');
     }
+
+    // Always update local state
+    const idx = this.events.findIndex(e => e.reference === this.editingEvent!.reference);
+    if (idx !== -1) this.events[idx] = { ...this.editingEvent };
     this.isEditOpen = false;
-    this.toastService.success('Event updated');
+  }
+
+  /** Resolve an AccountDTO from the display string "Code - Name" or just a plain name */
+  private resolveAccountByName(nameOrLabel: string | undefined): AccountDTO | undefined {
+    if (!nameOrLabel) return undefined;
+    // Handles both "6001 - Salaries" and "Salaries" formats
+    const bare = nameOrLabel.includes(' - ')
+      ? nameOrLabel.split(' - ').slice(1).join(' - ').trim()
+      : nameOrLabel.trim();
+    return this.accounts.find(a => a.accountName === bare || a.accountName === nameOrLabel);
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedType = '';
+    this.selectedModule = '';
+    this.selectedStatus = '';
+    this.toastService.info('Filters cleared');
+  }
+
+  formatMetadataKey(key: string): string {
+    if (!key) return '';
+    // camelCase to Title Case
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
+  }
+
+  getMetadataEntries(metadata: any): { key: string, value: any }[] {
+    if (!metadata) return [];
+    return Object.entries(metadata)
+      .map(([key, value]) => ({ key, value }))
+      .filter(item => item.value !== null && item.value !== undefined && item.value !== '');
+  }
+
+  isCurrencyField(key: string): boolean {
+    const currencyKeys = ['amount', 'repayable', 'rate', 'interest', 'balance', 'bankBalance', 'approvedAmount', 'totalRepayable'];
+    const lowerKey = key.toLowerCase();
+    return currencyKeys.some(ck => lowerKey.includes(ck));
+  }
+
+  isDateField(key: string): boolean {
+    const dateKeys = ['initiatedat', 'approveddate', 'createdat', 'updatedat', 'expecteddate', 'date'];
+    const lowerKey = key.toLowerCase();
+    return dateKeys.some(dk => lowerKey.includes(dk));
   }
 
   getStatusClass(status: string): string {

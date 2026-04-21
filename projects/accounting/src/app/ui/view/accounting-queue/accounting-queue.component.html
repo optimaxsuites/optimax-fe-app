@@ -37,6 +37,53 @@
       </div>
     </div>
 
+    <!-- ── Filter Bar ── -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6 mb-8">
+      <div class="relative flex-1 w-full">
+        <i class="pi pi-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input [(ngModel)]="searchTerm" type="text" placeholder="Search by reference or description..."
+          class="w-full pl-12 pr-5 py-4 bg-white border border-gray-200 rounded-xl font-bold text-lg text-gray-700 outline-none focus:ring-4 focus:ring-customBlue/10 transition-all placeholder:text-gray-300">
+      </div>
+      
+      <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+        <!-- Type Filter -->
+        <div class="relative flex-1 md:w-64">
+          <select [(ngModel)]="selectedType"
+            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
+            <option value="">All Types</option>
+            <option *ngFor="let type of eventTypes" [value]="type">{{ formatLabel(type) }}</option>
+          </select>
+          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+        </div>
+
+        <!-- Module Filter -->
+        <div class="relative flex-1 md:w-56">
+          <select [(ngModel)]="selectedModule"
+            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
+            <option value="">All Modules</option>
+            <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+          </select>
+          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="relative flex-1 md:w-56">
+          <select [(ngModel)]="selectedStatus"
+            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
+            <option value="">All Statuses</option>
+            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+          </select>
+          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+        </div>
+
+        <!-- Clear Button -->
+        <button (click)="clearFilters()"
+          class="px-6 py-4 text-gray-400 font-black uppercase tracking-widest text-lg hover:text-gray-900 transition-colors flex items-center gap-2">
+          <i class="pi pi-filter-slash"></i> Clear
+        </button>
+      </div>
+    </div>
+
     <!-- ── Table Card ── -->
     <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
 
@@ -48,15 +95,15 @@
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="!loading && events.length === 0"
+      <div *ngIf="!loading && filteredEvents.length === 0"
         class="flex flex-col items-center justify-center py-32 text-gray-400">
         <i class="pi pi-inbox text-6xl opacity-20 mb-4"></i>
-        <p class="text-2xl font-black opacity-40 italic">No events in the queue</p>
-        <p class="text-lg font-medium mt-2">New accounting events will appear here once generated</p>
+        <p class="text-2xl font-black opacity-40 italic">No events match your criteria</p>
+        <p class="text-lg font-medium mt-2">Try adjusting your search or filters</p>
       </div>
 
       <!-- Table -->
-      <div *ngIf="!loading && events.length > 0" class="overflow-x-auto">
+      <div *ngIf="!loading && filteredEvents.length > 0" class="overflow-x-auto">
         <table class="w-full border-collapse">
           <thead>
             <tr class="bg-customBlue text-left border-b border-gray-100">
@@ -71,7 +118,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr *ngFor="let ev of events"
+            <tr *ngFor="let ev of filteredEvents"
               class="hover:bg-gray-50/60 transition-all group"
               [class.opacity-50]="ev.status === 'REJECTED'">
 
@@ -92,7 +139,7 @@
               <!-- Description -->
               <td class="px-6 py-5">
                 <p class="text-xl font-bold text-gray-800 max-w-xs truncate">{{ ev.description || '—' }}</p>
-                <p class="text-lg text-gray-400 font-medium mt-0.5">{{ ev.eventType }}</p>
+                <p class="text-lg text-gray-400 font-medium mt-0.5">{{ formatLabel(ev.eventType) }}</p>
               </td>
 
               <!-- Amount -->
@@ -169,52 +216,153 @@
   </div>
 </div>
 
-<!-- ── Edit Modal ── -->
-<div *ngIf="isEditOpen"
-  class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
-  <div class="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-
-    <div class="p-8 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-      <div>
-        <h2 class="text-2xl font-black text-gray-900 leading-none">Edit Queue Event</h2>
-        <p class="text-gray-400 font-bold mt-1 text-xs uppercase tracking-widest">{{ editingEvent?.reference }}</p>
-      </div>
-      <button (click)="isEditOpen = false" class="text-gray-400 hover:text-gray-900 transition-colors">
-        <i class="pi pi-times text-2xl"></i>
-      </button>
+<!-- ── Redesigned Edit Modal ── -->
+<app-large-side-modal *ngIf="isEditOpen" (close)="isEditOpen = false">
+  <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 backdrop-blur-sm">
+    <div class="flex items-center gap-4">
+      <h2 class="text-3xl font-black text-[#2E6276] leading-none tracking-tight">Queue Event Manager</h2>
+      <span *ngIf="editingEvent" class="px-3 py-1 text-xs font-black uppercase tracking-widest rounded-full border"
+            [ngClass]="getStatusClass(editingEvent.status)">
+        {{ editingEvent.status }}
+      </span>
     </div>
+    <button (click)="isEditOpen = false" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+      <i class="pi pi-times text-2xl text-gray-400"></i>
+    </button>
+  </div>
+  
+  <div class="px-8 py-2 bg-white" *ngIf="editingEvent">
+    <p class="text-gray-500 font-bold text-lg">ID: <span class="font-black text-gray-900">{{ editingEvent?.reference }}</span></p>
+  </div>
 
-    <div class="p-8 space-y-6" *ngIf="editingEvent">
+  <div class="px-8 py-8 space-y-10 pb-10 overflow-y-auto h-[calc(100vh-180px)]" *ngIf="editingEvent">
 
-      <div>
-        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
-        <input [(ngModel)]="editingEvent.description" type="text"
-          class="w-full bg-gray-100 border-none rounded-2xl px-5 py-3 font-bold text-gray-700 outline-none focus:ring-4 focus:ring-customBlue/10 transition-all">
-      </div>
-
-      <div class="grid grid-cols-2 gap-6">
-        <div>
-          <label class="block text-xs font-black text-red-400 uppercase tracking-widest mb-2">Suggested Debit Account</label>
-          <input [(ngModel)]="editingEvent.suggestedDebit" type="text" placeholder="e.g. 6001 - Salaries"
-            class="w-full bg-red-50 border-2 border-red-100 rounded-2xl px-5 py-3 font-bold text-red-900 outline-none focus:ring-4 focus:ring-red-100 transition-all placeholder:text-red-300">
+    <!-- Section: Core Mapping -->
+    <section class="space-y-6">
+      <div class="relative flex items-center">
+        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+          <div class="w-full border-t border-gray-200"></div>
         </div>
-        <div>
-          <label class="block text-xs font-black text-emerald-400 uppercase tracking-widest mb-2">Suggested Credit Account</label>
-          <input [(ngModel)]="editingEvent.suggestedCredit" type="text" placeholder="e.g. 1001 - Cash"
-            class="w-full bg-emerald-50 border-2 border-emerald-100 rounded-2xl px-5 py-3 font-bold text-emerald-900 outline-none focus:ring-4 focus:ring-emerald-100 transition-all placeholder:text-emerald-300">
+        <div class="relative flex justify-start">
+          <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">General Mapping</span>
         </div>
       </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Event Type</label>
+          <input [value]="formatLabel(editingEvent.eventType)" disabled
+            class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-5 py-4 font-black text-[#2E6276] text-xl uppercase tracking-widest outline-none opacity-80 cursor-not-allowed">
+        </div>
 
-    </div>
+        <div>
+          <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Description</label>
+          <div class="relative">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#2E6276] rounded-l-xl"></div>
+            <input [(ngModel)]="editingEvent.description" type="text"
+              class="w-full bg-gray-50/80 border border-gray-200 rounded-xl pl-7 pr-5 py-4 font-bold text-gray-700 text-xl outline-none focus:ring-4 focus:ring-customBlue/5 transition-all">
+          </div>
+        </div>
 
-    <div class="p-8 bg-gray-50 flex items-center justify-end gap-4">
-      <button (click)="isEditOpen = false" class="text-gray-400 font-black uppercase tracking-widest text-sm hover:text-gray-900 transition-colors">
+        <div>
+          <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Debit Account Suggestion</label>
+          <ng-select 
+            [items]="accounts"
+            bindLabel="accountName"
+            bindValue="accountName"
+            [(ngModel)]="editingEvent.suggestedDebit"
+            placeholder="Search account..."
+            class="custom-ng-select-queue"
+            appendTo="body">
+            <ng-template ng-option-tmp let-item="item">
+              <div class="flex items-center gap-2 py-1">
+                <span class="text-[#2E6276] font-bold">{{ item.accountCode }}</span>
+                <span class="text-gray-300">-</span>
+                <span class="font-medium">{{ item.accountName }}</span>
+              </div>
+            </ng-template>
+          </ng-select>
+        </div>
+
+        <div>
+          <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Credit Account Suggestion</label>
+          <ng-select 
+            [items]="accounts"
+            bindLabel="accountName"
+            bindValue="accountName"
+            [(ngModel)]="editingEvent.suggestedCredit"
+            placeholder="Search account..."
+            class="custom-ng-select-queue"
+            appendTo="body">
+            <ng-template ng-option-tmp let-item="item">
+              <div class="flex items-center gap-2 py-1">
+                <span class="text-[#2E6276] font-bold">{{ item.accountCode }}</span>
+                <span class="text-gray-300">-</span>
+                <span class="font-medium">{{ item.accountName }}</span>
+              </div>
+            </ng-template>
+          </ng-select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section: Transaction Detail Metadata -->
+    <section *ngIf="editingEvent.metadata" class="space-y-6">
+      <div class="relative flex items-center">
+        <div class="absolute inset-0 flex items-center" aria-hidden="true">
+          <div class="w-full border-t border-gray-200"></div>
+        </div>
+        <div class="relative flex justify-start">
+          <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Transaction Metadata</span>
+        </div>
+      </div>
+      
+      <div class="bg-white border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 divide-x divide-y divide-gray-200 border-collapse">
+          
+          <div *ngFor="let item of getMetadataEntries(editingEvent.metadata)" 
+            class="p-6 flex flex-col gap-2 min-h-[120px]">
+            <span class="text-base font-black text-gray-400 uppercase tracking-widest">{{ formatMetadataKey(item.key) }}</span>
+            <div class="flex-1 flex items-center">
+              <ng-container [ngSwitch]="true">
+                <!-- Purpose Badge -->
+                <span *ngSwitchCase="item.key === 'purpose'" class="px-3 py-1 bg-gray-100 text-gray-400 text-lg font-black uppercase tracking-widest rounded-md border border-gray-200">
+                  {{ item.value }}
+                </span>
+                
+                <!-- Currency -->
+                <span *ngSwitchCase="isCurrencyField(item.key)" class="text-2xl font-black text-[#2E6276]">
+                  {{ item.value | currency:'NGN':'symbol-narrow' }}
+                </span>
+
+                <!-- Date -->
+                <div *ngSwitchCase="isDateField(item.key)" class="flex flex-col gap-0.5">
+                  <span class="text-xl font-bold text-gray-800">{{ item.value | date:'yyyy-MM-dd' }}</span>
+                  <span class="text-lg font-medium text-gray-400 lowercase">{{ item.value | date:'h:mm a' }}</span>
+                </div>
+                
+                <!-- Default -->
+                <span *ngSwitchDefault class="text-xl font-bold text-gray-800" [ngClass]="{'text-gray-300 italic font-medium': item.value === 'string'}">
+                  {{ item.value }}
+                </span>
+              </ng-container>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+
+    <!-- Buttons moved inside the scrollable container footer area -->
+    <div class="pt-10 flex items-center justify-end gap-5 border-t border-gray-100">
+      <button (click)="isEditOpen = false" class="px-10 py-4 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-black uppercase tracking-widest text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-sm">
         Cancel
       </button>
       <button (click)="saveEdit()"
-        class="bg-customBlue text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-customBlue/20 hover:scale-105 active:scale-95 transition-all">
-        Save Changes
+        class="bg-[#2E6276] text-white px-12 py-4 rounded-xl font-black uppercase tracking-widest text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#2E6276]/20">
+        Apply & Close <i class="pi pi-check-circle text-xl"></i>
       </button>
     </div>
+
   </div>
-</div>
+</app-large-side-modal>

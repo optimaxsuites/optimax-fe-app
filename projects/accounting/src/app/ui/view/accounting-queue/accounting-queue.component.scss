@@ -1,1 +1,79 @@
 // Styles are handled via Tailwind CSS utility classes in the template
+
+// Global ng-select premium styling for the Queue Event Manager
+::ng-deep .custom-ng-select-queue {
+  .ng-select-container {
+    background-color: #f9fafb !important; // bg-gray-50
+    border: 1px solid #e5e7eb !important; // border-gray-200
+    border-radius: 0.75rem !important; // rounded-xl
+    min-height: 4rem !important;
+    padding: 0 0.75rem !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease-in-out !important;
+
+    &:hover {
+      border-color: #d1d5db !important;
+    }
+  }
+
+  &.ng-select-focused .ng-select-container {
+    border-color: #2E6276 !important;
+    background-color: #fff !important;
+    box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.05) !important;
+  }
+
+  .ng-value-label, .ng-placeholder {
+    font-weight: 700 !important; // font-bold
+    color: #374151 !important; // text-gray-700
+    font-size: 1.25rem !important; // text-xl
+  }
+
+  .ng-dropdown-panel {
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 1.5rem !important; // rounded-3xl
+    margin-top: 0.75rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+
+    .ng-dropdown-panel-items {
+      .ng-option {
+        padding: 1rem 1.5rem !important;
+        font-weight: 700 !important;
+        font-size: 1.125rem !important;
+        transition: background-color 0.15s ease !important;
+
+        &.ng-option-selected {
+          background-color: #f0f7f9 !important;
+          color: #2E6276 !important;
+        }
+
+        &.ng-option-marked {
+          background-color: #f8fafc !important;
+        }
+      }
+    }
+  }
+
+  // Clear icon
+  .ng-clear-wrapper {
+    color: #9ca3af !important;
+    &:hover { color: #6b7280 !important; }
+  }
+}
+
+// Custom scrollbar for modal content
+.overflow-y-auto {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+    &:hover {
+      background: #d1d5db;
+    }
+  }
+}

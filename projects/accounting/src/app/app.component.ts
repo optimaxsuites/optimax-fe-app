@@ -14,10 +14,15 @@ export class AppComponent implements OnInit {
 
   constructor(private authenticationService: AuthenticationService) {
     console.warn('[Optimax Heartbeat] AppComponent constructor initialized');
-    // ✅ FIXED: Mirrors Hospitality — check raw token presence, not isAuthenticated()
-    // This avoids a race condition where JwtHelperService isn't ready yet in the constructor
+    // Check token presence AND expiry — re-login if missing or expired
     const existingToken = sessionStorage.getItem('Token') || localStorage.getItem('Token2');
-    if (!existingToken) {
+    const isExpiredOrMissing = !existingToken || this.authenticationService.isAuthenticated() === false;
+    if (isExpiredOrMissing) {
+      // Clear stale expired tokens before re-logging in
+      sessionStorage.removeItem('Token');
+      localStorage.removeItem('Token2');
+      sessionStorage.removeItem('accessToken');
+      localStorage.removeItem('accessToken2');
       this.userLoginAction();
     }
   }

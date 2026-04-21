@@ -122,6 +122,7 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
 import { GeneralLedgerComponent } from './ui/view/general-ledger/general-ledger.component';
 import { ToastComponent } from './ui/sharedComponent/view/toast/toast.component';
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
+import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 
 @NgModule({
   declarations: [
@@ -237,7 +238,8 @@ import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-
     ToggleButtonModule,
     ProgressSpinnerModule,
     PdfViewerWrapperModule,
-    SideModalComponent
+    SideModalComponent,
+    LargeSideModalComponent
   ],
   providers: [
     MessageService,
