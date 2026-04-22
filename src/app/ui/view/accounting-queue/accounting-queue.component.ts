@@ -48,6 +48,10 @@ export class AccountingQueueComponent implements OnInit {
   isEditOpen = false;
   editingEvent: QueueEvent | null = null;
 
+  // Custom Confirmation Modal State
+  isConfirmOpen = false;
+  pendingActionData: { event: QueueEvent, mapping: AccountMappingDTO, createdBy: any } | null = null;
+
   constructor(
     private accountingService: AccountingService,
     private toastService: ToastService
@@ -163,6 +167,12 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   approveEvent(event: QueueEvent): void {
+    // ── Irreversible Processing Check ──
+    if (event.status === 'PROCESSING' || event.status === 'APPROVED') {
+      this.toastService.warn('This event is already processed or being processed.');
+      return;
+    }
+
     // Build mapping from current account suggestions on the event, if they exist
     const debitAcc = this.resolveAccountByName(event.suggestedDebit);
     const creditAcc = this.resolveAccountByName(event.suggestedCredit);
@@ -191,20 +201,38 @@ export class AccountingQueueComponent implements OnInit {
     }
 
     const createdBy = JSON.parse(userDataStr);
+
+    // ── Open Custom Confirmation Modal ──
+    this.pendingActionData = { event, mapping, createdBy };
+    this.isConfirmOpen = true;
+  }
+
+  executePostToLedger(): void {
+    if (!this.pendingActionData) return;
+
+    const { event, mapping, createdBy } = this.pendingActionData;
+    
     event.status = 'PROCESSING';
+    this.isConfirmOpen = false; // Close modal immediately to show status change in background
 
     this.accountingService.orchestrateEventExecution(event, mapping, createdBy).subscribe({
       next: (res) => {
         event.status = 'APPROVED';
         this.toastService.success(`Event ${event.reference} successfully posted to the General Ledger`);
-        console.log('[Optimax Queue] Orchestration result:', res);
+        this.pendingActionData = null;
       },
       error: (err) => {
         event.status = 'UNPROCESSED';
         this.toastService.error(`Failed to process event ${event.reference}: ${err.message || 'Server error'}`);
-        console.error('[Optimax Queue] Orchestration error:', err);
+        // Consider whether to reopen the modal or just let the user try again
+        this.pendingActionData = null;
       }
     });
+  }
+
+  cancelConfirm(): void {
+    this.isConfirmOpen = false;
+    this.pendingActionData = null;
   }
 
   rejectEvent(event: QueueEvent): void {

@@ -13,6 +13,7 @@ import {
   UserDTO,
   PaginationResult 
 } from '../ui/domain/accounting.dto';
+import { concatMap, map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -143,13 +144,14 @@ export class AccountingService {
   // Event → Transaction → Journal Entry → Journal Lines → Ledger Entries
   orchestrateEventExecution(event: AccountingEventDTO, mapping: AccountMappingDTO, createdBy: UserDTO): Observable<any> {
     const transactionDate = new Date().toISOString();
+    const createdById = createdBy?.id ?? createdBy?.userId ?? null;
 
     // ── Extract rich metadata for meaningful descriptions ──
     const meta = event.metadata || {};
-    const memberName    = meta.memberName || meta.accountName || meta.employeeName || meta.reference || event.reference;
-    const purpose       = meta.purpose     ? `[${meta.purpose}]` : '';
-    const paymentMethod = meta.modeOfPayment || meta.paymentMethod || '';
-    const groupName     = meta.groupName   ? ` | Group: ${meta.groupName}` : '';
+    const memberName     = meta.memberName || meta.accountName || meta.employeeName || meta.reference || event.reference;
+    const purpose        = meta.purpose     ? `[${meta.purpose}]` : '';
+    const paymentMethod  = meta.modeOfPayment || meta.paymentMethod || '';
+    const groupName      = meta.groupName   ? ` | Group: ${meta.groupName}` : '';
     const instructionRef = meta.instructionReference || event.reference;
 
     const txDescription = [
@@ -166,86 +168,78 @@ export class AccountingService {
     const debitAccountId  = mapping.debitAccountId  ?? mapping.debitAccount?.id;
     const creditAccountId = mapping.creditAccountId ?? mapping.creditAccount?.id;
 
-    return new Observable(observer => {
-      // Resolve the numeric user ID — backend expects a Long, not a full object
-      const createdById = createdBy?.id ?? createdBy?.userId ?? null;
+    // ── Execute Pipeline ─────────────────────
+    return this.createTransaction({
+      transactionReference: instructionRef,
+      sourceModule:         event.sourceModule,
+      amount:               event.amount,
+      currency:             event.currency || 'NGN',
+      status:               TransactionReviewStatus.APPROVED,
+      accountId:            debitAccountId,
+      description:          txDescription,
+      transactionDate:      transactionDate,
+      createdBy:            createdById
+    }).pipe(
+      concatMap(tx => {
+        return this.createJournalEntry({
+          transactionId: tx.id,
+          entryDate:     transactionDate,
+          description:   `Journal Entry: ${txDescription}`,
+          status:        JournalEntryStatus.POSTED
+        }).pipe(map(journal => ({ tx, journal })));
+      }),
+      concatMap(({ tx, journal }) => {
+        const debitLine = {
+          journalEntryId: journal.id,
+          accountId:      debitAccountId,
+          debitAmount:    event.amount,
+          creditAmount:   0,
+          description:    debitDescription,
+          createdBy:      createdById
+        };
+        const creditLine = {
+          journalEntryId: journal.id,
+          accountId:      creditAccountId,
+          debitAmount:    0,
+          creditAmount:   event.amount,
+          description:    creditDescription,
+          createdBy:      createdById
+        };
 
-      // ── Step 1: Create Transaction ───────────────────────
-      this.createTransaction({
-        transactionReference: instructionRef,
-        sourceModule:         event.sourceModule,
-        amount:               event.amount,
-        currency:             event.currency || 'NGN',
-        status:               TransactionReviewStatus.APPROVED,
-        accountId:            debitAccountId,
-        description:          txDescription,
-        transactionDate:      transactionDate,
-        createdBy:            createdById
-      }).subscribe({
-        next: (tx) => {
-          // ── Step 2: Create Journal Entry ─────────────────
-          this.createJournalEntry({
-            transactionId: tx.id,
-            entryDate:     transactionDate,
-            description:   `Journal Entry: ${txDescription}`,
-            status:        JournalEntryStatus.POSTED
-          }).subscribe({
-            next: (journal) => {
-              // ── Step 3: Create Journal Lines (Debit & Credit) ──
-              const debitLine = {
-                journalEntryId: journal.id,
-                accountId:      debitAccountId,
-                debitAmount:    event.amount,
-                creditAmount:   0,
-                description:    debitDescription,
-                createdBy:      createdById
-              };
-              const creditLine = {
-                journalEntryId: journal.id,
-                accountId:      creditAccountId,
-                debitAmount:    0,
-                creditAmount:   event.amount,
-                description:    creditDescription,
-                createdBy:      createdById
-              };
+        return this.createJournalLine(debitLine).pipe(
+          concatMap(dl => this.createJournalLine(creditLine).pipe(map(cl => ({ debitLine: dl, creditLine: cl })))),
+          map(({ debitLine, creditLine }) => ({ tx, journal, debitLine, creditLine }))
+        );
+      }),
+      concatMap(({ tx, journal, debitLine, creditLine }) => {
+        // ── Posting to Ledger ─────────────────────
+        // We MUST link journalEntryLineId for the backend to derive descriptions/modules
+        const debitLedger = {
+          accountId:            debitAccountId,
+          journalEntryLineId:   debitLine.id, // CRITICAL LINK
+          debit:                event.amount,
+          credit:               0,
+          description:          debitDescription,
+          entryDate:            transactionDate,
+          sourceModule:         event.sourceModule,
+          transactionReference: instructionRef
+        };
+        const creditLedger = {
+          accountId:            creditAccountId,
+          journalEntryLineId:   creditLine.id, // CRITICAL LINK
+          debit:                0,
+          credit:               event.amount,
+          description:          creditDescription,
+          entryDate:            transactionDate,
+          sourceModule:         event.sourceModule,
+          transactionReference: instructionRef
+        };
 
-              this.createJournalLine(debitLine).subscribe({
-                next: () => {
-                  this.createJournalLine(creditLine).subscribe({
-                    next: () => {
-                      // ── Step 4: Post to Ledger ─────────────────────
-                      this.createLedgerEntry({
-                        accountId:    debitAccountId,
-                        debit:        event.amount,
-                        credit:       0,
-                        balanceAfter: 0,
-                        description:  debitDescription,
-                        entryDate:    transactionDate
-                      }).subscribe();
-
-                      this.createLedgerEntry({
-                        accountId:    creditAccountId,
-                        debit:        0,
-                        credit:       event.amount,
-                        balanceAfter: 0,
-                        description:  creditDescription,
-                        entryDate:    transactionDate
-                      }).subscribe();
-
-                      observer.next({ success: true, transaction: tx, journal: journal });
-                      observer.complete();
-                    },
-                    error: err => observer.error(err)
-                  });
-                },
-                error: err => observer.error(err)
-              });
-            },
-            error: err => observer.error(err)
-          });
-        },
-        error: err => observer.error(err)
-      });
-    });
+        return this.createLedgerEntry(debitLedger).pipe(
+          concatMap(() => this.createLedgerEntry(creditLedger)),
+          map(() => ({ success: true, transaction: tx, journal: journal }))
+        );
+      })
+    );
   }
 }

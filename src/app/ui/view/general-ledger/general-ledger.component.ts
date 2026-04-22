@@ -61,16 +61,29 @@ export class GeneralLedgerComponent implements OnInit {
     this.loading = true;
     this.accountingService.getLedgerEntries(0, 1000).subscribe({
       next: (res: PaginationResult<LedgerEntryDTO>) => {
-        this.allEntries = (res.content || []).map((entry: any) => ({
-          ...entry,
-          // Flatten nested fields the template expects as direct properties
-          date: entry.entryDate,
-          description: entry.description || entry.journalEntryLine?.description || 'System Entry',
-          transactionReference: entry.transactionReference ||
-            entry.journalEntryLine?.journalEntry?.transaction?.transactionReference || '—',
-          sourceModule: entry.sourceModule ||
-            entry.journalEntryLine?.journalEntry?.transaction?.sourceModule || 'MANUAL'
-        }));
+        console.log('[GeneralLedger Debug] Raw entries count:', res?.content?.length || 0);
+        if (res?.content?.length > 0) {
+          console.log('[GeneralLedger Debug] First entry raw:', res.content[0]);
+        }
+        
+        this.allEntries = (res.content || []).map((entry: any) => {
+          const normalizedDate = this.normalizeDateArray(entry.entryDate);
+          return {
+            ...entry,
+            entryDate: normalizedDate,
+            date: normalizedDate,
+            description: entry.description || 
+              entry.journalEntryLine?.description || 
+              entry.journalEntryLine?.journalEntry?.description || 
+              entry.journalEntryLine?.journalEntry?.transaction?.description || 'System Entry',
+            transactionReference: entry.transactionReference ||
+              entry.journalEntryLine?.journalEntry?.transaction?.transactionReference || 
+              entry.journalEntryLine?.journalEntry?.transaction?.reference || '—',
+            sourceModule: entry.sourceModule ||
+              entry.journalEntryLine?.journalEntry?.transaction?.sourceModule || 
+              entry.journalEntryLine?.journalEntry?.transaction?.source || 'MANUAL'
+          };
+        });
         this.applyFilters();
         this.loading = false;
       },
@@ -127,28 +140,34 @@ export class GeneralLedgerComponent implements OnInit {
 
     for (const entry of this.filteredEntries) {
       const accId = entry.accountId || entry.account?.id;
-      if (!accId) continue;
+      // Fallback for missing account IDs to ensure data is still visible in a 'Suspense' category if necessary
+      const safeAccId = accId || 999999; 
+      const safeAccName = entry.account?.accountName || 'Unassigned/Suspense Account';
 
-      if (!map.has(accId)) {
-        map.set(accId, {
-          accountId: accId,
-          accountName: entry.account?.accountName || 'Unknown Account',
+      if (!map.has(safeAccId)) {
+        map.set(safeAccId, {
+          accountId: safeAccId,
+          accountName: safeAccName,
           account: entry.account,
           entries: [],
           openingBalance: 0
         });
       }
-      map.get(accId)!.entries.push(entry);
+      map.get(safeAccId)!.entries.push(entry);
     }
 
     // Calculate opening balance
     map.forEach(group => {
-      group.entries.sort((a, b) => a.entryDate.localeCompare(b.entryDate));
+      group.entries.sort((a, b) => {
+        const dateA = new Date(a.entryDate || 0).getTime();
+        const dateB = new Date(b.entryDate || 0).getTime();
+        return dateA - dateB;
+      });
       const firstEntry = group.entries[0];
       if (firstEntry) {
-        group.openingBalance = firstEntry.balanceAfter
-          - firstEntry.debit
-          + firstEntry.credit;
+        group.openingBalance = (firstEntry.balanceAfter || 0)
+          - (firstEntry.debit || 0)
+          + (firstEntry.credit || 0);
       }
     });
 
@@ -212,5 +231,136 @@ export class GeneralLedgerComponent implements OnInit {
   getClosingBalance(group: AccountLedgerGroup): number {
     if (!group.entries.length) return 0;
     return group.entries[group.entries.length - 1].balanceAfter;
+  }
+
+  printLedger(): void {
+    if (!this.groupedLedger.length) {
+      this.toastService.warn('No ledger data to print.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.toastService.error('Popup blocked! Please allow popups to print the ledger.');
+      return;
+    }
+
+    const totalDebits = this.getTotalDebits();
+    const totalCredits = this.getTotalCredits();
+    
+    let groupsHtml = '';
+    this.groupedLedger.forEach(group => {
+      let rowsHtml = '';
+      group.entries.forEach(entry => {
+        rowsHtml += `
+          <tr>
+            <td>${entry.entryDate || '—'}</td>
+            <td>${entry.description || '—'}</td>
+            <td>${entry.transactionReference || '—'}</td>
+            <td class="amount">${entry.debit ? entry.debit.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : '-'}</td>
+            <td class="amount">${entry.credit ? entry.credit.toLocaleString('en-NG', { minimumFractionDigits: 2 }) : '-'}</td>
+            <td class="amount">${entry.balanceAfter.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        `;
+      });
+
+      groupsHtml += `
+        <div class="account-section">
+          <div class="account-header">
+            <h3>${group.accountName} (${group.account?.accountCode || 'N/A'})</h3>
+            <div class="balances">
+              <span>Opening: ₦${group.openingBalance.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+              <span style="margin-left: 20px;">Closing: ₦${this.getClosingBalance(group).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 15%">Date</th>
+                <th style="width: 35%">Description</th>
+                <th style="width: 20%">Reference</th>
+                <th style="width: 10%">Debit</th>
+                <th style="width: 10%">Credit</th>
+                <th style="width: 10%">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    });
+
+    const html = `
+      <html>
+        <head>
+          <title>General Ledger - Optimax Accounting</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+            body { font-family: 'Inter', sans-serif; color: #111827; padding: 40px; line-height: 1.5; }
+            .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 4px solid #2E6276; padding-bottom: 20px; margin-bottom: 40px; }
+            .header-info h1 { margin: 0; font-size: 32px; font-weight: 800; color: #2E6276; text-transform: uppercase; letter-spacing: -1px; }
+            .header-info p { margin: 5px 0 0; color: #6B7280; font-weight: 600; }
+            .summary-box { background: #F9FAFB; padding: 20px; border-radius: 12px; display: flex; gap: 40px; margin-bottom: 40px; border: 1px solid #E5E7EB; }
+            .summary-item label { display: block; font-size: 11px; font-weight: 800; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+            .summary-item span { font-size: 18px; font-weight: 800; color: #111827; }
+            .account-section { margin-bottom: 50px; page-break-inside: avoid; }
+            .account-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+            .account-header h3 { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
+            .account-header .balances { font-weight: 600; color: #4B5563; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th { text-align: left; background: #2E6276; color: white; padding: 12px 15px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+            td { padding: 12px 15px; border-bottom: 1px solid #F3F4F6; font-size: 12px; color: #374151; font-weight: 500; }
+            .amount { text-align: right; font-family: monospace; font-weight: 700; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 1cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="header-info">
+              <h1>General Ledger</h1>
+              <p>Accounting Report • Printed on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+            </div>
+          </div>
+          
+          <div class="summary-box">
+            <div class="summary-item"><label>Total Debits</label><span>₦${totalDebits.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span></div>
+            <div class="summary-item"><label>Total Credits</label><span>₦${totalCredits.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span></div>
+            <div class="summary-item"><label>Status</label><span style="color:#059669">POSTED</span></div>
+          </div>
+
+          ${groupsHtml}
+
+          <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-between; font-size: 10px; color: #9CA3AF; font-weight: 600;">
+            <span>Generated by Optimax ERP Accounting Module</span>
+            <span>Signature: __________________________</span>
+          </div>
+
+          <script>
+            window.onload = () => {
+              window.print();
+              // window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+
+  private normalizeDateArray(value: any): string {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && value.length >= 3) {
+      const [y, mo, d, h = 0, mi = 0, s = 0] = value;
+      return new Date(y, mo - 1, d, h, mi, s).toISOString();
+    }
+    return String(value);
   }
 }

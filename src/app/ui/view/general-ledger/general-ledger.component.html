@@ -20,12 +20,16 @@
         </div>
       </div>
 
-      <!-- Export Button -->
-      <button (click)="exportLedger()"
-        class="flex items-center gap-3 bg-customBlue hover:bg-customBlueHover text-white px-8 py-4 rounded-xl font-bold text-xl shadow-md shadow-customBlue/10 transition-all active:scale-95 transform hover:-translate-y-1">
-        <i class="pi pi-download text-2xl"></i>
-        Export Statement
-      </button>
+        <div class="flex items-center gap-4">
+          <button (click)="printLedger()"
+            class="flex items-center gap-3 bg-white text-[#2E6276] border-2 border-[#2E6276]/20 px-8 py-3.5 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+            <i class="pi pi-print text-xl"></i> Print Ledger
+          </button>
+          <button (click)="exportLedger()"
+            class="flex items-center gap-3 bg-[#2E6276] text-white px-8 py-3.5 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-[#2E6276]/30">
+            <i class="pi pi-download text-xl"></i> Export CSV
+          </button>
+        </div>
     </div>
 
     <!-- Filters Row -->
