@@ -49,6 +49,7 @@ import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-managemen
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
+import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -258,6 +259,10 @@ const routes: Routes = [
   {
     path: 'cooperative/groups/:uuid',
     component: CooperativeLoanGroupsComponent,
+  },
+    {
+    path: 'admin/hr/cooperative/patronage-distribution/:uuid',
+    component: CooperativePatronageDistributionComponent,
   },
   {
     path: 'admin/hr/cooperative/groups/:uuid',

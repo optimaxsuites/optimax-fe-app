@@ -23,6 +23,15 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loan-detail.component.scss']
 })
 export class CooperativeLoanDetailComponent implements OnInit {
+    // Helper: True if any guarantor has rejected
+    get anyGuarantorRejected(): boolean {
+      return this.guarantors.some(g => g.status === 'REJECTED');
+    }
+
+    // Helper: True if loan is ready for admin review
+    get isReadyForAdminReview(): boolean {
+      return this.loan && this.loan.applicationStage === 'READY_FOR_ADMIN_REVIEW';
+    }
   currentUuid = uuidV4();
   loan!: CooperativeLoan;
   statusTimeline: CooperativeLoanAuditEntryView[] = [];

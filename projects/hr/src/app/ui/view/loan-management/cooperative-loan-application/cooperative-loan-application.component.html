@@ -1,4 +1,18 @@
-<div class="cooperative-loan-container" [class.modal-mode]="isModal">
+<!-- Guarantor View - Only shows modal, no form -->
+<div *ngIf="isGuarantorView" class="guarantor-view-container">
+  <app-guarantor-approval-modal
+    [visible]="showGuarantorApprovalModal"
+    [loanSummary]="modalLoanSummary"
+    [loading]="modalLoading"
+    [error]="modalError"
+    (approve)="handleGuarantorApprove()"
+    (reject)="handleGuarantorReject()"
+    (close)="handleGuarantorModalClose()">
+  </app-guarantor-approval-modal>
+</div>
+
+<!-- Normal Member View - Full Application Form -->
+<div *ngIf="!isGuarantorView" class="cooperative-loan-container" [class.modal-mode]="isModal">
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
   <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="cooperative-loan-form">
@@ -53,7 +67,7 @@
     <div class="form-grid">
       <!-- Left Column -->
       <div class="form-column">
-        <!-- Applicant Information Card - Dark Gradient Style (like Financial Summary) -->
+        <!-- Applicant Information Card - Dark Gradient Style -->
         <div class="form-card applicant-summary-card">
           <div class="card-header">
             <div class="card-header-icon light">
@@ -62,7 +76,6 @@
             <h3>Applicant Information</h3>
           </div>
 
-          <!-- Member Details - Dark theme -->
           <div class="member-info-dark" *ngIf="selectedMember">
             <div class="member-details-grid-dark">
               <div class="member-detail-dark">
@@ -88,10 +101,7 @@
             </div>
           </div>
 
-          <div class="eligibility-note-dark" *ngIf="!selectedMember">
-            <i class="fas fa-info-circle"></i>
-            <span>Select a member to view the loan groups they belong to.</span>
-          </div>
+          <!-- No member selection needed; current user is auto-selected -->
 
           <div class="form-group-dark">
             <label>Select Loan Group <span class="required-dark">*</span></label>
@@ -301,7 +311,7 @@
                 <select formControlName="memberId" class="form-control">
                   <option value="" disabled>Select guarantor</option>
                   <option *ngFor="let candidate of guarantorCandidates" [value]="candidate.id">
-                    {{ candidate.fullName }} ({{ candidate.memberId }})
+                    {{ candidate.fullName }} ({{ candidate.memberId || candidate.id }})
                   </option>
                 </select>
                 <div class="input-with-symbol">
@@ -408,7 +418,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> <!-- END form-grid -->
 
     <!-- Form Actions -->
     <div class="form-actions" *ngIf="!showConfirmation">

@@ -10,6 +10,7 @@ export interface GuarantorMedia {
 
 export interface GuarantorDto {
   id: number;
+  memberId?: number; // Add this property for template compatibility
   fullName: string;
   email: string;
   phone: string;

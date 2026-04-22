@@ -702,13 +702,13 @@
                 <small>Review cooperative grace period extension requests</small>
               </span>
             </div>
-            <div class="command-pill" role="button" tabindex="0" (click)="runPatronageCalculator()" (keydown.enter)="runPatronageCalculator()" (keydown.space)="runPatronageCalculator()">
-              <span class="command-icon"><i class="pi pi-calculator"></i></span>
+            <a class="command-pill patronage" role="button" tabindex="0" [routerLink]="['/admin/hr/cooperative/patronage-distribution', currentUuid]">
+              <span class="command-icon"><i class="pi pi-gift"></i></span>
               <span class="command-copy">
-                <strong>Patronage Calculator</strong>
-                <small>Calculate and distribute patronage</small>
+                <strong>Distribute Patronage</strong>
+                <small>Distribute patronage to members</small>
               </span>
-            </div>
+            </a>
             <div class="command-pill" role="button" tabindex="0" (click)="navigateTo('groups')" (keydown.enter)="navigateTo('groups')" (keydown.space)="navigateTo('groups')">
               <span class="command-icon"><i class="pi pi-th-large"></i></span>
               <span class="command-copy">

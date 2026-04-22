@@ -22,6 +22,10 @@ export interface CooperativeMember {
   };
   createdAt: string;
   updatedAt: string;
+  memberAccountNumber?: string;  
+  memberBankName?: string;       
+  firstName?: string;            
+  lastName?: string;            
 }
 
 export interface CooperativeLoanGroup {
