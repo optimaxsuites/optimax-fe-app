@@ -300,85 +300,392 @@
 
     <!-- ── Threads view ───────────────────────────────────────────────────── -->
     <ng-container *ngIf="activeView === 'threads'">
-      <div class="flex flex-col flex-1 overflow-hidden min-w-0 bg-white">
+      <div
+        class="flex flex-1 overflow-hidden min-w-0"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- LEFT: Thread list -->
         <div
-          class="flex items-center px-6 h-14 border-b border-gray-200 flex-shrink-0"
-        >
-          <h2 class="text-[16px] font-bold text-gray-900">Threads</h2>
-        </div>
-        <div
-          class="flex-1 overflow-y-auto px-5 py-5"
-          style="scrollbar-width: thin"
+          class="flex flex-col bg-white border-r border-gray-200 overflow-hidden flex-shrink-0"
+          style="width: 380px; min-width: 280px"
         >
           <div
-            *ngIf="!allThreaded.length"
-            class="flex flex-col items-center justify-center py-24 text-center"
+            class="px-5 h-14 flex items-center border-b border-gray-200 flex-shrink-0"
           >
-            <p class="text-[15px] font-semibold text-gray-500 mb-1.5">
-              No threads yet
-            </p>
-            <p class="text-[14px] text-gray-400">
-              Click Reply on any channel message to start a thread.
-            </p>
+            <h2 class="text-[15px] font-bold text-gray-900">Threads</h2>
+            <span class="ml-2 text-[12px] text-gray-400 font-medium">{{
+              allThreaded.length
+            }}</span>
           </div>
+
           <div
-            *ngFor="let t of allThreaded"
-            class="p-4 bg-white border border-gray-200 rounded-2xl mb-3 cursor-pointer hover:border-[#2e6276]/30 hover:shadow-sm transition-all"
-            (click)="openThreadFromList(t.msg, $event)"
+            class="flex-1 overflow-y-auto py-3 px-3"
+            style="scrollbar-width: thin"
           >
-            <div class="flex items-center gap-2.5 mb-2.5">
-              <img
-                *ngIf="t.msg.avatarUrl"
-                [src]="t.msg.avatarUrl"
-                alt=""
-                class="w-8 h-8 rounded-full object-cover flex-shrink-0"
-              />
-              <div
-                *ngIf="!t.msg.avatarUrl"
-                class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
-                [style.background]="t.msg.avatarColor"
-              >
-                {{ t.msg.initials }}
-              </div>
-              <span class="text-[14px] font-medium text-gray-800">{{
-                t.msg.author
-              }}</span>
-              <span class="text-[13px] font-semibold text-[#2e6276]">{{
-                t.channelName
-              }}</span>
-              <span class="text-[12px] text-gray-400 ml-auto">{{
-                t.msg.time
-              }}</span>
-            </div>
-            <p class="text-[14px] text-gray-600 leading-relaxed mb-3">
-              {{ t.msg.content }}
-            </p>
+            <!-- Empty state -->
             <div
-              class="flex items-center gap-2.5 pt-3 border-t border-gray-100"
+              *ngIf="!allThreaded.length"
+              class="flex flex-col items-center justify-center py-20 text-center px-4"
             >
-              <div class="flex -space-x-2">
-                <ng-container *ngFor="let r of t.msg.replies.slice(0, 2)">
-                  <img
-                    *ngIf="r.avatarUrl"
-                    [src]="r.avatarUrl"
-                    alt=""
-                    class="w-6 h-6 rounded-full object-cover border-2 border-white"
-                  />
-                  <div
-                    *ngIf="!r.avatarUrl"
-                    class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-[8px] font-bold"
-                    [style.background]="r.avatarColor"
-                  >
-                    {{ r.initials }}
-                  </div>
-                </ng-container>
-              </div>
-              <span class="text-[13px] font-semibold text-[#2e6276]"
-                >{{ t.msg.replies.length }}
-                {{ t.msg.replies.length === 1 ? "reply" : "replies" }}</span
+              <div
+                class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3"
               >
+                <svg
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="#9ca3af"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
+                </svg>
+              </div>
+              <p class="text-[14px] font-semibold text-gray-500 mb-1">
+                No threads yet
+              </p>
+              <p class="text-[13px] text-gray-400 leading-relaxed">
+                Reply to a message in a channel to start a thread.
+              </p>
+            </div>
+
+            <!-- Thread cards -->
+            <button
+              *ngFor="let t of allThreaded; trackBy: trackByThreaded"
+              type="button"
+              class="w-full text-left p-3.5 rounded-xl mb-2 border transition-all focus:outline-none"
+              [ngClass]="
+                selectedThreadMsg?.id === t.msg.id
+                  ? 'border-[#2e6276] bg-[#eef6f9]'
+                  : 'border-gray-200 bg-white hover:border-[#2e6276]/40 hover:bg-gray-50'
+              "
+              (click)="openThreadFromList(t.msg, $event)"
+            >
+              <!-- Author + channel + time -->
+              <div class="flex items-center gap-2 mb-2">
+                <img
+                  *ngIf="t.msg.avatarUrl"
+                  [src]="t.msg.avatarUrl"
+                  alt=""
+                  class="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                />
+                <div
+                  *ngIf="!t.msg.avatarUrl"
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+                  [style.background]="t.msg.avatarColor"
+                >
+                  {{ t.msg.initials }}
+                </div>
+                <span
+                  class="text-[13px] font-semibold text-gray-800 truncate"
+                  >{{ t.msg.author }}</span
+                >
+                <span
+                  class="text-[11px] font-semibold text-[#2e6276] flex-shrink-0"
+                  >#{{ t.channelName }}</span
+                >
+                <span class="text-[11px] text-gray-400 ml-auto flex-shrink-0">{{
+                  t.msg.time
+                }}</span>
+              </div>
+
+              <!-- Message preview -->
+              <p
+                class="text-[13px] text-gray-600 leading-relaxed mb-2.5 line-clamp-2 text-left"
+              >
+                {{ t.msg.content }}
+              </p>
+
+              <!-- Reply count + avatars -->
+              <div class="flex items-center gap-2">
+                <div class="flex -space-x-1.5 flex-shrink-0">
+                  <ng-container *ngFor="let r of t.msg.replies.slice(0, 3)">
+                    <img
+                      *ngIf="r.avatarUrl"
+                      [src]="r.avatarUrl"
+                      alt=""
+                      class="w-5 h-5 rounded-full object-cover border-2 border-white"
+                    />
+                    <div
+                      *ngIf="!r.avatarUrl"
+                      class="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-white text-[7px] font-bold"
+                      [style.background]="r.avatarColor"
+                    >
+                      {{ r.initials }}
+                    </div>
+                  </ng-container>
+                </div>
+                <span class="text-[12px] font-semibold text-[#2e6276]">
+                  {{ t.msg.replies.length }}
+                  {{ t.msg.replies.length === 1 ? "reply" : "replies" }}
+                </span>
+                <span class="text-[11px] text-gray-400 ml-auto">
+                  {{ t.msg.replies[t.msg.replies.length - 1].time }}
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Thread detail -->
+        <div class="flex flex-col flex-1 overflow-hidden min-w-0 bg-white">
+          <!-- Nothing selected -->
+          <div
+            *ngIf="!selectedThreadMsg"
+            class="flex flex-1 items-center justify-center h-full"
+          >
+            <div class="text-center px-8">
+              <div
+                class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4 mx-auto"
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  fill="none"
+                  stroke="#9ca3af"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
+                </svg>
+              </div>
+              <p class="text-[15px] font-semibold text-gray-500 mb-1">
+                Select a thread
+              </p>
+              <p class="text-[13px] text-gray-400">
+                Click any thread on the left to view it here
+              </p>
             </div>
           </div>
+
+          <!-- Thread detail panel -->
+          <ng-container *ngIf="selectedThreadMsg">
+            <!-- Header -->
+            <div
+              class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <svg
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="#2e6276"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
+                </svg>
+                <span class="text-[15px] font-bold text-gray-800">Thread</span>
+                <span class="text-[13px] text-gray-400 truncate">
+                  in #{{ getChannelNameForMsg(selectedThreadMsg) }}
+                </span>
+              </div>
+              <button
+                (click)="closeSelectedThread()"
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors flex-shrink-0"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Messages area -->
+            <div
+              #threadEl
+              class="flex-1 overflow-y-auto px-5 py-5"
+              style="scrollbar-width: thin"
+            >
+              <!-- Root message -->
+              <div
+                class="flex gap-3 p-4 bg-white border border-gray-200 rounded-2xl mb-6"
+              >
+                <img
+                  *ngIf="selectedThreadMsg.avatarUrl"
+                  [src]="selectedThreadMsg.avatarUrl"
+                  alt=""
+                  class="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5"
+                />
+                <div
+                  *ngIf="!selectedThreadMsg.avatarUrl"
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mt-0.5"
+                  [style.background]="selectedThreadMsg.avatarColor"
+                >
+                  {{ selectedThreadMsg.initials }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2 mb-1.5">
+                    <span class="text-[15px] font-semibold text-gray-800">{{
+                      selectedThreadMsg.author
+                    }}</span>
+                    <span class="text-[12px] text-gray-400">{{
+                      selectedThreadMsg.time
+                    }}</span>
+                  </div>
+                  <p class="text-[14px] text-gray-700 leading-relaxed">
+                    {{ selectedThreadMsg.content }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Replies header -->
+              <div class="flex items-center gap-3 mb-5">
+                <div class="flex-1 h-px bg-gray-100"></div>
+                <span
+                  class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider"
+                >
+                  {{ selectedThreadMsg.replies.length }}
+                  {{
+                    selectedThreadMsg.replies.length === 1 ? "reply" : "replies"
+                  }}
+                </span>
+                <div class="flex-1 h-px bg-gray-100"></div>
+              </div>
+
+              <!-- No replies -->
+              <div
+                *ngIf="!selectedThreadMsg.replies.length"
+                class="text-center py-10"
+              >
+                <p class="text-[14px] text-gray-400">
+                  No replies yet — be the first!
+                </p>
+              </div>
+
+              <!-- Reply list -->
+              <div
+                *ngFor="let r of selectedThreadMsg.replies; trackBy: trackById"
+                class="flex gap-3 mb-5"
+              >
+                <img
+                  *ngIf="r.avatarUrl"
+                  [src]="r.avatarUrl"
+                  alt=""
+                  class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5"
+                />
+                <div
+                  *ngIf="!r.avatarUrl"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
+                  [style.background]="r.avatarColor"
+                >
+                  {{ r.initials }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2 mb-1">
+                    <span class="text-[14px] font-semibold text-gray-800">{{
+                      r.author
+                    }}</span>
+                    <span class="text-[12px] text-gray-400">{{ r.time }}</span>
+                  </div>
+                  <p class="text-[14px] text-gray-600 leading-relaxed">
+                    {{ r.content }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reply composer -->
+            <div
+              class="border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white"
+            >
+              <div
+                class="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-[#2e6276]/50 transition-all bg-white"
+              >
+                <img
+                  *ngIf="me.avatarUrl"
+                  [src]="me.avatarUrl"
+                  alt=""
+                  class="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                />
+                <div
+                  *ngIf="!me.avatarUrl"
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                  [style.background]="me.avatarColor"
+                >
+                  {{ me.initials }}
+                </div>
+                <input
+                  type="text"
+                  [value]="threadReplyDraft"
+                  (input)="threadReplyDraft = $any($event.target).value"
+                  (keydown.enter)="sendThreadReply()"
+                  placeholder="Reply in thread…"
+                  class="flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
+                />
+                <button
+                  (click)="sendThreadReply()"
+                  [disabled]="sendingReply || !threadReplyDraft.trim()"
+                  class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
+                  [ngClass]="
+                    threadReplyDraft.trim()
+                      ? 'bg-[#2e6276] text-white hover:bg-[#255264]'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  "
+                >
+                  <svg
+                    *ngIf="!sendingReply"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2.5"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                  <svg
+                    *ngIf="sendingReply"
+                    class="animate-spin"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    />
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
     </ng-container>
