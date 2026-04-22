@@ -9,10 +9,10 @@
           <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
             <i class="pi pi-history text-amber-600 text-xl"></i>
           </div>
-          <h1 class="text-4xl font-black text-gray-900 tracking-tight">Accounting Queue</h1>
+          <h1 class="text-4xl font-black text-gray-900 tracking-tight">Accounting Transactions</h1>
         </div>
         <p class="text-gray-500 font-semibold text-lg">
-          Review, approve and map incoming financial events before they flow into the ledger.
+          Review, approve, and audit financial events before they are finalized in the ledger.
         </p>
       </div>
 
@@ -169,28 +169,39 @@
 
               <!-- Actions -->
               <td class="px-6 py-5 border-l border-gray-50">
-                <div class="flex items-center justify-end gap-2">
-                  <!-- Approve -->
-                  <button *ngIf="ev.status !== 'APPROVED'" (click)="approveEvent(ev)"
-                    title="Approve"
-                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'REJECTED' || !ev.matchedMapping"
-                    class="p-2 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed">
-                    <i class="pi" [ngClass]="ev.status === 'PROCESSING' ? 'pi-spin pi-spinner' : 'pi-check-circle'"></i>
+                <div class="flex items-center justify-end gap-2 px-2">
+                  <!-- View (Always Visible) -->
+                  <button (click)="viewEvent(ev)"
+                    title="View Details"
+                    class="p-2 rounded-xl text-gray-400 bg-gray-50 hover:bg-gray-100 transition-all hover:scale-110 active:scale-95 shadow-sm">
+                    <i class="pi pi-eye text-base"></i>
                   </button>
-                  <!-- Edit -->
-                  <button (click)="openEdit(ev)"
-                    title="Edit"
-                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'APPROVED'"
-                    class="p-2 rounded-xl text-customBlue bg-customBlue/5 hover:bg-customBlue/10 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed">
-                    <i class="pi pi-pencil text-base"></i>
-                  </button>
-                  <!-- Reject -->
-                  <button *ngIf="ev.status !== 'REJECTED'" (click)="rejectEvent(ev)"
-                    title="Reject"
-                    [disabled]="ev.status === 'PROCESSING' || ev.status === 'APPROVED'"
-                    class="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed">
-                    <i class="pi pi-times-circle text-base"></i>
-                  </button>
+
+                  <!-- Status-locked Modification Actions -->
+                  <ng-container *ngIf="ev.status === 'UNPROCESSED'">
+                    <!-- Approve -->
+                    <button (click)="approveEvent(ev)"
+                      title="Post to Ledger"
+                      [disabled]="!ev.matchedMapping"
+                      class="p-2 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed">
+                      <i class="pi pi-check-circle"></i>
+                    </button>
+                    <!-- Edit -->
+                    <button (click)="openEdit(ev)"
+                      title="Edit Mapping"
+                      class="p-2 rounded-xl text-customBlue bg-customBlue/5 hover:bg-customBlue/10 transition-all hover:scale-110 active:scale-95 shadow-sm">
+                      <i class="pi pi-pencil text-base"></i>
+                    </button>
+                    <!-- Reject -->
+                    <button (click)="rejectEvent(ev)"
+                      title="Reject Event"
+                      class="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all hover:scale-110 active:scale-95 shadow-sm">
+                      <i class="pi pi-times-circle text-base"></i>
+                    </button>
+                  </ng-container>
+                  
+                  <!-- Compact View Indicator for Processed -->
+                  <span *ngIf="ev.status !== 'UNPROCESSED'" class="text-[10px] font-black uppercase tracking-tighter text-gray-300 ml-2">Locked</span>
                 </div>
               </td>
             </tr>
@@ -221,13 +232,17 @@
      class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-in-out">
   
   <!-- Backdrop (Glassmorphism) -->
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" (click)="cancelConfirm()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" (click)="!isProcessingPost && cancelConfirm()"></div>
 
   <!-- Modal Container -->
   <div class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
     
     <!-- Top Pattern/Accent -->
     <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-red-600 via-orange-500 to-red-600"></div>
+
+    <button *ngIf="!isProcessingPost" (click)="cancelConfirm()" class="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10">
+      <i class="pi pi-times text-gray-400"></i>
+    </button>
 
     <div class="px-10 pt-12 pb-10 flex flex-col items-center text-center">
       
@@ -283,13 +298,15 @@
 
       <!-- Actions -->
       <div class="flex items-center gap-4 w-full">
-        <button (click)="cancelConfirm()" 
-          class="flex-1 px-8 py-5 bg-gray-100 text-gray-600 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-sm border-0">
+        <button [disabled]="isProcessingPost" (click)="cancelConfirm()" 
+          class="flex-1 px-8 py-5 bg-gray-100 text-gray-600 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-sm border-0 disabled:opacity-50">
           Discard
         </button>
-        <button (click)="executePostToLedger()" 
-          class="flex-[2] px-8 py-5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 bg-[length:200%_auto] text-white rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-right transition-all active:scale-95 shadow-lg shadow-red-500/20 border-0">
-          Accept & Post
+        <button [disabled]="isProcessingPost" (click)="executePostToLedger()" 
+          class="flex-[2] px-8 py-5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 bg-[length:200%_auto] text-white rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-right transition-all active:scale-95 shadow-lg shadow-red-500/20 border-0 flex items-center justify-center gap-3 disabled:opacity-80">
+          <span *ngIf="!isProcessingPost">Accept & Post</span>
+          <i *ngIf="isProcessingPost" class="pi pi-spin pi-spinner text-xl"></i>
+          <span *ngIf="isProcessingPost">Processing...</span>
         </button>
       </div>
     </div>
@@ -300,15 +317,24 @@
 <app-large-side-modal *ngIf="isEditOpen" (close)="isEditOpen = false">
   <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 backdrop-blur-sm">
     <div class="flex items-center gap-4">
-      <h2 class="text-3xl font-black text-[#2E6276] leading-none tracking-tight">Queue Event Manager</h2>
+      <h2 class="text-3xl font-black text-[#2E6276] leading-none tracking-tight">{{ isViewOnly ? 'Event Insight' : 'Queue Event Manager' }}</h2>
       <span *ngIf="editingEvent" class="px-3 py-1 text-xs font-black uppercase tracking-widest rounded-full border"
             [ngClass]="getStatusClass(editingEvent.status)">
         {{ editingEvent.status }}
+      </span>
+      <span *ngIf="isViewOnly" class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-black uppercase tracking-widest rounded-full border border-amber-200">
+        Read Only
       </span>
     </div>
     <button (click)="isEditOpen = false" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
       <i class="pi pi-times text-2xl text-gray-400"></i>
     </button>
+  </div>
+  
+  <!-- READ ONLY Banner -->
+  <div *ngIf="isViewOnly" class="bg-amber-50 border-b border-amber-100 px-8 py-3 flex items-center gap-3">
+    <i class="pi pi-info-circle text-amber-600"></i>
+    <p class="text-amber-800 font-bold text-sm">This transaction has been finalized and cannot be modified.</p>
   </div>
   
   <div class="px-8 py-2 bg-white" *ngIf="editingEvent">
@@ -339,8 +365,8 @@
           <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Description</label>
           <div class="relative">
             <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#2E6276] rounded-l-xl"></div>
-            <input [(ngModel)]="editingEvent.description" type="text"
-              class="w-full bg-gray-50/80 border border-gray-200 rounded-xl pl-7 pr-5 py-4 font-bold text-gray-700 text-xl outline-none focus:ring-4 focus:ring-customBlue/5 transition-all">
+            <input [(ngModel)]="editingEvent.description" type="text" [disabled]="isViewOnly"
+              class="w-full bg-gray-50/80 border border-gray-200 rounded-xl pl-7 pr-5 py-4 font-bold text-gray-700 text-xl outline-none focus:ring-4 focus:ring-customBlue/5 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed">
           </div>
         </div>
 
@@ -351,6 +377,7 @@
             bindLabel="accountName"
             bindValue="accountName"
             [(ngModel)]="editingEvent.suggestedDebit"
+            [disabled]="isViewOnly"
             placeholder="Search account..."
             class="custom-ng-select-queue"
             appendTo="body">
@@ -371,6 +398,7 @@
             bindLabel="accountName"
             bindValue="accountName"
             [(ngModel)]="editingEvent.suggestedCredit"
+            [disabled]="isViewOnly"
             placeholder="Search account..."
             class="custom-ng-select-queue"
             appendTo="body">
@@ -433,12 +461,12 @@
       </div>
     </section>
 
-    <!-- Buttons moved inside the scrollable container footer area -->
+    <!-- Buttons -->
     <div class="pt-10 flex items-center justify-end gap-5 border-t border-gray-100">
       <button (click)="isEditOpen = false" class="px-10 py-4 bg-gray-50 text-gray-500 border border-gray-200 rounded-xl font-black uppercase tracking-widest text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-sm">
-        Cancel
+        {{ isViewOnly ? 'Dismiss' : 'Cancel' }}
       </button>
-      <button (click)="saveEdit()"
+      <button *ngIf="!isViewOnly" (click)="saveEdit()"
         class="bg-[#2E6276] text-white px-12 py-4 rounded-xl font-black uppercase tracking-widest text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#2E6276]/20">
         Apply & Close <i class="pi pi-check-circle text-xl"></i>
       </button>

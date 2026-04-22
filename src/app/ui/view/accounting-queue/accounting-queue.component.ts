@@ -47,9 +47,11 @@ export class AccountingQueueComponent implements OnInit {
   // Edit modal state
   isEditOpen = false;
   editingEvent: QueueEvent | null = null;
+  isViewOnly = false;
 
   // Custom Confirmation Modal State
   isConfirmOpen = false;
+  isProcessingPost = false;
   pendingActionData: { event: QueueEvent, mapping: AccountMappingDTO, createdBy: any } | null = null;
 
   constructor(
@@ -204,7 +206,14 @@ export class AccountingQueueComponent implements OnInit {
 
     // ── Open Custom Confirmation Modal ──
     this.pendingActionData = { event, mapping, createdBy };
+    this.isProcessingPost = false; // Reset for new action
     this.isConfirmOpen = true;
+  }
+
+  viewEvent(event: QueueEvent): void {
+    this.editingEvent = { ...event };
+    this.isViewOnly = true;
+    this.isEditOpen = true;
   }
 
   executePostToLedger(): void {
@@ -212,19 +221,23 @@ export class AccountingQueueComponent implements OnInit {
 
     const { event, mapping, createdBy } = this.pendingActionData;
     
-    event.status = 'PROCESSING';
-    this.isConfirmOpen = false; // Close modal immediately to show status change in background
+    this.isProcessingPost = true; // Show loader
 
     this.accountingService.orchestrateEventExecution(event, mapping, createdBy).subscribe({
       next: (res) => {
         event.status = 'APPROVED';
         this.toastService.success(`Event ${event.reference} successfully posted to the General Ledger`);
         this.pendingActionData = null;
+        this.isProcessingPost = false;
+        this.isConfirmOpen = false; // Only close on success
       },
       error: (err) => {
         event.status = 'UNPROCESSED';
         this.toastService.error(`Failed to process event ${event.reference}: ${err.message || 'Server error'}`);
-        // Consider whether to reopen the modal or just let the user try again
+        this.isProcessingPost = false;
+        // Keep modal open so user can see it failed or retry? 
+        // Actually it's better to keep it open or close and reset.
+        this.isConfirmOpen = false;
         this.pendingActionData = null;
       }
     });
@@ -242,6 +255,7 @@ export class AccountingQueueComponent implements OnInit {
 
   openEdit(event: QueueEvent): void {
     this.editingEvent = { ...event };
+    this.isViewOnly = false;
     this.isEditOpen = true;
   }
 
