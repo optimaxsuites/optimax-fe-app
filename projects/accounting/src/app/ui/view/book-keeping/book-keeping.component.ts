@@ -41,7 +41,11 @@ export class BookKeepingComponent implements OnInit {
     this.loading = true;
     this.accountingService.getJournalEntries(this.first / this.rows, this.rows).subscribe({
       next: (res: PaginationResult<JournalEntryDTO>) => {
-        this.journalEntries = res.content || [];
+        // Java backend returns LocalDateTime as array [y,m,d,h,min,s,nano] — normalize to ISO string
+        this.journalEntries = (res.content || []).map(entry => ({
+          ...entry,
+          entryDate: this.normalizeDateArray((entry as any).entryDate)
+        }));
         this.totalRecords = res.totalSize || 0;
         this.loading = false;
       },
@@ -50,6 +54,17 @@ export class BookKeepingComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  /** Converts Java LocalDateTime array [y,m,d,h,min,s,nano] or an ISO string to a JS Date string. */
+  private normalizeDateArray(value: any): string {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && value.length >= 3) {
+      const [y, mo, d, h = 0, mi = 0, s = 0] = value;
+      return new Date(y, mo - 1, d, h, mi, s).toISOString();
+    }
+    return String(value);
   }
 
   viewJournalLines(entry: JournalEntryDTO) {
@@ -84,6 +99,73 @@ export class BookKeepingComponent implements OnInit {
       case 'DRAFT': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'REVERSED': return 'bg-rose-100 text-rose-800 border-rose-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  }
+
+  downloadVoucher(): void {
+    if (!this.selectedJournal) return;
+
+    const entry = this.selectedJournal;
+    const lines = this.selectedJournalLines;
+    const date  = new Date(entry.entryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    const ref   = entry.transaction?.transactionReference || '—';
+
+    const lineRows = lines.map(l => `
+      <tr>
+        <td style="padding:12px 16px; border-bottom:1px solid #f1f1f1; font-weight:700">${l.account?.accountCode || ''} — ${l.account?.accountName || ''}</td>
+        <td style="padding:12px 16px; border-bottom:1px solid #f1f1f1; text-align:right; color:#dc2626; font-weight:800">${l.debitAmount > 0 ? '₦' + l.debitAmount.toLocaleString('en-NG', {minimumFractionDigits:2}) : '—'}</td>
+        <td style="padding:12px 16px; border-bottom:1px solid #f1f1f1; text-align:right; color:#059669; font-weight:800">${l.creditAmount > 0 ? '₦' + l.creditAmount.toLocaleString('en-NG', {minimumFractionDigits:2}) : '—'}</td>
+      </tr>
+    `).join('');
+
+    const totalDebit  = lines.reduce((s, l) => s + (l.debitAmount || 0), 0);
+    const totalCredit = lines.reduce((s, l) => s + (l.creditAmount || 0), 0);
+
+    const html = `
+      <!DOCTYPE html><html><head><title>Journal Voucher</title>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #111; }
+        h1   { font-size: 28px; font-weight: 900; margin: 0; color: #2E6276; }
+        .meta { margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .meta-item label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; color: #9ca3af; display: block; }
+        .meta-item span  { font-size: 15px; font-weight: 700; color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+        thead tr { background: #2E6276; }
+        thead th { padding: 12px 16px; color: white; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; text-align: left; }
+        .totals td { font-weight: 900; background: #f9fafb; border-top: 2px solid #2E6276; }
+        .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #9ca3af; }
+        @media print { body { margin: 20px; } }
+      </style></head><body>
+      <h1>Journal Voucher</h1>
+      <p style="color:#9ca3af;font-size:13px;margin:4px 0 0">#${entry.entryNumber ?? entry.id} &nbsp;•&nbsp; ${entry.status}</p>
+      <div class="meta">
+        <div class="meta-item"><label>Entry Date</label><span>${date}</span></div>
+        <div class="meta-item"><label>Transaction Reference</label><span>${ref}</span></div>
+        <div class="meta-item"><label>Description</label><span>${entry.description || '—'}</span></div>
+        <div class="meta-item"><label>Status</label><span>${entry.status}</span></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Account</th>
+          <th style="text-align:right">Debit (₦)</th>
+          <th style="text-align:right">Credit (₦)</th>
+        </tr></thead>
+        <tbody>${lineRows}</tbody>
+        <tfoot><tr class="totals">
+          <td style="padding:12px 16px;font-weight:900">TOTAL</td>
+          <td style="padding:12px 16px;text-align:right;color:#dc2626">₦${totalDebit.toLocaleString('en-NG',{minimumFractionDigits:2})}</td>
+          <td style="padding:12px 16px;text-align:right;color:#059669">₦${totalCredit.toLocaleString('en-NG',{minimumFractionDigits:2})}</td>
+        </tr></tfoot>
+      </table>
+      <div class="footer">Generated by Optimax ERP &nbsp;&bull;&nbsp; ${new Date().toLocaleString()}</div>
+      <script>window.onload = function(){ window.print(); }<\/script>
+      </body></html>
+    `;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
     }
   }
 }

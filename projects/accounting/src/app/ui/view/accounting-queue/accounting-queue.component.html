@@ -216,6 +216,86 @@
   </div>
 </div>
 
+<!-- ── Responsibility Confirmation Custom Modal ── -->
+<div *ngIf="isConfirmOpen" 
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-in-out">
+  
+  <!-- Backdrop (Glassmorphism) -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" (click)="cancelConfirm()"></div>
+
+  <!-- Modal Container -->
+  <div class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+    
+    <!-- Top Pattern/Accent -->
+    <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-red-600 via-orange-500 to-red-600"></div>
+
+    <div class="px-10 pt-12 pb-10 flex flex-col items-center text-center">
+      
+      <!-- Icon Header -->
+      <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-8 border border-red-100 shadow-inner group">
+        <i class="pi pi-shield text-5xl text-red-600 group-hover:scale-110 transition-transform duration-500"></i>
+      </div>
+      
+      <!-- Branding & Title -->
+      <h2 class="text-4xl font-black text-gray-900 mb-2 leading-tight tracking-tight italic">Fiduciary Control</h2>
+      <p class="text-gray-500 text-lg font-medium mb-6 max-w-[340px]">
+        Review and approval of this transaction triggers an <span class="text-red-600 font-extrabold underline decoration-wavy underline-offset-4 text-sm">immutable posting</span> to the ledger.
+      </p>
+
+      <!-- Transaction Preview Card -->
+      <div class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 mb-8 text-left relative overflow-hidden group">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="p-3 bg-customBlue/10 rounded-xl">
+            <i class="pi pi-file-edit text-customBlue font-bold"></i>
+          </div>
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Approval Target</p>
+            <p class="text-xl font-bold text-gray-900 tracking-tight">
+              {{ pendingActionData?.event?.eventType?.replace('_', ' ') }}
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex justify-between items-end border-t border-gray-200 pt-4">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Reference</p>
+            <p class="text-lg font-black text-customBlue font-mono">{{ pendingActionData?.event?.reference }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Amount</p>
+            <p class="text-2xl font-black text-gray-900">₦{{ pendingActionData?.event?.amount?.toLocaleString() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Warning Strip -->
+      <div class="w-full bg-orange-50 border border-orange-100 rounded-2xl p-5 mb-10 text-left flex items-start gap-4">
+        <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-lock text-orange-700 font-bold"></i>
+        </div>
+        <div>
+          <span class="text-orange-900 font-black uppercase tracking-[0.1em] text-[10px] mb-1 block">Security Protocol</span>
+          <p class="text-orange-800 font-bold text-sm leading-snug">
+            This operation is cryptographically hashed and <span class="text-red-700 font-black uppercase">cannot be reversed</span>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4 w-full">
+        <button (click)="cancelConfirm()" 
+          class="flex-1 px-8 py-5 bg-gray-100 text-gray-600 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-sm border-0">
+          Discard
+        </button>
+        <button (click)="executePostToLedger()" 
+          class="flex-[2] px-8 py-5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 bg-[length:200%_auto] text-white rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-right transition-all active:scale-95 shadow-lg shadow-red-500/20 border-0">
+          Accept & Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Redesigned Edit Modal ── -->
 <app-large-side-modal *ngIf="isEditOpen" (close)="isEditOpen = false">
   <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 backdrop-blur-sm">
