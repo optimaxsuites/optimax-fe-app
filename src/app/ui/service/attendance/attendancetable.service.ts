@@ -13,6 +13,14 @@ type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 export class AttendancetableService {
 
   private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
+
+  // ADD these two properties after attendanceSubject:
+  private localRecords = new Map<string, AttendanceTableRecord>(); // key: `${employeeId}_${date}`
+
+  private localKey(employeeId: string, date: string): string {
+    return `${employeeId}_${date}`;
+  }
+
   attendance$ = this.attendanceSubject.asObservable();
 
   getAttendance(filters?: any): Observable<AttendanceTableRecord[]> {
@@ -24,8 +32,8 @@ export class AttendancetableService {
   private apiRecordId: number | null = null;
 
   constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
-    
-  
+  // Seed registeredEmployees from current session so absent check works
+  // This will grow as employees clock in — for now at least covers the logged-in user
   this.scheduleAbsentCheck();
 
   // Re-schedule if admin changes office hours
@@ -34,6 +42,34 @@ export class AttendancetableService {
   });
 }
 
+// ADD this method to register an employee (call it from clockAction when a new record is created):
+private ensureRegistered(id: string, name: string, department: string): void {
+  const already = this.registeredEmployees.some(e => e.id === id);
+  if (!already) {
+    this.registeredEmployees.push({ id, name, department });
+  }
+}
+
+private mergeAndPublish(apiRecords: AttendanceTableRecord[]): void {
+  const merged = [...apiRecords];
+
+  // For each local record, either replace the matching API record or prepend it
+  this.localRecords.forEach((localRecord, key) => {
+    const index = merged.findIndex(
+      r => this.localKey(r.id, r.date ?? '') === key
+    );
+
+    if (index !== -1) {
+      // Local record wins over API record (has live location, real-time status)
+      merged[index] = { ...merged[index], ...localRecord };
+    } else {
+      // No matching API record — prepend the local one
+      merged.unshift(localRecord);
+    }
+  });
+
+  this.attendanceSubject.next(merged);
+}
 
 private getAuthHeaders(): HttpHeaders {
   const token = sessionStorage.getItem('accessToken')
@@ -109,7 +145,7 @@ fetchAllRecords(page: number = 1, size: number = 100): void {
   ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
-      this.attendanceSubject.next(mapped);
+      this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch attendance records:', err)
   });
@@ -123,7 +159,7 @@ fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100)
   ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
-      this.attendanceSubject.next(mapped);
+      this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch records by date range:', err)
   });
@@ -137,7 +173,7 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
   ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
-      this.attendanceSubject.next(mapped);
+      this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch employee records:', err)
   });
@@ -382,6 +418,7 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
 
   // Find or create local record
   let record = data.find(r => r.employee === employeeName && r.date === today);
+  this.ensureRegistered(employeeid, employeeName, department);
 
   if (!record) {
     record = {
@@ -440,7 +477,19 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
   }
 
   // Push local update
-  this.attendanceSubject.next(data);
+  //this.attendanceSubject.next(data);
+
+  // Save to local records map so API fetches can't overwrite it
+  this.localRecords.set(
+    this.localKey(employeeid, today),
+    { ...record }
+  );
+
+  // Merge with current API data and publish
+  const currentApiData = this.attendanceSubject.value.filter(
+    r => !this.localRecords.has(this.localKey(r.id, r.date ?? ''))
+  );
+  this.mergeAndPublish(currentApiData);
 
   // --- API calls (after local record is fully updated) ---
 const numericEmployeeId = parseInt(employeeid);
@@ -778,7 +827,27 @@ private autoMarkAbsentIfNeeded() {
     );
 
     if (!recordExists) {
-      data.unshift({
+      const absentRecord: AttendanceTableRecord = {
+      id: emp.id,
+      employee: emp.name,
+      department: emp.department,
+      date: today,
+      checkIn: null,
+      checkOut: null,
+      checkInLocation: null,
+      checkOutLocation: null,
+      status: 'ABSENT',
+      hours: 0
+    };
+
+    const key = this.localKey(emp.id, today);
+
+    // Only mark absent if not already in local records (employee may have just clocked in)
+    if (!this.localRecords.has(key)) {
+      this.localRecords.set(key, absentRecord);
+      changed = true;
+    }
+      /*data.unshift({
         id: emp.id,
         employee: emp.name,
         department: emp.department,
@@ -791,12 +860,16 @@ private autoMarkAbsentIfNeeded() {
         hours: 0
       });
 
-      changed = true;
+      changed = true;*/
     }
   });
 
   if (changed) {
-    this.attendanceSubject.next(data);
+    //this.attendanceSubject.next(data);
+    const currentApiData = this.attendanceSubject.value.filter(
+      r => !this.localRecords.has(this.localKey(r.id, r.date ?? ''))
+    );
+    this.mergeAndPublish(currentApiData);
   }
 
 }
