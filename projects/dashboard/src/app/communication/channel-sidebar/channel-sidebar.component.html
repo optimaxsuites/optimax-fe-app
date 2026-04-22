@@ -1,5 +1,5 @@
 <aside
-  class="flex flex-col bg-white border-r border-gray-200 overflow-hidden flex-shrink-0 relative"
+  class="flex flex-col bg-transparent border-r border-gray-200 overflow-hidden flex-shrink-0 relative"
   style="width: 100%; height: 100%"
 >
   <!-- Header -->
@@ -8,31 +8,63 @@
       <div
         class="w-9 h-9 rounded-xl bg-[#2e6276] flex items-center justify-center flex-shrink-0"
       >
-        <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+        <svg
+          width="17"
+          height="17"
+          fill="none"
+          stroke="white"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
             d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-1M7 8V6a2 2 0 012-2h9a2 2 0 012 2v6a2 2 0 01-2 2H9l-4 4V8z"
           />
         </svg>
       </div>
       <div>
-        <p class="text-[15px] font-bold text-gray-900 leading-none tracking-tight">OptimaX</p>
+        <p
+          class="text-[15px] font-bold text-gray-900 leading-none tracking-tight"
+        >
+          OptimaX
+        </p>
         <div class="flex items-center gap-1.5 mt-1">
           <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-          <span class="text-[11px] text-gray-400 uppercase tracking-widest">Workspace</span>
+          <span class="text-[11px] text-gray-400 uppercase tracking-widest"
+            >Workspace</span
+          >
         </div>
       </div>
     </div>
 
     <!-- Search -->
     <div class="relative">
-      <div class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
-        <svg class="text-gray-400 flex-shrink-0" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <div
+        class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg"
+      >
+        <svg
+          class="text-gray-400 flex-shrink-0"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
         <input
           type="text"
           [value]="searchQuery"
-          (input)="searchQueryChange.emit($any($event.target).value); searchExecuted.emit()"
+          (input)="
+            searchQueryChange.emit($any($event.target).value);
+            searchExecuted.emit()
+          "
           placeholder="Search…"
           class="flex-1 bg-transparent border-0 outline-none text-[13px] text-gray-700 placeholder-gray-400 min-w-0"
         />
@@ -41,7 +73,10 @@
         *ngIf="showSearch"
         class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-72 overflow-y-auto"
       >
-        <div *ngIf="!searchResults.length" class="px-4 py-3 text-[14px] text-gray-400">
+        <div
+          *ngIf="!searchResults.length"
+          class="px-4 py-3 text-[14px] text-gray-400"
+        >
           No results found
         </div>
         <div
@@ -49,9 +84,12 @@
           class="px-4 py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50"
           (click)="jumpTo.emit(r); searchClosed.emit()"
         >
-          <p class="text-[12px] font-semibold text-[#2e6276] mb-0.5">#{{ r.channelName }}</p>
+          <p class="text-[12px] font-semibold text-[#2e6276] mb-0.5">
+            #{{ r.channelName }}
+          </p>
           <p class="text-[13px] text-gray-600 truncate">
-            {{ r.msg.content | slice:0:60 }}{{ r.msg.content.length > 60 ? '…' : '' }}
+            {{ r.msg.content | slice: 0 : 60
+            }}{{ r.msg.content.length > 60 ? "…" : "" }}
           </p>
         </div>
       </div>
@@ -66,8 +104,20 @@
         class="sidebar-item flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-left"
         [ngClass]="{ active: activeView === 'threads' }"
       >
-        <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="flex-shrink-0">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        <svg
+          width="17"
+          height="17"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          class="flex-shrink-0"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+          />
         </svg>
         <span class="text-[14px]">Threads</span>
       </button>
@@ -77,14 +127,28 @@
     <!-- Channels -->
     <div class="px-2 mb-1">
       <div class="flex items-center justify-between pl-2 pr-1 mb-1 mt-1">
-        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Channels</span>
+        <span
+          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
+          >Channels</span
+        >
         <button
           (click)="createChannel.emit()"
           class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors"
           title="New channel"
         >
-          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
         </button>
       </div>
@@ -93,12 +157,18 @@
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-3/5"></div>
       </div>
-      <div *ngIf="channelsError && !channelsLoading" class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+      <div
+        *ngIf="channelsError && !channelsLoading"
+        class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg"
+      >
         <span class="text-[13px] text-red-600">{{ channelsError }}</span>
       </div>
 
       <ng-container *ngIf="!channelsLoading">
-        <div *ngIf="!channels.length && !channelsError" class="px-2 py-3 text-[13px] text-gray-400 text-center">
+        <div
+          *ngIf="!channels.length && !channelsError"
+          class="px-2 py-3 text-[13px] text-gray-400 text-center"
+        >
           No channels yet
         </div>
         <button
@@ -107,11 +177,25 @@
           class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
           [ngClass]="{
             active: activeChannelId === ch.id && activeView === 'channel',
-            unread: ch.hasUnread && !(activeChannelId === ch.id && activeView === 'channel')
+            unread:
+              ch.hasUnread &&
+              !(activeChannelId === ch.id && activeView === 'channel'),
           }"
         >
-          <svg class="flex-shrink-0 text-gray-400" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" [attr.d]="getChannelIconPath(ch.name)" />
+          <svg
+            class="flex-shrink-0 text-gray-400"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+              [attr.d]="getChannelIconPath(ch.name)"
+            />
           </svg>
           <span class="flex-1 truncate text-[14px]">{{ ch.name }}</span>
           <span
@@ -120,10 +204,13 @@
             title="Private channel"
           ></span>
           <span
-            *ngIf="ch.unreadCount && !(activeChannelId === ch.id && activeView === 'channel')"
+            *ngIf="
+              ch.unreadCount &&
+              !(activeChannelId === ch.id && activeView === 'channel')
+            "
             class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
           >
-            {{ ch.unreadCount! > 99 ? '99+' : ch.unreadCount }}
+            {{ ch.unreadCount! > 99 ? "99+" : ch.unreadCount }}
           </span>
         </button>
       </ng-container>
@@ -133,14 +220,20 @@
     <!-- Direct Messages -->
     <div class="px-2">
       <div class="pl-2 mb-1 mt-1">
-        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Direct Messages</span>
+        <span
+          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
+          >Direct Messages</span
+        >
       </div>
       <div *ngIf="employeesLoading" class="flex flex-col gap-1.5 px-1 mt-1">
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
       </div>
-      <div *ngIf="employeesError && !employeesLoading" class="px-2 py-2 text-[12px] text-red-500">
+      <div
+        *ngIf="employeesError && !employeesLoading"
+        class="px-2 py-2 text-[12px] text-red-500"
+      >
         {{ employeesError }}
       </div>
       <button
@@ -149,11 +242,17 @@
         class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left"
         [ngClass]="{
           active: activeDmId === dm.id && activeView === 'dm',
-          unread: dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm')
+          unread:
+            dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm'),
         }"
       >
         <div class="relative flex-shrink-0">
-          <img *ngIf="dm.avatarUrl" [src]="dm.avatarUrl" alt="" class="w-8 h-8 rounded-full object-cover" />
+          <img
+            *ngIf="dm.avatarUrl"
+            [src]="dm.avatarUrl"
+            alt=""
+            class="w-8 h-8 rounded-full object-cover"
+          />
           <div
             *ngIf="!dm.avatarUrl"
             class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
@@ -163,36 +262,54 @@
           </div>
           <span
             class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
-            [ngClass]="{ 'bg-emerald-400': dm.online, 'bg-gray-300': !dm.online }"
+            [ngClass]="{
+              'bg-emerald-400': dm.online,
+              'bg-gray-300': !dm.online,
+            }"
           ></span>
         </div>
         <div class="flex-1 min-w-0">
-          <span class="truncate text-[14px] block leading-tight">{{ dm.shortName }}</span>
+          <span class="truncate text-[14px] block leading-tight">{{
+            dm.shortName
+          }}</span>
         </div>
         <span
-          *ngIf="dm.unreadCount && !(activeDmId === dm.id && activeView === 'dm')"
+          *ngIf="
+            dm.unreadCount && !(activeDmId === dm.id && activeView === 'dm')
+          "
           class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
         >
-          {{ dm.unreadCount! > 99 ? '99+' : dm.unreadCount }}
+          {{ dm.unreadCount! > 99 ? "99+" : dm.unreadCount }}
         </span>
       </button>
     </div>
   </nav>
 
   <!-- User bar -->
-  <div class="border-t border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0 bg-white">
+  <div
+    class="border-t border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0 bg-white"
+  >
     <div class="relative flex-shrink-0">
-      <img *ngIf="me.avatarUrl" [src]="me.avatarUrl" alt="" class="w-9 h-9 rounded-full object-cover" />
+      <img
+        *ngIf="me.avatarUrl"
+        [src]="me.avatarUrl"
+        alt=""
+        class="w-9 h-9 rounded-full object-cover"
+      />
       <div
         *ngIf="!me.avatarUrl"
         class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-bold bg-[#2e6276]"
       >
         {{ me.initials }}
       </div>
-      <span class="absolute -bottom-px -right-px w-3 h-3 rounded-full border-2 border-white bg-emerald-400"></span>
+      <span
+        class="absolute -bottom-px -right-px w-3 h-3 rounded-full border-2 border-white bg-emerald-400"
+      ></span>
     </div>
     <div class="min-w-0 flex-1">
-      <p class="text-[14px] font-semibold text-gray-800 leading-none truncate">{{ me.shortName }}</p>
+      <p class="text-[14px] font-semibold text-gray-800 leading-none truncate">
+        {{ me.shortName }}
+      </p>
       <p class="text-[12px] text-emerald-500 mt-0.5">Active</p>
     </div>
     <button
@@ -201,16 +318,41 @@
       [style.color]="soundEnabled ? '#2e6276' : '#9ca3af'"
       [title]="soundEnabled ? 'Mute sounds' : 'Enable sounds'"
     >
-      <svg *ngIf="soundEnabled" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      <svg
+        *ngIf="soundEnabled"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
           d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3m3 3l3-3M9 9H5.5A1.5 1.5 0 004 10.5v3A1.5 1.5 0 005.5 15H9l3 3V6L9 9z"
         />
       </svg>
-      <svg *ngIf="!soundEnabled" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      <svg
+        *ngIf="!soundEnabled"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
           d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
         />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+        />
       </svg>
     </button>
     <button
@@ -218,8 +360,17 @@
       class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors flex-shrink-0"
       title="Compose email"
     >
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      <svg
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       </svg>
@@ -244,7 +395,14 @@
     color: #111827;
     font-weight: 700;
   }
-  .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-  .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-  .sidebar-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+  }
 </style>

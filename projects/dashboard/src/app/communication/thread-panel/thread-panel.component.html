@@ -222,139 +222,143 @@
 
 <!-- ══════════════  THREAD  ══════════════ -->
 <ng-container *ngIf="mode === 'thread' && activeThread">
-  <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
-    <div class="flex items-center gap-2.5">
-      <svg class="text-[#2e6276]" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-      </svg>
-      <h3 class="text-[16px] font-bold text-gray-800">Thread</h3>
-    </div>
-    <button (click)="threadClosed.emit()" class="panel-close-btn">
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+  <div class="flex flex-col h-full overflow-hidden">
 
-  <div class="flex-1 overflow-y-auto px-5 py-4" style="scrollbar-width: thin">
-    <!-- Root message -->
-    <div class="flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">
-      <img *ngIf="activeThread.avatarUrl" [src]="activeThread.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5" />
-      <div
-        *ngIf="!activeThread.avatarUrl"
-        class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mt-0.5"
-        [style.background]="activeThread.avatarColor"
-      >{{ activeThread.initials }}</div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-baseline gap-2.5 mb-1.5">
-          <span class="text-[15px] font-medium text-gray-800">{{ activeThread.author }}</span>
-          <span class="text-[12px] text-gray-400">{{ activeThread.time }}</span>
-        </div>
-        <p class="text-[14px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <svg class="text-[#2e6276]" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+        <h3 class="text-[16px] font-bold text-gray-800">Thread</h3>
       </div>
+      <button (click)="threadClosed.emit()" class="panel-close-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
 
-    <div class="flex items-center gap-3 mb-4">
-      <div class="flex-1 h-px bg-gray-100"></div>
-      <span class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
-        {{ activeThread.replies.length }} {{ activeThread.replies.length === 1 ? 'reply' : 'replies' }}
-      </span>
-      <div class="flex-1 h-px bg-gray-100"></div>
-    </div>
-
-    <div *ngIf="!activeThread.replies.length" class="text-center py-8">
-      <p class="text-[14px] text-gray-400">No replies yet. Be the first!</p>
-    </div>
-
-    <div *ngFor="let r of activeThread.replies; trackBy: trackById" class="mb-4">
-      <div class="flex gap-3">
-        <img *ngIf="r.avatarUrl" [src]="r.avatarUrl" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
+    <!-- Scrollable messages — flex-1 so it takes all space between header and composer -->
+    <div class="flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin">
+      <!-- Root message -->
+      <div class="flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">
+        <img *ngIf="activeThread.avatarUrl" [src]="activeThread.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5" />
         <div
-          *ngIf="!r.avatarUrl"
-          class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
-          [style.background]="r.avatarColor"
-        >{{ r.initials }}</div>
+          *ngIf="!activeThread.avatarUrl"
+          class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 mt-0.5"
+          [style.background]="activeThread.avatarColor"
+        >{{ activeThread.initials }}</div>
         <div class="flex-1 min-w-0">
-          <div class="flex items-baseline gap-2.5 mb-1">
-            <span class="text-[14px] font-bold text-gray-800">{{ r.author }}</span>
-            <span class="text-[12px] text-gray-400">{{ r.time }}</span>
+          <div class="flex items-baseline gap-2.5 mb-1.5">
+            <span class="text-[15px] font-medium text-gray-800">{{ activeThread.author }}</span>
+            <span class="text-[12px] text-gray-400">{{ activeThread.time }}</span>
           </div>
-          <p class="text-[14px] text-gray-600 leading-relaxed">{{ r.content }}</p>
-          <button
-            (click)="replyTargetSet.emit({ reply: r, event: $event })"
-            class="mt-1.5 flex items-center gap-1 text-[12px] font-medium text-gray-400 transition-colors"
-            [style.color]="activeThreadReplyToId === r.id ? '#2e6276' : ''"
-          >
-            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-            </svg>
-            {{ activeThreadReplyToId === r.id ? 'Replying…' : 'Reply' }}
-            <span *ngIf="r.replies.length" style="color: #2e6276" class="ml-1">· {{ r.replies.length }}</span>
-          </button>
-          <!-- Nested replies -->
-          <div *ngIf="r.replies.length" class="mt-3 pl-4 border-l-2 border-gray-100 flex flex-col gap-3">
-            <div *ngFor="let r2 of r.replies; trackBy: trackById" class="flex gap-2.5">
-              <img *ngIf="r2.avatarUrl" [src]="r2.avatarUrl" alt="" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
-              <div
-                *ngIf="!r2.avatarUrl"
-                class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
-                [style.background]="r2.avatarColor"
-              >{{ r2.initials }}</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-baseline gap-2 mb-0.5">
-                  <span class="text-[13px] font-bold text-gray-800">{{ r2.author }}</span>
-                  <span class="text-[11px] text-gray-400">{{ r2.time }}</span>
+          <p class="text-[14px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1 h-px bg-gray-100"></div>
+        <span class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider">
+          {{ activeThread.replies.length }} {{ activeThread.replies.length === 1 ? 'reply' : 'replies' }}
+        </span>
+        <div class="flex-1 h-px bg-gray-100"></div>
+      </div>
+
+      <div *ngIf="!activeThread.replies.length" class="text-center py-8">
+        <p class="text-[14px] text-gray-400">No replies yet. Be the first!</p>
+      </div>
+
+      <div *ngFor="let r of activeThread.replies; trackBy: trackById" class="mb-4">
+        <div class="flex gap-3">
+          <img *ngIf="r.avatarUrl" [src]="r.avatarUrl" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
+          <div
+            *ngIf="!r.avatarUrl"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 mt-0.5"
+            [style.background]="r.avatarColor"
+          >{{ r.initials }}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-2.5 mb-1">
+              <span class="text-[14px] font-bold text-gray-800">{{ r.author }}</span>
+              <span class="text-[12px] text-gray-400">{{ r.time }}</span>
+            </div>
+            <p class="text-[14px] text-gray-600 leading-relaxed">{{ r.content }}</p>
+            <button
+              (click)="replyTargetSet.emit({ reply: r, event: $event })"
+              class="mt-1.5 flex items-center gap-1 text-[12px] font-medium text-gray-400 transition-colors"
+              [style.color]="activeThreadReplyToId === r.id ? '#2e6276' : ''"
+            >
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              {{ activeThreadReplyToId === r.id ? 'Replying…' : 'Reply' }}
+              <span *ngIf="r.replies.length" style="color: #2e6276" class="ml-1">· {{ r.replies.length }}</span>
+            </button>
+            <div *ngIf="r.replies.length" class="mt-3 pl-4 border-l-2 border-gray-100 flex flex-col gap-3">
+              <div *ngFor="let r2 of r.replies; trackBy: trackById" class="flex gap-2.5">
+                <img *ngIf="r2.avatarUrl" [src]="r2.avatarUrl" alt="" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
+                <div
+                  *ngIf="!r2.avatarUrl"
+                  class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5"
+                  [style.background]="r2.avatarColor"
+                >{{ r2.initials }}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2 mb-0.5">
+                    <span class="text-[13px] font-bold text-gray-800">{{ r2.author }}</span>
+                    <span class="text-[11px] text-gray-400">{{ r2.time }}</span>
+                  </div>
+                  <p class="text-[13px] text-gray-600 leading-relaxed">{{ r2.content }}</p>
                 </div>
-                <p class="text-[13px] text-gray-600 leading-relaxed">{{ r2.content }}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Reply composer -->
-  <div class="border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white">
-    <!-- Reply target banner -->
-    <div
-      *ngIf="activeThreadReplyToId && activeThreadReplyTarget"
-      class="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#2e6276]/5 rounded-lg border border-[#2e6276]/10"
-    >
-      <svg class="text-[#2e6276] flex-shrink-0" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-      </svg>
-      <span class="text-[12px] text-[#2e6276] font-medium flex-1 truncate">Replying to {{ activeThreadReplyTarget.author }}</span>
-      <button (click)="replyTargetCleared.emit()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
-        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-    <div class="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all">
-      <input
-        type="text"
-        [value]="threadReplyDraft"
-        (input)="threadReplyDraftChange.emit($any($event.target).value)"
-        [placeholder]="activeThreadReplyToId && activeThreadReplyTarget ? 'Reply to ' + activeThreadReplyTarget.author + '…' : 'Reply in thread…'"
-        (keydown)="onThreadKey($event)"
-        class="flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
-      />
-      <button
-        (click)="replySent.emit()"
-        class="send-btn w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-        [ngClass]="{ ready: threadReplyDraft.trim() }"
-        [disabled]="sendingReply"
+    <!-- Composer — flex-shrink-0 keeps it pinned to bottom -->
+    <div class="border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white">
+      <div
+        *ngIf="activeThreadReplyToId && activeThreadReplyTarget"
+        class="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#2e6276]/5 rounded-lg border border-[#2e6276]/10"
       >
-        <svg *ngIf="!sendingReply" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        <svg class="text-[#2e6276] flex-shrink-0" width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
         </svg>
-        <svg *ngIf="sendingReply" class="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-        </svg>
-      </button>
+        <span class="text-[12px] text-[#2e6276] font-medium flex-1 truncate">Replying to {{ activeThreadReplyTarget.author }}</span>
+        <button (click)="replyTargetCleared.emit()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all">
+        <input
+          type="text"
+          [value]="threadReplyDraft"
+          (input)="threadReplyDraftChange.emit($any($event.target).value)"
+          [placeholder]="activeThreadReplyToId && activeThreadReplyTarget ? 'Reply to ' + activeThreadReplyTarget.author + '…' : 'Reply in thread…'"
+          (keydown)="onThreadKey($event)"
+          class="flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
+        />
+        <button
+          (click)="replySent.emit()"
+          class="send-btn w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+          [ngClass]="{ ready: threadReplyDraft.trim() }"
+          [disabled]="sendingReply"
+        >
+          <svg *ngIf="!sendingReply" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+          <svg *ngIf="sendingReply" class="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
+
   </div>
 </ng-container>
 

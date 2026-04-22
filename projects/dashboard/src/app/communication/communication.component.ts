@@ -206,6 +206,7 @@ export class CommunicationComponent
   searchQuery = '';
   searchResults: { msg: Message; channelId: string; channelName: string }[] =
     [];
+    selectedThreadMsg: Message | null = null;
 
   // ── Composer ─────────────────────────────────────────
   draft = '';
@@ -1089,14 +1090,22 @@ export class CommunicationComponent
   }
 
   setView(v: 'threads'): void {
-    this.activeView = v;
-    this.activeThreadId = null;
-    this.activeThreadReplyToId = null;
-    this.showPinnedPanel = false;
-    this.showChannelDetails = false;
-    this.cancelEdit();
-    this.confirmDeleteId = null;
+  this.activeView = v;
+  this.activeThreadId = null;
+  this.activeThreadReplyToId = null;
+  this.selectedThreadMsg = null;
+  this.showPinnedPanel = false;
+  this.showChannelDetails = false;
+  this.cancelEdit();
+  this.confirmDeleteId = null;
+  // Preload all channel messages so allThreaded has data
+  for (const ch of this.channels) {
+    if (this.channelMessages[ch.id] === undefined) {
+      this.loadChannelMessages(ch);
+    }
   }
+  this.cdr.detectChanges();
+}
 
   // ── DM ────────────────────────────────────────────────
 
@@ -1461,8 +1470,8 @@ export class CommunicationComponent
       osc.type = 'sine';
       osc.frequency.value = 880;
       gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.09, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
@@ -2664,10 +2673,72 @@ export class CommunicationComponent
   }
 
   openThreadFromList(msg: Message, event: Event): void {
-    this.selectChannel(this.getChannelIdForMsg(msg));
-    this.openThread({ msg, event });
+  event.stopPropagation();
+  this.selectedThreadMsg = msg;
+  this.threadReplyDraft = '';
+  this.cdr.detectChanges();
+}
+
+closeSelectedThread(): void {
+  this.selectedThreadMsg = null;
+  this.cdr.detectChanges();
+}
+
+getChannelNameForMsg(msg: Message): string {
+  for (const ch of this.channels) {
+    if ((this.channelMessages[ch.id] || []).find((m) => m.id === msg.id))
+      return ch.name;
+  }
+  return '';
+}
+
+sendThreadReply(): void {
+  const text = this.threadReplyDraft.trim();
+  const rootMsg = this.selectedThreadMsg;
+  if (!text || !rootMsg || this.sendingReply) return;
+
+  const channelId = this.getChannelIdForMsg(rootMsg);
+  const ch = this.channels.find((c) => c.id === channelId);
+  if (!ch?.backendId || !rootMsg.backendId) {
+    // Optimistic local only
+    rootMsg.replies.push(this.makeLocalMsg(text));
+    this.threadReplyDraft = '';
+    this.selectedThreadMsg = { ...rootMsg };
+    this.cdr.detectChanges();
+    return;
   }
 
+  this.sendingReply = true;
+  const optimistic = this.makeLocalMsg(text);
+  optimistic.replyToMessageId = rootMsg.backendId;
+  optimistic.threadRootMessageId = rootMsg.backendId;
+  rootMsg.replies = [...rootMsg.replies, optimistic];
+  this.selectedThreadMsg = { ...rootMsg, replies: rootMsg.replies };
+  this.threadReplyDraft = '';
+  this.scrollThread = true;
+  this.cdr.detectChanges();
+
+  this.collabService.sendMessage({
+    channelId: ch.backendId,
+    senderUserId: this.me.userId,
+    content: text,
+    messageType: 'TEXT',
+    replyToMessageId: rootMsg.backendId,
+    threadRootMessageId: rootMsg.backendId,
+  }).subscribe({
+    next: (saved) => {
+      optimistic.backendId = saved.id;
+      this.sendingReply = false;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      rootMsg.replies = rootMsg.replies.filter((r) => r !== optimistic);
+      this.selectedThreadMsg = { ...rootMsg };
+      this.sendingReply = false;
+      this.cdr.detectChanges();
+    },
+  });
+}
   getChannelIdForMsg(msg: Message): string {
     for (const ch of this.channels) {
       if ((this.channelMessages[ch.id] || []).find((m) => m.id === msg.id))
@@ -2675,6 +2746,7 @@ export class CommunicationComponent
     }
     return this.activeChannelId;
   }
+
 
   trackById(_: number, m: { id: string }): string {
     return m.id;
@@ -2919,5 +2991,8 @@ export class CommunicationComponent
     };
     this.cdr.detectChanges();
   }
+  trackByThreaded(_: number, t: { msg: Message; channelName: string }): string {
+  return t.msg.id;
+}
 }
 //origins
