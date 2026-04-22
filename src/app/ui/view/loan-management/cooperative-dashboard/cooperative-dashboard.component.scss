@@ -1,3 +1,25 @@
+// Patronage command pill accent style
+.command-pill.patronage {
+  border: 1.5px solid #2eb270;
+  background: linear-gradient(90deg, #e6f9f0 0%, #f8feff 100%);
+  box-shadow: 0 2px 12px 0 rgba(46, 178, 112, 0.08);
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+
+  .command-icon {
+    background: #2eb270;
+    color: #fff;
+  }
+
+  strong {
+    color: #1e7e4a;
+  }
+
+  &:hover, &:focus {
+    background: linear-gradient(90deg, #d2f5e3 0%, #e6f9f0 100%);
+    border-color: #1e7e4a;
+    box-shadow: 0 4px 18px 0 rgba(46, 178, 112, 0.13);
+  }
+}
 // ==========================================
 // STATUS BADGE STYLES
 // ==========================================

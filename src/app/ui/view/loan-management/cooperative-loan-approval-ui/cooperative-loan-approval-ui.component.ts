@@ -447,7 +447,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
 
     // Filter by application stage
     if (this.filters.stage) {
-      result = result.filter(l => l.applicationStage === this.filters.stage);
+      result = result.filter(l => (l.applicationStage || '').toUpperCase() === this.filters.stage.toUpperCase());
     }
 
     // Filter by date from

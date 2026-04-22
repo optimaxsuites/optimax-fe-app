@@ -107,6 +107,14 @@
 
     <!-- Filters -->
     <div class="loan-filters">
+          <div class="filter-group">
+            <label for="stageFilter">Approval Stage:</label>
+            <select id="stageFilter" [(ngModel)]="filters.stage" (ngModelChange)="applyFilters()">
+              <option value="">All Stages</option>
+              <option value="PENDING_GUARANTOR_APPROVAL">Awaiting Guarantors</option>
+              <option value="READY_FOR_ADMIN_REVIEW">Ready for Review</option>
+            </select>
+          </div>
       <div class="filter-group">
         <label for="groupFilter">Group:</label>
         <select id="groupFilter" [(ngModel)]="filters.groupId" (ngModelChange)="applyFilters()">
@@ -164,6 +172,7 @@
             <th>Purpose</th>
             <th>Interest Rate</th>
             <th>Total Repayable</th>
+            <th>Approval Stage</th>
             <th><button type="button" class="sort-btn" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></button></th>
             <th><button type="button" class="sort-btn" (click)="setSort('applicationDate')">Applied On <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i></button></th>
             <th>Actions</th>
@@ -181,6 +190,7 @@
             <td class="purpose-cell">{{ row.purposeDisplay }}</td>
             <td>{{ row.groupInterestRate }}</td>
             <td class="amount-cell">{{ formatCurrency(row.totalRepayable) }}</td>
+            <td>{{ row.stageLabel }}</td>
             <td>
               <span class="status-badge" [ngClass]="row.statusClass">
                 {{ row.statusLabel }}
@@ -191,10 +201,11 @@
               <button class="action-icon view-icon" type="button" (click)="viewLoanDetail(row.loan)" title="View Details">
                 <i class="fas fa-eye"></i>
               </button>
-<button class="action-icon history-icon" type="button" (click)="openCooperativeLoanHistory(row.loan)" title="View Member Loan History">                <i class="pi pi-history"></i>
+              <button class="action-icon history-icon" type="button" (click)="openCooperativeLoanHistory(row.loan)" title="View Member Loan History">
+                <i class="pi pi-history"></i>
               </button>
               <button
-                *ngIf="row.loan.status === 'PENDING'"
+                *ngIf="row.loan.status === 'PENDING' && row.loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'"
                 class="action-icon approve-icon"
                 type="button"
                 (click)="openApprovalModal(row.loan)"
@@ -202,7 +213,7 @@
                 <i class="fas fa-check"></i>
               </button>
               <button
-                *ngIf="row.loan.status === 'PENDING' || row.loan.status === 'APPROVED'"
+                *ngIf="(row.loan.status === 'PENDING' || row.loan.status === 'APPROVED') && row.loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'"
                 class="action-icon reject-icon"
                 type="button"
                 (click)="openRejectModal(row.loan)"

@@ -1,3 +1,4 @@
+import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -172,6 +173,7 @@ import { CooperativeDashboardComponent } from './ui/view/loan-management/coopera
 import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
 import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
 import { CooperativeLoanApplicationComponent } from './ui/view/loan-management/cooperative-loan-application/cooperative-loan-application.component';
+import { GuarantorApprovalModalComponent } from './ui/view/loan-management/cooperative-loan-application/guarantor-approval-modal.component';
 import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
 import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
 import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
@@ -324,6 +326,7 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
     CooperativeLoansComponent,
     CooperativeLoanDetailComponent,
     CooperativeLoanApplicationComponent,
+    GuarantorApprovalModalComponent,
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
@@ -368,6 +371,7 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
     CooperativeLoanReportsComponent,
     CooperativeLoanDisbursementUiComponent,
     CooperativeMemberLoanHistoryComponent,
+    CooperativePatronageDistributionComponent,
   ],
   imports: [
     BrowserModule,

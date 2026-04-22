@@ -3910,6 +3910,10 @@ private buildGroupApiPayload(
       phone: String(employee?.phone || member.phone || '').trim(),
       address: String(employee?.address || member.address || '').trim(),
       employeeId: Number(member.employeeId || employee?.id || employee?.employeeId || 0) || member.employeeId,
+      memberAccountNumber: String(employee?.accountNumber || ''),
+      memberBankName: String(employee?.bankName || ''),
+      firstName: String(employee?.firstName || ''),
+      lastName: String(employee?.lastName || ''),
       updatedAt: new Date().toISOString()
     };
   }

@@ -364,7 +364,22 @@
             <button type="button" class="view-history-btn" (click)="viewMemberHistory()" title="See History" aria-label="See History">
               <i class="fas fa-history"></i>
             </button>
-            <button type="button" class="approve-btn" (click)="approveLoan()">
+            <button
+              type="button"
+              class="approve-btn"
+              (click)="approveLoan()"
+              [disabled]="anyGuarantorRejected || !isReadyForAdminReview"
+              *ngIf="!anyGuarantorRejected"
+            >
+              <i class="fas fa-check-circle"></i> Approve
+            </button>
+            <button
+              type="button"
+              class="approve-btn"
+              disabled
+              *ngIf="anyGuarantorRejected"
+              title="Cannot approve: a guarantor has rejected this loan"
+            >
               <i class="fas fa-check-circle"></i> Approve
             </button>
             <button type="button" class="reject-btn" (click)="showRejectDialog()">

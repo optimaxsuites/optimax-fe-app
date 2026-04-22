@@ -1,12 +1,12 @@
 import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
-import { Router } from '@angular/router';
+import { MailNotificationService } from '../../../service/mailNotification.service';
+import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { v4 as uuidV4 } from 'uuid';
 import { forkJoin, of } from 'rxjs';
-import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { catchError } from 'rxjs/operators';
@@ -21,7 +21,13 @@ import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/
   styleUrls: ['./cooperative-loan-application.component.scss']
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
-    isLoadingGroupDetails = false;
+    @Input() isModal = false;
+    @Input() isSelfService = false;
+    @Input() prefillMemberId: string | null = null;
+    @Output() applicationSubmitted = new EventEmitter<void>();
+    @Output() formCancelled = new EventEmitter<void>();
+    guarantorContacts: { [memberId: string]: GuarantorDto[] } = {};
+  isLoadingGroupDetails = false;
   messages: Message[] = [];
   supportingDocuments: LoanSupportingDocument[] = [];
 
@@ -60,24 +66,15 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   isSubmitting = false;
 
   estimatedAnnualPatronageRefund: number = 0;
-  guarantorCandidates: CooperativeMember[] = [];
-
-  // Stepper
-  stepIndex: number = 0;
+  guarantorCandidates: GuarantorDto[] = [];
   
-  // Application tracking
-  applicationStatus: string = '';
-  applicationNotifications: { title: string; message: string; date: string }[] = [];
-  currentUuid = uuidV4();
-  
-  // Inputs/Outputs
-  @Input() isModal = false;
-  @Input() isSelfService = false;
-  @Input() prefillMemberId: string | null = null;
-  @Output() formCancelled = new EventEmitter<void>();
-  @Output() applicationSubmitted = new EventEmitter<void>();
-
-  guarantorContacts: { [memberId: string]: GuarantorDto[] } = {};
+  // Guarantor Approval Modal properties
+  isGuarantorView = false;
+  showGuarantorApprovalModal = false;
+  modalLoanSummary: any = null;
+  modalLoanId: number | null = null;
+  modalLoading = false;
+  modalError = '';
 
   constructor(
     private fb: FormBuilder,
@@ -85,48 +82,142 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     private router: Router,
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
-    private employeeLoanService: EmployeeLoanService,
+    private mailNotificationService: MailNotificationService,
     private guarantorService: GuarantorService
   ) {}
 
   ngOnInit(): void {
-    const routeUuid = this.route.snapshot.paramMap.get('uuid');
-    if (routeUuid) {
-      this.currentUuid = routeUuid;
-    }
+    // Check URL parameters for guarantor approval
+    this.route.queryParams.subscribe(params => {
+      if (params['guarantorApproval'] === 'true' && params['loanId']) {
+        // This is a guarantor viewing the approval request
+        this.isGuarantorView = true;
+        this.modalLoanId = Number(params['loanId']);
+        this.fetchLoanSummaryById(this.modalLoanId);
+        return; // Don't load the normal form data
+      }
 
-    if (this.prefillMemberId) {
-      this.prefillMemberParam = this.prefillMemberId;
-    }
-
-    this.stepIndex = 0;
-
-    this.route.queryParamMap.subscribe(params => {
-      this.prefillMemberParam = params.get('memberId') || this.prefillMemberId;
-      this.tryApplyPrefillMember();
+      // Normal member view - load the form
+      this.isGuarantorView = false;
+      this.initForm();
+      this.setupPurposeChangeListener();
+      this.loadEmployeeDirectoryWithMemberCheckAndSelectCurrentUser();
     });
+  }
 
-    this.initForm();
-    this.setupPurposeChangeListener();
-    this.loadEmployeeDirectoryWithMemberCheck();
+  // ==================== GUARANTOR APPROVAL METHODS ====================
+  
+  fetchLoanSummaryById(loanId: number): void {
+    this.modalLoading = true;
+    this.modalError = '';
+    
+    this.cooperativeService.getLoanById(loanId).subscribe({
+      next: (loan) => {
+        if (!loan) {
+          this.modalError = 'Loan not found. Please contact support.';
+          this.modalLoading = false;
+          return;
+        }
+        
+        // Build loan summary for the modal
+        this.modalLoanSummary = {
+          applicantName: (loan as any).memberName || (loan as any).fullName || (loan as any).name || 'Unknown',
+          amount: loan.amount,
+          purpose: loan.purpose,
+          repaymentTime: loan.repaymentTime,
+          repaymentAmount: loan.repaymentAmount,
+          totalRepayable: loan.totalRepayable || (loan.repaymentAmount * loan.repaymentTime),
+          interestRate: loan.interestRate,
+          groupName: (loan as any).groupName || 'Cooperative Group',
+          requestDate: loan.requestDate
+        };
+        
+        this.showGuarantorApprovalModal = true;
+        this.modalLoading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching loan:', err);
+        this.modalError = 'Error loading loan details. Please try again.';
+        this.modalLoading = false;
+      }
+    });
+  }
+
+  handleGuarantorApprove(): void {
+    if (!this.modalLoanId) return;
+    
+    this.modalLoading = true;
+    this.modalError = '';
+    
+    // Get guarantor ID from session or token
+    const guarantorId = this.getGuarantorIdFromSession();
+    
+    this.cooperativeService.submitGuarantorDecision(this.modalLoanId, guarantorId, 'APPROVED').subscribe({
+      next: () => {
+        this.modalLoading = false;
+        this.showGuarantorApprovalModal = false;
+        alert('You have successfully approved this loan as a guarantor.');
+        // Optionally redirect or close the page
+      },
+      error: (err) => {
+        console.error('Error approving loan:', err);
+        this.modalLoading = false;
+        this.modalError = 'Failed to approve loan. Please try again.';
+      }
+    });
+  }
+
+  handleGuarantorReject(): void {
+    if (!this.modalLoanId) return;
+    
+    this.modalLoading = true;
+    this.modalError = '';
+    
+    const guarantorId = this.getGuarantorIdFromSession();
+    
+    this.cooperativeService.submitGuarantorDecision(this.modalLoanId, guarantorId, 'REJECTED').subscribe({
+      next: () => {
+        this.modalLoading = false;
+        this.showGuarantorApprovalModal = false;
+        alert('You have rejected this loan as a guarantor.');
+      },
+      error: (err) => {
+        console.error('Error rejecting loan:', err);
+        this.modalLoading = false;
+        this.modalError = 'Failed to reject loan. Please try again.';
+      }
+    });
+  }
+
+  handleGuarantorModalClose(): void {
+    this.showGuarantorApprovalModal = false;
+    // If this is a guarantor view, redirect to home or close
+    if (this.isGuarantorView) {
+      this.router.navigate(['/']);
+    }
+  }
+
+  private getGuarantorIdFromSession(): number {
+    // Get guarantor ID from session storage or from URL token
+    const guarantorId = sessionStorage.getItem('guarantorId');
+    if (guarantorId) {
+      return Number(guarantorId);
+    }
+    // Fallback - should be extracted from the approval token
+    return 0;
   }
 
   // ==================== SETUP METHODS ====================
   
   setupPurposeChangeListener(): void {
     this.applicationForm.get('purpose')?.valueChanges.subscribe(() => {
-      // Reset supporting documents when purpose changes
       this.supportingDocuments = [];
-      
-      // Clear any purpose-related validation errors
       const purposeControl = this.applicationForm.get('purpose');
       if (purposeControl?.errors) {
         const errors = { ...purposeControl.errors };
         delete errors['purposeRequired'];
         purposeControl.setErrors(Object.keys(errors).length ? errors : null);
       }
-      
-      // Re-validate the form
       this.applicationForm.updateValueAndValidity();
     });
   }
@@ -157,6 +248,15 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           ...this.selectedMember,
           email: this.resolveMemberEmail(this.selectedMember)
         };
+        if (this.selectedMember.employeeId) {
+          this.guarantorService.getGuarantorByEmployeeId(String(this.selectedMember.employeeId)).subscribe((guarantors: GuarantorDto[]) => {
+            this.guarantorCandidates = guarantors;
+          });
+        } else {
+          this.guarantorCandidates = [];
+        }
+      } else {
+        this.guarantorCandidates = [];
       }
       this.resolveSelectedMemberEligibility();
       this.refreshQualifiedGroups();
@@ -179,23 +279,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   // ==================== GETTERS ====================
 
-  public toTitleCase(value: string | undefined | null): string {
-  if (!value) return '';
-  const normalized = String(value).replace(/_/g, ' ').toLowerCase();
-  return normalized.replace(/\b\w/g, c => c.toUpperCase());
-}
-
   get guarantorsArray(): FormArray {
     return this.applicationForm.get('guarantors') as FormArray;
   }
 
   get selectedPurposeDefinition(): CooperativeLoanPurposeApiResponse | undefined {
     const currentPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
-    if (!currentPurpose) {
-      return undefined;
-    }
-    
-    // Find by name or id
+    if (!currentPurpose) return undefined;
     return this.availablePurposes.find((purpose) => {
       const purposeName = String(purpose.name || '').trim();
       const purposeId = String(purpose.id || '');
@@ -247,10 +337,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     return true;
   }
 
-  get controlNames(): string[] {
-    return Object.keys(this.applicationForm?.controls || {});
-  }
-
   get previewRepaymentSchedule(): RepaymentScheduleItem[] {
     const amount = Number(this.applicationForm?.get('amount')?.value || 0);
     const repaymentTime = Number(this.applicationForm?.get('repaymentTime')?.value || 0);
@@ -299,7 +385,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
-
   get workflowTimelinePreview(): Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> {
     const steps: Array<{ title: string; description: string; tone: 'neutral' | 'accent' | 'success' }> = [{
       title: 'Application Submitted',
@@ -338,19 +423,40 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   // ==================== LOAD METHODS ====================
 
-  private loadEmployeeDirectoryWithMemberCheck(): void {
+  private loadEmployeeDirectoryWithMemberCheckAndSelectCurrentUser(): void {
     this.employeeService.getAllEmployee().subscribe({
       next: (data) => {
         const employees = Array.isArray(data) ? data : [];
         this.employeeDirectory = employees
           .map((employee: any) => this.mapEmployeeToProfile(employee))
           .filter((employee: CooperativeEmployeeProfile | null): employee is CooperativeEmployeeProfile => !!employee);
-
-        this.loadData();
+        this.loadDataAndSelectCurrentUser();
       },
       error: () => {
         this.employeeDirectory = [];
-        this.loadData();
+        this.loadDataAndSelectCurrentUser();
+      }
+    });
+  }
+
+  private loadDataAndSelectCurrentUser(): void {
+    forkJoin({
+      purposes: this.cooperativeService.loadLoanPurposes(),
+      members: this.cooperativeService.getMembers(),
+      groups: this.cooperativeService.loadGroups()
+    }).subscribe(({ purposes, members, groups }) => {
+      this.availablePurposes = purposes;
+      this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
+      this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
+      // Auto-select current user as member
+      this.selectedMember = this.cooperativeService.resolveCurrentSessionMember(this.members);
+      this.refreshEligibleMembers();
+      this.resolveSelectedMemberEligibility();
+      this.refreshQualifiedGroups();
+      this.resolveSelectedMemberSalary();
+      // Patch form with selected member
+      if (this.selectedMember) {
+        this.applicationForm.patchValue({ memberId: this.selectedMember.id });
       }
     });
   }
@@ -360,7 +466,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       purposes: this.cooperativeService.loadLoanPurposes(),
       members: this.cooperativeService.getMembers(),
       groups: this.cooperativeService.loadGroups()
-    }).subscribe(({ purposes, members, groups }: { purposes: CooperativeLoanPurposeApiResponse[]; members: CooperativeMember[]; groups: CooperativeLoanGroup[] }) => {
+    }).subscribe(({ purposes, members, groups }) => {
       this.availablePurposes = purposes;
       const selectedPurpose = String(this.applicationForm?.get('purpose')?.value || '').trim();
       if (selectedPurpose && !this.availablePurposes.some((purpose) => purpose.name === selectedPurpose)) {
@@ -379,8 +485,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   // ==================== HELPER METHODS ====================
 
   private isValidEmailCandidate(email: unknown): email is string {
-    return typeof email === 'string'
-      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   }
 
   private resolveBestEmailCandidate(...candidates: unknown[]): string {
@@ -394,10 +499,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   private getSessionRegistrationEmail(): string {
     const userRegDataRaw = sessionStorage.getItem('userRegData');
-    if (!userRegDataRaw) {
-      return '';
-    }
-
+    if (!userRegDataRaw) return '';
     try {
       const userRegData = JSON.parse(userRegDataRaw);
       return this.resolveBestEmailCandidate(userRegData?.email);
@@ -407,17 +509,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   private resolveMemberEmail(member: CooperativeMember | undefined): string {
-    if (!member) {
-      return '';
-    }
-
+    if (!member) return '';
     const employeeMatch = this.employeeDirectory.find((employee) =>
-      String(employee.employeeId) === String(member.employeeId)
-      || String(employee.employeeId) === String(member.id)
-      || String(employee.employeeId) === String(member.memberId)
-      || (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
+      String(employee.employeeId) === String(member.employeeId) ||
+      String(employee.employeeId) === String(member.id) ||
+      String(employee.employeeId) === String(member.memberId) ||
+      (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
     );
-
     return this.resolveBestEmailCandidate(
       employeeMatch?.workEmail,
       employeeMatch?.email,
@@ -441,25 +539,18 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   private toDateTimeLocal(value: Date | string): string {
     const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-
+    if (Number.isNaN(date.getTime())) return '';
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     const hours = `${date.getHours()}`.padStart(2, '0');
     const minutes = `${date.getMinutes()}`.padStart(2, '0');
-
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   private normalizeRequestDate(value: string): string {
     const trimmedValue = String(value || '').trim();
-    if (!trimmedValue) {
-      return new Date().toISOString();
-    }
-
+    if (!trimmedValue) return new Date().toISOString();
     const parsedDate = new Date(trimmedValue);
     return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
   }
@@ -515,12 +606,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   resolveSelectedMemberSalary(): void {
-    // Use fallback salary if salary is 0 or falsy
     if (!this.selectedMember) {
       this.selectedMemberSalary = 20000000;
       return;
     }
-    // Try to get salary from member or employee profile
     let salary = 0;
     if (typeof this.selectedMember.monthlySalary === 'number') {
       salary = this.selectedMember.monthlySalary;
@@ -534,14 +623,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   tryApplyPrefillMember(): void {
-    if (!this.prefillMemberParam || !this.applicationForm || this.members.length === 0) {
-      return;
-    }
-
+    if (!this.prefillMemberParam || !this.applicationForm || this.members.length === 0) return;
     const matchedMember = this.eligibleMembers.find(member =>
       String(member.id) === String(this.prefillMemberParam) || String(member.memberId) === String(this.prefillMemberParam)
     );
-
     if (matchedMember) {
       this.applicationForm.patchValue({ memberId: matchedMember.id });
     }
@@ -554,10 +639,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const groupIdNum = Number(groupId);
     this.cooperativeService.loadGroupById(groupIdNum).subscribe({
       next: (group) => {
-        console.log('[onGroupSelect] Loaded group:', group);
         this.selectedGroup = group;
-        // Debug log: print the full selectedGroup object for field inspection
-        console.log('[onGroupSelect] selectedGroup (after mapping):', this.selectedGroup);
         this.selectedGroupMembership = this.selectedMember && this.selectedGroup
           ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
           : undefined;
@@ -577,8 +659,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           this.syncGuarantorControls();
           this.validateGuarantors();
           this.calculateRepayment();
-        } else {
-          console.warn('[onGroupSelect] No group found for ID:', groupIdNum);
         }
         this.isLoadingGroupDetails = false;
       },
@@ -618,7 +698,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       .filter(group => activeMembershipGroupIds.has(String(group.id)))
       .sort((left, right) => left.name.localeCompare(right.name));
 
-    // Restore previously selected group if still valid
     const selectedGroupId = this.applicationForm?.get('groupId')?.value;
     if (selectedGroupId && !this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
       this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
@@ -631,7 +710,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         : undefined;
     }
     
-    // Restore purpose if it still exists in availablePurposes
     if (previousPurpose && this.availablePurposes.some(p => String(p.name) === String(previousPurpose))) {
       this.applicationForm.patchValue({ purpose: previousPurpose }, { emitEvent: false });
     }
@@ -644,7 +722,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   private syncGuarantorControls(): void {
     if (!this.selectedGroup?.requiresGuarantors) {
       this.guarantorsArray.clear();
-      this.guarantorContacts = {};
       return;
     }
 
@@ -663,43 +740,20 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   addGuarantor(): void {
-    if (!this.selectedGroup?.requiresGuarantors) {
-      return;
-    }
-
-    const lastGuarantor = this.guarantorsArray.at(this.guarantorsArray.length - 1);
-    const memberId = lastGuarantor?.get('memberId')?.value;
-    if (memberId) {
-      this.guarantorService.getGuarantorByEmployeeId(memberId).subscribe(data => {
-        this.guarantorContacts[memberId] = data;
-      });
-    }
+    if (!this.selectedGroup?.requiresGuarantors) return;
     this.guarantorsArray.push(this.createGuarantorGroup());
     this.validateGuarantors();
   }
 
   removeGuarantor(index: number): void {
-    if (!this.selectedGroup?.requiresGuarantors) {
-      return;
-    }
-
-    const memberId = this.guarantorsArray.at(index)?.get('memberId')?.value;
-    if (memberId && this.guarantorContacts[memberId]) {
-      delete this.guarantorContacts[memberId];
-    }
+    if (!this.selectedGroup?.requiresGuarantors) return;
     this.guarantorsArray.removeAt(index);
     this.validateGuarantors();
   }
 
-  getGuarantorContacts(memberId: string): any[] {
-    return this.guarantorContacts[memberId] || [];
-  }
-
   private validateGuarantors(): void {
     const guarantorsControl = this.applicationForm.get('guarantors');
-    if (!guarantorsControl) {
-      return;
-    }
+    if (!guarantorsControl) return;
 
     if (!this.selectedGroup?.requiresGuarantors) {
       guarantorsControl.setErrors(null);
@@ -809,9 +863,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   onDocumentsSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files;
-    if (!files?.length) {
-      return;
-    }
+    if (!files?.length) return;
 
     const selectedDocuments: LoanSupportingDocument[] = Array.from(files).map((file) => ({
       name: file.name,
@@ -829,15 +881,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   getDocumentSizeLabel(size: number): string {
-    if (!Number.isFinite(size) || size <= 0) {
-      return 'Unknown size';
-    }
-    if (size < 1024) {
-      return `${size} B`;
-    }
-    if (size < 1024 * 1024) {
-      return `${(size / 1024).toFixed(1)} KB`;
-    }
+    if (!Number.isFinite(size) || size <= 0) return 'Unknown size';
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
 
@@ -858,20 +904,14 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   getSelectedGroupLateFeeSummary(): string {
-    if (!this.selectedGroup) {
-      return '';
-    }
-
+    if (!this.selectedGroup) return '';
     const percentage = Number(this.selectedGroup.lateFeePercentage || 0);
     const graceDays = Number(this.selectedGroup.lateFeeGraceDays || 0);
     return `${percentage}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
   }
 
   getSelectedGroupSettlementSummary(): string {
-    if (!this.selectedGroup) {
-      return '';
-    }
-
+    if (!this.selectedGroup) return '';
     const segments = [
       this.selectedGroup.principalBankName && this.selectedGroup.principalCollectionAccount
         ? `Principal: ${this.selectedGroup.principalBankName} (${this.selectedGroup.principalCollectionAccount})`
@@ -883,32 +923,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         ? `Late fees: ${this.selectedGroup.lateFeeBankName} (${this.selectedGroup.lateFeeCollectionAccount})`
         : ''
     ].filter(Boolean);
-
     return segments.join(' • ');
-  }
-
-  // ==================== STEPPER NAVIGATION ====================
-
-  nextStep(): void {
-    if (this.stepIndex < 4) {
-      this.stepIndex++;
-    }
-  }
-
-  prevStep(): void {
-    if (this.stepIndex > 0) {
-      this.stepIndex--;
-    }
   }
 
   // ==================== NOTIFICATIONS ====================
 
   addNotification(title: string, message: string) {
-    this.applicationNotifications.unshift({
-      title,
-      message,
-      date: new Date().toLocaleString()
-    });
+    // Implementation for notifications
   }
 
   // ==================== SUBMISSION ====================
@@ -936,11 +957,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       return false;
     }
 
-    if (this.requiresSupportingDocuments && this.supportingDocuments.length === 0) {
-      this.submitError = 'Upload the required supporting document(s) before submitting this cooperative loan request.';
-      return false;
-    }
-
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
     this.validateGuarantors();
@@ -956,17 +972,14 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         this.submitError = `Add at least ${this.requiredGuarantorCount} guarantor(s) for this group.`;
         return false;
       }
-
       if (guarantorErrors?.['duplicateGuarantor']) {
         this.submitError = 'A guarantor can only appear once in this application.';
         return false;
       }
-
       if (guarantorErrors?.['selfGuarantee']) {
         this.submitError = 'The borrowing member cannot be selected as a guarantor.';
         return false;
       }
-
       if (guarantorErrors?.['insufficientCoverage']) {
         this.submitError = 'Total guaranteed amount must cover the requested loan amount.';
         return false;
@@ -977,7 +990,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.isSubmitting) { return; }
+    if (this.isSubmitting) return;
     this.applicationForm.markAllAsTouched();
     this.calculateRepayment();
     this.submitSuccessMessage = '';
@@ -985,7 +998,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const memberId = this.applicationForm.get('memberId')?.value;
     const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
     const salary = Number(this.selectedMemberSalary || 0);
-    
+
     if (memberId && salary > 0) {
       this.cooperativeService.getLoans().subscribe(loans => {
         const activeLoans = (loans || []).filter(l => (l.memberId === memberId || l.cooperativeMemberId === memberId) && l.status === 'ACTIVE');
@@ -996,10 +1009,11 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           this.showConfirmation = false;
           return;
         }
-        
+
         if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByLevel || !this.validateBeforeSubmit()) {
           return;
         }
+
         this.showConfirmation = true;
       });
       return;
@@ -1013,14 +1027,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   confirmSubmit(): void {
-    this.applicationStatus = 'PENDING';
-    this.addNotification('Application Submitted', 'Your loan application has been submitted and is pending review.');
-    if (this.selectedGroup?.requiresGuarantors) {
-      this.addNotification('Guarantor Requests', 'Guarantor requests are pending before admin review.');
-    } else {
-      this.addNotification('Admin Review', 'Application sent for admin review.');
-    }
-    
     this.isSubmitting = true;
     const formValue = this.applicationForm.getRawValue();
     const requiresGuarantors = Boolean(this.selectedGroup?.requiresGuarantors);
@@ -1085,7 +1091,12 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     };
     
     this.cooperativeService.addLoan(newLoan as any).subscribe({
-      next: () => {
+      next: (savedLoan: any) => {
+        // Send email notifications to guarantors
+        if (requiresGuarantors && guarantors.length > 0) {
+          this.sendGuarantorEmails(savedLoan.id, guarantors);
+        }
+        
         this.submitSuccessMessage = this.selectedGroup?.requiresGuarantors
           ? 'Application submitted. Guarantor requests are now pending before admin review.'
           : 'Application submitted successfully and sent for admin review.';
@@ -1103,6 +1114,41 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       error: () => {
         this.isSubmitting = false;
         this.submitError = 'Unable to submit cooperative loan application right now.';
+      }
+    });
+  }
+
+  private sendGuarantorEmails(loanId: number, guarantors: any[]): void {
+    const baseUrl = window.location.origin + window.location.pathname;
+    
+    guarantors.forEach(guarantor => {
+      // Find the guarantor details
+      const guarantorDetails = this.guarantorCandidates.find(g => g.id === Number(guarantor.memberId));
+      if (guarantorDetails?.email) {
+        const approvalLink = `${baseUrl}?guarantorApproval=true&loanId=${loanId}`;
+        const mailBody = {
+          to: guarantorDetails.email,
+          subject: 'Guarantor Approval Request - Cooperative Loan',
+          text: `${this.selectedMember?.fullName} has requested a loan and selected you as their guarantor. 
+                 Loan Amount: ${this.formatCurrency(Number(this.applicationForm.get('amount')?.value))}
+                 Please review and approve or reject the request using the link below:
+                 ${approvalLink}`,
+          html: `
+            <h2>Guarantor Approval Request</h2>
+            <p><strong>${this.selectedMember?.fullName}</strong> has requested a loan and selected you as their guarantor.</p>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <p><strong>Loan Amount:</strong> ${this.formatCurrency(Number(this.applicationForm.get('amount')?.value))}</p>
+              <p><strong>Purpose:</strong> ${this.applicationForm.get('purpose')?.value}</p>
+              <p><strong>Repayment Period:</strong> ${this.applicationForm.get('repaymentTime')?.value} months</p>
+            </div>
+            <p><a href='${approvalLink}' style="background: #2EB270; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review Request</a></p>
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <p>${approvalLink}</p>
+          `
+        };
+        this.mailNotificationService.sendMail(mailBody).subscribe({
+          error: (err) => console.error('Error sending email to guarantor:', err)
+        });
       }
     });
   }
