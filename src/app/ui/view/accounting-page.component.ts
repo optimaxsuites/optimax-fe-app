@@ -36,15 +36,9 @@ export class AccountingPageComponent {
 
   tabsConfig: TabConfig[] = [
       {
-        name: 'Operations Hub',
-        component: TransactionsComponent,
-        icon: 'pi pi-bolt'
-      },
-
-      {
-        name: 'Journal Entries',
-        component: BookKeepingComponent,
-        icon: 'pi pi-book'
+        name: 'Accounting Transactions',
+        component: AccountingQueueComponent,
+        icon: 'pi pi-inbox'
       },
 
       {
@@ -54,15 +48,15 @@ export class AccountingPageComponent {
       },
 
       {
-        name: 'General Ledger',
-        component: GeneralLedgerComponent,
-        icon: 'pi pi-list'
+        name: 'Journal Entries',
+        component: BookKeepingComponent,
+        icon: 'pi pi-book'
       },
 
       {
-        name: 'Bank Accounts',
-        component: BankAccountOverviewComponent,
-        icon: 'pi pi-building'
+        name: 'General Ledger',
+        component: GeneralLedgerComponent,
+        icon: 'pi pi-list'
       },
 
       {
@@ -72,9 +66,9 @@ export class AccountingPageComponent {
       },
 
       {
-        name: 'Accounting Queue',
-        component: AccountingQueueComponent,
-        icon: 'pi pi-inbox'
+        name: 'Bank',
+        component: BankAccountOverviewComponent,
+        icon: 'pi pi-building'
       }
     ];
 }
