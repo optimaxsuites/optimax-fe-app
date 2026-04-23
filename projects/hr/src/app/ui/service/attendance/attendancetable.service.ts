@@ -77,10 +77,34 @@ private getAuthHeaders(): HttpHeaders {
              ?? sessionStorage.getItem('Token')
              ?? '';
 
-  const tenantId = sessionStorage.getItem('tenantId')
-                ?? sessionStorage.getItem('X-Tenant-ID')
-                ?? 'default'; // check DevTools for the actual sessionStorage key
+    const tenantId = 'optimax';
 
+ /* const tenantId = sessionStorage.getItem('tenantId')
+                ?? sessionStorage.getItem('X-Tenant-ID')
+                ?? sessionStorage.getItem('clientId')
+                ?? sessionStorage.getItem('tenant')
+                ?? 'default'; // check DevTools for the actual sessionStorage key
+*/
+  // Try to get tenant ID from userBranchInfoRegData
+  /*let tenantId = '';
+  const branchRaw = sessionStorage.getItem('userBranchInfoRegData');
+  if (branchRaw) {
+    try {
+      const branch = JSON.parse(branchRaw);
+      // ⚠️ adjust field name after checking DevTools
+      tenantId = branch.tenantId
+              ?? branch.branchCode
+              ?? branch.code
+              ?? branch.clientId
+              ?? '';
+    } catch {
+      console.warn('Failed to parse userBranchInfoRegData');
+    }
+  }
+
+  if (!tenantId) {
+    console.warn('X-Tenant-ID is missing — check userBranchInfoRegData in DevTools');
+  }*/
   return new HttpHeaders({
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -872,6 +896,18 @@ private autoMarkAbsentIfNeeded() {
     this.mergeAndPublish(currentApiData);
   }
 
+}
+
+getTodayStatusForEmployee(employeeId: string): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
+  const today = new Date().toISOString().split('T')[0];
+  const record = this.attendanceSubject.value.find(
+    r => r.id === employeeId && r.date === today
+  );
+
+  if (!record) return null;
+  if (record.checkIn && !record.checkOut) return 'CLOCKED_IN';
+  if (record.checkIn && record.checkOut) return 'CLOCKED_OUT';
+  return null;
 }
 
 isEmployeeBlockedToday(employeeId: string): boolean {
