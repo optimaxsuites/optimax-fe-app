@@ -40,6 +40,7 @@ import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/empl
 import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
 import { VendorProfileFormComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 import { VendorRegistrationComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-registration/vendor-registration.component';
+import { InterviewResponseComponent } from 'projects/hr/src/app/ui/view/recruitment/candidate/interview-response.component';
 
 const routes: Routes = [
   {
@@ -243,6 +244,9 @@ const routes: Routes = [
     path: 'vendor-profile-creation', component: VendorProfileFormComponent
   },
   { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
+  {
+    path: 'interview-response', component: InterviewResponseComponent
+  },
 
 
   {

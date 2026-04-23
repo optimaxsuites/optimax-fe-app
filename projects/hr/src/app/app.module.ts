@@ -73,6 +73,7 @@ import { TableComponent } from './ui/shared-component/view/table/table.component
 import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
+import { InterviewResponseComponent } from './ui/view/recruitment/candidate/interview-response.component';
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
 import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-score-sheet/interview-score-sheet.component';
@@ -376,6 +377,8 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     MyScheduleComponent,
     MySchedulesComponent,
     CooperativePatronageDistributionComponent,
+    InterviewInviteComponent,
+    InterviewResponseComponent
   ],
   imports: [
     // BrowserModule,
