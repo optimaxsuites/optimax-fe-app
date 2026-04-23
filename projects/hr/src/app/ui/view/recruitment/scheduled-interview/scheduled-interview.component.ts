@@ -165,7 +165,7 @@ export class ScheduledInterviewComponent {
 
     const candidates = this.interviews.map(interview => interview.candidate);
     // Reverse the order of candidates to implement LIFO
-    this.filteredCandidates = [...candidates].reverse();
+    this.filteredCandidates = [...this.interviews].reverse();
     
 
     console.log(this.filteredCandidates);

@@ -318,7 +318,7 @@ export class InterviewResponseComponent implements OnInit {
         ${isConfirmed ? `
           <p>Thank you for confirming your interview. We are excited to speak with you about the <strong>${this.candidate.jobVacancy?.jobTitle || 'Position'}</strong> role.</p>
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${this.candidate.inviteTimestamp || 'To be communicated'}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${this.candidate.scheduledDate || 'To be communicated'}</p>
             <p style="margin: 5px 0;"><strong>Location:</strong> Remote / Office (Check calendar invite)</p>
           </div>
           <p>A calendar invitation with the meeting link/address has been sent to your email. Please ensure you are in a quiet environment with a stable connection.</p>
