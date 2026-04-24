@@ -105,30 +105,33 @@ export function initialsFrom(name: string): string {
   return 'U?';
 }
 
+/**
+ * FIX #2 (Timezone): Parse server dates correctly as UTC.
+ * The backend sends Java LocalDateTime arrays which are in UTC.
+ * Using Date.UTC() ensures correct conversion to the user's local timezone.
+ */
 function parseServerDate(raw: string | number[] | undefined): Date | null {
   if (!raw) return null;
   let d: Date;
   if (Array.isArray(raw)) {
-    // Array from Java LocalDateTime — treat as local
-    d = new Date(
+    // Backend sends UTC values — use Date.UTC so browser converts to local tz
+    d = new Date(Date.UTC(
       raw[0] as number,
       ((raw[1] as number) || 1) - 1,
       (raw[2] as number) || 1,
       (raw[3] as number) || 0,
       (raw[4] as number) || 0,
       (raw[5] as number) || 0,
-    );
+      // index 6 is nanoseconds — convert to milliseconds
+      Math.floor(((raw[6] as number) || 0) / 1_000_000),
+    ));
   } else {
     let s = String(raw).trim().replace(' ', 'T');
-    // Only add Z if the server explicitly sent UTC — if it already has offset info, keep it
-    // If NO timezone info at all, treat as local (remove the forced 'Z')
-    if (/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) {
-      // Already has timezone — parse as-is
-      d = new Date(s);
-    } else {
-      // No timezone — parse as local time (no 'Z' suffix)
-      d = new Date(s);
+    // If no timezone info, assume UTC (backend sends UTC)
+    if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) {
+      s += 'Z';
     }
+    d = new Date(s);
     if (isNaN(d.getTime())) d = new Date(raw as string);
   }
   return isNaN(d.getTime()) ? null : d;
@@ -206,7 +209,7 @@ export class CommunicationComponent
   searchQuery = '';
   searchResults: { msg: Message; channelId: string; channelName: string }[] =
     [];
-    selectedThreadMsg: Message | null = null;
+  selectedThreadMsg: Message | null = null;
 
   // ── Composer ─────────────────────────────────────────
   draft = '';
@@ -399,7 +402,7 @@ export class CommunicationComponent
       client.subscribe(
         `/topic/collab/chat/user/${this.me.userId}/unread`,
         () => {
-          this.loadChannels(true); // silent — no loading flash
+          this.loadChannels(true);
         },
       );
       if (this.activeChannelId) {
@@ -426,15 +429,11 @@ export class CommunicationComponent
         this.channelPresenceSub = null;
       }
       this.dmChannelSubs.forEach((s) => {
-        try {
-          s.unsubscribe();
-        } catch (_) {}
+        try { s.unsubscribe(); } catch (_) {}
       });
       this.dmChannelSubs.clear();
       this.dmPresenceSubs.forEach((s) => {
-        try {
-          s.unsubscribe();
-        } catch (_) {}
+        try { s.unsubscribe(); } catch (_) {}
       });
       this.dmPresenceSubs.clear();
       if (this.stompClient) {
@@ -447,14 +446,10 @@ export class CommunicationComponent
   private subscribeToChannel(channelId: number): void {
     if (!this.stompClient || !this.wsConnected) return;
     if (this.channelSub) {
-      try {
-        this.channelSub.unsubscribe();
-      } catch (_) {}
+      try { this.channelSub.unsubscribe(); } catch (_) {}
     }
     if (this.channelPresenceSub) {
-      try {
-        this.channelPresenceSub.unsubscribe();
-      } catch (_) {}
+      try { this.channelPresenceSub.unsubscribe(); } catch (_) {}
     }
 
     this.channelSub = this.stompClient.subscribe(
@@ -462,7 +457,7 @@ export class CommunicationComponent
       (frame: any) => {
         const ch = this.channels.find((c) => c.backendId === channelId);
         if (!ch) return;
-        // Try to extract sender from WS frame to avoid self-notification
+
         let senderUserId: number | null = null;
         try {
           const body = JSON.parse(frame.body || '{}');
@@ -472,6 +467,7 @@ export class CommunicationComponent
           senderUserId !== null && senderUserId === this.me.userId;
 
         if (ch.id !== this.activeChannelId) {
+          // Not the active channel — only increment unread for others' messages
           if (!isOwnMessage) {
             ch.unreadCount = (ch.unreadCount || 0) + 1;
             ch.hasUnread = true;
@@ -479,6 +475,9 @@ export class CommunicationComponent
           }
           this.cdr.detectChanges();
         } else {
+          // FIX #1 (Duplicates): Skip re-fetch for own messages on active channel.
+          // Our optimistic message is already in the list; the WS event is redundant.
+          if (isOwnMessage) return;
           this.fetchAndAppendNewMessages(ch);
         }
       },
@@ -516,6 +515,7 @@ export class CommunicationComponent
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
+
           if (contact.id !== this.activeDmId) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
@@ -524,6 +524,8 @@ export class CommunicationComponent
             }
             this.cdr.detectChanges();
           } else {
+            // FIX #1 (Duplicates): Skip re-fetch for own DM messages too
+            if (isOwnMessage) return;
             this.fetchAndAppendNewDmMessages(contact, chId);
           }
         },
@@ -926,7 +928,6 @@ export class CommunicationComponent
     }
   }
 
-  // Bound methods passed as @Input() to child components
   getMemberAvatarUrl = (userId: number): string | undefined =>
     this.userAvatarCache[userId];
   getMemberName = (userId: number): string =>
@@ -1055,7 +1056,6 @@ export class CommunicationComponent
       ch.hasUnread = false;
       ch.unreadCount = undefined;
       this.presenceChannelId = ch.backendId;
-      // Use cache if available — no API call needed
       if (this.channelMessages[id] !== undefined) {
         this.scrollFeed = true;
         this.subscribeToChannel(ch.backendId);
@@ -1090,22 +1090,21 @@ export class CommunicationComponent
   }
 
   setView(v: 'threads'): void {
-  this.activeView = v;
-  this.activeThreadId = null;
-  this.activeThreadReplyToId = null;
-  this.selectedThreadMsg = null;
-  this.showPinnedPanel = false;
-  this.showChannelDetails = false;
-  this.cancelEdit();
-  this.confirmDeleteId = null;
-  // Preload all channel messages so allThreaded has data
-  for (const ch of this.channels) {
-    if (this.channelMessages[ch.id] === undefined) {
-      this.loadChannelMessages(ch);
+    this.activeView = v;
+    this.activeThreadId = null;
+    this.activeThreadReplyToId = null;
+    this.selectedThreadMsg = null;
+    this.showPinnedPanel = false;
+    this.showChannelDetails = false;
+    this.cancelEdit();
+    this.confirmDeleteId = null;
+    for (const ch of this.channels) {
+      if (this.channelMessages[ch.id] === undefined) {
+        this.loadChannelMessages(ch);
+      }
     }
+    this.cdr.detectChanges();
   }
-  this.cdr.detectChanges();
-}
 
   // ── DM ────────────────────────────────────────────────
 
@@ -1259,7 +1258,6 @@ export class CommunicationComponent
     });
   }
 
-  /** Shared message-building logic used by both channel and DM flows */
   private buildMessageList(
     messages: CollabMessage[],
     reactions: any[],
@@ -1513,7 +1511,9 @@ export class CommunicationComponent
       })
       .subscribe({
         next: (saved) => {
+          // Assign the real backend ID to the optimistic message so dedup works
           optimistic.backendId = saved.id;
+          optimistic.id = `backend-${saved.id}`;
           this.sendingMessage = false;
           this.playNotificationSound();
           if (capturedFile && capturedAtt)
@@ -1575,7 +1575,9 @@ export class CommunicationComponent
       })
       .subscribe({
         next: (saved) => {
+          // Assign real backend ID so dedup works
           optimistic.backendId = saved.id;
+          optimistic.id = `backend-${saved.id}`;
           this.sendingMessage = false;
           this.playNotificationSound();
           if (capturedFile && capturedAtt) {
@@ -1851,6 +1853,7 @@ export class CommunicationComponent
       .subscribe({
         next: (saved) => {
           optimistic.backendId = saved.id;
+          optimistic.id = `backend-${saved.id}`;
           this.sendingReply = false;
           this.cdr.detectChanges();
         },
@@ -2242,7 +2245,6 @@ export class CommunicationComponent
             body = p.body || p.content || body;
           } catch (_) {}
         }
-        // if (body && body.length > 40) this.draft = body;
         this.aiOutput = {
           visible: true,
           loading: false,
@@ -2419,7 +2421,6 @@ export class CommunicationComponent
         this.cdr.detectChanges();
         return;
       }
-      // this.draft = transcript;
       this.aiOutput = {
         visible: true,
         loading: true,
@@ -2673,72 +2674,73 @@ export class CommunicationComponent
   }
 
   openThreadFromList(msg: Message, event: Event): void {
-  event.stopPropagation();
-  this.selectedThreadMsg = msg;
-  this.threadReplyDraft = '';
-  this.cdr.detectChanges();
-}
-
-closeSelectedThread(): void {
-  this.selectedThreadMsg = null;
-  this.cdr.detectChanges();
-}
-
-getChannelNameForMsg(msg: Message): string {
-  for (const ch of this.channels) {
-    if ((this.channelMessages[ch.id] || []).find((m) => m.id === msg.id))
-      return ch.name;
-  }
-  return '';
-}
-
-sendThreadReply(): void {
-  const text = this.threadReplyDraft.trim();
-  const rootMsg = this.selectedThreadMsg;
-  if (!text || !rootMsg || this.sendingReply) return;
-
-  const channelId = this.getChannelIdForMsg(rootMsg);
-  const ch = this.channels.find((c) => c.id === channelId);
-  if (!ch?.backendId || !rootMsg.backendId) {
-    // Optimistic local only
-    rootMsg.replies.push(this.makeLocalMsg(text));
+    event.stopPropagation();
+    this.selectedThreadMsg = msg;
     this.threadReplyDraft = '';
-    this.selectedThreadMsg = { ...rootMsg };
     this.cdr.detectChanges();
-    return;
   }
 
-  this.sendingReply = true;
-  const optimistic = this.makeLocalMsg(text);
-  optimistic.replyToMessageId = rootMsg.backendId;
-  optimistic.threadRootMessageId = rootMsg.backendId;
-  rootMsg.replies = [...rootMsg.replies, optimistic];
-  this.selectedThreadMsg = { ...rootMsg, replies: rootMsg.replies };
-  this.threadReplyDraft = '';
-  this.scrollThread = true;
-  this.cdr.detectChanges();
+  closeSelectedThread(): void {
+    this.selectedThreadMsg = null;
+    this.cdr.detectChanges();
+  }
 
-  this.collabService.sendMessage({
-    channelId: ch.backendId,
-    senderUserId: this.me.userId,
-    content: text,
-    messageType: 'TEXT',
-    replyToMessageId: rootMsg.backendId,
-    threadRootMessageId: rootMsg.backendId,
-  }).subscribe({
-    next: (saved) => {
-      optimistic.backendId = saved.id;
-      this.sendingReply = false;
-      this.cdr.detectChanges();
-    },
-    error: () => {
-      rootMsg.replies = rootMsg.replies.filter((r) => r !== optimistic);
+  getChannelNameForMsg(msg: Message): string {
+    for (const ch of this.channels) {
+      if ((this.channelMessages[ch.id] || []).find((m) => m.id === msg.id))
+        return ch.name;
+    }
+    return '';
+  }
+
+  sendThreadReply(): void {
+    const text = this.threadReplyDraft.trim();
+    const rootMsg = this.selectedThreadMsg;
+    if (!text || !rootMsg || this.sendingReply) return;
+
+    const channelId = this.getChannelIdForMsg(rootMsg);
+    const ch = this.channels.find((c) => c.id === channelId);
+    if (!ch?.backendId || !rootMsg.backendId) {
+      rootMsg.replies.push(this.makeLocalMsg(text));
+      this.threadReplyDraft = '';
       this.selectedThreadMsg = { ...rootMsg };
-      this.sendingReply = false;
       this.cdr.detectChanges();
-    },
-  });
-}
+      return;
+    }
+
+    this.sendingReply = true;
+    const optimistic = this.makeLocalMsg(text);
+    optimistic.replyToMessageId = rootMsg.backendId;
+    optimistic.threadRootMessageId = rootMsg.backendId;
+    rootMsg.replies = [...rootMsg.replies, optimistic];
+    this.selectedThreadMsg = { ...rootMsg, replies: rootMsg.replies };
+    this.threadReplyDraft = '';
+    this.scrollThread = true;
+    this.cdr.detectChanges();
+
+    this.collabService.sendMessage({
+      channelId: ch.backendId,
+      senderUserId: this.me.userId,
+      content: text,
+      messageType: 'TEXT',
+      replyToMessageId: rootMsg.backendId,
+      threadRootMessageId: rootMsg.backendId,
+    }).subscribe({
+      next: (saved) => {
+        optimistic.backendId = saved.id;
+        optimistic.id = `backend-${saved.id}`;
+        this.sendingReply = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        rootMsg.replies = rootMsg.replies.filter((r) => r !== optimistic);
+        this.selectedThreadMsg = { ...rootMsg };
+        this.sendingReply = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   getChannelIdForMsg(msg: Message): string {
     for (const ch of this.channels) {
       if ((this.channelMessages[ch.id] || []).find((m) => m.id === msg.id))
@@ -2747,9 +2749,12 @@ sendThreadReply(): void {
     return this.activeChannelId;
   }
 
-
   trackById(_: number, m: { id: string }): string {
     return m.id;
+  }
+
+  trackByThreaded(_: number, t: { msg: Message; channelName: string }): string {
+    return t.msg.id;
   }
 
   getChannelIconPath(name: string): string {
@@ -2806,18 +2811,45 @@ sendThreadReply(): void {
     return msg;
   }
 
+  /**
+   * FIX #3 (Delete sync) + FIX #1 (Duplicates):
+   * After fetching snapshot, reconcile deletions by removing messages that no
+   * longer exist in the server snapshot. Then add only genuinely new messages.
+   * Optimistic match uses createdAt timestamp to avoid false deduplication.
+   */
   private fetchAndAppendNewMessages(channel: Channel): void {
     this.collabService.getChannelSnapshot(channel.backendId).subscribe({
       next: (snap) => {
         const existing = this.channelMessages[channel.id] || [];
-        const existingIds = new Set(existing.map((m) => m.backendId));
-        const newRaw = (snap.messages || []).filter(
-          (m) => !existingIds.has(m.id),
+        const snapIds = new Set((snap.messages || []).map((m) => m.id));
+
+        // FIX #3: Remove messages that were deleted on the server
+        const beforeCount = existing.length;
+        const reconciled = existing.filter(
+          (m) => !m.backendId || snapIds.has(m.backendId),
         );
-        if (!newRaw.length) return;
+        const removedCount = beforeCount - reconciled.length;
+        this.channelMessages[channel.id] = reconciled;
+
+        // Find messages new to us
+        const existingBackendIds = new Set(reconciled.map((m) => m.backendId).filter(Boolean));
+        const newRaw = (snap.messages || []).filter(
+          (m) => !existingBackendIds.has(m.id),
+        );
+
+        if (!newRaw.length && removedCount === 0) return;
+
+        if (!newRaw.length) {
+          // Only deletions happened — just re-render
+          this.channelMessages[channel.id] = [...reconciled];
+          this.cdr.detectChanges();
+          return;
+        }
+
         const senderIds = [...new Set(newRaw.map((m) => m.senderUserId))];
         this.loadUserDirectory(senderIds, () => {
           this.loadMemberAvatars(senderIds);
+          const current = this.channelMessages[channel.id] || [];
           for (const m of newRaw) {
             const author =
               this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
@@ -2841,7 +2873,7 @@ sendThreadReply(): void {
               threadRootMessageId: m.threadRootMessageId,
             };
             if (m.replyToMessageId) {
-              const parent = existing.find(
+              const parent = current.find(
                 (p) => p.backendId === m.replyToMessageId,
               );
               if (parent) {
@@ -2849,22 +2881,25 @@ sendThreadReply(): void {
                 continue;
               }
             }
-            const optimisticIdx = existing.findIndex(
+            // FIX #1: Tighten optimistic dedup — match on content + sender +
+            // recent timestamp (within 30s) to avoid false positives
+            const optimisticIdx = current.findIndex(
               (e) =>
                 !e.backendId &&
                 e.senderUserId === m.senderUserId &&
-                e.content === m.content,
+                e.content === m.content &&
+                (Date.now() - e.createdAt.getTime()) < 30_000,
             );
             if (optimisticIdx !== -1) {
-              existing[optimisticIdx].backendId = m.id;
-              existing[optimisticIdx].id = `backend-${m.id}`;
+              current[optimisticIdx].backendId = m.id;
+              current[optimisticIdx].id = `backend-${m.id}`;
             } else {
-              existing.push(newMsg);
+              current.push(newMsg);
               if (Number(m.senderUserId) !== Number(this.me.userId))
                 this.playNotificationSound();
             }
           }
-          this.channelMessages[channel.id] = [...existing];
+          this.channelMessages[channel.id] = [...current];
           this.scrollFeed = true;
           this.cdr.detectChanges();
         });
@@ -2873,6 +2908,9 @@ sendThreadReply(): void {
     });
   }
 
+  /**
+   * FIX #3 (Delete sync) + FIX #1 (Duplicates) for DM channels.
+   */
   private fetchAndAppendNewDmMessages(
     contact: DmContact,
     channelId: number,
@@ -2880,13 +2918,32 @@ sendThreadReply(): void {
     this.collabService.getChannelSnapshot(channelId).subscribe({
       next: (snap) => {
         const existing = this.dmMessages[contact.id] || [];
-        const existingIds = new Set(existing.map((m) => m.backendId));
-        const newRaw = (snap.messages || []).filter(
-          (m) => !existingIds.has(m.id),
+        const snapIds = new Set((snap.messages || []).map((m) => m.id));
+
+        // FIX #3: Remove deleted messages
+        const beforeCount = existing.length;
+        const reconciled = existing.filter(
+          (m) => !m.backendId || snapIds.has(m.backendId),
         );
-        if (!newRaw.length) return;
+        const removedCount = beforeCount - reconciled.length;
+        this.dmMessages[contact.id] = reconciled;
+
+        const existingBackendIds = new Set(reconciled.map((m) => m.backendId).filter(Boolean));
+        const newRaw = (snap.messages || []).filter(
+          (m) => !existingBackendIds.has(m.id),
+        );
+
+        if (!newRaw.length && removedCount === 0) return;
+
+        if (!newRaw.length) {
+          this.dmMessages[contact.id] = [...reconciled];
+          this.cdr.detectChanges();
+          return;
+        }
+
         const senderIds = [...new Set(newRaw.map((m) => m.senderUserId))];
         this.loadUserDirectory(senderIds, () => {
+          const current = this.dmMessages[contact.id] || [];
           for (const m of newRaw) {
             const author =
               this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
@@ -2907,22 +2964,24 @@ sendThreadReply(): void {
               createdAt: new Date(),
               senderUserId: m.senderUserId,
             };
-            const optimisticIdx = existing.findIndex(
+            // FIX #1: Tighten optimistic dedup with timestamp guard
+            const optimisticIdx = current.findIndex(
               (e) =>
                 !e.backendId &&
                 e.senderUserId === m.senderUserId &&
-                e.content === m.content,
+                e.content === m.content &&
+                (Date.now() - e.createdAt.getTime()) < 30_000,
             );
             if (optimisticIdx !== -1) {
-              existing[optimisticIdx].backendId = m.id;
-              existing[optimisticIdx].id = `backend-${m.id}`;
+              current[optimisticIdx].backendId = m.id;
+              current[optimisticIdx].id = `backend-${m.id}`;
             } else {
-              existing.push(newMsg);
+              current.push(newMsg);
               if (Number(m.senderUserId) !== Number(this.me.userId))
                 this.playNotificationSound();
             }
           }
-          this.dmMessages[contact.id] = [...existing];
+          this.dmMessages[contact.id] = [...current];
           this.scrollFeed = true;
           this.cdr.detectChanges();
         });
@@ -2930,7 +2989,7 @@ sendThreadReply(): void {
       error: () => {},
     });
   }
-  // Add this helper
+
   private extractSubjectAndBody(content: string): {
     subject: string;
     body: string;
@@ -2938,8 +2997,6 @@ sendThreadReply(): void {
     const lines = content.trim().split('\n');
     let subject = '';
     let bodyStartIndex = 0;
-
-    // Check first non-empty line for "Subject: ..."
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -2947,23 +3004,18 @@ sendThreadReply(): void {
       if (subjectMatch) {
         subject = subjectMatch[1].trim();
         bodyStartIndex = i + 1;
-        // Skip blank lines after subject line
         while (bodyStartIndex < lines.length && !lines[bodyStartIndex].trim()) {
           bodyStartIndex++;
         }
       }
-      break; // Only check the first non-empty line
+      break;
     }
-
     const body = lines.slice(bodyStartIndex).join('\n').trim();
     return { subject, body };
   }
 
-  // Add this method — called by (aiOutputUsed) from composer
   onAiOutputUsed(content: string): void {
     const { subject, body } = this.extractSubjectAndBody(content);
-
-    // Collect recipients same as openEmailModal
     const recipients: { email: string; name: string; locked: boolean }[] = [];
     if (this.activeView === 'dm' && this.activeDmContact) {
       const email =
@@ -2978,7 +3030,6 @@ sendThreadReply(): void {
     } else if (this.activeView === 'channel') {
       recipients.push(...this.getChannelMemberEmails());
     }
-
     this.emailModal = {
       open: true,
       recipients,
@@ -2991,8 +3042,4 @@ sendThreadReply(): void {
     };
     this.cdr.detectChanges();
   }
-  trackByThreaded(_: number, t: { msg: Message; channelName: string }): string {
-  return t.msg.id;
 }
-}
-//origins
