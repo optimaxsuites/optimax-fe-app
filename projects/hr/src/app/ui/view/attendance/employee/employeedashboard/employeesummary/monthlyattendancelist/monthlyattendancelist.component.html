@@ -25,8 +25,10 @@
     >
       <span>{{ record.date | date:'MMM d, yyyy' }}</span>
       <span class="status">{{ record.status }}</span>
-      <span>{{ record.checkIn || '--' }}</span>
-      <span>{{ record.checkOut || '--' }}</span>
+      <span>{{ record.checkIn | date:'HH:mm:ss' }}</span>
+      <!--<span>{{ record.checkIn || '--' }}</span>-->
+      <span>{{ record.checkOut | date:'HH:mm:ss' }}</span>
+      <!--<span>{{ record.checkOut || '--' }}</span>-->
       <span>{{ record.hours || 0 }}h</span>
     </div>
 
