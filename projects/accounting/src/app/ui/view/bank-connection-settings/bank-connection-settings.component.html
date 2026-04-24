@@ -1,0 +1,310 @@
+<!-- ============================================================ -->
+<!-- BANK CONNECTION SETTINGS                                    -->
+<!-- ============================================================ -->
+<div class="min-h-screen bg-gray-50 font-sans">
+
+  <!-- ── Page Header ─────────────────────────────────────── -->
+  <div class="bg-white border-b border-gray-200 px-8 py-10 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="w-20 h-20 rounded-2xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+        <i class="fa-solid fa-plug-circle-bolt text-4xl"></i>
+      </div>
+      <div>
+        <h1 class="text-5xl font-extrabold text-gray-900 tracking-tight leading-none">Bank Connections</h1>
+        <p class="text-2xl text-gray-500 font-semibold mt-3 flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-customBlue"></i>
+          Manage payment gateway integrations and API credentials
+        </p>
+      </div>
+    </div>
+    <button id="btn-add-connection" (click)="openCreateForm()"
+            class="flex items-center gap-4 px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white text-xl font-black rounded-xl transition-all shadow-md shadow-customBlue/10 active:scale-95 transform hover:-translate-y-1">
+      <i class="fa-solid fa-plus text-2xl"></i> New Connection
+    </button>
+  </div>
+
+  <div class="px-8 py-8 space-y-8">
+
+    <!-- ── Error State ─────────────────────────────────────── -->
+    <div *ngIf="listError" class="p-6 rounded-2xl border-2 border-red-200 bg-red-50 text-red-700 font-bold flex gap-4 items-center text-xl">
+      <i class="fa-solid fa-circle-exclamation text-2xl shrink-0"></i>
+      <span>{{ listError }}</span>
+    </div>
+
+    <!-- ── Loading ─────────────────────────────────────────── -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-24">
+      <i class="fa-solid fa-spinner fa-spin text-5xl text-customBlue opacity-40"></i>
+    </div>
+
+    <!-- ── Empty State ─────────────────────────────────────── -->
+    <div *ngIf="!isLoading && connections.length === 0 && !listError"
+         class="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-24 text-center">
+      <div class="w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center mb-8">
+        <i class="fa-solid fa-plug text-5xl text-gray-300"></i>
+      </div>
+      <h3 class="text-3xl font-black text-gray-400 tracking-tight">No Bank Connections</h3>
+      <p class="text-xl text-gray-400 mt-3 font-bold max-w-md">Add your first payment gateway connection to enable disbursements.</p>
+      <button (click)="openCreateForm()" class="mt-8 px-10 py-4 bg-customBlue text-white font-black rounded-xl text-xl hover:bg-customBlueHover transition-all shadow-md">
+        <i class="fa-solid fa-plus mr-3"></i> Add Connection
+      </button>
+    </div>
+
+    <!-- ── Connections Table ──────────────────────────────── -->
+    <div *ngIf="!isLoading && connections.length > 0" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-2xl font-black text-gray-900 tracking-tight">Active Connections</h2>
+        <span class="bg-customBlue/10 text-customBlue font-black text-lg px-4 py-1.5 rounded-full">{{ connections.length }}</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-xl">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-100">
+              <th class="px-8 py-5 text-left text-lg font-black uppercase tracking-widest text-gray-400">Provider</th>
+              <th class="px-8 py-5 text-left text-lg font-black uppercase tracking-widest text-gray-400">API Key</th>
+              <th class="px-8 py-5 text-left text-lg font-black uppercase tracking-widest text-gray-400">Secret Key</th>
+              <th class="px-8 py-5 text-left text-lg font-black uppercase tracking-widest text-gray-400">Webhook URL</th>
+              <th class="px-8 py-5 text-center text-lg font-black uppercase tracking-widest text-gray-400">Status</th>
+              <th class="px-8 py-5 text-center text-lg font-black uppercase tracking-widest text-gray-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr *ngFor="let conn of connections" class="hover:bg-gray-50/50 transition-colors group">
+
+              <!-- Provider Name -->
+              <td class="px-8 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue font-black text-xl shadow-inner group-hover:bg-customBlue group-hover:text-white transition-all">
+                    {{ conn.providerName.substring(0, 2).toUpperCase() }}
+                  </div>
+                  <span class="font-black text-gray-900">{{ conn.providerName }}</span>
+                </div>
+              </td>
+
+              <!-- API Key — always masked, never revealed from server -->
+              <td class="px-8 py-6">
+                <span class="font-mono text-gray-400 text-xl tracking-[0.3em] select-none">••••••••••••</span>
+              </td>
+
+              <!-- Secret Key — always masked, never revealed from server -->
+              <td class="px-8 py-6">
+                <span class="font-mono text-gray-400 text-xl tracking-[0.3em] select-none">••••••••••••</span>
+              </td>
+
+              <!-- Webhook URL -->
+              <td class="px-8 py-6">
+                <span class="text-gray-600 font-mono text-lg truncate max-w-[240px] block" title="{{ conn.webhookUrl }}">
+                  {{ conn.webhookUrl || '—' }}
+                </span>
+              </td>
+
+              <!-- Status Badge -->
+              <td class="px-8 py-6 text-center">
+                <span class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-lg font-black uppercase tracking-widest"
+                      [ngClass]="conn.active ? 'bg-green-50 text-customGreen border border-customGreen/20' : 'bg-gray-50 text-gray-400 border border-gray-200'">
+                  <span class="w-2.5 h-2.5 rounded-full" [ngClass]="conn.active ? 'bg-customGreen animate-pulse' : 'bg-gray-300'"></span>
+                  {{ conn.active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-8 py-6">
+                <div class="flex items-center justify-center gap-3">
+                  <button [id]="'btn-edit-' + conn.id" (click)="openEditForm(conn)"
+                          class="w-11 h-11 rounded-xl border-2 border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-customBlue hover:border-customBlue/30 transition-all shadow-sm active:scale-95">
+                    <i class="fa-solid fa-pen-to-square text-lg"></i>
+                  </button>
+                  <button [id]="'btn-delete-' + conn.id" (click)="confirmDelete(conn.id)"
+                          class="w-11 h-11 rounded-xl border-2 border-gray-100 bg-white flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-all shadow-sm active:scale-95">
+                    <i class="fa-solid fa-trash text-lg"></i>
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CREATE / EDIT FORM SLIDE-OVER                               -->
+<!-- ============================================================ -->
+<div *ngIf="showForm" class="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-40 backdrop-blur-sm" (click)="closeForm()">
+  <div class="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col border-l border-gray-200"
+       style="animation: slideInRight 0.3s ease-out;" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="px-8 py-8 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm shrink-0">
+      <div class="flex items-center gap-5">
+        <div class="w-14 h-14 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+          <i class="fa-solid text-2xl" [ngClass]="isEditing ? 'fa-pen-to-square' : 'fa-plug-circle-plus'"></i>
+        </div>
+        <div>
+          <p class="text-gray-400 text-lg font-black uppercase tracking-[0.2em]">{{ isEditing ? 'Edit Connection' : 'New Connection' }}</p>
+          <h2 class="text-3xl font-black text-gray-900 leading-none mt-1">
+            {{ isEditing ? form.providerName || 'Bank Connection' : 'Add Bank Connection' }}
+          </h2>
+        </div>
+      </div>
+      <button (click)="closeForm()" class="w-12 h-12 rounded-xl border-2 border-gray-100 flex items-center justify-center text-gray-400 hover:text-customBlue hover:bg-customBlue/5 transition-all bg-white shadow-sm active:scale-95">
+        <i class="fa-solid fa-xmark text-2xl"></i>
+      </button>
+    </div>
+
+    <!-- Form Body -->
+    <div class="flex-1 overflow-y-auto p-8 space-y-8">
+
+      <!-- Success -->
+      <div *ngIf="formSuccess" class="p-6 rounded-2xl border-2 border-customGreen/30 bg-green-50 text-customGreen font-bold flex gap-4 items-center text-xl">
+        <i class="fa-solid fa-circle-check text-2xl shrink-0"></i>
+        <span>{{ formSuccess }}</span>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="formError" class="p-6 rounded-2xl border-2 border-red-200 bg-red-50 text-red-700 font-bold flex gap-4 items-center text-xl">
+        <i class="fa-solid fa-circle-exclamation text-2xl shrink-0"></i>
+        <span>{{ formError }}</span>
+      </div>
+
+      <!-- Security Note (edit mode) -->
+      <div *ngIf="isEditing" class="p-6 rounded-2xl border-2 border-amber-200 bg-amber-50 text-amber-700 font-bold flex gap-4 items-start text-xl">
+        <i class="fa-solid fa-shield-halved text-2xl mt-0.5 shrink-0"></i>
+        <span>Leave <strong>API Key</strong> and <strong>Secret Key</strong> blank to keep current values. Only fill them to set new credentials.</span>
+      </div>
+
+      <!-- Provider Name -->
+      <div>
+        <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Provider Name *</label>
+        <div class="relative">
+          <i class="fa-solid fa-building-columns absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+          <input id="input-providerName" type="text" [(ngModel)]="form.providerName"
+                 placeholder="e.g. Monnify, Paystack, Flutterwave"
+                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-6 py-5 text-xl font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+        </div>
+      </div>
+
+      <!-- API Key -->
+      <div>
+        <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">
+          API Key {{ isEditing ? '(leave blank to keep current)' : '*' }}
+        </label>
+        <div class="relative">
+          <i class="fa-solid fa-key absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+          <input id="input-apiKey"
+                 [type]="revealApiKey ? 'text' : 'password'"
+                 [(ngModel)]="form.apiKey"
+                 placeholder="••••••••••••••••"
+                 autocomplete="new-password"
+                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-16 py-5 text-xl font-mono font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+          <button type="button" (click)="revealApiKey = !revealApiKey"
+                  class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-customBlue transition-colors">
+            <i class="fa-solid text-xl" [ngClass]="revealApiKey ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Secret Key -->
+      <div>
+        <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">
+          Secret Key {{ isEditing ? '(leave blank to keep current)' : '*' }}
+        </label>
+        <div class="relative">
+          <i class="fa-solid fa-lock absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+          <input id="input-secretKey"
+                 [type]="revealSecretKey ? 'text' : 'password'"
+                 [(ngModel)]="form.secretKey"
+                 placeholder="••••••••••••••••"
+                 autocomplete="new-password"
+                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-16 py-5 text-xl font-mono font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+          <button type="button" (click)="revealSecretKey = !revealSecretKey"
+                  class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-customBlue transition-colors">
+            <i class="fa-solid text-xl" [ngClass]="revealSecretKey ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Webhook URL -->
+      <div>
+        <label class="block text-lg font-black text-gray-400 uppercase tracking-[0.2em] mb-3">Webhook URL</label>
+        <div class="relative">
+          <i class="fa-solid fa-link absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+          <input id="input-webhookUrl" type="text" [(ngModel)]="form.webhookUrl"
+                 placeholder="https://your-domain.com/webhook/payments"
+                 class="w-full border-2 border-gray-100 bg-gray-50 rounded-xl pl-14 pr-6 py-5 text-xl font-black text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all shadow-inner">
+        </div>
+      </div>
+
+      <!-- Active Toggle -->
+      <div class="bg-gray-50 rounded-2xl border border-gray-100 p-8 flex items-center justify-between">
+        <div>
+          <p class="text-xl font-black text-gray-900">Connection Active</p>
+          <p class="text-lg font-bold text-gray-400 mt-1">Enable this connection for disbursements</p>
+        </div>
+        <button id="toggle-active" type="button" (click)="form.active = !form.active"
+                class="relative w-16 h-8 rounded-full transition-all duration-300 focus:outline-none shadow-inner"
+                [ngClass]="form.active ? 'bg-customBlue' : 'bg-gray-200'">
+          <div class="absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300"
+               [ngClass]="form.active ? 'left-9' : 'left-1'"></div>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-8 py-8 bg-white border-t border-gray-200 flex gap-4 shrink-0">
+      <button (click)="closeForm()"
+              class="flex-none px-8 h-16 rounded-xl border-2 border-gray-100 text-gray-400 font-black text-xl hover:bg-gray-50 hover:text-gray-600 transition-all uppercase tracking-widest">
+        Cancel
+      </button>
+      <button id="btn-save-connection" (click)="saveConnection()" [disabled]="isSaving"
+              class="flex-1 h-16 rounded-xl text-white font-black text-xl transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-40 active:scale-95 bg-customBlue hover:bg-customBlueHover">
+        <i *ngIf="isSaving" class="fa-solid fa-spinner fa-spin text-xl"></i>
+        <i *ngIf="!isSaving" class="fa-solid fa-floppy-disk text-xl"></i>
+        {{ isSaving ? 'Saving…' : (isEditing ? 'Update Connection' : 'Create Connection') }}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- DELETE CONFIRMATION MODAL                                   -->
+<!-- ============================================================ -->
+<div *ngIf="deleteTargetId !== null" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-6">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-12" style="animation: scaleIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);">
+    <div class="flex flex-col items-center text-center">
+      <div class="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-8 shadow-inner">
+        <i class="fa-solid fa-trash-can text-5xl text-red-500"></i>
+      </div>
+      <h3 class="text-4xl font-black text-gray-900 mb-3 tracking-tight">Remove Connection</h3>
+      <p class="text-xl text-gray-500 font-bold mb-4 leading-relaxed">
+        This will permanently remove the bank connection and revoke its credentials. This action cannot be undone.
+      </p>
+
+      <div *ngIf="deleteError" class="w-full p-4 rounded-xl bg-red-50 text-red-600 font-bold text-lg mb-4 flex items-center gap-3">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ deleteError }}
+      </div>
+
+      <div class="flex w-full gap-4">
+        <button (click)="cancelDelete()"
+                class="flex-1 py-5 rounded-xl border-2 border-gray-100 text-gray-400 font-black text-xl hover:bg-gray-50 transition-all uppercase tracking-widest">
+          Cancel
+        </button>
+        <button id="btn-confirm-delete" (click)="executeDelete()" [disabled]="isDeleting"
+                class="flex-1 py-5 rounded-xl bg-red-500 text-white font-black text-xl hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 uppercase tracking-widest disabled:opacity-40 active:scale-95">
+          <i *ngIf="isDeleting" class="fa-solid fa-spinner fa-spin mr-2"></i>
+          {{ isDeleting ? 'Removing…' : 'Remove' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+</style>

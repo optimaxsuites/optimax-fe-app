@@ -206,8 +206,7 @@
               <!-- Date Submitted -->
               <td class="px-8 py-6">
                 <div class="flex flex-col">
-                  <span class="text-xl font-bold text-gray-800">{{ trx.transactionDate | date:'dd MMM yyyy' }}</span>
-                  <!-- <span class="text-lg font-bold text-gray-400 uppercase tracking-wide">Submission</span> -->
+                  <span class="text-xl font-bold text-gray-800">{{ parseTransactionDate(trx.transactionDate) | date:'dd MMM yyyy' }}</span>
                 </div>
               </td>
 
@@ -386,7 +385,7 @@
             {{ selectedTransaction.sourceModule }}
           </span>
           <span class="w-2 h-2 rounded-full bg-gray-200"></span>
-          <span class="text-gray-400 uppercase tracking-widest">Initiator: <strong class="text-gray-700 ml-1">{{ selectedTransaction.createdBy }}</strong></span>
+          <span class="text-gray-400 uppercase tracking-widest">Initiator: <strong class="text-gray-700 ml-1">{{ getCreatedByName(selectedTransaction) }}</strong></span>
           <span class="w-2 h-2 rounded-full bg-gray-200"></span>
           <div class="px-5 py-2 rounded-full font-black flex items-center gap-2 shadow-sm border border-gray-100 bg-white"
                [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'text-customGreen italic' : (selectedTransaction.Status === 'DISBURSED' ? 'text-sky-600' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'text-customBlue' : 'text-red-600'))">
@@ -627,7 +626,14 @@
       </div>
 
       <!-- Source Cards (single-select radio) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+      <div *ngIf="isLoadingFunding" class="flex justify-center items-center py-16">
+        <i class="fa-solid fa-spinner fa-spin text-4xl text-customBlue"></i>
+      </div>
+      <div *ngIf="!isLoadingFunding && fundingAccounts.length === 0" class="p-8 rounded-2xl border-2 border-amber-200 bg-amber-50 text-amber-700 font-bold flex gap-4 items-center">
+        <i class="fa-solid fa-triangle-exclamation text-2xl shrink-0"></i>
+        <span>No active bank connections found. Please add a bank connection in Settings first.</span>
+      </div>
+      <div *ngIf="!isLoadingFunding" class="grid grid-cols-1 sm:grid-cols-2 gap-8">
         <div *ngFor="let acc of fundingAccounts"
              (click)="selectedSourceId = acc.id"
              class="rounded-2xl border-2 p-8 cursor-pointer transition-all hover:shadow-2xl active:scale-[0.98] relative group"
@@ -698,6 +704,12 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Error Banner -->
+      <div *ngIf="payoutError" class="p-8 rounded-2xl border-2 border-red-200 bg-red-50 text-red-700 font-bold flex gap-5 items-start text-xl shadow-sm">
+        <i class="fa-solid fa-circle-exclamation text-2xl mt-0.5 shrink-0"></i>
+        <span>{{ payoutError }}</span>
       </div>
 
       <!-- Info Banner -->

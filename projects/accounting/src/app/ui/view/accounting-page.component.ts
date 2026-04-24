@@ -10,6 +10,7 @@ import { DisbursementComponent } from './disbursement/disbursement.component';
 import { GeneralLedgerComponent } from './general-ledger/general-ledger.component';
 import { BookKeepingComponent } from './book-keeping/book-keeping.component';
 import { AccountingQueueComponent } from './accounting-queue/accounting-queue.component';
+import { BankConnectionSettingsComponent } from './bank-connection-settings/bank-connection-settings.component';
 
 export interface TabConfig {
   name: string;
@@ -69,6 +70,12 @@ export class AccountingPageComponent {
         name: 'Bank',
         component: BankAccountOverviewComponent,
         icon: 'pi pi-building'
+      },
+
+      {
+        name: 'Settings',
+        component: BankConnectionSettingsComponent,
+        icon: 'pi pi-cog'
       }
     ];
 }
