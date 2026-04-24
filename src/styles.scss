@@ -143,8 +143,106 @@ body {
 }
 }
 
-.p-toast{
+.p-toast {
   font-size: 1em;
+  opacity: 1;
+}
+
+.p-toast .p-toast-message {
+  border: 0;
+  border-radius: 1.4rem;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1.6rem 4rem rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.p-toast .p-toast-message .p-toast-message-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.p-toast .p-toast-icon-close {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  color: #64748b;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.p-toast .p-toast-icon-close:hover {
+  background: rgba(148, 163, 184, 0.14);
+  color: #0f172a;
+}
+
+.p-toast .p-toast-message-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-top: 0.1rem;
+}
+
+.p-toast .p-toast-summary {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+  font-size: 1.22rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.p-toast .p-toast-detail {
+  margin: 0;
+  color: #475569;
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
+
+.p-toast .p-toast-message-success {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #16a34a;
+}
+
+.p-toast .p-toast-message-success .p-toast-message-icon {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.p-toast .p-toast-message-info {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #2563eb;
+}
+
+.p-toast .p-toast-message-info .p-toast-message-icon {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.p-toast .p-toast-message-warn {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #d97706;
+}
+
+.p-toast .p-toast-message-warn .p-toast-message-icon {
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+}
+
+.p-toast .p-toast-message-error {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #dc2626;
+}
+
+.p-toast .p-toast-message-error .p-toast-message-icon {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
 }
 .p-dialog{
   font-size: 1em;
@@ -266,6 +364,8 @@ input[type="radio"]{
 body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
   pointer-events: none !important;
 }
+
+
 
 // input[type="text"], textarea {
 //   text-transform: capitalize;
