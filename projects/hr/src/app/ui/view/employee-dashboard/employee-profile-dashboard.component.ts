@@ -6,6 +6,7 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
@@ -44,7 +45,8 @@ export class EmployeeProfileDashboardComponent {
     private employeeService: EmployeeService,
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -327,7 +329,7 @@ export class EmployeeProfileDashboardComponent {
 
   private fetchEmployeeForCurrentUser(): void {
     const selectedEmployee = localStorage.getItem('employeeInView');
-    if (selectedEmployee) {
+    if (selectedEmployee && this.isEmployeeManagementContext()) {
       try {
         const parsedEmployee = JSON.parse(selectedEmployee);
         if (parsedEmployee) {
@@ -372,6 +374,10 @@ export class EmployeeProfileDashboardComponent {
     }
 
     this.fetchFirstEmployee();
+  }
+
+  private isEmployeeManagementContext(): boolean {
+    return this.router.url.includes('/admin/hr/employee-management/');
   }
 
   private fetchFirstEmployee(): void {

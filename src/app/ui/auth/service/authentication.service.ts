@@ -130,6 +130,18 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError))
   }
 
+  requestPasswordReset(email: string): Observable<any> {
+    const payload = {
+      email,
+      project: environment.project || 'ERP',
+      apiKey: environment.apiKey || 'default-api-key',
+    };
+
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/resetpasswordlink', payload)
+      .pipe(catchError(this.handleError));
+  }
+
 
   checkIfDomainExists(domain: string): Observable<any> {
      const url = this.getBaseApiUrl() + `/x/api/v2/us/ur/get/tenant/domain/${domain}`;

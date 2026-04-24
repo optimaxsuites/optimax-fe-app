@@ -554,6 +554,7 @@ handleDateClick(arg: DateClickArg) {
     closeViewEmployee() {
   this.viewEmployee = false
   this.employeeInView = {}
+  localStorage.removeItem('employeeInView');
   }
 
 

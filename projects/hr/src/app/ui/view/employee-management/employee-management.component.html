@@ -272,7 +272,7 @@
 
 <p-confirmDialog></p-confirmDialog>
 
-<app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false" class="flex flex-col gap-8 table-item">
+<app-large-side-modal *ngIf="viewEmployee" (close)="closeViewEmployee()" class="flex flex-col gap-8 table-item">
 <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> 
 </app-large-side-modal>
 
