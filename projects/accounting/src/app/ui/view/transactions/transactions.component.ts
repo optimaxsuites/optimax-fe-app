@@ -142,7 +142,7 @@ export class TransactionsComponent implements OnInit {
       next: (data: PaginationResult<AccountingTransactionDTO>) => {
         this.transactions = (data.content || []).map(tx => ({
           ...tx,
-          date: tx.transactionDate,
+          date: tx.transactionDate as string | Date, // cast: transactionDate may be number[] from API
           reviewStatus: tx.status ?? TransactionReviewStatus.UNREVIEWED,
           debitAmount: tx.amount, // UI helper
           creditAmount: 0 // UI helper

@@ -73,6 +73,7 @@ import { CallModalComponent } from './communication/call-modal/call-modal.compon
 import { MessageComposerComponent } from './communication/message-composer/message-composer.component';
 import { MessageFeedComponent } from './communication/message-feed/message-feed.component';
 import { ChannelSidebarComponent } from './communication/channel-sidebar/channel-sidebar.component';
+import { FeedComponent } from './feed/feed.component';
 
 @NgModule({
   declarations: [
@@ -101,8 +102,8 @@ import { ChannelSidebarComponent } from './communication/channel-sidebar/channel
     CallModalComponent,
     MessageComposerComponent,
     MessageFeedComponent,
-    ChannelSidebarComponent
-
+    ChannelSidebarComponent,
+    FeedComponent
   ],
   imports: [
     MarkdownModule.forRoot(),
