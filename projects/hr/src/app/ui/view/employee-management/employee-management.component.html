@@ -1,147 +1,274 @@
-<div class="employee-toolbar table-item">
-  <div class="flex flex-wrap items-start justify-between gap-4">
-    <div>
-      <p class="text-lg font-semibold text-customBlue">Employees</p>
-      <p class="text-xs text-slate-500">{{ filteredEmployees.length || 0 }} total</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <Button class="btn-primary" (click)="openAddForm = true">
-        <span class="fa-solid fa-plus mr-2 text-xs"></span>
-        Add new employee
-      </Button>
-    </div>
-  </div>
+<div class="employee-management-shell">
+  <div *ngIf="loading" class="surface-loading-overlay">
+    <div class="surface-loading-card">
+      <div class="employee-loading-shell">
+        <div class="employee-toolbar table-item employee-loading-block">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex flex-col gap-2">
+              <div class="loading-line w-32"></div>
+              <div class="loading-line w-20"></div>
+            </div>
+            <div class="loading-pill w-40"></div>
+          </div>
 
-  <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
-    <div class="w-full">
-      <ng-select
-        [items]="uniqueLevels"
-        bindLabel="name"
-        bindValue="id"
-        [multiple]="true"
-        placeholder="Filter by level type"
-        [(ngModel)]="selectedEmployeeType"
-        (ngModelChange)="filterBySelectedEmployeeType()">
-      </ng-select>
-    </div>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <div class="loading-pill"></div>
+            <div class="loading-pill"></div>
+            <div class="loading-pill md:col-span-1 xl:col-span-2"></div>
+          </div>
+        </div>
 
-    <div class="w-full">
-      <ng-select
-        [items]="uniquePositions"
-        bindLabel="name"
-        bindValue="id"
-        [multiple]="true"
-        placeholder="Filter by position"
-        [(ngModel)]="selectedPosition"
-        (ngModelChange)="filterBySelectedPosition()">
-      </ng-select>
-    </div>
+        <div class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div *ngFor="let item of [1,2,3,4,5,6,7,8]" class="employee-card employee-loading-block">
+            <div class="flex w-full items-start justify-between">
+              <div class="loading-line w-28"></div>
+              <div class="loading-dot"></div>
+            </div>
 
-    <div class="relative w-full md:col-span-1 xl:col-span-2">
-      <span class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm"></span>
-      <input
-        type="text"
-        placeholder="Search by name or title"
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="applyFilters()"
-        class="input-modern w-full pl-9"
-      />
+            <div class="mt-4 flex flex-col items-center">
+              <div class="loading-avatar"></div>
+              <div class="loading-line w-32 mt-3"></div>
+              <div class="loading-line w-24 mt-2"></div>
+            </div>
+
+            <div class="mt-4 grid w-full grid-cols-2 gap-2">
+              <div class="loading-meta"></div>
+              <div class="loading-meta"></div>
+            </div>
+
+            <div class="mt-4 flex w-full items-center justify-between">
+              <div class="loading-line w-32"></div>
+              <div class="loading-line w-10"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-  <div *ngFor="let employee of pagedEmployees; let i = index"
-    class="employee-card group"
-    (click)="viewThisEmployee(employee)">
+  <div *ngIf="!loading">
+    <section class="management-summary-grid">
+      <article class="management-summary-card management-summary-card--accent">
+        <div class="management-summary-top">
+          <span class="management-summary-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="management-summary-trend management-summary-trend--light">Directory</span>
+        </div>
+        <span class="management-summary-label">Headcount</span>
+        <strong class="management-summary-value">{{ filteredEmployees.length || 0 }}</strong>
+        <span class="management-summary-meta">Employees in the current workspace</span>
+      </article>
+      <article class="management-summary-card">
+        <div class="management-summary-top">
+          <span class="management-summary-icon management-summary-icon--blue"><i class="fa-solid fa-table-cells-large"></i></span>
+          <span class="management-summary-trend">Page window</span>
+        </div>
+        <span class="management-summary-label">Visible this page</span>
+        <strong class="management-summary-value">{{ pagedEmployees.length || 0 }}</strong>
+        <span class="management-summary-meta">Current pagination selection</span>
+      </article>
+      <article class="management-summary-card">
+        <div class="management-summary-top">
+          <span class="management-summary-icon management-summary-icon--emerald"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="management-summary-trend">Structure</span>
+        </div>
+        <span class="management-summary-label">Levels</span>
+        <strong class="management-summary-value">{{ uniqueLevels?.length || 0 }}</strong>
+        <span class="management-summary-meta">Distinct level groupings</span>
+      </article>
+      <article class="management-summary-card">
+        <div class="management-summary-top">
+          <span class="management-summary-icon management-summary-icon--amber"><i class="fa-solid fa-id-badge"></i></span>
+          <span class="management-summary-trend">Coverage</span>
+        </div>
+        <span class="management-summary-label">Positions</span>
+        <strong class="management-summary-value">{{ uniquePositions?.length || 0 }}</strong>
+        <span class="management-summary-meta">Active role titles in this view</span>
+      </article>
+    </section>
 
-    <div class="flex w-full items-start justify-between text-[11px] text-slate-500">
-      <span class="uppercase tracking-wide">
-        {{ employee?.department?.name || employee?.department || 'Department' }}
-      </span>
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center gap-2">
-          <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
-          <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
-        </span>
-        <button
-          type="button"
-          class="employee-action delete-action"
-          [disabled]="deletingEmployeeIds[employee?.id]"
-          (click)="deleteEmployee(employee, $event)"
-          aria-label="Delete employee"
-          title="Delete employee">
-          <span *ngIf="!deletingEmployeeIds[employee?.id]" class="fa-solid fa-trash text-[10px]"></span>
-          <span *ngIf="deletingEmployeeIds[employee?.id]" class="fa-solid fa-spinner animate-spin text-[10px]"></span>
-        </button>
+    <div class="employee-toolbar table-item">
+      <div class="toolbar-header">
+        <div>
+          <p class="toolbar-eyebrow">Employee operations</p>
+          <p class="text-lg font-semibold text-customBlue">Employee directory</p>
+          <p class="text-sm text-slate-500">Search, segment, and open complete employee records without leaving the workspace.</p>
+        </div>
+        <div class="toolbar-badge">
+          <span class="toolbar-badge-label">Live directory</span>
+          <strong class="toolbar-badge-value">{{ filteredEmployees.length || 0 }}</strong>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <Button class="btn-primary" (click)="openAddForm = true">
+            <span class="fa-solid fa-plus mr-2 text-xs"></span>
+            Add new employee
+          </Button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        <div class="w-full">
+          <ng-select
+            [items]="uniqueLevels"
+            bindLabel="name"
+            bindValue="id"
+            [multiple]="true"
+            placeholder="Filter by level type"
+            [(ngModel)]="selectedEmployeeType"
+            (ngModelChange)="filterBySelectedEmployeeType()">
+          </ng-select>
+        </div>
+
+        <div class="w-full">
+          <ng-select
+            [items]="uniquePositions"
+            bindLabel="name"
+            bindValue="id"
+            [multiple]="true"
+            placeholder="Filter by position"
+            [(ngModel)]="selectedPosition"
+            (ngModelChange)="filterBySelectedPosition()">
+          </ng-select>
+        </div>
+
+        <div class="relative w-full md:col-span-1 xl:col-span-2">
+          <span class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm"></span>
+          <input
+            type="text"
+            placeholder="Search by name or title"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="applyFilters()"
+            class="input-modern w-full pl-9"
+          />
+        </div>
       </div>
     </div>
 
-    <div class="mt-4 flex flex-col items-center text-center">
-      <div class="employee-avatar">
-        <img
-          [src]="employee.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
-          alt=""
-        />
-      </div>
-      <p class="mt-3 text-sm font-semibold text-slate-800 capitalize">{{employee.lastName}} {{employee.firstName}}</p>
-      <p class="text-xs text-slate-500 capitalize">{{employee.jobTitle}}</p>
-    </div>
+    <div class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div *ngFor="let employee of pagedEmployees; let i = index"
+        class="employee-card group"
+        (click)="viewThisEmployee(employee)">
 
-    <div class="mt-4 grid w-full grid-cols-2 gap-2">
-      <div class="employee-meta">
-        <span class="employee-meta-label">Level</span>
-        <span class="employee-meta-value">{{ employee?.level?.name || employee?.level || '-' }}</span>
-      </div>
-      <div class="employee-meta">
-        <span class="employee-meta-label">Type</span>
-        <span class="employee-meta-value">{{ employee?.employmentType?.name || employee?.jobType.name || '-' }}</span>
+        <div class="card-top-row">
+          <span class="department-badge">
+            {{ employee?.department?.name || employee?.department || 'Department' }}
+          </span>
+          <div class="flex items-center gap-2">
+            <span class="employee-state-pill">
+              <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
+              <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
+            </span>
+            <button
+              type="button"
+              class="employee-action delete-action"
+              [disabled]="deletingEmployeeIds[employee?.id]"
+              (click)="deleteEmployee(employee, $event)"
+              aria-label="Delete employee"
+              title="Delete employee">
+              <span *ngIf="!deletingEmployeeIds[employee?.id]" class="fa-solid fa-trash text-[10px]"></span>
+              <span *ngIf="deletingEmployeeIds[employee?.id]" class="fa-solid fa-spinner animate-spin text-[10px]"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="employee-card-hero">
+          <div class="employee-avatar">
+            <img
+              [src]="employee.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
+              alt=""
+            />
+          </div>
+          <div class="employee-card-copy">
+            <p class="employee-name">{{employee.lastName}} {{employee.firstName}}</p>
+            <p class="employee-role">{{employee.jobTitle || 'Role not set'}}</p>
+            <p class="employee-email">{{ employee?.email || 'No email on record' }}</p>
+            <div class="employee-chip-row">
+              <span class="employee-chip">{{ employee?.department?.name || employee?.department || 'Department' }}</span>
+              <span class="employee-chip employee-chip--soft">{{ employee?.employmentType?.name || employee?.jobType.name || 'Type pending' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="employee-metrics-grid">
+          <div class="employee-meta">
+            <span class="employee-meta-label">Level</span>
+            <span class="employee-meta-value">{{ employee?.level?.name || employee?.level || '-' }}</span>
+          </div>
+          <div class="employee-meta">
+            <span class="employee-meta-label">Type</span>
+            <span class="employee-meta-value">{{ employee?.employmentType?.name || employee?.jobType.name || '-' }}</span>
+          </div>
+        </div>
+
+        <div class="employee-extra-grid">
+          <div class="employee-extra-item">
+            <span class="employee-extra-label">Joined</span>
+            <strong class="employee-extra-value">{{ employee?.hireDate || employee?.employmentStartDate || '-' }}</strong>
+          </div>
+          <div class="employee-extra-item">
+            <span class="employee-extra-label">Employee ID</span>
+            <strong class="employee-extra-value">{{ employee?.id || '-' }}</strong>
+          </div>
+        </div>
+
+        <div class="employee-card-footer">
+          <span class="footer-hint">Open employee record or download staff identity card</span>
+          <div class="employee-card-links">
+            <button
+              type="button"
+              class="staff-id-link"
+              (click)="openStaffId(employee, $event)">
+              Staff ID
+            </button>
+            <button
+              type="button"
+              class="view-profile-btn"
+              (click)="openEmployeeProfile(employee, $event)">
+              View profile
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+    
+    <div class="pagination-bar">
+      <div class="text-xs text-slate-500">
+        Showing
+        <span class="font-semibold text-slate-700">{{ startItem }}</span>
+        -
+        <span class="font-semibold text-slate-700">{{ endItem }}</span>
+        of
+        <span class="font-semibold text-slate-700">{{ filteredEmployees.length }}</span>
+      </div>
 
-    <div class="mt-4 flex w-full items-center justify-between text-[11px] text-slate-500">
-      <span class="truncate max-w-[65%]">{{ employee?.email || ' ' }}</span>
-      <span class="text-customBlue font-semibold group-hover:underline">View</span>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span>Rows</span>
+          <select class="input-modern" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+            <span class="fa-solid fa-chevron-left text-xs"></span>
+          </button>
+          <button
+            *ngFor="let page of displayPages"
+            class="page-number"
+            [ngClass]="{ 'active': page === currentPage, 'ellipsis': page === '...' }"
+            [disabled]="page === '...'"
+            (click)="onPageClick(page)">
+            {{ page }}
+          </button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <span class="fa-solid fa-chevron-right text-xs"></span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
-
-<div class="pagination-bar">
-  <div class="text-xs text-slate-500">
-    Showing
-    <span class="font-semibold text-slate-700">{{ startItem }}</span>
-    -
-    <span class="font-semibold text-slate-700">{{ endItem }}</span>
-    of
-    <span class="font-semibold text-slate-700">{{ filteredEmployees.length }}</span>
-  </div>
-
-  <div class="flex items-center gap-3">
-    <div class="flex items-center gap-2 text-xs text-slate-500">
-      <span>Rows</span>
-      <select class="input-modern" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
-        <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
-      </select>
-    </div>
-
-    <div class="flex items-center gap-1">
-      <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
-        <span class="fa-solid fa-chevron-left text-xs"></span>
-      </button>
-      <button
-        *ngFor="let page of displayPages"
-        class="page-number"
-        [ngClass]="{ 'active': page === currentPage, 'ellipsis': page === '...' }"
-        [disabled]="page === '...'"
-        (click)="onPageClick(page)">
-        {{ page }}
-      </button>
-      <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
-        <span class="fa-solid fa-chevron-right text-xs"></span>
-      </button>
-    </div>
-  </div>
-</div>
 
 <p-confirmDialog></p-confirmDialog>
 
@@ -152,3 +279,129 @@
 <app-large-side-modal *ngIf="openAddForm" (close)="closeAddForm()">
    <app-admin-creation-form></app-admin-creation-form>
 </app-large-side-modal>
+
+<app-modal *ngIf="staffIdEmployee" (close)="closeStaffId()">
+  <div class="staff-id-modal">
+    <div class="staff-id-toolbar">
+      <button type="button" class="staff-modal-link" (click)="closeStaffId()">Close</button>
+      <button type="button" class="staff-modal-btn" (click)="printStaffId()">Download PDF</button>
+    </div>
+    <div class="staff-id-layout" id="employee-management-staff-id">
+      <div class="staff-id-card">
+        <div class="staff-id-card__header">
+          <div class="staff-id-card__brand">
+            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <div>
+              <p class="staff-id-card__eyebrow">Centrifuge Information Technology Ltd</p>
+              <h3>Staff Identification Card</h3>
+            </div>
+          </div>
+          <span class="staff-id-card__badge">Printable</span>
+        </div>
+
+        <div class="staff-id-card__body">
+          <div class="staff-id-card__identity">
+            <div class="staff-id-card__avatar">
+              <img
+                [src]="staffIdEmployee?.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
+                alt=""
+              />
+            </div>
+            <div>
+              <p class="staff-id-card__name">{{ staffIdEmployee?.firstName }} {{ staffIdEmployee?.lastName }}</p>
+              <p class="staff-id-card__role">{{ staffIdEmployee?.jobTitle || 'Role pending' }}</p>
+              <div class="staff-id-card__chips">
+                <span>{{ staffIdEmployee?.department?.name || staffIdEmployee?.department || 'Department' }}</span>
+                <span>{{ staffIdEmployee?.level?.name || staffIdEmployee?.level || 'Level' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="staff-id-card__details">
+            <div class="staff-id-card__detail">
+              <span>Staff ID</span>
+              <strong>{{ staffIdEmployee?.id || '-' }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Work email</span>
+              <strong>{{ staffIdEmployee?.workEmail || staffIdEmployee?.email || '-' }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Phone</span>
+              <strong>{{ staffIdEmployee?.phone || '-' }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Date joined</span>
+              <strong>{{ staffIdEmployee?.hireDate || staffIdEmployee?.employmentStartDate || '-' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-id-card__scan-row">
+          <div class="staff-id-card__qr" *ngIf="staffIdQrDataUrl; else qrFallbackCard">
+            <img [src]="staffIdQrDataUrl" alt="Staff QR code" />
+            <small>HR scan code</small>
+          </div>
+          <ng-template #qrFallbackCard>
+            <div class="staff-id-card__qr staff-id-card__qr--empty">
+              <small>QR unavailable</small>
+            </div>
+          </ng-template>
+          <div class="staff-id-card__barcode-wrap">
+            <img *ngIf="staffIdBarcodeDataUrl" [src]="staffIdBarcodeDataUrl" alt="Staff barcode" class="staff-id-card__barcode-image" />
+            <p>{{ staffIdEmployee?.id || '-' }}</p>
+          </div>
+        </div>
+
+        <div class="staff-id-card__footer">
+          <p>Valid for internal identity, facility access, and HR record verification.</p>
+          <div class="staff-id-card__actions">
+            <button type="button" class="staff-modal-link" (click)="closeStaffId()">Close</button>
+            <button type="button" class="staff-modal-btn" (click)="printStaffId()">Download PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="staff-id-card staff-id-card--back">
+        <div class="staff-id-card__header">
+          <div class="staff-id-card__brand">
+            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <div>
+              <p class="staff-id-card__eyebrow">Reverse side</p>
+              <h3>Verification and emergency</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-id-card__back-grid">
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Emergency contact</span>
+            <strong>{{ staffIdEmployee?.nextOfKin?.[0]?.fullName || staffIdEmployee?.nextOfKin?.[0]?.name || 'Not available' }}</strong>
+            <p>{{ staffIdEmployee?.nextOfKin?.[0]?.phone || '-' }}</p>
+            <p>{{ staffIdEmployee?.nextOfKin?.[0]?.relationship || '-' }}</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Verification policy</span>
+            <p>This card remains company property and must be presented for internal identity, access, and HR record validation.</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Issue control</span>
+            <strong>Issue date: {{ staffIdEmployee?.hireDate || staffIdEmployee?.employmentStartDate || '-' }}</strong>
+            <p>Expiry: Valid while employment status remains active and identity records are current.</p>
+            <p>Authorized by: HR Operations</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Signature</span>
+            <div class="staff-id-card__signature-line"></div>
+            <p>For and on behalf of Centrifuge Information Technology Ltd.</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Report issues</span>
+            <p>Contact HR Operations immediately if this card is lost, damaged, or employee details change.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-modal>
+</div>

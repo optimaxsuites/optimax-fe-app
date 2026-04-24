@@ -1,19 +1,68 @@
-
-  <div class=" d-flex max-h-screen">
-  <app-sidebar class=" "></app-sidebar>
-  <div class="main-container max-h-screen">
-    <div class="">
-        <router-outlet></router-outlet>
+<div class="workspace-shell">
+  <aside class="workspace-sidebar">
+    <div class="brand-block">
+      <div class="brand-mark">OP</div>
+      <div>
+        <p class="eyebrow">OptimaX Suites</p>
+        <h1>Work Productivity</h1>
+      </div>
     </div>
-</div>
-</div>
 
+    <div class="sidebar-section">
+      <p class="section-label">Performance operations</p>
+      <a
+        *ngFor="let item of navItems"
+        class="nav-link"
+        [routerLink]="[item.route]"
+        routerLinkActive="active"
+      >
+        <div class="nav-link-copy">
+          <span class="nav-icon"><i [class]="item.icon"></i></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.summary }}</small>
+          </span>
+        </div>
+        <i class="pi pi-angle-right nav-arrow"></i>
+      </a>
+    </div>
 
+    <div class="sidebar-card">
+      <div class="status-dot"></div>
+      <div>
+        <strong>Live supervision window</strong>
+        <p>31 overdue items are waiting for manager action today.</p>
+      </div>
+    </div>
 
+    <div class="sidebar-card">
+      <div class="status-dot"></div>
+      <div>
+        <strong>Configuration location</strong>
+        <p>Templates and policy controls are managed from HR Settings.</p>
+      </div>
+    </div>
+  </aside>
 
-  <!-- <div class="side-bar">
-  <app-sidebar class="app-side-bar"></app-sidebar>
-  <div class="flex-1 p-6">
+  <main class="workspace-main">
+    <header class="workspace-header">
+      <div>
+        <p class="eyebrow">Enterprise execution and performance</p>
+        <h2>Supervisor workspace</h2>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="ghost-action">
+          <i class="pi pi-bell"></i>
+          Reminders
+        </button>
+        <button type="button" class="primary-action">
+          <i class="pi pi-plus"></i>
+          New assignment
+        </button>
+      </div>
+    </header>
+
     <router-outlet></router-outlet>
-  </div>
-</div> -->
+  </main>
+</div>

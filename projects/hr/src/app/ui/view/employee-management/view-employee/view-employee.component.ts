@@ -15,6 +15,7 @@ import { MessageService } from 'primeng/api';
 export class ViewEmployeeComponent {
    employeeInView: any; 
   calendarOptions: CalendarOptions = {}
+  loading = false;
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
   private readonly bonusNameCache = new Map<string, Observable<string>>();
   private readonly deductionNameCache = new Map<string, Observable<string>>();
@@ -28,6 +29,7 @@ export class ViewEmployeeComponent {
   constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService){}
   
   ngOnInit(): void {
+    this.loading = true;
     const employee = localStorage.getItem("employeeInView");
 
     if (employee) {
@@ -62,6 +64,8 @@ export class ViewEmployeeComponent {
           events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
         };
       }    
+
+    this.loading = false;
 
 
   }

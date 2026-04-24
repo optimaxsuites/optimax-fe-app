@@ -73,6 +73,9 @@ private readonly payrollLoanDeductionService = inject(PayrollLoanDeductionServic
 isApplyingLoanDeductions = false;
 loanDeductionSyncMessage = '';
 autoApplyLoanDeductions = true;
+isLoadingPayroll = false;
+isApprovingPayroll = false;
+private readonly approverNameByUserId = new Map<string, string>();
 
 payType: string[] = [];
 selectedPayType: string[] = [];
@@ -276,6 +279,7 @@ ngOnInit(){
     next: data => {this.currentUser = data; console.log(data)},
     error: err => console.log(err)
   })
+  this.loadApproverDirectory();
   this.generatePayrolls()    
 }
 
@@ -292,7 +296,7 @@ formatCurrency(value: number | null | undefined): string {
 }
 
 generatePayrolls(){
-
+    this.isLoadingPayroll = true;
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
             this.payrollRecords = response
@@ -311,7 +315,8 @@ generatePayrolls(){
             this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
             this.canEditRecord = currentStage?.canEditRecord ?? false;
             this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
-            if (this.canEditRecord) {
+            const hasEditAction = this.payrollActions.some(action => action.id === 'edit');
+            if (this.canEditRecord && !hasEditAction) {
               this.payrollActions.push({
                 id: 'edit',
                 label: 'Edit',
@@ -327,8 +332,51 @@ generatePayrolls(){
             this.selectedYear = this.years[this.years.length - 1]
             
         },
-        error: err => console.log(err)
+        error: err => {
+          console.log(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Load failed',
+            detail: 'Unable to load payroll records right now.',
+            key: 'tl'
+          });
+        },
+        complete: () => {
+          this.isLoadingPayroll = false;
+        }
     })
+}
+
+private loadApproverDirectory(): void {
+  this.employeeService.getAllEmployee().subscribe({
+    next: (employees) => {
+      (employees || []).forEach((employee: any) => {
+        const name = this.buildEmployeeFullName(employee);
+        if (!name) {
+          return;
+        }
+
+        [
+          employee?.user?.id,
+          employee?.userId,
+          employee?.user?.userId,
+          employee?.id
+        ].forEach((id) => {
+          if (id !== null && id !== undefined && String(id).trim() !== '') {
+            this.approverNameByUserId.set(String(id), name);
+          }
+        });
+      });
+    },
+    error: (err) => console.log(err)
+  });
+}
+
+private buildEmployeeFullName(employee: any): string {
+  const firstName = employee?.firstName ?? '';
+  const lastName = employee?.lastName ?? '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || employee?.workEmail || employee?.email || '';
 }
 
  
@@ -563,7 +611,104 @@ generatePayrolls(){
   }
 
   confirmApprovePayroll(){
+    if (this.isApprovingPayroll) {
+      return;
+    }
+    if (this.openApproveModal) {
+      this.selectedFile = null;
+    }
     this.openApproveModal = !this.openApproveModal
+  }
+
+  get approvalStages(): any[] {
+    return this.payrollInView?.payrollApprovalInstance?.approval?.stages ?? [];
+  }
+
+  get approvalActions(): any[] {
+    return this.payrollInView?.payrollApprovalInstance?.actions ?? [];
+  }
+
+  get currentApprovalStageOrder(): number | null {
+    return this.payrollInView?.payrollApprovalInstance?.currentStage?.orderIndex ?? null;
+  }
+
+  getStageStatus(stage: any): 'completed' | 'current' | 'pending' {
+    const stageOrder = stage?.orderIndex;
+    if (stageOrder == null) {
+      return 'pending';
+    }
+
+    const hasApprovedAction = this.approvalActions.some(
+      (action: any) => action?.stageOrder === stageOrder && action?.actionType === 'APPROVED'
+    );
+
+    if (hasApprovedAction) {
+      return 'completed';
+    }
+
+    if (this.currentApprovalStageOrder === stageOrder) {
+      return 'current';
+    }
+
+    return 'pending';
+  }
+
+  getStageStatusLabel(stage: any): string {
+    const status = this.getStageStatus(stage);
+    if (status === 'completed') {
+      return 'Completed';
+    }
+    if (status === 'current') {
+      return 'Current';
+    }
+    return 'Pending';
+  }
+
+  getStageAssignments(stage: any): any[] {
+    return stage?.assignment ?? [];
+  }
+
+  getStageAction(stage: any): any {
+    const stageOrder = stage?.orderIndex;
+    if (stageOrder == null) {
+      return null;
+    }
+
+    return this.approvalActions.find((action: any) => action?.stageOrder === stageOrder) ?? null;
+  }
+
+  getUserDisplayName(user: any): string {
+    if (!user) {
+      return 'Unassigned';
+    }
+
+    if (typeof user === 'number' || typeof user === 'string') {
+      return this.approverNameByUserId.get(String(user)) || `User #${user}`;
+    }
+
+    const firstName = user?.firstName ?? '';
+    const lastName = user?.lastName ?? '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    if (user?.id !== null && user?.id !== undefined) {
+      const directoryName = this.approverNameByUserId.get(String(user.id));
+      if (directoryName) {
+        return directoryName;
+      }
+    }
+
+    return user?.email || user?.username || `User #${user?.id ?? ''}`.trim();
+  }
+
+  getStageApproverNames(stage: any): string {
+    const names = this.getStageAssignments(stage)
+      .map((assignment: any) => this.getUserDisplayName(assignment?.userId))
+      .filter((name: string) => !!name);
+
+    return names.length ? names.join(', ') : 'No approver assigned';
   }
 
 
@@ -1158,71 +1303,50 @@ download(format: string) {
     }
 
     onFileSelected(event: any) {
-  const file = event.target.files?.[0];
-  this.selectedFile = file ?? null;
-}
+      const file = event.target.files?.[0];
+      this.selectedFile = file ?? null;
+    }
     onApprove() {
+      if (this.isApprovingPayroll) {
+        return;
+      }
+
+      const approvalInstanceId = this.payrollInView?.payrollApprovalInstance?.id;
+      if (!approvalInstanceId || !this.currentUserId) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Approval data is incomplete', key: 'tl' });
+        return;
+      }
+
       if (this.isDocumentRequired && !this.selectedFile) {
         return;
       }
 
       const payload = {
-        id: this.payrollInView.payrollApprovalInstance.id,
-        approvalId: this.payrollInView.payrollApprovalInstance.approval.id,
-        currentStageId: this.payrollInView.payrollApprovalInstance.currentStage.id,
-        status: "PENDING",
-        approversAccount: [
-          {
-            "id": 0,
-            "userId": this.currentUser.user,
-            "action": "APPROVED",
-            "comment": "",
-            "createdAt": "2026-04-13T12:50:30.809Z",
-            "completedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ],
-        isCompleted: true,
-        "startedAt": "2026-04-13T12:50:30.809Z",
-        "completedAt": "2026-04-13T12:50:30.809Z",
-        "approvalLookupId": 0,
-        "approvalCode": "string",
-        "moduleName": "string",
-        "serviceName": "string",
-        "resourceName": "string",
-        "operationType": "POST",
-        "referenceType": "string",
-        "referenceId": "string",
-        "targetId": "string",
-        "summary": "string",
-        "payloadJson": "string",
-        "callbackUrl": "string",
-        "callbackMethod": "string",
-        "callbackPayloadJson": "string",
-        "currentStageOrder": 0,
-        "requestedBy": 0,
-        "requestedAt": "2026-04-13T12:50:30.809Z",
-        "actions": [
-          {
-            "id": 0,
-            "approvalInstanceId": this.payrollInView.payrollApprovalInstance.approval.id,
-            "stageId": this.payrollInView.payrollApprovalInstance.currentStage.id,
-            "stageOrder": this.payrollInView.payrollApprovalInstance.currentStage.orderIndex,
-            "actionType": "APPROVED",
-            "actorUserId": this.currentUserId,
-            "actorRoleCode": "string",
-            "comment": "string",
-            "actedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ]
+        actorUserId: this.currentUserId,
+        actorRoleCode: sessionStorage.getItem('role') || null,
+        comment: ''
       };
 
-      console.log(payload)
-      this.payrollService.approvePayroll(this.payrollInView.payrollApprovalInstance.id, payload).subscribe({
+      this.isApprovingPayroll = true;
+      this.payrollService.approvePayroll(approvalInstanceId, payload).subscribe({
         next: () => {
           this.openApproveModal = false;
+          this.selectedFile = null;
+          this.generatePayrolls();
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: 'tl' });
         },
-        error: (err: any) => console.log(err)
+        error: (err: any) => {
+          console.log(err);
+          const detail =
+            err?.error?.message ||
+            err?.error?.detail ||
+            err?.error?.error ||
+            'Unable to approve payroll';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl' });
+        },
+        complete: () => {
+          this.isApprovingPayroll = false;
+        }
       });
     }
 }

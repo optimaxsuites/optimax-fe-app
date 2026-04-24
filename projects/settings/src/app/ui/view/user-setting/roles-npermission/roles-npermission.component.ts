@@ -3,7 +3,6 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { MenuItemsService } from '../../../sharedComponents/service/menue-items/menu-items.service';
 import { ModulesService } from '../../../service/modules.service';
 import { forkJoin } from 'rxjs';
-import { getLimitsForModule } from '../../pos/branches/branches.component';
 
 
 // interface Permission {
@@ -80,7 +79,7 @@ export class RolesNpermissionComponent {
     this.moduleService.getModules().subscribe({
       next: (data) => {
         this.modules = data
-    this.initializePermissions();
+        this.initializePermissions();
 
       },
       error: (err) => {
@@ -90,16 +89,16 @@ export class RolesNpermissionComponent {
     this.moduleService.getRoles().subscribe((apiRoles: any[]) => {
       console.log(apiRoles)
       this.roles = apiRoles.map(role => {
-        const permissions: any = {};
-    
+        const permissions = this.buildPermissionsFromModules();
+
         for (const perm of role.appRolePermissionList) {
           const moduleTitle = this.getModuleTitleById(perm.appRegister.moduleId);
           const appName = perm.appRegister.appName;
-    
+
           if (!permissions[moduleTitle]) {
             permissions[moduleTitle] = {};
           }
-    
+
           permissions[moduleTitle][appName] = {
             canView: perm.canView,
             canEdit: perm.canUpdate,
@@ -123,32 +122,39 @@ export class RolesNpermissionComponent {
 
     });
     
-     this.roleLimit = getLimitsForModule('optimaXPOS').roles || 0;
+     this.roleLimit = Number.MAX_SAFE_INTEGER;
         console.log(this.roleLimit)
     
   }
 
 initializePermissions() {
   if (!this.modules) return;
+  this.newRole.permissions = this.buildPermissionsFromModules();
+}
 
-  this.modules.forEach((module: { title: any; appRegister: any[]; }) => {
-    const mTitle = module.title; // No trim, or trim consistently
-    this.newRole.permissions[mTitle] = {};
+  private buildPermissionsFromModules(): any {
+    const permissions: any = {};
 
-    if (module.appRegister) {
-      module.appRegister.forEach((app) => {
-        const aName = app.appName;
-        this.newRole.permissions[mTitle][aName] = {
+    if (!this.modules) {
+      return permissions;
+    }
+
+    this.modules.forEach((module: { title: string; appRegister: any[] }) => {
+      permissions[module.title] = {};
+
+      (module.appRegister || []).forEach((app) => {
+        permissions[module.title][app.appName] = {
           canView: false,
           canEdit: false,
           canDelete: false,
           canCreate: false,
-          superuser: false
+          superuser: false,
         };
       });
-    }
-  });
-}
+    });
+
+    return permissions;
+  }
 
   toogleForm() {
     this.showAddForm =!this.showAddForm
@@ -213,6 +219,16 @@ initializePermissions() {
       if (role.isEditing) {
         this.saveEditedRole(role);
       } else {
+        role.permissions = {
+          ...this.buildPermissionsFromModules(),
+          ...role.permissions,
+        };
+        this.modules.forEach((module: { title: string; appRegister: any[] }) => {
+          role.permissions[module.title] = {
+            ...(this.buildPermissionsFromModules()[module.title] || {}),
+            ...(role.permissions[module.title] || {}),
+          };
+        });
         role.isEditing = true; 
       }
   }
@@ -487,6 +503,29 @@ initializePermissions() {
 
     // The Superuser status should only be true if ALL others are true.
     // Otherwise, set Superuser to false.
+    if (permissions.superuser && !allPermissionsChecked) {
+      permissions.superuser = false;
+    }
+  }
+
+  updateRoleSuperuserPermissions(role: Role, moduleTitle: string, formName: string): void {
+    const permissions = role.permissions[moduleTitle][formName];
+    const isSuperuser = permissions.superuser || false;
+
+    permissions.canView = isSuperuser;
+    permissions.canEdit = isSuperuser;
+    permissions.canDelete = isSuperuser;
+    permissions.canCreate = isSuperuser;
+  }
+
+  revokeRoleSuperuserIfPermissionUnchecked(role: Role, moduleTitle: string, formName: string): void {
+    const permissions = role.permissions[moduleTitle][formName];
+    const allPermissionsChecked =
+      permissions.canView &&
+      permissions.canEdit &&
+      permissions.canDelete &&
+      permissions.canCreate;
+
     if (permissions.superuser && !allPermissionsChecked) {
       permissions.superuser = false;
     }

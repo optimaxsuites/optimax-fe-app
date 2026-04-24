@@ -45,14 +45,20 @@ tenant: any = {
 
     this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
 
-    this.menuItems = this.menuService.getMenuItems$();
+    const token = sessionStorage.getItem('Token');
+    if (token) {
+      this.menuService.getRegisterApps();
+    }
 
-    console.log('Menu items:', this.menuItems
-    );
+    this.menuItems = this.menuService.getMenuItems$();
 
   // console.log("menuItems = ")
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
+        const latestToken = sessionStorage.getItem('Token');
+        if (latestToken) {
+          this.menuService.getRegisterApps();
+        }
         this.updateActiveState();
       }
     });
@@ -76,7 +82,6 @@ tenant: any = {
         }
       });
       item.open = willOpen; // Toggle the 'open' property to show/hide submenu
-      console.log(`Toggled submenu for ${item.label}, open: ${item.open}`);
     }
   }
   onToggleSidebar() {
@@ -93,4 +98,3 @@ tenant: any = {
 }
   
 }
-
