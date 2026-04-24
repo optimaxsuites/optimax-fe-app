@@ -1,6 +1,14 @@
 import { Component, OnInit } from '@angular/core';
+import { concatMap } from 'rxjs/operators';
 import { DisbursementService } from '../../../services/disbursement.service';
-import { AccountingTransactionDTO, TransactionReviewStatus } from '../../domain/accounting.dto';
+import {
+  AccountingTransactionDTO,
+  BankConnectionDTO,
+  CreateDisbursementPayload,
+  CreateTransactionPayload,
+  DisbursementDTO,
+  TransactionReviewStatus
+} from '../../domain/accounting.dto';
 
 interface FundingAccount {
   id: string;
@@ -22,7 +30,13 @@ export class DisbursementComponent implements OnInit {
   // ── Data ────────────────────────────────────────────────
   allTransactions: AccountingTransactionDTO[] = [];
   filteredTransactions: AccountingTransactionDTO[] = [];
+  allDisbursements: DisbursementDTO[] = [];
   searchQuery: string = '';
+
+  // ── Loading / Error States ───────────────────────────────
+  isLoadingTransactions = false;
+  isLoadingFunding = false;
+  payoutError: string | null = null;
 
   // ── Filters & Selection ──────────────────────────────────
   activeCardFilter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED' = 'ALL';
@@ -36,13 +50,8 @@ export class DisbursementComponent implements OnInit {
   isReviewModalOpen: boolean = false;
   selectedSidebarTransaction: any = null;
 
-  // ── Funding Sources ──────────────────────────────────────
-  fundingAccounts: FundingAccount[] = [
-    { id: 'bank-1', name: 'Standard Chartered', number: '0012345678', type: 'BANK', bankName: 'Standard Chartered Bank', balance: 8450000, selected: false },
-    { id: 'bank-2', name: 'GTBank Operating', number: '3021456789', type: 'BANK', bankName: 'Guaranty Trust Bank', balance: 3980000, selected: false },
-    { id: 'cash-1', name: 'Main Office Vault', number: 'VAULT-001', type: 'CASH', bankName: 'Physical Cash', balance: 250000, selected: false },
-    { id: 'cash-2', name: 'Petty Cash Box', number: 'PETTY-001', type: 'CASH', bankName: 'Physical Cash', balance: 45000, selected: false },
-  ];
+  // ── Funding Sources (loaded from bank-connections API) ───
+  fundingAccounts: FundingAccount[] = [];
 
   // ── Wizard State ─────────────────────────────────────────
   viewMode: 'DASHBOARD' | 'EXECUTE' = 'DASHBOARD';
@@ -70,22 +79,25 @@ export class DisbursementComponent implements OnInit {
   }
 
   get approvedDisbursements(): number {
-    // allTransactions are populated via getApprovedTransactions()
     return this.allTransactions.length;
   }
 
   get disbursementsToday(): number {
     const today = new Date().toDateString();
     return this.allTransactions.filter(t =>
-      new Date(t.transactionDate).toDateString() === today
+      this.parseTransactionDate(t.transactionDate).toDateString() === today
     ).length;
   }
 
+  /**
+   * Total disbursed amount today: sums disbursementAmount from disbursements
+   * where status === 'DISBURSED' and disbursedAt is today's date.
+   */
   get totalDisbursedAmountToday(): number {
     const today = new Date().toDateString();
-    return this.allTransactions
-      .filter(t => new Date(t.transactionDate).toDateString() === today)
-      .reduce((s, t) => s + t.amount, 0);
+    return this.allDisbursements
+      .filter(d => d.status === 'DISBURSED' && d.disbursedAt && new Date(d.disbursedAt).toDateString() === today)
+      .reduce((s, d) => s + d.disbursementAmount, 0);
   }
 
   get availableLiquidity(): number {
@@ -108,113 +120,183 @@ export class DisbursementComponent implements OnInit {
 
   constructor(private disbursementService: DisbursementService) {
     this.chartOptions = {
-      series: [
-        {
-          name: "Allocated",
-          data: [42, 28, 15, 10, 5]
-        }
-      ],
-      chart: {
-        type: "bar",
-        height: 350,
-        toolbar: { show: false }
-      },
-      plotOptions: {
-        bar: {
-          columnWidth: "40%",
-          borderRadius: 2
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
+      series: [{ name: "Allocated", data: [42, 28, 15, 10, 5] }],
+      chart: { type: "bar", height: 350, toolbar: { show: false } },
+      plotOptions: { bar: { columnWidth: "40%", borderRadius: 2 } },
+      dataLabels: { enabled: false },
       xaxis: {
         categories: ["HR", "POS", "EXPENSE", "HOSPITALITY", "MARKETPLACE"],
         axisBorder: { show: false },
         axisTicks: { show: false },
-        labels: {
-          style: {
-            colors: "#6B7280",
-            fontSize: "12px",
-            fontWeight: 600
-          }
-        }
+        labels: { style: { colors: "#6B7280", fontSize: "12px", fontWeight: 600 } }
       },
-      yaxis: {
-        show: false
-      },
-      grid: {
-        borderColor: "#f1f1f1",
-        strokeDashArray: 0,
-        yaxis: {
-          lines: { show: true }
-        }
-      },
-      fill: {
-        opacity: 1,
-        colors: ['#2EB270'] // Use customGreen here
-      }
+      yaxis: { show: false },
+      grid: { borderColor: "#f1f1f1", strokeDashArray: 0, yaxis: { lines: { show: true } } },
+      fill: { opacity: 1, colors: ['#2EB270'] }
     };
   }
 
   ngOnInit(): void {
     this.loadTransactions();
+    this.loadDisbursements();
+    this.loadBankConnections();
   }
 
+  // ── Data Loaders ────────────────────────────────────────
+
   loadTransactions(): void {
-    this.disbursementService.getApprovedTransactions().subscribe(trxs => {
-      const p1: AccountingTransactionDTO = { ...trxs[0], id: 991, transactionReference: 'MOC-111', Status: 'UNREVIEWED', amount: 45000, sourceModule: 'EXPENSE' } as any;
-      const p2: AccountingTransactionDTO = { ...trxs[0], id: 992, transactionReference: 'MOC-112', Status: 'IN_REVIEW', amount: 80000, sourceModule: 'HR' } as any;
-      const p3: AccountingTransactionDTO = { ...trxs[0], id: 993, transactionReference: 'MOC-113', Status: 'REJECTED', amount: 125000, sourceModule: 'MARKETPLACE' } as any;
-      const p4: AccountingTransactionDTO = { ...trxs[0], id: 994, transactionReference: 'MOC-114', Status: 'DISBURSED', amount: 500000, sourceModule: 'HOSPITALITY' } as any;
-      
-      this.allTransactions = [...trxs, p1, p2, p3, p4];
-      this.filteredTransactions = [...this.allTransactions];
+    this.isLoadingTransactions = true;
+    this.disbursementService.getApprovedTransactions().subscribe({
+      next: response => {
+        this.allTransactions = (response.content || []).map(t => ({
+          ...t,
+          transactionDate: this.parseTransactionDate(t.transactionDate),
+          Status: t.status // sync legacy alias
+        }));
+        this.filteredTransactions = [...this.allTransactions];
+        this.isLoadingTransactions = false;
+      },
+      error: err => {
+        console.error('Failed to load transactions:', err);
+        this.isLoadingTransactions = false;
+      }
     });
+  }
+
+  loadDisbursements(): void {
+    this.disbursementService.getDisbursements().subscribe({
+      next: response => {
+        this.allDisbursements = response.content || [];
+      },
+      error: err => {
+        console.error('Failed to load disbursements:', err);
+      }
+    });
+  }
+
+  loadBankConnections(): void {
+    this.isLoadingFunding = true;
+    this.disbursementService.getBankConnections().subscribe({
+      next: response => {
+        const activeConnections: BankConnectionDTO[] = (response.content || []).filter(c => c.active);
+        this.fundingAccounts = activeConnections.map(conn => ({
+          id: conn.id.toString(),
+          name: conn.providerName,
+          bankName: conn.providerName,
+          number: '',
+          type: 'BANK' as const,
+          balance: 0,
+          selected: false
+        }));
+        this.isLoadingFunding = false;
+      },
+      error: err => {
+        console.error('Failed to load bank connections:', err);
+        this.isLoadingFunding = false;
+      }
+    });
+  }
+
+  // ── Confirm Payout — Two sequential API calls ────────────
+  confirmPayout(): void {
+    if (!this.selectedTransaction || !this.selectedSource) return;
+    this.isProcessing = true;
+    this.payoutError = null;
+
+    // Build the transaction creation payload from the selected transaction's data
+    const txPayload: CreateTransactionPayload = {
+      transactionReference: this.selectedTransaction.transactionReference,
+      sourceModule: this.selectedTransaction.sourceModule as string,
+      amount: this.selectedTransaction.amount,
+      currency: this.selectedTransaction.currency || 'NGN',
+      status: 'APPROVED',
+      accountId: this.selectedTransaction.account?.id,
+      description: this.selectedTransaction.description || this.selectedTransaction.transactionReference,
+      externalReference: this.selectedTransaction.externalReference || undefined
+    };
+
+    // Step 1: POST transaction → get transactionId
+    // Step 2: POST disbursement using that transactionId
+    this.disbursementService.createTransaction(txPayload).pipe(
+      concatMap(createdTx => {
+        const disbursementPayload: CreateDisbursementPayload = {
+          transaction: { id: createdTx.id },
+          disbursementAmount: this.selectedTransaction!.amount,
+          status: 'PENDING',
+          disbursedFrom: this.selectedSource!.name
+        };
+        return this.disbursementService.createDisbursement(disbursementPayload);
+      })
+    ).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.currentStep = 3;
+        // Remove this transaction from the queue
+        this.allTransactions = this.allTransactions.filter(
+          t => t.transactionReference !== this.selectedTransaction!.transactionReference
+        );
+        this.filteredTransactions = [...this.allTransactions];
+        // Refresh disbursements for updated stats
+        this.loadDisbursements();
+      },
+      error: err => {
+        this.isProcessing = false;
+        this.payoutError = err?.error?.message
+          || err?.message
+          || 'Payout failed. Please try again or contact support.';
+        console.error('Payout error:', err);
+      }
+    });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+
+  /**
+   * Safely convert any transactionDate format to a JS Date.
+   * Handles: number[] (Java array), string (ISO), or Date object.
+   */
+  parseTransactionDate(td: number[] | string | Date | any): Date {
+    if (!td) return new Date();
+    if (Array.isArray(td)) return DisbursementService.parseJavaDate(td);
+    return new Date(td as string);
   }
 
   filterTransactions(): void {
     const q = this.searchQuery.toLowerCase().trim();
     let currentTxs = this.allTransactions;
 
-    // Card filter
     const todayStr = new Date().toDateString();
     if (this.activeCardFilter === 'TODAY') {
-      currentTxs = currentTxs.filter(t => new Date(t.transactionDate).toDateString() === todayStr);
+      currentTxs = currentTxs.filter(t => this.parseTransactionDate(t.transactionDate).toDateString() === todayStr);
     } else if (this.activeCardFilter === 'PENDING') {
-      // Assuming pending logic corresponds to specific logic, or everything loaded since this is queue
       currentTxs = currentTxs.filter(t => t.Status !== 'APPROVED' && t.Status !== 'REJECTED');
     } else if (this.activeCardFilter === 'APPROVED') {
-      // Mocking approved check
-      currentTxs = currentTxs.filter(t => true); 
+      currentTxs = currentTxs.filter(t => true);
     } else if (this.activeCardFilter === 'FAILED') {
       currentTxs = [];
     }
 
-    // Source Module Dropdown
     if (this.selectedSourceModule && this.selectedSourceModule !== 'All Modules') {
       currentTxs = currentTxs.filter(t => t.sourceModule.toLowerCase() === this.selectedSourceModule.toLowerCase());
     }
 
-    // Search query
     if (q) {
-      currentTxs = currentTxs.filter(t =>
-        t.createdBy.toLowerCase().includes(q) ||
-        t.transactionReference.toLowerCase().includes(q) ||
-        t.sourceModule.toLowerCase().includes(q)
-      );
+      currentTxs = currentTxs.filter(t => {
+        const createdByStr = typeof t.createdBy === 'string'
+          ? t.createdBy
+          : (t.createdBy?.fullname || t.createdBy?.username || '');
+        return createdByStr.toLowerCase().includes(q) ||
+          t.transactionReference.toLowerCase().includes(q) ||
+          t.sourceModule.toLowerCase().includes(q);
+      });
     }
-    
+
     this.filteredTransactions = [...currentTxs];
     this.updateSelectAllCheckbox();
   }
 
   setCardFilter(filter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED'): void {
-    if (this.activeCardFilter === filter) {
-      this.activeCardFilter = 'ALL';
-    } else {
-      this.activeCardFilter = filter;
-    }
+    this.activeCardFilter = this.activeCardFilter === filter ? 'ALL' : filter;
     this.filterTransactions();
   }
 
@@ -254,11 +336,11 @@ export class DisbursementComponent implements OnInit {
   openSidebar(trx: AccountingTransactionDTO): void {
     this.selectedSidebarTransaction = {
       id: trx.id,
-      date: new Date(trx.transactionDate).toLocaleDateString(),
+      date: this.parseTransactionDate(trx.transactionDate).toLocaleDateString(),
       description: trx.description || trx.transactionReference,
       spent: trx.amount,
       received: null,
-      assignedTo: trx.createdBy,
+      assignedTo: typeof trx.createdBy === 'string' ? trx.createdBy : (trx.createdBy?.fullname || trx.createdBy?.username),
       reviewed: false
     };
     this.isReviewModalOpen = true;
@@ -272,29 +354,29 @@ export class DisbursementComponent implements OnInit {
   // ── View Actions ─────────────────────────────────────────
   isBatchReviewOpen: boolean = false;
   selectedLineItems: any[] = [];
+
   openBatchReview(trx: AccountingTransactionDTO): void {
     this.selectedTransaction = trx;
     this.internalMemo = `Settlement for ${trx.transactionReference} — ${trx.description?.substring(0, 50)}`;
     this.disbursementDate = new Date().toISOString().split('T')[0];
-    
-    // Mock line items based on amount to show varied data
+
     this.selectedLineItems = [
       { recipient: 'Elena Hernandez', account: '0123456789', bank: 'Access Bank', type: 'ACH', amount: trx.amount * 0.45 },
       { recipient: 'Marcus Chen', account: '3024519921', bank: 'Guaranty Trust Bank', type: 'WIRE', amount: trx.amount * 0.35 },
       { recipient: 'Sarah Jenkins', account: '0012398471', bank: 'Zenith Bank', type: 'ACH', amount: trx.amount * 0.20 }
     ];
 
-    // Reset single-select and destination fields
     this.selectedSourceId = null;
     this.destBank = '';
     this.destAccountNumber = '';
     this.destAccountName = '';
+    this.payoutError = null;
     this.isBatchReviewOpen = true;
   }
 
   closeBatchReview(): void {
     this.isBatchReviewOpen = false;
-    this.isApproveConfirmOpen = false; // reset
+    this.isApproveConfirmOpen = false;
   }
 
   isApproveConfirmOpen: boolean = false;
@@ -310,22 +392,23 @@ export class DisbursementComponent implements OnInit {
   confirmApproval(): void {
     if (this.selectedTransaction) {
       this.selectedTransaction.Status = TransactionReviewStatus.APPROVED;
-      // If we wanted to re-filter, we could call this.filterTransactions() here
     }
     this.isApproveConfirmOpen = false;
   }
 
   proceedToPayment(): void {
     if (!this.selectedTransaction) return;
+    this.payoutError = null;
     this.isBatchReviewOpen = false;
     this.viewMode = 'EXECUTE';
-    this.currentStep = 2; // Jump straight to payment method
+    this.currentStep = 2;
   }
 
   backToDashboard(): void {
     this.viewMode = 'DASHBOARD';
     this.selectedTransaction = null;
     this.currentStep = 1;
+    this.payoutError = null;
   }
 
   // ── Wizard Steps ─────────────────────────────────────────
@@ -341,21 +424,7 @@ export class DisbursementComponent implements OnInit {
     account.selected = !account.selected;
   }
 
-  confirmPayout(): void {
-    if (!this.selectedTransaction) return;
-    this.isProcessing = true;
-
-    setTimeout(() => {
-      this.isProcessing = false;
-      this.currentStep = 3;
-      this.allTransactions = this.allTransactions.filter(
-        t => t.transactionReference !== this.selectedTransaction!.transactionReference
-      );
-      this.filteredTransactions = [...this.allTransactions];
-    }, 1800);
-  }
-
-  // ── Helpers ──────────────────────────────────────────────
+  // ── Badge Helpers ─────────────────────────────────────────
   getModuleBadgeClass(module: string): string {
     const map: Record<string, string> = {
       'POS':         'bg-blue-50 text-customBlue border-customBlue/20',
@@ -366,7 +435,7 @@ export class DisbursementComponent implements OnInit {
       'BANK':        'bg-teal-50 text-teal-700 border-teal-200',
       'MANUAL':      'bg-gray-50 text-gray-700 border-gray-200',
     };
-    return map[module.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
+    return map[module?.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
   }
 
   getCategoryColor(category: string): string {
@@ -375,12 +444,18 @@ export class DisbursementComponent implements OnInit {
 
   /** Safely retrieves the bank/institution name from an AccountID object */
   getAccountBank(trx: AccountingTransactionDTO): string {
-    return (trx.AccountID as any)?.bankName || '—';
+    return (trx.account as any)?.bankName || '—';
   }
 
   /** Safely retrieves the account number from an AccountID object */
   getAccountNumber(trx: AccountingTransactionDTO): string {
-    return (trx.AccountID as any)?.accountNumber || '—';
+    return (trx.account as any)?.accountNumber || '—';
+  }
+
+  /** Get display name for createdBy which can be string or UserDTO */
+  getCreatedByName(trx: AccountingTransactionDTO): string {
+    if (typeof trx.createdBy === 'string') return trx.createdBy;
+    return trx.createdBy?.fullname || trx.createdBy?.username || '—';
   }
 
   exportTable(): void {

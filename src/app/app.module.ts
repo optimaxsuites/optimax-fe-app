@@ -123,6 +123,7 @@ import { GeneralLedgerComponent } from './ui/view/general-ledger/general-ledger.
 import { ToastComponent } from './ui/sharedComponent/view/toast/toast.component';
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
+import { BankConnectionSettingsComponent } from './ui/view/bank-connection-settings/bank-connection-settings.component';
 
 @NgModule({
   declarations: [
@@ -171,7 +172,8 @@ import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-mo
     DisbursementComponent,
     GeneralLedgerComponent,
     ToastComponent,
-    AccountingQueueComponent
+    AccountingQueueComponent,
+    BankConnectionSettingsComponent
   ],
   imports: [
     BrowserModule,
