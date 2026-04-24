@@ -332,6 +332,37 @@
         </div>
       </div>
 
+      <!-- Tab: Decision History -->
+      <div *ngIf="activeTab === 'decisionHistory'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Decision History</div>
+          <div class="timeline" *ngIf="selectedCandidate.decisionHistory && selectedCandidate.decisionHistory.length > 0">
+            <div class="timeline-item" *ngFor="let item of selectedCandidate.decisionHistory; let i = index">
+              <div class="timeline-marker">
+                <i class="fas" [ngClass]="getTimelineIcon(item.action)"></i>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-action">{{ item.action }}</span>
+                  <span class="timeline-date">{{ item.date | date:'medium' }}</span>
+                </div>
+                <div class="timeline-details" *ngIf="item.details">{{ item.details }}</div>
+                <div class="timeline-email" *ngIf="item.emailCopy">
+                  <button class="email-toggle-btn" (click)="toggleEmailView(i)">
+                    <i class="fas" [ngClass]="expandedEmails[i] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    View Email Copy
+                  </button>
+                  <div class="email-content" *ngIf="expandedEmails[i]" [innerHTML]="item.emailCopy"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedCandidate.decisionHistory || selectedCandidate.decisionHistory.length === 0" class="list-empty">
+            No decision history available
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 

@@ -28,16 +28,33 @@ export interface AiVetting {
   summary: string;
 }
  
+export interface DecisionHistoryItem {
+  date: string;
+  action: string;
+  details?: string;
+  emailCopy?: string;
+  status?: string;
+}
+ 
 export interface Candidate {
   id: string;
-  fullName: string;
+  firstname: string;
+  lastname: string;
   email: string;
   phone: string;
   appliedDate: string;
-  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Offered';
+  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Interview Accepted' | 'Interview Declined' | 'Offered' | 'Hired';
+  interviewStatus?: 'Not Invited' | 'Invited' | 'Accepted' | 'Declined' | 'Completed';
+  interviewDetails?: {
+    scheduledDate?: string;
+    location?: string;
+    format?: string;
+    notes?: string;
+  };
   formResponses: FormResponse[];
   documents: CandidateDocument[];
   aiVetting: AiVetting | null;
+  decisionHistory?: DecisionHistoryItem[];
 }
 
 export interface EmailTemplate {
@@ -79,7 +96,9 @@ export class CandidateComponent implements OnInit {
     { header: 'First Name', field: 'firstname', sortable: true },
     { header: 'Last Name', field: 'lastname', sortable: true },
     { header: 'Email', field: 'email', sortable: true },
-    // { header: 'Actions', field: 'action', badgeClass: (row) => 'badge-info' }
+    { header: 'Status', field: 'status', badgeClass: (row) => this.getStatusBadgeClass(row.status) },
+    { header: 'Interview Status', field: 'interviewStatus', badgeClass: (row) => this.getInterviewStatusBadgeClass(row.interviewStatus) },
+    { header: 'Applied Date', field: 'appliedDate', sortable: true }
   ];
 
   applicantActions: TableAction[] = [
@@ -93,6 +112,7 @@ export class CandidateComponent implements OnInit {
     { key: 'form',      label: 'Form Response' },
     { key: 'documents', label: 'Documents'      },
     { key: 'ai',        label: 'AI Vetting'     },
+    { key: 'decisionHistory', label: 'Decision History' },
   ];
    actionItems: MenuItem[] | undefined;
    currentAction: string = '';
@@ -106,6 +126,8 @@ export class CandidateComponent implements OnInit {
 
     regData: any = {};
 
+    expandedEmails: boolean[] = [];
+
    constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
@@ -114,11 +136,23 @@ export class CandidateComponent implements OnInit {
 
    ngOnInit(): void {
     this.actionItems = [
-      // {
-      //   label: 'Interview Invite',
-      //   icon: 'fas fa-calendar-check',
-      //   command: () => this.onSendInterview(this.selectedCandidate)
-      // },
+      {
+        label: 'Interview Invite',
+        icon: 'fas fa-calendar-check',
+        command: () => this.onActionSelected('Interview Invite')
+      },
+      {
+        label: 'Admin Accept Interview',
+        icon: 'fas fa-check-circle',
+        command: () => this.adminAcceptInterview(this.selectedCandidate)
+      },
+      {
+        label: 'Admin Decline Interview',
+        icon: 'fas fa-times-circle',
+        command: () => this.adminDeclineInterview(this.selectedCandidate),
+        styleClass: 'text-danger'
+      },
+      { separator: true },
       {
         label: 'Shortlist',
         icon: 'fas fa-bookmark',
@@ -135,12 +169,12 @@ export class CandidateComponent implements OnInit {
         icon: 'fas fa-envelope-open-text',
         command: () => this.onActionSelected('Send Offer')
       },
-      // {
-      //   label: 'Reject',
-      //   icon: 'fas fa-xmark',
-      //   styleClass: 'text-danger', // Optional: highlight rejection in red
-      //   command: () => this.onActionSelected('Reject')
-      // }
+      {
+        label: 'Reject',
+        icon: 'fas fa-xmark',
+        styleClass: 'text-danger',
+        command: () => this.onActionSelected('Reject')
+      }
     ];
 
     const saved = localStorage.getItem('settings.hr.mailTemplates');
@@ -153,6 +187,18 @@ export class CandidateComponent implements OnInit {
   }
 
   loadDummyData() {
+    // Load from localStorage first, then fall back to dummy data
+    const savedData = localStorage.getItem('candidateData');
+    if (savedData) {
+      try {
+        this.allApplications = JSON.parse(savedData);
+        this.groupApplicationsByJob();
+        return;
+      } catch (e) {
+        console.error('Error loading saved candidate data:', e);
+      }
+    }
+
     // Mimicking the JobApplicationDTO structure
     this.allApplications = [
       {
@@ -160,6 +206,9 @@ export class CandidateComponent implements OnInit {
         firstname: 'Rukayat',
         lastname: 'Morufu',
         email: 'oluwadarequeensheba@gmail.com',
+        appliedDate: 'Apr 10, 2025',
+        status: 'Invited',
+        interviewStatus: 'Invited',
         formResponses: [
           { label: 'Years of Experience', value: '5 years' },
           { label: 'Current Role', value: 'Product Designer at Paystack' },
@@ -196,6 +245,9 @@ export class CandidateComponent implements OnInit {
         firstname: 'Galadinma',
         lastname: 'Christabel',
         email: 'damilola@centrifugegroup.com',
+        appliedDate: 'Apr 12, 2025',
+        status: 'Shortlisted',
+        interviewStatus: 'Not Invited',
         formResponses: [
           { label: 'Years of Experience', value: '3 years' },
           { label: 'Current Role', value: 'UI Designer at Flutterwave' },
@@ -255,6 +307,7 @@ export class CandidateComponent implements OnInit {
 
   handleCandidateAction($event: { actionId: string; row: any; }) {
       this.selectedCandidate = $event.row;
+      this.expandedEmails = [];
       this.viewCandidateModal = true;
       if ($event.actionId === 'view') {
         this.viewState = 'applicant-view';
@@ -269,28 +322,116 @@ export class CandidateComponent implements OnInit {
   }
  
   onShortlist(candidate: Candidate): void {
-    // TODO: implement shortlist logic
-    console.log('Shortlist', candidate.id);
+    this.updateCandidateStatus(candidate, 'Shortlisted');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Shortlisted', 'Candidate was shortlisted for further consideration.');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `${candidate.firstname} ${candidate.lastname} has been shortlisted.`,
+      life: 3000,
+    });
   }
  
-onSendInterview(candidate: Candidate): void {
-  const storedInvites = localStorage.getItem('upcomingInvite');
-  let prevInvites: any[] = [];
-  if (storedInvites) {
-    try { prevInvites = JSON.parse(storedInvites) || []; } catch { prevInvites = []; }
+  onSendInterview(candidate: Candidate, emailBody?: string): void {
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    let prevInvites: any[] = [];
+    if (storedInvites) {
+      try { prevInvites = JSON.parse(storedInvites) || []; } catch { prevInvites = []; }
+    }
+
+    // Check if invite already exists for this candidate
+    const existingInviteIndex = prevInvites.findIndex((inv: any) => inv.id === candidate.id);
+    
+    const newInvite = {
+      ...candidate,
+      job: this.selectedJob,
+      stage: 'Awaiting Response',
+      interviewStage: 1,
+      scheduledDate: this.manualPlaceholderValues['date'],
+      inviteTimestamp: new Date().toISOString()
+    };
+
+    if (existingInviteIndex === -1) {
+      // New invite - just add it
+      localStorage.setItem('upcomingInvite', JSON.stringify([...prevInvites, newInvite]));
+    } else {
+      // Update existing invite with new details
+      prevInvites[existingInviteIndex] = newInvite;
+      localStorage.setItem('upcomingInvite', JSON.stringify(prevInvites));
+    }
+    
+    this.updateCandidateStatus(candidate, 'Invited');
+    this.updateCandidateInterviewStatus(candidate, 'Invited');
+    // Add decision history with email copy
+    this.addDecisionHistory(candidate, 'Interview Invited', 'Interview invitation sent to candidate.', emailBody);
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Interview Invite Sent',
+      detail: `Interview invitation sent to ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
   }
 
-  const newInvite = {
-    ...candidate,
-    job: this.selectedJob,
-    stage: 'Awaiting Response', // New initial state
-    interviewStage: 1,
-    scheduledDate: this.manualPlaceholderValues['date'],
-    inviteTimestamp: new Date().toISOString()
-  };
+  // Admin can accept interview on behalf of candidate
+  adminAcceptInterview(candidate: Candidate): void {
+    this.updateCandidateStatus(candidate, 'Interview Accepted');
+    this.updateCandidateInterviewStatus(candidate, 'Accepted');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Interview Accepted', 'Interview accepted by admin on behalf of candidate.');
+    
+    // Update the invite record
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    if (storedInvites) {
+      try {
+        const invites = JSON.parse(storedInvites);
+        const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
+        if (inviteIndex !== -1) {
+          invites[inviteIndex].stage = 'Accepted';
+          localStorage.setItem('upcomingInvite', JSON.stringify(invites));
+        }
+      } catch (e) {
+        console.error('Error updating invite status:', e);
+      }
+    }
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Interview Accepted',
+      detail: `Interview accepted for ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
+  }
 
-  localStorage.setItem('upcomingInvite', JSON.stringify([...prevInvites, newInvite]));
-}
+  adminDeclineInterview(candidate: Candidate): void {
+    this.updateCandidateStatus(candidate, 'Interview Declined');
+    this.updateCandidateInterviewStatus(candidate, 'Declined');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Interview Declined', 'Interview declined by admin on behalf of candidate.');
+    
+    // Update the invite record
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    if (storedInvites) {
+      try {
+        const invites = JSON.parse(storedInvites);
+        const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
+        if (inviteIndex !== -1) {
+          invites[inviteIndex].stage = 'Declined';
+          localStorage.setItem('upcomingInvite', JSON.stringify(invites));
+        }
+      } catch (e) {
+        console.error('Error updating invite status:', e);
+      }
+    }
+    
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Interview Declined',
+      detail: `Interview declined for ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
+  }
  
   onRequestDocs(candidate: Candidate): void {
     // TODO: open request docs modal
@@ -327,6 +468,31 @@ onSendInterview(candidate: Candidate): void {
     if (score >= 75) return 'score--high';
     if (score >= 50) return 'score--medium';
     return 'score--low';
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const statusMap: Record<string, string> = {
+      'New': 'badge-secondary',
+      'Shortlisted': 'badge-warning',
+      'Rejected': 'badge-danger',
+      'Invited': 'badge-info',
+      'Interview Accepted': 'badge-success',
+      'Interview Declined': 'badge-danger',
+      'Offered': 'badge-primary',
+      'Hired': 'badge-success'
+    };
+    return statusMap[status] || 'badge-secondary';
+  }
+
+  getInterviewStatusBadgeClass(status?: string): string {
+    const statusMap: Record<string, string> = {
+      'Not Invited': 'badge-secondary',
+      'Invited': 'badge-info',
+      'Accepted': 'badge-success',
+      'Declined': 'badge-danger',
+      'Completed': 'badge-primary'
+    };
+    return statusMap[status || 'Not Invited'] || 'badge-secondary';
   }
 
   onActionSelected(action: string) {
@@ -390,7 +556,7 @@ onSendInterview(candidate: Candidate): void {
 
         switch (this.currentAction) {
           case 'Interview Invite':
-            this.onSendInterview(this.selectedCandidate);
+            this.onSendInterview(this.selectedCandidate, body.body);
             break;
           case 'Shortlist':
             this.onShortlist(this.selectedCandidate);
@@ -427,7 +593,70 @@ onSendInterview(candidate: Candidate): void {
     })
   }
 
- 
+  // Helper methods for status updates
+  private updateCandidateStatus(candidate: Candidate, status: Candidate['status']): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.allApplications[candidateIndex].status = status;
+      // Add to decision history
+      this.addDecisionHistory(candidate, status);
+      // Persist to localStorage or API
+      this.persistCandidateData();
+    }
+  }
+
+  private addDecisionHistory(candidate: Candidate, action: string, details?: string, emailCopy?: string): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      if (!this.allApplications[candidateIndex].decisionHistory) {
+        this.allApplications[candidateIndex].decisionHistory = [];
+      }
+      this.allApplications[candidateIndex].decisionHistory!.push({
+        date: new Date().toISOString(),
+        action,
+        details,
+        emailCopy
+      });
+    }
+  }
+
+  private updateCandidateInterviewStatus(candidate: Candidate, interviewStatus: Candidate['interviewStatus']): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.allApplications[candidateIndex].interviewStatus = interviewStatus;
+      // Persist to localStorage or API
+      this.persistCandidateData();
+    }
+  }
+
+  private persistCandidateData(): void {
+    // For now, save to localStorage. In production, this would be an API call
+    try {
+      localStorage.setItem('candidateData', JSON.stringify(this.allApplications));
+    } catch (error) {
+      console.error('Error saving candidate data:', error);
+    }
+  }
+
+  toggleEmailView(index: number): void {
+    this.expandedEmails[index] = !this.expandedEmails[index];
+  }
+
+  getTimelineIcon(action: string): string {
+    switch (action) {
+      case 'Shortlisted':
+        return 'fa-bookmark';
+      case 'Interview Invited':
+        return 'fa-calendar-check';
+      case 'Interview Accepted':
+        return 'fa-check-circle';
+      case 'Interview Declined':
+        return 'fa-times-circle';
+      default:
+        return 'fa-info-circle';
+    }
+  }
+
   
   
 }

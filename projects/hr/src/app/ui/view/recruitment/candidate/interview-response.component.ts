@@ -281,22 +281,55 @@ export class InterviewResponseComponent implements OnInit {
   }
 
   updateStatus(id: string, action: string) {
+    // Get the invitation to preserve it
     const invites = JSON.parse(localStorage.getItem('upcomingInvite') || '[]');
     const index = invites.findIndex((c: any) => c.id == id);
 
     if (index !== -1) {
-      invites[index].stage = action;
       this.candidate = invites[index];
+      // Keep the invite in the list for reference - mark response but keep record
+      invites[index].candidateResponse = action;
       localStorage.setItem('upcomingInvite', JSON.stringify(invites));
-      
-      this.action = action.toLowerCase();
-      this.title = action === 'accept' ? 'Awesome!' : 'Response Noted';
-      this.message = action === 'accept' 
-        ? 'Your interview has been confirmed. We look forward to meeting you!' 
-        : 'Thank you for letting us know. We wish you the best in your search.';
+    }
+    
+    this.action = action.toLowerCase();
+    this.title = action === 'accept' ? 'Awesome!' : 'Response Noted';
+    this.message = action === 'accept' 
+      ? 'Your interview has been confirmed. We look forward to meeting you!' 
+      : 'Thank you for letting us know. We wish you the best in your search.';
+
+    // Update the candidate data in localStorage
+    const candidateData = localStorage.getItem('candidateData');
+    if (candidateData) {
+      try {
+        const candidates = JSON.parse(candidateData);
+        const candidateIndex = candidates.findIndex((c: any) => c.id == id);
+        if (candidateIndex !== -1) {
+          candidates[candidateIndex].status = action === 'accept' ? 'Interview Accepted' : 'Interview Declined';
+          candidates[candidateIndex].interviewStatus = action === 'accept' ? 'Accepted' : 'Declined';
+          // Add to decision history without overwriting
+          if (!candidates[candidateIndex].decisionHistory) {
+            candidates[candidateIndex].decisionHistory = [];
+          }
+          
+          // Send confirmation email and capture copy
+          const emailCopy = this.sendConfirmationEmail(action);
+          
+          // Add acceptance/decline entry - AFTER the invite entry (which already exists)
+          candidates[candidateIndex].decisionHistory.push({
+            date: new Date().toISOString(),
+            action: action === 'accept' ? 'Interview Accepted' : 'Interview Declined',
+            details: action === 'accept' ? 'Candidate accepted the interview invitation.' : 'Candidate declined the interview invitation.',
+            emailCopy
+          });
+          
+          localStorage.setItem('candidateData', JSON.stringify(candidates));
+        }
+      } catch (e) {
+        console.error('Error updating candidate data:', e);
+      }
     }
 
-    this.sendConfirmationEmail(action);
     this.processing = false;
   }
 
