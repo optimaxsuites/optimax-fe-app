@@ -1,7 +1,6 @@
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
+import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -377,12 +376,9 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     MyScheduleComponent,
     MySchedulesComponent,
     CooperativePatronageDistributionComponent,
-    InterviewInviteComponent,
-    InterviewResponseComponent
+    ProductivityWorkspaceComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,

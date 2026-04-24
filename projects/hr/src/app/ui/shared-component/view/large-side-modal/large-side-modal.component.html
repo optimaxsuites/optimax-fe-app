@@ -1,4 +1,10 @@
 <div class="modal-backdrop" (click)="closeModal()"></div>
-<div class="modal-content " data-aos="fade-left" (click)="$event.stopPropagation()">
+<div
+  class="modal-content"
+  [style.transform]="'translate(' + dragOffset.x + 'px,' + dragOffset.y + 'px)'"
+  (click)="$event.stopPropagation()">
+  <button type="button" class="drag-handle" (mousedown)="beginDrag($event)">
+    <span></span>
+  </button>
   <ng-content></ng-content>
 </div>

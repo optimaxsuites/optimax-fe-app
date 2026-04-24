@@ -1,0 +1,178 @@
+.page-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dde7ea;
+  border-radius: 0.8rem;
+  padding: 2rem;
+  box-shadow: 0 18px 42px rgba(46, 98, 118, 0.08);
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #778b92;
+  font-size: 1.1rem;
+}
+
+h3,
+h4,
+h5 {
+  margin: 0.6rem 0 0;
+}
+
+h3 {
+  font-size: 2.6rem;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+label {
+  display: grid;
+  gap: 0.6rem;
+  color: #53676f;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+input,
+select {
+  height: 4.3rem;
+  border-radius: 0.8rem;
+  border: 1px solid #d8e3e6;
+  padding: 0 1.2rem;
+  font-size: 1.3rem;
+  font-family: inherit;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.6rem;
+  align-items: start;
+}
+
+.board-column {
+  padding: 1.6rem;
+}
+
+.task-card {
+  border: 1px solid #e5ecef;
+  border-radius: 0.8rem;
+  padding: 1.4rem;
+  background: #fbfcfc;
+  margin-top: 1.2rem;
+
+  p {
+    margin: 0.6rem 0 0;
+    color: #60737a;
+    font-size: 1.2rem;
+    line-height: 1.5;
+  }
+}
+
+.task-top,
+.progress-footer,
+.task-meta li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.task-meta {
+  margin: 1.4rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.8rem;
+
+  strong {
+    color: #224957;
+    font-size: 1.15rem;
+  }
+
+  span {
+    color: #60737a;
+    font-size: 1.15rem;
+    text-align: right;
+  }
+}
+
+.status-pill,
+.priority-pill {
+  display: inline-flex;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.status-pill {
+  background: rgba(46, 98, 118, 0.1);
+  color: var(--blue-green);
+}
+
+.status-overdue,
+.status-blocked {
+  background: rgba(233, 55, 55, 0.1);
+  color: #b30000;
+}
+
+.status-in-progress {
+  background: rgba(231, 222, 101, 0.22);
+  color: #8f8500;
+}
+
+.status-completed {
+  background: rgba(46, 178, 112, 0.1);
+  color: #1e7e4a;
+}
+
+.priority-pill {
+  background: rgba(79, 124, 255, 0.12);
+  color: #2d5bcc;
+}
+
+.progress-line {
+  width: 100%;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: #e6eef1;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-green), var(--celadon-green));
+}
+
+.progress-footer {
+  margin-top: 0.9rem;
+  font-size: 1.1rem;
+  color: #72848b;
+
+  button {
+    border: 0;
+    background: transparent;
+    color: var(--blue-green);
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+@media screen and (max-width: 1100px) {
+  .board-grid,
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+}

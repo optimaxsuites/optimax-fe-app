@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, signal } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -50,6 +50,10 @@ export class LoginComponent implements OnInit {
   messages: Message[] | undefined;
   posCode: string = '';
   pinDots: number[] = [1, 2, 3, 4];
+  tenantDisplayName = 'OptimaX Suites';
+  tenantDomainLabel = '';
+  environmentLabel = environment.env || 'production';
+  supportEmail = 'support@optimaxsuites.com';
   
   // New state variable to toggle between login modes
   isCodeLogin: boolean = false;
@@ -80,10 +84,12 @@ export class LoginComponent implements OnInit {
     private randomTokenService: RandomTokenService,
     private subscriptionService: SubscriptionService,
     private metadataService: MetadataService,
-    private tenantService: TenantService
+    private tenantService: TenantService,
+    private cdr: ChangeDetectorRef
   ){}
 
   ngOnInit(): void {
+    this.loadTenantIdentity();
     if (this.authenticationService.isLoggedIn()) {
 
       this.authenticationService.logout();
@@ -94,17 +100,44 @@ export class LoginComponent implements OnInit {
 
   }
 
+  private loadTenantIdentity(): void {
+    const host = window.location.hostname || '';
+    const firstLabel = host.split('.')[0] || 'optimax';
+    const normalized = firstLabel.toLowerCase();
+    this.tenantDomainLabel = normalized;
+
+    if (normalized === 'optimax' || normalized === 'localhost' || normalized === '127') {
+      this.tenantDisplayName = 'OptimaX Suites';
+      this.supportEmail = 'support@optimaxsuites.com';
+      return;
+    }
+
+    this.tenantDisplayName = this.toDisplayName(normalized);
+    this.supportEmail = `support@${normalized}.optimaxsuites.com`;
+    this.cdr.markForCheck();
+  }
+
+  private toDisplayName(value: string): string {
+    return value
+      .split(/[-_]/g)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
   // Method to toggle the login mode
   toggleLoginMode(): void {
     this.isCodeLogin = !this.isCodeLogin;
     // Clear the form fields when toggling modes
     this.loginInfo = {};
     this.posCodeDisplay = '';
+    this.submitted = false;
   }
   
  
 async posLoginAction(): Promise<void> {
  this.loading = true;
+ this.submitted = true;
 
  const loginDetails = {
   username: this.loginInfo.username,
@@ -273,6 +306,35 @@ async posLoginAction(): Promise<void> {
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
     this.router.navigate([signupLink]);
+  }
+
+  triggerForgotPassword(): void {
+    const email = String(this.loginInfo.username || '').trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Email required',
+        detail: 'Enter your work email first, then use forgot password.',
+      });
+      return;
+    }
+
+    this.authenticationService.requestPasswordReset(email).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Reset link sent',
+          detail: `A password reset link has been sent to ${email}.`,
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Reset failed',
+          detail: 'Unable to send reset link right now. Please try again shortly.',
+        });
+      }
+    });
   }
 
   loadInitParam(data: any) {

@@ -16,6 +16,10 @@ import { DataService } from '../../service/data.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { EmployeeProfileDashboardComponent } from '../employee-dashboard/employee-profile-dashboard.component';
+import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 
 @Component({
@@ -26,10 +30,10 @@ import { EmployeeProfileDashboardComponent } from '../employee-dashboard/employe
 
 })
 export class EmployeeManagementComponent {
+  private readonly minimumLoaderDurationMs = 900;
   
   tabsConfig: TabConfig[] = [
-    { name: 'Basic Information', component: ViewEmployeeComponent },
-    // { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
+    { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
     { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
     { name: 'Offboarding', component:  EmployeeOffboardingComponent, },
@@ -41,6 +45,9 @@ export class EmployeeManagementComponent {
 
 viewEmployee: boolean = false;
 employeeInView: any = {}
+staffIdEmployee: any = null;
+staffIdQrDataUrl = '';
+staffIdBarcodeDataUrl = '';
 searchTerm: any;
 
 selectedPosition: any;
@@ -243,6 +250,7 @@ employeeList = [
 salaryStructure: any[] = [];
 employees: any = []
 filteredEmployees: any[] = [];
+loading = false;
 selectedEmployeeType: any;
 calendarOptions: CalendarOptions = {}
 currentPage = 1;
@@ -264,7 +272,6 @@ handleDateClick(arg: DateClickArg) {
   ) {
   }
    ngOnInit() {
-
    this.fetchEmployees()
 
       
@@ -276,6 +283,7 @@ handleDateClick(arg: DateClickArg) {
   return this.employeeProfilePhotoUrl
   }
   fetchEmployees(){
+    const startedAt = this.startLoading();
     this.employeeService.getAllEmployee().subscribe({
       next: (employees) => {
         this.employees = this.sortEmployeesLatest(employees);
@@ -307,10 +315,35 @@ handleDateClick(arg: DateClickArg) {
     
 
       },
-      error: err => console.log(err)
+      error: err => {
+        console.log(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Load failed',
+          detail: 'Unable to fetch employee records.',
+          key: 'tl',
+          life: 3000
+        });
+      },
+      complete: () => {
+        this.finishLoading(startedAt);
+      }
     })
 
 
+  }
+
+  private startLoading(): number {
+    this.loading = true;
+    return Date.now();
+  }
+
+  private finishLoading(startedAt: number): void {
+    const elapsed = Date.now() - startedAt;
+    const delay = Math.max(0, this.minimumLoaderDurationMs - elapsed);
+    window.setTimeout(() => {
+      this.loading = false;
+    }, delay);
   }
 
   private sortEmployeesLatest(employees: any[]): any[] {
@@ -377,21 +410,107 @@ handleDateClick(arg: DateClickArg) {
   viewThisEmployee(employee: any){
 
     if (employee) {
-      // this.employeeInView = JSON.parse(employee);
       console.log(employee)
-
+      this.viewEmployee = false;
       localStorage.setItem('employeeInView', JSON.stringify(employee))
-        this.viewEmployee = true
 
-
-      this.employeeService.getNOKByEmployeeId(employee.id).subscribe((res: any) => {
-        employee.nextOfKin = res;
-        localStorage.setItem('employeeInView', JSON.stringify(employee))
-
-        this.employeeInView = employee
+      this.employeeService.getNOKByEmployeeId(employee.id).subscribe({
+        next: (res: any) => {
+          employee.nextOfKin = res;
+          localStorage.setItem('employeeInView', JSON.stringify(employee))
+          this.employeeInView = employee
+        },
+        error: () => {
+          this.employeeInView = employee;
+          window.setTimeout(() => {
+            this.viewEmployee = true;
+          }, 0);
+        },
+        complete: () => {
+          window.setTimeout(() => {
+            this.viewEmployee = true;
+          }, 0);
+        }
       })
     }    
     }    
+
+  openEmployeeProfile(employee: any, event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.viewThisEmployee(employee);
+  }
+
+  openStaffId(employee: any, event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    this.staffIdEmployee = employee;
+    this.generateStaffQrCode(employee);
+    this.generateStaffBarcode(employee);
+  }
+
+  closeStaffId() {
+    this.staffIdEmployee = null;
+  }
+
+  async printStaffId() {
+    const target = document.getElementById('employee-management-staff-id');
+    if (!target) return;
+
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+    });
+    const imageData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imageData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`staff-id-${this.staffIdEmployee?.id ?? 'employee'}.pdf`);
+  }
+
+  private generateStaffQrCode(employee: any): void {
+    const payload = JSON.stringify({
+      id: employee?.id ?? null,
+      name: `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim(),
+      role: employee?.jobTitle ?? '',
+      department: employee?.department?.name || employee?.department || '',
+      email: employee?.workEmail || employee?.email || '',
+    });
+
+    QRCode.toDataURL(payload, {
+      width: 160,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    }).then((dataUrl) => {
+      this.staffIdQrDataUrl = dataUrl;
+    }).catch(() => {
+      this.staffIdQrDataUrl = '';
+    });
+  }
+
+  private generateStaffBarcode(employee: any): void {
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, String(employee?.id ?? '000000'), {
+        format: 'CODE128',
+        displayValue: false,
+        background: '#f8fafc',
+        lineColor: '#0f172a',
+        margin: 0,
+        width: 2,
+        height: 72,
+      });
+      this.staffIdBarcodeDataUrl = canvas.toDataURL('image/png');
+    } catch {
+      this.staffIdBarcodeDataUrl = '';
+    }
+  }
 
   deleteEmployee(employee: any, event: Event) {
     event.stopPropagation();
@@ -435,6 +554,7 @@ handleDateClick(arg: DateClickArg) {
     closeViewEmployee() {
   this.viewEmployee = false
   this.employeeInView = {}
+  localStorage.removeItem('employeeInView');
   }
 
 

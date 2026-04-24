@@ -297,17 +297,25 @@ export class MenuItemsService {
           roles: ['ROLE_USER'],
           icon: 'fas fa-calendar-minus',
           description: 'Manage leave requests, approvals, balances, and policies.'
+        },
+        {
+          label: 'Work Productivity',
+          code: 'HR_PRODUCTIVITY',
+          route: this.navigationLink.getLink('productivityLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-chart-line',
+          description: 'Track execution, reviews, and operational productivity in one workspace.'
         }
       ]
     },    
     {
-      label: 'Office Productivity',
-      code: 'OP',
+      label: 'Work Productivity',
+      code: 'HR_PRODUCTIVITY',
       route: this.navigationLink.getLink('productivityLink'),
       icon: 'fas fa-file-alt',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      description: 'The Office Productivity module of OptimaXSuites provides tools and integrations to enhance daily work efficiency, document collaboration, scheduling, and internal communication.',
-      shortDescription: 'Boost team efficiency with tools for documents, scheduling, and collaboration.',
+      description: 'The Work Productivity module of OptimaXSuites provides tools for task execution, performance tracking, reviews, and productivity monitoring.',
+      shortDescription: 'Track execution, reviews, and operational productivity in one workspace.',
       locked: true,
       active: true
     },    
@@ -671,6 +679,7 @@ export class MenuItemsService {
         { label: 'Interview', route: this.navigationLink.getLink('interviewLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
         { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
         { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+        { label: 'Work Productivity', code: 'HR_PRODUCTIVITY', route: this.navigationLink.getLink('productivityLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-chart-line' },
         { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
 
       ],
@@ -787,8 +796,8 @@ export class MenuItemsService {
       forms: ['employee','recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
     },
     {
-      name: 'Office Productivity',
-      forms: ['project','task']
+      name: 'Work Productivity',
+      forms: ['Work Productivity']
     },
   ]
   private settingsMenuItemsSubject = new BehaviorSubject<MenuItem[]>([]);
@@ -801,13 +810,19 @@ export class MenuItemsService {
     const token = sessionStorage.getItem('Token');
     if (token) {
      this.getRegisterApps()
-    } else {
-      console.log('No token yet — skipping app registration fetch');
     }
   
    
   }
   
+  private getRegisteredItemCode(app: any): string {
+    return String(app?.appCode || app?.code || app?.name || '').trim();
+  }
+
+  private getRegisteredItemLabel(app: any): string {
+    return String(app?.appName || app?.label || app?.name || '').trim();
+  }
+
   async getRegisterApps(){
     this.appRegisterService.getRegisteredApp().subscribe({
       next: (app: any) => {
@@ -851,15 +866,13 @@ export class MenuItemsService {
   } 
 
  loadUnlockedModules() {
-    const unlockedRoutes = this.appList.map((app : {name : string}) => app.name)
-    // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    console.log(unlockedRoutes)
+    const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
+    const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
     
     let unlockedCount = 0;
   
     this.menuItems.forEach(module => {
-      if (unlockedRoutes.includes(module.code || 'null')) {
-        console.log(true)
+      if (unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label)) {
         module.locked = false;
   
         if (module.label !== 'Dashboard') {
@@ -880,18 +893,16 @@ export class MenuItemsService {
 
   loadUnlockedSettingsModules() {
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    const unlockedRoutes = this.appList.map((app : {name : string}) => app.name)
-    console.log(unlockedRoutes)
+    const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
+    const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
   
     this.settingsMenuItems.forEach((module) => {
       if (module.code === 'General Settings' || module.code === 'User and Roles Management') {
         module.locked = false; 
       } else {
-        module.locked = !unlockedRoutes.includes(module.code || 'null');
+        module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label));
       }
     });
-
-    console.log('Updated Settings Menu:', this.settingsMenuItems);
     this.settingsMenuItemsSubject.next([...this.settingsMenuItems]); 
 
   }
@@ -946,7 +957,7 @@ export class MenuItemsService {
         return submenu.filter(item => item.doNotRegisterAsPermission || allowedCodes.includes(item.code));
       };
 
-      return modules
+      const filteredMenus = modules
         .map(menu => {
           if (menu.code === 'dashboard') {
             return menu;
@@ -966,6 +977,8 @@ export class MenuItemsService {
           return menu.doNotRegisterAsPermission || allowedCodes.includes(menu.code ?? "") ? menu : null;
         })
         .filter(Boolean) as MenuItem[];
+
+      return filteredMenus;
     })
   );
 }
@@ -975,10 +988,6 @@ export class MenuItemsService {
   getUserPermissions(): string[] {
   const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
   if (!user?.appRole?.appRolePermissionList) return [];
-
-  console.log(user.appRole.appRolePermissionList
-    .filter((perm: any) => perm.canView || perm.superuser)
-    .map((perm: any) => perm.appRegister.appCode))
 
   return user.appRole.appRolePermissionList
     .filter((perm: any) => perm.canView || perm.superuser)

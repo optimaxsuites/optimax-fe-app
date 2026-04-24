@@ -196,7 +196,7 @@ export class PayrollService {
   }
 
   approvePayroll(id: number, payload: any): Observable<any> {
-     return this.http.post(`${this.baseUrl}/x/api/v2/hr/payrollGenerationResponses/${id}/approvalCallback`, payload)
+     return this.http.post(`${this.baseUrl}/x/api/v2/workflow/approvalInstances/${id}/approve`, payload)
       .pipe(catchError(this.handleError));
   }
 

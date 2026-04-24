@@ -8,10 +8,6 @@
 
 <hr/>
 
-<div class="bg-orange-100 text-gray-600 font-bold text-center py-3 rounded-xl" *ngIf="roles.length >= roleLimit">
-  <p>You have reached your role limit. Upgrade your plan to enjoy more amazing features.</p>
-</div>
-
 <div class="mb-4 mt-3 px-3 flex items-center">
     <p *ngIf="showAddForm" class="text-xl font-semibold text-customBlue capitalize flex-1">
       <span>New</span> Role structure
@@ -19,8 +15,6 @@
     <button 
       class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto disabled:bg-customBlueHover disabled:cursor-not-allowed" 
       (click)="toogleForm()"
-    [disabled]="roles.length >= roleLimit"
-
     >
       {{ showAddForm ? "Cancel" : "Create New" }}
     </button>
@@ -58,34 +52,44 @@
                 <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
                 <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
                 <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
+                <th class="border border-gray-300 px-4 py-2 text-center">Super</th>
               </tr>
             </thead>
             <tbody>
-              @for(moduleKey of Object.keys(role.permissions); track moduleKey) {
+              @for(module of modules; track module.title) {
                 <tr class="bg-gray-200 font-bold">
-                  <td colspan="5" class="border border-gray-300 px-4 py-2 capitalize text-customBlue">
-                    <div class="py-2">{{ moduleKey }}</div> 
+                  <td colspan="6" class="border border-gray-300 px-4 py-2 capitalize text-customBlue">
+                    <div class="py-2">{{ module.title }}</div> 
                   </td>
                 </tr>
             
-                @for(permissionKey of Object.keys(role.permissions[moduleKey]); track permissionKey) {
+                @for(form of module.appRegister; track form.appName) {
                   <tr class="border-t-4 border-transparent"> 
-                    <td class="border border-gray-300 px-4 py-2 capitalize">{{ permissionKey }}</td>
+                    <td class="border border-gray-300 px-4 py-2 capitalize">{{ form.appName }}</td>
                   
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canView" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canView" [disabled]="!role.isEditing"
+                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
                     </td>
                   
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canEdit" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canEdit" [disabled]="!role.isEditing"
+                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
                     </td>
                   
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canDelete" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canDelete" [disabled]="!role.isEditing"
+                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
                     </td>
                   
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canCreate" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].canCreate" [disabled]="!role.isEditing"
+                        (change)="revokeRoleSuperuserIfPermissionUnchecked(role, module.title, form.appName)" />
+                    </td>
+
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                      <input type="checkbox" [(ngModel)]="role.permissions[module.title][form.appName].superuser" [disabled]="!role.isEditing"
+                        (change)="updateRoleSuperuserPermissions(role, module.title, form.appName)" />
                     </td>
                   </tr>
                   

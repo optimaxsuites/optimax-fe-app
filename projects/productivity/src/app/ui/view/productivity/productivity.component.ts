@@ -1,21 +1,41 @@
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ProductivityNavItem } from './productivity.models';
 
-// productivity.component.ts
-import { ChangeDetectorRef, Component } from '@angular/core';
-import { Router } from '@angular/router';
+const PRODUCTIVITY_NAV_ITEMS: ProductivityNavItem[] = [
+  {
+    label: 'Overview',
+    route: 'overview',
+    icon: 'pi pi-home',
+    summary: 'Executive dashboard and current workload posture',
+  },
+  {
+    label: 'Tasks',
+    route: 'tasks',
+    icon: 'pi pi-check-square',
+    summary: 'Assignment board, due dates, evidence, and blockers',
+  },
+  {
+    label: 'Reviews',
+    route: 'reviews',
+    icon: 'pi pi-star',
+    summary: 'Self-assessment, supervisor scoring, and active cycles',
+  },
+  {
+    label: 'Analytics',
+    route: 'analytics',
+    icon: 'pi pi-chart-line',
+    summary: 'Department drill-down and trend monitoring',
+  },
+];
 
 @Component({
   selector: 'app-productivity',
   templateUrl: './productivity.component.html',
-  styleUrls: ['./productivity.component.scss']
+  styleUrls: ['./productivity.component.scss'],
 })
 export class ProductivityComponent {
+  readonly navItems: ProductivityNavItem[] = PRODUCTIVITY_NAV_ITEMS;
 
-  constructor(private router: Router, private cdr: ChangeDetectorRef) {}
-
-navigate(path: string) {
-  this.router.navigate([path]).then(() => {
-    this.cdr.detectChanges()
-  });
-}
-
+  constructor(public route: ActivatedRoute) {}
 }

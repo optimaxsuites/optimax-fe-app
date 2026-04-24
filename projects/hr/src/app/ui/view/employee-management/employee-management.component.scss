@@ -22,28 +22,161 @@ p{
     margin-bottom: 0;
 }
 
+.employee-management-shell {
+    @apply relative min-h-[calc(100vh-140px)] rounded-[28px] bg-gradient-to-br from-slate-100 via-cyan-50 to-white p-3 md:p-5;
+}
+
+.management-summary-grid {
+    @apply mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4;
+}
+
+.management-summary-card {
+    @apply rounded-[24px] border border-white/80 bg-white/95 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)] flex flex-col gap-2;
+}
+
+.management-summary-top {
+    @apply mb-1 flex items-center justify-between gap-3;
+}
+
+.management-summary-icon {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white text-base;
+}
+
+.management-summary-icon--blue {
+    @apply bg-blue-50 text-blue-600;
+}
+
+.management-summary-icon--emerald {
+    @apply bg-emerald-50 text-emerald-600;
+}
+
+.management-summary-icon--amber {
+    @apply bg-amber-50 text-amber-600;
+}
+
+.management-summary-card--accent {
+    @apply bg-slate-900 border-slate-900;
+}
+
+.management-summary-trend {
+    @apply inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700;
+}
+
+.management-summary-trend--light {
+    @apply bg-white/10 text-white;
+}
+
+.management-summary-label {
+    @apply text-xs uppercase tracking-[0.18em] text-slate-400;
+}
+
+.management-summary-card--accent .management-summary-label,
+.management-summary-card--accent .management-summary-meta {
+    color: rgba(255,255,255,0.68);
+}
+
+.management-summary-value {
+    @apply text-2xl font-semibold text-slate-900;
+}
+
+.management-summary-card--accent .management-summary-value {
+    @apply text-white;
+}
+
+.management-summary-meta {
+    @apply text-sm text-slate-500;
+}
+
+.toolbar-header {
+    @apply flex flex-wrap items-start justify-between gap-4;
+}
+
+.toolbar-eyebrow {
+    @apply mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400;
+}
+
+.toolbar-badge {
+    @apply rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3 min-w-[140px] text-right;
+}
+
+.toolbar-badge-label {
+    @apply block text-[11px] uppercase tracking-[0.16em] text-slate-400;
+}
+
+.toolbar-badge-value {
+    @apply text-2xl font-semibold text-slate-900;
+}
+
 .employee-toolbar {
-    @apply bg-white/80 border border-slate-100 rounded-2xl shadow-sm px-4 py-4 md:px-6 md:py-5 flex flex-col gap-4;
+    @apply bg-white/95 border border-white/80 rounded-[24px] shadow-[0_24px_60px_rgba(15,23,42,0.08)] px-4 py-4 md:px-6 md:py-5 flex flex-col gap-4;
 }
 
 .employee-card {
-    @apply bg-white/80 border border-slate-100 rounded-2xl p-4 shadow-sm transition duration-200 cursor-pointer;
+    @apply bg-white/95 border border-white/80 rounded-[24px] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)] transition duration-200 cursor-pointer flex flex-col gap-4;
 }
 
 .employee-card:hover {
-    @apply -translate-y-0.5 shadow-md border-slate-200;
+    @apply -translate-y-1 shadow-[0_24px_60px_rgba(15,23,42,0.12)] border-slate-200;
+}
+
+.card-top-row {
+    @apply flex w-full items-start justify-between gap-3 text-[11px] text-slate-500;
+}
+
+.department-badge {
+    @apply inline-flex max-w-[65%] truncate rounded-full bg-slate-100 px-3 py-1 font-semibold uppercase tracking-wide text-slate-600;
+}
+
+.employee-state-pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500;
+}
+
+.employee-card-hero {
+    @apply flex items-center gap-4;
+}
+
+.employee-card-copy {
+    @apply min-w-0 flex-1;
 }
 
 .employee-avatar {
-    @apply rounded-full bg-gradient-to-br from-slate-100 to-white p-1 shadow-inner;
+    @apply h-20 w-20 rounded-[22px] bg-gradient-to-br from-slate-100 to-white p-1 shadow-inner shrink-0;
 }
 
 .employee-avatar img {
-    @apply rounded-full w-24 h-24 object-cover;
+    @apply rounded-[18px] w-full h-full object-cover;
+}
+
+.employee-name {
+    @apply text-base font-semibold text-slate-800 capitalize truncate;
+}
+
+.employee-role {
+    @apply text-sm text-slate-500 capitalize;
+}
+
+.employee-email {
+    @apply mt-1 truncate text-xs text-slate-400;
+}
+
+.employee-chip-row {
+    @apply mt-3 flex flex-wrap gap-2;
+}
+
+.employee-chip {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600;
+}
+
+.employee-chip--soft {
+    @apply bg-blue-50 text-blue-700;
+}
+
+.employee-metrics-grid {
+    @apply grid w-full grid-cols-2 gap-2;
 }
 
 .employee-meta {
-    @apply rounded-xl border border-slate-100 bg-slate-50 px-2 py-2 flex flex-col gap-1;
+    @apply rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 flex flex-col gap-1;
 }
 
 .employee-meta-label {
@@ -52,6 +185,22 @@ p{
 
 .employee-meta-value {
     @apply text-xs font-semibold text-slate-700;
+}
+
+.employee-extra-grid {
+    @apply grid grid-cols-2 gap-2;
+}
+
+.employee-extra-item {
+    @apply rounded-2xl border border-dashed border-slate-200 px-3 py-3 flex flex-col gap-1;
+}
+
+.employee-extra-label {
+    @apply text-[10px] uppercase tracking-wide text-slate-400;
+}
+
+.employee-extra-value {
+    @apply text-xs font-semibold text-slate-700 break-words;
 }
 
 .status-dot {
@@ -64,6 +213,26 @@ p{
 
 .input-modern {
     @apply bg-gray-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none transition focus:border-customBlue focus:ring-2 focus:ring-customBlue/20;
+}
+
+.employee-card-footer {
+    @apply mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4;
+}
+
+.footer-hint {
+    @apply text-[11px] text-slate-400 leading-5;
+}
+
+.employee-card-links {
+    @apply flex items-center gap-3;
+}
+
+.staff-id-link {
+    @apply inline-flex items-center justify-center text-sm font-semibold text-slate-500 no-underline hover:text-slate-700;
+}
+
+.view-profile-btn {
+    @apply inline-flex items-center justify-center text-sm font-semibold text-customBlue no-underline hover:text-customBlueHover;
 }
 
 .pagination-bar {
@@ -100,4 +269,225 @@ p{
 
 .delete-action:hover {
     @apply text-red-600 border-red-200 bg-red-50;
+}
+
+.employee-loading-shell {
+    @apply flex flex-col gap-4;
+}
+
+.surface-loading-overlay {
+    @apply absolute inset-0 z-20 flex items-center justify-center rounded-[28px] bg-slate-950/10 p-4 backdrop-blur-sm;
+}
+
+.surface-loading-card {
+    @apply w-full max-w-7xl rounded-[28px] border border-white/80 bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.16)];
+}
+
+.employee-loading-block {
+    @apply animate-pulse;
+}
+
+.loading-line {
+    @apply h-4 rounded-full bg-slate-200;
+}
+
+.loading-pill {
+    @apply h-[42px] rounded-xl bg-slate-200;
+}
+
+.loading-dot {
+    @apply h-7 w-7 rounded-lg bg-slate-200;
+}
+
+.loading-avatar {
+    @apply h-24 w-24 rounded-full bg-slate-200;
+}
+
+.loading-meta {
+    @apply h-14 rounded-xl bg-slate-200;
+}
+
+.staff-id-modal {
+    @apply flex min-h-[60vh] items-center justify-center;
+}
+
+.staff-id-toolbar {
+    @apply fixed right-8 top-8 z-20 flex flex-wrap gap-2;
+}
+
+.staff-id-layout {
+    @apply grid w-full max-w-3xl gap-4;
+}
+
+.staff-id-card {
+    @apply w-full max-w-2xl rounded-[28px] border border-white/80 bg-white p-6 shadow-[0_32px_80px_rgba(15,23,42,0.2)];
+}
+
+.staff-id-card__header,
+.staff-id-card__footer,
+.staff-id-card__scan-row {
+    @apply flex flex-wrap items-start justify-between gap-4;
+}
+
+.staff-id-card__brand {
+    @apply flex items-center gap-3;
+}
+
+.staff-id-card__logo {
+    @apply h-12 w-12 rounded-xl object-contain bg-white p-2 border border-slate-200;
+}
+
+.staff-id-card__eyebrow {
+    @apply mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400;
+}
+
+.staff-id-card__header h3 {
+    @apply m-0 text-xl font-semibold text-slate-900;
+}
+
+.staff-id-card__badge {
+    @apply inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700;
+}
+
+.staff-id-card__body {
+    @apply my-6 grid gap-5 md:grid-cols-[0.95fr_1.05fr];
+}
+
+.staff-id-card__identity {
+    @apply rounded-[24px] bg-slate-900 p-5 text-white flex flex-col gap-4;
+}
+
+.staff-id-card__avatar {
+    @apply h-28 w-28 overflow-hidden rounded-[24px] border border-white/10 bg-white/10;
+}
+
+.staff-id-card__avatar img {
+    @apply h-full w-full object-cover;
+}
+
+.staff-id-card__name {
+    @apply mb-1 text-2xl font-semibold text-white;
+}
+
+.staff-id-card__role {
+    @apply m-0 text-sm text-white/70;
+}
+
+.staff-id-card__chips {
+    @apply mt-3 flex flex-wrap gap-2;
+}
+
+.staff-id-card__chips span {
+    @apply inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white;
+}
+
+.staff-id-card__details {
+    @apply grid gap-3;
+}
+
+.staff-id-card__detail {
+    @apply rounded-2xl bg-slate-50 px-4 py-4 flex flex-col gap-1;
+}
+
+.staff-id-card__detail span {
+    @apply text-[11px] uppercase tracking-[0.16em] text-slate-400;
+}
+
+.staff-id-card__detail strong {
+    @apply text-sm font-semibold text-slate-800 break-words;
+}
+
+.staff-id-card__qr {
+    @apply flex min-w-[10rem] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3;
+}
+
+.staff-id-card__qr img {
+    @apply h-36 w-36 rounded-xl bg-white p-2;
+}
+
+.staff-id-card__qr small {
+    @apply mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500;
+}
+
+.staff-id-card__barcode-wrap {
+    @apply flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4;
+}
+
+.staff-id-card__barcode-image {
+    @apply block h-[72px] w-full rounded-xl object-cover bg-white;
+}
+
+.staff-id-card__barcode-wrap p {
+    @apply mt-2 text-xs font-semibold tracking-[0.18em] text-slate-500;
+}
+
+.staff-id-card__footer p {
+    @apply m-0 max-w-xl text-sm text-slate-500;
+}
+
+.staff-id-card__actions {
+    @apply flex flex-wrap gap-2;
+}
+
+.staff-id-card--back {
+    @apply bg-slate-900 text-white border-slate-900;
+}
+
+.staff-id-card--back .staff-id-card__eyebrow,
+.staff-id-card--back h3,
+.staff-id-card--back .staff-id-card__panel span,
+.staff-id-card--back .staff-id-card__panel strong,
+.staff-id-card--back .staff-id-card__panel p {
+    color: white;
+}
+
+.staff-id-card__back-grid {
+    @apply grid gap-4;
+}
+
+.staff-id-card__panel {
+    @apply rounded-2xl bg-white/10 px-4 py-4 flex flex-col gap-2;
+}
+
+.staff-id-card__panel-title {
+    @apply text-[11px] uppercase tracking-[0.18em] text-white/45;
+}
+
+.staff-id-card__panel span {
+    @apply text-[11px] uppercase tracking-[0.16em] text-white/60;
+}
+
+.staff-id-card__panel strong {
+    @apply text-base font-semibold text-white;
+}
+
+.staff-id-card__panel p {
+    @apply m-0 text-sm leading-6 text-white/75;
+}
+
+.staff-id-card__signature-line {
+    @apply mt-2 h-px w-full bg-white/40;
+}
+
+.staff-modal-link {
+    @apply inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+}
+
+.staff-modal-btn {
+    @apply inline-flex items-center justify-center rounded-lg bg-customBlue px-4 py-2 text-sm font-medium text-white hover:bg-customBlueHover;
+}
+
+@media print {
+    .staff-id-toolbar {
+        display: none;
+    }
+
+    .staff-id-card {
+        box-shadow: none;
+        border: 1px solid #e2e8f0;
+    }
+
+    .staff-id-card__actions {
+        display: none;
+    }
 }
