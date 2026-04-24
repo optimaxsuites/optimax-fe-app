@@ -312,9 +312,17 @@
 
   i { font-size: 12px; }
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: #f3f4f6;
     border-color: #9ca3af;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f9fafb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
   }
 
   // Semantic overrides
@@ -322,9 +330,13 @@
     color: #dc2626;
     border-color: #fca5a5;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #fef2f2;
       border-color: #dc2626;
+    }
+
+    &:disabled {
+      color: #fca5a5;
     }
   }
 

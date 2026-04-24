@@ -207,8 +207,8 @@ export class CandidateComponent implements OnInit {
         lastname: 'Morufu',
         email: 'oluwadarequeensheba@gmail.com',
         appliedDate: 'Apr 10, 2025',
-        status: 'Invited',
-        interviewStatus: 'Invited',
+        status: 'Shortlisted',
+        interviewStatus: 'Not Invited',
         formResponses: [
           { label: 'Years of Experience', value: '5 years' },
           { label: 'Current Role', value: 'Product Designer at Paystack' },
@@ -301,12 +301,44 @@ export class CandidateComponent implements OnInit {
   selectJob(job: any) {
     console.log("job", job  )
     this.selectedJob = job;
-    this.filteredApplicants = job.applicants;
+    this.refreshFilteredApplicants();
     this.viewState = 'applicant-list';
   }
 
+  refreshFilteredApplicants(): void {
+    if (this.selectedJob) {
+      // Reload from allApplications to get fresh data with decision history
+      // selectedJob has id from jobVacancy.id (see groupApplicationsByJob)
+      this.filteredApplicants = this.allApplications.filter(app => 
+        app.jobVacancy?.id === this.selectedJob?.id
+      );
+    }
+  }
+
   handleCandidateAction($event: { actionId: string; row: any; }) {
-      this.selectedCandidate = $event.row;
+      // Load fresh candidate data from allApplications to ensure decision history is up-to-date
+      const freshCandidate = this.allApplications.find(app => app.id === $event.row.id);
+      this.selectedCandidate = freshCandidate || $event.row;
+      
+      // Also refresh from localStorage to catch any recent updates (e.g., from interview response page)
+      try {
+        const candidateDataStr = localStorage.getItem('candidateData');
+        if (candidateDataStr) {
+          const allCandidates = JSON.parse(candidateDataStr);
+          const fromStorage = allCandidates.find((c: any) => c.id === $event.row.id);
+          if (fromStorage) {
+            this.selectedCandidate = fromStorage;
+            // Also update in allApplications
+            const idx = this.allApplications.findIndex(app => app.id === $event.row.id);
+            if (idx !== -1) {
+              this.allApplications[idx] = fromStorage;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load fresh candidate from storage:', e);
+      }
+      
       this.expandedEmails = [];
       this.viewCandidateModal = true;
       if ($event.actionId === 'view') {
@@ -365,6 +397,12 @@ export class CandidateComponent implements OnInit {
     this.updateCandidateInterviewStatus(candidate, 'Invited');
     // Add decision history with email copy
     this.addDecisionHistory(candidate, 'Interview Invited', 'Interview invitation sent to candidate.', emailBody);
+    
+    // Refresh the selectedCandidate to update UI
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.selectedCandidate = { ...this.allApplications[candidateIndex] };
+    }
     
     this.messageService.add({
       severity: 'success',
@@ -655,6 +693,44 @@ export class CandidateComponent implements OnInit {
       default:
         return 'fa-info-circle';
     }
+  }
+
+  // Helper methods to check if decision already made
+  isInterviewInviteSent(candidate: Candidate): boolean {
+    return candidate.status === 'Invited' || candidate.decisionHistory?.some(h => h.action === 'Interview Invited') || false;
+  }
+
+  isInterviewAccepted(candidate: Candidate): boolean {
+    return candidate.interviewStatus === 'Accepted' || candidate.decisionHistory?.some(h => h.action === 'Interview Accepted') || false;
+  }
+
+  isInterviewDeclined(candidate: Candidate): boolean {
+    return candidate.interviewStatus === 'Declined' || candidate.decisionHistory?.some(h => h.action === 'Interview Declined') || false;
+  }
+
+  isShortlisted(candidate: Candidate): boolean {
+    return candidate.status === 'Shortlisted' || candidate.decisionHistory?.some(h => h.action === 'Shortlisted') || false;
+  }
+
+  getFilteredActionItems(): MenuItem[] {
+    if (!this.selectedCandidate || !this.actionItems) return [];
+    
+    return this.actionItems.map(item => {
+      const updatedItem = { ...item };
+      
+      // Check if action should be disabled
+      if (item.label === 'Admin Accept Interview' && this.isInterviewAccepted(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else if (item.label === 'Admin Decline Interview' && this.isInterviewDeclined(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else if (item.label === 'Shortlist' && this.isShortlisted(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else {
+        updatedItem.disabled = false;
+      }
+      
+      return updatedItem;
+    });
   }
 
   
