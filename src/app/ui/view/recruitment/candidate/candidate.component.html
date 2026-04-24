@@ -104,11 +104,13 @@
 </app-modal> -->
 
 
-<div class="p-6">
+<div class="p-6 bg-gray-50 rounded-lg min-h-[80vh]">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-700">
-      <span (click)="viewState = 'job-grid'" class="cursor-pointer hover:text-customBlue">Recruitment</span>
-      <span *ngIf="viewState === 'applicant-list'"> / {{ selectedJob?.jobTitle }}</span>
+      <span (click)="viewState = 'job-grid'; selectedJob = null; selectedCandidate = null" class="cursor-pointer hover:text-customBlue">Recruitment</span>
+      <span (click)="viewState = 'applicant-list'; selectedCandidate = null; refreshFilteredApplicants()" *ngIf="selectedJob" class="cursor-pointer hover:text-customBlue"> / {{ selectedJob?.title }}</span>
+      <span *ngIf="selectedCandidate" class="cursor-pointer hover:text-customBlue"> / {{ selectedCandidate?.firstname }} {{ selectedCandidate?.lastname }}</span>
+
     </h2>
   </div>
 
@@ -144,7 +146,279 @@
     <app-table 
       [columns]="applicantColumns" 
       [rows]="filteredApplicants" 
+      [actions]="applicantActions"
       (actionClick)="handleCandidateAction($event)">
     </app-table>
   </div>
+
+    <div *ngIf="viewState === 'applicant-view'" class="animate-fade-in">
+
+
+  <!-- Right: Candidate Detail -->
+  <div class="candidate-detail" *ngIf="selectedCandidate; else noSelection">
+
+    <!-- Detail Header -->
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div class="detail-avatar">{{ getInitials(selectedCandidate) }}</div>
+        <div>
+          <h2 class="detail-name">{{ selectedCandidate.fullName }}</h2>
+          <p class="detail-meta">
+            <span>{{ selectedCandidate.email }}</span>
+            <span class="meta-dot">·</span>
+            <span>{{ selectedCandidate.phone }}</span>
+            <span class="meta-dot">·</span>
+            <span>Applied {{ selectedCandidate.appliedDate }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--invite" 
+          [disabled]="isInterviewInviteSent(selectedCandidate)" 
+          (click)="onActionSelected('Interview Invite')">
+          <i class="fas fa-calendar-check"></i> Interview Invite
+        </button>
+
+        <button class="action-btn action-btn--reject" 
+          (click)="onActionSelected('Rejection')">
+          <i class="fas fa-xmark"></i> Reject
+        </button>
+
+        <p-button 
+          icon="pi pi-ellipsis-v" 
+          [text]="true" 
+          [rounded]="true" 
+           class="btn-navigate"
+          severity="secondary"
+          (click)="menu.toggle($event)"
+          pTooltip="More Actions"
+          tooltipPosition="bottom">
+        </p-button>
+
+        <p-menu 
+          #menu 
+          [model]="getFilteredActionItems()" 
+          [popup]="true" 
+          styleClass="payroll-menu"
+          appendTo="body">
+        </p-menu>
+      </div>
+    </div>
+
+    <!-- Detail Body Tabs -->
+    <div class="detail-tabs">
+      <button
+        *ngFor="let tab of tabs"
+        class="tab-btn"
+        [class.tab-btn--active]="activeTab === tab.key"
+        (click)="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="detail-body">
+
+      <!-- Tab: Form Response -->
+      <div *ngIf="activeTab === 'form'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Application Responses</div>
+          <div class="response-grid">
+            <div class="response-item" *ngFor="let field of selectedCandidate.formResponses">
+              <span class="response-label">{{ field.label }}</span>
+              <span class="response-value">{{ field.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Documents -->
+      <div *ngIf="activeTab === 'documents'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Submitted Documents</div>
+          <div class="document-list">
+            <div class="document-row" *ngFor="let doc of selectedCandidate.documents">
+              <div class="document-row__icon">
+                <i class="fas fa-file-pdf" *ngIf="doc.type === 'pdf'"></i>
+                <i class="fas fa-file-word" *ngIf="doc.type === 'docx'"></i>
+                <i class="fas fa-file" *ngIf="doc.type !== 'pdf' && doc.type !== 'docx'"></i>
+              </div>
+              <div class="document-row__info">
+                <span class="document-name">{{ doc.name }}</span>
+                <span class="document-meta">{{ doc.size }} · Uploaded {{ doc.uploadedDate }}</span>
+              </div>
+              <button class="doc-download-btn" (click)="downloadDocument(doc)">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+            </div>
+
+            <div *ngIf="!selectedCandidate.documents || selectedCandidate.documents.length === 0" class="list-empty">
+              No documents submitted
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: AI Vetting -->
+      <div *ngIf="activeTab === 'ai'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__header">
+            <span class="section-block__title">AI Vetting Analysis</span>
+            <button class="rerun-btn" (click)="runAiVetting(selectedCandidate)">
+              <i class="fas fa-rotate-right"></i> Re-run Analysis
+            </button>
+          </div>
+
+          <div *ngIf="selectedCandidate.aiVetting as ai">
+
+            <!-- Score Bar -->
+            <div class="ai-score-row">
+              <div class="ai-score-card">
+                <span class="ai-score-label">Overall Score</span>
+                <span class="ai-score-value" [ngClass]="getScoreClass(ai.overallScore)">
+                  {{ ai.overallScore }}<span class="ai-score-max">/100</span>
+                </span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Skills Match</span>
+                <span class="ai-score-value">{{ ai.skillsMatch }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Experience Fit</span>
+                <span class="ai-score-value">{{ ai.experienceFit }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Recommendation</span>
+                <span class="ai-recommendation ai-recommendation--{{ ai.recommendation | lowercase }}">
+                  {{ ai.recommendation }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Strengths -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-circle-check"></i> Strengths
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let s of ai.strengths">{{ s }}</li>
+              </ul>
+            </div>
+
+            <!-- Concerns -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title ai-subsection__title--warn">
+                <i class="fas fa-triangle-exclamation"></i> Concerns
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let c of ai.concerns">{{ c }}</li>
+              </ul>
+            </div>
+
+            <!-- Summary -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-robot"></i> AI Summary
+              </div>
+              <p class="ai-summary">{{ ai.summary }}</p>
+            </div>
+
+          </div>
+
+          <div *ngIf="!selectedCandidate.aiVetting" class="ai-empty">
+            <i class="fas fa-robot ai-empty__icon"></i>
+            <span>No AI analysis yet.</span>
+            <button class="rerun-btn" (click)="runAiVetting(selectedCandidate)">
+              Run Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Decision History -->
+      <div *ngIf="activeTab === 'decisionHistory'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Decision History</div>
+          <div class="timeline" *ngIf="selectedCandidate.decisionHistory && selectedCandidate.decisionHistory.length > 0">
+            <div class="timeline-item" *ngFor="let item of selectedCandidate.decisionHistory; let i = index">
+              <div class="timeline-marker">
+                <i class="fas" [ngClass]="getTimelineIcon(item.action)"></i>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-action">{{ item.action }}</span>
+                  <span class="timeline-date">{{ item.date | date:'medium' }}</span>
+                </div>
+                <div class="timeline-details" *ngIf="item.details">{{ item.details }}</div>
+                <div class="timeline-email" *ngIf="item.emailCopy">
+                  <button class="email-toggle-btn" (click)="toggleEmailView(i)">
+                    <i class="fas" [ngClass]="expandedEmails[i] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    View Email Copy
+                  </button>
+                  <div class="email-content" *ngIf="expandedEmails[i]" [innerHTML]="item.emailCopy"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedCandidate.decisionHistory || selectedCandidate.decisionHistory.length === 0" class="list-empty">
+            No decision history available
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- No selection state -->
+  <ng-template #noSelection>
+    <div class="no-selection">
+      <i class="fas fa-user-group no-selection__icon"></i>
+      <span>Select a candidate to view details</span>
+    </div>
+  </ng-template>
+
+  </div>
 </div>
+
+
+<p-dialog [(visible)]="showInviteModal" [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vw', 'max-height': '90vh', 'min-height': '35vh', overflow: 'auto'}" >
+  
+  <div class="flex flex-col justify-between" *ngIf="!isStepTwo">
+    <div>
+   <label class="block mb-2 font-semibold">Select a Template</label>
+    <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
+                optionLabel="name" placeholder="Choose a template..."
+                styleClass="w-full mb-4">
+    </p-dropdown>
+    </div>
+ 
+    
+    <div class="flex justify-end items-end gap-2">
+      <button class="btn-secondary" (click)="showInviteModal = false">Cancel</button>
+      <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
+    </div>
+  </div>
+
+  <div *ngIf="isStepTwo">
+    <div class="mb-4">
+      <h3 class="font-semibold mb-2">Required Information</h3>
+      <div *ngFor="let field of selectedInviteTemplate?.customPlaceholders" class="mb-3 w-96">
+        <label class="block text-sm text-gray-600">{{field.label}}</label>
+        <input type="text" [(ngModel)]="manualPlaceholderValues[field.key]" class="w-full p-2 border rounded">
+      </div>
+    </div>
+
+    <div class="preview-box p-4 bg-gray-50 rounded border">
+      <h4 class="font-bold border-b pb-1 mb-2">{{resolveFinalContent(selectedInviteTemplate?.subject || '')}}</h4>
+      <div class="text-wrap" [innerHTML]="resolveFinalContent(selectedInviteTemplate?.body || '')"></div>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button class="btn-secondary" (click)="isStepTwo = false">Back</button>
+      <button class="btn-primary disabled:cursor-not-allowed disabled:bg-customBlueHover" (click)="sendFinalMail()" [disabled]="sendLoading">
+        <span *ngIf="!sendLoading">Send</span>
+        <span *ngIf="sendLoading">Sending...</span>
+      </button>
+    </div>
+  </div>
+</p-dialog>

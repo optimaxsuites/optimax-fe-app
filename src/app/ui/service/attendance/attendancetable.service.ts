@@ -197,6 +197,7 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
   ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch employee records:', err)
@@ -474,7 +475,7 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
 
   // Update local record
   if (action === 'IN') {
-    record.checkIn = now.toLocaleTimeString();
+    record.checkIn = now.toISOString();
     record.checkInLocation = location
       ? { address: location.address, lat: location.lat, lng: location.lng }
       : null;

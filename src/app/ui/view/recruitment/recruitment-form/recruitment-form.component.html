@@ -1,156 +1,227 @@
 <p-toast class="table-item"></p-toast>
-<div class="card recruitment-form">
-  <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+<div class="recruitment-form">
+  <div class="form-header">
+    <app-back-button class="back-btn" (click)="goBack()"></app-back-button>
+    <div class="form-header__text">
+      <!-- <h3 class="form-title">Job Posting</h3>
+      <p class="form-subtitle">Create, publish, or update vacancy details.</p> -->
+    </div>
+  </div>
 
-  <div class="invite-main">
-    <div>
-      <div class="form-header">
-        <div>
-          <h3 class="remove-mb mb-1 form-title"><strong>Job Posting</strong></h3>
-          <p class="form-subtitle">Create, publish, or update vacancy details.</p>
+  <div class="form-body">
+
+    <!-- Left Column -->
+    <div class="form-column form-column--left">
+
+      <!-- Section: Role Details -->
+      <div class="form-section">
+        <div class="section-label">Role Details</div>
+
+        <div class="field">
+          <label class="field-label">Job Title <span class="required">*</span></label>
+          <input
+            type="text"
+            id="jobTitle"
+            placeholder="e.g. Senior Product Designer"
+            class="field-input"
+            name="jobTitle"
+            [(ngModel)]="jobData.jobTitle"
+            required
+          />
         </div>
-      </div>
 
-      <div class="form-grid table-item">
-        <div class="form-panel">
-          <div class="panel-title">Role Details</div>
-          <div class="form-fields">
-            <!-- Job Title -->
-            <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
-            <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px] form-input" name="jobTitle" [(ngModel)]="jobData.jobTitle" required>
-            
-            <!-- Job Category -->
-            
-            <label for="jobCategory">Category: <span style="color: red;">*</span></label> 
-            <div class="flex items-center w-full">
-              <ng-select 
-              bindLabel="name"
-              bindValue="id"
-              placeholder="Select Category"
-              class="w-full"
-              [(ngModel)]="jobData.jobCategory"
-              [items]="jobCategories">
-            </ng-select>
-               <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Category')"></i>
-            </div>
-            
-            
-            <!-- Job Type -->
-            <label for="jobType">Job Type: <span style="color: red;">*</span></label>
-            <div class="flex items-center w-full">
-            <ng-select 
-              bindLabel="name"
-              bindValue="id"
-              placeholder="Select Job Type"
-              class="w-full"
-              [(ngModel)]="jobData.jobType"
-              [items]="jobTypes">
-            </ng-select>
-             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Job Type')"></i>
-            </div>
-            
-            <!-- Job Location -->
-            <label for="jobLocation">Location:</label>
-            <input type="text" id="jobLocation" placeholder="Location" class="editInput h-[36px] form-input" name="jobLocation" [(ngModel)]="jobData.location" required>
-            
-            <!-- Experience -->
-            <label for="experience">Experience:</label>
-            <div class="flex items-center w-full">
-            <ng-select 
-              bindLabel="name"
-              bindValue="id"
-              placeholder="Select Experience Year"
-             class="w-full"
-              [(ngModel)]="jobData.jobVacancyExperience"
-              [items]="jobExperienceLevels">
-            </ng-select>
-             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Experience')"></i>
-            </div>
-            
-            <!-- Qualification -->
-            <label for="qualification">Qualification:</label>
-            <div class="flex items-center w-full">
-            <ng-select 
-              bindLabel="name"
-              bindValue="id"
-              placeholder="Select Qualification"
-             class="w-full"
-              [(ngModel)]="jobData.qualifications"
-              [items]="jobQualification">
-            </ng-select>
-             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Qualification')"></i>
-            </div>
-            
-            <!-- specification -->
-            <label for="specification">Specification:</label>
-            <div class="flex items-center w-full">
-            <ng-select 
-              bindLabel="name"
-              bindValue="id"
-              placeholder="Select Specification"
-             class="w-full"
-              [(ngModel)]="jobData.jobVacancySpecification"
-              [items]="jobSpecifications">
-            </ng-select>
-             <i class="fas fa-plus cursor-pointer text-white bg-customBlue px-2 py-3 rounded-r-xl" (click)="openMetadataModal('Specification')"></i>
-            </div>
-            
-          </div>
-          
-          <div class="form-row">
-            <div class="form-field">
-              <!-- Posted Date -->
-              <label for="postedDate">Posted Date:</label>
-              <input 
-              type="datetime-local" 
-              id="postedDate" 
-              class="editInput h-[36px] form-input" 
-              name="postedDate" 
-              [value]="formatToDatetimeLocal(jobData.jobPostedDate!)" 
-              disabled 
-              required>
-            </div>
-            <div class="form-field">
-              <!-- Expiry Date -->
-              <label for="expiryDate">Expiry Date: <span style="color: red;">*</span></label>
-              <input 
-              type="datetime-local" 
-              id="expiryDate" 
-              class="editInput h-[36px] form-input" 
-              name="expiryDate" 
-              [(ngModel)]="jobExpiryDateInput" 
-              (ngModelChange)="onExpiryDateChange($event)" 
-              required>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Category <span class="required">*</span></label>
+            <div class="select-wrapper">
+              <ng-select
+                bindLabel="name"
+                bindValue="id"
+                placeholder="Select category"
+                class="field-select"
+                [(ngModel)]="jobData.jobCategory"
+                [items]="jobCategories">
+              </ng-select>
+              <button class="add-icon-btn" (click)="openMetadataModal('Category')" title="Add category">
+                <i class="fas fa-plus"></i>
+              </button>
             </div>
           </div>
 
-          <div class="custom-fields">
-            <div *ngIf="customFieldList && customFieldList.length > 0">
-              <h4><strong>Customised input field(s)</strong></h4>
-              <div class="card custom-field-card" *ngFor="let item of customFieldList">
-                <div class="list-card-right">
-                  <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="btn-wrapper">
-              <button class="add-btn" (click)="toggleSideModal()">
-                <i class="fas fa-plus me-2"></i>{{ jobData.jobVacancyCustomFields?.length! > 0 ? 'Edit Customize Input' : 'Add Customize Input' }}
+          <div class="field">
+            <label class="field-label">Job Type <span class="required">*</span></label>
+            <div class="select-wrapper">
+              <ng-select
+                bindLabel="name"
+                bindValue="id"
+                placeholder="Select job type"
+                class="field-select"
+                [(ngModel)]="jobData.jobType"
+                [items]="jobTypes">
+              </ng-select>
+              <button class="add-icon-btn" (click)="openMetadataModal('Job Type')" title="Add job type">
+                <i class="fas fa-plus"></i>
               </button>
             </div>
           </div>
         </div>
-        <div class="form-panel">
-          <div class="panel-title">Overview & Description</div>
-          <label for="" class="form-help">Overview & Description: <span style="color: red;">*</span></label>
-          <p-editor [(ngModel)]="jobData.companyOverview" placeholder="Overview & Description..." [style]="{ height: '420px' }" styleClass="vacancy-editor" />
+
+        <div class="field">
+          <label class="field-label">Location</label>
+          <input
+            type="text"
+            id="jobLocation"
+            placeholder="e.g. Lagos, Nigeria or Remote"
+            class="field-input"
+            name="jobLocation"
+            [(ngModel)]="jobData.location"
+          />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Experience</label>
+            <div class="select-wrapper">
+              <ng-select
+                bindLabel="name"
+                bindValue="id"
+                placeholder="Select experience"
+                class="field-select"
+                [(ngModel)]="jobData.jobVacancyExperience"
+                [items]="jobExperienceLevels">
+              </ng-select>
+              <button class="add-icon-btn" (click)="openMetadataModal('Experience')" title="Add experience">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Qualification</label>
+            <div class="select-wrapper">
+              <ng-select
+                bindLabel="name"
+                bindValue="id"
+                placeholder="Select qualification"
+                class="field-select"
+                [(ngModel)]="jobData.qualifications"
+                [items]="jobQualification">
+              </ng-select>
+              <button class="add-icon-btn" (click)="openMetadataModal('Qualification')" title="Add qualification">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Specification</label>
+          <div class="select-wrapper">
+            <ng-select
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select specification"
+              class="field-select"
+              [(ngModel)]="jobData.jobVacancySpecification"
+              [items]="jobSpecifications">
+            </ng-select>
+            <button class="add-icon-btn" (click)="openMetadataModal('Specification')" title="Add specification">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Posted Date</label>
+            <input
+              type="datetime-local"
+              id="postedDate"
+              class="field-input"
+              name="postedDate"
+              [value]="formatToDatetimeLocal(jobData.jobPostedDate!)"
+              disabled
+            />
+          </div>
+          <div class="field">
+            <label class="field-label">Expiry Date <span class="required">*</span></label>
+            <input
+              type="datetime-local"
+              id="expiryDate"
+              class="field-input"
+              name="expiryDate"
+              [(ngModel)]="jobExpiryDateInput"
+              (ngModelChange)="onExpiryDateChange($event)"
+              required
+            />
+          </div>
         </div>
       </div>
-      <div class="btn-wrapper form-actions">
-        <button (click)="onSubmitForm()" type="submit" class="btn-navigate">{{ isEdit ? 'Update' : 'Create' }}</button>
+
+      <!-- Section: Custom Fields -->
+      <div class="form-section">
+        <div class="section-label">Custom Input Fields</div>
+
+        <div *ngIf="customFieldList && customFieldList.length > 0" class="custom-field-list">
+          <div class="custom-field-item" *ngFor="let item of customFieldList">
+            <span class="custom-field-label">{{ item.label }}</span>
+            <span class="custom-field-meta">{{ item.type }}</span>
+            <span class="custom-field-badge" [class.custom-field-badge--required]="item.required">
+              {{ item.required ? 'Required' : 'Optional' }}
+            </span>
+          </div>
+        </div>
+
+        <button class="add-field-btn" (click)="toggleSideModal()">
+          <i class="fas fa-plus"></i>
+          {{ jobData.jobVacancyCustomFields?.length! > 0 ? 'Edit Custom Fields' : 'Add Custom Fields' }}
+        </button>
       </div>
+
     </div>
+
+    <!-- Right Column: Editors -->
+    <div class="form-column form-column--right">
+
+      <div class="form-section">
+        <div class="section-label">Company Overview <span class="required">*</span></div>
+        <p-editor
+          [(ngModel)]="jobData.companyOverview"
+          placeholder="Describe the company..."
+          [style]="{ height: '300px' }"
+          styleClass="vacancy-editor">
+        </p-editor>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Position Overview <span class="required">*</span></div>
+        <p-editor
+          [(ngModel)]="jobData.positionOverview"
+          placeholder="Describe the role..."
+          [style]="{ height: '300px' }"
+          styleClass="vacancy-editor">
+        </p-editor>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Key Responsibilities <span class="required">*</span></div>
+        <p-editor
+          [(ngModel)]="jobData.keyResponsibilities"
+          placeholder="List key responsibilities..."
+          [style]="{ height: '300px' }"
+          styleClass="vacancy-editor">
+        </p-editor>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer Actions -->
+  <div class="form-footer">
+    <button class="btn-secondary" (click)="goBack()">Cancel</button>
+    <button class="btn-primary" (click)="onSubmitForm()" type="submit">
+      {{ isEdit ? 'Update Posting' : 'Create Posting' }}
+    </button>
   </div>
 </div>
 
@@ -218,7 +289,7 @@
 
 <app-side-modal *ngIf="showMetadataModal" (close)="showMetadataModal = false">
   <div class="modal-header">
-    <h2 class="font-semibold">Add New {{ activeMetadataType }}</h2>
+    <h2 class=" text-gray-600 text-[16px]" >Add New {{ activeMetadataType }}</h2>
   </div>
 
   <div class="form-fields space-y-4 mt-4">

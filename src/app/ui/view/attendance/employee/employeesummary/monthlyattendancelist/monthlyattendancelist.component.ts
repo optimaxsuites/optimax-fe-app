@@ -1,9 +1,12 @@
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
+import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 
 @Component({
   selector: 'app-monthlyattendancelist',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './monthlyattendancelist.component.html',
   styleUrl: './monthlyattendancelist.component.scss'
 })

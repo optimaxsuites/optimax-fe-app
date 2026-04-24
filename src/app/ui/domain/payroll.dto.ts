@@ -47,6 +47,7 @@ export type Employee = {
   employeeMedia: Media;
   level: Lookup;
   userId: number;
+  user?: any;
 };
 
 // ===== Allowance =====

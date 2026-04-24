@@ -73,6 +73,7 @@ import { TableComponent } from './ui/shared-component/view/table/table.component
 import { TableBodyDirective } from './ui/shared-component/view/table/table-body.directive';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
+import { InterviewResponseComponent } from './ui/view/recruitment/candidate/interview-response.component';
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
 import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-score-sheet/interview-score-sheet.component';
@@ -223,6 +224,8 @@ import { CooperativePaymentModalComponent } from './ui/view/loan-management/coop
 import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
 
 import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management/cooperative-repayment-schedule/cooperative-repayment-schedule.component';
+import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
+import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 
 @NgModule({
   declarations: [
@@ -371,11 +374,15 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
     CooperativeLoanReportsComponent,
     CooperativeLoanDisbursementUiComponent,
     CooperativeMemberLoanHistoryComponent,
+    MyScheduleComponent,
+    MySchedulesComponent,
     CooperativePatronageDistributionComponent,
+    InterviewInviteComponent,
+    InterviewResponseComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,

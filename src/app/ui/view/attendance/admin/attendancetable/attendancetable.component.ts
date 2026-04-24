@@ -1,13 +1,14 @@
+import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import { AttendancetableService } from '../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../shared-component/models/attendancetable.model';
-import { Observable, switchMap } from 'rxjs';
-import { MOCK_ATTENDANCE } from '../../../../shared-component/models/attendancetable.mock';
-//import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
+import { AttendanceTableRecord } from '../../../../domain/attendance/attendancetable.dto';
+import { MOCK_ATTENDANCE } from '../../../../domain/attendance/attendancetable.mock';
+import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
 
 @Component({
   selector: 'app-attendancetable',
+  standalone: true,
+  imports: [CommonModule, AttendancefilterComponent],
   templateUrl: './attendancetable.component.html',
   styleUrl: './attendancetable.component.scss'
 })
@@ -60,6 +61,7 @@ filters: any = {};
 onFiltersChange(filters: any) {
   this.attendancetableService.getAttendance(filters).subscribe((data: AttendanceTableRecord[]) => {
     this.attendance = data;
+    this.filteredAttendance = data;
   });
 }
 

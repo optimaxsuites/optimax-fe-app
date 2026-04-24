@@ -2,10 +2,18 @@ import { Injectable } from '@angular/core';
 import { environment } from '../shared-component/environments/environment';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
-
+type body = 
+{
+  name: string,
+  recieverEmail: string
+  subject: string,
+  body: string
+}
 @Injectable({
   providedIn: 'root'
 })
+
+
 export class MailNotificationService {
     private baseUrl = environment.apiBaseUrl;
 
@@ -22,7 +30,7 @@ export class MailNotificationService {
     return throwError(() => error);
   }
 
-   sendMail(body: any): Observable<any> {
+   sendMail(body: body): Observable<any> {
       const headers = new HttpHeaders({
       'Content-Type': 'application/json',
       'x-api-key': environment.apiKey

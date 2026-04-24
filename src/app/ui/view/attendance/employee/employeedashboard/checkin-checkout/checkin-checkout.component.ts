@@ -97,36 +97,36 @@ private restoreClockStatus(): void {
   }*/
 
   async toggleClock() {
-    if (this.isAbsentToday) {
-    return; // Block action completely
+    if (this.isAbsentToday) return; // Block action completely
 
     this.isGettingLocation = true;
-  }
+    try {
+      if (this.status === 'CLOCKED_OUT') {
+        this.status = 'CLOCKED_IN';
+        this.attendanceService.setClockStatus('CLOCKED_IN');
 
-  if (this.status === 'CLOCKED_OUT') {
-    this.status = 'CLOCKED_IN';
-    this.attendanceService.setClockStatus('CLOCKED_IN');
-
-    await this.attendanceService.clockAction(
-      this.currentUser!.id,
-      this.currentUser!.name,
-      this.currentUser!.department,
-      'IN'
-    );
+        await this.attendanceService.clockAction(
+          this.currentUser!.id,
+          this.currentUser!.name,
+          this.currentUser!.department,
+          'IN'
+        );
 
   } else {
 
     this.status = 'CLOCKED_OUT';
     this.attendanceService.setClockStatus('CLOCKED_OUT');
 
-    this.attendanceService.clockAction(
+    await this.attendanceService.clockAction(
       this.currentUser!.id,
       this.currentUser!.name,
       this.currentUser!.department,
       'OUT'
     );
   }
-  this.isGettingLocation  = false;
+} finally {
+    this.isGettingLocation  = false;
+}
 }
 
 /*checkOfficeHours() {

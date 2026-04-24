@@ -47,15 +47,15 @@
             [emptyMessage]="'No scheduled interview yet.'"
             >
             <ng-template appTableBody let-candidate>
-              <td class="table-item">{{ candidate.candidateName }}</td>
+              <td class="table-item">{{ candidate.firstname }} {{ candidate.lastname }}</td>
               <td class="table-item">{{ candidate.email }}</td>
-              <td class="table-item">{{ candidate.position }}</td>
+              <td class="table-item">{{ candidate.jobVacancy.jobCategory.name }}</td>
               <td class="table-item">{{ candidate.dateApplied }}</td>
               <td class="table-item">{{ candidate.interviewType }}</td>
               <td class="table-item">Interview {{ candidate.interviewStage }}</td>
               <td class="table-item">
                   <span [ngClass]="getStatusClass(candidate.stage)">
-                    {{ candidate.stage }} 
+                    {{ candidate.stage === 'accept' ? 'Accepted' : candidate.stage === 'decline' ? 'Declined' : candidate.stage }} 
                   </span>
               </td>
 
@@ -99,87 +99,13 @@
   <app-appointment-letter [candidate]="activeItem" (back)="close()" (submitFrom)="sendAppointment($event)"></app-appointment-letter>
 </div>
 
-<!-- <app-modal 
-  *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.candidate + '\'s information'"
-  [title]="'Cancel'"
-  (close)="closeViewModal()">
-    <div class="view-wrapper">
-      <div class="d-flex gap-4 my-2">
-        <div class="input-container-50">
-            <label for="name"><strong>Name:</strong></label>
-            <span>  {{activeItem.firstName + ' ' + activeItem.lastName}}</span>
-        </div>
-      </div>
-      <div class="d-flex gap-4 my-2">
-        <div class="input-container-50">
-            <label for="email"><strong>Email:</strong></label>
-            <span>  {{activeItem.email}}</span>
-        </div>
-        <div class="input-container-50">
-            <label for="position"><strong>Position:</strong></label>
-            <span>  {{activeItem.position}}</span>
-        </div>
-      </div>
-      <div class="d-flex gap-4 my-2 ">
-        <div class="input-container-50 ">
-            <label for="email" class="me-2"><strong>Stage:</strong></label>
-            <span [ngClass]="getStatusClass(activeItem.stage)">
-              {{ activeItem.stage }}
-            </span>
-        </div>
-        <div class="input-container-50">
-            <label for="position"><strong>Interview Stage:</strong></label>
-            <span>  {{activeItem.interviewStage}}</span>
-        </div>
-      </div>
-      <div class="d-flex gap-4 my-2">
-        <div class="input-container-50">
-            <label for="email"><strong>Interview Type:</strong></label>
-            <span>  {{activeItem.interviewType}}</span>
-        </div>
-      </div>
-      <div class="d-flex gap-4 my-2">
-        <div class="input-container-50">
-            <label for="date"><strong>Date Applied:</strong></label>
-            <span>  {{activeItem.dateApplied}}</span>
-        </div>
-        <div class="input-container-50">
-            <label for="resume"><strong>Resume:</strong></label>
-            <span class="" style="color: var(--celadon-green); font-size: var(--md-font); cursor: pointer;" (click)="viewResume(activeItem.resume || '')">
-                View Resume
-            </span>
-        </div>
-      </div>
-      <div class="d-flex gap-4 my-2">
-        <div class="input-container-50">
-          <label for="cover-letter"><strong>Cover Letter:</strong></label>
-          <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
-        </div>
-        <div class="input-container-50">
-          <label for="cover-letter" class="mb-2"><strong>Interview Score:</strong></label>
-          <div class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview {{activeItem.interviewStage}}</span>
-            <span class="scorevalue"> 30</span>
-          </div>
-          <div class="scoresheet-total">
-            <span class="scorelabel">Total</span>
-            <span class="scorevalue"> 30</span>
-          </div>
-        </div>
-      </div>
-    </div>
-</app-modal> -->
 
-
-<app-modal 
+<app-large-side-modal 
   *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.candidate + '\'s information'"
   [title]="'Close'"
   (close)="closeViewModal()">
   
-  <div class="view-wrapper p-4">
-    <!-- Section for Predefined Fields -->
+  <!-- <div class="view-wrapper p-4">
     <div class="predefined-section">
       <h3 class="section-title">Basic Information</h3>
       <div class="info-grid">
@@ -238,19 +164,6 @@
           </div>
         </div>
 
-        <!-- <div class="input-container-50">
-          <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
-        
-          <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview: {{ score.criteria }}</span>
-            <span class="scorevalue">{{ score.totalScore }}</span>
-          </div>
-        
-          <div class="scoresheet-total">
-            <span class="scorelabel">Average Score</span>
-            <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
-          </div>
-        </div> -->
 
         <div class="input-container-50">
           <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
@@ -269,38 +182,195 @@
         
 
 
-        <!-- <div class="input-container-50">
-          <label for="cover-letter" class="mb-2"><strong>Interview Score:</strong></label>
-          <div class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview {{activeItem.interviewStage}}</span>
-            <span class="scorevalue"> 30</span>
-          </div>
-          <div class="scoresheet-total">
-            <span class="scorelabel">Total</span>
-            <span class="scorevalue"> 30</span>
-          </div>
-        </div> -->
       </div>
     </div>
-  </div>
-</app-modal>
+  </div> -->
 
+  <div class="candidate-detail">
 
-<!-- <div class="input-container-50">
-  <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div class="detail-avatar">{{ getInitials(activeItem) }}</div>
+        <div>
+          <h2 class="detail-name">{{ activeItem.fullName }}</h2>
+          <p class="detail-meta">
+            <span>{{ activeItem.email }}</span>
+            <span class="meta-dot">·</span>
+            <span>{{ activeItem.phone }}</span>
+            <span class="meta-dot">·</span>
+            <span>Applied {{ activeItem.appliedDate }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--invite" *ngIf="activeItem.stage !== 'In-Progress' && activeItem.stage !== 'Completed' && activeItem.stage !== 'Cancelled' && activeItem.stage !== 'Offer-Sent' && activeItem.stage !== 'Appointment-Letter-Sent'" (click)="startInterview(activeItem)">
+        <i class="fas fa-calendar-check"></i> Start Interview
+        </button>
 
-  loop through all interiewsatage
-  <div loop through the activeitem.interviewstage>
-    <p>item.interview</p>
-    <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
-      <span class="scorelabel">criteria.title</span>
-      <span class="scorevalue">{{ criteria.totalScore }}</span>
+        <button class="action-btn action-btn--shortlisted" (click)="openScoreSheet(activeItem)">
+        <i class="fas fa-pen"></i> New Score Sheet
+        </button>
+        <!-- <div> 
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openScoreSheet(candidate)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
+                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress'" (click)="downloadScoresheet(candidate.id)"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
+                      </div> -->
+
+        <p-button 
+          icon="pi pi-ellipsis-v" 
+          [text]="true" 
+          [rounded]="true" 
+           class="btn-navigate"
+          severity="secondary"
+          (click)="menu.toggle($event)"
+          pTooltip="More Actions"
+          tooltipPosition="bottom">
+        </p-button>
+
+        <p-menu 
+          #menu 
+          [model]="actionItems" 
+          [popup]="true" 
+          styleClass="payroll-menu"
+          appendTo="body">
+        </p-menu>
+      </div>
+    </div>
+
+    <!-- Detail Body Tabs -->
+    <div class="detail-tabs">
+      <button
+        *ngFor="let tab of tabs"
+        class="tab-btn"
+        [class.tab-btn--active]="activeTab === tab.key"
+        (click)="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="detail-body">
+
+      <!-- Tab: Form Response -->
+      <div *ngIf="activeTab === 'form'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Application Responses</div>
+          <div class="response-grid">
+            <div class="response-item" *ngFor="let field of activeItem.formResponses">
+              <span class="response-label">{{ field.label }}</span>
+              <span class="response-value">{{ field.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Documents -->
+      <div *ngIf="activeTab === 'documents'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Submitted Documents</div>
+          <div class="document-list">
+            <div class="document-row" *ngFor="let doc of activeItem.documents">
+              <div class="document-row__icon">
+                <i class="fas fa-file-pdf" *ngIf="doc.type === 'pdf'"></i>
+                <i class="fas fa-file-word" *ngIf="doc.type === 'docx'"></i>
+                <i class="fas fa-file" *ngIf="doc.type !== 'pdf' && doc.type !== 'docx'"></i>
+              </div>
+              <div class="document-row__info">
+                <span class="document-name">{{ doc.name }}</span>
+                <span class="document-meta">{{ doc.size }} · Uploaded {{ doc.uploadedDate }}</span>
+              </div>
+              <button class="doc-download-btn" (click)="downloadDocument(doc)">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+            </div>
+
+            <div *ngIf="!activeItem.documents || activeItem.documents.length === 0" class="list-empty">
+              No documents submitted
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: AI Vetting -->
+      <div *ngIf="activeTab === 'ai'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__header">
+            <span class="section-block__title">AI Vetting Analysis</span>
+            <button class="rerun-btn" (click)="runAiVetting(activeItem)">
+              <i class="fas fa-rotate-right"></i> Re-run Analysis
+            </button>
+          </div>
+
+          <div *ngIf="activeItem.aiVetting as ai">
+
+            <!-- Score Bar -->
+            <div class="ai-score-row">
+              <div class="ai-score-card">
+                <span class="ai-score-label">Overall Score</span>
+                <span class="ai-score-value" [ngClass]="getScoreClass(ai.overallScore)">
+                  {{ ai.overallScore }}<span class="ai-score-max">/100</span>
+                </span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Skills Match</span>
+                <span class="ai-score-value">{{ ai.skillsMatch }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Experience Fit</span>
+                <span class="ai-score-value">{{ ai.experienceFit }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Recommendation</span>
+                <span class="ai-recommendation ai-recommendation--{{ ai.recommendation | lowercase }}">
+                  {{ ai.recommendation }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Strengths -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-circle-check"></i> Strengths
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let s of ai.strengths">{{ s }}</li>
+              </ul>
+            </div>
+
+            <!-- Concerns -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title ai-subsection__title--warn">
+                <i class="fas fa-triangle-exclamation"></i> Concerns
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let c of ai.concerns">{{ c }}</li>
+              </ul>
+            </div>
+
+            <!-- Summary -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-robot"></i> AI Summary
+              </div>
+              <p class="ai-summary">{{ ai.summary }}</p>
+            </div>
+
+          </div>
+
+          <div *ngIf="!activeItem.aiVetting" class="ai-empty">
+            <i class="fas fa-robot ai-empty__icon"></i>
+            <span>No AI analysis yet.</span>
+            <button class="rerun-btn" (click)="runAiVetting(activeItem)">
+              Run Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
+</app-large-side-modal>
 
-
-  <div class="scoresheet-total">
-    <span class="scorelabel">Average Score</span>
-    <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
-  </div>
-</div> -->

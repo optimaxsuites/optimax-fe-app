@@ -181,7 +181,7 @@
 
 .view-hero__subtitle {
   color: var(--vacancy-muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-top: 0.2rem;
 }
 
@@ -245,7 +245,7 @@
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--vacancy-muted);
@@ -254,7 +254,7 @@
 
 .stat-value {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .view-grid {
@@ -291,7 +291,7 @@
   gap: 1rem;
   padding-bottom: 0.4rem;
   border-bottom: 1px dashed #e2e8f0;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .view-item span {
@@ -386,4 +386,170 @@
   justify-content: center;
   align-items: center;
   margin-right: 2rem;
+}
+// Vacancy List — card-style rows matching the table's visual rhythm
+
+.vacancy-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vacancy-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.15s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f9fafb;
+  }
+}
+
+.vacancy-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.vacancy-row__title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vacancy-row__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vacancy-row__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 99px;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.vacancy-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #6b7280;
+
+  i {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+}
+
+// Actions column
+.vacancy-row__actions {
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ellipsis-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 15px;
+  line-height: 1;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: #d1d5db;
+    background: #f3f4f6;
+    color: #374151;
+  }
+}
+
+// Overlay action menu
+.action-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px 0;
+  list-style: none;
+  margin: 0;
+}
+
+.action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 15px;
+  color: #374151;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 0;
+  transition: background 0.12s;
+
+  i {
+    font-size: 15px;
+    width: 14px;
+    color: #6b7280;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  &--danger {
+    color: #dc2626;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 4px;
+
+    i {
+      color: #dc2626;
+    }
+
+    &:hover {
+      background: #fef2f2;
+    }
+  }
+}
+
+// Empty state
+.vacancy-empty {
+  padding: 40px;
+  text-align: center;
+  font-size: 15px;
+  color: #9ca3af;
+  background: #ffffff;
 }

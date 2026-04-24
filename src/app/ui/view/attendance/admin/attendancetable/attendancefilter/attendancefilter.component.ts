@@ -1,10 +1,13 @@
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 //import { Router, ActivatedRoute } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
-import { AttendanceTableRecord } from '../../../../../shared-component/models/attendancetable.model';
 
 @Component({
   selector: 'app-attendancefilter',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './attendancefilter.component.html',
   styleUrl: './attendancefilter.component.scss'
 })

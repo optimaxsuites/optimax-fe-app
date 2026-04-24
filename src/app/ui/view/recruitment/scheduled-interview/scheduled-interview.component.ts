@@ -6,6 +6,41 @@ import {jsPDF} from 'jspdf';
 import 'jspdf-autotable';
 // import autoTable from "jspdf-autotable";
 
+export interface FormResponse {
+  label: string;
+  value: string;
+}
+ 
+export interface CandidateDocument {
+  name: string;
+  type: 'pdf' | 'docx' | string;
+  size: string;
+  uploadedDate: string;
+  url: string;
+}
+ 
+export interface AiVetting {
+  overallScore: number;
+  skillsMatch: number;
+  experienceFit: number;
+  recommendation: 'Strong Hire' | 'Hire' | 'Maybe' | 'Pass';
+  strengths: string[];
+  concerns: string[];
+  summary: string;
+}
+ 
+export interface Candidate {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  appliedDate: string;
+  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Offered';
+  formResponses: FormResponse[];
+  documents: CandidateDocument[];
+  aiVetting: AiVetting | null;
+}
+
 @Component({
   selector: 'app-scheduled-interview',
   templateUrl: './scheduled-interview.component.html',
@@ -13,9 +48,12 @@ import 'jspdf-autotable';
   providers: [MessageService, ConfirmationService]
 })
 export class ScheduledInterviewComponent {
+  onActionSelected(arg0: string) {
+    throw new Error('Method not implemented.');
+  }
   activeItem: any = {};
   searchTerm: string = '';
-  interviews: ApplicantDTO[] = [];
+  interviews: any[] = [];
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
   showScoreSheet: boolean = false;
@@ -27,14 +65,56 @@ export class ScheduledInterviewComponent {
   filteredCandidates: ApplicantDTO[] = [];
   candidateData: any = {};
   interviewColumns: TableColumn[] = [
-    { header: 'Name', field: 'candidateName', sortable: true, className: 'table-item' },
+    { header: 'Name', field: 'firstname', sortable: true, className: 'table-item' },
     { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
-    { header: 'Position', field: 'position', sortable: true, className: 'table-item' },
+    { header: 'Position', field: 'job.jobVacancy.jobCategory.name', sortable: true, className: 'table-item' },
     { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
+    { header: 'Scheduled Date', field: 'scheduledDate', sortable: true, className: 'table-item' },
     { header: 'Interview Type', field: 'interviewType', sortable: true, className: 'table-item' },
     { header: 'Interview Stage', field: 'interviewStage', sortable: true, className: 'table-item' },
     { header: 'Stage', field: 'stage', sortable: true, className: 'table-item' },
     { header: 'Actions', className: 'table-item' },
+  ];
+
+  actionItems = [
+      // {
+      //   label: 'Interview Invite',
+      //   icon: 'fas fa-calendar-check',
+      //   command: () => this.onSendInterview(this.selectedCandidate)
+      // },
+      {
+        label: 'Shortlist',
+        icon: 'fas fa-bookmark',
+        command: () => this.onActionSelected('Shortlist')
+      },
+      {
+        label: 'Request Docs',
+        icon: 'fas fa-file-arrow-up',
+        command: () => this.onActionSelected('Request Docs')
+      },
+      { separator: true },
+      {
+        label: 'Send Offer',
+        icon: 'fas fa-envelope-open-text',
+        command: () => this.onActionSelected('Send Offer')
+      },
+      // {
+      //   label: 'Reject',
+      //   icon: 'fas fa-xmark',
+      //   styleClass: 'text-danger', // Optional: highlight rejection in red
+      //   command: () => this.onActionSelected('Reject')
+      // }
+    ];
+
+  activeTab = 'form';
+
+   tabs = [
+    { key: 'form',      label: 'Form Response' },
+    { key: 'documents', label: 'Documents'      },
+    { key: 'ai',        label: 'AI Vetting'     },
+    { key: 'interviews',        label: 'Interview history'},
+    
+
   ];
 
 
@@ -76,16 +156,18 @@ export class ScheduledInterviewComponent {
 // ==============================================get candidate
   getCandidateData(){
     // Retrieve candidates from localStorage
-    const storedCandidates = localStorage.getItem('scheduledCandidate');
+    const storedCandidates = localStorage.getItem('upcomingInvite');
     if (storedCandidates) {
       this.interviews = JSON.parse(storedCandidates);
     }
 
     // Extract unique positions
-    this.positions = [...new Set(this.interviews.map(c => c.position))];
+    this.positions = [...new Set(this.interviews.map(c => c.job.category))];
 
+    const candidates = this.interviews.map(interview => interview.candidate);
     // Reverse the order of candidates to implement LIFO
     this.filteredCandidates = [...this.interviews].reverse();
+    
 
     console.log(this.filteredCandidates);
 
@@ -180,7 +262,8 @@ export class ScheduledInterviewComponent {
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
-        inviteAttachments: interviewDetails.inviteAttachments
+        inviteAttachments: interviewDetails.inviteAttachments,
+        scheduledDate: interviewDetails['scheduledDate']
       };
 
       // Update the existing candidate at the found index
@@ -327,6 +410,12 @@ export class ScheduledInterviewComponent {
     if (storedData) {
       this.candidateData = JSON.parse(storedData);
     }
+  }
+
+   getScoreClass(score: number): string {
+    if (score >= 75) return 'score--high';
+    if (score >= 50) return 'score--medium';
+    return 'score--low';
   }
 
 
@@ -583,7 +672,27 @@ export class ScheduledInterviewComponent {
     return totalSum / scores.length;
   }
   
+    downloadDocument(doc: CandidateDocument): void {
+      // TODO: trigger download
+      console.log('Download', doc.url);
+    }
+   
+    runAiVetting(candidate: Candidate): void {
+      // TODO: call AI vetting service
+      console.log('Run AI vetting for', candidate.id);
+    }
   
+  
+      getInitials(candidate: any): string {
+       const fullName = `${candidate?.firstname || ''} ${candidate?.lastname || ''}`.trim();
+      return fullName
+        .split(' ')
+        .map(n => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    }
+
   
   
 }
