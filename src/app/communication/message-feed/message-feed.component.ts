@@ -90,20 +90,29 @@ export class MessageFeedComponent {
     return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
+  /**
+   * FIX #2 (Timezone): Parse server dates as UTC so they display in the
+   * browser's local timezone. Java LocalDateTime arrays from the backend
+   * represent UTC values — using Date.UTC() triggers correct local conversion.
+   */
   parseServerDate(raw: string | number[] | undefined): Date | null {
     if (!raw) return null;
     let d: Date;
     if (Array.isArray(raw)) {
-      d = new Date(
+      // Backend array values are UTC — convert via Date.UTC for local display
+      d = new Date(Date.UTC(
         raw[0] as number,
         ((raw[1] as number) || 1) - 1,
         (raw[2] as number) || 1,
         (raw[3] as number) || 0,
         (raw[4] as number) || 0,
         (raw[5] as number) || 0,
-      );
+        // index 6 is nanoseconds — convert to milliseconds
+        Math.floor(((raw[6] as number) || 0) / 1_000_000),
+      ));
     } else {
       let s = String(raw).trim().replace(' ', 'T');
+      // If no timezone info present, treat as UTC (backend sends UTC)
       if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
       d = new Date(s);
       if (isNaN(d.getTime())) d = new Date(raw as string);
@@ -124,7 +133,6 @@ export class MessageFeedComponent {
   }
 
   getReadCount(_msg: Message): number {
-    // Read receipt counts are passed in via message or managed by parent
     return 0;
   }
 }

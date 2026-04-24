@@ -73,6 +73,7 @@ import { ThreadPanelComponent } from './communication/thread-panel/thread-panel.
 import { ChannelModalComponent } from './communication/channel-modal/channel-modal.component';
 import { EmailModalComponent } from './communication/email-modal/email-modal.component';
 import { CallModalComponent } from './communication/call-modal/call-modal.component';
+import { FeedComponent } from './feed/feed.component';
 
 @NgModule({
   declarations: [
@@ -102,6 +103,7 @@ import { CallModalComponent } from './communication/call-modal/call-modal.compon
     ChannelModalComponent,
     EmailModalComponent,
     CallModalComponent,
+    FeedComponent
   ],
   imports: [
     MarkdownModule.forRoot(),
