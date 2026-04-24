@@ -168,7 +168,7 @@
           <div class="flex items-center gap-0 mt-2 flex-wrap">
             <!-- Reply / Thread -->
             <button
-              *ngIf="activeView === 'channel'"
+              *ngIf="activeView === 'channel'|| activeView === 'dm'"
               (click)="threadOpened.emit({ msg, event: $event })"
               class="action-btn flex items-center gap-1.5"
               [ngClass]="{ 'action-active': activeThreadId === msg.id }"

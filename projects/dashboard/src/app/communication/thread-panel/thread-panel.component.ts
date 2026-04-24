@@ -42,7 +42,12 @@ export class ThreadPanelComponent {
   @Input() memberMenuOpen = false;
   @Input() memberMenuUserId = 0;
 
-  // Avatar helpers — passed in from parent (cache lookups)
+  // ── Reply edit/delete state (passed from parent) ────
+  @Input() editingReplyId: string | null = null;
+  @Input() editReplyDraft = '';
+  @Input() confirmDeleteReplyId: string | null = null;
+
+  // Avatar helpers
   @Input() getMemberAvatarUrl!: (userId: number) => string | undefined;
   @Input() getMemberName!: (userId: number) => string;
   @Input() colorFor!: (seed: number) => string;
@@ -53,12 +58,26 @@ export class ThreadPanelComponent {
   @Input() getEmpImageUrl!: (e: EmployeeProfile) => string | undefined;
 
   // ── Outputs ─────────────────────────────────────────
-  // Thread
+  // Thread navigation
   @Output() threadClosed = new EventEmitter<void>();
   @Output() threadReplyDraftChange = new EventEmitter<string>();
   @Output() replyTargetSet = new EventEmitter<{ reply: Message; event?: Event }>();
   @Output() replyTargetCleared = new EventEmitter<void>();
   @Output() replySent = new EventEmitter<void>();
+
+  // Reply edit
+  @Output() replyEditStarted = new EventEmitter<{ reply: Message; event?: Event }>();
+  @Output() replyEditCancelled = new EventEmitter<void>();
+  @Output() replyEditSaved = new EventEmitter<{ reply: Message; rootId: string }>();
+  @Output() editReplyDraftChange = new EventEmitter<string>();
+
+  // Reply delete
+  @Output() replyDeleteRequested = new EventEmitter<{ reply: Message; event?: Event }>();
+  @Output() replyDeleteConfirmed = new EventEmitter<{ reply: Message; rootMsg: Message; event?: Event }>();
+  @Output() replyDeleteDismissed = new EventEmitter<void>();
+
+  // Reply like
+  @Output() replyLikeToggled = new EventEmitter<{ msg: Message; event?: Event }>();
 
   // Pinned
   @Output() pinnedPanelClosed = new EventEmitter<void>();
@@ -81,6 +100,10 @@ export class ThreadPanelComponent {
 
   isChannelOwner(): boolean {
     return this.activeChannel?.createdBy === this.myUserId;
+  }
+
+  isOwnReply(reply: Message): boolean {
+    return Number(reply.senderUserId) === Number(this.myUserId);
   }
 
   onThreadKey(e: KeyboardEvent): void {
