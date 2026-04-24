@@ -1127,13 +1127,13 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       if (guarantorDetails?.email) {
         const approvalLink = `${baseUrl}?guarantorApproval=true&loanId=${loanId}`;
         const mailBody = {
-          to: guarantorDetails.email,
+          recieverEmail: guarantorDetails.email,
           subject: 'Guarantor Approval Request - Cooperative Loan',
-          text: `${this.selectedMember?.fullName} has requested a loan and selected you as their guarantor. 
+          name: `${this.selectedMember?.fullName} has requested a loan and selected you as their guarantor. 
                  Loan Amount: ${this.formatCurrency(Number(this.applicationForm.get('amount')?.value))}
                  Please review and approve or reject the request using the link below:
                  ${approvalLink}`,
-          html: `
+          body: `
             <h2>Guarantor Approval Request</h2>
             <p><strong>${this.selectedMember?.fullName}</strong> has requested a loan and selected you as their guarantor.</p>
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">

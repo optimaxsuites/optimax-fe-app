@@ -69,6 +69,7 @@ export class ScheduledInterviewComponent {
     { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
     { header: 'Position', field: 'job.jobVacancy.jobCategory.name', sortable: true, className: 'table-item' },
     { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
+    { header: 'Scheduled Date', field: 'scheduledDate', sortable: true, className: 'table-item' },
     { header: 'Interview Type', field: 'interviewType', sortable: true, className: 'table-item' },
     { header: 'Interview Stage', field: 'interviewStage', sortable: true, className: 'table-item' },
     { header: 'Stage', field: 'stage', sortable: true, className: 'table-item' },
@@ -165,7 +166,7 @@ export class ScheduledInterviewComponent {
 
     const candidates = this.interviews.map(interview => interview.candidate);
     // Reverse the order of candidates to implement LIFO
-    this.filteredCandidates = [...candidates].reverse();
+    this.filteredCandidates = [...this.interviews].reverse();
     
 
     console.log(this.filteredCandidates);
@@ -261,7 +262,8 @@ export class ScheduledInterviewComponent {
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
-        inviteAttachments: interviewDetails.inviteAttachments
+        inviteAttachments: interviewDetails.inviteAttachments,
+        scheduledDate: interviewDetails['scheduledDate']
       };
 
       // Update the existing candidate at the found index

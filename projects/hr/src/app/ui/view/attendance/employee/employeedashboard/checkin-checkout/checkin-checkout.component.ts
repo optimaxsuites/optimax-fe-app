@@ -36,6 +36,42 @@ export class CheckinCheckoutComponent implements OnInit {
   }
 
   ngOnInit() {
+  setInterval(() => { this.currentTime = new Date(); }, 1000);
+
+  // React to attendance changes
+  this.attendanceService.attendance$.subscribe(() => {
+    const userId = this.currentUser?.id!;
+    this.hasCompletedToday = this.attendanceService.hasCompletedToday(userId);
+    this.isAbsentToday = this.attendanceService.isEmployeeBlockedToday(userId);
+
+    // Restore clock status from today's record after refresh
+    this.restoreClockStatus();
+  });
+
+  this.checkOfficeHours();
+  this.officeHoursService.officeHours$.subscribe(() => this.checkOfficeHours());
+
+  // Load today's record for this employee on init
+  const user = this.currentUser;
+  if (user?.id) {
+    this.attendanceService.fetchByEmployee(parseInt(user.id));
+  }
+}
+
+private restoreClockStatus(): void {
+  const userId = this.currentUser?.id!;
+  const restored = this.attendanceService.getTodayStatusForEmployee(userId);
+
+  if (restored === 'CLOCKED_IN') {
+    this.status = 'CLOCKED_IN';
+    this.attendanceService.setClockStatus('CLOCKED_IN');
+  } else if (restored === 'CLOCKED_OUT') {
+    this.status = 'CLOCKED_OUT';
+    this.attendanceService.setClockStatus('CLOCKED_OUT');
+  }
+}
+
+  /*ngOnInit() {
     setInterval(() => {
       this.currentTime = new Date();
     }, 1000);
@@ -58,39 +94,39 @@ export class CheckinCheckoutComponent implements OnInit {
   // React if admin changes hours
   this.officeHoursService.officeHours$
     .subscribe(() => this.checkOfficeHours());
-  }
+  }*/
 
   async toggleClock() {
-    if (this.isAbsentToday) {
-    return; // Block action completely
+    if (this.isAbsentToday) return; // Block action completely
 
     this.isGettingLocation = true;
-  }
+    try {
+      if (this.status === 'CLOCKED_OUT') {
+        this.status = 'CLOCKED_IN';
+        this.attendanceService.setClockStatus('CLOCKED_IN');
 
-  if (this.status === 'CLOCKED_OUT') {
-    this.status = 'CLOCKED_IN';
-    this.attendanceService.setClockStatus('CLOCKED_IN');
-
-    await this.attendanceService.clockAction(
-      this.currentUser!.id,
-      this.currentUser!.name,
-      this.currentUser!.department,
-      'IN'
-    );
+        await this.attendanceService.clockAction(
+          this.currentUser!.id,
+          this.currentUser!.name,
+          this.currentUser!.department,
+          'IN'
+        );
 
   } else {
 
     this.status = 'CLOCKED_OUT';
     this.attendanceService.setClockStatus('CLOCKED_OUT');
 
-    this.attendanceService.clockAction(
+    await this.attendanceService.clockAction(
       this.currentUser!.id,
       this.currentUser!.name,
       this.currentUser!.department,
       'OUT'
     );
   }
-  this.isGettingLocation  = false;
+} finally {
+    this.isGettingLocation  = false;
+}
 }
 
 /*checkOfficeHours() {

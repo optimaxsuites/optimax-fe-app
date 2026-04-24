@@ -17,6 +17,8 @@ export class NavigationLinksService {
     this.links['dashboardLink'] = '/admin/dashboard/' + uuidV4();
     this.links['optimaXAILink'] = '/admin/dashboard/optimaxai/' + uuidV4();
     this.links['analyticsLink'] = '/admin/dashboard/analytics/' + uuidV4();
+    this.links['feedLink'] = '/admin/dashboard/feed/' + uuidV4();
+
 
     this.links['userRegistrationLink'] = '/admin/settings/user-reg/' + uuidV4();
     this.links['salesLink'] = '/admin/sales/' +uuidV4();

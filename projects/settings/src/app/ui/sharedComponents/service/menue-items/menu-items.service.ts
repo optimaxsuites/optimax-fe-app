@@ -39,6 +39,14 @@ export class MenuItemsService {
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'BUSINESS ANALYTICS.'
+        },
+        {
+          label: 'Feeds',
+          code: 'DASH_FEED',
+          route: this.navigationLink.getLink('feedLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage organization feeds.'
         }
       ]
     },

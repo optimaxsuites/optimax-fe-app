@@ -28,16 +28,33 @@ export interface AiVetting {
   summary: string;
 }
  
+export interface DecisionHistoryItem {
+  date: string;
+  action: string;
+  details?: string;
+  emailCopy?: string;
+  status?: string;
+}
+ 
 export interface Candidate {
   id: string;
-  fullName: string;
+  firstname: string;
+  lastname: string;
   email: string;
   phone: string;
   appliedDate: string;
-  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Offered';
+  status: 'New' | 'Shortlisted' | 'Rejected' | 'Invited' | 'Interview Accepted' | 'Interview Declined' | 'Offered' | 'Hired';
+  interviewStatus?: 'Not Invited' | 'Invited' | 'Accepted' | 'Declined' | 'Completed';
+  interviewDetails?: {
+    scheduledDate?: string;
+    location?: string;
+    format?: string;
+    notes?: string;
+  };
   formResponses: FormResponse[];
   documents: CandidateDocument[];
   aiVetting: AiVetting | null;
+  decisionHistory?: DecisionHistoryItem[];
 }
 
 export interface EmailTemplate {
@@ -79,7 +96,9 @@ export class CandidateComponent implements OnInit {
     { header: 'First Name', field: 'firstname', sortable: true },
     { header: 'Last Name', field: 'lastname', sortable: true },
     { header: 'Email', field: 'email', sortable: true },
-    // { header: 'Actions', field: 'action', badgeClass: (row) => 'badge-info' }
+    { header: 'Status', field: 'status', badgeClass: (row) => this.getStatusBadgeClass(row.status) },
+    { header: 'Interview Status', field: 'interviewStatus', badgeClass: (row) => this.getInterviewStatusBadgeClass(row.interviewStatus) },
+    { header: 'Applied Date', field: 'appliedDate', sortable: true }
   ];
 
   applicantActions: TableAction[] = [
@@ -93,6 +112,7 @@ export class CandidateComponent implements OnInit {
     { key: 'form',      label: 'Form Response' },
     { key: 'documents', label: 'Documents'      },
     { key: 'ai',        label: 'AI Vetting'     },
+    { key: 'decisionHistory', label: 'Decision History' },
   ];
    actionItems: MenuItem[] | undefined;
    currentAction: string = '';
@@ -106,6 +126,8 @@ export class CandidateComponent implements OnInit {
 
     regData: any = {};
 
+    expandedEmails: boolean[] = [];
+
    constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
@@ -114,11 +136,23 @@ export class CandidateComponent implements OnInit {
 
    ngOnInit(): void {
     this.actionItems = [
-      // {
-      //   label: 'Interview Invite',
-      //   icon: 'fas fa-calendar-check',
-      //   command: () => this.onSendInterview(this.selectedCandidate)
-      // },
+      {
+        label: 'Interview Invite',
+        icon: 'fas fa-calendar-check',
+        command: () => this.onActionSelected('Interview Invite')
+      },
+      {
+        label: 'Admin Accept Interview',
+        icon: 'fas fa-check-circle',
+        command: () => this.adminAcceptInterview(this.selectedCandidate)
+      },
+      {
+        label: 'Admin Decline Interview',
+        icon: 'fas fa-times-circle',
+        command: () => this.adminDeclineInterview(this.selectedCandidate),
+        styleClass: 'text-danger'
+      },
+      { separator: true },
       {
         label: 'Shortlist',
         icon: 'fas fa-bookmark',
@@ -135,12 +169,12 @@ export class CandidateComponent implements OnInit {
         icon: 'fas fa-envelope-open-text',
         command: () => this.onActionSelected('Send Offer')
       },
-      // {
-      //   label: 'Reject',
-      //   icon: 'fas fa-xmark',
-      //   styleClass: 'text-danger', // Optional: highlight rejection in red
-      //   command: () => this.onActionSelected('Reject')
-      // }
+      {
+        label: 'Reject',
+        icon: 'fas fa-xmark',
+        styleClass: 'text-danger',
+        command: () => this.onActionSelected('Reject')
+      }
     ];
 
     const saved = localStorage.getItem('settings.hr.mailTemplates');
@@ -153,6 +187,18 @@ export class CandidateComponent implements OnInit {
   }
 
   loadDummyData() {
+    // Load from localStorage first, then fall back to dummy data
+    const savedData = localStorage.getItem('candidateData');
+    if (savedData) {
+      try {
+        this.allApplications = JSON.parse(savedData);
+        this.groupApplicationsByJob();
+        return;
+      } catch (e) {
+        console.error('Error loading saved candidate data:', e);
+      }
+    }
+
     // Mimicking the JobApplicationDTO structure
     this.allApplications = [
       {
@@ -160,6 +206,9 @@ export class CandidateComponent implements OnInit {
         firstname: 'Rukayat',
         lastname: 'Morufu',
         email: 'oluwadarequeensheba@gmail.com',
+        appliedDate: 'Apr 10, 2025',
+        status: 'Shortlisted',
+        interviewStatus: 'Not Invited',
         formResponses: [
           { label: 'Years of Experience', value: '5 years' },
           { label: 'Current Role', value: 'Product Designer at Paystack' },
@@ -196,6 +245,9 @@ export class CandidateComponent implements OnInit {
         firstname: 'Galadinma',
         lastname: 'Christabel',
         email: 'damilola@centrifugegroup.com',
+        appliedDate: 'Apr 12, 2025',
+        status: 'Shortlisted',
+        interviewStatus: 'Not Invited',
         formResponses: [
           { label: 'Years of Experience', value: '3 years' },
           { label: 'Current Role', value: 'UI Designer at Flutterwave' },
@@ -249,12 +301,45 @@ export class CandidateComponent implements OnInit {
   selectJob(job: any) {
     console.log("job", job  )
     this.selectedJob = job;
-    this.filteredApplicants = job.applicants;
+    this.refreshFilteredApplicants();
     this.viewState = 'applicant-list';
   }
 
+  refreshFilteredApplicants(): void {
+    if (this.selectedJob) {
+      // Reload from allApplications to get fresh data with decision history
+      // selectedJob has id from jobVacancy.id (see groupApplicationsByJob)
+      this.filteredApplicants = this.allApplications.filter(app => 
+        app.jobVacancy?.id === this.selectedJob?.id
+      );
+    }
+  }
+
   handleCandidateAction($event: { actionId: string; row: any; }) {
-      this.selectedCandidate = $event.row;
+      // Load fresh candidate data from allApplications to ensure decision history is up-to-date
+      const freshCandidate = this.allApplications.find(app => app.id === $event.row.id);
+      this.selectedCandidate = freshCandidate || $event.row;
+      
+      // Also refresh from localStorage to catch any recent updates (e.g., from interview response page)
+      try {
+        const candidateDataStr = localStorage.getItem('candidateData');
+        if (candidateDataStr) {
+          const allCandidates = JSON.parse(candidateDataStr);
+          const fromStorage = allCandidates.find((c: any) => c.id === $event.row.id);
+          if (fromStorage) {
+            this.selectedCandidate = fromStorage;
+            // Also update in allApplications
+            const idx = this.allApplications.findIndex(app => app.id === $event.row.id);
+            if (idx !== -1) {
+              this.allApplications[idx] = fromStorage;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load fresh candidate from storage:', e);
+      }
+      
+      this.expandedEmails = [];
       this.viewCandidateModal = true;
       if ($event.actionId === 'view') {
         this.viewState = 'applicant-view';
@@ -269,25 +354,121 @@ export class CandidateComponent implements OnInit {
   }
  
   onShortlist(candidate: Candidate): void {
-    // TODO: implement shortlist logic
-    console.log('Shortlist', candidate.id);
+    this.updateCandidateStatus(candidate, 'Shortlisted');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Shortlisted', 'Candidate was shortlisted for further consideration.');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `${candidate.firstname} ${candidate.lastname} has been shortlisted.`,
+      life: 3000,
+    });
   }
  
-  onSendInterview(candidate: Candidate): void {
+  onSendInterview(candidate: Candidate, emailBody?: string): void {
     const storedInvites = localStorage.getItem('upcomingInvite');
     let prevInvites: any[] = [];
     if (storedInvites) {
+      try { prevInvites = JSON.parse(storedInvites) || []; } catch { prevInvites = []; }
+    }
+
+    // Check if invite already exists for this candidate
+    const existingInviteIndex = prevInvites.findIndex((inv: any) => inv.id === candidate.id);
+    
+    const newInvite = {
+      ...candidate,
+      job: this.selectedJob,
+      stage: 'Awaiting Response',
+      interviewStage: 1,
+      scheduledDate: this.manualPlaceholderValues['date'],
+      inviteTimestamp: new Date().toISOString()
+    };
+
+    if (existingInviteIndex === -1) {
+      // New invite - just add it
+      localStorage.setItem('upcomingInvite', JSON.stringify([...prevInvites, newInvite]));
+    } else {
+      // Update existing invite with new details
+      prevInvites[existingInviteIndex] = newInvite;
+      localStorage.setItem('upcomingInvite', JSON.stringify(prevInvites));
+    }
+    
+    this.updateCandidateStatus(candidate, 'Invited');
+    this.updateCandidateInterviewStatus(candidate, 'Invited');
+    // Add decision history with email copy
+    this.addDecisionHistory(candidate, 'Interview Invited', 'Interview invitation sent to candidate.', emailBody);
+    
+    // Refresh the selectedCandidate to update UI
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.selectedCandidate = { ...this.allApplications[candidateIndex] };
+    }
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Interview Invite Sent',
+      detail: `Interview invitation sent to ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
+  }
+
+  // Admin can accept interview on behalf of candidate
+  adminAcceptInterview(candidate: Candidate): void {
+    this.updateCandidateStatus(candidate, 'Interview Accepted');
+    this.updateCandidateInterviewStatus(candidate, 'Accepted');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Interview Accepted', 'Interview accepted by admin on behalf of candidate.');
+    
+    // Update the invite record
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    if (storedInvites) {
       try {
-        prevInvites = JSON.parse(storedInvites) || [];
-      } catch {
-        prevInvites = [];
+        const invites = JSON.parse(storedInvites);
+        const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
+        if (inviteIndex !== -1) {
+          invites[inviteIndex].stage = 'Accepted';
+          localStorage.setItem('upcomingInvite', JSON.stringify(invites));
+        }
+      } catch (e) {
+        console.error('Error updating invite status:', e);
       }
     }
-    const body = {
-      job: this.selectedJob,
-      candidate: candidate,
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Interview Accepted',
+      detail: `Interview accepted for ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
+  }
+
+  adminDeclineInterview(candidate: Candidate): void {
+    this.updateCandidateStatus(candidate, 'Interview Declined');
+    this.updateCandidateInterviewStatus(candidate, 'Declined');
+    // Add decision history
+    this.addDecisionHistory(candidate, 'Interview Declined', 'Interview declined by admin on behalf of candidate.');
+    
+    // Update the invite record
+    const storedInvites = localStorage.getItem('upcomingInvite');
+    if (storedInvites) {
+      try {
+        const invites = JSON.parse(storedInvites);
+        const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
+        if (inviteIndex !== -1) {
+          invites[inviteIndex].stage = 'Declined';
+          localStorage.setItem('upcomingInvite', JSON.stringify(invites));
+        }
+      } catch (e) {
+        console.error('Error updating invite status:', e);
+      }
     }
-    localStorage.setItem('upcomingInvite', JSON.stringify([...prevInvites, body]));
+    
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Interview Declined',
+      detail: `Interview declined for ${candidate.firstname} ${candidate.lastname}.`,
+      life: 3000,
+    });
   }
  
   onRequestDocs(candidate: Candidate): void {
@@ -327,6 +508,31 @@ export class CandidateComponent implements OnInit {
     return 'score--low';
   }
 
+  getStatusBadgeClass(status: string): string {
+    const statusMap: Record<string, string> = {
+      'New': 'badge-secondary',
+      'Shortlisted': 'badge-warning',
+      'Rejected': 'badge-danger',
+      'Invited': 'badge-info',
+      'Interview Accepted': 'badge-success',
+      'Interview Declined': 'badge-danger',
+      'Offered': 'badge-primary',
+      'Hired': 'badge-success'
+    };
+    return statusMap[status] || 'badge-secondary';
+  }
+
+  getInterviewStatusBadgeClass(status?: string): string {
+    const statusMap: Record<string, string> = {
+      'Not Invited': 'badge-secondary',
+      'Invited': 'badge-info',
+      'Accepted': 'badge-success',
+      'Declined': 'badge-danger',
+      'Completed': 'badge-primary'
+    };
+    return statusMap[status || 'Not Invited'] || 'badge-secondary';
+  }
+
   onActionSelected(action: string) {
     this.currentAction = action;
     this.showInviteModal = true;
@@ -356,7 +562,9 @@ export class CandidateComponent implements OnInit {
       companyName: this.regData?.companyName || 'N/A', 
       recruiterName: this.regData?.user?.username ||  'Recruiter',
       recruiterEmail: this.regData?.user?.email || 'recruiter@company.com',
-      location: this.selectedJob?.location || 'Location'
+      location: this.selectedJob?.location || 'Location',
+      acceptButton: window.location.origin + '/interview-response?action=accept&candidateId=' + this.selectedCandidate.id,
+      declineButton: window.location.origin + '/interview-response?action=decline&candidateId=' + this.selectedCandidate.id 
     };
 
     const allValues = { ...dbValues, ...this.manualPlaceholderValues };
@@ -386,7 +594,7 @@ export class CandidateComponent implements OnInit {
 
         switch (this.currentAction) {
           case 'Interview Invite':
-            this.onSendInterview(this.selectedCandidate);
+            this.onSendInterview(this.selectedCandidate, body.body);
             break;
           case 'Shortlist':
             this.onShortlist(this.selectedCandidate);
@@ -423,369 +631,108 @@ export class CandidateComponent implements OnInit {
     })
   }
 
-  // showCandidate: boolean = true;
-  // showInterviewInvite: boolean = false;
-  // searchTerm: string = '';
-  // activeItem: ApplicantDTO = {}
-  // viewModal: boolean = false;
-  // candidateColumns: TableColumn[] = [
-  //   { header: 'Name', field: 'candidateName', sortable: true, className: 'table-item' },
-  //   { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
-  //   { header: 'Position', field: 'position', sortable: true, className: 'table-item' },
-  //   { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
-  //   {
-  //     header: 'Stage',
-  //     field: 'stage',
-  //     sortable: true,
-  //     className: 'table-item',
-  //     badgeClass: (row) => this.getStatusClass(row.stage)
-  //   }
-  // ];
-  // candidateActions: TableAction[] = [
-  //   { id: 'view', label: 'View', icon: 'pi pi-eye' },
-  //   {
-  //     id: 'invite',
-  //     label: 'Send Invite',
-  //     icon: 'pi pi-send',
-  //     visible: (row) => row?.stage === 'Application Received'
-  //   }
-  // ];
+  // Helper methods for status updates
+  private updateCandidateStatus(candidate: Candidate, status: Candidate['status']): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.allApplications[candidateIndex].status = status;
+      // Add to decision history
+      this.addDecisionHistory(candidate, status);
+      // Persist to localStorage or API
+      this.persistCandidateData();
+    }
+  }
 
-  // constructor(
-  //   private confirmationService: ConfirmationService,
-  //   private messageService: MessageService 
-  // ) {}
+  private addDecisionHistory(candidate: Candidate, action: string, details?: string, emailCopy?: string): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      if (!this.allApplications[candidateIndex].decisionHistory) {
+        this.allApplications[candidateIndex].decisionHistory = [];
+      }
+      this.allApplications[candidateIndex].decisionHistory!.push({
+        date: new Date().toISOString(),
+        action,
+        details,
+        emailCopy
+      });
+    }
+  }
 
-  // getDynamicKeys(): string[] {
-  //   const predefinedKeys = [
-  //     'id', 'candidateName', 'contactNo', 'email', 'position',
-  //     'dateApplied', 'stage', 'interviewStage', 'firstName', 'firstname', 'lastName', 'lastname', 'fullName', 'fullname',
-  //     'interviewSubject', 'interviewInvite', 'interviewType', 'inviteAttachments',
-  //     'offerSubject', 'offerLetter', 'offerAttachments',
-  //     'appointmentSubject', 'appointmentLetter', 'appointmentAttachments'
-  //   ];
+  private updateCandidateInterviewStatus(candidate: Candidate, interviewStatus: Candidate['interviewStatus']): void {
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.allApplications[candidateIndex].interviewStatus = interviewStatus;
+      // Persist to localStorage or API
+      this.persistCandidateData();
+    }
+  }
+
+  private persistCandidateData(): void {
+    // For now, save to localStorage. In production, this would be an API call
+    try {
+      localStorage.setItem('candidateData', JSON.stringify(this.allApplications));
+    } catch (error) {
+      console.error('Error saving candidate data:', error);
+    }
+  }
+
+  toggleEmailView(index: number): void {
+    this.expandedEmails[index] = !this.expandedEmails[index];
+  }
+
+  getTimelineIcon(action: string): string {
+    switch (action) {
+      case 'Shortlisted':
+        return 'fa-bookmark';
+      case 'Interview Invited':
+        return 'fa-calendar-check';
+      case 'Interview Accepted':
+        return 'fa-check-circle';
+      case 'Interview Declined':
+        return 'fa-times-circle';
+      default:
+        return 'fa-info-circle';
+    }
+  }
+
+  // Helper methods to check if decision already made
+  isInterviewInviteSent(candidate: Candidate): boolean {
+    return candidate.status === 'Invited' || candidate.decisionHistory?.some(h => h.action === 'Interview Invited') || false;
+  }
+
+  isInterviewAccepted(candidate: Candidate): boolean {
+    return candidate.interviewStatus === 'Accepted' || candidate.decisionHistory?.some(h => h.action === 'Interview Accepted') || false;
+  }
+
+  isInterviewDeclined(candidate: Candidate): boolean {
+    return candidate.interviewStatus === 'Declined' || candidate.decisionHistory?.some(h => h.action === 'Interview Declined') || false;
+  }
+
+  isShortlisted(candidate: Candidate): boolean {
+    return candidate.status === 'Shortlisted' || candidate.decisionHistory?.some(h => h.action === 'Shortlisted') || false;
+  }
+
+  getFilteredActionItems(): MenuItem[] {
+    if (!this.selectedCandidate || !this.actionItems) return [];
     
-  //   return Object.keys(this.activeItem).filter(key => !predefinedKeys.includes(key));
-  // }
-  
-  // isFile(value: any): boolean {
-  //   return typeof value === 'string' && (value.startsWith('http') || value.startsWith('blob:'));
-  // }
-
-
-  // openViewModal(candidate: any, op?: any) {
-  //   this.activeItem = candidate
-  //   this.viewModal = !this.viewModal;
-  //   op?.hide?.();
-  // }
-
-  // closeViewModal() {
-  //   for (const key of this.getDynamicKeys()) {
-  //     if (this.isDocument(this.activeItem[key])) {
-  //       URL.revokeObjectURL(this.getDocumentUrl(key));
-  //     }
-  //   }
-  //   this.viewModal = false;
-  // }
-  
-
-  // openInterviewInvite(candidate: any){
-  //   this.activeItem = candidate
-  //   console.log(candidate)
-  //   this.showCandidate = false;
-  //   this.showInterviewInvite = true;
-  // }
-
-  // handleCandidateAction(event: { actionId: string; row: ApplicantDTO }) {
-  //   if (event.actionId === 'view') {
-  //     this.openViewModal(event.row);
-  //   }
-  //   if (event.actionId === 'invite') {
-  //     this.openInterviewInvite(event.row);
-  //   }
-  // }
-  // closeInterviewInvite() {
-  //   this.showCandidate = true;
-  //   this.showInterviewInvite = false;
-  // }
-
-  // viewResume(resume: string | File): void {
-  //   if (!resume) {
-  //     console.error('No resume found.');
-  //     return;
-  //   }
-  
-  //   if (typeof resume === 'string') {
-  //     const base64String = resume.split(',')[1];  
-  //     const blob = this.base64ToBlob(base64String, 'application'); 
-  //     const url = URL.createObjectURL(blob);
-  //     window.open(url, '_blank');
-  //   } else if (resume instanceof File) {
-  //     const fileUrl = URL.createObjectURL(resume);
-  //     window.open(fileUrl, '_blank');
-  //   }
-  // }
-  
-  // base64ToBlob(base64: string, mimeType: string): Blob {
-  //   const byteCharacters = atob(base64);  
-  //   const byteArrays = [];
-  
-  //   for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-  //     const slice = byteCharacters.slice(offset, offset + 1024);
-  //     const byteNumbers = new Array(slice.length);
-  
-  //     for (let i = 0; i < slice.length; i++) {
-  //       byteNumbers[i] = slice.charCodeAt(i);
-  //     }
-  
-  //     byteArrays.push(new Uint8Array(byteNumbers));
-  //   }
-  
-  //   return new Blob(byteArrays, { type: mimeType });
-  // }
-  
-
-  // getStatusClass(stage: string) {
-  //   switch (stage) {
-  //     case 'Application Received':
-  //       return 'badge badge-lightgrey';
-  //     case 'Shortlisted':
-  //       return 'badge badge-lightblue';
-  //     default:
-  //       return '';
-  //   }
-  // }
-
-
-
-  // ngOnInit(): void {
-  //   // Store myCandidates in localStorage if not already present
-  //   // if (!localStorage.getItem('candidates')) {
-  //   //   localStorage.setItem('candidates', JSON.stringify(this.myCandidates));
-  //   // }
-
-  //   this.getCandidate();
-  // }
-
-  // getCandidate(){
-  //   const storedCandidates = localStorage.getItem('candidates');
-  //   if (storedCandidates) {
-  //     this.candidates = JSON.parse(storedCandidates);
-  //   }
-
-  //   this.positions = [...new Set(this.candidates.map(c => c.position))]; 
-  //   this.filteredCandidates = [...this.candidates].reverse(); 
-
-  //   console.log(this.candidates)
-  // }
-
-
-  // stages = ['Application Received', 'Shortlisted'];
-  
-  // // myCandidates: any[] = [
-  // //   { id: 1, candidateName: 'Damilola Awe', position: 'Frontend Dev', email: 'damilola.awe@hotmail.com', contactNo: '202-555-0181', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 1', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. luptatum cumque,',  },
-  // //   { id: 2, candidateName: 'Awe Williams', position: 'Sales Personel', email: 'Awe.williams@gmail.com', contactNo: '+1(970)333-3833', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 2', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. quam, ' },
-  // //   { id: 3, candidateName: 'Anthony Awe', position: 'Frontend Dev', email: 'anthony.Awe@gmail.com', contactNo: '+1(970)888-3866', dateApplied: '2023-06-03', stage: 'Application Received', resume: 'resume 3', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluia voluptas ' },
-  // //   { id: 4, candidateName: 'Kevin Awe', position: 'Backend Dev', email: 'kevin.Awe@gmail.com', contactNo: '202-555-0120', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 4', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, ' },
-  // //   { id: 5, candidateName: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru' }
-  // // ];
-
-  // candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
-
-  // positions: any[] =[]; 
-  // // positions = [...new Set(this.candidates.map(c => c.position))]; 
-  // selectedPositions: string[] = [];
-  // filteredCandidates: ApplicantDTO[] = [];
-
-  // filterCandidatesByPosition() {
-  //   if (this.selectedPositions.length > 0) {
-  //     this.filteredCandidates = this.candidates.filter(candidate =>
-  //     this.selectedPositions.includes(candidate.position!)
-  //     );
-  //   } else {
-  //     this.filteredCandidates = [...this.candidates]; // Show all if no position is selected
-  //   }
-  // }
-
-
-  // updateStage(candidate: any, newStage: string) {
-  //   candidate.stage = newStage;
-  // }
-  
-  // filterCandidates() {
-  //   this.filteredCandidates = this.candidates.filter(candidate => {
-  //     const matchesSearchTerm = candidate.candidateName!.toLowerCase().includes(this.searchTerm.toLowerCase());
-  //     const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position!);
-  
-  //     return matchesSearchTerm && matchesPosition;
-  //   });
-  // }
-
-  // confirmCandidateDelete(candidate: any): void {
-  //   this.confirmationService.confirm({
-  //     message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${candidate.candidateName}'s application`,
-  //     header: `Delete Candidate - ${candidate.candidateName}`,
-  //     icon: 'pi pi-exclamation-triangle',
-  //     acceptButtonStyleClass:"p-btn-danger p-button-text",
-  //     rejectButtonStyleClass:"p-btn-cancle p-button-text",
-  //     acceptIcon:"none",
-  //     rejectIcon:"none",
-  //     acceptLabel: 'Delete',
-  //     rejectLabel: 'Cancel',
-  //     // styleClass: 'custom-confirm-dialog',
-  //     accept: () => {
-  //       this.deleteCandidate(candidate);
-  //     },
-  //     reject: () => {
-
-  //     }
-  //   });
-  // }
-
-  // deleteCandidate(candidate: any): void {
-  // const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-
-  // const updatedCandidates = storedCandidates.filter((c: any) => c.id !== candidate.id);
-
-  // localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-
-  // this.filteredCandidates = updatedCandidates;
-
-  // localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-  //   this.messageService.add({
-  //     severity: 'success',
-  //     summary: 'Candidate Deleted',
-  //     detail: `${candidate.candidateName} application has been successfully deleted.`
-  //   });
-  // }
-
-  // sendInvite(interviewDetails: ApplicantDTO) {
-  //   const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
-  //   const scheduledInterview: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-    
-  //   const index = interviewCandidate.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
-  //   if (index !== -1 && this.activeItem) {
-  //     const currentStage = this.activeItem.interviewStage || 0; 
-  //     const updatedCandidate: ApplicantDTO = {
-  //       ...interviewCandidate[index],
-  //       stage: ApplicationStage.Scheduled,
-  //       interviewStage: currentStage + 1,  
-  //       interviewInvite: interviewDetails.interviewInvite,
-  //       interviewType: interviewDetails.interviewType,
-  //       inviteAttachments: interviewDetails.inviteAttachments,
-  //     };
-
-  //     interviewCandidate.splice(index, 1);
+    return this.actionItems.map(item => {
+      const updatedItem = { ...item };
       
-  //     localStorage.setItem('candidates', JSON.stringify(interviewCandidate));
-  //     scheduledInterview.push(updatedCandidate);
-  //     console.log("candidate-Job Application Info", updatedCandidate.interviewInvite, updatedCandidate.interviewType)
-  //     localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
-
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Candidate Invited',
-  //       detail: `${this.activeItem.candidateName} has been successfully invited for the interview.`
-  //     });
+      // Check if action should be disabled
+      if (item.label === 'Admin Accept Interview' && this.isInterviewAccepted(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else if (item.label === 'Admin Decline Interview' && this.isInterviewDeclined(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else if (item.label === 'Shortlist' && this.isShortlisted(this.selectedCandidate)) {
+        updatedItem.disabled = true;
+      } else {
+        updatedItem.disabled = false;
+      }
       
-  //     this.closeInterviewInvite();
-  //     this.getCandidate();
-  //   }
-  // }
-  
-  // updateInterviewStatus(inviteData: any) {
-  //   console.log('Updating interview status:', inviteData);
-  // }
-  
-  
-  // downloadFile(candidate: any) {
-  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  //   const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
-  
-  //   if (applicant) {
-  //     const keywords = ['resume', 'cv', 'curriculum vitae'];
-  //     const cvFiles = Object.entries(applicant).filter(([key, value]) => {
-  //       if (typeof value === 'string' && value.startsWith('data:')) {
-  //         try {
-  //           const decodedValue = atob(value.split(',')[1]);
-  //           return keywords.some(keyword =>
-  //             key.toLowerCase().includes(keyword) || decodedValue.toLowerCase().includes(keyword)
-  //           );
-  //         } catch {
-  //           return false;
-  //         }
-  //       }
-  //       return false;
-  //     });
-  
-  //     if (cvFiles.length > 0) {
-  //       cvFiles.forEach(([key, base64Data]) => {
-  //         const link = document.createElement('a');
-  //         link.href = base64Data as string;
-  //         link.download = `${applicant.candidateName || 'Candidate'} - ${key}`; 
-  //         link.click();
-  //       });
-  //     } else {
-  //       this.messageService.add({
-  //         severity: 'error',
-  //         summary: 'Download Failed',
-  //         detail: `No CV or resume found for ${candidate.candidateName}.`
-  //       });
-  //     }
-  //   } else {
-  //     this.messageService.add({
-  //       severity: 'error',
-  //       summary: 'Download Failed',
-  //       detail: `Candidate not found.`
-  //     });
-  //   }
-  // }
-  
-  // // generateBlobUrl(dataUrl: string): string {
-  // //   const byteString = atob(dataUrl.split(',')[1]); 
-  // //   const mimeType = dataUrl.split(';')[0].split(':')[1]; 
-  
-  // //   const byteNumbers = new Array(byteString.length);
-  // //   for (let i = 0; i < byteString.length; i++) {
-  // //     byteNumbers[i] = byteString.charCodeAt(i);
-  // //   }
-  
-  // //   const byteArray = new Uint8Array(byteNumbers);
-  // //   const blob = new Blob([byteArray], { type: mimeType });
-  // //   return URL.createObjectURL(blob);
-  // // }
-  
-  // // isDocument(value: any): boolean {
-  // //   return typeof value === 'string' && value.startsWith('data:application');
-  // // }
+      return updatedItem;
+    });
+  }
 
-  // // getDocumentUrl(key: string): string {
-  // //   return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
-  // // }
-  
-
-  // generateBlobUrl(dataUrl: string): string {
-  //   const byteString = atob(dataUrl.split(',')[1]);
-  //   const mimeType = dataUrl.split(';')[0].split(':')[1];
-  
-  //   const byteNumbers = new Array(byteString.length);
-  //   for (let i = 0; i < byteString.length; i++) {
-  //     byteNumbers[i] = byteString.charCodeAt(i);
-  //   }
-  
-  //   const byteArray = new Uint8Array(byteNumbers);
-  //   const blob = new Blob([byteArray], { type: mimeType });
-  //   return URL.createObjectURL(blob);
-  // }
-  
-  // isDocument(value: any): boolean {
-  //   return typeof value === 'string' && 
-  //          (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
-  // }
-  
-  // getDocumentUrl(key: string): string {
-  //   return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
-  // }
   
   
 }

@@ -8,6 +8,7 @@ import { HrDashboardComponent } from './hr-dashboard/hr-dashboard.component';
 import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
 import { CommunicationComponent } from './communication/communication.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
+import { FeedComponent } from './feed/feed.component';
 const routes: Routes = [
   {
     path:'',
@@ -44,6 +45,10 @@ const routes: Routes = [
 {
   path: 'analytics/:uuid',
   component: AnalyticsComponent
+},
+{
+  path: 'feed/:uuid',
+  component: FeedComponent
 }
 ];
 

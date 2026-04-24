@@ -108,7 +108,7 @@
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-700">
       <span (click)="viewState = 'job-grid'; selectedJob = null; selectedCandidate = null" class="cursor-pointer hover:text-customBlue">Recruitment</span>
-      <span (click)="viewState = 'applicant-list'; selectedCandidate = null" *ngIf="selectedJob" class="cursor-pointer hover:text-customBlue"> / {{ selectedJob?.title }}</span>
+      <span (click)="viewState = 'applicant-list'; selectedCandidate = null; refreshFilteredApplicants()" *ngIf="selectedJob" class="cursor-pointer hover:text-customBlue"> / {{ selectedJob?.title }}</span>
       <span *ngIf="selectedCandidate" class="cursor-pointer hover:text-customBlue"> / {{ selectedCandidate?.firstname }} {{ selectedCandidate?.lastname }}</span>
 
     </h2>
@@ -173,12 +173,15 @@
         </div>
       </div>
       <div class="detail-header__actions">
-        <button class="action-btn action-btn--invite" (click)="onActionSelected('Interview Invite')">
-        <i class="fas fa-calendar-check"></i> Interview Invite
+        <button class="action-btn action-btn--invite" 
+          [disabled]="isInterviewInviteSent(selectedCandidate)" 
+          (click)="onActionSelected('Interview Invite')">
+          <i class="fas fa-calendar-check"></i> Interview Invite
         </button>
 
-        <button class="action-btn action-btn--reject" (click)="onActionSelected('Rejection')">
-        <i class="fas fa-xmark"></i> Reject
+        <button class="action-btn action-btn--reject" 
+          (click)="onActionSelected('Rejection')">
+          <i class="fas fa-xmark"></i> Reject
         </button>
 
         <p-button 
@@ -194,7 +197,7 @@
 
         <p-menu 
           #menu 
-          [model]="actionItems" 
+          [model]="getFilteredActionItems()" 
           [popup]="true" 
           styleClass="payroll-menu"
           appendTo="body">
@@ -328,6 +331,37 @@
             <button class="rerun-btn" (click)="runAiVetting(selectedCandidate)">
               Run Analysis
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Decision History -->
+      <div *ngIf="activeTab === 'decisionHistory'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Decision History</div>
+          <div class="timeline" *ngIf="selectedCandidate.decisionHistory && selectedCandidate.decisionHistory.length > 0">
+            <div class="timeline-item" *ngFor="let item of selectedCandidate.decisionHistory; let i = index">
+              <div class="timeline-marker">
+                <i class="fas" [ngClass]="getTimelineIcon(item.action)"></i>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-action">{{ item.action }}</span>
+                  <span class="timeline-date">{{ item.date | date:'medium' }}</span>
+                </div>
+                <div class="timeline-details" *ngIf="item.details">{{ item.details }}</div>
+                <div class="timeline-email" *ngIf="item.emailCopy">
+                  <button class="email-toggle-btn" (click)="toggleEmailView(i)">
+                    <i class="fas" [ngClass]="expandedEmails[i] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    View Email Copy
+                  </button>
+                  <div class="email-content" *ngIf="expandedEmails[i]" [innerHTML]="item.emailCopy"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedCandidate.decisionHistory || selectedCandidate.decisionHistory.length === 0" class="list-empty">
+            No decision history available
           </div>
         </div>
       </div>

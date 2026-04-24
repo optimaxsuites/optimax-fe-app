@@ -493,6 +493,7 @@ const dbConfig: DBConfig = {
     TourGuideComponent,
     TenantsComponent,
     ModuleComponent,
+    InterviewInviteComponent
     //  EstimatedDeliveryPipe
 
   ],

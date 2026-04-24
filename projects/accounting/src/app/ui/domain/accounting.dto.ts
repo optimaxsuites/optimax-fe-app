@@ -51,6 +51,7 @@ export enum BankTransactionType {
 
 export enum DisbursementStatus {
   PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
   APPROVED = 'APPROVED',
   DISBURSED = 'DISBURSED',
   FAILED = 'FAILED'
@@ -146,7 +147,7 @@ export interface AccountingTransactionDTO {
   creditAmount?: number; // UI display helper
   externalReference?: string;
   description?: string;
-  transactionDate: string | Date;
+  transactionDate: number[] | string | Date; // API returns [year, month, day, hour, min, sec, nano]
   date?: string | Date; // Template alias
   createdBy: UserDTO | any;
   createdAt: string | Date;
@@ -155,14 +156,60 @@ export interface AccountingTransactionDTO {
 
 export interface DisbursementDTO {
   id: number;
-  transactionId: AccountingTransactionDTO;
+  transaction: AccountingTransactionDTO; // Real API uses 'transaction', not 'transactionId'
   disbursementAmount: number;
-  status: DisbursementStatus;
-  disbursedFrom: 'CASH' | 'ACCOUNT';
-  monifyReference?: string;
-  disbursedAt?: Date | string;
-  createdBy: string | UserDTO;
-  createdAt: Date | string;
+  status: 'PENDING' | 'PROCESSING' | 'DISBURSED' | 'FAILED';
+  disbursedFrom: string; // name of funding account / bank connection providerName
+  monifyReference: string | null;
+  disbursedAt: string | null; // ISO string from API
+  createdBy: UserDTO | any;
+  createdAt: string;
+}
+
+export interface BankConnectionDTO {
+  id: number;
+  providerName: string;
+  apiKey: string;      // Server returns masked value after creation
+  secretKey: string;  // Server returns masked value after creation
+  webhookUrl: string;
+  active: boolean;
+  createdBy?: UserDTO | any;
+  createdAt?: string;
+}
+
+// ── Generic paged response wrapper ────────────────────
+export interface PagedResponse<T> {
+  content: T[];
+  totalSize: number;
+  page: number;
+  size: number;
+}
+
+// ── Request Payloads ─────────────────────────────────
+export interface CreateTransactionPayload {
+  transactionReference: string;
+  sourceModule: string;
+  amount: number;
+  currency: string;
+  status: string;
+  accountId?: number;
+  description: string;
+  externalReference?: string;
+}
+
+export interface CreateDisbursementPayload {
+  transaction: { id: number };
+  disbursementAmount: number;
+  status: 'PENDING';
+  disbursedFrom: string;
+}
+
+export interface CreateBankConnectionPayload {
+  providerName: string;
+  apiKey: string;
+  secretKey: string;
+  webhookUrl: string;
+  active: boolean;
 }
 
 export interface JournalEntryDTO {

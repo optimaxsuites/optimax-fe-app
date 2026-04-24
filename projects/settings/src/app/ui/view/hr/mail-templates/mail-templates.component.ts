@@ -8,7 +8,7 @@ export interface PlaceholderField {
   key: string;       // inserted as {{key}}
   label: string;     // shown on chip
   source: 'db' | 'manual';
-  inputType: 'text' | 'email' | 'url' | 'date' | 'time' | 'datetime';
+  inputType: 'text' | 'email' | 'url' | 'date' | 'time' | 'datetime' | 'button';
   required: boolean;
   appliesTo?: EmailTemplate['category'][];
   helpText?: string;
@@ -78,6 +78,24 @@ export class MailTemplatesComponent {
       required: true,
       appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
       helpText: 'Pulled from the selected candidate record.',
+    },
+    {
+      key: 'declineButton',
+      label: 'Decline Button',
+      source: 'db',
+      inputType: 'button',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Pulled from the related vacancy or application.',
+    },
+    {
+      key: 'acceptButton',
+      label: 'Accept Button',
+      source: 'db',
+      inputType: 'button',
+      required: true,
+      appliesTo: ['Interview', 'Offer', 'Rejection', 'General', 'Follow-up'],
+      helpText: 'Pulled from the related vacancy or application.',
     },
     {
       key: 'jobTitle',
@@ -249,12 +267,16 @@ export class MailTemplatesComponent {
 }
   saveTemplate(): void {
     if (!this.selectedTemplate) return;
+
+    // Process body to convert button placeholders from spans to proper elements
+    const processedTemplate = this.cloneTemplate(this.selectedTemplate);
+    processedTemplate.body = this.processBodyForButtonPlaceholders(processedTemplate.body);
  
     const idx = this.templates.findIndex(t => t.id === this.selectedTemplate!.id);
     if (idx >= 0) {
-      this.templates[idx] = this.cloneTemplate(this.selectedTemplate);
+      this.templates[idx] = processedTemplate;
     } else {
-      this.templates.unshift(this.cloneTemplate(this.selectedTemplate));
+      this.templates.unshift(processedTemplate);
     }
     this.filteredTemplates = [...this.templates];
     this.persistTemplates();
@@ -267,6 +289,20 @@ export class MailTemplatesComponent {
     });
  
     // TODO: persist via your API/service here
+  }
+
+  private processBodyForButtonPlaceholders(html: string): string {
+    return html.replace(/<span[^>]*class="editor-placeholder-token"[^>]*>\{\{(\w+)\}\}<\/span>/g, (match, key) => {
+      const field = this.getPlaceholderField(key, this.selectedTemplate?.category ?? 'General');
+      
+      if (field?.inputType === 'button') {
+        // For button types, convert to <a> tag with href as the placeholder value
+        return `<a href="{{${key}}}" class="email-button" style="display: inline-block; padding: 10px 20px; margin: 10px 0; background-color: #2563eb; color: white; text-decoration: none; border-radius: 4px;">${field.label}</a>`;
+      }
+      
+      // Keep non-button placeholders as spans
+      return match;
+    });
   }
  
   deleteTemplate(tpl: EmailTemplate, event: Event): void {
@@ -491,10 +527,28 @@ export class MailTemplatesComponent {
  
   resolvePreviewHtml(html: string): SafeHtml {
     if (!html) return '';
-    const resolved = html.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-      const val = this.previewValues[key] ?? `{{${key}}}`;
+    let resolved = html;
+    
+    // Handle span-wrapped placeholders: <span class="editor-placeholder-token">{{key}}</span>
+    resolved = resolved.replace(/<span[^>]*class="editor-placeholder-token"[^>]*>\{\{(\w+)\}\}<\/span>/g, (match, key) => {
+      const field = this.getPlaceholderField(key, this.selectedTemplate?.category ?? 'General');
+      const val = this.previewValues[key] ?? field?.label ?? `{{${key}}}`;
+      if (field?.inputType === 'button') {
+        return `<button type="button" class="preview-placeholder-button">${val}</button>`;
+      }
       return `<span class="placeholder-token">${val}</span>`;
     });
+    
+    // Handle bare placeholders: {{key}}
+    resolved = resolved.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+      const field = this.getPlaceholderField(key, this.selectedTemplate?.category ?? 'General');
+      const val = this.previewValues[key] ?? field?.label ?? `{{${key}}}`;
+      if (field?.inputType === 'button') {
+        return `<button type="button" class="preview-placeholder-button">${val}</button>`;
+      }
+      return `<span class="placeholder-token">${val}</span>`;
+    });
+    
     return this.sanitizer.bypassSecurityTrustHtml(resolved);
   }
  
