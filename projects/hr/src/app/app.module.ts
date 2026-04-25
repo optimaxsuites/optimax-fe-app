@@ -377,6 +377,7 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     MySchedulesComponent,
     CooperativePatronageDistributionComponent,
     ProductivityWorkspaceComponent,
+    InterviewResponseComponent
   ],
   imports: [
     AppHrRoutingModule,
