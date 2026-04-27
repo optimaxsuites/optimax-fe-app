@@ -447,6 +447,7 @@
             [searchable]="true"
             placeholder="Select interviewer"
             [(ngModel)]="member.id"
+            (openChange)="onDropdownOpen(i)"
             (ngModelChange)="onPanelUserSelected(i, $event)">
           </ng-select>
         </div>

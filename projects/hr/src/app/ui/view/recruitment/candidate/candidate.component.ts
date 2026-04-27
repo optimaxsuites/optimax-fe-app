@@ -974,6 +974,12 @@ export class CandidateComponent implements OnInit {
     console.log("Panel members after update:", this.interviewInviteSetup.panelMembers);
   }
 
+  onDropdownOpen(index: number): void {
+    console.log(`=== Dropdown opened for index ${index} ===`);
+    console.log("Available users:", this.availablePanelUsers);
+    console.log("Panel users for this member:", this.getPanelUserOptions(this.interviewInviteSetup.panelMembers[index]?.id));
+  }
+
   compareUsers(u1: any, u2: any): boolean {
     return u1 && u2 ? u1 === u2 : u1 === u2;
   }
