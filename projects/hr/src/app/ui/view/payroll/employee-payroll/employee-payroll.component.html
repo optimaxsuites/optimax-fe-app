@@ -1,5 +1,7 @@
 <!--  -->
 
+<p-toast position="top-right" key="tf"></p-toast>
+
 <div class="border-2 rounded-3xl m-4 table-item payroll-shell">
     <div *ngIf="isLoadingPayroll" class="payroll-loading-overlay">
       <div class="payroll-loading-card">
@@ -40,6 +42,9 @@
               <button class="bg-customGreen hover:border hover:border-customGreen hover:text-customGreen hover:bg-transparent" (click)="confirmApprovePayroll()" *ngIf="payrollInView.payrollApprovalInstance && canSeeApprovalButton">
                 Approve
               </button>
+              <button class="bg-red-500 hover:border hover:border-red-500 hover:text-red-500 hover:bg-transparent text-white" (click)="confirmRejectPayroll()" *ngIf="payrollInView.payrollApprovalInstance && canSeeApprovalButton">
+                Reject
+              </button>
 
               <p-button
                 label="Actions"
@@ -67,8 +72,14 @@
           <p class="text-sm font-semibold text-slate-800">Approval Progress</p>
           <p class="text-xs text-slate-500">Track the current stage and completed approvers.</p>
         </div>
-        <span class="inline-flex w-fit rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase text-slate-700">
-          {{ payrollInView?.payrollApprovalInstance?.status || 'PENDING' }}
+        <span
+          class="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase"
+          [ngClass]="{
+            'border-emerald-200 bg-emerald-50 text-emerald-700': overallApprovalStatus === 'completed',
+            'border-blue-200 bg-blue-50 text-blue-700': overallApprovalStatus === 'current',
+            'border-slate-200 bg-white text-slate-700': overallApprovalStatus === 'pending'
+          }">
+          {{ overallApprovalStatusLabel }}
         </span>
       </div>
 
@@ -109,11 +120,33 @@
               {{ stageAction?.actionType }} by {{ getUserDisplayName(stageAction?.actorUser) }}
             </p>
             <p *ngIf="stage?.isDocumentRequired" class="text-amber-700">
-              Supporting document required
+              Supporting document required during approval
             </p>
+            <p *ngIf="stage?.requiresComment" class="text-sky-700">
+              Comment required for approval action
+            </p>
+            <div *ngIf="hasStageDocuments(stage)" class="pt-1">
+              <p class="font-medium text-slate-700">Attachments:</p>
+              <div class="mt-1 flex flex-wrap gap-2">
+                <a
+                  *ngFor="let document of getStageDocuments(stage)"
+                  [href]="getApprovalDocumentUrl(document.documentMediaNo)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-customBlue">
+                  {{ document.documentMediaNo }}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <div
+      *ngIf="payrollInView?.payrollApprovalInstance?.currentStage?.isDocumentRequired && canSeeApprovalButton"
+      class="mx-3 mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+      This approval step requires a supporting document. Open the approval dialog to attach the file before confirming.
     </div>
 
     <div class="flex w-full justify-between gap-4 px-3">
@@ -438,6 +471,33 @@
         </small>
       </div>
 
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          Approval Comment <span *ngIf="currentStageRequiresComment" class="text-red-500">*</span>
+        </label>
+        <textarea
+          rows="4"
+          [(ngModel)]="approvalComment"
+          class="border rounded px-3 py-2"
+          [placeholder]="currentStageRequiresComment ? 'Enter required approval comment' : 'Add approval comment (optional)'"
+        ></textarea>
+      </div>
+
+      <div *ngIf="approvalStages.length" class="rounded border border-slate-200 bg-slate-50 px-3 py-3">
+        <p class="text-sm font-medium text-slate-700">Files already attached in this approval flow</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <a
+            *ngFor="let action of approvalActions"
+            [href]="getApprovalDocumentUrl(action.documentMediaNo)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-customBlue"
+            [hidden]="!action.documentMediaNo">
+            {{ action.documentMediaNo }}
+          </a>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div class="flex justify-end gap-3 mt-4">
         <button
@@ -450,11 +510,63 @@
         <button
           type="button"
           class="px-4 py-2 bg-customGreen text-white rounded disabled:opacity-50"
-          [disabled]="isDocumentRequired && !selectedFile"
+          [disabled]="(isDocumentRequired && !selectedFile) || (currentStageRequiresComment && !approvalComment.trim())"
           (click)="onApprove()">
           Confirm Approval
         </button>
       </div>
 
+    </div>
+  </app-modal>
+
+  <app-modal *ngIf="openRejectModal" (close)="confirmRejectPayroll()">
+    <div class="flex flex-col gap-4">
+      <div>
+        <h3 class="text-lg font-semibold">Reject Payroll</h3>
+        <p class="text-gray-600">
+          Rejecting this payroll stops the current approval flow. Enter the rejection reason below.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium">
+          Rejection Comment <span class="text-red-500">*</span>
+        </label>
+        <textarea
+          rows="4"
+          [(ngModel)]="approvalComment"
+          class="border rounded px-3 py-2"
+          placeholder="Enter rejection reason"
+        ></textarea>
+      </div>
+
+      <div *ngIf="approvalActions.length" class="rounded border border-slate-200 bg-slate-50 px-3 py-3">
+        <p class="text-sm font-medium text-slate-700">Files attached before this stage</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <a
+            *ngFor="let action of approvalActions"
+            [href]="getApprovalDocumentUrl(action.documentMediaNo)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-customBlue"
+            [hidden]="!action.documentMediaNo">
+            {{ action.documentMediaNo }}
+          </a>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" class="px-4 py-2 border rounded bg-gray-100" (click)="confirmRejectPayroll()">
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="px-4 py-2 bg-red-500 text-white rounded disabled:opacity-50"
+          [disabled]="!approvalComment.trim()"
+          (click)="onReject()">
+          Confirm Rejection
+        </button>
+      </div>
     </div>
   </app-modal>
