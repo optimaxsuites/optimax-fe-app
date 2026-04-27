@@ -701,30 +701,51 @@ export class CandidateComponent implements OnInit {
   }
 
   sendFinalMail(){
-    console.log("sent")
+    console.log("Starting sendFinalMail - Action:", this.currentAction);
+    console.log("Manual placeholder values:", this.manualPlaceholderValues);
     this.sendLoading = true;
-    if (this.currentAction === 'Interview Invite' && !this.isInterviewSetupValid()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Incomplete Interview Setup',
-        detail: 'Add the meeting date, time, location, type, and at least one panel member before sending.'
-      });
-      this.sendLoading = false;
-      return;
-    }
-
+    
     if (this.currentAction === 'Interview Invite') {
+      // First sync the placeholder values to interview setup
+      console.log("Syncing placeholder values to interview setup...");
+      this.updateInterviewSetupFromPlaceholders();
+      console.log("Interview setup after sync:", this.interviewInviteSetup);
       this.syncInterviewManualPlaceholders();
+      
+      if (!this.isInterviewSetupValid()) {
+        console.error("Interview setup invalid", this.interviewInviteSetup);
+        const { scheduledDate, scheduledTime, location, interviewType, panelMembers } = this.interviewInviteSetup;
+        const missingFields = [];
+        if (!scheduledDate) missingFields.push("date");
+        if (!scheduledTime) missingFields.push("time");
+        if (!interviewType) missingFields.push("interview type");
+        if (!panelMembers || panelMembers.length === 0) missingFields.push("at least one panel member");
+        
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Incomplete Interview Setup',
+          detail: `Missing: ${missingFields.join(', ')}`
+        });
+        this.sendLoading = false;
+        return;
+      }
     }
 
+    const resolvedSubject = this.resolveFinalContent(this.selectedInviteTemplate?.subject || '');
+    const resolvedBody = this.resolveFinalContent(this.selectedInviteTemplate?.body || '');
+    
     const body = {
       name: this.selectedCandidate.firstname,
       recieverEmail: this.selectedCandidate.email,
-      subject: this.resolveFinalContent(this.selectedInviteTemplate?.subject || ''),
-      body: this.resolveFinalContent(this.selectedInviteTemplate?.body || '')
-    }
+      subject: resolvedSubject,
+      body: resolvedBody
+    };
+    
+    console.log("Sending mail with body:", body);
+    
     this.mailService.sendMail(body).subscribe({
       next: (res) => {
+        console.log("Mail service response received:", res);
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
@@ -735,6 +756,7 @@ export class CandidateComponent implements OnInit {
 
         switch (this.currentAction) {
           case 'Interview Invite':
+            console.log("Processing Interview Invite action");
             this.onSendInterview(this.selectedCandidate, body.body);
             break;
           case 'Shortlist':
@@ -750,27 +772,33 @@ export class CandidateComponent implements OnInit {
             this.onReject(this.selectedCandidate);
             break;
           default:
+            console.warn("Unknown action:", this.currentAction);
              break;
         }
 
-          this.showInviteModal = false;
-          this.isStepTwo = false;
-          this.selectedInviteTemplate = null;
-          this.interviewInviteSetup = this.createInterviewInviteSetup();
-          this.sendLoading = false;
+        this.showInviteModal = false;
+        this.isStepTwo = false;
+        this.selectedInviteTemplate = null;
+        this.interviewInviteSetup = this.createInterviewInviteSetup();
+        this.sendLoading = false;
+        
+        // Refresh the applicant list to show updated status
+        setTimeout(() => {
+          this.refreshFilteredApplicants();
+        }, 500);
       },
       error: (err) => {
+        console.error("Mail service error:", err);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to send invite',
+          detail: err?.error?.message || 'Failed to send invite',
           key: 'tl'
         });
         console.error("Error sending invite", err);
         this.sendLoading = false;
-
       }
-    })
+    });
   }
 
   // Helper methods for status updates
@@ -887,14 +915,20 @@ export class CandidateComponent implements OnInit {
   }
 
   onPanelUserSelected(index: number, selectedUserId: string): void {
+    console.log(`Panel member selection - Index: ${index}, Selected ID: ${selectedUserId}, Available users:`, this.availablePanelUsers);
+    
     const selectedUser = this.availablePanelUsers.find(user => user.id === selectedUserId);
     const currentMember = this.interviewInviteSetup.panelMembers[index];
 
+    console.log(`Selected user found:`, selectedUser, `Current member:`, currentMember);
+
     if (!currentMember) {
+      console.warn("Current member not found at index", index);
       return;
     }
 
     if (!selectedUser) {
+      console.log("No user selected, clearing member");
       this.interviewInviteSetup.panelMembers[index] = {
         ...currentMember,
         userId: '',
@@ -903,6 +937,7 @@ export class CandidateComponent implements OnInit {
         email: ''
       };
     } else {
+      console.log("Updating member with user data:", selectedUser);
       this.interviewInviteSetup.panelMembers[index] = {
         ...currentMember,
         userId: selectedUser.id,
@@ -912,6 +947,8 @@ export class CandidateComponent implements OnInit {
         role: currentMember.role?.trim() || selectedUser.role || 'Interviewer'
       };
     }
+    
+    console.log("Updated panel member:", this.interviewInviteSetup.panelMembers[index]);
     
     // Force update to trigger change detection
     this.interviewInviteSetup = { ...this.interviewInviteSetup };
@@ -953,13 +990,34 @@ export class CandidateComponent implements OnInit {
   private isInterviewSetupValid(): boolean {
     const { scheduledDate, scheduledTime, location, interviewType, panelMembers } = this.interviewInviteSetup;
 
+    // Check all required fields
+    // Location is optional if no location-type placeholder exists in the template
+    const hasLocationPlaceholder = this.selectedInviteTemplate?.customPlaceholders?.some((p: any) => 
+      p.key?.toLowerCase().includes('location') || 
+      p.key?.toLowerCase().includes('link') ||
+      p.key?.toLowerCase().includes('meeting') ||
+      p.label?.toLowerCase().includes('location') ||
+      p.label?.toLowerCase().includes('link') ||
+      p.label?.toLowerCase().includes('meeting')
+    );
+
+    const hasLocation = location?.trim() || 
+                       Object.values(this.manualPlaceholderValues).some((v: any) => 
+                         v && typeof v === 'string' && v.trim() && 
+                         (v.toLowerCase().includes('zoom') || 
+                          v.toLowerCase().includes('http') || 
+                          v.toLowerCase().includes('room') || 
+                          v.toLowerCase().includes('conference') ||
+                          v.toLowerCase().includes('meet'))
+                       );
+
     return Boolean(
       scheduledDate &&
       scheduledTime &&
-      location.trim() &&
+      (!hasLocationPlaceholder || hasLocation) && // Only require location if template has location field
       interviewType &&
-      panelMembers.length > 0 &&
-      panelMembers.every(member => member.name.trim() && member.role.trim() && member.email.trim())
+      panelMembers?.length > 0 &&
+      panelMembers.every(member => member.name?.trim() && member.role?.trim() && member.email?.trim())
     );
   }
 
@@ -976,30 +1034,36 @@ export class CandidateComponent implements OnInit {
 
   updateInterviewSetupFromPlaceholders(): void {
     // Map template placeholder values to interview setup fields
+    // Check for interviewDate or date
     if (this.manualPlaceholderValues['interviewDate']) {
       this.interviewInviteSetup.scheduledDate = this.manualPlaceholderValues['interviewDate'];
-    }
-    if (this.manualPlaceholderValues['interviewTime']) {
-      this.interviewInviteSetup.scheduledTime = this.manualPlaceholderValues['interviewTime'];
-    }
-    if (this.manualPlaceholderValues['interviewType']) {
-      this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['interviewType'];
-    }
-    if (this.manualPlaceholderValues['interviewLocation']) {
-      this.interviewInviteSetup.location = this.manualPlaceholderValues['interviewLocation'];
-    }
-    // Also check for common alternative placeholder keys
-    if (this.manualPlaceholderValues['date']) {
+    } else if (this.manualPlaceholderValues['date']) {
       this.interviewInviteSetup.scheduledDate = this.manualPlaceholderValues['date'];
     }
-    if (this.manualPlaceholderValues['time']) {
+    
+    // Check for interviewTime or time
+    if (this.manualPlaceholderValues['interviewTime']) {
+      this.interviewInviteSetup.scheduledTime = this.manualPlaceholderValues['interviewTime'];
+    } else if (this.manualPlaceholderValues['time']) {
       this.interviewInviteSetup.scheduledTime = this.manualPlaceholderValues['time'];
     }
-    if (this.manualPlaceholderValues['type']) {
+    
+    // Check for interviewType or type
+    if (this.manualPlaceholderValues['interviewType']) {
+      this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['interviewType'];
+    } else if (this.manualPlaceholderValues['type']) {
       this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['type'];
     }
-    if (this.manualPlaceholderValues['location']) {
+    
+    // Check for various location/link field names
+    if (this.manualPlaceholderValues['interviewLocation']) {
+      this.interviewInviteSetup.location = this.manualPlaceholderValues['interviewLocation'];
+    } else if (this.manualPlaceholderValues['location']) {
       this.interviewInviteSetup.location = this.manualPlaceholderValues['location'];
+    } else if (this.manualPlaceholderValues['meetingLink']) {
+      this.interviewInviteSetup.location = this.manualPlaceholderValues['meetingLink'];
+    } else if (this.manualPlaceholderValues['link']) {
+      this.interviewInviteSetup.location = this.manualPlaceholderValues['link'];
     }
   }
 
@@ -1020,15 +1084,18 @@ export class CandidateComponent implements OnInit {
 
   private loadPanelUsers(): void {
     this.panelUsersLoading = true;
+    console.log("Loading panel users...");
 
     this.authenticationService.getUsers().subscribe({
       next: (users) => {
+        console.log("Raw users from API:", users);
         this.availablePanelUsers = Array.isArray(users)
           ? users
               .map((user: any) => this.mapUserToPanelOption(user))
               .filter((user): user is PanelUserOption => Boolean(user))
               .sort((a, b) => a.label.localeCompare(b.label))
           : [];
+        console.log("Mapped panel users:", this.availablePanelUsers);
         this.interviewInviteSetup = {
           ...this.interviewInviteSetup,
           panelMembers: this.interviewInviteSetup.panelMembers.map(member => this.mapPanelMember(member))
