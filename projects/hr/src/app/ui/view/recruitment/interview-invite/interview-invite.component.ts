@@ -258,6 +258,7 @@ export class InterviewInviteComponent {
 
     this.inviteDraft.panelMembers[index] = {
       ...currentMember,
+      id: selectedUser.id,
       userId: selectedUser.id,
       username: selectedUser.username,
       name: selectedUser.name,
@@ -399,7 +400,8 @@ export class InterviewInviteComponent {
 
   private createEmptyPanelMember(): InterviewPanelMemberDTO {
     return {
-      id: this.generateId('panel'),
+      id: '',
+      panelId: this.generateId('panel'),
       userId: '',
       username: '',
       name: '',

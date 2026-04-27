@@ -89,7 +89,7 @@ export interface PlaceholderField {
 interface InterviewInviteSetup {
   scheduledDate: string;
   scheduledTime: string;
-  location: string;
+  location?: string;
   interviewType: string;
   notes: string;
   panelMembers: InterviewPanelMemberDTO[];
@@ -716,11 +716,12 @@ export class CandidateComponent implements OnInit {
     this.sendLoading = true;
     
     if (this.currentAction === 'Interview Invite') {
+      console.log("Interview setup after sync:", this.interviewInviteSetup);
+      this.syncInterviewManualPlaceholders();
       // First sync the placeholder values to interview setup
       console.log("Syncing placeholder values to interview setup...");
       this.updateInterviewSetupFromPlaceholders();
-      console.log("Interview setup after sync:", this.interviewInviteSetup);
-      this.syncInterviewManualPlaceholders();
+    
       
       if (!this.isInterviewSetupValid()) {
         console.error("Interview setup invalid", this.interviewInviteSetup);
@@ -925,9 +926,7 @@ export class CandidateComponent implements OnInit {
   }
 
   onPanelUserSelected(index: number, selectedUserId: string): void {
-    console.log("=== onPanelUserSelected called ===");
-    console.log(`Index: ${index}, SelectedUserId: ${selectedUserId}`);
-    console.log("Available users:", this.availablePanelUsers);
+    console.log(typeof selectedUserId, selectedUserId);
     
     if (!selectedUserId) {
       console.log("No user ID selected, clearing");
@@ -961,7 +960,8 @@ export class CandidateComponent implements OnInit {
     }
 
     const updatedMember = {
-      ...currentMember,
+  ...currentMember,
+      id: selectedUser.id,
       userId: selectedUser.id,
       username: selectedUser.username,
       name: selectedUser.name,
@@ -971,34 +971,44 @@ export class CandidateComponent implements OnInit {
     
     console.log("Updated member:", updatedMember);
     
-    this.interviewInviteSetup.panelMembers[index] = updatedMember;
-    
-    // Force update to trigger change detection
-    this.interviewInviteSetup = { ...this.interviewInviteSetup };
+    currentMember.id = selectedUser.id;
+    currentMember.userId = selectedUser.id;
+    currentMember.username = selectedUser.username;
+    currentMember.name = selectedUser.name;
+    currentMember.email = selectedUser.email;
+    currentMember.role =
+      currentMember.role?.trim() || selectedUser.role || 'Interviewer';
+
     this.syncInterviewManualPlaceholders();
-    
+        
     console.log("Panel members after update:", this.interviewInviteSetup.panelMembers);
   }
 
   onDropdownOpen(index: number): void {
-    console.log(`=== Dropdown opened for index ${index} ===`);
-    console.log("Available users:", this.availablePanelUsers);
-    console.log("Panel users for this member:", this.getPanelUserOptions(this.interviewInviteSetup.panelMembers[index]?.id));
-  }
+  console.log(`=== Dropdown opened for index ${index} ===`);
+  console.log("Available users:", this.availablePanelUsers);
+  console.log(
+    "Panel users for this member:",
+    this.getPanelUserOptions(this.interviewInviteSetup.panelMembers[index]?.id)
+  );
+}
 
   compareUsers(u1: any, u2: any): boolean {
     return u1 && u2 ? u1 === u2 : u1 === u2;
   }
 
   getPanelUserOptions(selectedUserId?: string): PanelUserOption[] {
-    const selectedIds = new Set(
-      this.interviewInviteSetup.panelMembers
-        .map(member => member.id)
-        .filter((id): id is string => Boolean(id))
-    );
 
-    return this.availablePanelUsers.filter(user => user.id === selectedUserId || !selectedIds.has(user.id));
-  }
+  const selectedIds = new Set(
+    this.interviewInviteSetup.panelMembers
+      .map(member => member.id)
+      .filter((id): id is string => Boolean(id))
+  );
+
+  return this.availablePanelUsers.filter(
+    user => user.id === selectedUserId || !selectedIds.has(user.id)
+  );
+}
 
   private createInterviewInviteSetup(): InterviewInviteSetup {
     const existingInvite = this.selectedCandidate ? this.getStoredInterviewInvite(this.selectedCandidate.id) : null;
@@ -1009,7 +1019,6 @@ export class CandidateComponent implements OnInit {
     return {
       scheduledDate: existingMeetingDetails.date || existingInterviewDetails.scheduledDate || '',
       scheduledTime: existingMeetingDetails.time || '',
-      location: existingMeetingDetails.location || existingInterviewDetails.location || '',
       interviewType: existingMeetingDetails.interviewType || existingInterviewDetails.format || 'Virtual Interview',
       notes: existingMeetingDetails.notes || existingInterviewDetails.notes || '',
       panelMembers: existingPanel.length
@@ -1021,32 +1030,9 @@ export class CandidateComponent implements OnInit {
   private isInterviewSetupValid(): boolean {
     const { scheduledDate, scheduledTime, location, interviewType, panelMembers } = this.interviewInviteSetup;
 
-    // Check all required fields
-    // Location is optional if no location-type placeholder exists in the template
-    const hasLocationPlaceholder = this.selectedInviteTemplate?.customPlaceholders?.some((p: any) => 
-      p.key?.toLowerCase().includes('location') || 
-      p.key?.toLowerCase().includes('link') ||
-      p.key?.toLowerCase().includes('meeting') ||
-      p.label?.toLowerCase().includes('location') ||
-      p.label?.toLowerCase().includes('link') ||
-      p.label?.toLowerCase().includes('meeting')
-    );
 
-    const hasLocation = location?.trim() || 
-                       Object.values(this.manualPlaceholderValues).some((v: any) => 
-                         v && typeof v === 'string' && v.trim() && 
-                         (v.toLowerCase().includes('zoom') || 
-                          v.toLowerCase().includes('http') || 
-                          v.toLowerCase().includes('room') || 
-                          v.toLowerCase().includes('conference') ||
-                          v.toLowerCase().includes('meet'))
-                       );
 
     return Boolean(
-      scheduledDate &&
-      scheduledTime &&
-      (!hasLocationPlaceholder || hasLocation) && // Only require location if template has location field
-      interviewType &&
       panelMembers?.length > 0 &&
       panelMembers.every(member => member.name?.trim() && member.role?.trim() && member.email?.trim())
     );
@@ -1056,7 +1042,6 @@ export class CandidateComponent implements OnInit {
     this.manualPlaceholderValues['date'] = this.interviewInviteSetup.scheduledDate;
     this.manualPlaceholderValues['interviewDate'] = this.interviewInviteSetup.scheduledDate;
     this.manualPlaceholderValues['interviewTime'] = this.interviewInviteSetup.scheduledTime;
-    this.manualPlaceholderValues['interviewLocation'] = this.interviewInviteSetup.location;
     this.manualPlaceholderValues['interviewType'] = this.interviewInviteSetup.interviewType;
     this.manualPlaceholderValues['panelMembers'] = this.interviewInviteSetup.panelMembers
       .map(member => `${member.name} (${member.role})`)
@@ -1086,16 +1071,16 @@ export class CandidateComponent implements OnInit {
       this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['type'];
     }
     
-    // Check for various location/link field names
-    if (this.manualPlaceholderValues['interviewLocation']) {
-      this.interviewInviteSetup.location = this.manualPlaceholderValues['interviewLocation'];
-    } else if (this.manualPlaceholderValues['location']) {
-      this.interviewInviteSetup.location = this.manualPlaceholderValues['location'];
-    } else if (this.manualPlaceholderValues['meetingLink']) {
-      this.interviewInviteSetup.location = this.manualPlaceholderValues['meetingLink'];
-    } else if (this.manualPlaceholderValues['link']) {
-      this.interviewInviteSetup.location = this.manualPlaceholderValues['link'];
-    }
+    // // Check for various location/link field names
+    // if (this.manualPlaceholderValues['interviewLocation']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['interviewLocation'];
+    // } else if (this.manualPlaceholderValues['location']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['location'];
+    // } else if (this.manualPlaceholderValues['meetingLink']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['meetingLink'];
+    // } else if (this.manualPlaceholderValues['link']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['link'];
+    // }
   }
 
   private createInterviewHistoryEntry(stageNumber: number, action: string, details: string, documents: AttachmentDTO[] = []): InterviewHistoryItemDTO {
@@ -1183,31 +1168,34 @@ export class CandidateComponent implements OnInit {
   }
 
   private mapPanelMember(member: InterviewPanelMemberDTO): InterviewPanelMemberDTO {
-    const matchedUser = this.availablePanelUsers.find(user =>
-      user.id === String(member.userId || '') || user.email.toLowerCase() === String(member.email || '').toLowerCase()
-    );
+  const matchedUser = this.availablePanelUsers.find(user =>
+    user.id === String(member.userId || member.id || '') ||
+    user.email.toLowerCase() === String(member.email || '').toLowerCase()
+  );
 
-    return {
-      ...member,
-      id: member.id || this.generateId('panel'),
-      userId: matchedUser?.id || member.userId || '',
-      username: matchedUser?.username || member.username || '',
-      name: matchedUser?.name || member.name || '',
-      role: member.role || matchedUser?.role || 'Interviewer',
-      email: matchedUser?.email || member.email || ''
-    };
-  }
+  return {
+    ...member,
+    panelId: (member as any).panelId || this.generateId('panel'),
+    id: matchedUser?.id || member.id || member.userId || '',
+    userId: matchedUser?.id || member.userId || member.id || '',
+    username: matchedUser?.username || member.username || '',
+    name: matchedUser?.name || member.name || '',
+    role: member.role || matchedUser?.role || 'Interviewer',
+    email: matchedUser?.email || member.email || ''
+  };
+}
 
   private createEmptyPanelMember(): InterviewPanelMemberDTO {
-    return {
-      id: this.generateId('panel'),
-      userId: '',
-      username: '',
-      name: '',
-      role: '',
-      email: ''
-    };
-  }
+  return {
+    panelId: this.generateId('panel'), // row identity only
+    id: '', // selected user id for dropdown binding
+    userId: '',
+    username: '',
+    name: '',
+    role: '',
+    email: ''
+  };
+}
 
   private getStoredInterviewInvite(candidateId: string): any | null {
     try {
@@ -1285,6 +1273,8 @@ export class CandidateComponent implements OnInit {
       || 'Candidate';
   }
 
-  
+  test(e: any) {
+  console.log('FIRED', e);
+}
   
 }

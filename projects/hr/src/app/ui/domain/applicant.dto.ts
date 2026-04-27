@@ -49,6 +49,7 @@ export interface AttachmentDTO {
 }
 
 export interface InterviewPanelMemberDTO {
+    panelId: string;
     id: string;
     userId?: string;
     username?: string;

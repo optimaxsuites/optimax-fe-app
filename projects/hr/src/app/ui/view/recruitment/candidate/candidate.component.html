@@ -439,17 +439,32 @@
         <div>
           <label class="block text-sm text-gray-600">User</label>
 
-          <ng-select
-            [items]="getPanelUserOptions(member.id)"
-            bindLabel="label"
-            bindValue="id"
-            [clearable]="true"
-            [searchable]="true"
-            placeholder="Select interviewer"
+         <!-- <ng-select
+          [items]="getPanelUserOptions(member.id)"
+          bindLabel="label"
+          bindValue="id"
+          [clearable]="true"
+          [searchable]="true"
+          placeholder="Select interviewer"
+          [(ngModel)]="member.id"
+          name="panel-user-{{ i }}"
+           (open)="onDropdownOpen(i)"
+          (ngModelChange)="test($event)">
+          </ng-select> -->
+
+          <select
             [(ngModel)]="member.id"
-            (openChange)="onDropdownOpen(i)"
-            (ngModelChange)="onPanelUserSelected(i, $event)">
-          </ng-select>
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onPanelUserSelected(i, $event)"
+          >
+            <option value="">Select interviewer</option>
+            <option
+              *ngFor="let user of getPanelUserOptions(member.id)"
+              [value]="user.id"
+            >
+              {{ user.label }}
+            </option>
+          </select>
         </div>
         <div>
           <label class="block text-sm text-gray-600">Role</label>
