@@ -19,8 +19,12 @@ import { MailNotificationService } from '../../../service/mailNotification.servi
         <!-- Response State -->
         <div class="response-card" *ngIf="!processing">
           <div class="response-header">
-            <div class="icon-container" [ngClass]="{'success-icon': action === 'accept', 'decline-icon': action === 'decline'}">
-              <i class="fas" [ngClass]="{'fa-check-circle': action === 'accept', 'fa-info-circle': action === 'decline'}"></i>
+            <div class="icon-container"
+                 [class.success-icon]="action === 'accept'"
+                 [class.decline-icon]="action === 'decline'">
+              <i class="fas"
+                 [class.fa-check-circle]="action === 'accept'"
+                 [class.fa-info-circle]="action === 'decline'"></i>
             </div>
             <h1 class="response-title">{{ title }}</h1>
           </div>
