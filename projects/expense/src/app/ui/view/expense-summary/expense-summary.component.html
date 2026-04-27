@@ -1,0 +1,194 @@
+<!-- <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" /> -->
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/icon?family=Material+Icons"
+  rel="stylesheet"
+/>
+
+
+
+    <div class="table-container mx-3">
+
+    <!-- <div class="container-header bg-white p-9 rounded shadow-md mb-4">
+      <div class="flex justify-between items-center mb-6">
+        <div class="header-content">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Expenses Summary</h1>
+          <p class="text-gray-600">Manage your expense requests efficiently</p>
+      
+        </div>
+      </div>
+
+      
+      <div class="flex-justify-end">
+  <div class="grid grid-cols-3 gap-4 w-1/2 ml-auto">
+    <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+      <div class="text-green-600 text-xl font-medium">Approved</div>
+      <div class="text-2xl font-bold text-green-900">{{ getApprovedCount() }}</div>
+    </div>
+
+    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+      <div class="text-yellow-600 text-xl font-medium">Pending</div>
+      <div class="text-2xl font-bold text-yellow-900">{{ getPendingCount() }}</div>
+      </div>
+
+    <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+      <div class="text-red-600 text-xl font-medium">Rejected</div>
+      <div class="text-2xl font-bold text-red-900">{{ getRejectedCount() }}</div>
+      </div>
+</div>
+  </div>
+</div> -->
+
+  <div class="floating-box">
+
+
+
+<div class="table-with-filters w-full max-w-9xl mx-auto px-4">
+
+  <div class="filter-panel">
+
+
+ <div class="filter-left">
+          <button
+            class="btn btn-danger"
+            [disabled]="!selectedRequests.length"
+            (click)="deleteSelected()"
+          >
+            <span class="material-icons btn-icon">delete</span>
+            Delete
+          </button>
+        </div>
+
+      <!-- <div class="toolbar-left">
+        <app-button text="Delete" class="btn-delete" [disabled]="!selectedRequests?.length" (click)="deleteSelected()"></app-button>
+      </div> -->
+
+      <div class="filter-right">
+        <div class="filter-group">
+        <button class="btn btn-success"
+        [disabled]="!selectedRequests.length"
+        (click)="bulkApprove()"
+        >
+          <span class="material-icons btn-icon">check_circle</span>
+          Accept
+        </button>
+
+      </div>
+      
+        <div class="filter-group">
+        <button class="btn btn-danger"
+        [disabled]="!selectedRequests.length"
+        (click)="bulkReject()"
+        >
+          <span class="material-icons btn-icon">cancel</span>
+          Reject
+        </button>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- <div class="toolbar-right">
+        <app-button text="Accept" class="btn-export gap-2" [disabled]="!selectedRequests?.length" (click)="bulkApprove()"></app-button>
+        <app-button text="Reject" class="btn-delete" [disabled]="!selectedRequests?.length" (click)="bulkReject()"></app-button>
+     </div> -->
+    
+    
+    </div>
+
+
+    
+    <div class="table-wrapper">
+    <p-table [value]="requests"[(selection)]="selectedRequests" [paginator]="true" styleClass="p-datatable-striped" [rows]="15"  >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">Date</th>
+          <th class="table-item">Expense</th>
+          <th class="table-item">Merchant</th>
+          <th class="table-item">Category</th>
+          <th class="table-item">Amount</th>
+          <th class="table-item">Submitted By</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-request let-i="rowIndex">
+        <tr>
+          <td><p-tableCheckbox [value]="request" /></td>
+          <td class="table-item">{{ request.eventDate }}</td>
+          <td class="table-item">{{ request.name }}</td>
+          <td class="table-item">{{ request.merchant }}</td>
+          <td class="table-item">{{ request.category }}</td>
+          <td class="table-item">{{ request.amount }}</td>
+          <td class="table-item">{{ request.id }}</td>
+          <td class="table-item">
+            <div class="flex items-center">
+            <span *ngIf="request.status === 'Pending'" class="material-symbols-outlined status-icon pending-icon">
+              schedule
+            </span>
+            <span *ngIf="request.status === 'Approved'" class="material-symbols-outlined status-icon approved-icon">
+              check
+            </span>
+            <span *ngIf="request.status === 'Rejected'" class="material-symbols-outlined status-icon rejected-icon">
+              close
+            </span>
+          
+            <span class="status-text" [ngClass]="{
+              'pending-icon': request.status === 'Pending',
+              'approved-icon': request.status === 'Approved',
+              'rejected-icon': request.status === 'Rejected'
+              }">  
+              {{ request.status }}
+            </span>
+            </div>
+          </td>          
+          
+            
+
+          
+          <td class="dropdown-container">
+            <span class="material-symbols-outlined action-icon">more_vert</span>
+            <div class="dropdown-content">
+              <a (click)="approve(request)">
+                <span class="material-symbols-outlined">check_circle</span> Accept
+              </a>
+              <a (click)="reject(request)">
+                <span class="material-symbols-outlined">cancel</span> Reject
+              </a>
+            </div>
+          </td>
+          
+        </tr>
+      </ng-template>
+    </p-table>
+
+    
+    </div>
+  </div>
+
+ </div>
+
+<div class="form-buttons" (click)=" goBack()">
+  <div class="arrow-left">
+    <div></div>
+  </div>
+  </div>
+
+
+</div>
+
+
+
+
+ <p-toast></p-toast>
+ <p-confirmDialog></p-confirmDialog>
+
+ 

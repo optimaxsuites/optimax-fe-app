@@ -1,0 +1,652 @@
+<!-- category-products.component.html -->
+<div class="min-h-screen bg-gray-50 flex flex-col">
+  <!-- Loading Overlay -->
+  @if (isLoading()) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-xl p-8 flex flex-col items-center gap-4">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6276]"></div>
+      <p class="text-gray-700 font-medium">Loading products...</p>
+    </div>
+  </div>
+  }
+
+  <!-- Toast Notifications -->
+  <div class="toast-container fixed bottom-4 right-4 z-[100] space-y-2 w-full max-w-sm px-4 md:px-0">
+    @for (toast of toasts(); track toast.id) {
+    <div
+      class="toast-item bg-white border-l-4 shadow-lg rounded-lg p-4 w-full transform transition-all duration-300 ease-in-out"
+      [class.border-customGreen]="toast.type === 'success'" [class.border-customBlue]="toast.type === 'info'"
+      [class.border-amber-500]="toast.type === 'warning'" [class.border-red-500]="toast.type === 'error'"
+      [class.opacity-0]="toast.leaving" [class.translate-y-full]="toast.leaving">
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          @switch (toast.type) {
+          @case ('success') {
+          <i class="fa-solid fa-circle-check text-customGreen text-lg"></i>
+          }
+          @case ('info') {
+          <i class="fa-solid fa-circle-info text-customBlue text-lg"></i>
+          }
+          @case ('warning') {
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 text-lg"></i>
+          }
+          @case ('error') {
+          <i class="fa-solid fa-circle-xmark text-red-500 text-lg"></i>
+          }
+          }
+        </div>
+        <div class="flex-1">
+          <h4 class="font-semibold text-gray-900 text-sm">{{ toast.title }}</h4>
+          <p class="text-gray-600 text-sm mt-1">{{ toast.message }}</p>
+        </div>
+        <button class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          (click)="removeToast(toast.id)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Header -->
+  <app-store-header [branches]="branches" [selectedCategory]="selectedCategory()" [searchText]="searchText()"
+    [isCartEmpty]="isCartEmpty()" [totalCartItems]="totalCartItems()" [allProducts]="allProducts"
+    [selectedBranch]="selectedBranch" (categoryChange)="onCategoryChange($event)"
+    (searchChange)="onSearchChange($event)" (toggleCart)="onToggleCart()" (branchChange)="onBranchChange($event)"
+    (mobileCategoryNavigate)="onMobileCategoryNavigate($event)"></app-store-header>
+
+  <!-- Breadcrumb -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+          <li>
+            <div class="flex items-center">
+              <a [routerLink]="['/optimerce', storeUuid]" class="text-[#2E6276] hover:text-[#4291b1] font-medium">
+                Store
+              </a>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fa-solid fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+              <span class="text-gray-500">Category</span>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fa-solid fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+              <span class="text-gray-900 font-medium capitalize">
+                {{ categoryName }}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Main Products Area -->
+    <main class="flex-1 overflow-auto">
+      <!-- Category Header -->
+      <div class="bg-white border-b border-gray-200 py-6">
+        <div class="container mx-auto px-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold text-gray-900 capitalize">
+                {{ categoryName }}
+              </h1>
+              <p class="text-gray-600 mt-2">
+                {{ filteredProducts().length }} products found
+                @if (searchText()) {
+                for "{{ searchText() }}"
+                }
+              </p>
+            </div>
+
+            <!-- Mobile Filter Toggle -->
+            <div class="flex items-center gap-3 md:hidden">
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                (click)="toggleMobileFilters()">
+                <i class="fa-solid fa-filter"></i>
+                <span>Filters</span>
+                @if (hasActiveFilters()) {
+                <span class="bg-[#2E6276] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {{ getActiveFiltersCount() }}
+                </span>
+                }
+              </button>
+              <button
+                class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                (click)="onToggleCart()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart ({{ totalCartItems() }})</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Filters Overlay -->
+      @if (isMobileFiltersOpen) {
+      <div class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" (click)="isMobileFiltersOpen = false"></div>
+      <div class="fixed inset-y-0 left-0 w-72 bg-white shadow-xl z-50 transform transition-transform md:hidden">
+        <div class="h-full overflow-y-auto">
+          <!-- Mobile Filter Header -->
+          <div class="p-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-800">Filters</h2>
+              <button class="p-1 hover:bg-gray-100 rounded" (click)="isMobileFiltersOpen = false">
+                <i class="fa-solid fa-times text-gray-600"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Filter Content -->
+          <div class="p-4">
+            @if (hasActiveFilters()) {
+            <button class="w-full mb-6 py-2 text-sm text-[#2E6276] hover:text-[#4291b1] font-medium"
+              (click)="clearFilters()">
+              Clear All Filters
+            </button>
+            }
+
+            <!-- Price Range -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-3">Price Range</h3>
+              <div class="space-y-2">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="priceRange" [checked]="filters().priceRange === ''"
+                    (change)="updatePriceRange('')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">All Prices</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="priceRange" [checked]="filters().priceRange === '0-1000'"
+                    (change)="updatePriceRange('0-1000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">Under ₦1,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="priceRange" [checked]="filters().priceRange === '1000-5000'"
+                    (change)="updatePriceRange('1000-5000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">₦1,000 - ₦5,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="priceRange" [checked]="filters().priceRange === '5000-10000'"
+                    (change)="updatePriceRange('5000-10000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">₦5,000 - ₦10,000</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="radio" name="priceRange" [checked]="filters().priceRange === '10000+'"
+                    (change)="updatePriceRange('10000+')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">Over ₦10,000</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Stock Status -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-3">Stock Status</h3>
+              <div class="space-y-2">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" [checked]="filters().inStock"
+                    (change)="updateStockFilter('inStock', !filters().inStock)"
+                    class="rounded text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">In Stock</span>
+                </label>
+                <label class="flex items-center space-x-3 cursor-pointer">
+                  <input type="checkbox" [checked]="filters().outOfStock"
+                    (change)="updateStockFilter('outOfStock', !filters().outOfStock)"
+                    class="rounded text-[#2E6276] focus:ring-[#2E6276]" />
+                  <span class="text-gray-700">Out of Stock</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Sort By -->
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-3">Sort By</h3>
+              <select
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2E6276]"
+                [value]="filters().sortBy" (change)="updateSort($any($event.target).value)">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="price-asc">Price (Low to High)</option>
+                <option value="price-desc">Price (High to Low)</option>
+              </select>
+            </div>
+
+            <!-- Apply Filters Button -->
+            <button
+              class="w-full py-3 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors"
+              (click)="isMobileFiltersOpen = false">
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </div>
+      }
+
+      <!-- Products Grid -->
+      <div class="container mx-auto px-4 py-6">
+        @if (filteredProducts().length === 0) {
+        <!-- No Results State -->
+        <div class="text-center py-12">
+          <i class="fa-solid fa-search text-5xl text-gray-300 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+          <p class="text-gray-600 mb-6">
+            @if (searchText()) {
+            No results found for "{{ searchText() }}". Try a different search term or clear filters.
+            } @else {
+            No products available in this category.
+            }
+          </p>
+          @if (hasActiveFilters() || searchText()) {
+          <button class="px-6 py-3 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors"
+            (click)="clearFilters(); searchText.set('')">
+            Clear Filters & Search
+          </button>
+          }
+        </div>
+        } @else {
+        <!-- Products Grid -->
+        <div class="container mx-auto px-4 py-6">
+          @if (filteredProducts().length === 0) {
+          <!-- No Results State -->
+          <div class="text-center py-12">
+            <i class="fa-solid fa-search text-5xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
+            <p class="text-gray-600 mb-6">
+              @if (searchText()) {
+              No results found for "{{ searchText() }}". Try a different search term or clear filters.
+              } @else {
+              No products available in this category.
+              }
+            </p>
+            @if (hasActiveFilters() || searchText()) {
+            <button
+              class="px-6 py-3 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors"
+              (click)="clearFilters(); searchText.set('')">
+              Clear Filters & Search
+            </button>
+            }
+          </div>
+          } @else {
+          <!-- Products Grid -->
+          <div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-8 gap-4 md:gap-6">
+            @for (product of filteredProducts(); track product.id) {
+            <div
+              class="bg-white rounded-xl border border-gray-200 overflow-hidden transition-all hover:shadow-lg duration-300 cursor-pointer group"
+              (click)="navigateToProductDetails(product.id)">
+              <!-- Product Image -->
+              <div class="relative h-48 bg-gray-100 overflow-hidden">
+                <img [src]="getProductImage(product)" [alt]="product.name"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  (error)="handleImageError($event)" />
+
+                <!-- Discount Badge - Top Left -->
+                @if (hasDiscount(product)) {
+                <div
+                  class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+                  🎉{{ getDiscountPercentage(product) }}% OFF
+                </div>
+                }
+
+                <!-- Stock Badge - Top Right -->
+                @if (product.quantity === 0) {
+                <div
+                  class="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium z-10">
+                  Out of stock
+                </div>
+                }
+              </div>
+
+              <!-- Product Info -->
+              <div class="p-4">
+                <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-2">
+                  {{ product.name }}
+                </h3>
+
+                <!-- Price Display -->
+                <div class="flex flex-col gap-1 mb-3">
+                  <!-- Current/New Price -->
+                  <p class="text-customBlue font-semibold text-xl">
+                    {{ formatPrice(getDiscountedPrice(product)) }}
+                  </p>
+
+                  <!-- Original Price with Strikethrough -->
+                  @if (hasDiscount(product)) {
+                  <div class="flex items-center gap-2">
+                    <p class="text-gray-500 text-sm line-through">
+                      {{ formatPrice(getCostPrice(product)) }}
+                    </p>
+                    <!-- Discount Percentage Badge inline -->
+                    <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">
+                      Save {{ getDiscountPercentage(product) }}%
+                    </span>
+                  </div>
+                  }
+                </div>
+
+                <!-- Stock Info -->
+                <div class="flex items-center justify-between mb-4">
+                  @if (product.quantity > 0) {
+                  <span class="text-sm text-gray-600">
+                    {{ product.quantity }} items left
+                  </span>
+                  } @else {
+                  <span class="text-sm text-red-600">Out of stock</span>
+                  }
+                </div>
+
+                <!-- Add to Cart Button -->
+                <button
+                  class="w-full py-3 bg-[#2EB270] hover:bg-[#239c5c] text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  (click)="$event.stopPropagation(); addToCart(product)" [disabled]="product.quantity === 0">
+                  <i class="fa-solid fa-cart-plus"></i>
+                  <span>Add to Cart</span>
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </main>
+
+    <!-- Desktop Filters Sidebar -->
+    <aside class="hidden md:block w-64 flex-shrink-0 border-l border-gray-200 bg-white overflow-y-auto">
+      <div class="p-6 sticky top-0">
+        <!-- Filter Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-800">Filters</h3>
+          @if (hasActiveFilters()) {
+          <button class="text-sm text-[#2E6276] hover:text-[#4291b1] font-medium" (click)="clearFilters()">
+            Clear All
+          </button>
+          }
+        </div>
+
+        <!-- Price Range -->
+        <div class="mb-8">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Price Range</h4>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="priceRange" [checked]="filters().priceRange === ''"
+                (change)="updatePriceRange('')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">All Prices</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="priceRange" [checked]="filters().priceRange === '0-1000'"
+                (change)="updatePriceRange('0-1000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">Under ₦1,000</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="priceRange" [checked]="filters().priceRange === '1000-5000'"
+                (change)="updatePriceRange('1000-5000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">₦1,000 - ₦5,000</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="priceRange" [checked]="filters().priceRange === '5000-10000'"
+                (change)="updatePriceRange('5000-10000')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">₦5,000 - ₦10,000</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="radio" name="priceRange" [checked]="filters().priceRange === '10000+'"
+                (change)="updatePriceRange('10000+')" class="text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">Over ₦10,000</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Stock Status -->
+        <div class="mb-8">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Stock Status</h4>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="checkbox" [checked]="filters().inStock"
+                (change)="updateStockFilter('inStock', !filters().inStock)"
+                class="rounded text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">In Stock</span>
+            </label>
+            <label class="flex items-center space-x-3 cursor-pointer">
+              <input type="checkbox" [checked]="filters().outOfStock"
+                (change)="updateStockFilter('outOfStock', !filters().outOfStock)"
+                class="rounded text-[#2E6276] focus:ring-[#2E6276]" />
+              <span class="text-gray-700">Out of Stock</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Sort By -->
+        <div class="mb-8">
+          <h4 class="text-sm font-medium text-gray-700 mb-3">Sort By</h4>
+          <select
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#2E6276]"
+            [value]="filters().sortBy" (change)="updateSort($any($event.target).value)">
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="price-asc">Price (Low to High)</option>
+            <option value="price-desc">Price (High to Low)</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Desktop Cart Sidebar -->
+    @if (isCartSidebarVisible && !isCartEmpty()) {
+    <div class="hidden md:block w-[30%] bg-white border-l border-gray-300 overflow-hidden flex flex-col">
+      <div class="flex flex-col h-full">
+        <div class="p-4 bg-gray-50 border-b">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-800">Shopping Cart</h2>
+            <span class="bg-[#2E6276]/10 text-[#2E6276] text-lg px-2 py-1 rounded-full">
+              {{ totalCartItems() }} items
+            </span>
+          </div>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <div class="space-y-4">
+            @for (data of cartProducts() | keyvalue; track $index) {
+            <div
+              class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+              <!-- Product Image -->
+              <div class="w-16 h-16 flex-shrink-0 rounded-lg">
+                <img [src]="getProductImage(data.value.product)" [alt]="data.value.product.name"
+                  class="w-full h-full object-cover rounded-xl border" (error)="handleImageError($event)" />
+              </div>
+
+              <!-- Product Details -->
+              <div class="flex-1 min-w-0">
+                <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+                  {{ data.value.product.name }}
+                </h4>
+                <div class="flex flex-col">
+                  <p class="text-lg text-gray-800 font-medium">
+                    {{ formatPrice(data.value.unitPrice) }} each
+                  </p>
+
+                  @if (hasDiscount(data.value.product)) {
+                  <p class="text-sm text-gray-500 line-through">
+                    {{ formatPrice(getCostPrice(data.value.product)) }}
+                  </p>
+                  }
+                </div>
+              </div>
+
+              <!-- Quantity Controls -->
+              <div class="flex items-center space-x-2">
+                <button
+                  class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                  (click)="reduceQuantityInCart(data.value.product)">
+                  <i class="fa-solid fa-minus text-xl text-gray-600"></i>
+                </button>
+
+                <span class="w-6 text-center text-xl font-medium">
+                  {{ data.value.quantity }}
+                </span>
+
+                <button
+                  class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                  (click)="addToCart(data.value.product)"
+                  [disabled]="data.value.product.quantity <= data.value.quantity">
+                  <i class="fa-solid fa-plus text-xl text-gray-600"></i>
+                </button>
+              </div>
+
+              <!-- Remove Item -->
+              <button
+                class="w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                (click)="removeFromCart(data.value.product)">
+                <i class="fa-solid fa-trash text-lg"></i>
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="border-t border-gray-200 p-4 bg-gray-100">
+          <!-- Subtotal -->
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
+            <span class="text-2xl font-bold text-[#333]">
+              {{ formatPrice(cartSubtotal()) }}
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex w-full mt-auto flex-row gap-2">
+            <button
+              class="py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 w-full rounded-lg font-medium transition-colors"
+              (click)="clearCart()">
+              Clear Cart
+            </button>
+            <button
+              class="py-2 px-4 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 w-full"
+              (click)="navigateToCheckout()">
+              <i class="fa-solid fa-credit-card"></i>
+              <span>Checkout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Mobile Cart Modal -->
+  @if (isCartOpen && !isCartEmpty()) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-center p-0 md:hidden">
+    <div class="bg-white w-full h-4/5 rounded-t-2xl shadow-xl flex flex-col" (click)="$event.stopPropagation()">
+      <!-- Cart Header -->
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-cart-shopping text-[#2E6276]"></i>
+          <h2 class="text-xl font-semibold text-gray-800">Shopping Cart</h2>
+          <span class="bg-[#2E6276]/10 text-[#2E6276] text-xs px-2 py-1 rounded-full">
+            {{ totalCartItems() }} items
+          </span>
+        </div>
+        <button class="py-4 px-5 hover:bg-gray-200 rounded transition-colors" (click)="isCartOpen = false">
+          <i class="fa-solid fa-times text-gray-600"></i>
+        </button>
+      </div>
+
+      <!-- Cart Items -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div class="space-y-3">
+          @for (data of cartProducts() | keyvalue; track $index) {
+          <div
+            class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+            <!-- Product Image -->
+            <div class="w-16 h-16 flex-shrink-0">
+              <img [src]="getProductImage(data.value.product)" [alt]="data.value.product.name"
+                class="w-full h-full object-cover rounded-md border" (error)="handleImageError($event)" />
+            </div>
+
+            <!-- Product Details -->
+            <div class="flex-1 min-w-0">
+              <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+                {{ data.value.product.name }}
+              </h4>
+              <div class="flex flex-col">
+                <p class="text-lg text-gray-800 font-medium">
+                  {{ formatPrice(data.value.unitPrice) }} each
+                </p>
+
+                @if (hasDiscount(data.value.product)) {
+                <p class="text-sm text-gray-500 line-through">
+                  {{ formatPrice(getCostPrice(data.value.product)) }}
+                </p>
+                }
+              </div>
+            </div>
+
+            <!-- Quantity Controls -->
+            <div class="flex items-center space-x-4">
+              <button
+                class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                (click)="reduceQuantityInCart(data.value.product)">
+                <i class="fa-solid fa-minus text-lg text-gray-600"></i>
+              </button>
+
+              <span class="w-6 text-center text-sm font-medium">
+                {{ data.value.quantity }}
+              </span>
+
+              <button
+                class="w-6 h-6 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                (click)="addToCart(data.value.product)" [disabled]="data.value.product.quantity <= data.value.quantity">
+                <i class="fa-solid fa-plus text-lg text-gray-600"></i>
+              </button>
+            </div>
+
+            <!-- Remove Item -->
+            <button
+              class="w-6 h-6 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              (click)="removeFromCart(data.value.product)">
+              <i class="fa-solid fa-trash text-lg"></i>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Cart Footer -->
+      @if (!isCartEmpty()) {
+      <div class="border-t border-gray-200 p-4 bg-gray-50">
+        <!-- Subtotal -->
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
+          <span class="text-2xl font-bold text-[#2EB270]">
+            {{ formatPrice(cartSubtotal()) }}
+          </span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col gap-4">
+          <button class="py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors"
+            (click)="clearCart(); isCartOpen = false">
+            Clear Cart
+          </button>
+          <button
+            class="py-3 px-4 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+            (click)="navigateToCheckout()">
+            <i class="fa-solid fa-credit-card"></i>
+            <span>Checkout</span>
+          </button>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+

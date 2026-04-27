@@ -1,0 +1,219 @@
+/* You can add global styles to this file, and also import other style files */
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+// Plus imports for other components in your app.
+
+// FontAwesome
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+@import "@ng-select/ng-select/themes/default.theme.css";
+
+// custom primeUI
+@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
+@import "../node_modules/primeng/resources/primeng.css";
+@import "../node_modules/primeng/resources/primeng.min.css";
+@import "../node_modules/primeicons/primeicons.css";
+
+/* Custom css */
+@import "assets/theme.scss";
+
+// QUILL CSS
+@import "../node_modules/quill/dist/quill.core.css";
+@import "../node_modules/quill/dist/quill.snow.css";
+
+* {
+  // padding: 0;
+  // margin: 0;
+  list-style: none;
+  outline: none;
+  text-decoration: none;
+  font-family: "Roboto Slab", serif;
+}
+html {
+  height: 100%;
+  // font-size: 10px;
+}
+body {
+  // margin: 0;
+  font-family: "Roboto Slab", serif;
+  font-size: var(--xl-font);
+  @apply font-sans antialiased text-gray-800 bg-[#fff] dark:text-gray-200 dark:bg-gray-900 transition-colors duration-300;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Roboto Slab", serif;
+}
+
+@media screen and (min-width: 1200px) {
+  html {
+    // font-size: 16px;
+  }
+}
+
+.p-toast {
+  font-size: 1em;
+}
+.p-dialog {
+  font-size: 1em;
+}
+.p-panel {
+  font-size: 1.1em;
+}
+
+.p-divider {
+  margin: 0;
+  padding: 0;
+}
+
+.pi {
+  cursor: pointer;
+}
+
+.pi-times-circle,
+.pi-trash {
+  color: red;
+}
+
+.button {
+  background-color: red;
+  font-size: 5em;
+}
+
+.custom-header {
+  font-size: 2rem;
+  color: purple;
+  font-weight: bold;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  padding: 0;
+}
+.custom-header > a {
+  color: #224957;
+  font-weight: bold;
+  text-decoration: none;
+}
+.custom-header > a[aria-selected="true"] {
+  background-color: rgb(37 146 91 / 0.6);
+  color: white;
+  border-radius: 1rem;
+}
+
+/* Apply a background color and text color to all PrimeNG tables */
+.p-datatable {
+  font-size: 14px !important;
+}
+
+/* Style header row */
+.p-datatable .p-datatable-thead > tr > th {
+  font-size: 14px !important;
+}
+
+/* Style rows */
+.p-datatable .p-datatable-tbody > tr > td {
+  font-size: 14px !important;
+}
+
+/* Style hover effect */
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: #e0f7fa;
+}
+
+/* Styling p-toolbar globally */
+.p-toolbar {
+  background-color: #f8f9fa;
+
+  font-size: 14px !important;
+}
+
+.p-toolbar .p-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-delete {
+  background-color: red;
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+
+.btn-export {
+  background-color: var(--celadon-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+.btn-export:hover {
+  background-color: var(--celadon-green-hover);
+}
+
+.btn-navigate {
+  background-color: var(--blue-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+.btn-navigate:hover {
+  background-color: var(--blue-green-hover);
+}
+
+/* styles.scss */
+.custom-dialog {
+  .p-dialog-content {
+    padding: 0;
+    overflow: hidden; /* Prevent scrolling at the dialog level */
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Constrain height */
+  }
+
+  // Remove default p-dialog header since we're using our own
+  .p-dialog-header {
+    display: none;
+  }
+}
+
+// Ensure the component itself takes full height
+app-hotel-extendstay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// Additional styling for loading state
+button.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+// Make sure p-inputNumber spans the full width when w-full class is used
+:host ::ng-deep .w-full .p-inputnumber {
+  width: 100%;
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300;
+  }
+
+  .section-padding {
+    @apply py-20 px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Smooth transitions for dark mode */
+  .transition-theme {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+}
+

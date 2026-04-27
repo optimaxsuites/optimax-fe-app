@@ -1,0 +1,143 @@
+<div class="group-join-history-container loan-management-surface">
+  <app-modal *ngIf="showReviewModal" (close)="closeReviewModal()">
+    <div class="review-modal" [ngClass]="reviewAction === 'approve' ? 'approve-mode' : 'reject-mode'" *ngIf="selectedApplication as application">
+      <div class="review-hero">
+        <div class="review-icon-shell">
+          <i class="fas" [ngClass]="reviewAction === 'approve' ? 'fa-user-check' : 'fa-user-times'"></i>
+        </div>
+        <div>
+          <span class="review-kicker">Group Join Review</span>
+          <h2>{{ reviewAction === 'approve' ? 'Approve Member Into Group' : 'Reject Group Join Request' }}</h2>
+          <p class="review-intro">
+            {{ reviewAction === 'approve'
+              ? 'Confirm this member should be admitted to the selected cooperative group. Add a short note if there is an onboarding instruction.'
+              : 'Record a clear rejection reason so the member understands what needs to change before reapplying.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="review-snapshot-grid">
+        <article class="snapshot-card">
+          <span class="label">Member</span>
+          <strong>{{ application.memberName }}</strong>
+          <small>{{ application.memberCode }}</small>
+        </article>
+        <article class="snapshot-card">
+          <span class="label">Group</span>
+          <strong>{{ application.groupName }}</strong>
+          <small>Join request</small>
+        </article>
+        <article class="snapshot-card">
+          <span class="label">Requested On</span>
+          <strong>{{ application.requestedAt | date:'MMM d, y' }}</strong>
+          <small>{{ application.requestedAt | date:'shortTime' }}</small>
+        </article>
+      </div>
+
+      <label class="review-field">
+        <span>{{ reviewAction === 'approve' ? 'Approval Note' : 'Rejection Reason' }}</span>
+        <textarea rows="4" [(ngModel)]="reviewNote" [placeholder]="reviewAction === 'approve' ? 'Optional note for the member' : 'Explain why this request was rejected'"></textarea>
+      </label>
+
+      <div class="review-guidance">
+        <span><i class="fas fa-shield-alt"></i> This decision is stored in the group join history.</span>
+        <span><i class="fas fa-comment-dots"></i> {{ reviewAction === 'approve' ? 'A short note helps the member understand next steps.' : 'A rejection reason is required for a clean audit trail.' }}</span>
+      </div>
+
+      <p class="review-error" *ngIf="reviewError">{{ reviewError }}</p>
+
+      <div class="review-actions">
+        <button type="button" class="secondary-btn" (click)="closeReviewModal()">Cancel</button>
+        <button type="button" class="primary-btn" (click)="submitReview()">
+          <i class="fas" [ngClass]="reviewAction === 'approve' ? 'fa-user-check' : 'fa-user-times'"></i>
+          {{ reviewAction === 'approve' ? 'Approve Request' : 'Reject Request' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <div class="page-header lm-header-card">
+    <div class="header-left">
+      <app-back-button (click)="goBack()"></app-back-button>
+      <div class="join-requests-header">
+        <i class="fas fa-hand-holding-usd title-icon"></i>
+        <h1>Group Join Requests</h1>
+      </div>
+    </div>
+    <p>Full history of cooperative group applications and admin decisions.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card tone-total" (click)="setStatusFilter('ALL')" [class.active-filter]="statusFilter === 'ALL'">
+      <div class="stat-icon"><i class="fas fa-inbox"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Requests</span>
+        <span class="stat-value">{{ applications.length }}</span>
+        <span class="stat-note">All requests</span>
+      </div>
+    </div>
+    <div class="stat-card tone-pending" (click)="setStatusFilter('PENDING')" [class.active-filter]="statusFilter === 'PENDING'">
+      <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ pendingCount }}</span>
+        <span class="stat-note">Awaiting review</span>
+      </div>
+    </div>
+    <div class="stat-card tone-active" (click)="setStatusFilter('ACTIVE')" [class.active-filter]="statusFilter === 'ACTIVE'">
+      <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Approved</span>
+        <span class="stat-value">{{ approvedCount }}</span>
+        <span class="stat-note">Active members</span>
+      </div>
+    </div>
+    <div class="stat-card tone-rejected" (click)="setStatusFilter('REJECTED')" [class.active-filter]="statusFilter === 'REJECTED'">
+      <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Rejected</span>
+        <span class="stat-value">{{ rejectedCount }}</span>
+        <span class="stat-note">Declined requests</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-card">
+    <div class="filter-strip">
+      <button class="filter-btn" [class.active]="statusFilter === 'ALL'" (click)="setStatusFilter('ALL')">All</button>
+      <button class="filter-btn" [class.active]="statusFilter === 'PENDING'" (click)="setStatusFilter('PENDING')">Pending</button>
+      <button class="filter-btn" [class.active]="statusFilter === 'ACTIVE'" (click)="setStatusFilter('ACTIVE')">Approved</button>
+      <button class="filter-btn" [class.active]="statusFilter === 'REJECTED'" (click)="setStatusFilter('REJECTED')">Rejected</button>
+    </div>
+
+    <label class="search-field">
+      <span>Search</span>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Search member, group, or status" />
+    </label>
+  </div>
+
+  <p class="action-message" *ngIf="actionMessage">{{ actionMessage }}</p>
+
+  <div class="table-card">
+    <div *ngIf="isLoading" class="table-loading">
+      <span class="simple-spinner"></span>
+      <span>Loading group join history...</span>
+    </div>
+    <ng-container *ngIf="!isLoading">
+      <app-table
+        [columns]="applicationColumns"
+        [rows]="pagedApplications"
+        [actions]="applicationActions"
+        [striped]="true"
+        [emptyMessage]="'No group join requests match the current filters.'"
+        (actionClick)="handleApplicationAction($event)">
+      </app-table>
+
+      <div class="pagination-bar pagination-bar-right">
+        <button class="pagination-btn small" (click)="goToPreviousPage()" [disabled]="totalPages <= 1 || currentPage === 1">Previous</button>
+        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="pagination-btn small" (click)="goToNextPage()" [disabled]="totalPages <= 1 || currentPage === totalPages">Next</button>
+      </div>
+    </ng-container>
+  </div>
+</div>

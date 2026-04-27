@@ -1,0 +1,274 @@
+<div class="login-shell">
+  <p-toast></p-toast>
+
+  <section class="login-card">
+    <aside class="login-brand-panel">
+      <div class="brand-top">
+        <div class="secure-corner">
+          <i class="fa-solid fa-lock"></i>
+          <span>Secured access</span>
+        </div>
+
+        <div class="brand-wordmark">
+          <span class="brand-wordmark-title">OptimaXSuites</span>
+          <span class="brand-wordmark-sub">Business Solution</span>
+        </div>
+
+        <div class="brand-badge-wrapper">
+          <span class="brand-badge">Enterprise workspace</span>
+        </div>
+      </div>
+
+      <div class="brand-body">
+        <h1>
+          Coordinate workforce, productivity, finance, and operations from one workspace.
+        </h1>
+
+        <p>
+          OptimaX Suites connects HR, payroll, work productivity, accounting,
+          approvals, and AI-assisted operational review in one business workspace.
+        </p>
+
+        <div class="brand-metrics">
+          <div class="brand-metric">
+            <div class="brand-metric-icon">👥</div>
+            <div>
+              <span>HR + Payroll</span>
+              <strong>
+                People records, attendance tracking, leave management,
+                payroll processing, and employee lifecycle automation
+              </strong>
+            </div>
+          </div>
+
+          <div class="brand-metric">
+            <div class="brand-metric-icon">📊</div>
+            <div>
+              <span>Work Productivity</span>
+              <strong>
+                Goals, performance reviews, execution tracking,
+                team collaboration, and measurable output visibility
+              </strong>
+            </div>
+          </div>
+
+          <div class="brand-metric">
+            <div class="brand-metric-icon">💰</div>
+            <div>
+              <span>Finance + AI</span>
+              <strong>
+                Centralised accounting, approvals, expense control,
+                anomaly detection, and AI-driven financial insights
+              </strong>
+            </div>
+          </div>
+
+          <div class="brand-metric">
+            <div class="brand-metric-icon">🛒</div>
+            <div>
+              <span>POS + Inventory</span>
+              <strong>
+                Sales tracking, stock management, product movement,
+                multi-branch operations, and revenue visibility
+              </strong>
+            </div>
+          </div>
+
+          <div class="brand-metric">
+            <div class="brand-metric-icon">📡</div>
+            <div>
+              <span>Real-time Analytics</span>
+              <strong>
+                Live dashboards, KPIs, performance trends,
+                and business intelligence across all modules
+              </strong>
+            </div>
+          </div>
+
+          <div class="brand-metric">
+            <div class="brand-metric-icon">🔐</div>
+            <div>
+              <span>Access Control</span>
+              <strong>
+                Role-based permissions, tenant isolation,
+                secure authentication, and enterprise-grade access control
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tenant-card">
+        <div>
+          <strong>{{ tenantDisplayName || 'Acme Corporation' }}</strong>
+          <span>{{ tenantDomainLabel || 'acme' }}.optimaxsuites.com</span>
+        </div>
+
+        <span class="environment-pill">
+          {{ environmentLabel | titlecase }}
+        </span>
+      </div>
+    </aside>
+
+    <main class="login-panel">
+      <div class="login-panel__content">
+        <div class="login-panel__head">
+          <div>
+            <p class="panel-eyebrow">Welcome back</p>
+            <h2>{{ isCodeLogin ? 'PIN sign in' : 'Sign in to your workspace' }}</h2>
+            <p class="panel-copy">
+              {{
+                isCodeLogin
+                  ? 'Use your access PIN for quick workstation entry.'
+                  : 'Enter your account credentials to continue into the business workspace.'
+              }}
+            </p>
+          </div>
+
+          <button type="button" class="mode-switch" (click)="toggleLoginMode()">
+            <span>Mode</span>
+            <strong>{{ isCodeLogin ? 'Username' : 'PIN' }}</strong>
+          </button>
+        </div>
+
+        <div class="logout-banner" *ngIf="loggedOutMessage1">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>{{ loggedOutMessage1 }}</span>
+        </div>
+
+        <form class="login-form" (ngSubmit)="userLoginAction()">
+          <ng-container *ngIf="!isCodeLogin">
+            <div class="field-group">
+              <label for="username" class="field-label">Username</label>
+
+              <div
+                class="auth-input-shell"
+                [class.auth-input-shell--error]="submitted && !loginInfo.username"
+              >
+                <span class="auth-input-icon">
+                  <i class="fa-regular fa-user"></i>
+                </span>
+
+                <input
+                  id="username"
+                  type="text"
+                  name="username"
+                  [(ngModel)]="loginInfo.username"
+                  placeholder="Enter your workspace username"
+                  class="auth-input"
+                />
+              </div>
+
+              <small class="field-error" *ngIf="submitted && !loginInfo.username">
+                Username is required
+              </small>
+            </div>
+
+            <div class="field-group">
+              <label for="password" class="field-label">Password</label>
+
+              <div
+                class="auth-input-shell"
+                [class.auth-input-shell--error]="submitted && !loginInfo.password"
+              >
+                <span class="auth-input-icon">
+                  <i class="fa-solid fa-lock"></i>
+                </span>
+
+                <input
+                  id="password"
+                  name="password"
+                  [type]="hide() ? 'password' : 'text'"
+                  [(ngModel)]="loginInfo.password"
+                  placeholder="Enter your workspace password"
+                  class="auth-input"
+                />
+
+                <button
+                  type="button"
+                  class="password-visibility"
+                  (click)="clickEvent($event)"
+                  [attr.aria-label]="hide() ? 'Show password' : 'Hide password'"
+                  [attr.aria-pressed]="!hide()"
+                >
+                  <i [ngClass]="hide() ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
+
+              <small class="field-error" *ngIf="submitted && !loginInfo.password">
+                Password is required
+              </small>
+            </div>
+
+            <div class="login-options">
+              <label class="checkbox-row">
+                <input id="remember-login" type="checkbox" />
+                <span>Remember me</span>
+              </label>
+
+              <button type="button" class="inline-link" (click)="triggerForgotPassword()">
+                Forgot password?
+              </button>
+            </div>
+
+            <button type="submit" class="primary-submit" [disabled]="loading">
+              <mat-spinner
+                *ngIf="loading"
+                diameter="20"
+                class="custom-spinner"
+              ></mat-spinner>
+              <span *ngIf="!loading">Sign in</span>
+            </button>
+
+            <div class="form-support">
+              <span>Need help accessing your workspace?</span>
+              <a [attr.href]="'mailto:' + supportEmail">{{ supportEmail }}</a>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="isCodeLogin">
+            <div class="pin-shell">
+              <div class="pin-head">
+                <p class="pin-title">Enter your PIN</p>
+                <p class="pin-copy">
+                  Fast sign in for shared workstations and operational desks.
+                </p>
+              </div>
+
+              <div class="pin-dots" *ngIf="!loading">
+                <span
+                  *ngFor="let dot of pinDots; let i = index"
+                  class="pin-dot"
+                  [class.pin-dot--active]="i < posCode.length"
+                ></span>
+              </div>
+
+              <div class="pin-loading" *ngIf="loading">
+                <div class="pin-loading__spinner"></div>
+              </div>
+
+              <div class="pin-pad">
+                <button type="button" (click)="onNumpadClick('1')">1</button>
+                <button type="button" (click)="onNumpadClick('2')">2</button>
+                <button type="button" (click)="onNumpadClick('3')">3</button>
+                <button type="button" (click)="onNumpadClick('4')">4</button>
+                <button type="button" (click)="onNumpadClick('5')">5</button>
+                <button type="button" (click)="onNumpadClick('6')">6</button>
+                <button type="button" (click)="onNumpadClick('7')">7</button>
+                <button type="button" (click)="onNumpadClick('8')">8</button>
+                <button type="button" (click)="onNumpadClick('9')">9</button>
+                <button type="button" class="pin-key--danger" (click)="onNumpadClick('clear')">
+                  Clear
+                </button>
+                <button type="button" (click)="onNumpadClick('0')">0</button>
+                <button type="button" class="pin-key--warning" (click)="onNumpadClick('delete')">
+                  <i class="fas fa-backspace"></i>
+                </button>
+              </div>
+            </div>
+          </ng-container>
+        </form>
+      </div>
+    </main>
+  </section>
+</div>

@@ -1,0 +1,668 @@
+<!-- Loading State -->
+<div *ngIf="isLoading" class="loading-overlay">
+  <div class="spinner"></div>
+  <h3>Loading Cooperative Groups</h3>
+  <p>Please wait while we load your data...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!isLoading && loadError" class="error-overlay">
+  <div class="error-card">
+    <i class="fas fa-exclamation-triangle"></i>
+    <h3>Error Loading Data</h3>
+    <p>{{ loadError }}</p>
+    <p class="error-details" *ngIf="errorDetails">{{ errorDetails }}</p>
+    <button class="retry-btn" (click)="loadInitialData()">
+      <i class="fas fa-sync-alt"></i> Retry
+    </button>
+  </div>
+</div>
+
+<!-- Main Content - Only show when not loading and no error -->
+<ng-container *ngIf="!isLoading && !loadError">
+  <div class="groups-container">
+    <div class="groups-header approval-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Cooperative Loan Groups</h1>
+      </div>
+      <button class="add-btn" (click)="openAddForm()">
+        <i class="fas fa-plus"></i> Add New Group
+      </button>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-head">
+        <h2>Group Summary</h2>
+        <span>Review lending policy, accounting readiness, and outreach actions from one surface.</span>
+      </div>
+
+      <div class="summary-metrics" *ngIf="groupSummaryRows.length > 0">
+        <article class="metric-tile">
+          <span class="metric-label">Active Groups</span>
+          <strong>{{ activeGroupCount }}</strong>
+          <small>{{ inactiveGroupCount }} inactive</small>
+        </article>
+        <article class="metric-tile">
+          <span class="metric-label">Members in Groups</span>
+          <strong>{{ totalMembersAcrossGroups }}</strong>
+          <small>Across all active memberships</small>
+        </article>
+        <article class="metric-tile accent">
+          <span class="metric-label">Total Contributions</span>
+          <strong>{{ formatCurrency(totalContributionsAcrossGroups) }}</strong>
+          <small>Captured from current group memberships</small>
+        </article>
+        <article class="metric-tile">
+          <span class="metric-label">Accounting Ready</span>
+          <strong>{{ configuredAccountingGroupCount }}/{{ groupSummaryRows.length }}</strong>
+          <small>Groups with complete collection rails</small>
+        </article>
+      </div>
+
+      <div class="portfolio-table-wrapper" *ngIf="groupSummaryRows.length > 0; else emptyGroupSummary">
+        <app-table
+          [columns]="[
+            { header: 'Group' },
+            { header: 'Contribution Policy' },
+            { header: 'Loan Terms' },
+            { header: 'Fees and Accounting' },
+            { header: 'Members' },
+            { header: 'Status' },
+            { header: 'Actions' }
+          ]"
+          [rows]="groupSummaryRows"
+          [emptyMessage]="'No loan groups available'"
+          tableClass="portfolio-table"
+        >
+          <ng-template appTableBody let-row>
+            <td>
+              <div class="group-name-cell">
+                <strong>{{ row.name }}</strong>
+                <span>{{ row.code || 'No code assigned' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="stacked-cell">
+                <strong>{{ formatCurrency(row.monthlyContributionAmount) }}/mo</strong>
+                <span>Withdrawal cap: {{ getBorrowCapSummary(row) }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="stacked-cell">
+                <strong>{{ row.interestRate }}% interest</strong>
+                <span>
+                  {{ row.requiresGuarantors ? (row.minimumGuarantors + ' guarantor' + (row.minimumGuarantors === 1 ? '' : 's')) : 'No guarantor rule' }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="stacked-cell">
+                <strong>{{ getLateFeeSummary(row) }}</strong>
+                <span>{{ getSettlementAccountSummary(row) }}</span>
+                <span>{{ row.accountingEmail || 'No accounting email configured' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="stacked-cell compact">
+                <strong style="font-size:1.2em;color:#1976d2">{{ row.memberCount }}</strong>
+                <span>{{ formatCurrency(row.totalContribution) }} total</span>
+              </div>
+            </td>
+            <td>
+              <div class="status-stack">
+                <span class="status-pill" [class.active]="row.status === 'ACTIVE'" [class.inactive]="row.status !== 'ACTIVE'">
+                  {{ row.status }}
+                </span>
+                <span class="config-pill" [class.ready]="row.hasAccountingConfiguration" [class.missing]="!row.hasAccountingConfiguration">
+                  {{ row.hasAccountingConfiguration ? 'Accounting ready' : 'Needs setup' }}
+                </span>
+              </div>
+            </td>
+            <td class="actions-col">
+              <div class="table-actions" *ngIf="getGroupById(row.id) as group">
+                <button type="button" class="summary-action-btn invite" (click)="openInviteMembersModal(group)" title="Invite members" aria-label="Invite members">
+                  <i class="pi pi-send"></i>
+                </button>
+                <button type="button" class="summary-action-btn edit" (click)="openEditForm(group)" title="Edit group" aria-label="Edit group">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button type="button" class="summary-action-btn view" (click)="viewGroupDetails(group)" title="View group details" aria-label="View group details">
+                  <i class="pi pi-eye"></i>
+                </button>
+              </div>
+            </td>
+          </ng-template>
+        </app-table>
+      </div>
+
+      <ng-template #emptyGroupSummary>
+        <div class="empty-summary-state">
+          <h3>No loan groups available</h3>
+          <p>Create a cooperative group to define contribution rules, lending terms, and accounting destinations.</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="invite-helper-card">
+      <div>
+        <h3>Manage Group Outreach</h3>
+        <p>Use the summary table for group actions, then use the cards below to review each group's fee policy and settlement setup without the extra control clutter.</p>
+      </div>
+    </div>
+
+    <div class="group-card" *ngFor="let group of groups">
+      <div class="group-card-header">
+        <div class="group-title-block">
+          <h2>{{ group.name }}</h2>
+          <span>{{ group.code || 'No group code' }}</span>
+        </div>
+        <span class="status-pill" [class.active]="group.status === 'ACTIVE'" [class.inactive]="group.status === 'INACTIVE'">
+          {{ group.status }}
+        </span>
+      </div>
+
+      <p class="description">{{ group.description }}</p>
+
+      <div class="group-chip-row">
+        <span class="info-chip emphasis">{{ formatCurrency(group.monthlyContributionAmount) }}/month</span>
+        <span class="info-chip">{{ group.interestRate }}% interest</span>
+        <span class="info-chip">{{ getLateFeeSummary(group) }}</span>
+        <span class="info-chip">{{ getSettlementAccountSummary(group) }}</span>
+        <span class="info-chip" [class.warning]="!hasAccountingConfiguration(group)">
+          {{ hasAccountingConfiguration(group) ? 'Accounting configured' : 'Accounting incomplete' }}
+        </span>
+      </div>
+
+      <div class="details-line">
+        <span><strong>Monthly contribution:</strong> {{ formatCurrency(group.monthlyContributionAmount) }}</span>
+        <span><strong>Withdrawal cap:</strong> {{ getBorrowCapSummary(group) }}</span>
+        <span><strong>Members:</strong> {{ getGroupMetrics(group.id).memberCount }}</span>
+      </div>
+
+      <div class="details-line">
+        <span><strong>Code:</strong> {{ group.code || '—' }}</span>
+        <span><strong>Interest:</strong> {{ group.interestRate }}%</span>
+        <span><strong>Member limit:</strong> {{ group.memberLimit || 'No limit' }}</span>
+      </div>
+
+      <div class="details-line">
+        <span><strong>Accounting email:</strong> {{ group.accountingEmail || '—' }}</span>
+        <span><strong>Webhook:</strong> {{ group.accountingWebhookUrl || '—' }}</span>
+        <span><strong>Principal rail:</strong> {{ group.principalBankName }} ({{ group.principalCollectionAccount }})</span>
+        <span><strong>Interest rail:</strong> {{ group.interestBankName }} ({{ group.interestCollectionAccount }})</span>
+      </div>
+
+      <div class="details-line">
+        <span><strong>Requires guarantors:</strong> {{ group.requiresGuarantors ? 'YES' : 'NO' }}</span>
+        <span *ngIf="group.requiresGuarantors"><strong>Minimum guarantors:</strong> {{ group.minimumGuarantors || 1 }}</span>
+        <span><strong>Total contributions:</strong> {{ formatCurrency(getGroupMetrics(group.id).totalContribution) }}</span>
+        <span>
+          <strong>Patronage eligible:</strong>
+          {{ group.patronageEligible ? 'YES (' + group.patronageRate + '%)' : 'NO' }}
+        </span>
+        <span class="status-pill" [class.active]="group.status === 'ACTIVE'" [class.inactive]="group.status === 'INACTIVE'">
+          {{ group.status }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Group Details Modal -->
+    <div class="overlay" *ngIf="showGroupDetails && selectedGroupForDetails">
+      <div class="form-modal details-modal">
+        <div class="details-hero">
+          <div>
+            <span class="details-kicker">Cooperative Group Profile</span>
+            <h3>{{ selectedGroupForDetails.name }}</h3>
+            <p class="description">{{ selectedGroupForDetails.description }}</p>
+          </div>
+          <div class="details-hero-actions">
+            <span class="status-pill" [class.active]="selectedGroupForDetails.status === 'ACTIVE'" [class.inactive]="selectedGroupForDetails.status === 'INACTIVE'">
+              {{ selectedGroupForDetails.status }}
+            </span>
+            <button type="button" class="secondary ghost" (click)="closeGroupDetails()">Close</button>
+          </div>
+        </div>
+
+        <div class="details-metrics">
+          <article class="details-metric">
+            <span>Monthly Contribution</span>
+            <strong>{{ formatCurrency(selectedGroupForDetails.monthlyContributionAmount) }}</strong>
+          </article>
+          <article class="details-metric">
+            <span>Interest Rate</span>
+            <strong>{{ selectedGroupForDetails.interestRate }}%</strong>
+          </article>
+          <article class="details-metric">
+            <span>Active Members</span>
+            <strong>{{ getGroupMetrics(selectedGroupForDetails.id).memberCount }}</strong>
+          </article>
+          <article class="details-metric accent">
+            <span>Total Contributions</span>
+            <strong>{{ formatCurrency(getGroupMetrics(selectedGroupForDetails.id).totalContribution) }}</strong>
+          </article>
+        </div>
+
+        <div class="details-section-grid">
+          <section class="details-section-card">
+            <div class="section-head">
+              <h4>Eligibility and Terms</h4>
+              <span>{{ selectedGroupForDetails.code || 'No group code' }}</span>
+            </div>
+            <div class="details-grid">
+              <div class="detail-row"><strong>Withdrawal cap</strong><span>{{ getBorrowCapSummary(selectedGroupForDetails) }}</span></div>
+              <div class="detail-row"><strong>Member limit</strong><span>{{ selectedGroupForDetails.memberLimit || 'No limit' }}</span></div>
+              <div class="detail-row"><strong>Patronage</strong><span>{{ selectedGroupForDetails.patronageEligible ? (selectedGroupForDetails.patronageRate + '% refund eligible') : 'Not enabled' }}</span></div>
+              <div class="detail-row"><strong>Guarantors</strong><span>{{ selectedGroupForDetails.requiresGuarantors ? ((selectedGroupForDetails.minimumGuarantors || 1) + ' required') : 'Not required' }}</span></div>
+            </div>
+          </section>
+
+          <section class="details-section-card">
+            <div class="section-head">
+              <h4>Accounting and Fees</h4>
+              <span>{{ hasAccountingConfiguration(selectedGroupForDetails) ? 'Fully configured' : 'Needs attention' }}</span>
+            </div>
+            <div class="details-grid">
+              <div class="detail-row"><strong>Late fee policy</strong><span>{{ getLateFeeSummary(selectedGroupForDetails) }}</span></div>
+              <div class="detail-row"><strong>Settlement coverage</strong><span>{{ getSettlementAccountSummary(selectedGroupForDetails) }}</span></div>
+              <div class="detail-row"><strong>Accounting email</strong><span>{{ selectedGroupForDetails.accountingEmail || '—' }}</span></div>
+              <div class="detail-row"><strong>Accounting webhook</strong><span>{{ selectedGroupForDetails.accountingWebhookUrl || '—' }}</span></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="details-section-grid rails-grid">
+          <section class="details-section-card rail-card">
+            <div class="section-head">
+              <h4>Contribution Rail</h4>
+              <span>Monthly collections</span>
+            </div>
+            <div class="rail-value">{{ selectedGroupForDetails.contributionsBankName || '—' }}</div>
+            <div class="rail-account">{{ selectedGroupForDetails.contributionsAccount || 'No account set' }}</div>
+          </section>
+
+          <section class="details-section-card rail-card">
+            <div class="section-head">
+              <h4>Principal Rail</h4>
+              <span>Loan principal recovery</span>
+            </div>
+            <div class="rail-value">{{ selectedGroupForDetails.principalBankName || '—' }}</div>
+            <div class="rail-account">{{ selectedGroupForDetails.principalCollectionAccount || 'No account set' }}</div>
+          </section>
+
+          <section class="details-section-card rail-card">
+            <div class="section-head">
+              <h4>Interest Rail</h4>
+              <span>Interest income collection</span>
+            </div>
+            <div class="rail-value">{{ selectedGroupForDetails.interestBankName || '—' }}</div>
+            <div class="rail-account">{{ selectedGroupForDetails.interestCollectionAccount || 'No account set' }}</div>
+          </section>
+
+          <section class="details-section-card rail-card">
+            <div class="section-head">
+              <h4>Late Fee Rail</h4>
+              <span>Penalty recovery</span>
+            </div>
+            <div class="rail-value">{{ selectedGroupForDetails.lateFeeBankName || '—' }}</div>
+            <div class="rail-account">{{ selectedGroupForDetails.lateFeeCollectionAccount || 'No account set' }}</div>
+          </section>
+        </div>
+
+        <section class="details-section-card member-list">
+          <div class="section-head">
+            <h4>Member Snapshot</h4>
+            <span>{{ getGroupMetrics(selectedGroupForDetails.id).memberCount }} in group</span>
+          </div>
+
+          <div *ngIf="getGroupMetrics(selectedGroupForDetails.id).members.length > 0; else emptyMembers">
+            <div class="member-row" *ngFor="let member of getGroupMetrics(selectedGroupForDetails.id).members">
+              <div>
+                <strong>{{ member.name }}</strong>
+                <span>Monthly contribution</span>
+              </div>
+              <div>
+                <strong>{{ formatCurrency(member.monthlyContributionAmount) }}/mo</strong>
+                <span>Current contribution cadence</span>
+              </div>
+              <div>
+                <strong>{{ formatCurrency(member.totalContribution) }}</strong>
+                <span>Total posted contributions</span>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #emptyMembers>
+            <p>No active members are currently assigned to this group.</p>
+          </ng-template>
+        </section>
+      </div>
+    </div>
+
+    <!-- Invite Members Modal -->
+    <div class="overlay" *ngIf="showInviteMembersModal && selectedGroupForInvite">
+      <div class="form-modal invite-modal">
+        <!-- Modal content remains the same -->
+        <div class="invite-modal-header">
+          <div>
+            <h3>Invite New Members</h3>
+            <p>
+              Notify employees about <strong>{{ selectedGroupForInvite.name }}</strong>. They will still need to apply from their
+              <strong>My Membership</strong> dashboard and can still be approved or rejected through the normal review flow.
+            </p>
+          </div>
+          <button type="button" class="secondary ghost" (click)="closeInviteMembersModal()">Close</button>
+        </div>
+
+        <div class="invite-filter-bar">
+          <label>
+            <span>Department</span>
+            <select [(ngModel)]="inviteDepartmentFilter">
+              <option value="ALL">All departments</option>
+              <option *ngFor="let department of inviteDepartmentOptions" [ngValue]="department">{{ department }}</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Level</span>
+            <select [(ngModel)]="inviteLevelFilter">
+              <option value="ALL">All levels</option>
+              <option *ngFor="let level of inviteLevelOptions" [ngValue]="level">{{ level }}</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Tenure</span>
+            <select [(ngModel)]="inviteTenureFilter">
+              <option *ngFor="let option of inviteTenureOptions" [ngValue]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="invite-toolbar">
+          <div class="invite-summary">
+            <strong>{{ filteredInviteEmployees.length }}</strong> employee{{ filteredInviteEmployees.length === 1 ? '' : 's' }} in view
+            <span>· {{ selectedInviteCount }} selected</span>
+          </div>
+
+          <button type="button" class="secondary" (click)="toggleAllVisibleInviteSelection()" [disabled]="selectableFilteredInviteEmployees.length === 0">
+            {{ getVisibleInviteSelectionLabel() }}
+          </button>
+        </div>
+
+        <div class="invite-table-wrapper" *ngIf="filteredInviteEmployees.length > 0; else emptyInviteState">
+          <app-table
+            [columns]="[
+              { header: 'Select' },
+              { header: 'Employee' },
+              { header: 'Email' },
+              { header: 'Department' },
+              { header: 'Level' },
+              { header: 'Tenure' },
+              { header: 'Status' }
+            ]"
+            [rows]="filteredInviteEmployees"
+            tableClass="invite-table">
+            <ng-template appTableBody let-employee>
+              <td class="checkbox-col">
+                <input
+                  type="checkbox"
+                  [checked]="isInviteSelected(employee.employeeId)"
+                  (change)="toggleInviteSelection(employee.employeeId)"
+                  [disabled]="!canInviteEmployee(employee)"
+                  [attr.aria-label]="'Select ' + employee.fullName" />
+              </td>
+              <td>
+                <div class="employee-cell">
+                  <strong>{{ employee.fullName }}</strong>
+                </div>
+              </td>
+              <td>{{ employee.email }}</td>
+              <td>{{ employee.department }}</td>
+              <td>{{ employee.level }}</td>
+              <td>{{ getInviteTenureLabel(employee) }}</td>
+              <td>
+                <span class="invite-status" [class.disabled]="!canInviteEmployee(employee)">
+                  {{ getInviteStatusLabel(employee) }}
+                </span>
+              </td>
+            </ng-template>
+          </app-table>
+        </div>
+
+        <ng-template #emptyInviteState>
+          <div class="invite-empty-state">
+            <p>No employees match the current filters.</p>
+          </div>
+        </ng-template>
+
+        <div class="email-preview-card">
+          <span class="preview-label">Email preview</span>
+          <h4>{{ inviteEmailSubject }}</h4>
+          <p>{{ inviteEmailBodyPreview }}</p>
+        </div>
+
+        <div *ngIf="inviteMessage" class="invite-message-display">
+          <i class="fas fa-envelope-open-text"></i>
+          <div class="invite-message-content">
+            <strong>Invite Status</strong>
+            <span>{{ inviteMessage }}</span>
+          </div>
+        </div>
+
+        <div class="form-actions invite-actions-row redesigned-invite-actions">
+          <button type="button" class="secondary outlined" (click)="closeInviteMembersModal()">Cancel</button>
+          <span class="invite-actions-spacer"></span>
+          <button type="button" class="primary" (click)="sendGroupInviteEmails()" [disabled]="selectedInviteCount === 0 || isSendingInviteEmails">
+            {{ isSendingInviteEmails ? 'Sending...' : inviteActionLabel }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Form Modal -->
+    <div class="overlay" *ngIf="showGroupForm">
+      <div class="form-modal group-form-modal">
+        <div class="form-header">
+          <div>
+            <h3>{{ editingGroupId ? 'Edit Loan Group' : 'Add Loan Group' }}</h3>
+            <p>Set up the group profile, contribution rules, and collection accounts in one place.</p>
+          </div>
+          <div class="form-badge">{{ editingGroupId ? 'Editing Existing Group' : 'New Group Setup' }}</div>
+        </div>
+
+        <div *ngIf="formMessage" class="form-message-display" [class.success]="formMessageSeverity === 'success'" [class.error]="formMessageSeverity === 'error'">
+          <div class="form-message-icon">
+            <i *ngIf="formMessageSeverity === 'success'" class="fas fa-check-circle"></i>
+            <i *ngIf="formMessageSeverity === 'error'" class="fas fa-exclamation-triangle"></i>
+            <i *ngIf="formMessageSeverity === 'info'" class="fas fa-info-circle"></i>
+          </div>
+          <div class="form-message-content">
+            <strong>{{ formMessageSeverity === 'success' ? 'Success!' : formMessageSeverity === 'error' ? 'Error!' : 'Notice' }}</strong>
+            <span>{{ formMessage }}</span>
+          </div>
+        </div>
+
+        <form [formGroup]="groupForm" (ngSubmit)="saveGroup()" class="group-form">
+          <!-- Form fields remain the same -->
+          <div class="form-section">
+            <div class="section-heading">
+              <h4>Group Basics</h4>
+              <span>Core identifiers and contribution rules.</span>
+            </div>
+
+            <div class="form-grid compact-grid">
+              <div class="form-group" [class.invalid]="hasControlError('code')">
+                <label>Group Code</label>
+                <input type="text" formControlName="code" />
+                <small class="field-hint">Short internal identifier for the group.</small>
+                <small class="error-text" *ngIf="hasControlError('code')">{{ getControlErrorMessage('code') }}</small>
+              </div>
+
+              <div class="form-group" [class.invalid]="hasControlError('name')">
+                <label>Name</label>
+                <input type="text" formControlName="name" />
+                <small class="error-text" *ngIf="hasControlError('name')">{{ getControlErrorMessage('name') }}</small>
+              </div>
+            </div>
+
+            <div class="form-group form-group-wide" [class.invalid]="hasControlError('description')">
+              <label>Description</label>
+              <textarea rows="3" formControlName="description"></textarea>
+              <small class="error-text" *ngIf="hasControlError('description')">{{ getControlErrorMessage('description') }}</small>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Monthly Contribution Amount</label>
+                <input type="number" formControlName="monthlyContributionAmount" />
+                <small class="error-text" *ngIf="hasControlError('monthlyContributionAmount')">{{ getControlErrorMessage('monthlyContributionAmount') }}</small>
+              </div>
+              <div class="form-group">
+                <label>Withdrawal Cap (%)</label>
+                <input type="number" step="0.1" min="0" formControlName="withdrawCap" />
+                <small class="field-hint">Maximum borrowing as a percentage of the group's total contributions.</small>
+                <small class="error-text" *ngIf="hasControlError('withdrawCap')">{{ getControlErrorMessage('withdrawCap') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('memberLimit')">
+                <label>Member Limit</label>
+                <input type="number" formControlName="memberLimit" />
+                <small class="field-hint">Optional. Leave empty for no cap.</small>
+                <small class="error-text" *ngIf="hasControlError('memberLimit')">{{ getControlErrorMessage('memberLimit') }}</small>
+              </div>
+              <div class="form-group">
+                <label>Interest Rate (%)</label>
+                <input type="number" step="0.1" formControlName="interestRate" />
+                <small class="error-text" *ngIf="hasControlError('interestRate')">{{ getControlErrorMessage('interestRate') }}</small>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select formControlName="status">
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section bank-section">
+            <div class="section-heading">
+              <h4>Settlement Accounts</h4>
+              <span>Required collection accounts for contribution, principal, interest, and late-fee postings.</span>
+            </div>
+
+            <div class="bank-grid">
+              <div class="account-card">
+                <h5>Contributions</h5>
+                <div class="form-group" [class.invalid]="hasControlError('contributionsBankName')">
+                  <label>Bank Name</label>
+                  <input type="text" formControlName="contributionsBankName" required />
+                  <small class="error-text" *ngIf="hasControlError('contributionsBankName')">{{ getControlErrorMessage('contributionsBankName') }}</small>
+                </div>
+                <div class="form-group" [class.invalid]="hasControlError('contributionsAccount')">
+                  <label>Account</label>
+                  <input type="text" formControlName="contributionsAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('contributionsAccount')" />
+                  <small class="error-text" *ngIf="hasControlError('contributionsAccount')">{{ getControlErrorMessage('contributionsAccount') }}</small>
+                </div>
+              </div>
+
+              <div class="account-card">
+                <h5>Principal</h5>
+                <div class="form-group" [class.invalid]="hasControlError('principalBankName')">
+                  <label>Bank Name</label>
+                  <input type="text" formControlName="principalBankName" required />
+                  <small class="error-text" *ngIf="hasControlError('principalBankName')">{{ getControlErrorMessage('principalBankName') }}</small>
+                </div>
+                <div class="form-group" [class.invalid]="hasControlError('principalCollectionAccount')">
+                  <label>Account</label>
+                  <input type="text" formControlName="principalCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('principalCollectionAccount')" />
+                  <small class="error-text" *ngIf="hasControlError('principalCollectionAccount')">{{ getControlErrorMessage('principalCollectionAccount') }}</small>
+                </div>
+              </div>
+
+              <div class="account-card">
+                <h5>Interest</h5>
+                <div class="form-group" [class.invalid]="hasControlError('interestBankName')">
+                  <label>Bank Name</label>
+                  <input type="text" formControlName="interestBankName" required />
+                  <small class="error-text" *ngIf="hasControlError('interestBankName')">{{ getControlErrorMessage('interestBankName') }}</small>
+                </div>
+                <div class="form-group" [class.invalid]="hasControlError('interestCollectionAccount')">
+                  <label>Account</label>
+                  <input type="text" formControlName="interestCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('interestCollectionAccount')" />
+                  <small class="error-text" *ngIf="hasControlError('interestCollectionAccount')">{{ getControlErrorMessage('interestCollectionAccount') }}</small>
+                </div>
+              </div>
+
+              <div class="account-card">
+                <h5>Late Fees</h5>
+                <div class="form-group" [class.invalid]="hasControlError('lateFeeBankName')">
+                  <label>Bank Name</label>
+                  <input type="text" formControlName="lateFeeBankName" required />
+                  <small class="error-text" *ngIf="hasControlError('lateFeeBankName')">{{ getControlErrorMessage('lateFeeBankName') }}</small>
+                </div>
+                <div class="form-group" [class.invalid]="hasControlError('lateFeeCollectionAccount')">
+                  <label>Account</label>
+                  <input type="text" formControlName="lateFeeCollectionAccount" required inputmode="numeric" maxlength="10" placeholder="e.g. 0123456789" (blur)="normalizeAccountField('lateFeeCollectionAccount')" />
+                  <small class="error-text" *ngIf="hasControlError('lateFeeCollectionAccount')">{{ getControlErrorMessage('lateFeeCollectionAccount') }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="section-heading">
+              <h4>Fees and Controls</h4>
+              <span>Late fee settings, accounting contact, and optional patronage behaviour.</span>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Late Fee Percentage (%)</label>
+                <input type="number" step="0.1" formControlName="lateFeePercentage" />
+                <small class="error-text" *ngIf="hasControlError('lateFeePercentage')">{{ getControlErrorMessage('lateFeePercentage') }}</small>
+              </div>
+              <div class="form-group">
+                <label>Late Fee Grace Days</label>
+                <input type="number" formControlName="lateFeeGraceDays" />
+                <small class="error-text" *ngIf="hasControlError('lateFeeGraceDays')">{{ getControlErrorMessage('lateFeeGraceDays') }}</small>
+              </div>
+              <div class="form-group" [class.invalid]="hasControlError('accountingEmail')">
+                <label>Accounting Email</label>
+                <input type="email" formControlName="accountingEmail" />
+                <small class="error-text" *ngIf="hasControlError('accountingEmail')">{{ getControlErrorMessage('accountingEmail') }}</small>
+              </div>
+              <div class="form-group">
+                <label>Accounting Webhook</label>
+                <input type="url" formControlName="accountingWebhookUrl" />
+                <small class="field-hint">Optional callback for posting accounting events.</small>
+              </div>
+            </div>
+
+            <div class="checkbox-row modern-checkbox-row">
+              <label class="toggle-chip"><input type="checkbox" formControlName="requiresGuarantors" /> Requires guarantors</label>
+              <label class="toggle-chip"><input type="checkbox" formControlName="patronageEligible" /> Patronage eligible</label>
+            </div>
+
+            <div class="form-group inline-form-group" *ngIf="groupForm.get('requiresGuarantors')?.value" [class.invalid]="hasControlError('minimumGuarantors')">
+              <label>Minimum Guarantors Required</label>
+              <input type="number" min="1" formControlName="minimumGuarantors" />
+              <small class="error-text" *ngIf="hasControlError('minimumGuarantors')">{{ getControlErrorMessage('minimumGuarantors') }}</small>
+            </div>
+
+            <div class="form-group inline-form-group" *ngIf="groupForm.get('patronageEligible')?.value" [class.invalid]="hasControlError('patronageRate')">
+              <label>Patronage Rate (%)</label>
+              <input type="number" step="0.1" formControlName="patronageRate" />
+              <small class="error-text" *ngIf="hasControlError('patronageRate')">{{ getControlErrorMessage('patronageRate') }}</small>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="secondary" (click)="cancelForm()">Cancel</button>
+            <button type="submit" class="primary">Save Group</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</ng-container>

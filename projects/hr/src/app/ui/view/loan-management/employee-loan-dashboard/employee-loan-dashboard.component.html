@@ -1,0 +1,213 @@
+<div class="employee-dashboard-container loan-management-surface">
+  <div class="modal-overlay" *ngIf="showPaymentForm" (click)="closePaymentFormModal()">
+    <div class="payment-modal-container" (click)="$event.stopPropagation()">
+      <app-payment-modal
+        [loan]="selectedPaymentLoan"
+        [installment]="selectedPaymentInstallment"
+        [loans]="payableLoans"
+        [allowLoanSelection]="allowPaymentLoanSelection"
+        (close)="closePaymentFormModal()"
+        (paymentSuccess)="handlePaymentSuccess()">
+      </app-payment-modal>
+    </div>
+  </div>
+
+  <app-modal *ngIf="showLoanForm" [header]="'New Loan Request'" (close)="closeLoanFormModal()">
+    <app-loan-request-form
+      [isModal]="true"
+      [employeeId]="employeeId"
+      [employeeName]="employeeName"
+      [department]="employeeDepartment"
+      (loanSubmitted)="onLoanSubmitted()"
+      (formCancelled)="closeLoanFormModal()">
+    </app-loan-request-form>
+  </app-modal>
+
+  <app-side-modal *ngIf="showLoanDetailsModal" (close)="closeLoanDetailsModal()">
+    <app-employee-loan-details-modal [loan]="selectedLoanForDetails" (close)="closeLoanDetailsModal()" (refresh)="loadLoanData()"></app-employee-loan-details-modal>
+  </app-side-modal>
+
+  <div class="dashboard-content">
+    <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+
+    <div class="welcome-header lm-header-card">
+      <div>
+        <h1><i class="fas fa-hand-holding-dollar"></i> Welcome back, {{ employeeName }}!</h1>
+        <p class="member-id">Employee ID: {{ employeeId }}</p>
+      </div>
+      <div class="user-avatar">{{ getInitials(employeeName) }}</div>
+    </div>
+
+    <div class="stats-overview">
+      <div class="stats-grid primary-grid employee-summary-grid">
+        <div class="stat-card hero-card" *ngFor="let card of employeeDashboardCards" [ngClass]="'tone-' + card.tone">
+          <div class="stat-icon"><i class="fas" [ngClass]="card.icon"></i></div>
+          <div class="stat-content">
+            <span class="stat-label">{{ card.label }}</span>
+            <span class="stat-value">{{ card.value }}</span>
+            <span class="stat-sub">{{ card.note }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add before the dashboard-workspace -->
+  <div class="payment-reminder-widget" *ngIf="allLoans.length > 0">
+  <app-employee-payment-reminder [loans]="allLoans" (makePaymentClick)="makePaymentFromReminder($event.loan, $event.installment)"></app-employee-payment-reminder>
+  </div>
+
+    <div class="dashboard-workspace">
+      <aside class="quick-actions-panel card">
+        <div class="action-panel-head">
+          <h2><i class="fas fa-compass"></i> Command Center</h2>
+        </div>
+
+        <button class="quick-action-btn new-loan-btn" (click)="openLoanFormModal()">
+          <span class="action-icon"><i class="fas fa-plus"></i></span>
+          <span class="action-copy">
+            <strong>New Loan Request</strong>
+            <small>Start a fresh application</small>
+          </span>
+        </button>
+        <button class="quick-action-btn" (click)="openPaymentFormModal()">
+          <span class="action-lock-pill" *ngIf="!payableLoans.length">Locked</span>
+          <span class="action-icon"><i class="fas fa-credit-card"></i></span>
+          <span class="action-copy">
+            <strong>Make Payment</strong>
+            <small>{{ getPaymentActionNote() }}</small>
+          </span>
+        </button>
+        <button class="quick-action-btn" (click)="toggleHistory()">
+          <span class="action-icon"><i class="fas fa-history"></i></span>
+          <span class="action-copy">
+            <strong>Loan History</strong>
+            <small>Show or hide recent requests</small>
+          </span>
+        </button>
+        <button class="quick-action-btn" (click)="viewDetailedHistory()">
+          <span class="action-icon"><i class="fas fa-list"></i></span>
+          <span class="action-copy">
+            <strong>Full History</strong>
+            <small>Open the detailed loan ledger</small>
+          </span>
+        </button>
+
+        <section class="status-updates-panel" *ngIf="applicationUpdates.length > 0">
+          <div class="status-updates-panel-head">
+            <div>
+              <h3><i class="fas fa-bell"></i> Status Updates</h3>
+              <span>Latest 3 updates</span>
+            </div>
+            <button type="button" class="status-toggle-btn" (click)="toggleStatusUpdates()" [attr.aria-expanded]="showStatusUpdates">
+              <i class="fas" [ngClass]="showStatusUpdates ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+          </div>
+
+          <div class="updates-list" *ngIf="showStatusUpdates">
+            <div class="update-item" *ngFor="let update of recentApplicationUpdates">
+              <div class="update-topline">
+                <span class="loan-code">{{ update.loanId }}</span>
+                <span class="status-badge" [ngClass]="'status-' + getStatusClass(update.status)">{{ getStatusDisplay(update.status) }}</span>
+              </div>
+              <p>{{ update.message }}</p>
+              <span class="time" *ngIf="isValidDate(update.changedAt); else invalidChangedAt">{{ update.changedAt | date:'medium' }}</span>
+              <ng-template #invalidChangedAt><span class="time">Invalid date</span></ng-template>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <div class="workspace-main">
+        <div class="card loan-history-section" *ngIf="showHistory">
+          <div class="card-header">
+            <h2><i class="fas fa-history"></i> Recent Loan Requests</h2>
+            <span class="history-subtitle">Showing last 5 requests</span>
+          </div>
+
+          <div class="table-loading-state" *ngIf="isLoading">
+            <div class="spiral-loader" aria-hidden="true">
+              <span class="spiral-ring ring-one"></span>
+              <span class="spiral-ring ring-two"></span>
+              <span class="spiral-ring ring-three"></span>
+              <span class="spiral-core"></span>
+            </div>
+            <div class="loading-copy">
+              <strong>Loading your loan requests</strong>
+              <p>Fetching your latest applications and repayment status.</p>
+            </div>
+          </div>
+
+          <div class="table-container" *ngIf="allLoans.length > 0 && !isLoading">
+            <app-table
+              [columns]="[
+                { header: 'Loan ID', field: 'loanId', sortable: true },
+                { header: 'Date', field: 'requestDate', sortable: true },
+                { header: 'Purpose', field: 'purpose', sortable: true },
+                { header: 'Amount', field: 'amount', sortable: true },
+                { header: 'Interest', field: 'interestRate', sortable: true },
+                { header: 'Repayment Date' },
+                { header: 'Repayable Amount', field: 'totalRepayable', sortable: true },
+                { header: 'Status', field: 'status', sortable: true },
+                { header: 'Actions' }
+              ]"
+              [rows]="recentLoanRows"
+              tableClass="history-table">
+              <ng-template appTableBody let-row>
+                <td class="loan-id" [title]="formatAdvanceLoanDisplayId(row.loan)">{{ row.displayId }}</td>
+                <td>
+                  <ng-container *ngIf="isValidDate(row.loan.requestDate); else invalidRequestDate">
+                    {{ row.loan.requestDate | date:'mediumDate' }}
+                  </ng-container>
+                  <ng-template #invalidRequestDate>Invalid date</ng-template>
+                </td>
+                <td class="loan-purpose">{{ row.purposeDisplay }}</td>
+                <td class="loan-amount">{{ row.amountDisplay }}</td>
+                <td>{{ row.loan.interestRate || 0 }}%</td>
+                <td>
+                  <div>{{ row.repaymentMonthYear }}</div>
+                  <small>{{ row.repaymentDay }}</small>
+                  <div class="policy-summary" *ngIf="row.overduePolicySummary">{{ row.overduePolicySummary }}</div>
+                </td>
+                <td class="loan-amount">{{ row.totalRepayableDisplay }}</td>
+                <td>
+                 <span class="status-badge" [ngClass]="'status-' + row.statusClass">
+                  {{ row.statusLabel }}
+                </span>
+                </td>
+                <td class="actions-col">
+                  <div class="table-actions">
+                    <button class="btn-view-schedule" (click)="viewLoanDetails(row.loan)" title="View Details" aria-label="View Details">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn-view-schedule" (click)="viewRepaymentSchedule(row.loan)" title="View Repayment Schedule" aria-label="View Repayment Schedule">
+                      <i class="fas fa-calendar-alt"></i>
+                    </button>
+                  </div>
+                </td>
+              </ng-template>
+            </app-table>
+          </div>
+
+            <div class="empty-state" *ngIf="allLoans.length === 0 && !isLoading">
+            <i class="fas fa-inbox"></i>
+            <p>You haven't submitted any loan requests yet.</p>
+            <button class="quick-action-btn" (click)="openLoanFormModal()">
+              <i class="fas fa-plus"></i> Submit Your First Request.
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card repayment-schedule-section" *ngIf="selectedLoanForSchedule">
+      <div class="card-header">
+        <h2><i class="fas fa-calendar-alt"></i> Repayment Schedule</h2>
+        <button class="btn-close" (click)="closeRepaymentSchedule()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <app-employee-repayment-schedule [loan]="selectedLoanForSchedule"></app-employee-repayment-schedule>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,484 @@
+$teal: #2a7a74;
+$teal-light: #e6f4f3;
+$teal-muted: #4a9e98;
+$text-primary: #1a1a1a;
+$text-secondary: #6b7280;
+$text-muted: #9ca3af;
+$border: #e5e7eb;
+$white: #ffffff;
+
+.calendar-container {
+  padding: 1.5rem;
+}
+
+.calendar-card {
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+// --- Month navigation ---
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  .month-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-primary;
+    min-width: 140px;
+    text-align: center;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: $text-secondary;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.15s;
+
+    &:hover {
+      background: $teal-light;
+      color: $teal;
+    }
+  }
+}
+
+// --- Weekday headers ---
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+  background: #2f9e75;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+
+  
+}
+
+.weekday-cell {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: white; //$text-muted;
+    padding: 8px 0;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid $border;
+}
+
+.date-cell {
+  height: 90px;
+  border-right: 1px solid $border;
+  border-bottom: 1px solid $border;
+  padding: 6px;
+  font-size: 12px;
+  position: relative;
+  cursor: pointer;
+  background: #fafafa;
+  font-weight: 500;
+  color: $text-primary;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  &:nth-child(7n) {
+    border-right: none;
+  }
+
+  &:hover {
+    background: #f0fdfa;
+  }
+
+  &.other-month {
+    background: #f5f5f5;
+    color: #c0c0c0;
+  }
+
+  &.today {
+    border: 2px solid $teal;
+  }
+
+  &.selected {
+    background: $teal-light;
+  }
+
+  &.has-schedules::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $teal;
+  }
+}
+
+.date-cell.disabled {
+  background: #fafafa;
+  color: #c0c0c0;
+  cursor: not-allowed;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+// --- Day detail panel ---
+
+.day-detail {
+  border-top: 1px solid $border;
+  padding-top: 1.25rem;
+}
+
+.day-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  .day-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+}
+  .add-btn {
+    font-size: 13px;
+    color: #fff;
+    background-color: #166534 !important;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+.empty-day {
+  font-size: 13px;
+  color: $text-muted;
+  padding: 1rem 0;
+}
+
+// --- Shift groups ---
+
+.shift-group {
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.shift-group-header {
+  margin-bottom: 0.75rem;
+
+  .shift-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+
+    strong {
+      font-size: 14px;
+      font-weight: 500;
+      color: $text-primary;
+    }
+  }
+
+  .shift-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .shift-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+
+    .time {
+      font-size: 13px;
+      color: $text-secondary;
+    }
+
+    .location {
+      font-size: 13px;
+      color: $text-secondary;
+    }
+  }
+
+  .project-link {
+    font-size: 12px;
+    color: $teal;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .recurrence-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #f3e8ff;
+    color: #7c3aed;
+    border: 1px solid #e9d5ff;
+  }
+}
+
+// --- Employee rows ---
+
+.assigned-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  border-top: 1px solid $border;
+  padding-top: 10px;
+}
+
+.employee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid $border;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .emp-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .emp-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: $text-primary;
+    }
+
+    .emp-time {
+      font-size: 12px;
+      color: $text-muted;
+    }
+  }
+
+  .status-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+
+    &.status--scheduled {
+      background: #fef9c3;
+      color: #854d0e;
+      border: 1px solid #fde68a;
+    }
+
+    &.status--completed {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    &.status--cancelled {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+  }
+}
+
+.view-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+
+  button {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #f5f5f5;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+
+    &.active {
+      background:#2a834f;
+      color: white;
+      border-color: #166534;
+    }
+
+    &:hover {
+      background: #0e5d22;
+    }
+  }
+}
+
+.table-view {
+  margin-top: 16px;
+}
+
+.shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  th {
+    background: #f8f9fb;
+    font-weight: 600;
+  }
+
+  tr:hover {
+    background: #f9fafb;
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+
+  button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* DATE INPUT */
+.date-picker {
+  appearance: none;
+  -webkit-appearance: none;
+
+  padding: 10px 12px;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  background: #fff;
+
+  font-size: 14px;
+  color: #333;
+
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+/* HOVER */
+.date-picker:hover {
+  border-color: #409eff;
+}
+
+/* FOCUS */
+.date-picker:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15);
+}
+
+/* CALENDAR ICON (Chrome/Edge) */
+.date-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.date-picker::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* DISABLED STATE */
+.date-picker:disabled {
+  background: #f5f7fa;
+  cursor: not-allowed;
+  color: #aaa;
+}
+
+/* OPTIONAL: Align button nicely */
+.assign-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #22c55e;
+  color: white;
+  border: none;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.assign-btn:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.assign-btn:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}

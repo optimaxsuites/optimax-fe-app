@@ -1,0 +1,224 @@
+<div class="member-detail-container">
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading member details...</p>
+  </div>
+
+  <div *ngIf="!isLoading && member" class="detail-content">
+    <div class="detail-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Member Profile: {{ member.fullName | titlecase }}</h1>
+      </div>
+    </div>
+
+    <div class="profile-summary-card">
+      <span><strong>Member ID:</strong> {{ formattedMemberId }}</span>
+      <span><strong>Since:</strong> {{ member.joinDate | date:'MMM yyyy' }}</span>
+      <span><strong>Tenure:</strong> {{ memberTenureMonths }} month(s)</span>
+      <span class="status-badge" 
+        [class.status-active]="member.status === 'ACTIVE'" 
+        [class.status-inactive]="member.status === 'INACTIVE'" 
+        [class.status-suspended]="member.status === 'SUSPENDED'">
+        {{ formatStatusDisplay(member.status) }}
+      </span>
+    </div>
+
+    <!-- Summary Grid Cards -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="card-icon tone-total"><i class="fas fa-layer-group"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Groups</span>
+          <strong>{{ activeGroups.length }}</strong>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon tone-approved"><i class="fas fa-naira-sign"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Borrowed</span>
+          <strong>{{ formatCurrency(getTotalBorrowed()) }}</strong>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon tone-active"><i class="fas fa-wallet"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Active</span>
+          <strong>{{ getActiveLoans().length }}</strong>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="card-icon tone-closed"><i class="fas fa-flag-checkered"></i></div>
+        <div class="card-copy">
+          <span class="summary-label">Completed</span>
+          <strong>{{ getCompletedLoans().length }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Groups List -->
+    <div class="tab-content group-membership-tab">
+      <div class="section-head">
+        <h3><i class="fas fa-layer-group"></i> ACTIVE GROUPS</h3>
+      </div>
+
+      <div class="groups-list" *ngIf="activeGroups.length > 0; else noActiveGroups">
+        <div class="group-list-item" *ngFor="let group of activeGroups">
+          <div class="group-info">
+            <div class="group-name">{{ group.groupName }}</div>
+            <div class="group-joined">Joined {{ group.joinedAt | date:'mediumDate' }}</div>
+          </div>
+          <div class="group-contributions">
+            <div class="contribution-item">
+              <span class="label">Monthly</span>
+              <strong>{{ formatCurrency(group.monthlyContributionAmount) }}</strong>
+            </div>
+            <div class="contribution-item">
+              <span class="label">Total</span>
+              <strong>{{ formatCurrency(group.totalContribution) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noActiveGroups>
+        <div class="empty-state compact">
+          <p>This member does not belong to any active cooperative groups yet.</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h3><i class="fas fa-address-card"></i> CONTACT</h3>
+        <div class="info-row">
+          <span class="label">Email:</span>
+          <span class="value">{{ member.email }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Phone:</span>
+          <span class="value">{{ member.phone }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Address:</span>
+          <span class="value">{{ member.address || 'Not provided' }}</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fas fa-phone-volume"></i> EMERGENCY CONTACT</h3>
+        <div *ngIf="member.emergencyContact; else noEmergency">
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span class="value">{{ member.emergencyContact.name }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Phone:</span>
+            <span class="value">{{ member.emergencyContact.phone }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Relation:</span>
+            <span class="value">{{ member.emergencyContact.relationship }}</span>
+          </div>
+        </div>
+        <ng-template #noEmergency>
+          <p class="text-muted">No emergency contact provided</p>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="tab-content loans-tab">
+      <div class="section-head">
+        <h3><i class="fas fa-file-invoice-dollar"></i> LOAN HISTORY</h3>
+        <button class="view-all-btn" (click)="viewAllMemberLoans()">View All</button>
+      </div>
+
+      <div class="table-container" *ngIf="memberLoans.length > 0">
+        <app-table
+          [columns]="[
+            { header: 'ID' },
+            { header: 'Amount' },
+            { header: 'Purpose' },
+            { header: 'Group' },
+            { header: 'Status' },
+            { header: 'Date' },
+            { header: 'Actions' }
+          ]"
+          [rows]="memberLoans"
+          [rowClickable]="true"
+          (rowClick)="viewLoan($event.id)"
+          tableClass="loans-table">
+          <ng-template appTableBody let-loan>
+            <td class="loan-id">{{ loan.loanCode }}</td>
+            <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+            <td class="purpose">{{ formatPurposeDisplay(loan.purpose) }}</td>
+            <td class="group-name">
+              {{ getGroupName(loan.cooperativeGroupId || loan.groupId) }}
+            </td>
+            <td>
+              <span class="status-badge" 
+                [class.status-pending]="loan.status === 'PENDING'"
+                [class.status-approved]="loan.status === 'APPROVED'"
+                [class.status-ready_for_disbursement]="loan.status === 'READY_FOR_DISBURSEMENT'"
+                [class.status-active]="loan.status === 'ACTIVE'"
+                [class.status-skipped]="loan.status === 'SKIPPED'"
+                [class.status-overdue]="loan.status === 'OVERDUE'"
+                [class.status-paused]="loan.status === 'PAUSED'"
+                [class.status-completed]="loan.status === 'COMPLETED'"
+                [class.status-defaulted]="loan.status === 'DEFAULTED'"
+                [class.status-rejected]="loan.status === 'REJECTED'">
+                {{ formatStatusDisplay(loan.status) }}
+              </span>
+            </td>
+            <td>{{ loan.requestDate | date:'MMM yyyy' }}</td>
+            <td class="actions-col">
+              <button class="action-icon view-icon" (click)="viewLoan(loan.id); $event.stopPropagation()" title="View Loan">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </ng-template>
+        </app-table>
+      </div>
+
+      <div *ngIf="memberLoans.length === 0" class="empty-state">
+        <i class="fas fa-file-invoice"></i>
+        <p>No loan applications yet</p>
+      </div>
+    </div>
+
+    <div class="tab-content repayment-tab">
+      <div class="section-head">
+        <h3><i class="fas fa-receipt"></i> REPAYMENT HISTORY</h3>
+      </div>
+
+      <div class="table-container" *ngIf="getRepaymentHistory().length > 0">
+        <app-table
+          [columns]="[
+            { header: 'Loan ID' },
+            { header: 'Paid' },
+            { header: 'Outstanding' },
+            { header: 'Last Payment' },
+            { header: 'Status' }
+          ]"
+          [rows]="getRepaymentHistory()"
+          tableClass="loans-table">
+          <ng-template appTableBody let-item>
+            <td class="loan-id">{{ item.loanId }}</td>
+            <td class="amount">{{ formatCurrency(item.paidAmount) }}</td>
+            <td>{{ formatCurrency(item.outstandingAmount) }}</td>
+            <td>{{ item.lastPaymentDate | date:'mediumDate' }}</td>
+            <td>
+              <span class="status-badge" 
+                [class.status-paid]="item.status === 'PAID'"
+                [class.status-ongoing]="item.status === 'ONGOING'"
+                [class.status-pending]="item.status === 'PENDING'">
+                {{ formatStatusDisplay(item.status) }}
+              </span>
+            </td>
+          </ng-template>
+        </app-table>
+      </div>
+    </div>
+  </div>
+</div>

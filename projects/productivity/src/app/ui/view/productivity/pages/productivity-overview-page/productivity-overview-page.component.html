@@ -1,0 +1,121 @@
+<section class="page-grid">
+  <div class="hero-panel">
+    <div class="hero-copy">
+      <p class="eyebrow dark">Current operating picture</p>
+      <h3>Connect daily execution to weekly and monthly performance.</h3>
+      <p>
+        Monitor assigned work, completion quality, overdue exposure, and review readiness
+        from one workspace built for supervisors, HR, and executives.
+      </p>
+    </div>
+
+    <div class="hero-metrics">
+      <article *ngFor="let metric of metrics" class="metric-card" [ngClass]="toneClass(metric.tone)">
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <p>{{ metric.delta }}</p>
+        <small>{{ metric.hint }}</small>
+      </article>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow muted">Critical workload</p>
+          <h4>Priority task watchlist</h4>
+        </div>
+        <button type="button" class="link-button">View all tasks</button>
+      </div>
+
+      <div class="task-list">
+        <article *ngFor="let task of tasks" class="task-card">
+          <div class="task-main">
+            <div>
+              <div class="task-heading">
+                <h5>{{ task.title }}</h5>
+                <span class="status-pill" [ngClass]="statusClass(task.status)">{{ task.status }}</span>
+              </div>
+              <p>{{ task.assignee }} · {{ task.team }}</p>
+            </div>
+            <span class="priority-pill">{{ task.priority }}</span>
+          </div>
+
+          <p class="task-target">{{ task.target }}</p>
+
+          <div class="progress-block">
+            <div class="progress-line">
+              <span class="progress-fill" [style.width.%]="task.progress"></span>
+            </div>
+            <div class="progress-meta">
+              <span>{{ task.progress }}% complete</span>
+              <span>Due {{ task.dueDate }}</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow muted">Review cadence</p>
+          <h4>Active performance cycles</h4>
+        </div>
+      </div>
+
+      <div class="cycle-list">
+        <article *ngFor="let cycle of cycles" class="cycle-card">
+          <div>
+            <h5>{{ cycle.name }}</h5>
+            <p>{{ cycle.period }} · Owner: {{ cycle.owner }}</p>
+          </div>
+          <div class="cycle-stats">
+            <span>Self {{ cycle.selfAssessmentRate }}</span>
+            <span>Supervisor {{ cycle.supervisorRate }}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-pill">{{ cycle.status }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow muted">Organization comparison</p>
+        <h4>Department drill-down</h4>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Unit</th>
+            <th>Score</th>
+            <th>Completed</th>
+            <th>Overdue</th>
+            <th>Self-review rate</th>
+            <th>Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of leaderboard">
+            <td>{{ row.unit }}</td>
+            <td>{{ row.score }}</td>
+            <td>{{ row.completed }}</td>
+            <td>{{ row.overdue }}</td>
+            <td>{{ row.selfReviewRate }}</td>
+            <td>
+              <span class="status-pill" [ngClass]="statusClass(row.risk)">{{ row.risk }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

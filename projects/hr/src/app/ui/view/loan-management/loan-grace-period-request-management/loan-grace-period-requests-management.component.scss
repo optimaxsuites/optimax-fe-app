@@ -1,0 +1,619 @@
+@use '../loan-status-badges' as loanStatus;
+
+.grace-period-admin-container {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding: 20px 28px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid rgba(46, 98, 118, 0.12);
+    box-shadow: 0 8px 20px rgba(46, 98, 118, 0.08);
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-title {
+      h1 {
+        margin: 0 0 6px;
+        color: #1a4b5c;
+        font-size: 1.6rem;
+        font-weight: 700;
+
+        .title-icon {
+          color: #2EB270;
+          margin-right: 10px;
+        }
+      }
+
+      p {
+        margin: 0;
+        color: #6b8a97;
+        font-size: 0.85rem;
+      }
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 12px;
+
+      .stat-badge {
+        padding: 8px 16px;
+        border-radius: 40px;
+        text-align: center;
+        min-width: 90px;
+
+        span {
+          display: block;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 2px;
+        }
+
+        strong {
+          font-size: 1.2rem;
+          font-weight: 700;
+        }
+
+        &.pending {
+          background: rgba(245, 158, 11, 0.12);
+          color: #f59e0b;
+          border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        &.approved {
+          background: rgba(46, 178, 112, 0.12);
+          color: #2EB270;
+          border: 1px solid rgba(46, 178, 112, 0.25);
+        }
+
+        &.rejected {
+          background: rgba(239, 68, 68, 0.12);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+      }
+    }
+  }
+
+  .filters-section {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid #e3eef0;
+
+    .filter-group {
+      flex: 1;
+      min-width: 200px;
+
+      label {
+        display: block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #8aadba;
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+
+      .filter-select, .filter-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #e3eef0;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        background: white;
+
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+        }
+      }
+    }
+
+    .refresh-btn {
+      padding: 0 24px;
+      border-radius: 40px;
+      background: linear-gradient(135deg, #2E6276, #4291b1);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-end;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.3);
+      }
+    }
+  }
+
+  .results-info {
+    margin-bottom: 16px;
+    color: #8aadba;
+    font-size: 0.85rem;
+  }
+
+  .table-container {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e3eef0;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.06);
+
+    .requests-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th, td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid #eef3f6;
+      }
+
+      th {
+        background: #f8fcfd;
+        color: #1a4b5c;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &.sortable {
+          cursor: pointer;
+          
+          i {
+            margin-left: 6px;
+            color: #8aadba;
+          }
+
+          &:hover {
+            background: #eef7fa;
+          }
+        }
+      }
+
+      .id {
+        font-family: monospace;
+        font-weight: 600;
+        color: #2E6276;
+      }
+
+      .loan-id {
+        font-family: monospace;
+        font-weight: 600;
+        color: #2E6276;
+      }
+
+      .payment-type {
+        .payment-badge {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.7rem;
+          font-weight: 600;
+
+          &.principal { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+          &.interest { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+          &.late-fee { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+        }
+      }
+
+      .reason {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #6b8a97;
+      }
+
+      .date {
+        font-size: 0.85rem;
+        color: #6b8a97;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+
+        @include loanStatus.advanceLoanStatusBadges(false);
+      }
+
+      .actions {
+        white-space: nowrap;
+
+        button {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s;
+          margin: 0 2px;
+
+          i {
+            font-size: 0.9rem;
+          }
+
+          &.btn-approve {
+            color: #2EB270;
+            &:hover { background: rgba(46, 178, 112, 0.1); transform: scale(1.05); }
+          }
+
+          &.btn-reject {
+            color: #ef4444;
+            &:hover { background: rgba(239, 68, 68, 0.1); transform: scale(1.05); }
+          }
+
+          &.btn-view {
+            color: #2E6276;
+            &:hover { background: rgba(46, 98, 118, 0.1); transform: scale(1.05); }
+          }
+        }
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 60px 20px;
+
+        i {
+          font-size: 3rem;
+          color: #cde3ea;
+          margin-bottom: 16px;
+          display: block;
+        }
+
+        p {
+          color: #8aadba;
+        }
+      }
+    }
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e3eef0;
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e3eef0;
+      border-top: 4px solid #2E6276;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    p {
+      color: #2E6276;
+    }
+  }
+}
+
+// Modal Styles
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 24px;
+  width: 550px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  &.details-modal {
+    width: 700px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #eef3f6;
+
+    h2 {
+      margin: 0;
+      color: #1a4b5c;
+      font-size: 1.2rem;
+
+      i {
+        margin-right: 8px;
+      }
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #f0f7fa;
+      cursor: pointer;
+    }
+  }
+
+  .modal-body {
+    padding: 24px;
+
+    .request-summary {
+      background: #f8fcfd;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #eef3f6;
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eef3f6;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        span {
+          color: #8aadba;
+          font-size: 0.85rem;
+        }
+
+        strong {
+          color: #1a4b5c;
+          font-size: 0.85rem;
+        }
+      }
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+
+      .detail-item {
+        label {
+          display: block;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          color: #8aadba;
+          margin-bottom: 4px;
+          font-weight: 600;
+        }
+
+        span {
+          font-size: 0.9rem;
+          color: #1a4b5c;
+        }
+
+        .payment-badge {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.7rem;
+          font-weight: 600;
+
+          &.principal { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+          &.interest { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+          &.late-fee { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 700;
+
+          @include loanStatus.advanceLoanStatusBadges(false);
+        }
+
+        .reason-text, .note-text {
+          display: block;
+          background: #f8fcfd;
+          padding: 10px;
+          border-radius: 8px;
+          margin-top: 4px;
+          line-height: 1.5;
+        }
+
+        .note-text.rejection {
+          background: #fef2f2;
+          color: #991b1b;
+        }
+
+        &.full-width {
+          grid-column: span 2;
+        }
+      }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+
+      label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1a4b5c;
+        margin-bottom: 8px;
+
+        .required {
+          color: #dc3545;
+          margin-left: 4px;
+        }
+      }
+
+      .form-input, .form-textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #e3eef0;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-family: inherit;
+
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+        }
+
+        &.readonly {
+          background: #f8fcfd;
+          color: #8aadba;
+        }
+      }
+
+      .form-textarea {
+        resize: vertical;
+      }
+
+      .field-hint {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.7rem;
+        color: #8aadba;
+      }
+    }
+
+    .info-box {
+      display: flex;
+      gap: 12px;
+      padding: 14px;
+      background: #fef8e7;
+      border-radius: 12px;
+      margin-top: 16px;
+      border-left: 4px solid #eb9b3f;
+
+      i {
+        color: #eb9b3f;
+        font-size: 1.2rem;
+      }
+
+      .info-text {
+        strong {
+          display: block;
+          color: #1a4b5c;
+          font-size: 0.85rem;
+          margin-bottom: 4px;
+        }
+
+        p {
+          margin: 0;
+          color: #6b8a97;
+          font-size: 0.8rem;
+          line-height: 1.5;
+        }
+      }
+    }
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #eef3f6;
+
+    .cancel-btn, .close-details-btn {
+      padding: 10px 20px;
+      border-radius: 40px;
+      border: 1px solid #e3eef0;
+      background: white;
+      color: #8aadba;
+      cursor: pointer;
+    }
+
+    .approve-btn {
+      padding: 10px 24px;
+      border-radius: 40px;
+      border: none;
+      background: linear-gradient(135deg, #2EB270, #239d60);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .reject-btn {
+      padding: 10px 24px;
+      border-radius: 40px;
+      border: none;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .grace-period-admin-container {
+    padding: 16px;
+
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+
+      .header-left {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header-stats {
+        justify-content: center;
+      }
+    }
+
+    .filters-section {
+      flex-direction: column;
+
+      .filter-group {
+        min-width: auto;
+      }
+    }
+
+    .table-container {
+      overflow-x: auto;
+
+      .requests-table {
+        min-width: 900px;
+      }
+    }
+  }
+}

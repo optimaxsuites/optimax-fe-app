@@ -1,0 +1,757 @@
+<div class="employee-page-shell">
+  <div *ngIf="loading" class="surface-loading-overlay">
+    <div class="surface-loading-card">
+      <div class="employee-view employee-dashboard-loading">
+        <section class="employee-hero dashboard-loading-card">
+          <div class="hero-main">
+            <div class="loading-avatar-lg"></div>
+            <div class="flex flex-col gap-3 flex-1">
+              <div class="loading-line w-48"></div>
+              <div class="loading-line w-32"></div>
+              <div class="flex gap-2 flex-wrap">
+                <div class="loading-chip"></div>
+                <div class="loading-chip"></div>
+                <div class="loading-chip"></div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-details">
+            <div class="loading-detail-card" *ngFor="let item of [1,2,3,4,5]"></div>
+          </div>
+        </section>
+
+        <section class="grid lg:grid-cols-2 gap-4">
+          <div class="info-card dashboard-loading-card">
+            <div class="loading-line w-24 mb-4"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="loading-stack">
+                <div class="loading-line w-20"></div>
+                <div class="loading-line w-full"></div>
+                <div class="loading-line w-5/6"></div>
+                <div class="loading-line w-4/6"></div>
+              </div>
+              <div class="loading-stack">
+                <div class="loading-line w-20"></div>
+                <div class="loading-line w-full"></div>
+                <div class="loading-line w-5/6"></div>
+                <div class="loading-line w-4/6"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card dashboard-loading-card">
+            <div class="loading-line w-28 mb-4"></div>
+            <div class="metric-grid">
+              <div class="loading-metric"></div>
+              <div class="loading-metric"></div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 mt-4">
+              <div class="loading-list-block"></div>
+              <div class="loading-list-block"></div>
+              <div class="loading-list-block"></div>
+              <div class="loading-list-block"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="employee-view p-4" *ngIf="!loading && employeeInView; else emptyState">
+    <section class="dashboard-summary-grid">
+      <article class="summary-card summary-card--accent">
+        <div class="summary-card-top">
+          <span class="summary-icon"><i class="fa-solid fa-briefcase"></i></span>
+          <span class="summary-trend summary-trend--light">{{ roleTrendLabel }}</span>
+        </div>
+        <span class="summary-label">Current role</span>
+        <strong class="summary-value">{{ employeeInView?.jobTitle || 'Role pending' }}</strong>
+        <span class="summary-meta">{{ employeeInView?.department?.name || employeeInView?.department || 'Department pending' }}</span>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card-top">
+          <span class="summary-icon summary-icon--blue"><i class="fa-solid fa-wallet"></i></span>
+          <span class="summary-trend">{{ salaryTrendLabel }}</span>
+        </div>
+        <span class="summary-label">Net salary</span>
+        <strong class="summary-value">
+          {{
+            (employeeInView?.salaryDetails?.netSalaryComputed ??
+              employeeInView?.salaryDetails?.netSalary) | currency: 'NGN'
+          }}
+        </strong>
+        <span class="summary-meta">Monthly take-home</span>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card-top">
+          <span class="summary-icon summary-icon--emerald"><i class="fa-solid fa-umbrella-beach"></i></span>
+          <span class="summary-trend">{{ leaveTrendLabel }}</span>
+        </div>
+        <span class="summary-label">Leave balance</span>
+        <strong class="summary-value">{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} day(s)</strong>
+        <span class="summary-meta">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} used this cycle</span>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card-top">
+          <span class="summary-icon summary-icon--amber"><i class="fa-solid fa-chart-line"></i></span>
+          <span class="summary-trend">{{ attendanceTrendLabel }}</span>
+        </div>
+        <span class="summary-label">Attendance</span>
+        <strong class="summary-value">{{ employeeInView?.attendance?.daysPresent || 0 }} day(s)</strong>
+        <span class="summary-meta">{{ employeeInView?.attendance?.lateArrivals || 0 }} late arrival(s)</span>
+      </article>
+    </section>
+
+    <section class="employee-hero">
+      <div class="hero-main-shell">
+        <div class="hero-main">
+          <div class="avatar">
+            <img
+              [src]="employeeInView?.imageUrl?.changingThisBreaksApplicationSecurity || employeeInView?.imageUrl || employeeProfilePhotoUrl"
+              alt=""
+            />
+          </div>
+          <div class="hero-text">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="hero-name">{{ employeeInView?.lastName }} {{ employeeInView?.firstName }}</h2>
+              <span class="status-pill"><i class="pi pi-check-circle status-dot"></i>Active</span>
+            </div>
+            <p class="hero-title">{{ employeeInView?.jobTitle || 'Role' }}</p>
+            <div class="chip-row">
+              <span class="chip">{{ employeeInView?.department?.name || employeeInView?.department || 'Department' }}</span>
+              <span class="chip">{{ employeeInView?.level?.name || employeeInView?.level || 'Level' }}</span>
+              <span class="chip">{{ employeeInView?.employmentType?.name || employeeInView?.employmentType || employeeInView?.jobType.name || 'Type' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-cta-card">
+          <span class="hero-cta-label">Profile completeness</span>
+          <strong class="hero-cta-value">{{ profileCompletionScore }}%</strong>
+          <p class="hero-cta-copy">Core employee profile, contact, and job record coverage in the HR workspace.</p>
+          <div class="hero-cta-progress">
+            <span class="hero-cta-progress-bar" [style.width.%]="profileCompletionScore"></span>
+          </div>
+          <div class="hero-cta-actions">
+            <button class="edit-btn" (click)="openEdit()">Edit Profile</button>
+            <button type="button" class="secondary-link-btn" (click)="openStaffId()">Staff ID</button>
+            <a class="secondary-link-btn" [attr.href]="buildMailLink(employeeInView?.workEmail || employeeInView?.email)">
+              Contact
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-details">
+        <div class="detail-item">
+          <span class="detail-label">Employee ID</span>
+          <span class="detail-value">{{ employeeInView?.id || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Date Joined</span>
+          <span class="detail-value">
+            {{
+              formatDate(
+                employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate
+              )
+            }}
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Email</span>
+          <div class="detail-value-row">
+            <span class="detail-value">{{ employeeInView?.email || '-' }}</span>
+            <div class="detail-actions">
+              <button
+                type="button"
+                class="icon-action-btn"
+                title="Copy email"
+                aria-label="Copy email"
+                (click)="copyToClipboard(employeeInView?.email, 'Email')"
+                [disabled]="!employeeInView?.email"
+              >
+                <i class="pi pi-copy"></i>
+              </button>
+              <a
+                class="icon-action-btn"
+                title="Send email"
+                aria-label="Send email"
+                [attr.href]="buildMailLink(employeeInView?.email)"
+                [class.is-disabled]="!employeeInView?.email"
+              >
+                <i class="pi pi-envelope"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Work Email</span>
+          <div class="detail-value-row">
+            <span class="detail-value">{{ employeeInView?.workEmail || '-' }}</span>
+            <div class="detail-actions">
+              <button
+                type="button"
+                class="icon-action-btn"
+                title="Copy work email"
+                aria-label="Copy work email"
+                (click)="copyToClipboard(employeeInView?.workEmail, 'Work email')"
+                [disabled]="!employeeInView?.workEmail"
+              >
+                <i class="pi pi-copy"></i>
+              </button>
+              <a
+                class="icon-action-btn"
+                title="Send work email"
+                aria-label="Send work email"
+                [attr.href]="buildMailLink(employeeInView?.workEmail)"
+                [class.is-disabled]="!employeeInView?.workEmail"
+              >
+                <i class="pi pi-envelope"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Phone</span>
+          <div class="detail-value-row">
+            <span class="detail-value">{{ employeeInView?.phone || '-' }}</span>
+            <div class="detail-actions">
+              <button
+                type="button"
+                class="icon-action-btn"
+                title="Copy phone"
+                aria-label="Copy phone"
+                (click)="copyToClipboard(employeeInView?.phone, 'Phone')"
+                [disabled]="!employeeInView?.phone"
+              >
+                <i class="pi pi-copy"></i>
+              </button>
+              <a
+                class="icon-action-btn"
+                title="Call phone"
+                aria-label="Call phone"
+                [attr.href]="buildTelLink(employeeInView?.phone)"
+                [class.is-disabled]="!employeeInView?.phone"
+              >
+                <i class="pi pi-phone"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid xl:grid-cols-[1.35fr_0.95fr] gap-4">
+      <div class="info-card">
+        <div class="card-header">
+          <p class="card-title">Profile</p>
+          <span class="card-caption">Employee record overview</span>
+        </div>
+        <div class="card-grid">
+          <div class="info-block">
+            <p class="block-title">Basic</p>
+            <div class="info-row">
+              <span class="info-label">Full name</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.lastName }} {{ employeeInView?.firstName }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Gender</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.gender?.name || employeeInView?.gender || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Date of birth</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.dob || '-' }}</span>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <p class="block-title">Contact</p>
+            <div class="info-row">
+              <span class="info-label">Work email</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Phone</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.phone || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Location</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.address || '-' }}</span>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <p class="block-title">Job</p>
+            <div class="info-row">
+              <span class="info-label">Department</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.department?.name || employeeInView?.department || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Level</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.level?.name || employeeInView?.level || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Supervisor</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-stack">
+        <div class="info-card">
+          <div class="card-header">
+            <p class="card-title">Compensation</p>
+            <span class="text-xs text-slate-400">Monthly</span>
+          </div>
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span class="metric-label">Base salary</span>
+              <span class="metric-value">{{ employeeInView?.salaryDetails?.baseSalary | currency: 'NGN' }}</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Net salary</span>
+              <span class="metric-value">
+                {{
+                  (employeeInView?.salaryDetails?.netSalaryComputed ??
+                    employeeInView?.salaryDetails?.netSalary) | currency: 'NGN'
+                }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4 mt-4">
+            <div class="list-block">
+              <p class="list-title">Allowances</p>
+              <div *ngIf="employeeInView?.salaryDetails?.allowance?.length; else noAllowances" class="list-stack">
+                <p *ngFor="let allowance of employeeInView?.salaryDetails?.allowance">
+                  {{ (getAllowanceName(allowance.allowanceTypeId) | async) || allowance.allowanceTypeId }}:
+                  {{ allowance.amount | currency: 'NGN' }}
+                </p>
+              </div>
+              <ng-template #noAllowances>
+                <p class="empty-text">No allowances available</p>
+              </ng-template>
+            </div>
+
+            <div class="list-block">
+              <p class="list-title">Bonuses</p>
+              <div *ngIf="employeeInView?.salaryDetails?.bonus?.length; else noBonuses" class="list-stack">
+                <p *ngFor="let bonus of employeeInView?.salaryDetails?.bonus">
+                  {{ (getBonusName(bonus.bonusTypeId) | async) || bonus.bonusTypeId }}:
+                  {{ bonus.amount | currency: 'NGN' }}
+                </p>
+              </div>
+              <ng-template #noBonuses>
+                <p class="empty-text">No bonuses available</p>
+              </ng-template>
+            </div>
+
+            <div class="list-block">
+              <p class="list-title">Deductions</p>
+              <div *ngIf="employeeInView?.salaryDetails?.deductions?.length; else noDeduction" class="list-stack">
+                <p *ngFor="let deduction of employeeInView?.salaryDetails?.deductions">
+                  {{ (getDeductionName(deduction.deductionsTypeId) | async) || deduction.deductionsTypeId }}:
+                  {{ deduction.amount | currency: 'NGN' }}
+                </p>
+              </div>
+              <ng-template #noDeduction>
+                <p class="empty-text">No deductions available</p>
+              </ng-template>
+            </div>
+
+            <div class="list-block">
+              <p class="list-title">Overtime</p>
+              <div *ngIf="employeeInView?.salaryDetails?.overtime?.length; else noOvertime" class="list-stack">
+                <p *ngFor="let overtime of employeeInView?.salaryDetails?.overtime">
+                  {{ (getOvertimeName(overtime.overtimeTypeId) | async) || overtime.overtimeTypeId }}:
+                  {{ overtime.rate | currency: 'NGN' }}
+                </p>
+              </div>
+              <ng-template #noOvertime>
+                <p class="empty-text">No overtime available</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card premium-panel">
+          <div class="card-header">
+            <p class="card-title">Profile activity</p>
+            <span class="card-caption">Timeline and service health</span>
+          </div>
+          <div class="timeline-stack">
+            <div class="timeline-item">
+              <span class="timeline-dot timeline-dot--solid"></span>
+              <div class="timeline-copy">
+                <strong>Profile synced</strong>
+                <p>Work email, phone, and salary details are available in the record.</p>
+              </div>
+              <span class="timeline-time">Today</span>
+            </div>
+            <div class="timeline-item">
+              <span class="timeline-dot"></span>
+              <div class="timeline-copy">
+                <strong>Attendance reviewed</strong>
+                <p>{{ employeeInView?.attendance?.daysPresent || 0 }} days present with {{ employeeInView?.attendance?.lateArrivals || 0 }} late arrivals recorded.</p>
+              </div>
+              <span class="timeline-time">This cycle</span>
+            </div>
+            <div class="timeline-item">
+              <span class="timeline-dot"></span>
+              <div class="timeline-copy">
+                <strong>Leave balance updated</strong>
+                <p>{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} days remain from {{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} assigned days.</p>
+              </div>
+              <span class="timeline-time">Recent</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-header">
+            <p class="card-title">Today at a glance</p>
+            <span class="card-caption">Operational snapshot</span>
+          </div>
+          <div class="spotlight-stack">
+            <div class="spotlight-row">
+              <span class="spotlight-label">Supervisor</span>
+              <strong class="spotlight-value">{{ employeeInView?.supervisor || 'Not assigned' }}</strong>
+            </div>
+            <div class="spotlight-row">
+              <span class="spotlight-label">Work email</span>
+              <strong class="spotlight-value">{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</strong>
+            </div>
+            <div class="spotlight-row">
+              <span class="spotlight-label">Last present</span>
+              <strong class="spotlight-value">{{ employeeInView?.attendance?.lastPresent || '-' }}</strong>
+            </div>
+            <div class="spotlight-row">
+              <span class="spotlight-label">Annual leave</span>
+              <strong class="spotlight-value">{{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} day(s)</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid xl:grid-cols-3 gap-4">
+      <div class="info-card">
+        <div class="card-header">
+          <p class="card-title">Leave Summary</p>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-card">
+            <span class="stat-label">Available days left</span>
+            <span class="stat-value">{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} day(s)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Days used</span>
+            <span class="stat-value">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} day(s)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total accrued</span>
+            <span class="stat-value">{{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} day(s)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-header">
+          <p class="card-title">Leave Usage</p>
+          <span class="card-caption">Calendar overview</span>
+        </div>
+        <div class="calendar-shell">
+          <div class="calendar-shell-header">
+            <div>
+              <p class="calendar-shell-title">Leave calendar</p>
+              <p class="calendar-shell-copy">Approved leave periods and schedule visibility in one surface.</p>
+            </div>
+            <span class="calendar-shell-badge">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} used</span>
+          </div>
+          <div class="calendar-wrap">
+          <full-calendar [options]="calendarOptions"></full-calendar>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-header">
+          <p class="card-title">Attendance</p>
+          <span class="status-pill"><span class="status-dot"></span>Online</span>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-card">
+            <span class="stat-label">Days present</span>
+            <span class="stat-value">{{ employeeInView?.attendance?.daysPresent || 0 }} day(s)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Days absent</span>
+            <span class="stat-value">{{ employeeInView?.attendance?.daysAbsent || 0 }} day(s)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Late arrivals</span>
+            <span class="stat-value">{{ employeeInView?.attendance?.lateArrivals || 0 }} day(s)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<ng-template #emptyState>
+  <div class="info-card p-4">
+    <p class="text-sm text-slate-500">No employee record found.</p>
+  </div>
+</ng-template>
+
+<app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
+  <div class="staff-id-modal">
+    <div class="staff-id-toolbar">
+      <button type="button" class="secondary-link-btn" (click)="closeStaffId()">Close</button>
+      <button type="button" class="edit-btn" (click)="printStaffId()">Download PDF</button>
+    </div>
+    <div class="staff-id-layout" id="staff-id-download">
+      <div class="staff-id-card">
+        <div class="staff-id-card__header">
+          <div class="staff-id-card__brand">
+            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <div>
+              <p class="staff-id-card__eyebrow">Centrifuge Information Technology Ltd</p>
+              <h3>Staff Identification Card</h3>
+            </div>
+          </div>
+          <span class="staff-id-card__badge">HR Verified</span>
+        </div>
+
+        <div class="staff-id-card__body">
+          <div class="staff-id-card__identity">
+            <div class="staff-id-card__avatar">
+              <img
+                [src]="employeeInView?.imageUrl?.changingThisBreaksApplicationSecurity || employeeInView?.imageUrl || employeeProfilePhotoUrl"
+                alt=""
+              />
+            </div>
+            <div>
+              <p class="staff-id-card__name">{{ printableStaffName || 'Employee' }}</p>
+              <p class="staff-id-card__role">{{ employeeInView?.jobTitle || 'Role pending' }}</p>
+              <div class="staff-id-card__chips">
+                <span>{{ employeeInView?.department?.name || employeeInView?.department || 'Department' }}</span>
+                <span>{{ employeeInView?.level?.name || employeeInView?.level || 'Level' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="staff-id-card__details">
+            <div class="staff-id-card__detail">
+              <span>Staff ID</span>
+              <strong>{{ printableStaffId }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Work email</span>
+              <strong>{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Phone</span>
+              <strong>{{ employeeInView?.phone || '-' }}</strong>
+            </div>
+            <div class="staff-id-card__detail">
+              <span>Date joined</span>
+              <strong>{{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-id-card__scan-row">
+          <div class="staff-id-card__qr" *ngIf="staffIdQrDataUrl; else qrFallback">
+            <img [src]="staffIdQrDataUrl" alt="Staff QR code" />
+            <small>HR scan code</small>
+          </div>
+          <ng-template #qrFallback>
+            <div class="staff-id-card__qr staff-id-card__qr--empty">
+              <small>QR unavailable</small>
+            </div>
+          </ng-template>
+          <div class="staff-id-card__barcode-wrap">
+            <img *ngIf="staffIdBarcodeDataUrl" [src]="staffIdBarcodeDataUrl" alt="Staff barcode" class="staff-id-card__barcode-image" />
+            <p>{{ printableStaffId }}</p>
+          </div>
+        </div>
+
+        <div class="staff-id-card__footer">
+          <p>Valid for internal identity, facility access, and HR record verification.</p>
+          <div class="staff-id-card__actions">
+            <button type="button" class="secondary-link-btn" (click)="closeStaffId()">Close</button>
+            <button type="button" class="edit-btn" (click)="printStaffId()">Download PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="staff-id-card staff-id-card--back">
+        <div class="staff-id-card__header">
+          <div class="staff-id-card__brand">
+            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <div>
+              <p class="staff-id-card__eyebrow">Reverse side</p>
+              <h3>Verification and emergency</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-id-card__back-grid">
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Emergency contact</span>
+            <strong>{{ employeeInView?.nextOfKin?.[0]?.fullName || employeeInView?.nextOfKin?.[0]?.name || 'Not available' }}</strong>
+            <p>{{ employeeInView?.nextOfKin?.[0]?.phone || '-' }}</p>
+            <p>{{ employeeInView?.nextOfKin?.[0]?.relationship || '-' }}</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Verification policy</span>
+            <p>This card remains company property and must be presented for internal identity, access, and HR record validation.</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Issue control</span>
+            <strong>Issue date: {{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</strong>
+            <p>Expiry: Valid while employment status remains active and identity records are current.</p>
+            <p>Authorized by: HR Operations</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Signature</span>
+            <div class="staff-id-card__signature-line"></div>
+            <p>For and on behalf of Centrifuge Information Technology Ltd.</p>
+          </div>
+          <div class="staff-id-card__panel">
+            <span class="staff-id-card__panel-title">Report issues</span>
+            <p>Contact HR Operations immediately if this card is lost, damaged, or employee details change.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-modal>
+
+<app-side-modal *ngIf="isEditOpen" (close)="closeEdit()" class="action-buttons mt-4">
+  <div class="p-6 md:p-8 mx-auto">
+    <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-200">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900">Edit Contact Details</h2>
+        <p class="text-sm text-slate-500 mt-1">Keep information current so HR can reach you quickly.</p>
+      </div>
+      <button
+        class="text-xs font-semibold text-slate-500 hover:text-red-500 transition"
+        (click)="closeEdit()"
+      >
+        Close
+      </button>
+    </div>
+
+    <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="mt-6 space-y-6">
+      <div class="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="h-16 w-16 md:h-20 md:w-20 rounded-2xl overflow-hidden bg-white border border-slate-200">
+          <img
+            [src]="pendingProfilePhotoDataUrl || employeeInView?.imageUrl || employeeProfilePhotoUrl"
+            alt="Profile photo"
+            class="h-full w-full object-cover"
+          />
+        </div>
+        <div class="flex-1 min-w-[180px]">
+          <p class="text-sm font-semibold text-slate-700">Profile photo</p>
+          <p class="text-xs text-slate-500">PNG or JPG, recommended square.</p>
+          <p *ngIf="pendingProfilePhotoName" class="text-xs text-slate-400 mt-1">
+            Selected: {{ pendingProfilePhotoName }}
+          </p>
+        </div>
+        <label
+          class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
+        >
+          <input
+            type="file"
+            class="hidden"
+            accept="image/png,image/jpeg,image/jpg"
+            (change)="onProfilePhotoChange($event)"
+          />
+          Upload
+        </label>
+        <button
+          type="button"
+          class="px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-white text-xs font-semibold disabled:opacity-50 disabled:pointer-events-none"
+          (click)="clearProfilePhotoSelection()"
+          [disabled]="!pendingProfilePhotoDataUrl"
+        >
+          Reset
+        </button>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</label>
+          <input
+            type="text"
+            class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-customBlue/15 focus:border-customBlue transition"
+            formControlName="phone"
+            placeholder="e.g. +234 803 000 0000"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Personal Email</label>
+          <input
+            type="email"
+            class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-customBlue/15 focus:border-customBlue transition"
+            formControlName="email"
+            placeholder="name@email.com"
+          />
+          <p class="text-xs text-slate-400">We will only use this for urgent contact.</p>
+        </div>
+
+        <div class="space-y-2 md:col-span-2">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Address</label>
+          <input
+            type="text"
+            class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white text-slate-800 placeholder:text-slate-400 focus:ring-4 focus:ring-customBlue/15 focus:border-customBlue transition"
+            formControlName="address"
+            placeholder="Street, city, state"
+          />
+        </div>
+
+        <div class="space-y-2 md:col-span-2">
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Work Email</label>
+          <div class="flex items-center gap-3 px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-500">
+            <span class="text-sm lowercase">{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</span>
+            <span class="ml-auto text-[11px] font-semibold uppercase tracking-wide text-slate-400 bg-white px-2 py-1 rounded-full border border-slate-200">
+              Read only
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+        <p class="text-xs text-slate-400">Fields marked here are saved to your profile instantly.</p>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+            (click)="closeEdit()"
+            [disabled]="saving"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-5 py-2 rounded-lg bg-customBlue text-white hover:bg-customBlueHover transition"
+            [disabled]="editForm.invalid || saving"
+          >
+            {{ saving ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</app-side-modal>

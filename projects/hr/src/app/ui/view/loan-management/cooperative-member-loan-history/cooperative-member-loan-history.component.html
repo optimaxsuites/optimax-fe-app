@@ -1,0 +1,118 @@
+<div class="member-history-container">
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading loan history...</p>
+  </div>
+  <div *ngIf="!isLoading" class="history-content">
+    <div class="history-header lm-header-card">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-copy">
+          <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Loan History: {{ memberName }}</h1>
+          <p class="member-id">Member ID: {{ formattedMemberId }}</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="export-btn excel" type="button" (click)="exportToExcel()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>    
+        <button class="export-btn csv" type="button" (click)="exportToCSV()">
+          <i class="fas fa-file-csv"></i> CSV
+        </button>
+        <button class="export-btn print" type="button" (click)="printReport()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon active-icon"><i class="pi pi-check-circle"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Active Loans</span>
+          <span class="stat-value">{{ activeLoansCount }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon total-icon"><i class="pi pi-chart-line"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Loans</span>
+          <span class="stat-value">{{ memberLoans.length }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amount-icon"><i class="pi pi-wallet"></i></div>
+        <div class="stat-content">
+          <span class="stat-label">Total Amount</span>
+          <span class="stat-value">{{ formatCurrency(totalLoanAmount) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Status</label>
+          <select [(ngModel)]="statusFilter" (ngModelChange)="onFiltersChanged()">
+            <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Date From</label>
+          <input type="date" [(ngModel)]="dateFrom" (ngModelChange)="onFiltersChanged()" />
+        </div>
+        <div class="filter-group">
+          <label>Date To</label>
+          <input type="date" [(ngModel)]="dateTo" (ngModelChange)="onFiltersChanged()" />
+        </div>
+        <div class="filter-actions">
+          <button class="reset-btn" type="button" (click)="resetFilters()">
+            <i class="fas fa-undo"></i> Reset Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Meta Info & Pagination -->
+    <!-- Removed: results count and top pagination bar -->
+
+    <!-- Table using shared app-table component -->
+    <div class="table-container">
+      <div class="table-head">
+        <h2><i class="fas fa-table-list"></i> Loan Records</h2>
+      </div>
+      <app-table
+        [columns]="[
+          { header: 'Loan ID', field: 'loanCode', sortable: true },
+          { header: 'Date', field: 'applicationDate', sortable: true },
+          { header: 'Amount', field: 'amount', sortable: true },
+          { header: 'Status', field: 'status', sortable: true },
+          { header: 'Actions' }
+        ]"
+        [rows]="paginatedLoans"
+        [emptyMessage]="filteredLoans.length === 0 ? 'No loan records found' : 'No loans match the selected filters'"
+        tableClass="loans-table">
+        <ng-template appTableBody let-loan>
+          <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+          <td>{{ formatDate(loan.applicationDate || loan.requestDate) }}</td>
+          <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+          <td><span class="status-badge" [ngClass]="getStatusClass(loan.status)">{{ getStatusLabel(loan.status) }}</span></td>
+          <td class="actions-col">
+            <button class="view-btn" (click)="viewLoanDetails(loan)" title="View loan details" aria-label="View loan details">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar pagination-bar-right">
+      <button class="pagination-btn small" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+      <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="pagination-btn small" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+    </div>
+  </div>
+</div>
