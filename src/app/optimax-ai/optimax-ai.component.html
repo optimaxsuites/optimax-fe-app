@@ -1,0 +1,815 @@
+<div
+  class="flex flex-row h-[calc(100vh-57px)] overflow-hidden bg-[#f0f4f7] font-['DM_Sans',sans-serif]"
+>
+  <!-- ═══════════════════════════════════════════════
+       LEFT SIDEBAR
+  ═══════════════════════════════════════════════ -->
+  <aside
+    class="w-[220px] min-w-[220px] flex flex-col overflow-hidden h-full bg-white border-r border-[#e2e8ed]"
+  >
+    <div class="px-4 pt-5 pb-3.5 border-b border-[#e2e8ed] shrink-0">
+      <div class="flex items-center gap-2">
+        <div
+          class="w-6 h-6 rounded-lg bg-[#2e6276] flex items-center justify-center shrink-0"
+        >
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="white"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+            />
+          </svg>
+        </div>
+        <p
+          class="text-[12.5px] font-bold text-[#1a2733] leading-none tracking-tight"
+        >
+          OptimaXAI
+        </p>
+      </div>
+    </div>
+
+    <div class="px-3 py-2.5 border-b border-[#e2e8ed] shrink-0">
+      <button
+        (click)="newChat()"
+        class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-[#2e6276] text-[#2e6276] text-[11px] font-semibold tracking-wide cursor-pointer bg-transparent transition-all hover:bg-[#eaf2f6]"
+      >
+        <svg
+          width="11"
+          height="11"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            d="M12 4v16m8-8H4"
+          />
+        </svg>
+        NEW CHAT
+      </button>
+    </div>
+
+    <div
+      class="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden px-3 pt-2.5"
+    >
+      <p
+        class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a0b0bc] mb-1.5 px-1"
+      >
+        Recent Chats
+      </p>
+      <div
+        *ngIf="allSessions.length === 0"
+        class="flex flex-col items-center py-8 text-center"
+      >
+        <p class="text-[10.5px] text-[#a0b0bc] leading-relaxed">No chats yet</p>
+      </div>
+      <ng-container *ngFor="let s of allSessions">
+        <button
+          (click)="selectSession(s.id)"
+          class="w-full text-left px-2.5 py-2 rounded-lg mb-0.5 cursor-pointer border-0 transition-all relative group"
+          [ngClass]="
+            s.id === activeChatId
+              ? 'bg-[#eaf2f6] text-[#1a2733]'
+              : 'bg-transparent text-[#6b8898] hover:bg-[#f4f8fa] hover:text-[#2e4a5a]'
+          "
+        >
+          <div
+            *ngIf="s.id === activeChatId"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#2e6276] rounded-r"
+          ></div>
+          <p class="text-[11px] font-medium truncate pl-1 mt-0.5">
+            {{ s.title }}
+          </p>
+        </button>
+      </ng-container>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN AREA
+  ═══════════════════════════════════════════════ -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- ══════════════════════════════════════════
+         WELCOME SCREEN — Modern chatbot style
+    ══════════════════════════════════════════ -->
+    <div
+      *ngIf="showWelcome"
+      class="flex-1 flex flex-col overflow-hidden bg-[#f0f4f7]"
+    >
+      <!-- Minimal top bar -->
+      <div
+        class="flex items-center justify-between px-6 py-3 border-b border-[#e2e8ed] bg-white shrink-0"
+      >
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-7 h-7 rounded-lg bg-[#eaf2f6] border border-[#2e6276]/20 flex items-center justify-center text-[#2e6276]"
+          >
+            <svg
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+              />
+            </svg>
+          </div>
+          <span class="text-[12.5px] font-semibold text-[#2e4a5a]"
+            >OptimaXAI ERP Assistant</span
+          >
+        </div>
+
+        <!-- Module filter pills -->
+        <div class="flex items-center gap-1.5">
+          <button
+            *ngFor="let m of erpModules"
+            (click)="selectModule(m.key)"
+            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold transition-all cursor-pointer border"
+            [ngClass]="
+              activeModule === m.key
+                ? 'bg-[#2e6276] text-white border-[#2e6276]'
+                : 'bg-white text-[#6b8898] border-[#e2e8ed] hover:border-[#2e6276]/40 hover:text-[#2e6276]'
+            "
+          >
+            <span [innerHTML]="m.icon"></span>
+            {{ m.label }}
+            <span
+              *ngIf="m.badge"
+              class="px-1 py-0.5 rounded text-[8px] font-bold"
+              [ngClass]="
+                activeModule === m.key ? 'bg-white/20 text-white' : m.badgeColor
+              "
+              >{{ m.badge }}</span
+            >
+          </button>
+        </div>
+      </div>
+
+      <!-- Centered hero content -->
+      <div
+        class="flex-1 flex flex-col items-center justify-center px-6 overflow-y-auto"
+      >
+        <!-- Brand mark -->
+        <div class="flex flex-col items-center mb-8">
+          <div
+            class="w-12 h-12 rounded-2xl bg-[#2e6276] flex items-center justify-center mb-4 shadow-[0_4px_24px_rgba(46,98,118,0.25)]"
+          >
+            <svg
+              width="22"
+              height="22"
+              fill="none"
+              stroke="white"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+              />
+            </svg>
+          </div>
+          <h1
+            class="text-[22px] font-bold text-[#1a2733] tracking-tight mb-1.5"
+          >
+            How can I help you today?
+          </h1>
+          <p
+            class="text-[13px] text-[#8fa3b0] text-center max-w-sm leading-relaxed"
+          >
+            Your intelligent ERP assistant. Ask about payroll, expenses, sales,
+            accounting, or compliance.
+          </p>
+        </div>
+
+        <!-- Main input -->
+        <div class="w-full max-w-[660px] mb-6">
+          <div
+            class="flex flex-col bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_2px_16px_rgba(46,98,118,0.08)] transition-all focus-within:border-[#2e6276]/60 focus-within:shadow-[0_0_0_3px_rgba(46,98,118,0.08),0_2px_16px_rgba(46,98,118,0.08)]"
+          >
+            <textarea
+              [(ngModel)]="newChatMessage"
+              [placeholder]="inputPlaceholder"
+              (input)="autoResize($event)"
+              (keydown)="onWelcomeKey($event)"
+              rows="3"
+              class="oai-textarea flex-1 border-0 outline-none text-[13.5px] text-[#1a2733] bg-transparent px-5 pt-4 pb-3 resize-none placeholder-[#c0cdd6] leading-relaxed min-h-[72px] max-h-[200px]"
+            ></textarea>
+            <div class="flex items-center justify-between px-4 pb-3.5 pt-2">
+              <p class="text-[10.5px] text-[#c0cdd6]">
+                Press Enter to send · Shift+Enter for new line
+              </p>
+              <button
+                (click)="newChat(); sendMessage(newChatMessage)"
+                class="w-8 h-8 rounded-xl flex items-center justify-center border-0 cursor-pointer transition-all"
+                [ngClass]="
+                  newChatMessage.trim().length > 0
+                    ? 'bg-[#2e6276] text-white hover:bg-[#255264] shadow-[0_2px_8px_rgba(46,98,118,0.35)]'
+                    : 'bg-[#f0f4f7] text-[#c0cdd6]'
+                "
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M5 10l7-7m0 0l7 7m-7-7v18"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggested prompts — compact pill list -->
+        <div class="w-full max-w-[660px]">
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b0c0cc] mb-2.5 text-center"
+          >
+            Suggestions
+          </p>
+          <div class="flex flex-wrap gap-2 justify-center">
+            <button
+              *ngFor="let s of suggestedPrompts"
+              (click)="startWithSuggestion(s.prompt)"
+              class="flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#e2e8ed] bg-white text-[11.5px] text-[#4a6272] font-medium cursor-pointer transition-all hover:border-[#2e6276]/50 hover:bg-[#f5f9fb] hover:text-[#2e6276] hover:shadow-sm group"
+            >
+              <span
+                class="text-[#a0b8c4] group-hover:text-[#2e6276] transition-colors"
+                [innerHTML]="s.icon"
+              ></span>
+              {{ s.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         CHAT SCREEN
+    ══════════════════════════════════════════ -->
+    <div
+      *ngIf="!showWelcome"
+      class="flex-1 flex flex-col overflow-hidden bg-[#f0f4f7]"
+    >
+      <!-- Chat header -->
+      <div
+        class="flex items-center gap-3 px-5 py-2.5 border-b border-[#e2e8ed] bg-white shrink-0"
+      >
+        <button
+          (click)="showWelcome = true; activeChatId = ''"
+          class="w-7 h-7 border border-[#e2e8ed] rounded-lg bg-transparent flex items-center justify-center cursor-pointer text-[#6b8898] transition-all hover:border-[#2e6276]/40 hover:text-[#2e6276]"
+        >
+          <svg
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+        <div class="w-px h-3.5 bg-[#e2e8ed]"></div>
+        <span class="text-[12px] font-medium text-[#2e4a5a] truncate flex-1">{{
+          activeSession?.title || "New conversation"
+        }}</span>
+
+        <!-- Module indicator badge only -->
+        <span
+          class="px-2 py-0.5 rounded-full text-[9.5px] font-semibold"
+          [ngClass]="getModuleBadgeClass(activeSession?.module || '')"
+        >
+          {{ activeSession?.module || "GEN" }}
+        </span>
+      </div>
+
+      <!-- Messages -->
+      <div
+        class="flex-1 overflow-y-auto py-6 flex flex-col gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        #chatContainer
+      >
+        <div class="flex-1 min-h-4"></div>
+
+        <div
+          *ngIf="activeMessages.length === 0 && !aiTyping"
+          class="flex flex-col items-center justify-center py-16 text-center px-8"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-[#eaf2f6] border border-[#2e6276]/15 flex items-center justify-center text-[#2e6276] mb-3"
+          >
+            <svg
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
+          <p class="text-[13px] font-semibold text-[#2e4a5a] mb-1">
+            Start the conversation
+          </p>
+          <p class="text-[11.5px] text-[#a0b0bc] max-w-xs leading-relaxed">
+            Ask about payroll, expenses, POS transactions, HR records, or
+            accounting reports.
+          </p>
+        </div>
+
+        <!-- ═══════════ Message Loop ═══════════ -->
+        <div *ngFor="let msg of activeMessages" class="flex flex-col px-5">
+          <!-- USER MESSAGE -->
+          <div *ngIf="msg.sender === 'user'" class="flex justify-end mb-1">
+            <div
+              class="max-w-[62%] bg-[#2e6276] text-white rounded-2xl rounded-tr-[5px] px-4 py-2.5 text-[13px] leading-relaxed shadow-[0_2px_12px_rgba(46,98,118,0.22)]"
+            >
+              {{ msg.text }}
+            </div>
+          </div>
+          <div *ngIf="msg.sender === 'user'" class="flex justify-end">
+            <p class="text-[10px] text-[#b8c8d4] mr-1">{{ msg.time }}</p>
+          </div>
+
+          <!-- AI MESSAGE -->
+          <div *ngIf="msg.sender === 'ai'" class="flex items-start gap-3 mb-1">
+            <div
+              class="w-7 h-7 rounded-lg bg-white border border-[#2e6276]/20 shadow-sm flex items-center justify-center text-[#2e6276] shrink-0 mt-0.5"
+            >
+              <svg
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+                />
+              </svg>
+            </div>
+
+            <div class="flex-1 max-w-[84%] flex flex-col gap-2">
+              <!-- LOADING -->
+              <div
+                *ngIf="msg.loading"
+                class="flex items-center gap-1.5 bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3 shadow-sm w-fit"
+              >
+                <span
+                  class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot"
+                  style="animation-delay: 0ms"
+                ></span>
+                <span
+                  class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot"
+                  style="animation-delay: 180ms"
+                ></span>
+                <span
+                  class="w-1.5 h-1.5 bg-[#2e6276] rounded-full oai-dot"
+                  style="animation-delay: 360ms"
+                ></span>
+              </div>
+
+              <!-- ERROR -->
+              <div
+                *ngIf="!msg.loading && msg.error"
+                class="bg-red-50 border border-red-200 rounded-2xl rounded-tl-[5px] px-4 py-3"
+              >
+                <p class="text-[12.5px] text-red-600 leading-relaxed">
+                  {{ msg.text }}
+                </p>
+                <p class="text-[10.5px] text-red-400 mt-1">{{ msg.error }}</p>
+              </div>
+
+              <!-- ═══════════ FULL AI RESPONSE ═══════════ -->
+              <ng-container *ngIf="!msg.loading && !msg.error">
+                <!-- Matched Scenario badge -->
+                <div
+                  *ngIf="msg.matchedScenario"
+                  class="flex items-center gap-1.5 mb-0.5"
+                >
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[9.5px] font-semibold bg-[#eaf2f6] text-[#2e6276] border border-[#2e6276]/15 uppercase tracking-wide"
+                  >
+                    {{ msg.matchedScenario }}
+                  </span>
+                </div>
+
+                <!-- ─── FORMAT: MARKDOWN ─── -->
+                <ng-container *ngIf="msg.format === 'markdown'">
+                  <div
+                    *ngIf="msg.text"
+                    class="bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3.5 shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                  >
+                    <div
+                      class="flex items-center gap-2 mb-2.5 pb-2 border-b border-[#f0f4f7]"
+                    >
+                      <div
+                        class="w-0.5 h-3.5 bg-[#2e6276] rounded shrink-0"
+                      ></div>
+                      <p
+                        class="text-[10px] font-semibold text-[#2e6276] tracking-widest uppercase"
+                      >
+                        Analysis
+                      </p>
+                      <span class="ml-auto text-[9px] text-[#a0b0bc]">{{
+                        msg.time
+                      }}</span>
+                    </div>
+                    <div class="oai-markdown-body">
+                      <markdown [data]="msg.text" />
+                    </div>
+                  </div>
+
+                  <!-- KPI Snapshot -->
+                  <div
+                    *ngIf="displayKpis(msg.kpis).length > 0"
+                    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                  >
+                    <div
+                      class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
+                    >
+                      <div class="w-0.5 h-3.5 bg-[#4a9db5] rounded"></div>
+                      <span
+                        class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
+                        >KPI Snapshot</span
+                      >
+                    </div>
+                    <div class="grid grid-cols-3 gap-px bg-[#f0f4f7] p-px">
+                      <div
+                        *ngFor="let kpi of displayKpis(msg.kpis)"
+                        class="bg-white px-4 py-3 flex flex-col gap-0.5"
+                      >
+                        <p
+                          class="text-[9px] uppercase tracking-widest text-[#a0b0bc] font-semibold"
+                        >
+                          {{ kpi.metric }}
+                        </p>
+                        <p
+                          class="text-[16px] font-bold text-[#1a2733] leading-none"
+                        >
+                          {{ kpi.value }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Suggested Actions -->
+                  <div
+                    *ngIf="msg.actions && msg.actions.length > 0"
+                    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                  >
+                    <div
+                      class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
+                    >
+                      <div class="w-0.5 h-3.5 bg-amber-400 rounded"></div>
+                      <span
+                        class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
+                        >Suggested Actions</span
+                      >
+                    </div>
+                    <ul class="px-4 py-3 flex flex-col gap-1.5 list-none m-0">
+                      <li
+                        *ngFor="let a of msg.actions; let i = index"
+                        class="flex items-start gap-2.5 text-[12px] text-[#4a6272] leading-relaxed px-3 py-2 bg-[#fffdf4] rounded-lg border border-amber-100"
+                      >
+                        <span
+                          class="shrink-0 w-4 h-4 rounded-full bg-amber-100 text-amber-600 text-[9px] font-bold flex items-center justify-center mt-0.5"
+                          >{{ i + 1 }}</span
+                        >
+                        {{ a }}
+                      </li>
+                    </ul>
+                  </div>
+                </ng-container>
+
+                <!-- ─── FORMAT: CHART ─── -->
+                <ng-container *ngIf="msg.format === 'chart'">
+                  <!-- HEATMAP -->
+                  <ng-container
+                    *ngIf="
+                      msg.isHeatmap &&
+                      msg.heatmapCells &&
+                      msg.heatmapCells.length > 0
+                    "
+                  >
+                    <div
+                      class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                    >
+                      <div
+                        class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
+                      >
+                        <div class="w-0.5 h-3.5 bg-[#2e6276] rounded"></div>
+                        <span
+                          class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
+                          >{{ msg.chart!.title }}</span
+                        >
+                        <span
+                          class="ml-auto px-1.5 py-0.5 rounded text-[9px] font-semibold bg-violet-50 text-violet-500 uppercase tracking-wide"
+                          >Heatmap</span
+                        >
+                      </div>
+                      <div class="px-4 py-3">
+                        <div class="oai-heatmap-wrap">
+                          <div class="oai-heatmap-labels-col">
+                            <div class="oai-heatmap-col-title">
+                              {{ msg.chart!.xAxis || "Category" }}
+                            </div>
+                            <div
+                              *ngFor="let cell of msg.heatmapCells"
+                              class="oai-heatmap-label"
+                            >
+                              {{ cell.label }}
+                            </div>
+                          </div>
+                          <div class="oai-heatmap-values-col">
+                            <div class="oai-heatmap-col-title">
+                              {{
+                                msg.chart!.yAxis ||
+                                  msg.chart!.datasets[0].label ||
+                                  "Value"
+                              }}
+                            </div>
+                            <div
+                              *ngFor="let cell of msg.heatmapCells"
+                              class="oai-heatmap-cell"
+                              [style.background]="cell.bg"
+                            >
+                              <span class="oai-heatmap-val">{{
+                                cell.displayValue
+                              }}</span>
+                              <span class="oai-heatmap-sub">{{
+                                cell.label
+                              }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="oai-heatmap-legend">
+                          <span>Lower intensity</span>
+                          <div class="oai-heatmap-legend-bar"></div>
+                          <span>Higher intensity</span>
+                        </div>
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <!-- APEX CHART -->
+                  <ng-container
+                    *ngIf="!msg.isHeatmap && msg.apexSeries && msg.apexOptions"
+                  >
+                    <div
+                      class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                    >
+                      <div
+                        class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
+                      >
+                        <div class="w-0.5 h-3.5 bg-[#2e6276] rounded"></div>
+                        <span
+                          class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
+                          >{{ msg.chart!.title }}</span
+                        >
+                        <span
+                          class="ml-auto px-1.5 py-0.5 rounded text-[9px] font-semibold bg-violet-50 text-violet-500 uppercase tracking-wide"
+                        >
+                          {{ msg.chart!.variant || msg.chart!.type }}
+                        </span>
+                      </div>
+                      <div class="px-3 py-3">
+                        <apx-chart
+                          [series]="msg.apexSeries"
+                          [chart]="msg.apexOptions.chart"
+                          [plotOptions]="msg.apexOptions.plotOptions"
+                          [xaxis]="msg.apexOptions.xaxis"
+                          [yaxis]="msg.apexOptions.yaxis"
+                          [colors]="msg.apexOptions.colors"
+                          [legend]="msg.apexOptions.legend"
+                          [dataLabels]="msg.apexOptions.dataLabels"
+                          [grid]="msg.apexOptions.grid"
+                          [tooltip]="msg.apexOptions.tooltip"
+                          [stroke]="msg.apexOptions.stroke"
+                          [labels]="
+                            msg.chart!.type === 'pie' ||
+                            msg.chart!.type === 'donut'
+                              ? msg.chart!.labels
+                              : []
+                          "
+                          height="220"
+                        >
+                        </apx-chart>
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <!-- No chart data fallback -->
+                  <ng-container *ngIf="!msg.isHeatmap && !msg.apexSeries">
+                    <div
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 mb-1"
+                    >
+                      <svg
+                        width="11"
+                        height="11"
+                        fill="none"
+                        stroke="#d97706"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                        />
+                      </svg>
+                      <span class="text-[11px] text-amber-700 font-medium"
+                        >No chart data was returned — showing analysis
+                        instead.</span
+                      >
+                    </div>
+                    <div
+                      *ngIf="msg.text"
+                      class="bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3.5 shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                    >
+                      <div
+                        class="flex items-center gap-2 mb-2.5 pb-2 border-b border-[#f0f4f7]"
+                      >
+                        <div
+                          class="w-0.5 h-3.5 bg-[#2e6276] rounded shrink-0"
+                        ></div>
+                        <p
+                          class="text-[10px] font-semibold text-[#2e6276] tracking-widest uppercase"
+                        >
+                          Analysis
+                        </p>
+                      </div>
+                      <div class="oai-markdown-body">
+                        <markdown [data]="msg.text" />
+                      </div>
+                    </div>
+                  </ng-container>
+
+                  <!-- Suggested Actions (chart) -->
+                  <div
+                    *ngIf="msg.actions && msg.actions.length > 0"
+                    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
+                  >
+                    <div
+                      class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
+                    >
+                      <div class="w-0.5 h-3.5 bg-amber-400 rounded"></div>
+                      <span
+                        class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
+                        >Suggested Actions</span
+                      >
+                    </div>
+                    <ul class="px-4 py-3 flex flex-col gap-1.5 list-none m-0">
+                      <li
+                        *ngFor="let a of msg.actions; let i = index"
+                        class="flex items-start gap-2.5 text-[12px] text-[#4a6272] leading-relaxed px-3 py-2 bg-[#fffdf4] rounded-lg border border-amber-100"
+                      >
+                        <span
+                          class="shrink-0 w-4 h-4 rounded-full bg-amber-100 text-amber-600 text-[9px] font-bold flex items-center justify-center mt-0.5"
+                          >{{ i + 1 }}</span
+                        >
+                        {{ a }}
+                      </li>
+                    </ul>
+                  </div>
+                </ng-container>
+
+                <!-- Follow-up prompts -->
+                <div
+                  *ngIf="msg.followUpPrompts && msg.followUpPrompts.length > 0"
+                  class="flex flex-wrap gap-1.5 mt-1"
+                >
+                  <button
+                    *ngFor="let fp of msg.followUpPrompts"
+                    (click)="newChatMessage = fp; sendMessage(fp)"
+                    class="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-white border border-[#e2e8ed] text-[#2e6276] cursor-pointer hover:bg-[#eaf2f6] hover:border-[#2e6276]/40 transition-all"
+                  >
+                    {{ fp }}
+                  </button>
+                </div>
+              </ng-container>
+
+              <!-- Actions row -->
+              <div
+                *ngIf="!msg.loading"
+                class="flex items-center gap-0.5 mt-0.5 ml-0.5"
+              >
+                <button
+                  (click)="copyText(msg.text)"
+                  class="flex items-center gap-1 px-2 py-1 text-[10.5px] text-[#a0b0bc] bg-transparent border-0 rounded cursor-pointer hover:text-[#2e4a5a] transition-colors"
+                >
+                  <svg
+                    width="10"
+                    height="10"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Copy
+                </button>
+                <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
+                <span
+                  class="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide"
+                  [ngClass]="
+                    msg.format === 'chart'
+                      ? 'bg-violet-50 text-violet-500'
+                      : 'bg-[#eaf2f6] text-[#2e6276]'
+                  "
+                >
+                  {{ msg.format || "analysis" }}
+                </span>
+                <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
+                <p class="text-[10px] text-[#b8c8d4] px-1">{{ msg.time }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CHAT INPUT ── -->
+      <div class="shrink-0 px-5 pt-3 pb-4 border-t border-[#e2e8ed] bg-white">
+        <div
+          class="flex flex-col bg-[#f9fbfc] border border-[#e2e8ed] rounded-2xl overflow-hidden transition-all focus-within:border-[#2e6276]/50 focus-within:shadow-[0_0_0_3px_rgba(46,98,118,0.08)]"
+        >
+          <textarea
+            [(ngModel)]="newChatMessage"
+            [placeholder]="inputPlaceholder"
+            (input)="autoResize($event)"
+            (keydown)="onChatKey($event)"
+            rows="1"
+            class="oai-textarea border-0 outline-none text-[13px] text-[#1a2733] bg-transparent px-4 pt-3.5 pb-2 resize-none placeholder-[#c0cdd6] leading-relaxed min-h-[44px] max-h-[200px] overflow-y-auto"
+          ></textarea>
+          <div
+            class="flex items-center justify-between px-3 pb-2.5 pt-1 border-t border-[#eef2f5]"
+          >
+            <p class="text-[10px] text-[#c8d6de]">Shift+Enter for new line</p>
+            <button
+              (click)="sendMessage(newChatMessage)"
+              class="w-7 h-7 rounded-lg flex items-center justify-center border-0 cursor-pointer transition-all"
+              [ngClass]="
+                newChatMessage.trim().length > 0
+                  ? 'bg-[#2e6276] text-white hover:bg-[#255264]'
+                  : 'bg-[#eef2f5] text-[#c0cdd6]'
+              "
+            >
+              <svg
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M5 10l7-7m0 0l7 7m-7-7v18"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
