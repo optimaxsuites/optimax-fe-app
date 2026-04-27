@@ -152,6 +152,7 @@ export interface AccountingTransactionDTO {
   createdBy: UserDTO | any;
   createdAt: string | Date;
   approvedBy?: string;
+  metadata?: any;
 }
 
 export interface DisbursementDTO {
@@ -195,6 +196,7 @@ export interface CreateTransactionPayload {
   accountId?: number;
   description: string;
   externalReference?: string;
+  metadata?: any;
 }
 
 export interface CreateDisbursementPayload {

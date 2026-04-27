@@ -178,7 +178,8 @@ export class AccountingService {
       accountId:            debitAccountId,
       description:          txDescription,
       transactionDate:      transactionDate,
-      createdBy:            createdById
+      createdBy:            createdById,
+      metadata:             event.metadata
     }).pipe(
       concatMap(tx => {
         return this.createJournalEntry({

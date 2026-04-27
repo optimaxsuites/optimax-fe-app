@@ -354,22 +354,23 @@ export class DisbursementComponent implements OnInit {
   // ── View Actions ─────────────────────────────────────────
   isBatchReviewOpen: boolean = false;
   selectedLineItems: any[] = [];
+  isViewOnly: boolean = false;
 
   openBatchReview(trx: AccountingTransactionDTO): void {
     this.selectedTransaction = trx;
     this.internalMemo = `Settlement for ${trx.transactionReference} — ${trx.description?.substring(0, 50)}`;
     this.disbursementDate = new Date().toISOString().split('T')[0];
+    this.isViewOnly = (trx.Status === TransactionReviewStatus.DISBURSED || trx.Status === TransactionReviewStatus.APPROVED);
 
-    this.selectedLineItems = [
-      { recipient: 'Elena Hernandez', account: '0123456789', bank: 'Access Bank', type: 'ACH', amount: trx.amount * 0.45 },
-      { recipient: 'Marcus Chen', account: '3024519921', bank: 'Guaranty Trust Bank', type: 'WIRE', amount: trx.amount * 0.35 },
-      { recipient: 'Sarah Jenkins', account: '0012398471', bank: 'Zenith Bank', type: 'ACH', amount: trx.amount * 0.20 }
-    ];
-
-    this.selectedSourceId = null;
-    this.destBank = '';
-    this.destAccountNumber = '';
-    this.destAccountName = '';
+    // Remove dummy data and populate with primary account details
+    this.selectedLineItems = []; // Keeping it as an array in case we want to support multiple beneficiaries later
+    
+    // Resolve "right account details" with fallback logic
+    const meta = trx.metadata || {};
+    this.destBank = meta.bankName || meta.bank || meta.destinationBank || this.getAccountBank(trx);
+    this.destAccountNumber = meta.accountNumber || meta.account || meta.destAccount || this.getAccountNumber(trx);
+    this.destAccountName = meta.memberName || meta.employeeName || meta.accountName || meta.recipientName || trx.account?.accountName || '';
+    
     this.payoutError = null;
     this.isBatchReviewOpen = true;
   }
@@ -411,6 +412,51 @@ export class DisbursementComponent implements OnInit {
     this.payoutError = null;
   }
 
+  // ── Meta & Formatting Helpers (Aligned with Queue Manager) ──
+
+  formatLabel(val: string | undefined): string {
+    if (!val) return '';
+    return val.replace(/_/g, ' ');
+  }
+
+  formatMetadataKey(key: string): string {
+    if (!key) return '';
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
+  }
+
+  getMetadataEntries(metadata: any): { key: string, value: any }[] {
+    if (!metadata) return [];
+    return Object.entries(metadata)
+      .map(([key, value]) => ({ key, value }))
+      .filter(item => item.value !== null && item.value !== undefined && item.value !== '');
+  }
+
+  isCurrencyField(key: string): boolean {
+    const currencyKeys = ['amount', 'repayable', 'rate', 'interest', 'balance', 'bankBalance', 'approvedAmount', 'totalRepayable'];
+    const lowerKey = key.toLowerCase();
+    return currencyKeys.some(ck => lowerKey.includes(ck));
+  }
+
+  isDateField(key: string): boolean {
+    const dateKeys = ['initiatedat', 'approveddate', 'createdat', 'updatedat', 'expecteddate', 'date'];
+    const lowerKey = key.toLowerCase();
+    return dateKeys.some(dk => lowerKey.includes(dk));
+  }
+
+  getStatusClass(status: string | undefined): string {
+    switch (status) {
+      case 'APPROVED':    return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'REJECTED':    return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'DISBURSED':   return 'bg-sky-100 text-sky-800 border-sky-200';
+      case 'UNREVIEWED':
+      case 'IN_REVIEW':   return 'bg-amber-100 text-amber-800 border-amber-200';
+      default:            return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  }
+
   // ── Wizard Steps ─────────────────────────────────────────
   nextStep(): void {
     if (this.currentStep < 2) this.currentStep++;
@@ -444,12 +490,14 @@ export class DisbursementComponent implements OnInit {
 
   /** Safely retrieves the bank/institution name from an AccountID object */
   getAccountBank(trx: AccountingTransactionDTO): string {
-    return (trx.account as any)?.bankName || '—';
+    const meta = trx.metadata || {};
+    return meta.bankName || meta.bank || meta.destinationBank || (trx.account as any)?.bankName || ' — ';
   }
 
   /** Safely retrieves the account number from an AccountID object */
   getAccountNumber(trx: AccountingTransactionDTO): string {
-    return (trx.account as any)?.accountNumber || '—';
+    const meta = trx.metadata || {};
+    return meta.accountNumber || meta.account || meta.destAccount || (trx.account as any)?.accountNumber || ' — ';
   }
 
   /** Get display name for createdBy which can be string or UserDTO */
