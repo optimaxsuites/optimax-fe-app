@@ -51,6 +51,9 @@ export class LoanDisbursementUiComponent implements OnInit {
   approvedSortDirection: QueueSortDirection = 'desc';
   readySortDirection: QueueSortDirection = 'desc';
   
+  // Single declaration of selectedApprovedLoanIdsMap
+  selectedApprovedLoanIdsMap: { [id: string]: boolean } = {};
+
   // Email fields
   accountingEmail: string = this.defaultAccountingEmail;
   emailNotes: string = '';
@@ -86,6 +89,152 @@ export class LoanDisbursementUiComponent implements OnInit {
     }
     this.restoreViewState();
     this.loadApprovedLoans();
+  }
+
+  // Helper method to get selected loan IDs
+  getSelectedApprovedLoanIds(): number[] {
+    return Object.entries(this.selectedApprovedLoanIdsMap)
+      .filter(([_, checked]) => checked)
+      .map(([id, _]) => Number(id));
+  }
+
+  sendSelectedToAccounting(): void {
+    const selectedIds = this.getSelectedApprovedLoanIds();
+    if (!selectedIds.length || this.isSubmittingDisbursement) return;
+    
+    this.isSubmittingDisbursement = true;
+    const selectedLoans = this.approvedLoans.filter(loan => selectedIds.includes(loan.id));
+    let processed = 0;
+    let errors: string[] = [];
+    let successCount = 0;
+    
+    const processNext = () => {
+      if (processed >= selectedLoans.length) {
+        this.isSubmittingDisbursement = false;
+        if (errors.length) {
+          this.messages = [{
+            severity: 'error',
+            summary: 'Batch Partially Failed',
+            detail: `${successCount} succeeded, ${errors.length} failed: ${errors.join('; ')}`
+          }];
+        } else {
+          this.messages = [{
+            severity: 'success',
+            summary: 'Batch Sent Successfully',
+            detail: `All ${successCount} loans sent to accounting.`
+          }];
+        }
+        this.selectedApprovedLoanIdsMap = {};
+        this.loadApprovedLoans();
+        return;
+      }
+      
+      const loan = selectedLoans[processed];
+      const disbursementInitiatedAt = new Date().toISOString();
+      const disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+      const approvedAmount = this.getApprovedAmount(loan);
+      const totalRepayable = resolveLoanTotalRepayableAmount(loan);
+      const disbursementInstructionReference = this.generateBatchDisbursementReference(loan);
+      const disbursementReference = `PENDING-${disbursementInstructionReference}`;
+      const paymentMethod = this.paymentMethod || 'BANK_TRANSFER';
+      const notes = this.emailNotes || '';
+      
+      this.employeeLoanService.getEmployeeById(loan.employeeId).subscribe({
+        next: (employee) => {
+          const payload: CreateDisbursementPayload = {
+            loanId: loan.id,
+            disbursedAmount: approvedAmount,
+            disbursementInstructionReference,
+            disbursementReference,
+            paymentMethod,
+            notes
+          };
+          
+          this.disbursementConfirmationService.createConfirmation(payload).subscribe({
+            next: () => {
+              const accountingPayload = {
+                id: 0,
+                sourceModule: 'HR',
+                eventType: 'LOAN_DISBURSEMENT',
+                amount: totalRepayable,
+                currency: 'NGN',
+                reference: disbursementInstructionReference,
+                description: notes || '',
+                transactionDate: disbursementInitiatedAt,
+                metadata: {
+                  loanId: loan.id,
+                  employeeName: loan.fullName,
+                  employeeId: loan.employeeId,
+                  department: loan.department,
+                  approvedAmount: approvedAmount,
+                  interest: loan.interestRate,
+                  repaymentPeriod: loan.repaymentTime,
+                  modeOfPayment: loan.modeOfPayment,
+                  purpose: loan.purpose,
+                  approvedDate: loan.approvedDate,
+                  approvedBy: this.getApprovedByName(),
+                  bankName: employee?.bankName,
+                  paymentMethod: paymentMethod,
+                  initiatedBy: disbursementInitiatedBy,
+                  initiatedAt: disbursementInitiatedAt
+                }
+              };
+              
+              const apiBaseUrl = environment.apiBaseUrl || '';
+              const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+              const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+              
+              this.http.post(url, accountingPayload, { headers }).subscribe({
+                next: () => {
+                  this.loanApprovalService.updateApplicationStatus(loan.id, {
+                    status: 'READY_FOR_DISBURSEMENT',
+                    changedAt: disbursementInitiatedAt,
+                    disbursementInitiatedAt: disbursementInitiatedAt,
+                    disbursementInitiatedBy: this.getCurrentUserId(),
+                    disbursementInstructionReference: disbursementInstructionReference,
+                    notes: notes?.trim()
+                      ? `Sent to accounting for disbursement. Reference: ${disbursementInstructionReference}. ${notes.trim()}`
+                      : `Sent to accounting for disbursement. Reference: ${disbursementInstructionReference}.`
+                  }).subscribe({
+                    next: () => {
+                      successCount++;
+                      processed++;
+                      processNext();
+                    },
+                    error: (err) => {
+                      errors.push(`Loan ${loan.id}: status update failed`);
+                      processed++;
+                      processNext();
+                    }
+                  });
+                },
+                error: (error) => {
+                  errors.push(`Loan ${loan.id}: accounting event failed`);
+                  processed++;
+                  processNext();
+                }
+              });
+            },
+            error: (err) => {
+              errors.push(`Loan ${loan.id}: confirmation failed`);
+              processed++;
+              processNext();
+            }
+          });
+        },
+        error: (err) => {
+          errors.push(`Loan ${loan.id}: failed to load employee details`);
+          processed++;
+          processNext();
+        }
+      });
+    };
+    
+    processNext();
+  }
+
+  generateBatchDisbursementReference(loan: LoanApplication): string {
+    return `DISB-BATCH-${loan.id}-${Date.now()}`;
   }
 
   loadApprovedLoans(): void {
@@ -541,7 +690,6 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   getQueueStatusLabel(loan: LoanApplication): string {
-    // Generic Title Case for any status
     if (!loan.status) return '';
     return String(loan.status)
       .toLowerCase()
