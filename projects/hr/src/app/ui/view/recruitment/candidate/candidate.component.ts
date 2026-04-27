@@ -650,11 +650,15 @@ export class CandidateComponent implements OnInit {
   }
 
   onActionSelected(action: string) {
+    console.log("=== onActionSelected called ===");
+    console.log("Action:", action);
     this.currentAction = action;
     this.showInviteModal = true;
     this.isStepTwo = false;
     this.selectedInviteTemplate = null;
     this.interviewInviteSetup = this.createInterviewInviteSetup();
+    console.log("Interview setup initialized:", this.interviewInviteSetup);
+    console.log("Available panel users:", this.availablePanelUsers);
   }
 
 // 4. Methods to handle transitions
@@ -915,44 +919,59 @@ export class CandidateComponent implements OnInit {
   }
 
   onPanelUserSelected(index: number, selectedUserId: string): void {
-    console.log(`Panel member selection - Index: ${index}, Selected ID: ${selectedUserId}, Available users:`, this.availablePanelUsers);
+    console.log("=== onPanelUserSelected called ===");
+    console.log(`Index: ${index}, SelectedUserId: ${selectedUserId}`);
+    console.log("Available users:", this.availablePanelUsers);
+    
+    if (!selectedUserId) {
+      console.log("No user ID selected, clearing");
+      const currentMember = this.interviewInviteSetup.panelMembers[index];
+      if (currentMember) {
+        this.interviewInviteSetup.panelMembers[index] = {
+          ...currentMember,
+          userId: '',
+          username: '',
+          name: '',
+          email: ''
+        };
+      }
+      return;
+    }
     
     const selectedUser = this.availablePanelUsers.find(user => user.id === selectedUserId);
+    console.log("Selected user found:", selectedUser);
+    
+    if (!selectedUser) {
+      console.warn("User not found in available users");
+      return;
+    }
+    
     const currentMember = this.interviewInviteSetup.panelMembers[index];
-
-    console.log(`Selected user found:`, selectedUser, `Current member:`, currentMember);
+    console.log("Current member:", currentMember);
 
     if (!currentMember) {
       console.warn("Current member not found at index", index);
       return;
     }
 
-    if (!selectedUser) {
-      console.log("No user selected, clearing member");
-      this.interviewInviteSetup.panelMembers[index] = {
-        ...currentMember,
-        userId: '',
-        username: '',
-        name: '',
-        email: ''
-      };
-    } else {
-      console.log("Updating member with user data:", selectedUser);
-      this.interviewInviteSetup.panelMembers[index] = {
-        ...currentMember,
-        userId: selectedUser.id,
-        username: selectedUser.username,
-        name: selectedUser.name,
-        email: selectedUser.email,
-        role: currentMember.role?.trim() || selectedUser.role || 'Interviewer'
-      };
-    }
+    const updatedMember = {
+      ...currentMember,
+      userId: selectedUser.id,
+      username: selectedUser.username,
+      name: selectedUser.name,
+      email: selectedUser.email,
+      role: currentMember.role?.trim() || selectedUser.role || 'Interviewer'
+    };
     
-    console.log("Updated panel member:", this.interviewInviteSetup.panelMembers[index]);
+    console.log("Updated member:", updatedMember);
+    
+    this.interviewInviteSetup.panelMembers[index] = updatedMember;
     
     // Force update to trigger change detection
     this.interviewInviteSetup = { ...this.interviewInviteSetup };
     this.syncInterviewManualPlaceholders();
+    
+    console.log("Panel members after update:", this.interviewInviteSetup.panelMembers);
   }
 
   compareUsers(u1: any, u2: any): boolean {
@@ -962,8 +981,8 @@ export class CandidateComponent implements OnInit {
   getPanelUserOptions(selectedUserId?: string): PanelUserOption[] {
     const selectedIds = new Set(
       this.interviewInviteSetup.panelMembers
-        .map(member => member.userId)
-        .filter((userId): userId is string => Boolean(userId))
+        .map(member => member.id)
+        .filter((id): id is string => Boolean(id))
     );
 
     return this.availablePanelUsers.filter(user => user.id === selectedUserId || !selectedIds.has(user.id));

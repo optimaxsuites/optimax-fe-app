@@ -435,21 +435,19 @@
       </div>
       <p *ngIf="panelUsersLoading" class="text-sm text-slate-500 mb-2">Loading users for interview panel...</p>
       <p *ngIf="!panelUsersLoading && !availablePanelUsers.length" class="text-sm text-red-500 mb-2">No users available for panel assignment yet.</p>
-      <div *ngFor="let member of interviewInviteSetup.panelMembers; let i = index" class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.2fr_auto] gap-2 mb-2 items-end" style="position: relative; z-index: 10;">
-        <div style="position: relative; z-index: 20;">
+      <div *ngFor="let member of interviewInviteSetup.panelMembers; let i = index" class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.2fr_auto] gap-2 mb-2 items-end">
+        <div>
           <label class="block text-sm text-gray-600">User</label>
 
           <ng-select
-            [items]="getPanelUserOptions(member.userId)"
+            [items]="getPanelUserOptions(member.id)"
             bindLabel="label"
             bindValue="id"
             [clearable]="true"
             [searchable]="true"
             placeholder="Select interviewer"
-            [(ngModel)]="member.userId"
-            (ngModelChange)="onPanelUserSelected(i, $event)"
-            appendTo="body"
-            style="z-index: 30; position: relative;">
+            [(ngModel)]="member.id"
+            (ngModelChange)="onPanelUserSelected(i, $event)">
           </ng-select>
         </div>
         <div>
