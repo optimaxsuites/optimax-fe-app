@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { QuestionDTO, QuestionItemDTO, ScoreSheetByIdDTO, ScoreSheetDTO } from '../../../domain/questions.dto';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { MessageService } from 'primeng/api';
+import { InterviewOutcomeDTO } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-interview-score-sheet',
@@ -188,6 +189,7 @@ export class InterviewScoreSheetComponent implements OnInit {
   ngOnInit(): void {
     this.getCriteria();
     this.getUserId(); 
+    this.prefillInterviewContext();
   }
 
   getUserId(): void {
@@ -203,6 +205,7 @@ export class InterviewScoreSheetComponent implements OnInit {
     this.authenticationService.getUserPrimaryInfoById(this.userId).subscribe({
       next: (data) => {
         this.interviewer = data;
+        this.prefillInterviewContext();
         console.log('User Info:', this.interviewer);
       },
       error: (error) => {
@@ -251,18 +254,7 @@ export class InterviewScoreSheetComponent implements OnInit {
   previousScore?: number;
   
   onScoreChange(changedQuestion: QuestionItemDTO): void {
-    const previousScore = this.previousScore || 0;
-    const currentScore = changedQuestion.score || 0;
-  
-    // Update sumOfScore based on the score delta
-    this.sumOfScore! += currentScore - previousScore;
-  
-    // Update the previous score reference
-    this.previousScore = currentScore;
-  
-    // Recalculate the scores
-    this.calculateTotalScore(); // Ensure maxScore and percentage are updated here
-  
+    this.calculateTotalScore();
     console.log(`Sum of Scores: ${this.sumOfScore}, Total Over 100: ${this.totalScoreOver100}`);
   }
 
@@ -353,6 +345,7 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 submitForm(): void {
   console.log('Total Score:', this.totalScoreOver100);
+  this.calculateTotalScore();
 
   // Find the selected criteria based on the selected questions
   const selectedCriteria = this.allCriteria.find(criteria => 
@@ -375,7 +368,13 @@ submitForm(): void {
         title: selectedCriteria.title!,
         questions: selectedCriteria.questions!
       },
-      totalScore: this.totalScoreOver100
+      totalScore: this.totalScoreOver100,
+      interviewStage: this.candidate?.['interviewStage'] || 1,
+      sessionId: this.candidate?.['interviewCurrentSessionId'] || '',
+      interviewerId: this.interviewer?.id?.toString?.() || this.userId,
+      interviewerName: this.getInterviewerName(),
+      interviewerEmail: this.getInterviewerEmail(),
+      interviewerRole: this.interviewer?.position || ''
     };
 
     // Initialize an array for this candidate if not present
@@ -385,7 +384,10 @@ submitForm(): void {
 
     // Check if this specific criteria has already been submitted by this candidate
     const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
-      submission => submission.criteria?.id === selectedCriteria.id
+      submission =>
+        submission.criteria?.id === selectedCriteria.id &&
+        submission.interviewStage === newCriteriaSubmission.interviewStage &&
+        (submission.interviewerEmail || submission.interviewerId) === (newCriteriaSubmission.interviewerEmail || newCriteriaSubmission.interviewerId)
     );
 
     if (isAlreadySubmitted) {
@@ -408,6 +410,10 @@ submitForm(): void {
         summary: 'Submission Successful',
         detail: 'Selected scoresheet submitted and saved successfully.'
       });
+      this.submitFrom.emit({
+        ...newCriteriaSubmission,
+        outcome: this.getOutcomeForScore(this.totalScoreOver100 ?? 0)
+      });
     }
   } else {
     // Error handling if no criteria is selected
@@ -429,6 +435,50 @@ submitForm(): void {
   this.totalScoreOver100 = 0;
   this.maximumScore = 0;
 }
+
+  getCandidateName(): string {
+    return (
+      this.candidate?.candidateName ||
+      this.candidate?.fullName ||
+      `${this.candidate?.firstname || this.candidate?.firstName || ''} ${this.candidate?.lastname || this.candidate?.lastName || ''}`.trim()
+    );
+  }
+
+  getCandidatePosition(): string {
+    return (
+      this.candidate?.position ||
+      this.candidate?.jobVacancy?.jobTitle ||
+      this.candidate?.job?.title ||
+      ''
+    );
+  }
+
+  getCandidatePhone(): string {
+    return this.candidate?.contactNo || this.candidate?.phone || '';
+  }
+
+  getStageLabel(): string {
+    return `Interview ${this.candidate?.['interviewStage'] || 1}`;
+  }
+
+  private prefillInterviewContext(): void {
+    this.interviewer.interviewDate = this.candidate?.['meetingDetails']?.date || this.candidate?.['scheduledDate'] || '';
+    this.interviewer.interviewTime = this.candidate?.['meetingDetails']?.time || '';
+  }
+
+  private getInterviewerName(): string {
+    return this.interviewer?.fullname || this.interviewer?.fullName || this.interviewer?.username || 'Interviewer';
+  }
+
+  private getInterviewerEmail(): string {
+    return this.interviewer?.email || '';
+  }
+
+  private getOutcomeForScore(score: number): InterviewOutcomeDTO {
+    if (score >= 70) return 'Pass';
+    if (score >= 50) return 'Borderline';
+    return 'Fail';
+  }
 
 
 }

@@ -16,6 +16,7 @@
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
   <form [formGroup]="applicationForm" (ngSubmit)="onSubmit()" class="cooperative-loan-form">
+    
     <!-- Elegant Warning Banner -->
     <div class="warning-banner">
       <div class="warning-icon">
@@ -46,7 +47,7 @@
       </div>
     </div>
 
-    <!-- Header for modal mode - Left aligned -->
+    <!-- Header for modal mode -->
     <div class="modal-header" *ngIf="isModal">
       <div class="modal-header-left">
         <i class="fas fa-hand-holding-dollar"></i>
@@ -67,7 +68,7 @@
     <div class="form-grid">
       <!-- Left Column -->
       <div class="form-column">
-        <!-- Applicant Information Card - Dark Gradient Style -->
+        <!-- Applicant Information Card -->
         <div class="form-card applicant-summary-card">
           <div class="card-header">
             <div class="card-header-icon light">
@@ -101,12 +102,10 @@
             </div>
           </div>
 
-          <!-- No member selection needed; current user is auto-selected -->
-
           <div class="form-group-dark">
             <label>Select Loan Group <span class="required-dark">*</span></label>
-            <select formControlName="groupId" [disabled]="!selectedMember || qualifiedGroups.length === 0" class="form-control-dark">
-              <option value="" disabled selected>-- Select a group --</option>
+            <select formControlName="groupId" class="form-control-dark">
+              <option value="" disabled>-- Select a group --</option>
               <option *ngFor="let group of qualifiedGroups" [value]="group.id">
                 {{ group.name }}
               </option>
@@ -146,15 +145,16 @@
             <div class="form-group">
               <label>Repayment Period <span class="required">*</span></label>
               <div class="input-with-suffix">
-                <input type="number" formControlName="repaymentTime" class="form-control" placeholder="1-60" min="1">
+                <input type="number" formControlName="repaymentTime" class="form-control" placeholder="1-12" min="1" max="12" step="1">
                 <span class="input-suffix">months</span>
               </div>
-              <div class="field-hint" *ngIf="selectedGroup">
-                Range: {{ selectedGroup.minDuration }} - {{ selectedGroup.maxDuration }} months
+              <div class="field-hint">
+                Range: 1 - 12 months
               </div>
               <div class="error" *ngIf="applicationForm.get('repaymentTime')?.invalid && applicationForm.get('repaymentTime')?.touched">
                 <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Repayment period is required</span>
-                <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['min'] || applicationForm.get('repaymentTime')?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Enter {{ selectedGroup?.minDuration }}-{{ selectedGroup?.maxDuration }} months</span>
+                <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum is 1 month</span>
+                <span *ngIf="applicationForm.get('repaymentTime')?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Maximum is 12 months</span>
               </div>
             </div>
           </div>
@@ -323,25 +323,6 @@
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </div>
-              
-              <div class="guarantor-contact-info" *ngIf="guarantor.get('memberId')?.value && guarantorContacts[guarantor.get('memberId')?.value]">
-                <div *ngFor="let contact of guarantorContacts[guarantor.get('memberId')?.value]" class="contact-details">
-                  <div class="contact-grid">
-                    <div><strong>{{ contact.fullName }}</strong></div>
-                    <div>Email: {{ contact.email }}</div>
-                    <div>Phone: {{ contact.phone }}</div>
-                    <div>Years Known: {{ contact.yearsKnown }}</div>
-                  </div>
-                  <div class="guarantor-actions">
-                    <button type="button" class="approve-btn" (click)="approveGuarantor(contact.id, guarantor.get('memberId')?.value)">
-                      <i class="fas fa-check"></i> Approve
-                    </button>
-                    <button type="button" class="reject-btn" (click)="rejectGuarantor(contact.id, guarantor.get('memberId')?.value)">
-                      <i class="fas fa-times"></i> Reject
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -418,7 +399,7 @@
           </div>
         </div>
       </div>
-    </div> <!-- END form-grid -->
+    </div>
 
     <!-- Form Actions -->
     <div class="form-actions" *ngIf="!showConfirmation">
@@ -440,7 +421,7 @@
 
     <!-- Confirmation Dialog -->
     <div class="confirmation-overlay" *ngIf="showConfirmation" (click)="showConfirmation = false">
-      <div class="confirmation-dialog" (click)="$event.stopPropagation()">
+      <div class="confirmation-dialog" (click="$event.stopPropagation())">
         <div class="confirmation-header">
           <div class="confirmation-header-left">
             <i class="fas fa-clipboard-list"></i>

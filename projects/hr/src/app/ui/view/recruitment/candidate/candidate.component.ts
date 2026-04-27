@@ -1,9 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
+import {
+  ApplicantDTO,
+  ApplicationStage,
+  AttachmentDTO,
+  InterviewHistoryItemDTO,
+  InterviewMeetingDetailsDTO,
+  InterviewPanelMemberDTO,
+  InterviewScoreAssignmentDTO,
+  InterviewStageSummaryDTO
+} from '../../../domain/applicant.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { MenuItem } from 'primeng/api';
 import { MailNotificationService } from '../../../service/mailNotification.service';
+import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 
 export interface FormResponse {
   label: string;
@@ -75,6 +85,24 @@ export interface PlaceholderField {
   appliesTo?: EmailTemplate['category'][];
   helpText?: string;
 }
+
+interface InterviewInviteSetup {
+  scheduledDate: string;
+  scheduledTime: string;
+  location?: string;
+  interviewType: string;
+  notes: string;
+  panelMembers: InterviewPanelMemberDTO[];
+}
+
+interface PanelUserOption {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: string;
+  label: string;
+}
 @Component({
   selector: 'app-candidate',
   templateUrl: './candidate.component.html',
@@ -127,11 +155,15 @@ export class CandidateComponent implements OnInit {
     regData: any = {};
 
     expandedEmails: boolean[] = [];
+    interviewInviteSetup: InterviewInviteSetup = this.createInterviewInviteSetup();
+    availablePanelUsers: PanelUserOption[] = [];
+    panelUsersLoading = false;
 
    constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
-    private mailService: MailNotificationService
+    private mailService: MailNotificationService,
+    private authenticationService: AuthenticationService
   ) {}
 
    ngOnInit(): void {
@@ -183,6 +215,7 @@ export class CandidateComponent implements OnInit {
     const userPrimaryInfoRegData = localStorage.getItem('userPrimaryInfoRegData');
     this.regData = userPrimaryInfoRegData ? JSON.parse(userPrimaryInfoRegData) : null;
 
+    this.loadPanelUsers();
     this.loadDummyData()
   }
 
@@ -375,13 +408,42 @@ export class CandidateComponent implements OnInit {
     // Check if invite already exists for this candidate
     const existingInviteIndex = prevInvites.findIndex((inv: any) => inv.id === candidate.id);
     
+    const panelMembers = this.interviewInviteSetup.panelMembers.map(member => ({
+      ...member,
+      id: member.id || this.generateId('panel')
+    }));
+    const meetingDetails: InterviewMeetingDetailsDTO = {
+      date: this.interviewInviteSetup.scheduledDate,
+      time: this.interviewInviteSetup.scheduledTime,
+      location: this.interviewInviteSetup.location,
+      interviewType: this.interviewInviteSetup.interviewType,
+      notes: this.interviewInviteSetup.notes
+    };
+    const stageNumber = 1;
+    const historyEntry = this.createInterviewHistoryEntry(
+      stageNumber,
+      `Interview ${stageNumber} Scheduled`,
+      `${candidate.firstname} ${candidate.lastname} was invited for interview ${stageNumber} on ${this.interviewInviteSetup.scheduledDate || 'the scheduled date'} at ${this.interviewInviteSetup.scheduledTime || 'the scheduled time'}.`
+    );
+
     const newInvite = {
       ...candidate,
       job: this.selectedJob,
+      fullName: `${candidate.firstname} ${candidate.lastname}`.trim(),
+      position: (candidate as any)?.jobVacancy?.jobTitle || this.selectedJob?.title,
+      phone: candidate.phone,
       stage: 'Awaiting Response',
-      interviewStage: 1,
-      scheduledDate: this.manualPlaceholderValues['date'],
-      inviteTimestamp: new Date().toISOString()
+      interviewStage: stageNumber,
+      scheduledDate: this.interviewInviteSetup.scheduledDate || this.manualPlaceholderValues['date'],
+      interviewType: this.interviewInviteSetup.interviewType,
+      inviteTimestamp: new Date().toISOString(),
+      meetingDetails,
+      interviewPanel: panelMembers,
+      interviewHistory: [historyEntry],
+      interviewStageSummaries: [] as InterviewStageSummaryDTO[],
+      interviewScoreAssignments: [] as InterviewScoreAssignmentDTO[],
+      latestInterviewOutcome: 'Pending',
+      scoreSheetStatus: 'Not Started'
     };
 
     if (existingInviteIndex === -1) {
@@ -395,11 +457,24 @@ export class CandidateComponent implements OnInit {
     
     this.updateCandidateStatus(candidate, 'Invited');
     this.updateCandidateInterviewStatus(candidate, 'Invited');
+    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
+    if (candidateIndex !== -1) {
+      this.allApplications[candidateIndex].interviewDetails = {
+        scheduledDate: meetingDetails.date,
+        location: meetingDetails.location,
+        format: meetingDetails.interviewType,
+        notes: meetingDetails.notes
+      };
+    }
     // Add decision history with email copy
-    this.addDecisionHistory(candidate, 'Interview Invited', 'Interview invitation sent to candidate.', emailBody);
+    this.addDecisionHistory(
+      candidate,
+      'Interview Invited',
+      `Interview ${stageNumber} invitation sent. ${panelMembers.length} panel member(s) added and score sheets will be created when the interview starts.`,
+      emailBody
+    );
     
     // Refresh the selectedCandidate to update UI
-    const candidateIndex = this.allApplications.findIndex(app => app.id === candidate.id);
     if (candidateIndex !== -1) {
       this.selectedCandidate = { ...this.allApplications[candidateIndex] };
     }
@@ -426,8 +501,35 @@ export class CandidateComponent implements OnInit {
         const invites = JSON.parse(storedInvites);
         const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
         if (inviteIndex !== -1) {
-          invites[inviteIndex].stage = 'Accepted';
+          const currentInvite = invites[inviteIndex];
+          const stageNumber = Number(currentInvite?.interviewStage || 1);
+          const interviewHistory = [
+            ...(currentInvite?.interviewHistory || []),
+            this.createInterviewHistoryEntry(
+              stageNumber,
+              'Candidate Accepted Invite',
+              `${this.getCandidateFullName(candidate)} accepted the interview ${stageNumber} invitation.`
+            )
+          ];
+
+          if ((currentInvite?.interviewPanel || []).length > 0) {
+            interviewHistory.push(
+              this.createInterviewHistoryEntry(
+                stageNumber,
+                'Panel Notification Triggered',
+                `${(currentInvite?.interviewPanel || []).length} panel member(s) were notified after the candidate accepted the interview.`
+              )
+            );
+          }
+
+          invites[inviteIndex] = {
+            ...currentInvite,
+            stage: 'Accepted',
+            candidateResponse: 'accept',
+            interviewHistory
+          };
           localStorage.setItem('upcomingInvite', JSON.stringify(invites));
+          this.notifyInterviewPanel(invites[inviteIndex]);
         }
       } catch (e) {
         console.error('Error updating invite status:', e);
@@ -455,7 +557,21 @@ export class CandidateComponent implements OnInit {
         const invites = JSON.parse(storedInvites);
         const inviteIndex = invites.findIndex((inv: any) => inv.id == candidate.id);
         if (inviteIndex !== -1) {
-          invites[inviteIndex].stage = 'Declined';
+          const currentInvite = invites[inviteIndex];
+          const stageNumber = Number(currentInvite?.interviewStage || 1);
+          invites[inviteIndex] = {
+            ...currentInvite,
+            stage: 'Declined',
+            candidateResponse: 'decline',
+            interviewHistory: [
+              ...(currentInvite?.interviewHistory || []),
+              this.createInterviewHistoryEntry(
+                stageNumber,
+                'Candidate Declined Invite',
+                `${this.getCandidateFullName(candidate)} declined the interview ${stageNumber} invitation.`
+              )
+            ]
+          };
           localStorage.setItem('upcomingInvite', JSON.stringify(invites));
         }
       } catch (e) {
@@ -534,10 +650,21 @@ export class CandidateComponent implements OnInit {
   }
 
   onActionSelected(action: string) {
+    console.log("=== onActionSelected called ===");
+    console.log("Action:", action);
     this.currentAction = action;
     this.showInviteModal = true;
     this.isStepTwo = false;
     this.selectedInviteTemplate = null;
+    this.interviewInviteSetup = this.createInterviewInviteSetup();
+    console.log("Interview setup initialized:", this.interviewInviteSetup);
+    
+    // Ensure panel users are loaded
+    if (this.availablePanelUsers.length === 0 && !this.panelUsersLoading) {
+      console.log("Panel users not loaded, loading now...");
+      this.loadPanelUsers();
+    }
+    console.log("Available panel users:", this.availablePanelUsers);
   }
 
 // 4. Methods to handle transitions
@@ -549,9 +676,15 @@ export class CandidateComponent implements OnInit {
     this.selectedInviteTemplate.customPlaceholders.forEach(p => {
       this.manualPlaceholderValues[p.key] = '';
     });
+
+    if (this.currentAction === 'Interview Invite') {
+      this.syncInterviewManualPlaceholders();
+    }
     
     this.isStepTwo = true;
   }
+
+
 
   // 5. Logic to resolve placeholders before sending
   resolveFinalContent(text: string): string {
@@ -563,6 +696,11 @@ export class CandidateComponent implements OnInit {
       recruiterName: this.regData?.user?.username ||  'Recruiter',
       recruiterEmail: this.regData?.user?.email || 'recruiter@company.com',
       location: this.selectedJob?.location || 'Location',
+      interviewDate: this.interviewInviteSetup.scheduledDate || this.manualPlaceholderValues['interviewDate'] || '',
+      interviewTime: this.interviewInviteSetup.scheduledTime || this.manualPlaceholderValues['interviewTime'] || '',
+      interviewLocation: this.interviewInviteSetup.location || this.manualPlaceholderValues['interviewLocation'] || '',
+      interviewType: this.interviewInviteSetup.interviewType || this.manualPlaceholderValues['interviewType'] || '',
+      panelMembers: this.interviewInviteSetup.panelMembers.map(member => `${member.name} (${member.role})`).join(', '),
       acceptButton: window.location.origin + '/interview-response?action=accept&candidateId=' + this.selectedCandidate.id,
       declineButton: window.location.origin + '/interview-response?action=decline&candidateId=' + this.selectedCandidate.id 
     };
@@ -573,17 +711,52 @@ export class CandidateComponent implements OnInit {
   }
 
   sendFinalMail(){
-    console.log("sent")
+    console.log("Starting sendFinalMail - Action:", this.currentAction);
+    console.log("Manual placeholder values:", this.manualPlaceholderValues);
     this.sendLoading = true;
+    
+    if (this.currentAction === 'Interview Invite') {
+      console.log("Interview setup after sync:", this.interviewInviteSetup);
+      this.syncInterviewManualPlaceholders();
+      // First sync the placeholder values to interview setup
+      console.log("Syncing placeholder values to interview setup...");
+      this.updateInterviewSetupFromPlaceholders();
+    
+      
+      if (!this.isInterviewSetupValid()) {
+        console.error("Interview setup invalid", this.interviewInviteSetup);
+        const { scheduledDate, scheduledTime, location, interviewType, panelMembers } = this.interviewInviteSetup;
+        const missingFields = [];
+        if (!scheduledDate) missingFields.push("date");
+        if (!scheduledTime) missingFields.push("time");
+        if (!interviewType) missingFields.push("interview type");
+        if (!panelMembers || panelMembers.length === 0) missingFields.push("at least one panel member");
+        
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Incomplete Interview Setup',
+          detail: `Missing: ${missingFields.join(', ')}`
+        });
+        this.sendLoading = false;
+        return;
+      }
+    }
 
+    const resolvedSubject = this.resolveFinalContent(this.selectedInviteTemplate?.subject || '');
+    const resolvedBody = this.resolveFinalContent(this.selectedInviteTemplate?.body || '');
+    
     const body = {
       name: this.selectedCandidate.firstname,
       recieverEmail: this.selectedCandidate.email,
-      subject: this.resolveFinalContent(this.selectedInviteTemplate?.subject || ''),
-      body: this.resolveFinalContent(this.selectedInviteTemplate?.body || '')
-    }
+      subject: resolvedSubject,
+      body: resolvedBody
+    };
+    
+    console.log("Sending mail with body:", body);
+    
     this.mailService.sendMail(body).subscribe({
       next: (res) => {
+        console.log("Mail service response received:", res);
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
@@ -594,6 +767,7 @@ export class CandidateComponent implements OnInit {
 
         switch (this.currentAction) {
           case 'Interview Invite':
+            console.log("Processing Interview Invite action");
             this.onSendInterview(this.selectedCandidate, body.body);
             break;
           case 'Shortlist':
@@ -609,26 +783,33 @@ export class CandidateComponent implements OnInit {
             this.onReject(this.selectedCandidate);
             break;
           default:
+            console.warn("Unknown action:", this.currentAction);
              break;
         }
 
-          this.showInviteModal = false;
-          this.isStepTwo = false;
-          this.selectedInviteTemplate = null;
-          this.sendLoading = false;
+        this.showInviteModal = false;
+        this.isStepTwo = false;
+        this.selectedInviteTemplate = null;
+        this.interviewInviteSetup = this.createInterviewInviteSetup();
+        this.sendLoading = false;
+        
+        // Refresh the applicant list to show updated status
+        setTimeout(() => {
+          this.refreshFilteredApplicants();
+        }, 500);
       },
       error: (err) => {
+        console.error("Mail service error:", err);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to send invite',
+          detail: err?.error?.message || 'Failed to send invite',
           key: 'tl'
         });
         console.error("Error sending invite", err);
         this.sendLoading = false;
-
       }
-    })
+    });
   }
 
   // Helper methods for status updates
@@ -733,6 +914,367 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-  
+  addPanelMember(): void {
+    this.interviewInviteSetup.panelMembers = [
+      ...this.interviewInviteSetup.panelMembers,
+      this.createEmptyPanelMember()
+    ];
+  }
+
+  removePanelMember(index: number): void {
+    this.interviewInviteSetup.panelMembers = this.interviewInviteSetup.panelMembers.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  onPanelUserSelected(index: number, selectedUserId: string): void {
+    console.log(typeof selectedUserId, selectedUserId);
+    
+    if (!selectedUserId) {
+      console.log("No user ID selected, clearing");
+      const currentMember = this.interviewInviteSetup.panelMembers[index];
+      if (currentMember) {
+        this.interviewInviteSetup.panelMembers[index] = {
+          ...currentMember,
+          userId: '',
+          username: '',
+          name: '',
+          email: ''
+        };
+      }
+      return;
+    }
+    
+    const selectedUser = this.availablePanelUsers.find(user => user.id === selectedUserId);
+    console.log("Selected user found:", selectedUser);
+    
+    if (!selectedUser) {
+      console.warn("User not found in available users");
+      return;
+    }
+    
+    const currentMember = this.interviewInviteSetup.panelMembers[index];
+    console.log("Current member:", currentMember);
+
+    if (!currentMember) {
+      console.warn("Current member not found at index", index);
+      return;
+    }
+
+    const updatedMember = {
+  ...currentMember,
+      id: selectedUser.id,
+      userId: selectedUser.id,
+      username: selectedUser.username,
+      name: selectedUser.name,
+      email: selectedUser.email,
+      role: currentMember.role?.trim() || selectedUser.role || 'Interviewer'
+    };
+    
+    console.log("Updated member:", updatedMember);
+    
+    currentMember.id = selectedUser.id;
+    currentMember.userId = selectedUser.id;
+    currentMember.username = selectedUser.username;
+    currentMember.name = selectedUser.name;
+    currentMember.email = selectedUser.email;
+    currentMember.role =
+      currentMember.role?.trim() || selectedUser.role || 'Interviewer';
+
+    this.syncInterviewManualPlaceholders();
+        
+    console.log("Panel members after update:", this.interviewInviteSetup.panelMembers);
+  }
+
+  onDropdownOpen(index: number): void {
+  console.log(`=== Dropdown opened for index ${index} ===`);
+  console.log("Available users:", this.availablePanelUsers);
+  console.log(
+    "Panel users for this member:",
+    this.getPanelUserOptions(this.interviewInviteSetup.panelMembers[index]?.id)
+  );
+}
+
+  compareUsers(u1: any, u2: any): boolean {
+    return u1 && u2 ? u1 === u2 : u1 === u2;
+  }
+
+  getPanelUserOptions(selectedUserId?: string): PanelUserOption[] {
+
+  const selectedIds = new Set(
+    this.interviewInviteSetup.panelMembers
+      .map(member => member.id)
+      .filter((id): id is string => Boolean(id))
+  );
+
+  return this.availablePanelUsers.filter(
+    user => user.id === selectedUserId || !selectedIds.has(user.id)
+  );
+}
+
+  private createInterviewInviteSetup(): InterviewInviteSetup {
+    const existingInvite = this.selectedCandidate ? this.getStoredInterviewInvite(this.selectedCandidate.id) : null;
+    const existingMeetingDetails = existingInvite?.meetingDetails || {};
+    const existingInterviewDetails = this.selectedCandidate?.interviewDetails || {};
+    const existingPanel = existingInvite?.interviewPanel || [];
+
+    return {
+      scheduledDate: existingMeetingDetails.date || existingInterviewDetails.scheduledDate || '',
+      scheduledTime: existingMeetingDetails.time || '',
+      interviewType: existingMeetingDetails.interviewType || existingInterviewDetails.format || 'Virtual Interview',
+      notes: existingMeetingDetails.notes || existingInterviewDetails.notes || '',
+      panelMembers: existingPanel.length
+        ? existingPanel.map((member: InterviewPanelMemberDTO) => this.mapPanelMember(member))
+        : [this.createEmptyPanelMember()]
+    };
+  }
+
+  private isInterviewSetupValid(): boolean {
+    const { scheduledDate, scheduledTime, location, interviewType, panelMembers } = this.interviewInviteSetup;
+
+
+
+    return Boolean(
+      panelMembers?.length > 0 &&
+      panelMembers.every(member => member.name?.trim() && member.role?.trim() && member.email?.trim())
+    );
+  }
+
+  private syncInterviewManualPlaceholders(): void {
+    this.manualPlaceholderValues['date'] = this.interviewInviteSetup.scheduledDate;
+    this.manualPlaceholderValues['interviewDate'] = this.interviewInviteSetup.scheduledDate;
+    this.manualPlaceholderValues['interviewTime'] = this.interviewInviteSetup.scheduledTime;
+    this.manualPlaceholderValues['interviewType'] = this.interviewInviteSetup.interviewType;
+    this.manualPlaceholderValues['panelMembers'] = this.interviewInviteSetup.panelMembers
+      .map(member => `${member.name} (${member.role})`)
+      .join(', ');
+  }
+
+  updateInterviewSetupFromPlaceholders(): void {
+    // Map template placeholder values to interview setup fields
+    // Check for interviewDate or date
+    if (this.manualPlaceholderValues['interviewDate']) {
+      this.interviewInviteSetup.scheduledDate = this.manualPlaceholderValues['interviewDate'];
+    } else if (this.manualPlaceholderValues['date']) {
+      this.interviewInviteSetup.scheduledDate = this.manualPlaceholderValues['date'];
+    }
+    
+    // Check for interviewTime or time
+    if (this.manualPlaceholderValues['interviewTime']) {
+      this.interviewInviteSetup.scheduledTime = this.manualPlaceholderValues['interviewTime'];
+    } else if (this.manualPlaceholderValues['time']) {
+      this.interviewInviteSetup.scheduledTime = this.manualPlaceholderValues['time'];
+    }
+    
+    // Check for interviewType or type
+    if (this.manualPlaceholderValues['interviewType']) {
+      this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['interviewType'];
+    } else if (this.manualPlaceholderValues['type']) {
+      this.interviewInviteSetup.interviewType = this.manualPlaceholderValues['type'];
+    }
+    
+    // // Check for various location/link field names
+    // if (this.manualPlaceholderValues['interviewLocation']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['interviewLocation'];
+    // } else if (this.manualPlaceholderValues['location']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['location'];
+    // } else if (this.manualPlaceholderValues['meetingLink']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['meetingLink'];
+    // } else if (this.manualPlaceholderValues['link']) {
+    //   this.interviewInviteSetup.location = this.manualPlaceholderValues['link'];
+    // }
+  }
+
+  private createInterviewHistoryEntry(stageNumber: number, action: string, details: string, documents: AttachmentDTO[] = []): InterviewHistoryItemDTO {
+    return {
+      id: this.generateId('history'),
+      date: new Date().toISOString(),
+      action,
+      details,
+      stageNumber,
+      documents
+    };
+  }
+
+  private generateId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private loadPanelUsers(): void {
+    this.panelUsersLoading = true;
+    console.log("Loading panel users...");
+
+    this.authenticationService.getUsers().subscribe({
+      next: (users) => {
+        console.log("Raw users from API:", users);
+        this.availablePanelUsers = Array.isArray(users)
+          ? users
+              .map((user: any) => this.mapUserToPanelOption(user))
+              .filter((user): user is PanelUserOption => Boolean(user))
+              .sort((a, b) => a.label.localeCompare(b.label))
+          : [];
+        console.log("Mapped panel users:", this.availablePanelUsers);
+        this.interviewInviteSetup = {
+          ...this.interviewInviteSetup,
+          panelMembers: this.interviewInviteSetup.panelMembers.map(member => this.mapPanelMember(member))
+        };
+        this.panelUsersLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading panel users:', error);
+        this.panelUsersLoading = false;
+      }
+    });
+  }
+
+  private mapUserToPanelOption(user: any): PanelUserOption | null {
+    const id = String(user?.id || '').trim();
+    const email = String(user?.email || '').trim();
+    const username = String(user?.username || '').trim();
+    const name = String(user?.fullname || user?.fullName || username || email).trim();
+
+    if (!id || !email) {
+      return null;
+    }
+
+    const role = this.resolveUserRole(user);
+    const label = `${name}${role ? ` • ${role}` : ''} • ${email}`;
+
+    return {
+      id,
+      username,
+      name,
+      email,
+      role,
+      label
+    };
+  }
+
+  private resolveUserRole(user: any): string {
+    if (typeof user?.appRole?.name === 'string' && user.appRole.name.trim()) {
+      return user.appRole.name.trim();
+    }
+
+    if (typeof user?.role?.name === 'string' && user.role.name.trim()) {
+      return user.role.name.trim();
+    }
+
+    if (Array.isArray(user?.roles) && user.roles.length > 0) {
+      const firstRole = user.roles.find((role: any) => typeof role?.name === 'string' && role.name.trim());
+      if (firstRole?.name) {
+        return firstRole.name.trim();
+      }
+    }
+
+    return 'Interviewer';
+  }
+
+  private mapPanelMember(member: InterviewPanelMemberDTO): InterviewPanelMemberDTO {
+  const matchedUser = this.availablePanelUsers.find(user =>
+    user.id === String(member.userId || member.id || '') ||
+    user.email.toLowerCase() === String(member.email || '').toLowerCase()
+  );
+
+  return {
+    ...member,
+    panelId: (member as any).panelId || this.generateId('panel'),
+    id: matchedUser?.id || member.id || member.userId || '',
+    userId: matchedUser?.id || member.userId || member.id || '',
+    username: matchedUser?.username || member.username || '',
+    name: matchedUser?.name || member.name || '',
+    role: member.role || matchedUser?.role || 'Interviewer',
+    email: matchedUser?.email || member.email || ''
+  };
+}
+
+  private createEmptyPanelMember(): InterviewPanelMemberDTO {
+  return {
+    panelId: this.generateId('panel'), // row identity only
+    id: '', // selected user id for dropdown binding
+    userId: '',
+    username: '',
+    name: '',
+    role: '',
+    email: ''
+  };
+}
+
+  private getStoredInterviewInvite(candidateId: string): any | null {
+    try {
+      const invites = JSON.parse(localStorage.getItem('upcomingInvite') || '[]');
+      return invites.find((invite: any) => String(invite.id) === String(candidateId)) || null;
+    } catch (error) {
+      console.error('Error loading stored interview invite:', error);
+      return null;
+    }
+  }
+
+  private notifyInterviewPanel(invite: any): void {
+    const panelMembers = Array.isArray(invite?.interviewPanel) ? invite.interviewPanel : [];
+    const notifiedEmails = new Set<string>();
+
+    panelMembers.forEach((member: InterviewPanelMemberDTO) => {
+      const email = String(member.email || '').trim().toLowerCase();
+
+      if (!email || notifiedEmails.has(email)) {
+        return;
+      }
+
+      notifiedEmails.add(email);
+      const payload = this.buildPanelNotificationEmail(invite, member);
+      this.mailService.sendMail(payload).subscribe({
+        error: (error) => {
+          console.error(`Error notifying panel member ${member.email}:`, error);
+        }
+      });
+    });
+  }
+
+  private buildPanelNotificationEmail(invite: any, member: InterviewPanelMemberDTO): { name: string; recieverEmail: string; subject: string; body: string } {
+    const meetingDetails = invite?.meetingDetails || {};
+    const candidateName = this.getCandidateFullName(invite);
+    const stageNumber = Number(invite?.interviewStage || 1);
+    const jobTitle = invite?.position || invite?.jobVacancy?.jobTitle || invite?.job?.title || 'the role';
+    const interviewType = meetingDetails.interviewType || invite?.interviewType || 'Interview';
+    const meetingDate = meetingDetails.date || invite?.scheduledDate || 'To be confirmed';
+    const meetingTime = meetingDetails.time || 'To be confirmed';
+    const meetingLocation = meetingDetails.location || 'To be confirmed';
+    const notes = meetingDetails.notes ? `<p><strong>Notes:</strong> ${meetingDetails.notes}</p>` : '';
+    const subject = `Interview Panel Notification: ${candidateName} - Stage ${stageNumber}`;
+    const body = `
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1f2937; line-height: 1.6;">
+        <h2 style="margin-bottom: 16px;">Interview Panel Assignment</h2>
+        <p>Dear <strong>${member.name || member.username || 'Team Member'}</strong>,</p>
+        <p>${candidateName} has accepted the interview invitation for <strong>${jobTitle}</strong>. You have been added to the interview ${stageNumber} panel.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <p style="margin: 0 0 8px;"><strong>Interview Type:</strong> ${interviewType}</p>
+          <p style="margin: 0 0 8px;"><strong>Date:</strong> ${meetingDate}</p>
+          <p style="margin: 0 0 8px;"><strong>Time:</strong> ${meetingTime}</p>
+          <p style="margin: 0 0 8px;"><strong>Location / Link:</strong> ${meetingLocation}</p>
+          <p style="margin: 0;"><strong>Your Role:</strong> ${member.role || 'Interviewer'}</p>
+        </div>
+        ${notes}
+        <p>The score sheet for this stage will be available once the interview is started from the scheduled interview workflow.</p>
+        <p>Regards,<br><strong>${this.regData?.user?.username || 'HR Team'}</strong></p>
+      </div>
+    `;
+
+    return {
+      name: member.name || member.username || 'Team Member',
+      recieverEmail: member.email,
+      subject,
+      body
+    };
+  }
+
+  private getCandidateFullName(candidate: any): string {
+    return `${candidate?.firstname || candidate?.firstName || ''} ${candidate?.lastname || candidate?.lastName || ''}`.trim()
+      || candidate?.fullName
+      || candidate?.fullname
+      || candidate?.candidateName
+      || 'Candidate';
+  }
+
+  test(e: any) {
+  console.log('FIRED', e);
+}
   
 }

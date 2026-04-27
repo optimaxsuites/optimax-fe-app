@@ -19,7 +19,6 @@
             <ng-select 
               [items]="positions || []"
               class="input-container-100"
-              bindLabel="position"
               [multiple]="true"
               placeholder="Filter by position"
               [(ngModel)]="selectedPositions"
@@ -47,15 +46,17 @@
             [emptyMessage]="'No scheduled interview yet.'"
             >
             <ng-template appTableBody let-candidate>
-              <td class="table-item">{{ candidate.firstname }} {{ candidate.lastname }}</td>
+              <td class="table-item">{{ candidate.fullName }}</td>
               <td class="table-item">{{ candidate.email }}</td>
-              <td class="table-item">{{ candidate.jobVacancy.jobCategory.name }}</td>
-              <td class="table-item">{{ candidate.dateApplied }}</td>
+              <td class="table-item">{{ candidate.position }}</td>
+              <td class="table-item">{{ candidate.appliedDate }}</td>
+              <td class="table-item">{{ candidate.scheduledDate }}</td>
+
               <td class="table-item">{{ candidate.interviewType }}</td>
               <td class="table-item">Interview {{ candidate.interviewStage }}</td>
               <td class="table-item">
-                  <span [ngClass]="getStatusClass(candidate.stage)">
-                    {{ candidate.stage === 'accept' ? 'Accepted' : candidate.stage === 'decline' ? 'Declined' : candidate.stage }} 
+                  <span [ngClass]="getStatusClass(getDisplayStage(candidate))">
+                    {{ getDisplayStage(candidate) }}
                   </span>
               </td>
 
@@ -64,16 +65,13 @@
                     <p-overlayPanel #op ngClass="padding: 0;">
                       <div>
                           <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> <span>View</span></li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'In-Progress' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="startInterview(candidate)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openScoreSheet(candidate)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
-                          <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li> -->
-                          <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress'" (click)="downloadScoresheet(candidate.id)"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
-                          <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled'" (click)="sendRejected(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Offer Rejected</li> -->
-                          <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Cancelled'" (click)="decline(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Declined</li> -->
+                          <li class="table-item-panel" *ngIf="canStartInterview(candidate)" (click)="startInterview(candidate)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
+                          <li class="table-item-panel" *ngIf="canCreateScoreSheet(candidate)" (click)="openScoreSheet(candidate)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
+                          <li class="table-item-panel" *ngIf="canEndInterview(candidate)" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                          <li class="table-item-panel" *ngIf="canMoveToNextStage(candidate)" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
+                          <li class="table-item-panel" *ngIf="canSendOffer(candidate)" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                          <li class="table-item-panel" *ngIf="canSendAppointmentLetter(candidate)" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
+                          <li class="table-item-panel" *ngIf="canDownloadScoreSheet(candidate)" (click)="downloadScoresheet(candidate.id)"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
                       </div>
                     </p-overlayPanel>
               </td>
@@ -196,18 +194,18 @@
           <p class="detail-meta">
             <span>{{ activeItem.email }}</span>
             <span class="meta-dot">·</span>
-            <span>{{ activeItem.phone }}</span>
+            <span>{{ activeItem.phone || activeItem.contactNo }}</span>
             <span class="meta-dot">·</span>
             <span>Applied {{ activeItem.appliedDate }}</span>
           </p>
         </div>
       </div>
       <div class="detail-header__actions">
-        <button class="action-btn action-btn--invite" *ngIf="activeItem.stage !== 'In-Progress' && activeItem.stage !== 'Completed' && activeItem.stage !== 'Cancelled' && activeItem.stage !== 'Offer-Sent' && activeItem.stage !== 'Appointment-Letter-Sent'" (click)="startInterview(activeItem)">
+        <button class="action-btn action-btn--invite" *ngIf="canStartInterview(activeItem)" (click)="startInterview(activeItem)">
         <i class="fas fa-calendar-check"></i> Start Interview
         </button>
 
-        <button class="action-btn action-btn--shortlisted" (click)="openScoreSheet(activeItem)">
+        <button class="action-btn action-btn--shortlisted" *ngIf="canCreateScoreSheet(activeItem)" (click)="openScoreSheet(activeItem)">
         <i class="fas fa-pen"></i> New Score Sheet
         </button>
         <!-- <div> 
@@ -360,7 +358,7 @@
 
           </div>
 
-          <div *ngIf="!activeItem.aiVetting" class="ai-empty">
+      <div *ngIf="!activeItem.aiVetting" class="ai-empty">
             <i class="fas fa-robot ai-empty__icon"></i>
             <span>No AI analysis yet.</span>
             <button class="rerun-btn" (click)="runAiVetting(activeItem)">
@@ -370,7 +368,106 @@
         </div>
       </div>
 
+      <div *ngIf="activeTab === 'interviews'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__header">
+            <span class="section-block__title">Interview Lifecycle</span>
+            <span class="badge badge-lightgrey">{{ activeItem.scoreSheetStatus || 'Not Started' }}</span>
+          </div>
+
+          <div class="history-grid">
+            <div class="history-card">
+              <div class="history-card__title">Meeting Setup</div>
+              <div class="history-card__meta"><strong>Date:</strong> {{ activeItem.meetingDetails?.date || activeItem.scheduledDate || 'TBD' }}</div>
+              <div class="history-card__meta"><strong>Time:</strong> {{ activeItem.meetingDetails?.time || 'TBD' }}</div>
+              <div class="history-card__meta"><strong>Type:</strong> {{ activeItem.meetingDetails?.interviewType || activeItem.interviewType || 'TBD' }}</div>
+              <div class="history-card__meta"><strong>Location:</strong> {{ activeItem.meetingDetails?.location || 'TBD' }}</div>
+              <div class="history-card__meta" *ngIf="activeItem.meetingDetails?.notes"><strong>Notes:</strong> {{ activeItem.meetingDetails?.notes }}</div>
+            </div>
+
+            <div class="history-card">
+              <div class="history-card__title">Panel Members</div>
+              <div *ngIf="activeItem.interviewPanel?.length; else noPanelMembers">
+                <div class="panel-member" *ngFor="let member of activeItem.interviewPanel">
+                  <div>
+                    <div class="panel-member__name">{{ member.name }}</div>
+                    <div class="panel-member__role">{{ member.role }}</div>
+                  </div>
+                  <div class="panel-member__email">{{ member.email }}</div>
+                </div>
+              </div>
+              <ng-template #noPanelMembers>
+                <div class="list-empty">No panel members added yet.</div>
+              </ng-template>
+            </div>
+          </div>
+
+          <div class="section-block mt-4">
+            <div class="section-block__title">Stage Results</div>
+            <div *ngIf="getInterviewStageSummaries().length; else noStageScores" class="stage-summary-list">
+              <div class="stage-summary-card" *ngFor="let summary of getInterviewStageSummaries()">
+                <div class="stage-summary-card__header">
+                  <span>Interview {{ summary.stageNumber }}</span>
+                  <span [ngClass]="getOutcomeClass(summary.outcome)">{{ summary.outcome }}</span>
+                </div>
+                <div class="stage-summary-card__meta">Average Score: {{ summary.averageScore || 0 | number:'1.1-1' }}</div>
+                <div class="stage-summary-card__meta">Submitted Score Sheets: {{ summary.totalSubmissions }}/{{ summary.panelSize }}</div>
+                <div class="stage-summary-card__meta" *ngIf="summary.submittedBy.length">Submitted By: {{ summary.submittedBy.join(', ') }}</div>
+              </div>
+            </div>
+            <ng-template #noStageScores>
+              <div class="list-empty">No stage scores submitted yet.</div>
+            </ng-template>
+          </div>
+
+          <div class="section-block mt-4">
+            <div class="section-block__title">Current Stage Score Sheets</div>
+            <div *ngIf="getScoreAssignmentsForActiveStage().length; else noAssignments">
+              <div class="assignment-row" *ngFor="let assignment of getScoreAssignmentsForActiveStage()">
+                <div>
+                  <div class="assignment-row__name">{{ assignment.participantName }}</div>
+                  <div class="assignment-row__role">{{ assignment.participantRole }}</div>
+                </div>
+                <div class="assignment-row__status" [ngClass]="assignment.status === 'Submitted' ? 'assignment-row__status--submitted' : 'assignment-row__status--pending'">
+                  {{ assignment.status }}
+                </div>
+              </div>
+            </div>
+            <ng-template #noAssignments>
+              <div class="list-empty">Score sheets will be created when the interview starts.</div>
+            </ng-template>
+          </div>
+
+          <div class="section-block mt-4">
+            <div class="section-block__title">Timeline</div>
+            <div class="timeline" *ngIf="getInterviewHistory().length; else noInterviewHistory">
+              <div class="timeline-item" *ngFor="let item of getInterviewHistory()">
+                <div class="timeline-marker">
+                  <i [class]="getHistoryIcon(item.action)"></i>
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-action">{{ item.action }}</span>
+                    <span class="timeline-date">{{ item.date | date:'medium' }}</span>
+                  </div>
+                  <div class="timeline-details">{{ item.details }}</div>
+                  <div class="timeline-score" *ngIf="item.averageScore || item.outcome">
+                    <span *ngIf="item.averageScore">Average Score: {{ item.averageScore || 0 | number:'1.1-1' }}</span>
+                    <span *ngIf="item.outcome" [ngClass]="getOutcomeClass(item.outcome)">{{ item.outcome }}</span>
+                  </div>
+                  <div class="timeline-documents" *ngIf="item.documents?.length">
+                    <a *ngFor="let doc of item.documents" [href]="doc.url" target="_blank" class="timeline-documents__link">{{ doc.name }}</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-template #noInterviewHistory>
+              <div class="list-empty">No interview history captured yet.</div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </app-large-side-modal>
-

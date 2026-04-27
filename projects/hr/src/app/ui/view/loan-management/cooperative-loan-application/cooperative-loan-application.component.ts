@@ -1,6 +1,6 @@
 import { formatDate } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
@@ -75,6 +75,8 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   modalLoanId: number | null = null;
   modalLoading = false;
   modalError = '';
+  private isValidating = false;
+
 
   constructor(
     private fb: FormBuilder,
@@ -90,18 +92,19 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     // Check URL parameters for guarantor approval
     this.route.queryParams.subscribe(params => {
       if (params['guarantorApproval'] === 'true' && params['loanId']) {
-        // This is a guarantor viewing the approval request
         this.isGuarantorView = true;
         this.modalLoanId = Number(params['loanId']);
         this.fetchLoanSummaryById(this.modalLoanId);
-        return; // Don't load the normal form data
+        return;
       }
 
-      // Normal member view - load the form
       this.isGuarantorView = false;
       this.initForm();
       this.setupPurposeChangeListener();
-      this.loadEmployeeDirectoryWithMemberCheckAndSelectCurrentUser();
+      
+      setTimeout(() => {
+        this.loadEmployeeDirectoryWithMemberCheckAndSelectCurrentUser();
+      }, 0);
     });
   }
 
@@ -119,7 +122,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
           return;
         }
         
-        // Build loan summary for the modal
         this.modalLoanSummary = {
           applicantName: (loan as any).memberName || (loan as any).fullName || (loan as any).name || 'Unknown',
           amount: loan.amount,
@@ -149,7 +151,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.modalLoading = true;
     this.modalError = '';
     
-    // Get guarantor ID from session or token
     const guarantorId = this.getGuarantorIdFromSession();
     
     this.cooperativeService.submitGuarantorDecision(this.modalLoanId, guarantorId, 'APPROVED').subscribe({
@@ -157,7 +158,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         this.modalLoading = false;
         this.showGuarantorApprovalModal = false;
         alert('You have successfully approved this loan as a guarantor.');
-        // Optionally redirect or close the page
       },
       error: (err) => {
         console.error('Error approving loan:', err);
@@ -191,19 +191,16 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   handleGuarantorModalClose(): void {
     this.showGuarantorApprovalModal = false;
-    // If this is a guarantor view, redirect to home or close
     if (this.isGuarantorView) {
       this.router.navigate(['/']);
     }
   }
 
   private getGuarantorIdFromSession(): number {
-    // Get guarantor ID from session storage or from URL token
     const guarantorId = sessionStorage.getItem('guarantorId');
     if (guarantorId) {
       return Number(guarantorId);
     }
-    // Fallback - should be extracted from the approval token
     return 0;
   }
 
@@ -222,60 +219,61 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     });
   }
 
-  initForm(): void {
-    this.applicationForm = this.fb.group({
-      memberId: ['', Validators.required],
-      groupId: ['', Validators.required],
-      amount: ['', [Validators.required, Validators.min(1000)]],
-      purpose: ['', Validators.required],
-      repaymentTime: ['', [Validators.required, Validators.min(1)]],
-      modeOfPayment: ['MONTHLY', Validators.required],
-      requestDate: [this.toDateTimeLocal(new Date()), Validators.required],
-      guarantors: this.fb.array([]),
-      acceptTerms: [false, Validators.requiredTrue],
-      acceptAcknowledgement: [false, Validators.requiredTrue]
-    });
+initForm(): void {
+  this.applicationForm = this.fb.group({
+    memberId: ['', Validators.required],
+    groupId: ['', Validators.required],
+    amount: ['', [Validators.required, Validators.min(1000)]],
+    purpose: ['', Validators.required],
+    repaymentTime: ['', [Validators.required, Validators.min(1), Validators.max(12)]],
+    modeOfPayment: ['MONTHLY', Validators.required],
+    requestDate: [this.toDateTimeLocal(new Date()), Validators.required],
+    guarantors: this.fb.array([]),
+    acceptTerms: [false, Validators.requiredTrue],
+    acceptAcknowledgement: [false, Validators.requiredTrue]
+  });
 
-    // Watch for changes
-    this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
-      this.onGroupSelect(groupId);
-    });
+  // Watch for changes - use distinctUntilChanged to prevent loops
+  this.applicationForm.get('groupId')?.valueChanges.subscribe(groupId => {
+    this.onGroupSelect(groupId);
+  });
 
-    this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
-      this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
-      if (this.selectedMember) {
-        this.selectedMember = {
-          ...this.selectedMember,
-          email: this.resolveMemberEmail(this.selectedMember)
-        };
-        if (this.selectedMember.employeeId) {
-          this.guarantorService.getGuarantorByEmployeeId(String(this.selectedMember.employeeId)).subscribe((guarantors: GuarantorDto[]) => {
-            this.guarantorCandidates = guarantors;
-          });
-        } else {
-          this.guarantorCandidates = [];
-        }
+  this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
+    this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
+    if (this.selectedMember) {
+      this.selectedMember = {
+        ...this.selectedMember,
+        email: this.resolveMemberEmail(this.selectedMember)
+      };
+      if (this.selectedMember.employeeId) {
+        this.guarantorService.getGuarantorByEmployeeId(String(this.selectedMember.employeeId)).subscribe((guarantors: GuarantorDto[]) => {
+          this.guarantorCandidates = guarantors;
+        });
       } else {
         this.guarantorCandidates = [];
       }
-      this.resolveSelectedMemberEligibility();
-      this.refreshQualifiedGroups();
-      this.validateGuarantors();
-    });
+    } else {
+      this.guarantorCandidates = [];
+    }
+    this.resolveSelectedMemberEligibility();
+    this.refreshQualifiedGroups();
+    this.validateGuarantors();
+  });
 
-    this.applicationForm.get('amount')?.valueChanges.subscribe(() => {
-      this.calculateRepayment();
-      this.validateGuarantors();
-    });
+  this.applicationForm.get('amount')?.valueChanges.subscribe(() => {
+    this.calculateRepayment();
+    this.validateGuarantors();
+  });
 
-    this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
-      this.calculateRepayment();
-    });
+  this.applicationForm.get('repaymentTime')?.valueChanges.subscribe(() => {
+    this.calculateRepayment();
+  });
 
-    this.guarantorsArray.valueChanges.subscribe(() => {
-      this.validateGuarantors();
-    });
-  }
+  // Use debounce to prevent rapid fire
+  this.guarantorsArray.valueChanges.subscribe(() => {
+    this.validateGuarantors();
+  });
+}
 
   // ==================== GETTERS ====================
 
@@ -444,21 +442,247 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       purposes: this.cooperativeService.loadLoanPurposes(),
       members: this.cooperativeService.getMembers(),
       groups: this.cooperativeService.loadGroups()
-    }).subscribe(({ purposes, members, groups }) => {
-      this.availablePurposes = purposes;
-      this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
-      this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
-      // Auto-select current user as member
-      this.selectedMember = this.cooperativeService.resolveCurrentSessionMember(this.members);
-      this.refreshEligibleMembers();
-      this.resolveSelectedMemberEligibility();
-      this.refreshQualifiedGroups();
-      this.resolveSelectedMemberSalary();
-      // Patch form with selected member
-      if (this.selectedMember) {
-        this.applicationForm.patchValue({ memberId: this.selectedMember.id });
+    }).subscribe({
+      next: ({ purposes, members, groups }) => {
+        this.availablePurposes = purposes;
+        this.members = members.filter((m: CooperativeMember) => m.status === 'ACTIVE');
+        this.groups = groups.filter((group: CooperativeLoanGroup) => group.status === 'ACTIVE');
+        
+        console.log('[CoopLoanApp] Loaded members:', this.members.map(m => ({
+          id: m.id,
+          employeeId: m.employeeId,
+          fullName: m.fullName,
+          email: m.email
+        })));
+        
+        const sessionUserId = Number(sessionStorage.getItem('userid') || localStorage.getItem('userid') || 0);
+        
+        let foundMember: CooperativeMember | undefined = this.members.find(m => m.employeeId === sessionUserId || m.id === sessionUserId);
+        
+        if (!foundMember && sessionUserId) {
+          console.log('[CoopLoanApp] Looking up employee by userId:', sessionUserId);
+          this.employeeService.getEmployeeByUserId(sessionUserId).subscribe({
+            next: (employee) => {
+              console.log('[CoopLoanApp] Employee found:', employee);
+              const employeeId = employee?.employeeId || employee?.id;
+              console.log('[CoopLoanApp] Looking for member with employeeId:', employeeId);
+              
+              foundMember = this.members.find(m => 
+                m.employeeId === employeeId || 
+                m.id === employeeId ||
+                m.memberId === employeeId
+              );
+              
+              if (foundMember) {
+                console.log('[CoopLoanApp] Found member by employee lookup:', foundMember);
+                this.setSelectedMemberAndLoadData(foundMember);
+              } else {
+                console.error('[CoopLoanApp] No member found for employeeId:', employeeId);
+                this.messages = [{
+                  severity: 'warn',
+                  summary: 'Not a Cooperative Member',
+                  detail: 'You are not yet registered as a cooperative member. Please contact support or join the cooperative to proceed.'
+                }];
+              }
+            },
+            error: (err) => {
+              console.error('[CoopLoanApp] Failed to fetch employee:', err);
+              this.messages = [{
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Could not verify your cooperative membership. Please contact support.'
+              }];
+            }
+          });
+        } else if (foundMember) {
+          console.log('[CoopLoanApp] Found member directly:', foundMember);
+          this.setSelectedMemberAndLoadData(foundMember);
+        } else {
+          console.error('[CoopLoanApp] No member found and no session userId');
+          this.messages = [{
+            severity: 'warn',
+            summary: 'Not a Cooperative Member',
+            detail: 'You are not yet registered as a cooperative member. Please contact support or join the cooperative to proceed.'
+          }];
+        }
+      },
+      error: (err) => {
+        console.error('[CoopLoanApp] Error loading initial data:', err);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Loading Error',
+          detail: 'Could not load cooperative data. Please try again later.'
+        }];
       }
     });
+  }
+
+  private setSelectedMemberAndLoadData(member: CooperativeMember): void {
+  console.log('[CoopLoanApp] Setting selected member:', member);
+  
+  // Guard against null/undefined
+  if (!member || !member.id) {
+    console.error('[CoopLoanApp] Invalid member passed to setSelectedMemberAndLoadData');
+    return;
+  }
+  
+  // Set the member
+  this.selectedMember = member;
+  
+  // Store the ID for verification
+  const selectedMemberId = this.selectedMember.id;
+  console.log('[CoopLoanApp] Selected member set with ID:', selectedMemberId);
+  
+  // Update the form if it exists
+  if (this.applicationForm) {
+    this.applicationForm.patchValue({ memberId: selectedMemberId });
+    console.log('[CoopLoanApp] Form patched with memberId:', selectedMemberId);
+  } else {
+    console.warn('[CoopLoanApp] Form not ready, will retry');
+    setTimeout(() => {
+      if (this.applicationForm && this.selectedMember) {
+        this.applicationForm.patchValue({ memberId: this.selectedMember.id });
+      }
+    }, 100);
+    return;
+  }
+  
+  // Refresh eligibility and salary
+  this.refreshEligibleMembers();
+  this.resolveSelectedMemberEligibility();
+  this.resolveSelectedMemberSalary();
+  
+  // Verify member still exists before proceeding
+  if (!this.selectedMember || this.selectedMember.id !== selectedMemberId) {
+    console.error('[CoopLoanApp] Member was reset! Restoring...');
+    this.selectedMember = member;
+  }
+  
+  console.log('[CoopLoanApp] Loading group memberships for member ID:', selectedMemberId);
+  
+  // Load group memberships
+  this.cooperativeService.refreshGroupMembershipsForMember(this.selectedMember).subscribe({
+    next: (memberships) => {
+      console.log('[CoopLoanApp] Group memberships loaded:', memberships);
+      
+      // Verify member still exists
+      if (!this.selectedMember) {
+        console.error('[CoopLoanApp] Selected member became undefined after loading memberships, restoring...');
+        this.selectedMember = member;
+      }
+      
+      if (this.selectedMember && this.selectedMember.id === selectedMemberId) {
+        // Clear any error messages
+        this.messages = [];
+        
+        // Refresh qualified groups - but only if member still matches
+        this.refreshQualifiedGroups();
+        
+        const activeMemberships = memberships.filter(m => m.status === 'ACTIVE');
+        if (activeMemberships.length === 0) {
+          this.messages = [{
+            severity: 'warn',
+            summary: 'No Active Group Membership',
+            detail: 'You are a cooperative member but not yet a member of any active loan group. Please contact support to join a group.'
+          }];
+        } else {
+          console.log('[CoopLoanApp] Available groups:', this.qualifiedGroups);
+          
+          // Auto-select first group if available and none selected
+          if (this.qualifiedGroups.length > 0 && !this.applicationForm.get('groupId')?.value) {
+            const firstGroup = this.qualifiedGroups[0];
+            this.applicationForm.patchValue({ groupId: firstGroup.id });
+            this.selectedGroup = firstGroup;
+            console.log('[CoopLoanApp] Auto-selected group:', firstGroup.name);
+          }
+          
+          // Set default values for amount and repayment time if not set
+          if (!this.applicationForm.get('amount')?.value || this.applicationForm.get('amount')?.value < 1000) {
+            this.applicationForm.patchValue({ amount: 10000 });
+            console.log('[CoopLoanApp] Set default amount to 10000');
+          }
+          
+          // FIX: Ensure repaymentTime has a valid value between 1-12
+          const currentRepaymentTime = this.applicationForm.get('repaymentTime')?.value;
+          if (!currentRepaymentTime || currentRepaymentTime < 1 || currentRepaymentTime > 12) {
+            this.applicationForm.patchValue({ repaymentTime: 6 });
+            console.log('[CoopLoanApp] Set default repaymentTime to 6');
+          }
+          
+          // Ensure modeOfPayment is set
+          if (!this.applicationForm.get('modeOfPayment')?.value) {
+            this.applicationForm.patchValue({ modeOfPayment: 'MONTHLY' });
+          }
+          
+          // Ensure requestDate is set
+          if (!this.applicationForm.get('requestDate')?.value) {
+            this.applicationForm.patchValue({ requestDate: this.toDateTimeLocal(new Date()) });
+          }
+          
+          // Force update validity for all controls
+          this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
+          this.applicationForm.get('amount')?.updateValueAndValidity();
+          this.applicationForm.updateValueAndValidity();
+          
+          // Force calculate repayment
+          this.calculateRepayment();
+          
+          // Debug form validity after fixes
+          setTimeout(() => {
+            console.log('[CoopLoanApp] After fixes - repaymentTime value:', this.applicationForm.get('repaymentTime')?.value);
+            console.log('[CoopLoanApp] After fixes - repaymentTime valid:', this.applicationForm.get('repaymentTime')?.valid);
+            console.log('[CoopLoanApp] After fixes - Form valid:', this.applicationForm.valid);
+          }, 100);
+          
+          // Force change detection
+          setTimeout(() => {
+            if (this.applicationForm) {
+              this.applicationForm.updateValueAndValidity();
+            }
+          }, 0);
+        }
+      } else {
+        console.error('[CoopLoanApp] Member ID mismatch after loading memberships');
+      }
+    },
+    error: (err) => {
+      console.error('[CoopLoanApp] Error loading group memberships:', err);
+      this.messages = [{
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Could not load your group memberships. Please try again.'
+      }];
+    }
+  });
+}
+
+  // Debug method
+  debugFormValidity(): void {
+    if (!this.applicationForm) {
+      console.log('[DEBUG] Form is not initialized yet');
+      return;
+    }
+    
+    console.log('========== FORM VALIDATION DEBUG ==========');
+    console.log('Form Valid:', this.applicationForm.valid);
+    
+    const controls = ['memberId', 'groupId', 'amount', 'purpose', 'repaymentTime', 'modeOfPayment', 'requestDate', 'acceptTerms', 'acceptAcknowledgement'];
+    
+    controls.forEach(controlName => {
+      const control = this.applicationForm.get(controlName);
+      if (control) {
+        console.log(`${controlName}:`, {
+          value: control.value,
+          valid: control.valid,
+          errors: control.errors
+        });
+      }
+    });
+    
+    console.log('Selected Member:', this.selectedMember?.id);
+    console.log('Selected Group:', this.selectedGroup?.id);
+    console.log('Qualified Groups Count:', this.qualifiedGroups.length);
+    console.log('==========================================');
   }
 
   loadData(): void {
@@ -510,19 +734,7 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   private resolveMemberEmail(member: CooperativeMember | undefined): string {
     if (!member) return '';
-    const employeeMatch = this.employeeDirectory.find((employee) =>
-      String(employee.employeeId) === String(member.employeeId) ||
-      String(employee.employeeId) === String(member.id) ||
-      String(employee.employeeId) === String(member.memberId) ||
-      (employee.fullName && member.fullName && employee.fullName.toLowerCase() === member.fullName.toLowerCase())
-    );
-    return this.resolveBestEmailCandidate(
-      employeeMatch?.workEmail,
-      employeeMatch?.email,
-      this.getSessionRegistrationEmail(),
-      member.email,
-      sessionStorage.getItem('email') || ''
-    );
+    return member.email || '';
   }
 
   getSelectedMemberEmail(): string {
@@ -575,20 +787,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.eligibleMembers = this.members
       .filter((member: CooperativeMember) => member.status === 'ACTIVE')
       .map((member: CooperativeMember) => {
-        const emp = this.employeeDirectory.find(e =>
-          String(e.employeeId) === String(member.employeeId) ||
-          String(e.employeeId) === String(member.id) ||
-          String(e.employeeId) === String(member.memberId) ||
-          (e.fullName && member.fullName && e.fullName.toLowerCase() === member.fullName.toLowerCase())
-        );
-        if (emp) {
-          return {
-            ...member,
-            fullName: emp.fullName || member.fullName,
-            email: this.resolveBestEmailCandidate(emp.email, member.email)
-          };
-        }
-        return member;
+        return {
+          ...member,
+          employeeId: typeof member.employeeId === 'string' ? parseInt(member.employeeId, 10) : member.employeeId,
+        };
       });
   }
 
@@ -635,102 +837,162 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   // ==================== GROUP SELECTION ====================
 
   onGroupSelect(groupId: string): void {
-    this.isLoadingGroupDetails = true;
-    const groupIdNum = Number(groupId);
-    this.cooperativeService.loadGroupById(groupIdNum).subscribe({
-      next: (group) => {
-        this.selectedGroup = group;
-        this.selectedGroupMembership = this.selectedMember && this.selectedGroup
-          ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
-          : undefined;
-
-        if (this.selectedGroup) {
-          this.applicationForm.get('amount')?.setValidators([
-            Validators.required,
-            Validators.min(1000)
-          ]);
-          this.applicationForm.get('repaymentTime')?.setValidators([
-            Validators.required,
-            Validators.min(this.selectedGroup.minDuration),
-            Validators.max(this.selectedGroup.maxDuration)
-          ]);
-          this.applicationForm.get('amount')?.updateValueAndValidity();
-          this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
-          this.syncGuarantorControls();
-          this.validateGuarantors();
-          this.calculateRepayment();
-        }
-        this.isLoadingGroupDetails = false;
-      },
-      error: (err) => {
-        console.error('[onGroupSelect] Error loading group:', err);
-        this.selectedGroup = undefined;
-        this.selectedGroupMembership = undefined;
-        this.isLoadingGroupDetails = false;
-      }
-    });
-  }
-
-  private refreshQualifiedGroups(): void {
-    const previousSelectedGroupId = this.applicationForm?.get('groupId')?.value;
-    const previousPurpose = this.applicationForm?.get('purpose')?.value;
-    
-    if (!this.selectedMember) {
-      this.qualifiedGroups = [];
-      this.selectedGroup = undefined;
-      this.selectedGroupMembership = undefined;
-      if (this.applicationForm?.get('groupId')?.value) {
-        this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
-      }
-      this.syncGuarantorControls();
-      return;
-    }
-
-    this.resolveSelectedMemberSalary();
-    const activeMembershipGroupIds = new Set(
-      this.cooperativeService
-        .getGroupMembershipsByMember(this.selectedMember.id)
-        .filter(membership => membership.status === 'ACTIVE')
-        .map(membership => String(membership.groupId))
-    );
-
-    this.qualifiedGroups = this.groups
-      .filter(group => activeMembershipGroupIds.has(String(group.id)))
-      .sort((left, right) => left.name.localeCompare(right.name));
-
-    const selectedGroupId = this.applicationForm?.get('groupId')?.value;
-    if (selectedGroupId && !this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
-      this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
-      this.selectedGroup = undefined;
-      this.selectedGroupMembership = undefined;
-    } else if (selectedGroupId && this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
-      this.selectedGroup = this.qualifiedGroups.find(group => String(group.id) === String(selectedGroupId));
+  this.isLoadingGroupDetails = true;
+  const groupIdNum = Number(groupId);
+  this.cooperativeService.loadGroupById(groupIdNum).subscribe({
+    next: (group) => {
+      this.selectedGroup = group;
       this.selectedGroupMembership = this.selectedMember && this.selectedGroup
         ? this.cooperativeService.getGroupMembership(this.selectedMember.id, this.selectedGroup.id)
         : undefined;
-    }
-    
-    if (previousPurpose && this.availablePurposes.some(p => String(p.name) === String(previousPurpose))) {
-      this.applicationForm.patchValue({ purpose: previousPurpose }, { emitEvent: false });
-    }
 
-    this.syncGuarantorControls();
+      if (this.selectedGroup) {
+        // Update validators
+        this.applicationForm.get('amount')?.setValidators([
+          Validators.required,
+          Validators.min(1000)
+        ]);
+        
+        // FIX: Update repaymentTime validators with group's min/max
+        const minDuration = this.selectedGroup.minDuration || 1;
+        const maxDuration = this.selectedGroup.maxDuration || 12;
+        this.applicationForm.get('repaymentTime')?.setValidators([
+          Validators.required,
+          Validators.min(minDuration),
+          Validators.max(maxDuration)
+        ]);
+        
+        // Get current value
+        let currentRepaymentTime = this.applicationForm.get('repaymentTime')?.value;
+        
+        // If current value is invalid for this group, set a default
+        if (!currentRepaymentTime || currentRepaymentTime < minDuration || currentRepaymentTime > maxDuration) {
+          const defaultTime = Math.min(Math.max(6, minDuration), maxDuration);
+          this.applicationForm.patchValue({ repaymentTime: defaultTime });
+          console.log(`[CoopLoanApp] Set repaymentTime to ${defaultTime} (min: ${minDuration}, max: ${maxDuration})`);
+        }
+        
+        this.applicationForm.get('amount')?.updateValueAndValidity();
+        this.applicationForm.get('repaymentTime')?.updateValueAndValidity();
+        this.syncGuarantorControls();
+        this.validateGuarantors();
+        this.calculateRepayment();
+      }
+      this.isLoadingGroupDetails = false;
+    },
+    error: (err) => {
+      console.error('[onGroupSelect] Error loading group:', err);
+      this.selectedGroup = undefined;
+      this.selectedGroupMembership = undefined;
+      this.isLoadingGroupDetails = false;
+    }
+  });
+}
+  private refreshQualifiedGroups(): void {
+  console.log('[CoopLoanApp] refreshQualifiedGroups called, selectedMember:', this.selectedMember?.id);
+  
+  if (!this.applicationForm) {
+    console.log('[CoopLoanApp] Application form not initialized yet, skipping refresh');
+    return;
+  }
+  
+  if (!this.selectedMember || !this.selectedMember.id) {
+    console.log('[CoopLoanApp] No valid selected member, clearing qualified groups');
+    this.qualifiedGroups = [];
+    this.selectedGroup = undefined;
+    this.selectedGroupMembership = undefined;
+    if (this.applicationForm?.get('groupId')?.value) {
+      this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
+    }
+    this.syncGuarantorControls(); // This will now clear guarantors properly
+    return;
   }
 
+  const memberId = this.selectedMember.id;
+  console.log('[CoopLoanApp] Refreshing qualified groups for member:', memberId);
+  this.resolveSelectedMemberSalary();
+  
+  const activeMembershipGroupIds = new Set(
+    this.cooperativeService
+      .getGroupMembershipsByMember(memberId)
+      .filter(membership => membership.status === 'ACTIVE')
+      .map(membership => String(membership.groupId))
+  );
+  
+  console.log('[CoopLoanApp] Active group IDs from memberships:', Array.from(activeMembershipGroupIds));
+
+  this.qualifiedGroups = this.groups
+    .filter(group => activeMembershipGroupIds.has(String(group.id)))
+    .sort((left, right) => left.name.localeCompare(right.name));
+  
+  console.log('[CoopLoanApp] Qualified groups count:', this.qualifiedGroups.length);
+
+  const selectedGroupId = this.applicationForm.get('groupId')?.value;
+  let groupChanged = false;
+  
+  if (selectedGroupId && !this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
+    console.log('[CoopLoanApp] Previously selected group no longer valid, clearing');
+    this.applicationForm.patchValue({ groupId: '' }, { emitEvent: false });
+    this.selectedGroup = undefined;
+    this.selectedGroupMembership = undefined;
+    groupChanged = true;
+  } else if (selectedGroupId && this.qualifiedGroups.some(group => String(group.id) === String(selectedGroupId))) {
+    const newGroup = this.qualifiedGroups.find(group => String(group.id) === String(selectedGroupId));
+    if (this.selectedGroup?.id !== newGroup?.id) {
+      this.selectedGroup = newGroup;
+      groupChanged = true;
+    }
+    this.selectedGroupMembership = this.selectedGroup
+      ? this.cooperativeService.getGroupMembership(memberId, this.selectedGroup.id)
+      : undefined;
+    console.log('[CoopLoanApp] Selected group:', this.selectedGroup?.name);
+  } else if (this.qualifiedGroups.length > 0 && !selectedGroupId) {
+    const firstGroup = this.qualifiedGroups[0];
+    this.applicationForm.patchValue({ groupId: firstGroup.id });
+    this.selectedGroup = firstGroup;
+    this.selectedGroupMembership = this.cooperativeService.getGroupMembership(memberId, firstGroup.id);
+    groupChanged = true;
+    console.log('[CoopLoanApp] Auto-selected first group:', firstGroup.name);
+  }
+  
+  // If group changed, update guarantor requirements
+  if (groupChanged) {
+    this.syncGuarantorControls();
+  }
+  
+  // Update form validity
+  this.applicationForm.updateValueAndValidity();
+}
+  
   // ==================== GUARANTOR METHODS ====================
 
   private syncGuarantorControls(): void {
-    if (!this.selectedGroup?.requiresGuarantors) {
-      this.guarantorsArray.clear();
-      return;
+  // Clear all validators first
+  this.guarantorsArray.clearValidators();
+  
+  if (!this.selectedGroup?.requiresGuarantors) {
+    // If no guarantors required, clear the array and remove validators
+    while (this.guarantorsArray.length) {
+      this.guarantorsArray.removeAt(0);
     }
-
-    const minimum = Math.max(this.requiredGuarantorCount, 1);
-    while (this.guarantorsArray.length < minimum) {
-      this.guarantorsArray.push(this.createGuarantorGroup());
-    }
-    this.validateGuarantors();
+    this.guarantorsArray.clearValidators();
+    this.guarantorsArray.updateValueAndValidity();
+    return;
   }
+
+  // If guarantors are required, set validators
+  const minimum = Math.max(this.requiredGuarantorCount, 1);
+  while (this.guarantorsArray.length < minimum) {
+    this.guarantorsArray.push(this.createGuarantorGroup());
+  }
+  
+  // Remove extra guarantors if there are too many
+  while (this.guarantorsArray.length > minimum + 2) { // Allow up to 2 extra
+    this.guarantorsArray.removeAt(this.guarantorsArray.length - 1);
+  }
+  
+  this.validateGuarantors();
+}
 
   private createGuarantorGroup(): FormGroup {
     return this.fb.group({
@@ -745,15 +1007,29 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     this.validateGuarantors();
   }
 
-  removeGuarantor(index: number): void {
-    if (!this.selectedGroup?.requiresGuarantors) return;
-    this.guarantorsArray.removeAt(index);
-    this.validateGuarantors();
+ removeGuarantor(index: number): void {
+  if (!this.selectedGroup?.requiresGuarantors) return;
+  const minimum = Math.max(this.requiredGuarantorCount, 1);
+  if (this.guarantorsArray.length <= minimum) {
+    return; // Don't remove below minimum
   }
+  this.guarantorsArray.removeAt(index);
+  this.validateGuarantors();
+}
 
-  private validateGuarantors(): void {
+private validateGuarantors(): void {
+  // Prevent infinite recursion
+  if (this.isValidating) {
+    return;
+  }
+  
+  this.isValidating = true;
+  
+  try {
     const guarantorsControl = this.applicationForm.get('guarantors');
-    if (!guarantorsControl) return;
+    if (!guarantorsControl) {
+      return;
+    }
 
     if (!this.selectedGroup?.requiresGuarantors) {
       guarantorsControl.setErrors(null);
@@ -786,7 +1062,10 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     }
 
     guarantorsControl.setErrors(Object.keys(errors).length ? errors : null);
+  } finally {
+    this.isValidating = false;
   }
+}
 
   approveGuarantor(guarantorId: number, memberId: string) {
     const control = this.guarantorsArray.controls.find(c => c.get('memberId')?.value === memberId);
@@ -990,42 +1269,78 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.isSubmitting) return;
-    this.applicationForm.markAllAsTouched();
-    this.calculateRepayment();
-    this.submitSuccessMessage = '';
+  console.log('[CoopLoanApp] Submit button clicked');
+  
+  if (this.isSubmitting) {
+    console.log('[CoopLoanApp] Already submitting, ignoring click');
+    return;
+  }
+  
+  this.applicationForm.markAllAsTouched();
+  this.calculateRepayment();
+  this.submitSuccessMessage = '';
+  this.submitError = '';
 
-    const memberId = this.applicationForm.get('memberId')?.value;
-    const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
-    const salary = Number(this.selectedMemberSalary || 0);
+  // Debug: Log all form values, validity, and errors
+  console.log('[CoopLoanApp] Submit Attempt:', {
+    formValue: this.applicationForm.getRawValue(),
+    valid: this.applicationForm.valid,
+    errors: this.applicationForm.errors,
+  });
 
-    if (memberId && salary > 0) {
-      this.cooperativeService.getLoans().subscribe(loans => {
-        const activeLoans = (loans || []).filter(l => (l.memberId === memberId || l.cooperativeMemberId === memberId) && l.status === 'ACTIVE');
+  // Check if form is valid
+  if (!this.applicationForm.valid) {
+    console.log('[CoopLoanApp] Form is invalid - cannot submit');
+    const firstInvalid = document.querySelector('.ng-invalid');
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
+
+  const memberId = this.applicationForm.get('memberId')?.value;
+  const requestedAmount = Number(this.applicationForm.get('amount')?.value || 0);
+  const salary = Number(this.selectedMemberSalary || 0);
+
+  console.log('[CoopLoanApp] Validation passed, checking salary limits:', { memberId, requestedAmount, salary });
+
+  // Check salary limit
+  if (memberId && salary > 0) {
+    this.cooperativeService.getLoans().subscribe({
+      next: (loans) => {
+        const activeLoans = (loans || []).filter(l => 
+          (l.memberId === memberId || l.cooperativeMemberId === memberId) && 
+          l.status === 'ACTIVE'
+        );
         const totalActiveLoanAmount = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
         const oneThirdSalary = salary / 3;
+        
+        console.log('[CoopLoanApp] Salary check:', { totalActiveLoanAmount, requestedAmount, oneThirdSalary });
+        
         if ((totalActiveLoanAmount + requestedAmount) > oneThirdSalary) {
           this.submitError = `You cannot request this loan because your total active loans would exceed one-third of your monthly salary (₦${oneThirdSalary.toLocaleString()}).`;
           this.showConfirmation = false;
+          console.log('[CoopLoanApp] Salary limit exceeded');
           return;
         }
 
-        if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByLevel || !this.validateBeforeSubmit()) {
-          return;
-        }
-
+        // Proceed to confirmation
+        console.log('[CoopLoanApp] Opening confirmation dialog');
         this.showConfirmation = true;
-      });
-      return;
-    }
-
-    if (!this.applicationForm.valid || !this.selectedGroup || !this.canSubmitByLevel || !this.validateBeforeSubmit()) {
-      return;
-    }
-
-    this.showConfirmation = true;
+      },
+      error: (err) => {
+        console.error('[CoopLoanApp] Error getting loans for salary check:', err);
+        // Still proceed even if salary check fails
+        this.showConfirmation = true;
+      }
+    });
+    return;
   }
 
+  // If no salary info, proceed directly to confirmation
+  console.log('[CoopLoanApp] No salary info, proceeding directly to confirmation');
+  this.showConfirmation = true;
+}
   confirmSubmit(): void {
     this.isSubmitting = true;
     const formValue = this.applicationForm.getRawValue();
@@ -1092,7 +1407,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     
     this.cooperativeService.addLoan(newLoan as any).subscribe({
       next: (savedLoan: any) => {
-        // Send email notifications to guarantors
         if (requiresGuarantors && guarantors.length > 0) {
           this.sendGuarantorEmails(savedLoan.id, guarantors);
         }
@@ -1122,7 +1436,6 @@ export class CooperativeLoanApplicationComponent implements OnInit {
     const baseUrl = window.location.origin + window.location.pathname;
     
     guarantors.forEach(guarantor => {
-      // Find the guarantor details
       const guarantorDetails = this.guarantorCandidates.find(g => g.id === Number(guarantor.memberId));
       if (guarantorDetails?.email) {
         const approvalLink = `${baseUrl}?guarantorApproval=true&loanId=${loanId}`;
@@ -1152,6 +1465,46 @@ export class CooperativeLoanApplicationComponent implements OnInit {
       }
     });
   }
+
+  // Add this custom validator for the guarantors array
+private guarantorArrayValidator(control: AbstractControl): { [key: string]: boolean } | null {
+  const formArray = control as FormArray;
+  
+  // If the selected group doesn't require guarantors, skip validation
+  if (!this.selectedGroup?.requiresGuarantors) {
+    return null;
+  }
+  
+  // If it does require guarantors, validate
+  const minimum = Math.max(this.requiredGuarantorCount, 1);
+  if (formArray.length < minimum) {
+    return { minimumGuarantors: true };
+  }
+  
+  const selectedMemberId = this.selectedMember?.id;
+  const guarantorIds = formArray.controls
+    .map(c => String(c.get('memberId')?.value || '').trim())
+    .filter(Boolean);
+  
+  if (selectedMemberId && guarantorIds.includes(String(selectedMemberId))) {
+    return { selfGuarantee: true };
+  }
+  
+  if (new Set(guarantorIds).size !== guarantorIds.length) {
+    return { duplicateGuarantor: true };
+  }
+  
+  const totalGuaranteed = formArray.controls.reduce((sum, c) => {
+    return sum + Number(c.get('guaranteedAmount')?.value || 0);
+  }, 0);
+  
+  const amount = Number(this.applicationForm?.get('amount')?.value || 0);
+  if (totalGuaranteed < amount) {
+    return { insufficientCoverage: true };
+  }
+  
+  return null;
+}
 
   // ==================== NAVIGATION ====================
 

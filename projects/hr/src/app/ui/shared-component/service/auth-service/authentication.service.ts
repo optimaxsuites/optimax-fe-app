@@ -106,6 +106,12 @@ export class AuthenticationService {
         .pipe(catchError(this.handleError));
   }
 
+  getUsers(): Observable<any> {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/ur/findAll')
+      .pipe(catchError(this.handleError));
+  }
+
   
   userRegistration(data: any): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))

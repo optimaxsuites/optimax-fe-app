@@ -290,9 +290,45 @@ export class InterviewResponseComponent implements OnInit {
     const index = invites.findIndex((c: any) => c.id == id);
 
     if (index !== -1) {
+      const existingInvite = invites[index];
+      const stageNumber = Number(existingInvite?.interviewStage || 1);
+      const panelMembers = Array.isArray(existingInvite?.interviewPanel) ? existingInvite.interviewPanel : [];
+      const candidateName = `${existingInvite?.firstname || existingInvite?.firstName || ''} ${existingInvite?.lastname || existingInvite?.lastName || ''}`.trim()
+        || existingInvite?.fullName
+        || existingInvite?.fullname
+        || existingInvite?.candidateName
+        || 'Candidate';
+      const historyEntries = [
+        this.createInterviewHistoryEntry(
+          stageNumber,
+          action === 'accept' ? 'Candidate Accepted Invite' : 'Candidate Declined Invite',
+          action === 'accept'
+            ? `${candidateName} accepted the interview ${stageNumber} invitation.`
+            : `${candidateName} declined the interview ${stageNumber} invitation.`
+        )
+      ];
+
+      if (action === 'accept' && panelMembers.length > 0) {
+        historyEntries.push(
+          this.createInterviewHistoryEntry(
+            stageNumber,
+            'Panel Notification Triggered',
+            `${panelMembers.length} panel member(s) were notified after the candidate accepted the interview.`
+          )
+        );
+      }
+
+      // Keep the invite in the list for reference and make the stage explicit for downstream screens.
+      invites[index] = {
+        ...existingInvite,
+        candidateResponse: action,
+        stage: action === 'accept' ? 'Accepted' : 'Declined',
+        interviewHistory: [
+          ...(existingInvite?.interviewHistory || []),
+          ...historyEntries
+        ]
+      };
       this.candidate = invites[index];
-      // Keep the invite in the list for reference - mark response but keep record
-      invites[index].candidateResponse = action;
       localStorage.setItem('upcomingInvite', JSON.stringify(invites));
     }
     
@@ -301,6 +337,11 @@ export class InterviewResponseComponent implements OnInit {
     this.message = action === 'accept' 
       ? 'Your interview has been confirmed. We look forward to meeting you!' 
       : 'Thank you for letting us know. We wish you the best in your search.';
+    const emailCopy = this.sendConfirmationEmail(action);
+
+    if (action === 'accept') {
+      this.notifyInterviewPanel();
+    }
 
     // Update the candidate data in localStorage
     const candidateData = localStorage.getItem('candidateData');
@@ -315,10 +356,7 @@ export class InterviewResponseComponent implements OnInit {
           if (!candidates[candidateIndex].decisionHistory) {
             candidates[candidateIndex].decisionHistory = [];
           }
-          
-          // Send confirmation email and capture copy
-          const emailCopy = this.sendConfirmationEmail(action);
-          
+
           // Add acceptance/decline entry - AFTER the invite entry (which already exists)
           candidates[candidateIndex].decisionHistory.push({
             date: new Date().toISOString(),
@@ -339,6 +377,9 @@ export class InterviewResponseComponent implements OnInit {
 
   sendConfirmationEmail(action: string) {
   const isConfirmed = action === 'accept';
+  const candidateFirstName = this.candidate.firstname || this.candidate.firstName || this.candidate.candidateName || 'Candidate';
+  const jobTitle = this.candidate.jobVacancy?.jobTitle || this.candidate.job?.title || this.candidate.position || 'Position';
+  const meetingDetails = this.candidate.meetingDetails || {};
   
   const title = isConfirmed ? 'Interview Confirmed' : 'Interview Withdrawn';
   const primaryColor = isConfirmed ? '#28a745' : '#dc3545';
@@ -350,17 +391,18 @@ export class InterviewResponseComponent implements OnInit {
       </div>
       
       <div style="padding: 30px; color: #333; line-height: 1.6;">
-        <p>Dear <strong>${this.candidate.firstname}</strong>,</p>
+        <p>Dear <strong>${candidateFirstName}</strong>,</p>
         
         ${isConfirmed ? `
-          <p>Thank you for confirming your interview. We are excited to speak with you about the <strong>${this.candidate.jobVacancy?.jobTitle || 'Position'}</strong> role.</p>
+          <p>Thank you for confirming your interview. We are excited to speak with you about the <strong>${jobTitle}</strong> role.</p>
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Date:</strong> ${this.candidate.scheduledDate || 'To be communicated'}</p>
-            <p style="margin: 5px 0;"><strong>Location:</strong> Remote / Office (Check calendar invite)</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${meetingDetails.date || this.candidate.scheduledDate || 'To be communicated'}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${meetingDetails.time || 'To be communicated'}</p>
+            <p style="margin: 5px 0;"><strong>Location:</strong> ${meetingDetails.location || 'Remote / Office (Check calendar invite)'}</p>
           </div>
           <p>A calendar invitation with the meeting link/address has been sent to your email. Please ensure you are in a quiet environment with a stable connection.</p>
         ` : `
-          <p>We have received your response declining the interview invitation for the <strong>${this.candidate.jobVacancy?.jobTitle  || 'Position'}</strong> role.</p>
+          <p>We have received your response declining the interview invitation for the <strong>${jobTitle}</strong> role.</p>
           <p>We have updated our records accordingly. Thank you for your interest in joining our team, and we wish you the very best in your current job search and future professional endeavors.</p>
         `}
         
@@ -377,7 +419,7 @@ export class InterviewResponseComponent implements OnInit {
     body: htmlMessage,
     subject: title,
     recieverEmail: this.candidate.email,
-    name: this.candidate.firstname
+    name: candidateFirstName
   }
   this.mailService.sendMail(body).subscribe(response => {
     console.log('Email sent successfully:', response);
@@ -385,6 +427,82 @@ export class InterviewResponseComponent implements OnInit {
     console.error('Error sending email:', error);
   });
   return htmlMessage;
+}
+
+private notifyInterviewPanel(): void {
+  const panelMembers = Array.isArray(this.candidate?.interviewPanel) ? this.candidate.interviewPanel : [];
+  const notifiedEmails = new Set<string>();
+
+  panelMembers.forEach((member: any) => {
+    const email = String(member?.email || '').trim().toLowerCase();
+
+    if (!email || notifiedEmails.has(email)) {
+      return;
+    }
+
+    notifiedEmails.add(email);
+    const body = this.buildPanelNotificationEmail(member);
+    this.mailService.sendMail(body).subscribe({
+      error: (error) => {
+        console.error(`Error notifying panel member ${member?.email}:`, error);
+      }
+    });
+  });
+}
+
+private buildPanelNotificationEmail(member: any): { name: string; recieverEmail: string; subject: string; body: string } {
+  const candidateName = this.getCandidateName();
+  const jobTitle = this.candidate.jobVacancy?.jobTitle || this.candidate.job?.title || this.candidate.position || 'the role';
+  const meetingDetails = this.candidate.meetingDetails || {};
+  const stageNumber = Number(this.candidate?.interviewStage || 1);
+  const notes = meetingDetails.notes ? `<p><strong>Notes:</strong> ${meetingDetails.notes}</p>` : '';
+  const subject = `Interview Panel Notification: ${candidateName} - Stage ${stageNumber}`;
+  const body = `
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #1f2937; line-height: 1.6;">
+      <h2 style="margin-bottom: 16px;">Interview Panel Assignment</h2>
+      <p>Dear <strong>${member?.name || member?.username || 'Team Member'}</strong>,</p>
+      <p>${candidateName} has accepted the interview invitation for <strong>${jobTitle}</strong>. You have been added to the interview ${stageNumber} panel.</p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+        <p style="margin: 0 0 8px;"><strong>Interview Type:</strong> ${meetingDetails.interviewType || this.candidate?.interviewType || 'Interview'}</p>
+        <p style="margin: 0 0 8px;"><strong>Date:</strong> ${meetingDetails.date || this.candidate?.scheduledDate || 'To be confirmed'}</p>
+        <p style="margin: 0 0 8px;"><strong>Time:</strong> ${meetingDetails.time || 'To be confirmed'}</p>
+        <p style="margin: 0 0 8px;"><strong>Location / Link:</strong> ${meetingDetails.location || 'To be confirmed'}</p>
+        <p style="margin: 0;"><strong>Your Role:</strong> ${member?.role || 'Interviewer'}</p>
+      </div>
+      ${notes}
+      <p>The score sheet for this stage will be available once the interview is started from the scheduled interview workflow.</p>
+      <p>Regards,<br><strong>The Hiring Team</strong></p>
+    </div>
+  `;
+
+  return {
+    name: member?.name || member?.username || 'Team Member',
+    recieverEmail: member?.email || '',
+    subject,
+    body
+  };
+}
+
+private createInterviewHistoryEntry(stageNumber: number, action: string, details: string): { id: string; date: string; action: string; details: string; stageNumber: number } {
+  return {
+    id: this.generateId('history'),
+    date: new Date().toISOString(),
+    action,
+    details,
+    stageNumber
+  };
+}
+
+private getCandidateName(): string {
+  return `${this.candidate?.firstname || this.candidate?.firstName || ''} ${this.candidate?.lastname || this.candidate?.lastName || ''}`.trim()
+    || this.candidate?.fullName
+    || this.candidate?.fullname
+    || this.candidate?.candidateName
+    || 'Candidate';
+}
+
+private generateId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 }

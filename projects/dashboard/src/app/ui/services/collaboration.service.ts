@@ -3,9 +3,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment';
 
-// ─────────────────────────────────────────────────────
-//  Interfaces
-// ─────────────────────────────────────────────────────
 export interface CollabChannel {
   id: number;
   channelId?: number;
@@ -79,7 +76,6 @@ export interface CollabUserInfo {
   email?: string;
 }
 
-// ── Employee ──────────────────────────────────────────
 export interface EmployeeMedia {
   id: number;
   name: string;
@@ -103,7 +99,6 @@ export interface EmployeeProfile {
   };
 }
 
-// ── AI ────────────────────────────────────────────────
 export interface AiRewriteResponse {
   body?: string;
   rewrittenText?: string;
@@ -136,9 +131,6 @@ export interface CollabActionResponse {
   payloadJson?: string;
 }
 
-// ─────────────────────────────────────────────────────
-//  Service
-// ─────────────────────────────────────────────────────
 @Injectable({ providedIn: 'root' })
 export class CollaborationService {
   private readonly baseUrl = environment.apiBaseUrl;
@@ -174,7 +166,7 @@ export class CollaborationService {
   // ── Employees ─────────────────────────────────────────
 
   /** GET /x/api/v2/hr/employees — returns array or paginated wrapper */
-  getAllEmployees(page = 0, size = 200): Observable<any> {
+  getAllEmployees(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/x/api/v2/hr/employees`, {
       headers: this.headers,
     });
@@ -194,10 +186,6 @@ export class CollaborationService {
     );
   }
 
-  /**
-   * Fetch profile image as blob → object URL (authenticated).
-   * Non-blocking — caller handles Promise independently.
-   */
   fetchEmployeeImageBlob(mediaNo: string): Promise<string> {
     const token = sessionStorage.getItem('token') || '';
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
@@ -445,7 +433,15 @@ export class CollaborationService {
     );
   }
 
-  /** PATCH /x/api/v2/ai/collab/chat/presence/typing */
+  upsertPresence(channelId: number, presenceStatus: string): Observable<any> {
+    const userId = Number(sessionStorage.getItem('userid') || 0);
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/upsert`,
+      { channelId, userId, presenceStatus, typing: false },
+      { headers: this.headers },
+    );
+  }
+
   setTyping(channelId: number, typing: boolean): Observable<any> {
     const userId = Number(sessionStorage.getItem('userid') || 0);
     return this.http.patch<any>(
@@ -455,7 +451,6 @@ export class CollaborationService {
     );
   }
 
-  /** GET /x/api/v2/ai/collab/chat/presence/channel/{channelId} */
   getChannelPresence(channelId: number): Observable<any[]> {
     return this.http.get<any[]>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/channel/${channelId}`,
@@ -463,7 +458,6 @@ export class CollaborationService {
     );
   }
 
-  /** GET /x/api/v2/ai/collab/chat/presence — all presence records */
   getAllPresence(): Observable<any[]> {
     return this.http.get<any[]>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/presence`,

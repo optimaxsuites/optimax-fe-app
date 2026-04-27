@@ -501,7 +501,7 @@ const dbConfig: DBConfig = {
       BrowserModule,
       CommonModule,
       AppRoutingModule,
-      AppDashboardModule,
+      // AppDashboardModule,
       AppHrModule,
       MatTabGroup,
       FormsModule, 

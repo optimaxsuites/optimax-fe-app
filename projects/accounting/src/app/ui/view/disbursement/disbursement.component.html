@@ -353,165 +353,166 @@
     (close)="closeSidebar()">
   </transaction-side-modal>
 
-  <!-- Disbursement Batch Review Side Modal -->
-  <div *ngIf="isBatchReviewOpen && selectedTransaction" class="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-40 backdrop-blur-sm transition-opacity" (click)="closeBatchReview()">
-    <div class="w-full max-w-[55rem] bg-[#f8fbff] h-full shadow-2xl flex flex-col transform transition-transform border-l border-gray-200" (click)="$event.stopPropagation()" style="animation: slideInRight 0.3s ease-out;">
+  <!-- ── Modernized Disbursement Side Modal ── -->
+  <app-large-side-modal *ngIf="isBatchReviewOpen && selectedTransaction" (close)="closeBatchReview()">
+    
+    <!-- Modal Header -->
+    <div class="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-30 backdrop-blur-sm">
+      <div class="flex items-center gap-4">
+        <h2 class="text-3xl font-black text-customBlue leading-none tracking-tight">Batch Inspection</h2>
+        <span class="px-3 py-1 text-xs font-black uppercase tracking-widest rounded-full border"
+              [ngClass]="getStatusClass(selectedTransaction.Status)">
+          {{ (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW') ? 'PENDING' : selectedTransaction.Status }}
+        </span>
+        <span *ngIf="isViewOnly" class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-black uppercase tracking-widest rounded-full border border-amber-200">
+          Locked
+        </span>
+      </div>
+      <button (click)="closeBatchReview()" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+        <i class="fa-solid fa-xmark text-2xl text-gray-400"></i>
+      </button>
+    </div>
+
+    <!-- READ ONLY Banner -->
+    <div *ngIf="isViewOnly" class="bg-amber-50 border-b border-amber-100 px-8 py-3 flex items-center gap-3">
+      <i class="fa-solid fa-circle-info text-amber-600"></i>
+      <p class="text-amber-800 font-bold text-sm">Disbursement protocol for this batch is finalized or active.</p>
+    </div>
+
+    <div class="px-8 py-8 space-y-10 pb-10 overflow-y-auto h-[calc(100vh-140px)]">
       
-      <!-- Header -->
-      <div class="px-8 py-8 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 shrink-0">
-        <div class="flex items-center gap-5">
-          <div class="w-14 h-14 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
-            <i class="fa-solid fa-list-check text-2xl"></i>
+      <!-- Section: Transaction Manifest -->
+      <section class="space-y-6">
+        <div class="relative flex items-center">
+          <div class="absolute inset-0 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-gray-100"></div>
           </div>
-          <div>
-            <div class="flex items-center gap-3">
-              <span class="text-gray-400 text-lg font-black uppercase tracking-[0.2em]">Batch Inspection</span>
-            </div>
-            <h2 class="text-3xl font-black text-gray-900 leading-none mt-1">#APP-{{ selectedTransaction.transactionReference || (selectedTransaction.id + 90000) }}</h2>
+          <div class="relative flex justify-start">
+            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Transaction Manifest</span>
           </div>
         </div>
-        <button (click)="closeBatchReview()" class="w-12 h-12 rounded-xl border-2 border-gray-100 flex items-center justify-center text-gray-400 hover:text-customBlue hover:bg-customBlue/5 transition-all bg-white shadow-sm shrink-0 active:scale-95">
-          <i class="fa-solid fa-xmark text-2xl"></i>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white border-2 border-gray-50 rounded-[1.5rem] p-6 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 mb-1">AGGREGATE VALUE</p>
+            <p class="text-4xl font-black text-gray-900 tracking-tighter">₦{{ selectedTransaction.amount | number: '1.2-2' }}</p>
+          </div>
+          <div class="bg-white border-2 border-gray-50 rounded-[1.5rem] p-6 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 mb-1">REFERENCE</p>
+            <p class="text-xl font-black text-customBlue font-mono">#APP-{{ selectedTransaction.transactionReference || (selectedTransaction.id + 90000) }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Settlement Topology (Right Account Details) -->
+      <section class="space-y-6">
+        <div class="relative flex items-center">
+          <div class="absolute inset-0 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-gray-100"></div>
+          </div>
+          <div class="relative flex justify-start">
+            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Settlement Topology</span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm">
+          <div class="grid grid-cols-1 md:grid-cols-2 divide-x divide-gray-100">
+            <div class="p-8 space-y-2">
+              <span class="text-xs font-black text-gray-400 uppercase tracking-widest">RECIPIENT NAME</span>
+              <p class="text-2xl font-black text-gray-900 leading-tight">{{ destAccountName || 'System Default' }}</p>
+            </div>
+            <div class="p-8 space-y-2">
+              <span class="text-xs font-black text-gray-400 uppercase tracking-widest">SOURCE MODULE</span>
+              <div class="flex items-center gap-3">
+                <span class="px-4 py-1 rounded-lg text-sm font-black tracking-widest uppercase border-2" 
+                  [ngClass]="getModuleBadgeClass(selectedTransaction.sourceModule)">
+                  {{ selectedTransaction.sourceModule }}
+                </span>
+              </div>
+            </div>
+            <div class="p-8 space-y-2 border-t border-gray-100">
+              <span class="text-xs font-black text-gray-400 uppercase tracking-widest">DESTINATION BANK</span>
+              <p class="text-xl font-bold text-gray-800">{{ destBank || 'Pending Verification' }}</p>
+            </div>
+            <div class="p-8 space-y-2 border-t border-gray-100">
+              <span class="text-xs font-black text-gray-400 uppercase tracking-widest">ACCOUNT NUMBER</span>
+              <p class="text-2xl font-black text-customBlue font-mono tracking-tighter">{{ destAccountNumber || '0000000000' }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Transaction Metadata -->
+      <section *ngIf="selectedTransaction?.metadata" class="space-y-6">
+        <div class="relative flex items-center">
+          <div class="absolute inset-0 flex items-center" aria-hidden="true">
+            <div class="w-full border-t border-gray-100"></div>
+          </div>
+          <div class="relative flex justify-start">
+            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Transaction Metadata</span>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50/50 border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm">
+          <div class="grid grid-cols-1 md:grid-cols-3 divide-x divide-y divide-gray-200 border-collapse">
+            <div *ngFor="let item of getMetadataEntries(selectedTransaction?.metadata)" 
+              class="p-6 flex flex-col gap-2 min-h-[100px]">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ formatMetadataKey(item.key) }}</span>
+              <div class="flex-1 flex items-center">
+                <ng-container [ngSwitch]="true">
+                  <span *ngSwitchCase="isCurrencyField(item.key)" class="text-lg font-black text-customBlue">
+                    {{ item.value | currency:'NGN':'symbol-narrow' }}
+                  </span>
+                  <div *ngSwitchCase="isDateField(item.key)" class="flex flex-col gap-0.5">
+                    <span class="text-base font-bold text-gray-800">{{ item.value | date:'yyyy-MM-dd' }}</span>
+                  </div>
+                  <span *ngSwitchDefault class="text-base font-bold text-gray-800">
+                    {{ item.value }}
+                  </span>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Approval Comments/Notes -->
+      <section class="space-y-6">
+        <div class="relative flex items-center">
+          <div class="absolute inset-0 flex items-center" aria-hidden="true" >
+            <div class="w-full border-t border-gray-100"></div>
+          </div>
+          <div class="relative flex justify-start">
+            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Internal Narrative</span>
+          </div>
+        </div>
+        <textarea [(ngModel)]="internalMemo" [disabled]="isViewOnly"
+          class="w-full bg-white border-2 border-gray-100 rounded-[1.5rem] p-6 text-gray-800 font-bold min-h-[120px] focus:outline-none focus:ring-4 focus:ring-customBlue/5 focus:border-customBlue transition-all text-xl shadow-sm placeholder:text-gray-300" 
+          placeholder="Specify final disbursement rationale or compliance notes..."></textarea>
+      </section>
+
+      <!-- Footer Buttons -->
+      <div class="pt-10 flex items-center justify-end gap-5 border-t border-gray-100">
+        <button (click)="closeBatchReview()" class="px-10 py-4 bg-gray-50 text-gray-500 border border-gray-100 rounded-xl font-black uppercase tracking-widest text-lg hover:bg-gray-100 transition-all active:scale-95 shadow-sm">
+          {{ isViewOnly ? 'Dismiss' : 'Cancel' }}
         </button>
-      </div>
-
-      <!-- Scrollable Content -->
-      <div class="flex-1 overflow-y-auto p-8 space-y-7">
         
-        <!-- Module & Meta -->
-        <div class="flex flex-wrap items-center gap-5 text-gray-500 text-lg font-bold">
-          <span class="inline-flex items-center px-6 py-2 rounded-full text-lg font-black uppercase tracking-widest shadow-sm border-2 transition-transform hover:scale-105"
-                [ngClass]="getModuleBadgeClass(selectedTransaction.sourceModule)">
-            {{ selectedTransaction.sourceModule }}
-          </span>
-          <span class="w-2 h-2 rounded-full bg-gray-200"></span>
-          <span class="text-gray-400 uppercase tracking-widest">Initiator: <strong class="text-gray-700 ml-1">{{ getCreatedByName(selectedTransaction) }}</strong></span>
-          <span class="w-2 h-2 rounded-full bg-gray-200"></span>
-          <div class="px-5 py-2 rounded-full font-black flex items-center gap-2 shadow-sm border border-gray-100 bg-white"
-               [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'text-customGreen italic' : (selectedTransaction.Status === 'DISBURSED' ? 'text-sky-600' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'text-customBlue' : 'text-red-600'))">
-            <i class="fa-solid" [ngClass]="selectedTransaction.Status === 'APPROVED' ? 'fa-circle-check' : (selectedTransaction.Status === 'DISBURSED' ? 'fa-paper-plane' : (selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'fa-clock-rotate-left' : 'fa-circle-exclamation'))"></i>
-            {{ selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW' ? 'AWAITING APPROVAL' : selectedTransaction.Status }}
-          </div>
-        </div>
-
-        <!-- 3 Info Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <!-- Total Amount -->
-          <div class="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm flex flex-col justify-center sm:col-span-2 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-customBlue/5 rounded-full -mr-16 -mt-16 blur-xl group-hover:bg-customBlue/10 transition-colors"></div>
-            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-1">AGGREGATE VALUE</p>
-            <p class="text-5xl font-black text-gray-900 tracking-tighter">₦{{ selectedTransaction.amount | number:'1.2-2' }}</p>
-            <div class="flex items-center gap-2 text-customGreen font-black text-xl mt-4 leading-tight">
-               <i class="fa-solid fa-circle-check text-2xl"></i> Transaction Node Verified
-            </div>
-          </div>
+        <ng-container *ngIf="!isViewOnly">
+          <button *ngIf="selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW'" 
+                  (click)="openApproveConfirm()"
+                  class="bg-customBlue text-white px-12 py-4 rounded-xl font-black uppercase tracking-widest text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-customBlue/20">
+            Approve for Payout <i class="fa-solid fa-circle-check text-xl"></i>
+          </button>
           
-          <!-- Line Items -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center">
-            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-1">ACCOUNT NODES</p>
-            <p class="text-4xl font-black text-gray-900 tracking-tighter">{{ selectedLineItems.length || 142 }}</p>
-          </div>
-          
-          <!-- Internal Approvals -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-center">
-            <p class="text-gray-400 font-black text-lg tracking-[0.2em] uppercase mb-3">INTERNAL CONSENSUS</p>
-            <div class="flex items-center gap-4">
-               <div class="flex -space-x-3">
-                 <div class="w-10 h-10 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center text-white font-black text-sm z-20 shadow-sm">JD</div>
-                 <div class="w-10 h-10 rounded-full bg-customBlue border-2 border-white flex items-center justify-center text-white font-black text-sm z-10 shadow-sm">SC</div>
-               </div>
-               <p class="text-gray-600 font-black text-lg">3 of 4 Sig.</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Table Wrapper -->
-        <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-inner">
-          <div class="bg-white/50 px-8 py-5 flex items-center justify-between border-b border-gray-100">
-            <h3 class="font-black text-gray-400 text-lg uppercase tracking-[0.2em]">Transaction Registry Nodes</h3>
-          </div>
-          
-          <div class="p-4">
-            <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
-              <table class="w-full text-left">
-                <thead>
-                  <tr class="bg-customBlue text-white border-b border-customBlueHover">
-                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest">RECIPIENT</th>
-                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest">DESTINATION</th>
-                    <th class="px-8 py-4 font-black text-lg uppercase tracking-widest text-right">VALUE</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 text-xl">
-                  <tr *ngFor="let item of selectedLineItems; let i = index" class="hover:bg-gray-50 transition-colors group">
-                    <td class="px-8 py-6">
-                      <div class="flex items-center gap-5">
-                        <div class="w-12 h-12 rounded-xl bg-customBlue/5 text-customBlue font-black flex items-center justify-center shadow-inner group-hover:bg-customBlue group-hover:text-white transition-all">{{ item.recipient.substring(0,2).toUpperCase() }}</div>
-                        <div>
-                          <p class="font-black text-gray-900 leading-none">{{ item.recipient }}</p>
-                          <p class="text-lg text-gray-400 font-bold mt-1 uppercase tracking-wide">{{ item.role }}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-8 py-6">
-                      <p class="font-black text-gray-800 tracking-tight leading-none">{{ item.bank || 'Bank Name' }}</p>
-                      <p class="text-lg text-gray-400 font-mono font-bold mt-1">{{ item.account || '0000000000' }}</p>
-                    </td>
-                    <td class="px-8 py-6 font-black text-gray-900 text-right text-2xl tracking-tighter">₦{{ item.amount | number:'1.2-2' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="py-6 flex justify-center bg-gray-50/50 hover:bg-white transition-all cursor-pointer border-t border-gray-100 group">
-             <button class="text-customBlue font-black text-lg tracking-[0.15em] uppercase flex items-center gap-2 group-hover:translate-y-0.5 transition-transform">
-               VIEW ALL <i class="fa-solid fa-chevron-down text-sm"></i>
-             </button>
-          </div>
-        </div>
-        
-        <!-- Approval Comments -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col relative overflow-hidden group">
-          <div class="absolute top-0 left-0 w-2 h-full bg-gray-50 group-focus-within:bg-customBlue transition-colors"></div>
-          <div class="flex gap-4 mb-6">
-            <div class="w-12 h-12 rounded-xl bg-gray-50 text-customBlue flex items-center justify-center shrink-0 shadow-inner">
-               <i class="fa-solid fa-note-sticky text-xl"></i>
-            </div>
-            <h3 class="font-black text-gray-900 text-2xl tracking-tight mt-1">Notes</h3>
-          </div>
-          <textarea class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl p-6 text-gray-800 font-bold min-h-[140px] focus:outline-none focus:ring-4 focus:ring-customBlue/10 focus:border-customBlue transition-all text-xl resize-none shadow-inner placeholder:text-gray-300" placeholder="Specify final disbursement rationale or compliance notes..."></textarea>
-          <div class="flex items-center justify-between mt-6">
-            <button class="text-gray-400 hover:text-customBlue font-black flex items-center gap-2 transition-all text-lg uppercase tracking-widest">
-              <i class="fa-solid fa-paperclip text-xl"></i> Add Attachments
-            </button>
-          </div>
-        </div>
-        
-      </div>
-      
-      <!-- Footer Button Area -->
-      <div class="px-8 py-8 bg-white border-t border-gray-200 flex flex-wrap sm:flex-nowrap justify-between gap-6 z-10 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] shrink-0">
-         <div class="flex gap-4">
-            <button class="w-16 h-16 rounded-xl border-2 border-gray-100 bg-white text-gray-400 hover:text-customBlue hover:border-customBlue/30 font-black flex items-center justify-center transition-all shadow-sm active:scale-95">
-              <i class="fa-solid fa-download text-2xl"></i>
-            </button>
-            <button class="px-8 h-16 rounded-xl border-2 border-red-50 bg-white text-red-500 font-black flex items-center gap-3 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm active:scale-95 text-xl uppercase tracking-widest">
-              <i class="fa-solid fa-ban text-2xl"></i> Halt Batch
-            </button>
-         </div>
-         <button *ngIf="selectedTransaction.Status === 'UNREVIEWED' || selectedTransaction.Status === 'IN_REVIEW'" 
-                (click)="openApproveConfirm()"
-                class="px-12 h-16 rounded-xl text-white font-black flex items-center gap-4 transition-all shadow-lg shadow-customBlue/20 active:scale-95 text-2xl w-full sm:w-auto justify-center bg-customBlue hover:bg-customBlueHover transform hover:-translate-y-1">
-          <i class="fa-solid fa-circle-check text-2xl"></i> Approve for Payout
-         </button>
-         <button *ngIf="selectedTransaction.Status === 'APPROVED'" (click)="proceedToPayment()" 
-                 class="px-12 h-16 rounded-xl text-white font-black flex items-center gap-4 transition-all shadow-lg shadow-customGreen/20 active:scale-95 text-2xl w-full sm:w-auto justify-center bg-customGreen hover:bg-customGreenHover transform hover:-translate-y-1">
-           Authorize Disbursement <i class="fa-solid fa-arrow-right-long text-2xl"></i>
-         </button>
+          <button *ngIf="selectedTransaction.Status === 'APPROVED'" (click)="proceedToPayment()" 
+                  class="bg-customGreen text-white px-12 py-4 rounded-xl font-black uppercase tracking-widest text-lg flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-customGreen/20">
+            Authorize Disbursement <i class="fa-solid fa-arrow-right-long text-xl"></i>
+          </button>
+        </ng-container>
       </div>
 
     </div>
-  </div>
+  </app-large-side-modal>
 
   <!-- Approve Confirmation Modal -->
   <div *ngIf="isApproveConfirmOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-6">

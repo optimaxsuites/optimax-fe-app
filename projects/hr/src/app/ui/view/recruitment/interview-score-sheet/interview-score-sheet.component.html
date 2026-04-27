@@ -9,6 +9,8 @@
         <!-- Interviewer Info Section -->
          <div class="input-container-100 gap-4 d-flex">
             <div class="input-container-50 mb-4">
+                <h3><strong>{{ getStageLabel() }} Score Sheet</strong></h3>
+                <p class="text-sm text-gray-500 mb-3">Panel score cards are created when the interview starts. This submission records your evaluation for the current stage.</p>
                 <h3><strong>Interviewer Information</strong></h3>
                 <div class="input-container-100 input-label-flex">
                   <span for="interviewerName">Name:</span>
@@ -74,7 +76,7 @@
                         type="text"
                         id="candidateName"
                         class="editInput"
-                        [(ngModel)]="candidate.candidateName"
+                        [ngModel]="getCandidateName()"
                         placeholder="Lawson Jerry"
                         disabled
                     />
@@ -85,7 +87,7 @@
                       type="text"
                       id="candidatePosition"
                       class="editInput"
-                      [(ngModel)]="candidate.position"
+                      [ngModel]="getCandidatePosition()"
                       placeholder="Web Developer (JNR)"
                       disabled
                     />
@@ -107,7 +109,7 @@
                       type="text"
                       id="candidatePhoneNo"
                       class="editInput"
-                      [(ngModel)]="candidate.contactNo"
+                      [ngModel]="getCandidatePhone()"
                       placeholder="08111111111"
                       disabled
                     />

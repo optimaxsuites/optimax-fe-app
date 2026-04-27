@@ -98,11 +98,14 @@
        MAIN AREA
   ═══════════════════════════════════════════════ -->
   <main class="flex-1 flex flex-col overflow-hidden">
-    <!-- ── WELCOME ── -->
+    <!-- ══════════════════════════════════════════
+         WELCOME SCREEN — Modern chatbot style
+    ══════════════════════════════════════════ -->
     <div
       *ngIf="showWelcome"
       class="flex-1 flex flex-col overflow-hidden bg-[#f0f4f7]"
     >
+      <!-- Minimal top bar -->
       <div
         class="flex items-center justify-between px-6 py-3 border-b border-[#e2e8ed] bg-white shrink-0"
       >
@@ -129,111 +132,99 @@
             >OptimaXAI ERP Assistant</span
           >
         </div>
-        <div
-          class="flex items-center gap-0 bg-[#f0f4f7] border border-[#e2e8ed] rounded-lg p-0.5"
-        >
+
+        <!-- Module filter pills -->
+        <div class="flex items-center gap-1.5">
           <button
-            (click)="setTone('business')"
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border-0"
+            *ngFor="let m of erpModules"
+            (click)="selectModule(m.key)"
+            class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-semibold transition-all cursor-pointer border"
             [ngClass]="
-              tone === 'business'
-                ? 'bg-white text-[#2e6276] shadow-sm'
-                : 'bg-transparent text-[#a0b0bc]'
+              activeModule === m.key
+                ? 'bg-[#2e6276] text-white border-[#2e6276]'
+                : 'bg-white text-[#6b8898] border-[#e2e8ed] hover:border-[#2e6276]/40 hover:text-[#2e6276]'
             "
           >
-            Business
-          </button>
-          <button
-            (click)="setTone('casual')"
-            class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border-0"
-            [ngClass]="
-              tone === 'casual'
-                ? 'bg-white text-[#2e6276] shadow-sm'
-                : 'bg-transparent text-[#a0b0bc]'
-            "
-          >
-            Casual
+            <span [innerHTML]="m.icon"></span>
+            {{ m.label }}
+            <span
+              *ngIf="m.badge"
+              class="px-1 py-0.5 rounded text-[8px] font-bold"
+              [ngClass]="
+                activeModule === m.key ? 'bg-white/20 text-white' : m.badgeColor
+              "
+              >{{ m.badge }}</span
+            >
           </button>
         </div>
       </div>
 
+      <!-- Centered hero content -->
       <div
-        class="flex-1 flex flex-col items-center justify-center px-8 pb-6 overflow-y-auto"
+        class="flex-1 flex flex-col items-center justify-center px-6 overflow-y-auto"
       >
-        <h1 class="text-[20px] font-bold text-[#1a2733] tracking-tight mb-1">
-          How can I assist you today?
-        </h1>
-        <p class="text-[12.5px] text-[#6b8898] mb-7 text-center max-w-md">
-          <span *ngIf="tone === 'business'"
-            >Your intelligent ERP assistant for HR, Accounting, POS, and Expense
-            management.</span
-          >
-          <span *ngIf="tone === 'casual'"
-            >Hey! Ask me anything about your business — payroll, sales,
-            expenses, you name it</span
-          >
-        </p>
-        <div class="grid grid-cols-3 gap-2.5 w-full max-w-[640px] mb-7">
-          <button
-            *ngFor="let action of activeQuickActions"
-            (click)="startWithAction(action)"
-            class="flex flex-col gap-2 px-4 py-3 rounded-xl border border-[#e2e8ed] bg-white text-left cursor-pointer transition-all hover:border-[#2e6276]/40 hover:shadow-[0_2px_12px_rgba(46,98,118,0.08)] group"
-          >
-            <div class="flex items-center gap-2">
-              <div
-                class="w-6 h-6 rounded-md bg-[#eaf2f6] border border-[#2e6276]/15 flex items-center justify-center text-[#2e6276]"
-                [innerHTML]="action.iconSvg"
-              ></div>
-              <span class="text-[11px] font-semibold text-[#2e4a5a]">{{
-                action.title
-              }}</span>
-            </div>
-            <span class="text-[11px] text-[#a0b0bc] leading-relaxed">{{
-              action.description
-            }}</span>
-          </button>
-        </div>
-        <div class="w-full max-w-[640px]">
+        <!-- Brand mark -->
+        <div class="flex flex-col items-center mb-8">
           <div
-            class="flex flex-col bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_8px_rgba(46,98,118,0.06)] transition-all focus-within:border-[#2e6276]/50 focus-within:shadow-[0_0_0_3px_rgba(46,98,118,0.08)]"
+            class="w-12 h-12 rounded-2xl bg-[#2e6276] flex items-center justify-center mb-4 shadow-[0_4px_24px_rgba(46,98,118,0.25)]"
+          >
+            <svg
+              width="22"
+              height="22"
+              fill="none"
+              stroke="white"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-2"
+              />
+            </svg>
+          </div>
+          <h1
+            class="text-[22px] font-bold text-[#1a2733] tracking-tight mb-1.5"
+          >
+            How can I help you today?
+          </h1>
+          <p
+            class="text-[13px] text-[#8fa3b0] text-center max-w-sm leading-relaxed"
+          >
+            Your intelligent ERP assistant. Ask about payroll, expenses, sales,
+            accounting, or compliance.
+          </p>
+        </div>
+
+        <!-- Main input -->
+        <div class="w-full max-w-[660px] mb-6">
+          <div
+            class="flex flex-col bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_2px_16px_rgba(46,98,118,0.08)] transition-all focus-within:border-[#2e6276]/60 focus-within:shadow-[0_0_0_3px_rgba(46,98,118,0.08),0_2px_16px_rgba(46,98,118,0.08)]"
           >
             <textarea
               [(ngModel)]="newChatMessage"
               [placeholder]="inputPlaceholder"
-              (keydown.enter)="
-                $event.preventDefault(); newChat(); sendMessage(newChatMessage)
-              "
-              rows="2"
-              class="flex-1 border-0 outline-none text-[13px] text-[#1a2733] bg-transparent px-4 pt-3.5 pb-2 resize-none placeholder-[#c0cdd6] leading-relaxed"
+              (input)="autoResize($event)"
+              (keydown)="onWelcomeKey($event)"
+              rows="3"
+              class="oai-textarea flex-1 border-0 outline-none text-[13.5px] text-[#1a2733] bg-transparent px-5 pt-4 pb-3 resize-none placeholder-[#c0cdd6] leading-relaxed min-h-[72px] max-h-[200px]"
             ></textarea>
-            <div
-              class="flex items-center justify-between px-3 pb-2.5 pt-1 border-t border-[#f0f4f7]"
-            >
-              <div class="flex items-center gap-1">
-                <button
-                  *ngFor="let f of formatOptions"
-                  (click)="setFormat(f.key)"
-                  class="flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border"
-                  [ngClass]="
-                    responseFormat === f.key
-                      ? 'bg-[#eaf2f6] border-[#2e6276]/30 text-[#2e6276]'
-                      : 'bg-transparent border-transparent text-[#a0b0bc] hover:bg-[#f4f8fa]'
-                  "
-                  [innerHTML]="f.label"
-                ></button>
-              </div>
+            <div class="flex items-center justify-between px-4 pb-3.5 pt-2">
+              <p class="text-[10.5px] text-[#c0cdd6]">
+                Press Enter to send · Shift+Enter for new line
+              </p>
               <button
                 (click)="newChat(); sendMessage(newChatMessage)"
-                class="w-7 h-7 rounded-lg flex items-center justify-center border-0 cursor-pointer transition-all"
+                class="w-8 h-8 rounded-xl flex items-center justify-center border-0 cursor-pointer transition-all"
                 [ngClass]="
                   newChatMessage.trim().length > 0
-                    ? 'bg-[#2e6276] text-white hover:bg-[#255264]'
+                    ? 'bg-[#2e6276] text-white hover:bg-[#255264] shadow-[0_2px_8px_rgba(46,98,118,0.35)]'
                     : 'bg-[#f0f4f7] text-[#c0cdd6]'
                 "
               >
                 <svg
-                  width="12"
-                  height="12"
+                  width="13"
+                  height="13"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -249,14 +240,39 @@
             </div>
           </div>
         </div>
+
+        <!-- Suggested prompts — compact pill list -->
+        <div class="w-full max-w-[660px]">
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b0c0cc] mb-2.5 text-center"
+          >
+            Suggestions
+          </p>
+          <div class="flex flex-wrap gap-2 justify-center">
+            <button
+              *ngFor="let s of suggestedPrompts"
+              (click)="startWithSuggestion(s.prompt)"
+              class="flex items-center gap-2 px-3.5 py-2 rounded-full border border-[#e2e8ed] bg-white text-[11.5px] text-[#4a6272] font-medium cursor-pointer transition-all hover:border-[#2e6276]/50 hover:bg-[#f5f9fb] hover:text-[#2e6276] hover:shadow-sm group"
+            >
+              <span
+                class="text-[#a0b8c4] group-hover:text-[#2e6276] transition-colors"
+                [innerHTML]="s.icon"
+              ></span>
+              {{ s.label }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ── CHAT SCREEN ── -->
+    <!-- ══════════════════════════════════════════
+         CHAT SCREEN
+    ══════════════════════════════════════════ -->
     <div
       *ngIf="!showWelcome"
       class="flex-1 flex flex-col overflow-hidden bg-[#f0f4f7]"
     >
+      <!-- Chat header -->
       <div
         class="flex items-center gap-3 px-5 py-2.5 border-b border-[#e2e8ed] bg-white shrink-0"
       >
@@ -283,37 +299,19 @@
         <span class="text-[12px] font-medium text-[#2e4a5a] truncate flex-1">{{
           activeSession?.title || "New conversation"
         }}</span>
-        <div
-          class="flex items-center gap-0 bg-[#f0f4f7] border border-[#e2e8ed] rounded-lg p-0.5"
+
+        <!-- Module indicator badge only -->
+        <span
+          class="px-2 py-0.5 rounded-full text-[9.5px] font-semibold"
+          [ngClass]="getModuleBadgeClass(activeSession?.module || '')"
         >
-          <button
-            (click)="setTone('business')"
-            class="px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer border-0"
-            [ngClass]="
-              tone === 'business'
-                ? 'bg-white text-[#2e6276] shadow-sm'
-                : 'bg-transparent text-[#a0b0bc]'
-            "
-          >
-            Business
-          </button>
-          <button
-            (click)="setTone('casual')"
-            class="px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer border-0"
-            [ngClass]="
-              tone === 'casual'
-                ? 'bg-white text-[#2e6276] shadow-sm'
-                : 'bg-transparent text-[#a0b0bc]'
-            "
-          >
-            Chat
-          </button>
-        </div>
+          {{ activeSession?.module || "GEN" }}
+        </span>
       </div>
 
       <!-- Messages -->
       <div
-        class="flex-1 overflow-y-auto py-5 flex flex-col gap-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        class="flex-1 overflow-y-auto py-6 flex flex-col gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         #chatContainer
       >
         <div class="flex-1 min-h-4"></div>
@@ -322,6 +320,24 @@
           *ngIf="activeMessages.length === 0 && !aiTyping"
           class="flex flex-col items-center justify-center py-16 text-center px-8"
         >
+          <div
+            class="w-10 h-10 rounded-xl bg-[#eaf2f6] border border-[#2e6276]/15 flex items-center justify-center text-[#2e6276] mb-3"
+          >
+            <svg
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
           <p class="text-[13px] font-semibold text-[#2e4a5a] mb-1">
             Start the conversation
           </p>
@@ -397,9 +413,7 @@
                 <p class="text-[10.5px] text-red-400 mt-1">{{ msg.error }}</p>
               </div>
 
-              <!-- ══════════════════════════════════════════
-                   FULL AI RESPONSE
-              ══════════════════════════════════════════ -->
+              <!-- ═══════════ FULL AI RESPONSE ═══════════ -->
               <ng-container *ngIf="!msg.loading && !msg.error">
                 <!-- Matched Scenario badge -->
                 <div
@@ -413,13 +427,7 @@
                   </span>
                 </div>
 
-                <!-- ─────────────────────────────────────────
-                     FORMAT: MARKDOWN
-                     Uses <markdown [data]="msg.text"> from
-                     ngx-markdown — no pipe, no custom code.
-                     The .oai-markdown-body class in the SCSS
-                     styles all elements ngx-markdown emits.
-                ───────────────────────────────────────── -->
+                <!-- ─── FORMAT: MARKDOWN ─── -->
                 <ng-container *ngIf="msg.format === 'markdown'">
                   <div
                     *ngIf="msg.text"
@@ -440,11 +448,6 @@
                         msg.time
                       }}</span>
                     </div>
-                    <!--
-                      KEY CHANGE: was  [innerHTML]="msg.text | markdown"
-                      Now uses the ngx-markdown component with [data] input.
-                      The oai-markdown-body class scopes all child styles via ::ng-deep in SCSS.
-                    -->
                     <div class="oai-markdown-body">
                       <markdown [data]="msg.text" />
                     </div>
@@ -481,39 +484,6 @@
                         </p>
                       </div>
                     </div>
-                  </div>
-
-                  <!-- Data Coverage warning -->
-                  <div
-                    *ngIf="msg.coverage && msg.coverage.length > 0"
-                    class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3"
-                  >
-                    <div class="flex items-center gap-2 mb-1.5">
-                      <svg
-                        width="11"
-                        height="11"
-                        fill="none"
-                        stroke="#d97706"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                        />
-                      </svg>
-                      <span
-                        class="text-[10px] font-semibold text-amber-700 uppercase tracking-widest"
-                        >Data Coverage</span
-                      >
-                    </div>
-                    <p
-                      *ngFor="let c of msg.coverage"
-                      class="text-[11.5px] text-amber-800 leading-relaxed"
-                    >
-                      {{ c }}
-                    </p>
                   </div>
 
                   <!-- Suggested Actions -->
@@ -686,9 +656,6 @@
                         instead.</span
                       >
                     </div>
-                    <!--
-                      Fallback also uses <markdown [data]> — same pattern, no pipe
-                    -->
                     <div
                       *ngIf="msg.text"
                       class="bg-white border border-[#e2e8ed] rounded-2xl rounded-tl-[5px] px-4 py-3.5 shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
@@ -711,7 +678,7 @@
                     </div>
                   </ng-container>
 
-                  <!-- Suggested Actions (all chart subtypes) -->
+                  <!-- Suggested Actions (chart) -->
                   <div
                     *ngIf="msg.actions && msg.actions.length > 0"
                     class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
@@ -740,47 +707,6 @@
                   </div>
                 </ng-container>
 
-                <!-- ─── FORMAT: JSON ─── -->
-                <ng-container *ngIf="msg.format === 'json'">
-                  <div
-                    class="bg-white border border-[#e2e8ed] rounded-2xl overflow-hidden shadow-[0_1px_6px_rgba(46,98,118,0.05)]"
-                  >
-                    <div
-                      class="flex items-center gap-2 px-4 py-2.5 border-b border-[#f0f4f7]"
-                    >
-                      <div class="w-0.5 h-3.5 bg-[#2e6276] rounded"></div>
-                      <span
-                        class="text-[10px] font-semibold text-[#2e6276] uppercase tracking-widest"
-                        >Raw JSON Response</span
-                      >
-                      <button
-                        (click)="copyText(msg.rawJson || '')"
-                        class="ml-auto flex items-center gap-1 text-[9px] text-[#a0b0bc] bg-transparent border-0 cursor-pointer hover:text-[#2e6276] transition-colors"
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          />
-                        </svg>
-                        Copy
-                      </button>
-                    </div>
-                    <pre
-                      class="px-4 py-3 font-mono text-[11px] text-[#2e6276] m-0 overflow-x-auto leading-relaxed bg-[#f4f8fa] whitespace-pre max-h-[280px] overflow-y-auto"
-                      >{{ msg.rawJson }}</pre
-                    >
-                  </div>
-                </ng-container>
-
                 <!-- Follow-up prompts -->
                 <div
                   *ngIf="msg.followUpPrompts && msg.followUpPrompts.length > 0"
@@ -803,7 +729,7 @@
               >
                 <button
                   (click)="copyText(msg.text)"
-                  class="flex items-center gap-1 px-2 py-1 text-[10.5px] text-[#a0b0bc] bg-transparent border-0 rounded cursor-pointer hover:text-[#2e4a5a]"
+                  class="flex items-center gap-1 px-2 py-1 text-[10.5px] text-[#a0b0bc] bg-transparent border-0 rounded cursor-pointer hover:text-[#2e4a5a] transition-colors"
                 >
                   <svg
                     width="10"
@@ -827,12 +753,10 @@
                   [ngClass]="
                     msg.format === 'chart'
                       ? 'bg-violet-50 text-violet-500'
-                      : msg.format === 'json'
-                        ? 'bg-amber-50 text-amber-600'
-                        : 'bg-[#eaf2f6] text-[#2e6276]'
+                      : 'bg-[#eaf2f6] text-[#2e6276]'
                   "
                 >
-                  {{ msg.format || "markdown" }}
+                  {{ msg.format || "analysis" }}
                 </span>
                 <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
                 <p class="text-[10px] text-[#b8c8d4] px-1">{{ msg.time }}</p>
@@ -840,8 +764,6 @@
             </div>
           </div>
         </div>
-
-        
       </div>
 
       <!-- ── CHAT INPUT ── -->
@@ -852,35 +774,15 @@
           <textarea
             [(ngModel)]="newChatMessage"
             [placeholder]="inputPlaceholder"
-            (keydown.enter)="
-              $event.preventDefault(); sendMessage(newChatMessage)
-            "
-            rows="2"
-            class="border-0 outline-none text-[13px] text-[#1a2733] bg-transparent px-4 pt-3.5 pb-2 resize-none placeholder-[#c0cdd6] leading-relaxed"
+            (input)="autoResize($event)"
+            (keydown)="onChatKey($event)"
+            rows="1"
+            class="oai-textarea border-0 outline-none text-[13px] text-[#1a2733] bg-transparent px-4 pt-3.5 pb-2 resize-none placeholder-[#c0cdd6] leading-relaxed min-h-[44px] max-h-[200px] overflow-y-auto"
           ></textarea>
           <div
             class="flex items-center justify-between px-3 pb-2.5 pt-1 border-t border-[#eef2f5]"
           >
-            <div class="flex items-center gap-1">
-              <button
-                *ngFor="let f of formatOptions"
-                (click)="setFormat(f.key)"
-                class="flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border"
-                [ngClass]="
-                  responseFormat === f.key
-                    ? 'bg-[#eaf2f6] border-[#2e6276]/30 text-[#2e6276]'
-                    : 'bg-transparent border-transparent text-[#a0b0bc] hover:bg-[#f4f8fa]'
-                "
-                [innerHTML]="f.label"
-              ></button>
-              <div class="w-px h-3 bg-[#e2e8ed] mx-1"></div>
-              <button
-                (click)="setTone(tone === 'business' ? 'casual' : 'business')"
-                class="flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer border bg-[#f0f4f7] border-[#e2e8ed] text-[#6b8898] hover:border-[#2e6276]/30 hover:text-[#2e6276]"
-              >
-                {{ tone === "business" ? "Business" : "Casual" }}
-              </button>
-            </div>
+            <p class="text-[10px] text-[#c8d6de]">Shift+Enter for new line</p>
             <button
               (click)="sendMessage(newChatMessage)"
               class="w-7 h-7 rounded-lg flex items-center justify-center border-0 cursor-pointer transition-all"
