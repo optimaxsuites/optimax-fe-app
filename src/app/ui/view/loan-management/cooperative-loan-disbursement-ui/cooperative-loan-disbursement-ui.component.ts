@@ -23,6 +23,139 @@ type QueueMessage = {
   styleUrls: ['./cooperative-loan-disbursement-ui.component.scss']
 })
 export class CooperativeLoanDisbursementUiComponent implements OnInit {
+  // Multi-select state for batch actions
+  selectedApprovedLoanIdsMap: { [id: string]: boolean } = {};
+    getSelectedApprovedLoanIds(): number[] {
+      return Object.entries(this.selectedApprovedLoanIdsMap)
+        .filter(([_, checked]) => checked)
+        .map(([id, _]) => Number(id));
+    }
+
+ sendSelectedToAccounting(): void {
+  const selectedIds = this.getSelectedApprovedLoanIds();
+  if (!selectedIds.length || this.isSubmitting) return;
+  
+  this.isSubmitting = true;
+  const selectedLoans = this.approvedLoans.filter(loan => selectedIds.includes(loan.id));
+  let processed = 0;
+  let errors: string[] = [];
+  let successCount = 0;
+  
+  const processNext = () => {
+    if (processed >= selectedLoans.length) {
+      this.isSubmitting = false;
+      if (errors.length) {
+        this.showMessage('error', 'Batch Partially Failed', 
+          `${successCount} succeeded, ${errors.length} failed: ${errors.join('; ')}`);
+      } else {
+        this.showMessage('success', 'Batch Sent Successfully', 
+          `All ${successCount} loans sent to accounting.`);
+      }
+      // Clear selections and refresh
+      this.selectedApprovedLoanIdsMap = {};
+      this.loadAllData();
+      return;
+    }
+    
+    const loan = selectedLoans[processed];
+    const member = this.getMemberForLoan(loan);
+    const employeeId = Number(member?.employeeId || 0);
+    
+    if (!employeeId) {
+      errors.push(`Loan ${loan.id}: missing employee details`);
+      processed++;
+      processNext();
+      return;
+    }
+    
+    this.employeeService.getEmployeeById(employeeId).subscribe({
+      next: (employee) => {
+        const group = this.getGroupForLoan(loan);
+        const instructionReference = this.generateBatchDisbursementReference(loan);
+        const adminComment = this.emailNotes?.trim() || undefined;
+        const transactionDate = new Date().toISOString();
+        const memberName = this.getMemberName(loan);
+        const totalRepayable = Number(loan.amount || 0) * (1 + (Number(group?.interestRate || 0) / 100));
+        const baseUrl = 'https://be.optimaxsuites.com';
+        const apiUrl = `${baseUrl}/x/api/v2/accounting/events`;
+        
+        const accountingEventPayload = {
+          id: 0,
+          sourceModule: "HR",
+          eventType: "LOAN_DISBURSEMENT",
+          amount: Number(loan.approvedAmount || loan.amount || 0),
+          currency: "NGN",
+          reference: instructionReference,
+          description: adminComment || `Loan disbursement for ${memberName}`,
+          transactionDate: transactionDate,
+          metadata: {
+            loanId: loan.id,
+            loanCode: loan.loanCode || loan.loanId,
+            member: memberName,
+            memberId: loan.memberId || loan.cooperativeMemberId,
+            membershipId: loan.membershipId,
+            groupMembershipId: this.getFormattedMembershipId(loan),
+            groupName: group?.name,
+            groupCode: group?.code,
+            groupInterestRate: group?.interestRate,
+            repaymentPeriod: loan.duration || loan.repaymentTime,
+            approvedAmount: Number(loan.approvedAmount || loan.amount || 0),
+            totalRepayable: totalRepayable,
+            modeOfPayment: loan.modeOfPayment || 'MONTHLY',
+            paymentMethod: this.paymentMethod,
+            purpose: loan.purpose,
+            approvedDate: loan.approvedDate,
+            approvedBy: loan.approvedBy,
+            bankName: employee?.bankName || loan.memberBankName || 'N/A',
+            accountNumber: employee?.accountNumber || loan.memberAccountNumber || 'N/A',
+            accountName: memberName,
+            initiatedBy: sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin',
+            initiatedAt: transactionDate,
+            instructionReference: instructionReference
+          }
+        };
+        
+        this.http.post(apiUrl, accountingEventPayload).subscribe({
+          next: () => {
+            this.cooperativeService.sendLoanToAccountingForDisbursement(loan.id, {
+              accountingEmail: this.accountingEmail,
+              disbursementInstructionReference: instructionReference,
+              paymentMethod: this.paymentMethod,
+              notes: adminComment
+            }).subscribe({
+              next: () => { 
+                successCount++;
+                processed++; 
+                processNext(); 
+              },
+              error: (err) => { 
+                errors.push(`Loan ${loan.id}: status update failed`); 
+                processed++; 
+                processNext(); 
+              }
+            });
+          },
+          error: (err) => { 
+            errors.push(`Loan ${loan.id}: accounting event failed - ${err.message || 'Unknown error'}`); 
+            processed++; 
+            processNext(); 
+          }
+        });
+      },
+      error: () => { 
+        errors.push(`Loan ${loan.id}: failed to load employee details`); 
+        processed++; 
+        processNext(); 
+      }
+    });
+  };
+  
+  processNext();
+}
+
+generateBatchDisbursementReference(loan: CooperativeLoan): string {
+  return `COOP-BATCH-${loan.id}-${Date.now()}`;
+}
   readonly queuePageSize = 6;
   // Loading states for partial UI rendering
   isLoansLoading = true;
@@ -73,10 +206,12 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   selectedLoanId = '';
   selectedEmployeeDetails: any = null;
 
+  
   approvedSearchTerm = '';
   readySearchTerm = '';
   approvedPage = 1;
   readyPage = 1;
+
 
   // Advanced UI compatibility properties
   selectedDisbursementLoan: CooperativeLoan | null = null;

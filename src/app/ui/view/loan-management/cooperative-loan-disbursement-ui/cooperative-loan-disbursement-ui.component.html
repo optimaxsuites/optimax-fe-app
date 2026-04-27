@@ -103,40 +103,51 @@
           </div>
 
           <div class="table-wrapper">
-            <app-table
-              [columns]="[
-                { header: 'Loan ID' },
-                { header: 'Member' },
-                { header: 'Group' },
-                { header: 'Amount' },
-                { header: 'Approved Date' },
-                { header: 'Status' },
-                { header: 'Action' }
-              ]"
-              [rows]="getPaginatedApprovedLoans()"
-              [emptyMessage]="'No approved loans match this view.'"
-              [rowClickable]="true"
-              (rowClick)="selectLoan($event)"
-              tableClass="approved-loans-table">
-              <ng-template appTableBody let-loan>
-                <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
-                <td>{{ getFullName(loan) }}</td>
-                <td>{{ getGroupNameTpl(loan) }}</td>
-                <td class="amount">{{ formatCurrency(loan.amount) }}</td>
-                <td>{{ formatDate(loan.approvedDate || loan.requestDate) }}</td>
-                <td>
-                  <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
-                </td>
-                <td>
-                  <button class="select-btn"
-                          [class.active]="selectedDisbursementLoan?.id === loan.id"
-                          (click)="selectLoan(loan); $event.stopPropagation()">
-                    <i class="fas fa-check" *ngIf="selectedDisbursementLoan?.id === loan.id"></i>
-                    {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
-                  </button>
-                </td>
-              </ng-template>
-            </app-table>
+            <form #batchForm="ngForm">
+              <app-table
+                [columns]="[
+                  { header: '' },
+                  { header: 'Loan ID' },
+                  { header: 'Member' },
+                  { header: 'Group' },
+                  { header: 'Amount' },
+                  { header: 'Approved Date' },
+                  { header: 'Status' },
+                  { header: 'Action' }
+                ]"
+                [rows]="getPaginatedApprovedLoans()"
+                [emptyMessage]="'No approved loans match this view.'"
+                [rowClickable]="true"
+                (rowClick)="selectLoan($event)"
+                tableClass="approved-loans-table">
+                <ng-template appTableBody let-loan>
+                  <td>
+                    <input type="checkbox" [(ngModel)]="selectedApprovedLoanIdsMap[loan.id]" name="select_{{loan.id}}" (click)="$event.stopPropagation()">
+                  </td>
+                  <td class="loan-id">{{ loan.loanCode || loan.id }}</td>
+                  <td>{{ getFullName(loan) }}</td>
+                  <td>{{ getGroupNameTpl(loan) }}</td>
+                  <td class="amount">{{ formatCurrency(loan.amount) }}</td>
+                  <td>{{ formatDate(loan.approvedDate || loan.requestDate) }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
+                  </td>
+                  <td>
+                    <button class="select-btn"
+                            [class.active]="selectedDisbursementLoan?.id === loan.id"
+                            (click)="selectLoan(loan); $event.stopPropagation()">
+                      <i class="fas fa-check" *ngIf="selectedDisbursementLoan?.id === loan.id"></i>
+                      {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
+                    </button>
+                  </td>
+                </ng-template>
+              </app-table>
+            </form>
+            <div class="batch-actions" *ngIf="getSelectedApprovedLoanIds().length > 0">
+              <button type="button" class="primary-btn" (click)="sendSelectedToAccounting()" [disabled]="isSubmitting">
+                Send Selected to Accounting ({{ getSelectedApprovedLoanIds().length }})
+              </button>
+            </div>
           </div>
 
           <div class="queue-footer" *ngIf="getFilteredApprovedLoans().length > 0">

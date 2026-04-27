@@ -154,8 +154,14 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-disbursement/:uuid',
     component: LoanDisbursementUiComponent,
   },
+
   {
     path: 'admin/hr/loan-management/grace-period-requests/:uuid',
+    component: LoanGracePeriodRequestsManagementComponent,
+  },
+  // Added missing route for loan-grace-period-requests (with 'loan-' in path)
+  {
+    path: 'admin/hr/loan-management/loan-grace-period-requests/:uuid',
     component: LoanGracePeriodRequestsManagementComponent,
   },
 

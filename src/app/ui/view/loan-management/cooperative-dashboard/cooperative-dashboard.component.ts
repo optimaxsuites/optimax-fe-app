@@ -346,10 +346,15 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     // Preload group data to warm up cache for all loan-management UIs
     this.cooperativeService.loadGroups().subscribe();
 
-    const routeUuid = this.route.snapshot.paramMap.get('uuid');
-    if (routeUuid) {
-      this.currentUuid = routeUuid;
-    }
+    // Always set currentUuid from route params and keep it updated
+    this.subscriptions.add(
+      this.route.paramMap.subscribe(params => {
+        const uuid = params.get('uuid');
+        if (uuid) {
+          this.currentUuid = uuid;
+        }
+      })
+    );
 
     this.subscriptions.add(this.route.queryParamMap.subscribe(params => {
       this.selectedDashboard = params.get('dashboard') === 'advance' ? 'advance' : 'cooperative';

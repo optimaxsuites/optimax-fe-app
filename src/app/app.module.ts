@@ -381,19 +381,21 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     InterviewResponseComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
-    AppHrRoutingModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     TableModule,
-    RouterModule,
+    RouterModule.forRoot([], {
+      bindToComponentInputs: true,
+      enableTracing: false,
+      useHash: false,
+    }),
     RippleModule,
     DialogModule,
     CalendarModule,
     ToastModule,
-    FormsModule,
-    ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
     ToolbarModule,
@@ -437,6 +439,7 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     FooterComponent,
     MenuModule,
     CooperativeGracePeriodRequestFormModule,
+    AppHrRoutingModule,
   ],
   providers: [
     {
