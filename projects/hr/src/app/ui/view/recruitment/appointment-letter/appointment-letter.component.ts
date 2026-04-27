@@ -25,7 +25,7 @@ export class AppointmentLetterComponent {
   }
 
   updateSubject() {
-    this.appointmentSubject = `Appointment Letter For The Position Of ${this.candidate.position}`;
+    this.appointmentSubject = `Appointment Letter For The Position Of ${this.getCandidatePosition()}`;
   }
 
   handleSendAppointment() {
@@ -104,8 +104,8 @@ export class AppointmentLetterComponent {
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
     return template
-      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
-      .replace(/\[Job Title\]/g, candidate.position)
+      .replace(/\[Candidate Name\]/g, this.getCandidateName(candidate))
+      .replace(/\[Job Title\]/g, this.getCandidatePosition(candidate))
       .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
   }
 
@@ -154,4 +154,23 @@ export class AppointmentLetterComponent {
         reader.readAsDataURL(file); // Read the file as a data URL
     }
   } 
+
+  private getCandidateName(candidate: ApplicantDTO = this.candidate): string {
+    return (
+      candidate.candidateName ||
+      candidate.fullName ||
+      candidate.fullname ||
+      `${candidate.firstname || candidate.firstName || ''} ${candidate.lastname || candidate.lastName || ''}`.trim()
+    );
+  }
+
+  private getCandidatePosition(candidate: ApplicantDTO = this.candidate): string {
+    return (
+      candidate.position ||
+      candidate['jobVacancy']?.jobTitle ||
+      candidate['job']?.title ||
+      candidate['jobVacancy']?.jobCategory?.name ||
+      ''
+    );
+  }
 }

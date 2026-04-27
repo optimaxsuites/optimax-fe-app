@@ -1,6 +1,24 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ApplicantDTO, AttachmentDTO } from '../../../domain/applicant.dto';
+import { ApplicantDTO, AttachmentDTO, InterviewPanelMemberDTO } from '../../../domain/applicant.dto';
 import { MessageService } from 'primeng/api';
+import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
+
+interface InterviewInviteDraft {
+  scheduledDate: string;
+  scheduledTime: string;
+  location: string;
+  notes: string;
+  panelMembers: InterviewPanelMemberDTO[];
+}
+
+interface PanelUserOption {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-interview-invite',
@@ -18,15 +36,22 @@ export class InterviewInviteComponent {
   processedTemplate?: string;
   selectedInterviewType?: string;
   attachments?: AttachmentDTO[] = [];
+  inviteDraft: InterviewInviteDraft = this.createInviteDraft();
+  availablePanelUsers: PanelUserOption[] = [];
+  panelUsersLoading = false;
 
   constructor(
     private messageService: MessageService,
+    private authenticationService: AuthenticationService,
   ){}
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
     this.setTemplate(0)
+    this.selectedInterviewType = this.candidate?.interviewType || this.candidate?.meetingDetails?.interviewType || 'Virtual Interview';
+    this.inviteDraft = this.createInviteDraft();
+    this.loadPanelUsers();
     console.log("active candidate", this.candidate)
   }
 
@@ -45,6 +70,11 @@ export class InterviewInviteComponent {
       interviewType: this.selectedInterviewType,
       interviewInvite: this.processedTemplate,
       inviteAttachments: this.attachments,
+      scheduledDate: this.inviteDraft.scheduledDate || this.candidate?.['scheduledDate'],
+      scheduledTime: this.inviteDraft.scheduledTime,
+      location: this.inviteDraft.location,
+      notes: this.inviteDraft.notes,
+      panelMembers: this.inviteDraft.panelMembers,
     };
 
     console.log("invite info from interview-Invite-component", inviteDetails)
@@ -56,7 +86,11 @@ export class InterviewInviteComponent {
   validateForm(): boolean {
     const requiredFields = [
       this.processedTemplate,
-      this.selectedInterviewType
+      this.selectedInterviewType,
+      this.inviteDraft.scheduledDate,
+      this.inviteDraft.scheduledTime,
+      this.inviteDraft.location,
+      this.inviteDraft.panelMembers.length > 0 && this.inviteDraft.panelMembers.every(member => member.name.trim() && member.role.trim() && member.email.trim())
     ];
 
     return requiredFields.every(field => field);
@@ -125,8 +159,12 @@ export class InterviewInviteComponent {
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
     return template
-      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
-      .replace(/\[Job Title\]/g, candidate.position)
+      .replace(/\[Candidate Name\]/g, this.getCandidateName(candidate))
+      .replace(/\[Job Title\]/g, this.getCandidatePosition(candidate))
+      .replace(/\[Interview Date\]/g, this.inviteDraft.scheduledDate || candidate['scheduledDate'] || '[Interview Date]')
+      .replace(/\[Interview Time\]/g, this.inviteDraft.scheduledTime || candidate['meetingDetails']?.time || '[Interview Time]')
+      .replace(/\[Interview Location\]/g, this.inviteDraft.location || candidate['meetingDetails']?.location || '[Interview Location]')
+      .replace(/\[In-person\/Virtual\]/g, this.selectedInterviewType || candidate['meetingDetails']?.interviewType || '[In-person/Virtual]')
       // .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
   }
 
@@ -186,6 +224,188 @@ export class InterviewInviteComponent {
 
   interviewTypeChange() {
     console.log('Selected Interview Type(s):', this.selectedInterviewType);
+  }
+
+  addPanelMember(): void {
+    this.inviteDraft.panelMembers = [
+      ...this.inviteDraft.panelMembers,
+      this.createEmptyPanelMember()
+    ];
+  }
+
+  removePanelMember(index: number): void {
+    this.inviteDraft.panelMembers = this.inviteDraft.panelMembers.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  onPanelUserSelected(index: number, selectedUserId: string): void {
+    const selectedUser = this.availablePanelUsers.find(user => user.id === selectedUserId);
+    const currentMember = this.inviteDraft.panelMembers[index];
+
+    if (!currentMember) {
+      return;
+    }
+
+    if (!selectedUser) {
+      this.inviteDraft.panelMembers[index] = {
+        ...currentMember,
+        userId: '',
+        username: '',
+        name: '',
+        email: ''
+      };
+      return;
+    }
+
+    this.inviteDraft.panelMembers[index] = {
+      ...currentMember,
+      userId: selectedUser.id,
+      username: selectedUser.username,
+      name: selectedUser.name,
+      email: selectedUser.email,
+      role: currentMember.role?.trim() || selectedUser.role || 'Interviewer'
+    };
+  }
+
+  getPanelUserOptions(selectedUserId?: string): PanelUserOption[] {
+    const selectedIds = new Set(
+      this.inviteDraft.panelMembers
+        .map(member => member.userId)
+        .filter((userId): userId is string => Boolean(userId))
+    );
+
+    return this.availablePanelUsers.filter(user => user.id === selectedUserId || !selectedIds.has(user.id));
+  }
+
+  getCandidateName(candidate: ApplicantDTO = this.candidate): string {
+    return (
+      candidate.candidateName ||
+      candidate.fullName ||
+      candidate.fullname ||
+      `${candidate.firstname || candidate.firstName || ''} ${candidate.lastname || candidate.lastName || ''}`.trim()
+    );
+  }
+
+  getCandidatePhone(candidate: ApplicantDTO = this.candidate): string {
+    return candidate.contactNo || candidate['phone'] || '';
+  }
+
+  getCandidatePosition(candidate: ApplicantDTO = this.candidate): string {
+    return (
+      candidate.position ||
+      candidate['jobVacancy']?.jobTitle ||
+      candidate['job']?.title ||
+      candidate['jobVacancy']?.jobCategory?.name ||
+      ''
+    );
+  }
+
+  private createInviteDraft(): InterviewInviteDraft {
+    return {
+      scheduledDate: this.candidate?.['meetingDetails']?.date || this.candidate?.['scheduledDate'] || '',
+      scheduledTime: this.candidate?.['meetingDetails']?.time || '',
+      location: this.candidate?.['meetingDetails']?.location || '',
+      notes: this.candidate?.['meetingDetails']?.notes || '',
+      panelMembers: this.candidate?.['interviewPanel']?.length
+        ? this.candidate['interviewPanel'].map((member: InterviewPanelMemberDTO) => this.mapPanelMember(member))
+        : [this.createEmptyPanelMember()]
+    };
+  }
+
+  private generateId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private loadPanelUsers(): void {
+    this.panelUsersLoading = true;
+
+    this.authenticationService.getUsers().subscribe({
+      next: (users) => {
+        this.availablePanelUsers = Array.isArray(users)
+          ? users
+              .map((user: any) => this.mapUserToPanelOption(user))
+              .filter((user): user is PanelUserOption => Boolean(user))
+              .sort((a, b) => a.label.localeCompare(b.label))
+          : [];
+        this.inviteDraft = {
+          ...this.inviteDraft,
+          panelMembers: this.inviteDraft.panelMembers.map(member => this.mapPanelMember(member))
+        };
+        this.panelUsersLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading panel users:', error);
+        this.panelUsersLoading = false;
+      }
+    });
+  }
+
+  private mapUserToPanelOption(user: any): PanelUserOption | null {
+    const id = String(user?.id || '').trim();
+    const email = String(user?.email || '').trim();
+    const username = String(user?.username || '').trim();
+    const name = String(user?.fullname || user?.fullName || username || email).trim();
+
+    if (!id || !email) {
+      return null;
+    }
+
+    const role = this.resolveUserRole(user);
+    const label = `${name}${role ? ` • ${role}` : ''} • ${email}`;
+
+    return {
+      id,
+      username,
+      name,
+      email,
+      role,
+      label
+    };
+  }
+
+  private resolveUserRole(user: any): string {
+    if (typeof user?.appRole?.name === 'string' && user.appRole.name.trim()) {
+      return user.appRole.name.trim();
+    }
+
+    if (typeof user?.role?.name === 'string' && user.role.name.trim()) {
+      return user.role.name.trim();
+    }
+
+    if (Array.isArray(user?.roles) && user.roles.length > 0) {
+      const firstRole = user.roles.find((role: any) => typeof role?.name === 'string' && role.name.trim());
+      if (firstRole?.name) {
+        return firstRole.name.trim();
+      }
+    }
+
+    return 'Interviewer';
+  }
+
+  private mapPanelMember(member: InterviewPanelMemberDTO): InterviewPanelMemberDTO {
+    const matchedUser = this.availablePanelUsers.find(user =>
+      user.id === String(member.userId || '') || user.email.toLowerCase() === String(member.email || '').toLowerCase()
+    );
+
+    return {
+      ...member,
+      id: member.id || this.generateId('panel'),
+      userId: matchedUser?.id || member.userId || '',
+      username: matchedUser?.username || member.username || '',
+      name: matchedUser?.name || member.name || '',
+      role: member.role || matchedUser?.role || 'Interviewer',
+      email: matchedUser?.email || member.email || ''
+    };
+  }
+
+  private createEmptyPanelMember(): InterviewPanelMemberDTO {
+    return {
+      id: this.generateId('panel'),
+      userId: '',
+      username: '',
+      name: '',
+      role: '',
+      email: ''
+    };
   }
 
 
