@@ -390,11 +390,11 @@ import { BrowserModule } from '@angular/platform-browser';
     FormsModule,
     ReactiveFormsModule,
     TableModule,
-    RouterModule.forRoot([], {
-      bindToComponentInputs: true,
-      enableTracing: false,
-      useHash: false,
-    }),
+    // RouterModule.forChild([], {
+    //   bindToComponentInputs: true,
+    //   enableTracing: false,
+    //   useHash: false,
+    // }),
     RippleModule,
     DialogModule,
     CalendarModule,

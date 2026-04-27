@@ -658,6 +658,12 @@ export class CandidateComponent implements OnInit {
     this.selectedInviteTemplate = null;
     this.interviewInviteSetup = this.createInterviewInviteSetup();
     console.log("Interview setup initialized:", this.interviewInviteSetup);
+    
+    // Ensure panel users are loaded
+    if (this.availablePanelUsers.length === 0 && !this.panelUsersLoading) {
+      console.log("Panel users not loaded, loading now...");
+      this.loadPanelUsers();
+    }
     console.log("Available panel users:", this.availablePanelUsers);
   }
 
