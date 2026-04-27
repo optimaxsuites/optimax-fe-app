@@ -60,19 +60,19 @@ import { CommunicationComponent } from './communication/communication.component'
 import { AnalyticsComponent } from './analytics/analytics.component';
 // import { MarkdownPipe } from './optimax-ai/optimax-ai.component';
 import { MarkdownModule } from 'ngx-markdown';
-import { ChatSidebarComponent } from './optimax-ai/chat-sidebar/chat-sidebar.component';
-import { ChatInputComponent } from './optimax-ai/chat-input/chat-input.component';
-import { ChatMessageComponent } from './optimax-ai/chat-message/chat-message.component';
-import { ChartRendererComponent } from './optimax-ai/chart-renderer/chart-renderer.component';
-import { WelcomeScreenComponent } from './optimax-ai/welcome-screen/welcome-screen.component';
-import { AiResponseComponent } from './optimax-ai/ai-response/ai-response.component';
+// import { ChatSidebarComponent } from './optimax-ai/chat-sidebar/chat-sidebar.component';
+// import { ChatInputComponent } from './optimax-ai/chat-input/chat-input.component';
+// import { ChatMessageComponent } from './optimax-ai/chat-message/chat-message.component';
+// import { ChartRendererComponent } from './optimax-ai/chart-renderer/chart-renderer.component';
+// import { WelcomeScreenComponent } from './optimax-ai/welcome-screen/welcome-screen.component';
+// import { AiResponseComponent } from './optimax-ai/ai-response/ai-response.component';
+import { ChannelSidebarComponent } from './communication/channel-sidebar/channel-sidebar.component';
+import { MessageFeedComponent } from './communication/message-feed/message-feed.component';
+import { MessageComposerComponent } from './communication/message-composer/message-composer.component';
 import { ThreadPanelComponent } from './communication/thread-panel/thread-panel.component';
 import { ChannelModalComponent } from './communication/channel-modal/channel-modal.component';
 import { EmailModalComponent } from './communication/email-modal/email-modal.component';
 import { CallModalComponent } from './communication/call-modal/call-modal.component';
-import { MessageComposerComponent } from './communication/message-composer/message-composer.component';
-import { MessageFeedComponent } from './communication/message-feed/message-feed.component';
-import { ChannelSidebarComponent } from './communication/channel-sidebar/channel-sidebar.component';
 import { FeedComponent } from './feed/feed.component';
 
 @NgModule({
@@ -90,20 +90,20 @@ import { FeedComponent } from './feed/feed.component';
     OptimaxaiComponent,
     CommunicationComponent,
     AnalyticsComponent,
-    ChatSidebarComponent,
-    ChatInputComponent,
-    ChatMessageComponent,
-    ChartRendererComponent,
-    WelcomeScreenComponent,
-    AiResponseComponent,
+    // ChatSidebarComponent,
+    // ChatInputComponent,
+    // ChatMessageComponent,
+    // ChartRendererComponent,
+    // WelcomeScreenComponent,
+    // AiResponseComponent,
+    ChannelSidebarComponent,
+    MessageFeedComponent,
+    MessageComposerComponent,
     ThreadPanelComponent,
     ChannelModalComponent,
     EmailModalComponent,
     CallModalComponent,
-    MessageComposerComponent,
-    MessageFeedComponent,
-    ChannelSidebarComponent,
-    FeedComponent
+    FeedComponent,
   ],
   imports: [
     MarkdownModule.forRoot(),
