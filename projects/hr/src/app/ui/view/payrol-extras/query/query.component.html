@@ -2,7 +2,7 @@
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
       <p class="text-gray-700 text-[20px] font-semibold">Queries</p>
-      <p class="text-[12px] text-gray-500">Manage disputes and verdicts.</p>
+      <p class="text-[12px] text-gray-500">Track payroll disputes and decide whether they become additions or deductions.</p>
     </div>
     <div class="flex items-center gap-2">
       <app-button *ngIf="isAdmin" text="Create Query" class="btn-navigate gap-2" (click)="toggleCreateForm()"></app-button>
@@ -31,9 +31,9 @@
         <label class="text-[12px] text-gray-500">Status</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full" [(ngModel)]="statusFilter" (change)="onFilterChange()">
           <option value="All">All</option>
-          <option value="Open">Open</option>
-          <option value="Responded">Responded</option>
-          <option value="Verdict Passed">Verdict Passed</option>
+          <option value="OPEN">Open</option>
+          <option value="RESPONDED">Responded</option>
+          <option value="VERDICT_PASSED">Verdict Passed</option>
         </select>
       </div>
     </div>
@@ -65,7 +65,7 @@
   <div class="flex items-start justify-between text-gray-700">
     <div>
       <p class="text-[18px] font-semibold">Create Query</p>
-      <p class="text-[12px] text-gray-500">Log a new dispute for an employee.</p>
+      <p class="text-[12px] text-gray-500">Log a payroll dispute for the employee and the affected period.</p>
     </div>
     <button class="border border-customBlue text-customBlue px-3 py-1 rounded-lg text-[12px]" (click)="toggleCreateForm()">
       Close
@@ -73,39 +73,50 @@
   </div>
 
   <div class="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-4">
-    <p class="font-semibold text-gray-700 mb-3">New Query</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Employee</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.employeeId">
-          <option *ngFor="let emp of employees" [value]="emp.employeeId">{{ emp.employeeName }}</option>
+          <option [ngValue]="null">Select employee</option>
+          <option *ngFor="let employee of employees" [ngValue]="employee.id">{{ employee.firstName }} {{ employee.lastName }}</option>
         </select>
       </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-[12px] text-gray-500">Operation Type</label>
+        <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.operationType">
+          <option value="ADDITION">Addition</option>
+          <option value="DEDUCTION">Deduction</option>
+        </select>
+      </div>
+
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Period Month</label>
         <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.periodMonth">
           <option *ngFor="let month of monthNames; let i = index" [value]="i + 1">{{ month }}</option>
         </select>
       </div>
+
       <div class="flex flex-col gap-1">
         <label class="text-[12px] text-gray-500">Period Year</label>
-        <input type="number" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.periodYear" />
+        <select class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.periodYear">
+          <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+        </select>
       </div>
+
       <div class="flex flex-col gap-1">
-        <label class="text-[12px] text-gray-500">Adjustment (₦)</label>
-        <input type="number" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.adjustment" />
+        <label class="text-[12px] text-gray-500">Adjustment Amount (₦)</label>
+        <input type="number" class="bg-white border border-gray-200 rounded-md px-2 py-2" [(ngModel)]="createForm.amount" />
       </div>
     </div>
+
     <div class="flex items-center gap-2 mt-3">
-      <input
-        type="checkbox"
-        id="requiresJustification"
-        [(ngModel)]="createForm.requiresJustification"
-      />
+      <input type="checkbox" id="requiresJustification" [(ngModel)]="createForm.requiresJustification" />
       <label for="requiresJustification" class="text-[12px] text-gray-600">
         Needs justification from employee
       </label>
     </div>
+
     <div class="flex flex-col gap-2 mt-3">
       <input
         type="text"
@@ -120,6 +131,7 @@
         [(ngModel)]="createForm.description"
       ></textarea>
     </div>
+
     <div class="flex justify-end gap-2 mt-3">
       <app-button text="Cancel" class="btn-navigate gap-2" (click)="toggleCreateForm()"></app-button>
       <app-button text="Submit Query" class="btn-navigate gap-2" (click)="createQuery()"></app-button>
@@ -127,78 +139,81 @@
   </div>
 </app-side-modal>
 
-<app-side-modal *ngIf="showDetail" (close)="closeDetail()">
+<app-side-modal *ngIf="showDetail && selectedQuery" (close)="closeDetail()">
   <div class="py-3 text-customBlue table-item">
     <div class="flex justify-between items-center px-5">
       <p class="text-center text-[20px] font-semibold">Query Details</p>
-      <span class="text-[12px] text-gray-500">{{ selectedQuery?.id }}</span>
+      <span class="text-[12px] text-gray-500">#{{ selectedQuery.id }}</span>
     </div>
 
     <div class="px-5 mt-4 grid grid-cols-2 gap-6">
       <div>
         <p class="font-semibold text-gray-700">Employee</p>
-        <p class="text-gray-600">{{ selectedQuery?.employeeName }} ({{ selectedQuery?.department }})</p>
+        <p class="text-gray-600">{{ selectedQuery.employee?.firstName }} {{ selectedQuery.employee?.lastName }}</p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Period</p>
-        <p class="text-gray-600">{{ selectedQuery ? formatPeriod(selectedQuery) : '' }}</p>
+        <p class="text-gray-600">{{ formatPeriod(selectedQuery) }}</p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Issue</p>
-        <p class="text-gray-600">{{ selectedQuery?.issue }}</p>
+        <p class="text-gray-600">{{ selectedQuery.issue }}</p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Adjustment</p>
-        <p class="text-gray-600">{{ selectedQuery ? formatCurrency(selectedQuery.adjustment) : '' }}</p>
-      </div>
-      <div class="col-span-2">
-        <p class="font-semibold text-gray-700">Description</p>
-        <p class="text-gray-600">{{ selectedQuery?.description }}</p>
+        <p class="text-gray-600">{{ formatSignedCurrency(selectedQuery.amount, selectedQuery.operationType) }}</p>
       </div>
       <div>
-        <p class="font-semibold text-gray-700">Status</p>
-        <p class="text-gray-600">{{ selectedQuery?.status }}</p>
+        <p class="font-semibold text-gray-700">Operation Type</p>
+        <p class="text-gray-600">{{ selectedQuery.operationType === 'DEDUCTION' ? 'Deduction' : 'Addition' }}</p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Verdict</p>
-        <p class="text-gray-600">{{ selectedQuery?.verdict }}</p>
+        <p class="text-gray-600">{{ formatVerdict(selectedQuery.verdict) }}</p>
+      </div>
+      <div class="col-span-2">
+        <p class="font-semibold text-gray-700">Description</p>
+        <p class="text-gray-600">{{ selectedQuery.description }}</p>
+      </div>
+      <div>
+        <p class="font-semibold text-gray-700">Status</p>
+        <p class="text-gray-600">{{ formatStatus(selectedQuery.status) }}</p>
       </div>
       <div>
         <p class="font-semibold text-gray-700">Justification Required</p>
-        <p class="text-gray-600">{{ selectedQuery?.requiresJustification ? 'Yes' : 'No' }}</p>
+        <p class="text-gray-600">{{ selectedQuery.requiresJustification ? 'Yes' : 'No' }}</p>
       </div>
     </div>
 
     <div class="px-5 mt-6">
       <p class="font-semibold text-gray-700">Employee Response</p>
-      <div *ngIf="!isAdmin && selectedQuery?.status === 'Open' && selectedQuery?.requiresJustification" class="mt-2">
+      <div *ngIf="!isAdmin && selectedQuery.status === 'OPEN' && selectedQuery.requiresJustification" class="mt-2">
         <textarea
           rows="4"
           class="bg-white border border-gray-200 rounded-md px-2 py-2 w-full"
           placeholder="Write your response"
-          [(ngModel)]="selectedQuery!.response"
+          [(ngModel)]="selectedQuery.response"
         ></textarea>
         <div class="flex justify-end mt-2">
           <app-button text="Submit Response" class="btn-navigate gap-2" (click)="submitResponse()"></app-button>
         </div>
       </div>
-      <div *ngIf="selectedQuery?.response" class="bg-gray-50 border border-gray-100 rounded-md p-3 mt-2">
-        <p class="text-gray-600">{{ selectedQuery?.response }}</p>
-        <p class="text-[11px] text-gray-500 mt-1">Responded on {{ selectedQuery?.respondedAt }}</p>
+      <div *ngIf="selectedQuery.response" class="bg-gray-50 border border-gray-100 rounded-md p-3 mt-2">
+        <p class="text-gray-600">{{ selectedQuery.response }}</p>
       </div>
-      <div *ngIf="selectedQuery?.requiresJustification === false" class="text-gray-500 text-[12px] mt-2">
-        No justification required. Employee will only be notified.
+      <div *ngIf="selectedQuery.requiresJustification === false" class="text-gray-500 text-[12px] mt-2">
+        No justification required. The query can move straight to verdict.
       </div>
-      <div *ngIf="!selectedQuery?.response && selectedQuery?.requiresJustification && !( !isAdmin && selectedQuery?.status === 'Open')" class="text-gray-500 text-[12px] mt-2">
+      <div *ngIf="!selectedQuery.response && selectedQuery.requiresJustification && !(!isAdmin && selectedQuery.status === 'OPEN')" class="text-gray-500 text-[12px] mt-2">
         No response submitted yet.
       </div>
     </div>
 
-    <div *ngIf="isAdmin && (selectedQuery?.status === 'Responded' || (selectedQuery?.status === 'Open' && selectedQuery?.requiresJustification === false))" class="px-5 mt-6">
+    <div *ngIf="isAdmin && (selectedQuery.status === 'RESPONDED' || (selectedQuery.status === 'OPEN' && selectedQuery.requiresJustification === false))" class="px-5 mt-6">
       <p class="font-semibold text-gray-700">Admin Verdict</p>
       <div class="flex gap-2 mt-2">
-        <app-button text="Approve" class="btn-navigate gap-2" (click)="setVerdict(selectedQuery!, 'Approved')"></app-button>
-        <app-button text="Reject" class="btn-navigate gap-2" (click)="setVerdict(selectedQuery!, 'Rejected')"></app-button>
+        <app-button text="Approve" class="btn-navigate gap-2" (click)="setVerdict(selectedQuery, 'APPROVED')"></app-button>
+        <app-button text="Reject" class="btn-navigate gap-2" (click)="setVerdict(selectedQuery, 'REJECTED')"></app-button>
       </div>
     </div>
   </div>

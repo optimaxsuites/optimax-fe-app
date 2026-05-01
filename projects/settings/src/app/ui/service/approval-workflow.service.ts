@@ -17,9 +17,21 @@ export class ApprovalWorkflowService {
       .pipe(catchError(this.handleError));
     }
 
+    updateWorkflow(id: number, payload: any){
+      return this.http
+      .put<any>(this.baseUrl + `/x/api/v2/workflow/approvals/${id}`, payload)
+      .pipe(catchError(this.handleError));
+    }
+
     getWorkflows(){
       return this.http
       .get<any>(this.baseUrl + `/x/api/v2/workflow/approvals`)
+      .pipe(catchError(this.handleError));
+    }
+
+    getApprovalStages(page: number = 1, size: number = 500){
+      return this.http
+      .get<any>(this.baseUrl + `/x/api/v2/workflow/approvalStages?page=${page}&size=${size}`)
       .pipe(catchError(this.handleError));
     }
 
