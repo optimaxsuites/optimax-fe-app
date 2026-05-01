@@ -1,6 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { Router, NavigationStart, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 
+// damilola worked on this: main application shell loading state and responsive sidebar behavior.
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',

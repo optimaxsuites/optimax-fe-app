@@ -8,6 +8,7 @@ import { TOUR_STEPS, TourStep } from './ui/onboarding/tour-guide';
 import { AuthenticationService } from './ui/auth/service/authentication.service';
 import { TenantService } from './ui/tenants/service/tenant.service';
 
+// damilola worked on this: root app boot/login session flow adjustments around the full application shell.
 declare global {
   interface Window {
     electronAPI: {

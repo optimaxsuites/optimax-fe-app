@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
 
 
-
+// damilola worked on this: normalized token handling to stabilize login and dashboard redirects.
 @Injectable({
   providedIn: 'root'
 })
@@ -21,8 +21,38 @@ export class AuthenticationService {
     private jwtHelper: JwtHelperService
   ) {  }
 
+  private normalizeToken(raw: string | null): string | null {
+    if (!raw) return null;
+
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.includes('=') && trimmed.includes(';')) {
+      const tokenStartIndex = trimmed.indexOf('=') + 1;
+      const tokenEndIndex = trimmed.indexOf(';', tokenStartIndex);
+      const extracted = trimmed.substring(tokenStartIndex, tokenEndIndex > -1 ? tokenEndIndex : undefined).trim();
+      return extracted || null;
+    }
+
+    if (trimmed.toLowerCase().startsWith('bearer ')) {
+      return trimmed.slice(7).trim() || null;
+    }
+
+    return trimmed;
+  }
+
+  private getStoredToken(): string | null {
+    return (
+      this.normalizeToken(sessionStorage.getItem('Token')) ||
+      this.normalizeToken(sessionStorage.getItem('token')) ||
+      this.normalizeToken(sessionStorage.getItem('accessToken')) ||
+      this.normalizeToken(localStorage.getItem('Token2')) ||
+      this.normalizeToken(localStorage.getItem('token'))
+    );
+  }
+
   isAuthenticated(): boolean {
-    const token = sessionStorage.getItem('accessToken');
+    const token = this.getStoredToken();
 
     if (!token || this.jwtHelper.isTokenExpired(token)) {
       return false;
@@ -55,7 +85,7 @@ export class AuthenticationService {
   }
 
   isLoggedIn(): boolean {
-   const token = sessionStorage.getItem('Token');
+   const token = this.getStoredToken();
    console.log(token)
   return token !== null && !this.jwtHelper.isTokenExpired(token);
   }

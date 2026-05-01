@@ -2,6 +2,7 @@ import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 
+// damilola worked on this: kept the lightweight auth/marketplace header aligned with current profile handling.
 @Component({
   selector: 'app-navbar2',
   templateUrl: './navbar2.component.html',
