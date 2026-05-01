@@ -1,3 +1,4 @@
+import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { NgModule } from '@angular/core';
@@ -380,7 +381,8 @@ import { BrowserModule } from '@angular/platform-browser';
     MySchedulesComponent,
     CooperativePatronageDistributionComponent,
     ProductivityWorkspaceComponent,
-    InterviewResponseComponent
+    InterviewResponseComponent,
+    InviteModalComponent
   ],
   imports: [
     AppHrRoutingModule,

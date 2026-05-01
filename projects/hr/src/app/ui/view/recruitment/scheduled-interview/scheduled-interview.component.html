@@ -81,9 +81,18 @@
 </div>
 
 
-<div *ngIf="showInterviewInvite">
-    <app-interview-invite [candidate]="activeItem" (back)="close()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
-</div>
+
+<app-invite-modal
+  *ngIf="showInterviewInvite"
+  [visible]="showInterviewInvite"
+  [header]="'Interview Invitation for ' + activeItem?.fullName"
+  [candidate]="activeItem"
+  [currentAction]="currentAction"
+  (close)="showInterviewInvite = false"
+  (inviteSent)="getCandidateData()">
+</app-invite-modal>
+
+
 
 <div *ngIf="showScoreSheet">
   <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet()"></app-interview-score-sheet>
@@ -369,11 +378,8 @@
       </div>
 
       <div *ngIf="activeTab === 'interviews'" class="tab-panel">
-        <div class="section-block">
-          <div class="section-block__header">
-            <span class="section-block__title">Interview Lifecycle</span>
-            <span class="badge badge-lightgrey">{{ activeItem.scoreSheetStatus || 'Not Started' }}</span>
-          </div>
+   
+        
 
           <div class="history-grid">
             <div class="history-card">
@@ -465,7 +471,7 @@
               <div class="list-empty">No interview history captured yet.</div>
             </ng-template>
           </div>
-        </div>
+
       </div>
 
     </div>

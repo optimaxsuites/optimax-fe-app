@@ -117,6 +117,7 @@ export class ScheduledInterviewComponent {
   interviews: InterviewRecord[] = [];
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
+   currentAction: string = '';
   showScoreSheet: boolean = false;
   showOfferLetter: boolean = false;
   viewModal: boolean = false;

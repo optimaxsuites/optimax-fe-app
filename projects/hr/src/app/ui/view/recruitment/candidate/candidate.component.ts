@@ -110,6 +110,9 @@ interface PanelUserOption {
   providers: [MessageService, ConfirmationService],
 })
 export class CandidateComponent implements OnInit {
+refreshCandidateData() {
+throw new Error('Method not implemented.');
+}
 
   viewState: 'job-grid' | 'applicant-list' | 'applicant-view' = 'job-grid';
   

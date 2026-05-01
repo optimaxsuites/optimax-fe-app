@@ -1,132 +1,97 @@
-<p-toast class="table-item"></p-toast>
-<div class="card">
-    <div class="move-back">
-        <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+<!-- <p-dialog  [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vw', 'max-height': '90vh', 'min-height': '35vh', overflow: 'auto'}" >
+  
+  <div class="flex flex-col justify-between" *ngIf="!isStepTwo">
+    <div>
+   <label class="block mb-2 font-semibold">Select a Template</label>
+    <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
+                optionLabel="name" placeholder="Choose a template..."
+                styleClass="w-full mb-4">
+    </p-dropdown>
     </div>
-
-    <div class="invite-main table-item">
-        <div class="invite-header">
-            <div class="d-flex gap-4 my-2">
-                <div class="input-container-50">
-                    <label for="name"><strong>Name:</strong> </label>
-                    <span>  {{ getCandidateName() }}</span>
-                    <!-- <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" disabled> -->
-                </div>
-                <div class="input-container-50">
-                    <label for="phone-number"><strong>Phone Number:</strong> </label>
-                    <span>  {{ getCandidatePhone() }}</span>
-                    <!-- <input type="text" id="phone-number" name="phone-number" [(ngModel)]="candidate.contactNo" class="editInput" disabled appNumberOnly> -->
-                </div>
-            </div>
-            <div class="d-flex gap-4 my-2">
-                <div class="input-container-50">
-                    <label for="email"><strong>Email:</strong></label>
-                    <span>  {{candidate.email}}</span>
-                    <!-- <input type="text" id="email" name="email" [(ngModel)]="candidate.email" class="editInput" disabled> -->
-                </div>
-                <div class="input-container-50">
-                    <label for="position"><strong>Position:</strong></label>
-                    <span>  {{ getCandidatePosition() }}</span>
-                    <!-- <input type="" id="position" name="position" [(ngModel)]="candidate.position" class="editInput" disabled appNumberOnly> -->
-                </div>
-            </div>
-        </div>
-        <div class="d-flex gap-4 my-2">
-            <div class="input-container-50">
-                <div class="invite-template-wrapper">
-                    <h3><strong>Template</strong></h3>
-                    <div class="invite-template">
-                        <div class="template-card" *ngFor="let template of templates; let i = index" (click)="setTemplate(i)" [ngClass]="{'active': activeTemplateIndex === i}" >{{ getTemplateName(i) }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="input-container-50">
-                <label for="interview-type">Interview Type <span style="color: red;">*</span></label>
-                <ng-select 
-                    [items]="interviewType || []"
-                    bindLabel="type"
-                    bindValue="type"
-                    placeholder="Select Invite Type"
-                    [(ngModel)]="selectedInterviewType"
-                    (change)="interviewTypeChange()">
-                </ng-select>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                    <div>
-                        <label for="scheduledDate">Interview Date <span style="color: red;">*</span></label>
-                        <input id="scheduledDate" type="date" class="editInput" [(ngModel)]="inviteDraft.scheduledDate">
-                    </div>
-                    <div>
-                        <label for="scheduledTime">Interview Time <span style="color: red;">*</span></label>
-                        <input id="scheduledTime" type="time" class="editInput" [(ngModel)]="inviteDraft.scheduledTime">
-                    </div>
-                </div>
-
-                <div class="mt-3">
-                    <label for="location">Meeting Location / Link <span style="color: red;">*</span></label>
-                    <input id="location" type="text" class="editInput" [(ngModel)]="inviteDraft.location" placeholder="Board room or meeting link">
-                </div>
-
-                <div class="mt-3">
-                    <label for="notes">Interview Notes</label>
-                    <textarea id="notes" rows="3" class="editInput" [(ngModel)]="inviteDraft.notes" placeholder="Agenda, prep, instructions"></textarea>
-                </div>
-
-                <div class="add-attachment mt-4">
-                    <!-- File upload input -->
-                    <input type="file" class="editInput" (change)="onFileSelected($event)" />
-
-                    <!-- Display attachments -->
-                    <div *ngIf="attachments?.length">
-                        <h4><strong>Attachement(s)</strong></h4>
-                            <span *ngFor="let attachment of attachments">
-                                <a [href]="attachment.url" target="_blank">{{ attachment.name }}</a><br>
-                            </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="invite-template-wrapper mt-4">
-            <div class="flex justify-between items-center mb-2">
-                <h3><strong>Interview Panel</strong> <span style="color: red;">*</span></h3>
-                <button type="button" class="btn-secondary" (click)="addPanelMember()" [disabled]="panelUsersLoading || !availablePanelUsers.length">Add Panel Member</button>
-            </div>
-            <p *ngIf="panelUsersLoading" class="text-sm text-slate-500 mb-2">Loading users for interview panel...</p>
-            <p *ngIf="!panelUsersLoading && !availablePanelUsers.length" class="text-sm text-red-500 mb-2">No users available for panel assignment yet.</p>
-            <div *ngFor="let member of inviteDraft.panelMembers; let i = index" class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.2fr_auto] gap-3 mb-3 items-end">
-                <div>
-                    <label>User</label>
-                    <ng-select
-                        [items]="getPanelUserOptions(member.userId)"
-                        bindLabel="label"
-                        bindValue="id"
-                        [clearable]="true"
-                        [searchable]="true"
-                        [placeholder]="'Select interviewer'"
-                        [(ngModel)]="member.userId"
-                        (ngModelChange)="onPanelUserSelected(i, $event)">
-                    </ng-select>
-                </div>
-                <div>
-                    <label>Role</label>
-                    <input type="text" class="editInput" [(ngModel)]="member.role" placeholder="Hiring Manager">
-                </div>
-                <div>
-                    <label>Email</label>
-                    <input type="email" class="editInput" [ngModel]="member.email" placeholder="panel@company.com" readonly>
-                </div>
-                <button type="button" class="btn-secondary" (click)="removePanelMember(i)" [disabled]="inviteDraft.panelMembers.length === 1">Remove</button>
-            </div>
-        </div>
-
-        <div class="invite-template-wrapper">
-            <h3><strong>Interview Invite</strong>  <span style="color: red;">*</span></h3>
-            <!-- <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)"></textarea> -->
-            <p-editor [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)" [style]="{ height: '400px' }" />
-        </div>
-        <div class="btn-wrapper">
-            <app-button text="Send Invite" class="btn-save" (click)="handleSendInvite()" ></app-button>
-        </div>
+ 
+    
+    <div class="flex justify-end items-end gap-2">
+      <button class="btn-secondary" (click)="close()">Cancel</button>
+      <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
     </div>
+  </div>
+
+  <div *ngIf="isStepTwo">
+   
+
+    <div *ngIf="currentAction === 'Interview Invite'" class="mb-4 rounded border border-slate-200 p-4">
+     <div class="mb-4">
+  <h3 class="font-semibold mb-2">Required Information</h3>
+
+  <div class="grid grid-cols-2 gap-2 w-full">
+    <div *ngFor="let field of selectedInviteTemplate?.customPlaceholders">
+      <label class="block text-sm text-gray-600">
+        {{ field.label }}
+      </label>
+
+      <input
+        type="text"
+        [(ngModel)]="manualPlaceholderValues[field.key]"
+        (ngModelChange)="updateInterviewSetupFromPlaceholders()"
+        class="w-full p-2 border rounded"
+      />
+    </div>
+  </div>
 </div>
+
+      <h3 class="font-semibold mb-3">Interview Setup</h3>
+
+      <div class="mb-3">
+        <label class="block text-sm text-gray-600">Interview Notes</label>
+        <textarea [(ngModel)]="interviewInviteSetup.notes" rows="3" class="w-full p-2 border rounded" placeholder="Agenda, prep instructions, or panel notes"></textarea>
+      </div>
+
+      <div class="mb-2 flex items-center justify-between">
+        <h4 class="font-semibold">Interview Panel</h4>
+        <button type="button" class="btn-secondary" (click)="addPanelMember()" [disabled]="panelUsersLoading || !availablePanelUsers.length">Add Panel Member</button>
+      </div>
+      <p *ngIf="panelUsersLoading" class="text-sm text-slate-500 mb-2">Loading users for interview panel...</p>
+      <p *ngIf="!panelUsersLoading && !availablePanelUsers.length" class="text-sm text-red-500 mb-2">No users available for panel assignment yet.</p>
+      <div *ngFor="let member of interviewInviteSetup.panelMembers; let i = index" class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.2fr_auto] gap-2 mb-2 items-end">
+        <div>
+          <label class="block text-sm text-gray-600">User</label>
+
+
+
+          <select
+            [(ngModel)]="member.id"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onPanelUserSelected(i, $event)"
+          >
+            <option value="">Select interviewer</option>
+            <option
+              *ngFor="let user of getPanelUserOptions(member.id)"
+              [value]="user.id"
+            >
+              {{ user.label }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Role</label>
+          <input type="text" [(ngModel)]="member.role" class="w-full p-2 border rounded" placeholder="Hiring Manager">
+        </div>
+
+        <button type="button" class="btn-secondary" (click)="removePanelMember(i)" [disabled]="interviewInviteSetup.panelMembers.length === 1">Remove</button>
+      </div>
+    </div>
+
+    <div class="preview-box p-4 bg-gray-50 rounded border">
+      <h4 class="font-bold border-b pb-1 mb-2">{{resolveFinalContent(selectedInviteTemplate?.subject || '')}}</h4>
+      <div class="text-wrap" [innerHTML]="resolveFinalContent(selectedInviteTemplate?.body || '')"></div>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button class="btn-secondary" (click)="isStepTwo = false">Back</button>
+      <button class="btn-primary disabled:cursor-not-allowed disabled:bg-customBlueHover" (click)="sendFinalMail()" [disabled]="sendLoading">
+        <span *ngIf="!sendLoading">Send</span>
+        <span *ngIf="sendLoading">Sending...</span>
+      </button>
+    </div>
+  </div>
+</p-dialog> -->
