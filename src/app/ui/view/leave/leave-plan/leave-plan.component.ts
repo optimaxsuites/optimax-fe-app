@@ -498,23 +498,19 @@ export class LeavePlanComponent implements OnInit {
     const toSafeISO = (date: string) =>
       new Date(date + 'T12:00:00').toISOString();
 
-    const payload = {
-      createdBy: this.currentUserId, // userId (number)
-      startDate: toSafeISO(this.emergencyLeaveForm.startDate),
-      endDate: toSafeISO(this.emergencyLeaveForm.endDate),
-      status: 'PENDING',
-      leaveTypeId: this.emergencyLeaveForm.leaveTypeObj.id, // leaveType ID (number)
-      totalDays: days,
-      planReason: `🚨 EMERGENCY: ${this.emergencyLeaveForm.reason}`,
-      attachment: '',
-      adminComment: '',
-      decisionBy: null,
-      decisionOn: null,
-    };
+const payload = {
+  createdBy: this.currentUserId,
+  leaveTypeId: this.emergencyLeaveForm.leaveTypeObj.id,
+  startDate: toSafeISO(this.emergencyLeaveForm.startDate),
+  endDate: toSafeISO(this.emergencyLeaveForm.endDate),
+  totalDays: days,
+  leaveReason: `EMERGENCY: ${this.emergencyLeaveForm.reason}`,
+  attachment: '',
+};
 
-    console.log('📤 Submitting emergency leave:', payload);
+console.log(' Submitting emergency leave request:', payload);
 
-    this.apiService.createLeavePlanRecord(payload).subscribe({
+this.apiService.createLeaveRequestRecord(payload).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
