@@ -283,6 +283,7 @@ export class LeaveUsageComponent implements OnInit {
 
   getTotalAllocatedDays(): number {
     if (!this.leaveBalances || this.leaveBalances.length === 0) {
+      console.log(this.leaveBalances);
       return 0;
     }
 
