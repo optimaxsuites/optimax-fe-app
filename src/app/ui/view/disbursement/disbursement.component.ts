@@ -1,23 +1,132 @@
-import { Component, OnInit } from '@angular/core';
-import { concatMap } from 'rxjs/operators';
-import { DisbursementService } from '../../../services/disbursement.service';
-import {
-  AccountingTransactionDTO,
-  BankConnectionDTO,
-  CreateDisbursementPayload,
-  CreateTransactionPayload,
-  DisbursementDTO,
-  TransactionReviewStatus
-} from '../../domain/accounting.dto';
+// disbursement.component.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { forkJoin, of, from, Subject } from 'rxjs';
+import { catchError, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 
-interface FundingAccount {
+// ============================================================================
+// DOMAIN MODELS (matching your backend)
+// ============================================================================
+export interface BankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  currency: string;
+  balance: number;
+  isVerified: boolean;
+}
+
+export interface FundingSource {
   id: string;
   name: string;
-  number: string;
-  type: 'BANK' | 'CASH';
   bankName: string;
-  balance: number;
-  selected: boolean;
+  accountNumber: string;
+  type: 'OPERATING' | 'SETTLEMENT' | 'RESERVE';
+  availableBalance: number;
+  ledgerBalance: number;
+  currency: string;
+}
+
+export interface Recipient {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  currency: string;
+}
+
+export interface DisbursementBatch {
+  id: string;
+  batchReference: string;
+  sourceModule: 'HR' | 'HOSPITALITY' | 'EXPENSE' | 'MARKETPLACE';
+  totalAmount: number;
+  currency: string;
+  transactionCount: number;
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'PARTIAL';
+  createdAt: Date;
+  approvedBy?: string;
+  approvedAt?: Date;
+  disbursedAt?: Date;
+  metadata?: any;
+}
+
+export interface DisbursementTransaction {
+  id: string;
+  batchId: string;
+  transactionReference: string;
+  recipient: Recipient;
+  amount: number;
+  fee: number;
+  totalAmount: number;
+  currency?: string;
+  narration: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'RETRYING';
+  statusMessage?: string;
+  retryCount: number;
+  createdAt: Date;
+  processedAt?: Date;
+  paystackReference?: string;
+  paystackTransferCode?: string;
+}
+
+export interface PaystackTransferResponse {
+  status: boolean;
+  message: string;
+  data: {
+    amount: number;
+    currency: string;
+    domain: string;
+    id: number;
+    reason: string;
+    reference: string;
+    source: string;
+    source_details: any;
+    status: 'pending' | 'success' | 'failed';
+    transfer_code: string;
+    titan_code: string;
+    transferred_at: string | null;
+    recipient: {
+      active: boolean;
+      currency: string;
+      description: string;
+      domain: string;
+      email: string | null;
+      id: number;
+      name: string;
+      recipient_code: string;
+      type: string;
+      metadata: any;
+    };
+  };
+}
+
+export interface PaystackRecipientResponse {
+  status: boolean;
+  message: string;
+  data: {
+    active: boolean;
+    createdAt: string;
+    currency: string;
+    domain: string;
+    id: number;
+    integration: number;
+    name: string;
+    recipient_code: string;
+    type: string;
+    updatedAt: string;
+    details: {
+      account_number: string;
+      account_name: string;
+      bank_code: string;
+      bank_name: string;
+    };
+  };
 }
 
 @Component({
@@ -25,488 +134,756 @@ interface FundingAccount {
   templateUrl: './disbursement.component.html',
   styleUrls: ['./disbursement.component.scss']
 })
-export class DisbursementComponent implements OnInit {
-
-  // ── Data ────────────────────────────────────────────────
-  allTransactions: AccountingTransactionDTO[] = [];
-  filteredTransactions: AccountingTransactionDTO[] = [];
-  allDisbursements: DisbursementDTO[] = [];
-  searchQuery: string = '';
-
-  // ── Loading / Error States ───────────────────────────────
-  isLoadingTransactions = false;
-  isLoadingFunding = false;
-  payoutError: string | null = null;
-
-  // ── Filters & Selection ──────────────────────────────────
-  activeCardFilter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED' = 'ALL';
-  selectedSourceModule: string = '';
-  selectedType: string = '';
-  dateRange: string = '';
-  selectedTransactions: Set<number> = new Set<number>();
-  selectAll: boolean = false;
-
-  // ── Sidebar State ────────────────────────────────────────
-  isReviewModalOpen: boolean = false;
-  selectedSidebarTransaction: any = null;
-
-  // ── Funding Sources (loaded from bank-connections API) ───
-  fundingAccounts: FundingAccount[] = [];
-
-  // ── Wizard State ─────────────────────────────────────────
-  viewMode: 'DASHBOARD' | 'EXECUTE' = 'DASHBOARD';
-  selectedTransaction: AccountingTransactionDTO | null = null;
-  currentStep: number = 1; // 1:Review  2:Source  3:Success
+export class DisbursementComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
+  // State Management
+  isLoading = false;
   isProcessing = false;
-  internalMemo: string = '';
-  disbursementDate: string = new Date().toISOString().split('T')[0];
-
-  // Selected funding source (single)
-  selectedSourceId: string | null = null;
-
-  // Destination account form
-  destBank: string = '';
-  destAccountNumber: string = '';
-  destAccountName: string = '';
-
-  get selectedSource(): FundingAccount | undefined {
-    return this.fundingAccounts.find(a => a.id === this.selectedSourceId);
+  errorMessage: string | null = null;
+  
+  // View Mode
+  viewMode: string = 'DASHBOARD';
+  
+  // Styling properties
+  customBlue = '#2E6276';
+  customBlueHover = '#245061';
+  customGreen = '#2EB270';
+  
+  // Data
+  allBatches: DisbursementBatch[] = [];
+  filteredBatches: DisbursementBatch[] = [];
+  selectedBatch: DisbursementBatch | null = null;
+  batchTransactions: DisbursementTransaction[] = [];
+  fundingSources: FundingSource[] = [];
+  
+  // Filters
+  activeStatusFilter: string = 'ALL';
+  selectedModule: string = '';
+  dateRangeStart: Date | null = null;
+  dateRangeEnd: Date | null = null;
+  
+  // Multi-select for batch operations
+  selectedBatchIds: Set<string> = new Set();
+  masterCheckbox = false;
+  
+  // Checkout state
+  checkoutForm: FormGroup;
+  selectedFundingSourceId: string | null = null;
+  processingProgress: { current: number; total: number; status: string } | null = null;
+  failedTransactions: DisbursementTransaction[] = [];
+  
+  // Execution monitoring
+  pollingInterval: any = null;
+  
+  // Paystack config (should come from environment)
+  private paystackSecretKey = 'your_paystack_secret_key';
+  
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient
+  ) {
+    this.checkoutForm = this.fb.group({
+      batchId: [{ value: '', disabled: true }],
+      totalAmount: [{ value: 0, disabled: true }],
+      transactionCount: [{ value: 0, disabled: true }],
+      fundingSourceId: ['', Validators.required],
+      batchNarration: ['', [Validators.required, Validators.maxLength(200)]],
+      reviewNotes: ['']
+    });
   }
-
-  // ── Dashboard Stats ──────────────────────────────────────
-  get totalPendingValue(): number {
-    return this.filteredTransactions.reduce((s, t) => s + t.amount, 0);
-  }
-
-  get approvedDisbursements(): number {
-    return this.allTransactions.length;
-  }
-
-  get disbursementsToday(): number {
-    const today = new Date().toDateString();
-    return this.allTransactions.filter(t =>
-      this.parseTransactionDate(t.transactionDate).toDateString() === today
-    ).length;
-  }
-
-  /**
-   * Total disbursed amount today: sums disbursementAmount from disbursements
-   * where status === 'DISBURSED' and disbursedAt is today's date.
-   */
-  get totalDisbursedAmountToday(): number {
-    const today = new Date().toDateString();
-    return this.allDisbursements
-      .filter(d => d.status === 'DISBURSED' && d.disbursedAt && new Date(d.disbursedAt).toDateString() === today)
-      .reduce((s, d) => s + d.disbursementAmount, 0);
-  }
-
-  get availableLiquidity(): number {
-    return this.fundingAccounts.reduce((s, a) => s + a.balance, 0);
-  }
-
-  get selectedFundingAccounts(): FundingAccount[] {
-    return this.fundingAccounts.filter(a => a.id === this.selectedSourceId);
-  }
-
-  get selectedFundingBalance(): number {
-    return this.selectedFundingAccounts.reduce((s, a) => s + a.balance, 0);
-  }
-
-  get selectedFundingNames(): string {
-    return this.selectedFundingAccounts.map(a => a.name).join(', ') || '—';
-  }
-
-  public chartOptions: any;
-
-  constructor(private disbursementService: DisbursementService) {
-    this.chartOptions = {
-      series: [{ name: "Allocated", data: [42, 28, 15, 10, 5] }],
-      chart: { type: "bar", height: 350, toolbar: { show: false } },
-      plotOptions: { bar: { columnWidth: "40%", borderRadius: 2 } },
-      dataLabels: { enabled: false },
-      xaxis: {
-        categories: ["HR", "POS", "EXPENSE", "HOSPITALITY", "MARKETPLACE"],
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-        labels: { style: { colors: "#6B7280", fontSize: "12px", fontWeight: 600 } }
-      },
-      yaxis: { show: false },
-      grid: { borderColor: "#f1f1f1", strokeDashArray: 0, yaxis: { lines: { show: true } } },
-      fill: { opacity: 1, colors: ['#2EB270'] }
-    };
-  }
-
+  
   ngOnInit(): void {
-    this.loadTransactions();
-    this.loadDisbursements();
-    this.loadBankConnections();
+    this.loadBatches();
+    this.loadFundingSources();
   }
-
-  // ── Data Loaders ────────────────────────────────────────
-
-  loadTransactions(): void {
-    this.isLoadingTransactions = true;
-    this.disbursementService.getApprovedTransactions().subscribe({
-      next: response => {
-        this.allTransactions = (response.content || []).map(t => ({
-          ...t,
-          transactionDate: this.parseTransactionDate(t.transactionDate),
-          Status: t.status // sync legacy alias
-        }));
-        this.filteredTransactions = [...this.allTransactions];
-        this.isLoadingTransactions = false;
-      },
-      error: err => {
-        console.error('Failed to load transactions:', err);
-        this.isLoadingTransactions = false;
-      }
-    });
+  
+  ngOnDestroy(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
-
-  loadDisbursements(): void {
-    this.disbursementService.getDisbursements().subscribe({
-      next: response => {
-        this.allDisbursements = response.content || [];
-      },
-      error: err => {
-        console.error('Failed to load disbursements:', err);
-      }
-    });
+  
+  // ==========================================================================
+  // DATA LOADING
+  // ==========================================================================
+  
+  loadBatches(): void {
+    this.isLoading = true;
+    // Simulate API call - replace with actual service
+    setTimeout(() => {
+      this.allBatches = this.generateMockBatches();
+      this.filteredBatches = [...this.allBatches];
+      this.isLoading = false;
+    }, 500);
   }
-
-  loadBankConnections(): void {
-    this.isLoadingFunding = true;
-    this.disbursementService.getBankConnections().subscribe({
-      next: response => {
-        const activeConnections: BankConnectionDTO[] = (response.content || []).filter(c => c.active);
-        this.fundingAccounts = activeConnections.map(conn => ({
-          id: conn.id.toString(),
-          name: conn.providerName,
-          bankName: conn.providerName,
-          number: '',
-          type: 'BANK' as const,
-          balance: 0,
-          selected: false
-        }));
-        this.isLoadingFunding = false;
-      },
-      error: err => {
-        console.error('Failed to load bank connections:', err);
-        this.isLoadingFunding = false;
-      }
-    });
+  
+  loadFundingSources(): void {
+    // Simulate API call
+    setTimeout(() => {
+      this.fundingSources = this.generateMockFundingSources();
+    }, 300);
   }
-
-  // ── Confirm Payout — Two sequential API calls ────────────
-  confirmPayout(): void {
-    if (!this.selectedTransaction || !this.selectedSource) return;
+  
+  loadBatchTransactions(batchId: string): void {
+    this.isLoading = true;
+    // Simulate API call
+    setTimeout(() => {
+      this.batchTransactions = this.generateMockTransactions(batchId);
+      this.isLoading = false;
+    }, 500);
+  }
+  
+  // ==========================================================================
+  // BATCH OPERATIONS
+  // ==========================================================================
+  
+  openBatchForReview(batch: DisbursementBatch): void {
+    this.selectedBatch = batch;
+    this.loadBatchTransactions(batch.id);
+    this.viewMode = 'BATCH_REVIEW';
+  }
+  
+  approveBatch(batch: DisbursementBatch): void {
     this.isProcessing = true;
-    this.payoutError = null;
-
-    // Build the transaction creation payload from the selected transaction's data
-    const txPayload: CreateTransactionPayload = {
-      transactionReference: this.selectedTransaction.transactionReference,
-      sourceModule: this.selectedTransaction.sourceModule as string,
-      amount: this.selectedTransaction.amount,
-      currency: this.selectedTransaction.currency || 'NGN',
-      status: 'APPROVED',
-      accountId: this.selectedTransaction.account?.id,
-      description: this.selectedTransaction.description || this.selectedTransaction.transactionReference,
-      externalReference: this.selectedTransaction.externalReference || undefined
+    // Simulate approval API call
+    setTimeout(() => {
+      batch.status = 'APPROVED';
+      batch.approvedBy = 'Current User';
+      batch.approvedAt = new Date();
+      this.isProcessing = false;
+      this.updateBatchInList(batch);
+    }, 800);
+  }
+  
+  rejectBatch(batch: DisbursementBatch, reason: string): void {
+    this.isProcessing = true;
+    // Simulate rejection
+    setTimeout(() => {
+      batch.status = 'FAILED';
+      batch.metadata = { ...batch.metadata, rejectionReason: reason, rejectedAt: new Date() };
+      this.isProcessing = false;
+      this.updateBatchInList(batch);
+    }, 500);
+  }
+  
+  private updateBatchInList(updatedBatch: DisbursementBatch): void {
+    const index = this.allBatches.findIndex(b => b.id === updatedBatch.id);
+    if (index !== -1) {
+      this.allBatches[index] = updatedBatch;
+    }
+    this.filterBatches();
+  }
+  
+  // ==========================================================================
+  // CHECKOUT / SETTLEMENT
+  // ==========================================================================
+  
+  initiateCheckout(batch: DisbursementBatch): void {
+    this.selectedBatch = batch;
+    this.checkoutForm.patchValue({
+      batchId: batch.batchReference,
+      totalAmount: batch.totalAmount,
+      transactionCount: batch.transactionCount
+    });
+    this.viewMode = 'CHECKOUT';
+  }
+  
+  executePayout(): void {
+    if (this.checkoutForm.invalid || !this.selectedFundingSourceId) {
+      this.errorMessage = 'Please select a funding source and fill all required fields';
+      return;
+    }
+    
+    this.isProcessing = true;
+    this.errorMessage = null;
+    this.processingProgress = { current: 0, total: this.batchTransactions.length, status: 'Initializing...' };
+    this.failedTransactions = [];
+    
+    const batchNarration = this.checkoutForm.get('batchNarration')?.value;
+    const fundingSource = this.fundingSources.find(f => f.id === this.selectedFundingSourceId);
+    
+    // Update batch status to PROCESSING
+    if (this.selectedBatch) {
+      this.selectedBatch.status = 'PROCESSING';
+    }
+    
+    // Process each transaction sequentially with Paystack
+    this.processTransactionsSequentially(0, batchNarration, fundingSource);
+  }
+  
+  private processTransactionsSequentially(
+    index: number, 
+    batchNarration: string, 
+    fundingSource: FundingSource | undefined
+  ): void {
+    if (index >= this.batchTransactions.length) {
+      // All transactions processed
+      this.finalizeBatchProcessing();
+      return;
+    }
+    
+    const transaction = this.batchTransactions[index];
+    transaction.status = 'PROCESSING';
+    this.processingProgress = {
+      current: index + 1,
+      total: this.batchTransactions.length,
+      status: `Processing ${transaction.recipient.accountName} - ${transaction.amount} ${transaction.currency}`
     };
-
-    // Step 1: POST transaction → get transactionId
-    // Step 2: POST disbursement using that transactionId
-    this.disbursementService.createTransaction(txPayload).pipe(
-      concatMap(createdTx => {
-        const disbursementPayload: CreateDisbursementPayload = {
-          transaction: { id: createdTx.id },
-          disbursementAmount: this.selectedTransaction!.amount,
-          status: 'PENDING',
-          disbursedFrom: this.selectedSource!.name
-        };
-        return this.disbursementService.createDisbursement(disbursementPayload);
-      })
-    ).subscribe({
-      next: () => {
-        this.isProcessing = false;
-        this.currentStep = 3;
-        // Remove this transaction from the queue
-        this.allTransactions = this.allTransactions.filter(
-          t => t.transactionReference !== this.selectedTransaction!.transactionReference
-        );
-        this.filteredTransactions = [...this.allTransactions];
-        // Refresh disbursements for updated stats
-        this.loadDisbursements();
+    
+    this.processSinglePayout(transaction, batchNarration, fundingSource).subscribe({
+      next: (response) => {
+        transaction.status = 'SUCCESS';
+        transaction.processedAt = new Date();
+        transaction.paystackReference = response.data.reference;
+        transaction.paystackTransferCode = response.data.transfer_code;
+        this.processTransactionsSequentially(index + 1, batchNarration, fundingSource);
       },
-      error: err => {
-        this.isProcessing = false;
-        this.payoutError = err?.error?.message
-          || err?.message
-          || 'Payout failed. Please try again or contact support.';
-        console.error('Payout error:', err);
+      error: (error) => {
+        console.error(`Failed to process transaction ${transaction.transactionReference}:`, error);
+        transaction.status = 'FAILED';
+        transaction.statusMessage = error.message || 'Payout failed. Please check recipient details.';
+        this.failedTransactions.push(transaction);
+        this.processTransactionsSequentially(index + 1, batchNarration, fundingSource);
       }
     });
   }
-
-  // ── Helpers ──────────────────────────────────────────────
-
-  /**
-   * Safely convert any transactionDate format to a JS Date.
-   * Handles: number[] (Java array), string (ISO), or Date object.
-   */
-  parseTransactionDate(td: number[] | string | Date | any): Date {
-    if (!td) return new Date();
-    if (Array.isArray(td)) return DisbursementService.parseJavaDate(td);
-    return new Date(td as string);
+  
+  private processSinglePayout(
+    transaction: DisbursementTransaction,
+    narration: string,
+    fundingSource: FundingSource | undefined
+  ) {
+    // Step 1: Create or get Paystack recipient
+    return this.createPaystackRecipient(transaction.recipient).pipe(
+      switchMap(recipientResponse => {
+        // Step 2: Initiate transfer
+        return this.initiatePaystackTransfer(transaction, recipientResponse.data.recipient_code, narration);
+      }),
+      catchError(error => {
+        console.error('Paystack API error:', error);
+        throw error;
+      })
+    );
   }
-
-  filterTransactions(): void {
-    const q = this.searchQuery.toLowerCase().trim();
-    let currentTxs = this.allTransactions;
-
-    const todayStr = new Date().toDateString();
-    if (this.activeCardFilter === 'TODAY') {
-      currentTxs = currentTxs.filter(t => this.parseTransactionDate(t.transactionDate).toDateString() === todayStr);
-    } else if (this.activeCardFilter === 'PENDING') {
-      currentTxs = currentTxs.filter(t => t.Status !== 'APPROVED' && t.Status !== 'REJECTED');
-    } else if (this.activeCardFilter === 'APPROVED') {
-      currentTxs = currentTxs.filter(t => true);
-    } else if (this.activeCardFilter === 'FAILED') {
-      currentTxs = [];
-    }
-
-    if (this.selectedSourceModule && this.selectedSourceModule !== 'All Modules') {
-      currentTxs = currentTxs.filter(t => t.sourceModule.toLowerCase() === this.selectedSourceModule.toLowerCase());
-    }
-
-    if (q) {
-      currentTxs = currentTxs.filter(t => {
-        const createdByStr = typeof t.createdBy === 'string'
-          ? t.createdBy
-          : (t.createdBy?.fullname || t.createdBy?.username || '');
-        return createdByStr.toLowerCase().includes(q) ||
-          t.transactionReference.toLowerCase().includes(q) ||
-          t.sourceModule.toLowerCase().includes(q);
-      });
-    }
-
-    this.filteredTransactions = [...currentTxs];
-    this.updateSelectAllCheckbox();
-  }
-
-  setCardFilter(filter: 'ALL' | 'TODAY' | 'PENDING' | 'APPROVED' | 'FAILED'): void {
-    this.activeCardFilter = this.activeCardFilter === filter ? 'ALL' : filter;
-    this.filterTransactions();
-  }
-
-  // ── Row Selection ────────────────────────────────────────
-  toggleSelection(trxId: number): void {
-    if (this.selectedTransactions.has(trxId)) {
-      this.selectedTransactions.delete(trxId);
-    } else {
-      this.selectedTransactions.add(trxId);
-    }
-    this.updateSelectAllCheckbox();
-  }
-
-  toggleSelectAll(): void {
-    if (this.selectAll) {
-      this.selectedTransactions.clear();
-      this.selectAll = false;
-    } else {
-      this.filteredTransactions.forEach(t => this.selectedTransactions.add(t.id));
-      this.selectAll = true;
-    }
-  }
-
-  updateSelectAllCheckbox(): void {
-    if (this.filteredTransactions.length === 0) {
-      this.selectAll = false;
-    } else {
-      this.selectAll = this.filteredTransactions.every(t => this.selectedTransactions.has(t.id));
-    }
-  }
-
-  get isAnySelected(): boolean {
-    return this.selectedTransactions.size > 0;
-  }
-
-  // ── Sidebar Logic ────────────────────────────────────────
-  openSidebar(trx: AccountingTransactionDTO): void {
-    this.selectedSidebarTransaction = {
-      id: trx.id,
-      date: this.parseTransactionDate(trx.transactionDate).toLocaleDateString(),
-      description: trx.description || trx.transactionReference,
-      spent: trx.amount,
-      received: null,
-      assignedTo: typeof trx.createdBy === 'string' ? trx.createdBy : (trx.createdBy?.fullname || trx.createdBy?.username),
-      reviewed: false
+  
+  private createPaystackRecipient(recipient: Recipient) {
+    const payload = {
+      type: 'nuban',
+      name: recipient.name,
+      account_number: recipient.accountNumber,
+      bank_code: recipient.bankCode,
+      currency: recipient.currency
     };
-    this.isReviewModalOpen = true;
-  }
-
-  closeSidebar(): void {
-    this.isReviewModalOpen = false;
-    this.selectedSidebarTransaction = null;
-  }
-
-  // ── View Actions ─────────────────────────────────────────
-  isBatchReviewOpen: boolean = false;
-  selectedLineItems: any[] = [];
-  isViewOnly: boolean = false;
-
-  openBatchReview(trx: AccountingTransactionDTO): void {
-    this.selectedTransaction = trx;
-    this.internalMemo = `Settlement for ${trx.transactionReference} — ${trx.description?.substring(0, 50)}`;
-    this.disbursementDate = new Date().toISOString().split('T')[0];
-    this.isViewOnly = (trx.Status === TransactionReviewStatus.DISBURSED || trx.Status === TransactionReviewStatus.APPROVED);
-
-    // Remove dummy data and populate with primary account details
-    this.selectedLineItems = []; // Keeping it as an array in case we want to support multiple beneficiaries later
     
-    // Resolve "right account details" with fallback logic
-    const meta = trx.metadata || {};
-    this.destBank = meta.bankName || meta.bank || meta.destinationBank || this.getAccountBank(trx);
-    this.destAccountNumber = meta.accountNumber || meta.account || meta.destAccount || this.getAccountNumber(trx);
-    this.destAccountName = meta.memberName || meta.employeeName || meta.accountName || meta.recipientName || trx.account?.accountName || '';
+    return this.http.post<PaystackRecipientResponse>(
+      'https://api.paystack.co/transferrecipient',
+      payload,
+      { headers: { Authorization: `Bearer ${this.paystackSecretKey}` } }
+    );
+  }
+  
+  private initiatePaystackTransfer(
+    transaction: DisbursementTransaction,
+    recipientCode: string,
+    narration: string
+  ) {
+    const payload = {
+      source: 'balance',
+      amount: Math.round(transaction.totalAmount * 100), // Paystack expects kobo
+      recipient: recipientCode,
+      reason: narration || transaction.narration,
+      currency: transaction.currency,
+      reference: `TXP_${transaction.transactionReference}_${Date.now()}`
+    };
     
-    this.payoutError = null;
-    this.isBatchReviewOpen = true;
+    return this.http.post<PaystackTransferResponse>(
+      'https://api.paystack.co/transfer',
+      payload,
+      { headers: { Authorization: `Bearer ${this.paystackSecretKey}` } }
+    );
   }
-
-  closeBatchReview(): void {
-    this.isBatchReviewOpen = false;
-    this.isApproveConfirmOpen = false;
-  }
-
-  isApproveConfirmOpen: boolean = false;
-
-  openApproveConfirm(): void {
-    this.isApproveConfirmOpen = true;
-  }
-
-  closeApproveConfirm(): void {
-    this.isApproveConfirmOpen = false;
-  }
-
-  confirmApproval(): void {
-    if (this.selectedTransaction) {
-      this.selectedTransaction.Status = TransactionReviewStatus.APPROVED;
+  
+  private finalizeBatchProcessing(): void {
+    const hasFailures = this.failedTransactions.length > 0;
+    const allSuccess = this.failedTransactions.length === 0;
+    
+    if (this.selectedBatch) {
+      if (allSuccess) {
+        this.selectedBatch.status = 'COMPLETED';
+        this.selectedBatch.disbursedAt = new Date();
+      } else if (hasFailures) {
+        this.selectedBatch.status = 'PARTIAL';
+        this.selectedBatch.metadata = {
+          ...this.selectedBatch.metadata,
+          failedCount: this.failedTransactions.length,
+          failedReferences: this.failedTransactions.map(t => t.transactionReference)
+        };
+      }
+      
+      // Update batch in the list
+      this.updateBatchInList(this.selectedBatch);
     }
-    this.isApproveConfirmOpen = false;
+    
+    this.isProcessing = false;
+    this.processingProgress = null;
+    
+    if (hasFailures) {
+      this.errorMessage = `${this.failedTransactions.length} transaction(s) failed. You can retry them individually.`;
+    } else {
+      this.viewMode = 'EXECUTION';
+      // Start polling for successful transfers to confirm final status
+      this.startPollingForConfirmation();
+    }
   }
-
-  proceedToPayment(): void {
-    if (!this.selectedTransaction) return;
-    this.payoutError = null;
-    this.isBatchReviewOpen = false;
-    this.viewMode = 'EXECUTE';
-    this.currentStep = 2;
+  
+  // ==========================================================================
+  // RETRY FAILED TRANSACTIONS
+  // ==========================================================================
+  
+  retryTransaction(transaction: DisbursementTransaction): void {
+    transaction.status = 'RETRYING';
+    transaction.retryCount++;
+    
+    const fundingSource = this.fundingSources.find(f => f.id === this.selectedFundingSourceId);
+    
+    this.processSinglePayout(transaction, this.checkoutForm.get('batchNarration')?.value, fundingSource).subscribe({
+      next: (response) => {
+        transaction.status = 'SUCCESS';
+        transaction.processedAt = new Date();
+        transaction.statusMessage = undefined;
+        transaction.paystackReference = response.data.reference;
+        
+        // Remove from failed list if present
+        const failedIndex = this.failedTransactions.findIndex(t => t.id === transaction.id);
+        if (failedIndex !== -1) {
+          this.failedTransactions.splice(failedIndex, 1);
+        }
+        
+        // If no more failures, mark batch as COMPLETED
+        if (this.failedTransactions.length === 0 && this.selectedBatch) {
+          this.selectedBatch.status = 'COMPLETED';
+          this.selectedBatch.disbursedAt = new Date();
+          this.updateBatchInList(this.selectedBatch);
+          this.viewMode = 'EXECUTION';
+        }
+      },
+      error: (error) => {
+        transaction.status = 'FAILED';
+        transaction.statusMessage = error.message || 'Retry failed. Please check recipient details.';
+      }
+    });
   }
-
+  
+  retryAllFailed(): void {
+    if (this.failedTransactions.length === 0) return;
+    
+    const transactionsToRetry = [...this.failedTransactions];
+    this.failedTransactions = [];
+    
+    this.isProcessing = true;
+    this.processingProgress = { current: 0, total: transactionsToRetry.length, status: 'Retrying failed transactions...' };
+    
+    this.retryTransactionsSequentially(transactionsToRetry, 0);
+  }
+  
+  private retryTransactionsSequentially(transactions: DisbursementTransaction[], index: number): void {
+    if (index >= transactions.length) {
+      this.isProcessing = false;
+      this.processingProgress = null;
+      return;
+    }
+    
+    const transaction = transactions[index];
+    transaction.status = 'RETRYING';
+    this.processingProgress = {
+      current: index + 1,
+      total: transactions.length,
+      status: `Retrying ${transaction.recipient.accountName}...`
+    };
+    
+    const fundingSource = this.fundingSources.find(f => f.id === this.selectedFundingSourceId);
+    
+    this.processSinglePayout(transaction, this.checkoutForm.get('batchNarration')?.value, fundingSource).subscribe({
+      next: (response) => {
+        transaction.status = 'SUCCESS';
+        transaction.processedAt = new Date();
+        transaction.statusMessage = undefined;
+        this.retryTransactionsSequentially(transactions, index + 1);
+      },
+      error: (error) => {
+        transaction.status = 'FAILED';
+        transaction.statusMessage = error.message || 'Retry failed.';
+        this.failedTransactions.push(transaction);
+        this.retryTransactionsSequentially(transactions, index + 1);
+      }
+    });
+  }
+  
+  // ==========================================================================
+  // EXECUTION MONITORING
+  // ==========================================================================
+  
+  private startPollingForConfirmation(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+    
+    this.pollingInterval = setInterval(() => {
+      if (this.selectedBatch && this.selectedBatch.id) {
+        this.checkTransferStatus(this.selectedBatch.id);
+      }
+    }, 5000); // Poll every 5 seconds
+    
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+    }, 120000);
+  }
+  
+  private checkTransferStatus(batchId: string): void {
+    // Simulate status check - replace with actual API call
+    // This would call Paystack's verify transfer endpoint
+    console.log(`Checking status for batch ${batchId}`);
+  }
+  
+  // ==========================================================================
+  // FILTERING & UI HELPERS
+  // ==========================================================================
+  
+  filterBatches(): void {
+    let filtered = [...this.allBatches];
+    
+    if (this.activeStatusFilter !== 'ALL') {
+      filtered = filtered.filter(b => b.status === this.activeStatusFilter);
+    }
+    
+    if (this.selectedModule) {
+      filtered = filtered.filter(b => b.sourceModule === this.selectedModule);
+    }
+    
+    if (this.dateRangeStart) {
+      filtered = filtered.filter(b => new Date(b.createdAt) >= this.dateRangeStart!);
+    }
+    
+    if (this.dateRangeEnd) {
+      filtered = filtered.filter(b => new Date(b.createdAt) <= this.dateRangeEnd!);
+    }
+    
+    this.filteredBatches = filtered;
+    this.updateSelectAllCheckbox();
+  }
+  
+  setStatusFilter(status: string): void {
+    this.activeStatusFilter = this.activeStatusFilter === status ? 'ALL' : status;
+    this.filterBatches();
+  }
+  
+  toggleBatchSelection(batchId: string): void {
+    if (this.selectedBatchIds.has(batchId)) {
+      this.selectedBatchIds.delete(batchId);
+    } else {
+      this.selectedBatchIds.add(batchId);
+    }
+    this.updateSelectAllCheckbox();
+  }
+  
+  toggleSelectAll(): void {
+    if (this.masterCheckbox) {
+      this.selectedBatchIds.clear();
+      this.masterCheckbox = false;
+    } else {
+      this.filteredBatches.forEach(b => this.selectedBatchIds.add(b.id));
+      this.masterCheckbox = true;
+    }
+  }
+  
+  private updateSelectAllCheckbox(): void {
+    this.masterCheckbox = this.filteredBatches.length > 0 && 
+      this.filteredBatches.every(b => this.selectedBatchIds.has(b.id));
+  }
+  
+  getSelectedBatchesCount(): number {
+    return this.selectedBatchIds.size;
+  }
+  
+  getSelectedBatchesTotal(): number {
+    return this.allBatches
+      .filter(b => this.selectedBatchIds.has(b.id))
+      .reduce((sum, b) => sum + b.totalAmount, 0);
+  }
+  
+  getSelectedBatches(): DisbursementBatch[] {
+    return this.allBatches.filter(b => this.selectedBatchIds.has(b.id));
+  }
+  
+  // ==========================================================================
+  // STATISTICS
+  // ==========================================================================
+  
+  getTotalDisbursedToday(): number {
+    const today = new Date().toDateString();
+    return this.allBatches
+      .filter(b => b.status === 'COMPLETED' && new Date(b.disbursedAt!).toDateString() === today)
+      .reduce((sum, b) => sum + b.totalAmount, 0);
+  }
+  
+  getPendingCount(): number {
+    return this.allBatches.filter(b => b.status === 'PENDING_APPROVAL' || b.status === 'APPROVED').length;
+  }
+  
+  getApprovedCount(): number {
+    return this.allBatches.filter(b => b.status === 'APPROVED').length;
+  }
+  
+  getFailedCount(): number {
+    return this.allBatches.filter(b => b.status === 'FAILED').length;
+  }
+  
+  getProcessingCount(): number {
+    return this.allBatches.filter(b => b.status === 'PROCESSING').length;
+  }
+  
+  // ==========================================================================
+  // NAVIGATION
+  // ==========================================================================
+  
   backToDashboard(): void {
     this.viewMode = 'DASHBOARD';
-    this.selectedTransaction = null;
-    this.currentStep = 1;
-    this.payoutError = null;
-  }
-
-  // ── Meta & Formatting Helpers (Aligned with Queue Manager) ──
-
-  formatLabel(val: string | undefined): string {
-    if (!val) return '';
-    return val.replace(/_/g, ' ');
-  }
-
-  formatMetadataKey(key: string): string {
-    if (!key) return '';
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
-      .trim();
-  }
-
-  getMetadataEntries(metadata: any): { key: string, value: any }[] {
-    if (!metadata) return [];
-    return Object.entries(metadata)
-      .map(([key, value]) => ({ key, value }))
-      .filter(item => item.value !== null && item.value !== undefined && item.value !== '');
-  }
-
-  isCurrencyField(key: string): boolean {
-    const currencyKeys = ['amount', 'repayable', 'rate', 'interest', 'balance', 'bankBalance', 'approvedAmount', 'totalRepayable'];
-    const lowerKey = key.toLowerCase();
-    return currencyKeys.some(ck => lowerKey.includes(ck));
-  }
-
-  isDateField(key: string): boolean {
-    const dateKeys = ['initiatedat', 'approveddate', 'createdat', 'updatedat', 'expecteddate', 'date'];
-    const lowerKey = key.toLowerCase();
-    return dateKeys.some(dk => lowerKey.includes(dk));
-  }
-
-  getStatusClass(status: string | undefined): string {
-    switch (status) {
-      case 'APPROVED':    return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'REJECTED':    return 'bg-rose-100 text-rose-800 border-rose-200';
-      case 'DISBURSED':   return 'bg-sky-100 text-sky-800 border-sky-200';
-      case 'UNREVIEWED':
-      case 'IN_REVIEW':   return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:            return 'bg-gray-100 text-gray-700 border-gray-200';
+    this.selectedBatch = null;
+    this.batchTransactions = [];
+    this.selectedBatchIds.clear();
+    this.masterCheckbox = false;
+    this.processingProgress = null;
+    this.failedTransactions = [];
+    this.errorMessage = null;
+    
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
   }
-
-  // ── Wizard Steps ─────────────────────────────────────────
-  nextStep(): void {
-    if (this.currentStep < 2) this.currentStep++;
+  
+  closeBatchReview(): void {
+    this.viewMode = 'DASHBOARD';
+    this.selectedBatch = null;
   }
-
-  prevStep(): void {
-    if (this.currentStep > 1) this.currentStep--;
+  
+  goToCheckoutFromReview(): void {
+    if (this.selectedBatch) {
+      this.initiateCheckout(this.selectedBatch);
+    }
   }
-
-  toggleFundingAccount(account: FundingAccount): void {
-    account.selected = !account.selected;
-  }
-
-  // ── Badge Helpers ─────────────────────────────────────────
-  getModuleBadgeClass(module: string): string {
-    const map: Record<string, string> = {
-      'POS':         'bg-blue-50 text-customBlue border-customBlue/20',
-      'HR':          'bg-purple-50 text-purple-700 border-purple-200',
-      'HOSPITALITY': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      'EXPENSE':     'bg-orange-50 text-orange-700 border-orange-200',
-      'MARKETPLACE': 'bg-teal-50 text-teal-700 border-teal-200',
-      'BANK':        'bg-teal-50 text-teal-700 border-teal-200',
-      'MANUAL':      'bg-gray-50 text-gray-700 border-gray-200',
+  
+  // ==========================================================================
+  // STATUS STYLES
+  // ==========================================================================
+  
+  getStatusBadgeClass(status: string): string {
+    const classes: Record<string, string> = {
+      'DRAFT': 'bg-gray-100 text-gray-600 border-gray-200',
+      'PENDING_APPROVAL': 'bg-amber-50 text-amber-600 border-amber-200',
+      'APPROVED': 'bg-emerald-50 text-customGreen border-emerald-200',
+      'PROCESSING': 'bg-blue-50 text-customBlue border-blue-200',
+      'COMPLETED': 'bg-emerald-100 text-emerald-700 border-emerald-300',
+      'FAILED': 'bg-red-50 text-red-600 border-red-200',
+      'PARTIAL': 'bg-orange-50 text-orange-600 border-orange-200'
     };
-    return map[module?.toUpperCase()] || 'bg-gray-50 text-gray-600 border-gray-200';
+    return classes[status] || 'bg-gray-50 text-gray-500 border-gray-200';
   }
-
-  getCategoryColor(category: string): string {
-    return this.getModuleBadgeClass(category);
+  
+  getTransactionStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      'PENDING': 'bg-amber-50 text-amber-600 border-amber-200',
+      'PROCESSING': 'bg-blue-50 text-customBlue border-blue-200',
+      'SUCCESS': 'bg-emerald-50 text-customGreen border-emerald-200',
+      'FAILED': 'bg-red-50 text-red-600 border-red-200',
+      'RETRYING': 'bg-purple-50 text-purple-600 border-purple-200'
+    };
+    return classes[status] || 'bg-gray-50 text-gray-500 border-gray-200';
   }
-
-  /** Safely retrieves the bank/institution name from an AccountID object */
-  getAccountBank(trx: AccountingTransactionDTO): string {
-    const meta = trx.metadata || {};
-    return meta.bankName || meta.bank || meta.destinationBank || (trx.account as any)?.bankName || ' — ';
+  
+  getModuleIcon(module: string): string {
+    const icons: Record<string, string> = {
+      'HR': 'fa-users',
+      'HOSPITALITY': 'fa-hotel',
+      'EXPENSE': 'fa-receipt',
+      'MARKETPLACE': 'fa-store'
+    };
+    return icons[module] || 'fa-layer-group';
   }
-
-  /** Safely retrieves the account number from an AccountID object */
-  getAccountNumber(trx: AccountingTransactionDTO): string {
-    const meta = trx.metadata || {};
-    return meta.accountNumber || meta.account || meta.destAccount || (trx.account as any)?.accountNumber || ' — ';
+  
+  // ==========================================================================
+  // MOCK DATA GENERATORS (Replace with actual API calls)
+  // ==========================================================================
+  
+  private generateMockBatches(): DisbursementBatch[] {
+    return [
+      {
+        id: '1',
+        batchReference: 'BATCH-HR-2024-001',
+        sourceModule: 'HR',
+        totalAmount: 2450000,
+        currency: 'NGN',
+        transactionCount: 28,
+        status: 'COMPLETED',
+        createdAt: new Date(),
+        disbursedAt: new Date()
+      },
+      {
+        id: '2',
+        batchReference: 'BATCH-EXP-2024-015',
+        sourceModule: 'EXPENSE',
+        totalAmount: 675000,
+        currency: 'NGN',
+        transactionCount: 12,
+        status: 'APPROVED',
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        approvedBy: 'Finance Manager',
+        approvedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        id: '3',
+        batchReference: 'BATCH-HSP-2024-008',
+        sourceModule: 'HOSPITALITY',
+        totalAmount: 189000,
+        currency: 'NGN',
+        transactionCount: 6,
+        status: 'PROCESSING',
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+      },
+      {
+        id: '4',
+        batchReference: 'BATCH-MKT-2024-042',
+        sourceModule: 'MARKETPLACE',
+        totalAmount: 3450000,
+        currency: 'NGN',
+        transactionCount: 45,
+        status: 'PENDING_APPROVAL',
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+      },
+      {
+        id: '5',
+        batchReference: 'BATCH-HR-2024-003',
+        sourceModule: 'HR',
+        totalAmount: 1200000,
+        currency: 'NGN',
+        transactionCount: 8,
+        status: 'FAILED',
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        metadata: { failureReason: 'Insufficient funds in settlement account' }
+      }
+    ];
   }
-
-  /** Get display name for createdBy which can be string or UserDTO */
-  getCreatedByName(trx: AccountingTransactionDTO): string {
-    if (typeof trx.createdBy === 'string') return trx.createdBy;
-    return trx.createdBy?.fullname || trx.createdBy?.username || '—';
+  
+  private generateMockFundingSources(): FundingSource[] {
+    return [
+      {
+        id: 'fs1',
+        name: 'Operating Account - GTBank',
+        bankName: 'Guaranty Trust Bank',
+        accountNumber: '0123456789',
+        type: 'OPERATING',
+        availableBalance: 12500000,
+        ledgerBalance: 12500000,
+        currency: 'NGN'
+      },
+      {
+        id: 'fs2',
+        name: 'Settlement Account - Zenith',
+        bankName: 'Zenith Bank',
+        accountNumber: '9876543210',
+        type: 'SETTLEMENT',
+        availableBalance: 8500000,
+        ledgerBalance: 8500000,
+        currency: 'NGN'
+      },
+      {
+        id: 'fs3',
+        name: 'Reserve Account - First Bank',
+        bankName: 'First Bank of Nigeria',
+        accountNumber: '4567890123',
+        type: 'RESERVE',
+        availableBalance: 5000000,
+        ledgerBalance: 5000000,
+        currency: 'NGN'
+      }
+    ];
   }
-
-  exportTable(): void {
-    console.log('Exporting disbursement report…');
+  
+  private generateMockTransactions(batchId: string): DisbursementTransaction[] {
+    return [
+      {
+        id: 'tx1',
+        batchId: batchId,
+        transactionReference: `TXP-${batchId}-001`,
+        recipient: {
+          id: 'rec1',
+          name: 'John Oluwaseun',
+          email: 'john.oluwaseun@example.com',
+          bankCode: '058',
+          bankName: 'Guaranty Trust Bank',
+          accountNumber: '0123456789',
+          accountName: 'John Oluwaseun',
+          currency: 'NGN'
+        },
+        amount: 150000,
+        fee: 0,
+        totalAmount: 150000,
+        narration: 'Salary payment - October 2024',
+        status: 'PENDING',
+        retryCount: 0,
+        createdAt: new Date()
+      },
+      {
+        id: 'tx2',
+        batchId: batchId,
+        transactionReference: `TXP-${batchId}-002`,
+        recipient: {
+          id: 'rec2',
+          name: 'Adebayo Ventures',
+          email: 'accounts@adebayoventures.com',
+          bankCode: '057',
+          bankName: 'Zenith Bank',
+          accountNumber: '9876543210',
+          accountName: 'Adebayo Ventures',
+          currency: 'NGN'
+        },
+        amount: 350000,
+        fee: 0,
+        totalAmount: 350000,
+        narration: 'Vendor payment - Office supplies',
+        status: 'PENDING',
+        retryCount: 0,
+        createdAt: new Date()
+      },
+      {
+        id: 'tx3',
+        batchId: batchId,
+        transactionReference: `TXP-${batchId}-003`,
+        recipient: {
+          id: 'rec3',
+          name: 'Peace Hospitality Ltd',
+          email: 'finance@peacehospitality.com',
+          bankCode: '011',
+          bankName: 'First Bank',
+          accountNumber: '4567890123',
+          accountName: 'Peace Hospitality Ltd',
+          currency: 'NGN'
+        },
+        amount: 89500,
+        fee: 0,
+        totalAmount: 89500,
+        narration: 'Hotel service settlement',
+        status: 'PENDING',
+        retryCount: 0,
+        createdAt: new Date()
+      }
+    ];
   }
 }
