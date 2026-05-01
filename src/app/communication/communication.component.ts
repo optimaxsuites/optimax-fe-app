@@ -1351,6 +1351,20 @@ export class CommunicationComponent
     if (!contact) return;
     contact.hasUnread = false;
     contact.unreadCount = undefined;
+
+    // Use cached messages if already loaded (same pattern as selectChannel)
+    if (this.dmMessages[contactId] !== undefined) {
+      this.scrollFeed = true;
+      if (contact.dmChannelId) {
+        this.subscribeToDmChannel(contact);
+        this.collabService
+          .setPresenceOnline(contact.dmChannelId)
+          .subscribe({ error: () => {} });
+      }
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.messagesLoading = true;
     this.cdr.detectChanges();
     this.getOrCreateDmChannel(contact);
@@ -2163,13 +2177,10 @@ export class CommunicationComponent
       this.reactingIds.delete(msg.id);
       const ch = this.activeChannel;
       if (ch?.backendId)
-        this.collabService
-          .getChannelSnapshot(ch.backendId)
-          .subscribe({
-            next: (snap) =>
-              this.refreshReactionCounts(ch, snap.reactions || []),
-            error: () => {},
-          });
+        this.collabService.getChannelSnapshot(ch.backendId).subscribe({
+          next: (snap) => this.refreshReactionCounts(ch, snap.reactions || []),
+          error: () => {},
+        });
     };
     const rollback = () => {
       msg.liked = wasLiked;
