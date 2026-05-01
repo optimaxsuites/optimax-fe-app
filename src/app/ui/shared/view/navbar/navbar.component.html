@@ -1,52 +1,136 @@
-<div class='header table-item'>
+<!-- damilola worked on this: redesigned enterprise header with profile image, bell tray, and unread badges. -->
+<header class="app-header">
+  <div class="app-header__left">
+    <button type="button" class="menu-toggle" (click)="onToggleSidebar()">
+      <i class="pi pi-bars"></i>
+    </button>
 
-    <!-- <div class="header-center">      
-      <div class="searchbar-container">
-        <app-searchbar></app-searchbar>
-      </div>
-    </div> -->
+    <div class="brand-block">
+      <p class="brand-kicker">Enterprise workspace</p>
+      <h1>OptimaX</h1>
+    </div>
+  </div>
 
-   
-    <div></div>
-    <div class="header-end">
-        <!-- <div class="items"><p>Contacts</p></div> -->
-        <div class="items">
-          <i class="fas fa-bell"></i>
-        </div>
-        <div class="items"><i class="fas fa-message"></i></div>
-        <div (click)="op.toggle($event)" class="items profile-item">
-            <div class="profile-img-container">
-                <img src='assets/profile.jpg' alt=""  class='profile-img' />
+  <div class="app-header__right">
+    <button
+      type="button"
+      class="header-chip"
+      (click)="openMessages()"
+    >
+      <i class="fas fa-message"></i>
+      <span>Messages</span>
+      <strong *ngIf="unreadMessages">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</strong>
+    </button>
+
+    <div class="header-bell-wrap">
+      <button
+        type="button"
+        class="header-icon"
+        (click)="openNotifications(); notificationsPanel.toggle($event)"
+      >
+        <i class="fas fa-bell"></i>
+        <span *ngIf="unreadNotifications" class="header-badge">
+          {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
+        </span>
+      </button>
+
+      <p-overlayPanel #notificationsPanel styleClass="header-overlay-panel">
+        <div class="notification-panel">
+          <div class="notification-panel__header">
+            <div>
+              <p>Notifications</p>
+              <span>Live updates across collaboration and modules</span>
             </div>
-            <div class="profile-name" id="inventory-list-header">
-                <p class="name">{{
-                  userRegData.username
-              }}</p>
-                <!-- <p class="status">{{userRegData.roles}}</p> -->
+          </div>
+
+          <div *ngIf="!notifications.length" class="notification-empty">
+            No notifications yet.
+          </div>
+
+          <button
+            type="button"
+            *ngFor="let item of latestNotifications"
+            class="notification-item"
+            [class.notification-item--unread]="!item.read"
+            (click)="openNotification(item); notificationsPanel.hide()"
+          >
+            <div class="notification-item__avatar">
+              <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+              <span *ngIf="!item.avatarUrl">{{ (item.title || 'U').charAt(0) }}</span>
             </div>
-        </div>
-        <p-overlayPanel #op>
-          <div class="panel-container">
-            <div class="profile-name">
-              <h3 class="name-2">{{
-                userRegData.username
-            }}</h3>
-              <!-- <h4 class="status-2">{{userRegData.roles}}</h4> -->
-              <h5 class="my-2"><strong>ID: </strong>{{userRegData.accountId}}</h5>
-            </div>
-              <p-divider></p-divider>
-              <div>
-                <h4 routerLink="/settings" class="settings"><i class="pi pi-cog"></i>Settings</h4>
-                <h4 (click)="logout()" class="logout"><i class="pi pi-sign-out"></i> Sign Out</h4>
+            <div class="notification-item__body">
+              <div class="notification-item__meta">
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.createdAt | date: 'shortTime' }}</span>
               </div>
+              <p>{{ item.body }}</p>
+              <time *ngIf="item.contextLabel">{{ item.contextLabel }}</time>
             </div>
-        </p-overlayPanel>
+          </button>
+
+          <button
+            *ngIf="notifications.length > 5"
+            type="button"
+            class="notification-view-all"
+            (click)="viewAllNotifications(); notificationsPanel.hide()"
+          >
+            View all updates
+          </button>
+        </div>
+      </p-overlayPanel>
     </div>
 
-<!-- 
-    <div class="items hamburger" >
-      <button class="hamburger-icon" (click)="onToggleSidebar()">
-      &#9776;
-      </button>
-    </div> -->
-</div>
+    <button
+      type="button"
+      class="profile-trigger"
+      (click)="profilePanel.toggle($event)"
+    >
+      <div class="profile-avatar">
+        <img
+          *ngIf="headerProfile.imageUrl; else initialsAvatar"
+          [src]="headerProfile.imageUrl"
+          [alt]="headerProfile.name"
+        />
+        <ng-template #initialsAvatar>
+          <span>{{ headerProfile.initials }}</span>
+        </ng-template>
+      </div>
+      <div class="profile-copy">
+        <strong>{{ headerProfile.username || headerProfile.name }}</strong>
+        <span>{{ headerProfile.accountId ? 'ID ' + headerProfile.accountId : 'Account active' }}</span>
+      </div>
+      <i class="pi pi-angle-down"></i>
+    </button>
+
+    <p-overlayPanel #profilePanel styleClass="header-overlay-panel">
+      <div class="profile-panel">
+        <div class="profile-panel__identity">
+          <div class="profile-avatar profile-avatar--large">
+            <img
+              *ngIf="headerProfile.imageUrl; else panelInitialsAvatar"
+              [src]="headerProfile.imageUrl"
+              [alt]="headerProfile.name"
+            />
+            <ng-template #panelInitialsAvatar>
+              <span>{{ headerProfile.initials }}</span>
+            </ng-template>
+          </div>
+          <div>
+            <h3>{{ headerProfile.name }}</h3>
+            <p>{{ headerProfile.username }}</p>
+            <span *ngIf="headerProfile.accountId">Account ID: {{ headerProfile.accountId }}</span>
+          </div>
+        </div>
+        <p-divider></p-divider>
+        <button type="button" class="panel-action" routerLink="/settings">
+          <i class="pi pi-cog"></i>
+          <span>Settings</span>
+        </button>
+        <button type="button" class="panel-action panel-action--danger" (click)="logout()">
+          <i class="pi pi-sign-out"></i>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </p-overlayPanel>
+  </div>
+</header>

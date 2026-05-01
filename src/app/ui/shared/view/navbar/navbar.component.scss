@@ -1,250 +1,323 @@
-*{
-    margin: 0;
-    padding: 0;
+.app-header {
+  /* damilola worked on this: modernized header shell styling. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background:
+    radial-gradient(circle at top left, rgba(46, 98, 118, 0.12), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
-.header{
-    width: auto;
-    height: auto;
-    // background-color: #224957;
-    border-bottom: 1px solid lightgrey;
-    padding-right: 0.5em;
-    box-sizing: border-box;
-    display: flex;
+.app-header__left,
+.app-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.menu-toggle,
+.header-icon,
+.header-chip,
+.profile-trigger,
+.panel-action {
+  border: 0;
+  background: transparent;
+}
+
+.menu-toggle {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+  background: #eef6f9;
+  color: #2e6276;
+  font-size: 1.1rem;
+}
+
+.brand-block h1,
+.brand-block p {
+  margin: 0;
+}
+
+.brand-kicker {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #64748b;
+}
+
+.brand-block h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.header-chip,
+.profile-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 999px;
+  padding: 0.7rem 0.95rem;
+  background: #ffffff;
+  border: 1px solid #dbe4ea;
+  color: #0f172a;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.header-chip i,
+.header-icon i {
+  color: #2e6276;
+}
+
+.header-chip span,
+.profile-copy span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.header-chip strong,
+.profile-copy strong {
+  font-size: 0.92rem;
+}
+
+.header-icon {
+  position: relative;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #dbe4ea;
+  color: #2e6276;
+  cursor: pointer;
+}
+
+.header-badge {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.1rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.profile-trigger {
+  min-width: 14rem;
+  justify-content: space-between;
+}
+
+.profile-avatar {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2e6276 0%, #0f766e 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar--large {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.profile-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-copy strong,
+.profile-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+:host ::ng-deep .header-overlay-panel {
+  margin-top: 0.55rem;
+}
+
+.notification-panel,
+.profile-panel {
+  width: 21rem;
+}
+
+.notification-panel__header p,
+.notification-panel__header span,
+.notification-item p,
+.notification-item time,
+.profile-panel__identity h3,
+.profile-panel__identity p,
+.profile-panel__identity span {
+  margin: 0;
+}
+
+.notification-panel__header {
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notification-panel__header p {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.notification-panel__header span,
+.notification-empty,
+.notification-item p,
+.notification-item time,
+.profile-panel__identity p,
+.profile-panel__identity span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.notification-empty {
+  padding: 1rem 0;
+}
+
+.notification-item {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 0.9rem 0;
+  border-top: 1px solid #eef2f7;
+  cursor: pointer;
+}
+
+.notification-item__avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2e6276 0%, #0f766e 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.notification-item__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.notification-item__body {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.notification-item--unread strong {
+  color: #0f172a;
+}
+
+.notification-item__meta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.notification-item__meta strong {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-item__meta span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2e6276;
+}
+
+.notification-view-all {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding-top: 0.85rem;
+  border: 0;
+  border-top: 1px solid #eef2f7;
+  background: transparent;
+  color: #2e6276;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-panel__identity {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.profile-panel__identity h3 {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.panel-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.panel-action--danger {
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    flex-wrap: wrap;
+  }
+
+  .app-header__right {
+    width: 100%;
     justify-content: space-between;
+  }
 
-    
-
-    .header-center{
-        width: 40%;
-        display: flex;
-        justify-self: center;
-        align-self: center;
-
-        .searchbar-container{
-            width: 100%;
-        }
-
-    }
-
-    .header-end{
-        display: flex;
-        align-items: center;
-
-        .items{
-            margin-right: 1em;
-            box-sizing: border-box;
-            cursor: pointer;
-            word-wrap: break-word;
-
-            p{
-                font-weight: 400;
-                // color: white;
-                text-decoration: none;
-                margin: 0;
-            }
-
-            .fa-message{
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                cursor: pointer;
-                background-color: red;
-                border-radius: 50%;
-                padding: 1.5rem;
-                width: 20px;
-                height: 20px;
-                font-size: 1.2em;
-                // cursor: pointer;
-                background-color: #DEEEE6;
-                color: #224957;
-            }
-        }
-        .profile-item{
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-
-            .profile-img-container{
-                width: auto;
-                margin-right: 0.5rem;
-
-                .profile-img{
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                }
-            }
-
-            .profile-name{
-                .name{
-                    // color: white;
-                    font-weight: 400;
-                    font-size: 1em;
-                    text-transform: capitalize;
-                }
-                
-                .status{
-                    color: #B3B3B3;
-                    font-weight: 400;
-                    font-size: 1em;
-                    text-transform: capitalize;
-                }
-            }
-        }
-
-        .fa-bell{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            width: 20px;
-            font-size: 1.5em;
-            height: 20px;
-            padding: 1.5rem;
-            border-radius: 50%;
-            background-color: #DEEEE6;
-            transition-duration: .3s;
-            color: #224957;
-        }
-          
-        .fa-bell:hover {
-        animation: bellRing 0.9s both;
-        }
-        
-        /* bell ringing animation keyframes*/
-        @keyframes bellRing {
-        0%,
-        100% {
-            transform-origin: top;
-        }
-        
-        15% {
-            transform: rotateZ(10deg);
-        }
-        
-        30% {
-            transform: rotateZ(-10deg);
-        }
-        
-        45% {
-            transform: rotateZ(5deg);
-        }
-        
-        60% {
-            transform: rotateZ(-5deg);
-        }
-        
-        75% {
-            transform: rotateZ(2deg);
-        }
-        }
-        
-        .humburger,
-        .items:active {
-        transform: scale(0.8);
-        }
-          
-        
-    }
-    .hamburger{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .pi-bars, .pi-times{
-            color: var(--blue-green);
-            cursor: pointer;
-            padding: 0.2rem 0.7rem;
-            font-size: var(--xl-font);
-        }
-        button{
-            background: none;
-            border: none;
-            outline: none;
-        }
-    }
+  .profile-trigger {
+    min-width: 0;
+    flex: 1;
+  }
 }
-
-.name-2{
-    font-size: 2.3em;
-    font-family: "Roboto Slab", serif;
-    text-transform: capitalize;
-    font-weight: bold;
-}
-.status-2{
-    // font-size: 1em;
-    font-family: "Roboto Slab", serif;
-
-}
-
-h1, h2, h3, h4, h5, h6 {
-    padding: 0;
-    margin: 0;
-}
-
-.logout{
-    font-family: "Roboto Slab", serif;
-    margin-top: 1rem;
-    cursor: pointer;
-    align-items: center;
-}
-
-.panel-container{
-    width: 250px;
-
-    .settings{
-        font-family: "Roboto Slab", serif;
-        margin-top: 1rem;
-        cursor: pointer;
-        align-items: center;
-    }
-
-    .pi-sign-out, .pi-cog{
-        font-size: .9em;
-        font-weight: bold;
-        margin-right: 1rem !important;
-    }
-}
-
-
-
-
-
-
-// @media only screen and (max-width: 1200px) {
-//     .header{
-//         .hamburger{
-//             display: contents;
-//         }
-//     }
-// }
-
-
-
-// @media only screen and (max-width: 767px) {
-//     .header{
-
-//         .header-center{
-//             display: none;
-//         }
-//         .header-end{
-//             .items{
-//                 .profile-name{
-//                     .name{
-//                         font-size: 0.8em;
-//                     }
-//                     .status{
-//                         font-size: 0.8em;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-
-
-
-
-
-

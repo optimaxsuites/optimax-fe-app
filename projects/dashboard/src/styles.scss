@@ -7,17 +7,17 @@
 
 
 // custom primeUI
-@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
-@import "../node_modules/primeng/resources/primeng.css";
-@import "../node_modules/primeng/resources/primeng.min.css";
+@import "primeng/resources/themes/saga-green/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeng/resources/primeng.min.css";
 
 /* Custom css */
 @import "assets/theme/theme.scss";
 
 // QUILL CSS
-@import "../node_modules/quill/dist/quill.core.css";
-@import "../node_modules/quill/dist/quill.snow.css";
-@import '../node_modules/@fortawesome/fontawesome-free/css/all.css';
+@import "quill/dist/quill.core.css";
+@import "quill/dist/quill.snow.css";
+@import "@fortawesome/fontawesome-free/css/all.css";
 
 
 

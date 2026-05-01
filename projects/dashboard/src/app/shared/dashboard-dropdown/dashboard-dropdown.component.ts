@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
+// dami just modified this to align dashboard switching with feed-first collaboration navigation.
 @Component({
   selector: 'app-dashboard-dropdown',
   templateUrl: './dashboard-dropdown.component.html',
@@ -9,19 +10,18 @@ import { filter } from 'rxjs/operators';
 })
 export class DashboardDropdownComponent implements OnInit {
   dropdownOpen = false;
-  selectedModule = 'Overview';
+  selectedModule = 'Feed';
+  currentUuid = 'uu';
 
-  modules = [
-    { name: 'Overview', route: '/dashboard/overview' },
-    { name: 'POS', route: '/POS/86b1650f-670f-4692-bf4f-332f45c033b9' },
-    { name: 'HR', route: '/HR/86b1650f-670f-4692-bf4f-332f45c033b9' },
-    { name: 'General', route: '/86b1650f-670f-4692-bf4f-332f45c033b9' },
-  //   { name: 'Communication', route: '/dashboard/communication' },
-  // { name: 'OptimaXAI', route: '/dashboard/optimaxai' },
-  // { name: 'Analytics', route: '/dashboard/analytics' },
-    // { name: 'Kitchen' },
-    // { name: 'Accounting' },
-  ];
+  get modules() {
+    return [
+      { name: 'Feed', route: `/admin/dashboard/feed/${this.currentUuid}` },
+      { name: 'Analytics', route: `/admin/dashboard/analytics/${this.currentUuid}` },
+      { name: 'POS', route: `/admin/dashboard/POS/${this.currentUuid}` },
+      { name: 'HR', route: `/admin/dashboard/HR/${this.currentUuid}` },
+      { name: 'Overview', route: `/admin/dashboard/${this.currentUuid}` },
+    ];
+  }
 
   constructor(private router: Router) {}
 
@@ -63,18 +63,22 @@ export class DashboardDropdownComponent implements OnInit {
 
   private setModuleFromRoute() {
     const currentRoute = this.router.url;
+    const uuidMatch = currentRoute.match(/[0-9a-fA-F-]{36}/);
+    if (uuidMatch?.[0]) {
+      this.currentUuid = uuidMatch[0];
+    }
     
     // Find module that matches current route
     const foundModule = this.modules.find(module => {
       if (!module.route) return false;
       
       // Extract path segments for comparison
-      const modulePath = module.route.split('/')[1]?.toLowerCase();
-      const currentPath = currentRoute.split('/')[1]?.toLowerCase();
+      const modulePath = module.route.split('/')[3]?.toLowerCase();
+      const currentPath = currentRoute.split('/')[3]?.toLowerCase();
       
       return modulePath === currentPath || 
              currentRoute.includes(module.route) ||
-             (currentRoute === '/' && module.name === 'Overview');
+             (currentRoute.includes('/admin/dashboard/feed/') && module.name === 'Feed');
     });
     
     // Update selected module if found

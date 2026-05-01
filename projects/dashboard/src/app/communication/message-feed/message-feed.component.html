@@ -1,3 +1,4 @@
+<!-- dami just modified this to fix reply previews, attachment snippets, and read-receipt rendering. -->
 <!-- Loading skeletons -->
 <div *ngIf="loading" class="flex flex-col gap-5">
   <div *ngFor="let i of [1,2,3,4]" class="flex gap-4 px-3">
@@ -138,30 +139,58 @@
           <!-- Attachment -->
           <div
             *ngIf="msg.attachment"
-            class="flex items-center gap-3 mt-3 p-3 bg-white border border-gray-200 rounded-xl w-fit max-w-sm"
+            class="mt-3"
           >
-            <div class="w-9 h-9 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0">
-              <svg class="text-[#2e6276]" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                />
-              </svg>
-            </div>
-            <div class="min-w-0">
-              <p class="text-[14px] font-semibold text-gray-700 leading-tight truncate">{{ msg.attachment.name }}</p>
-              <p *ngIf="msg.attachment.size" class="text-[12px] text-gray-400 mt-0.5">{{ msg.attachment.size }}</p>
-            </div>
-            <a
-              *ngIf="msg.attachment.downloadUrl"
-              href="#"
-              (click)="attachmentDownload.emit({ attachment: msg.attachment, event: $event })"
-              class="ml-auto flex-shrink-0 w-8 h-8 rounded-lg bg-[#2e6276]/10 hover:bg-[#2e6276]/20 flex items-center justify-center transition-colors"
-              title="Download"
+            <div
+              *ngIf="isImageAttachment(msg.attachment) && msg.attachment.previewUrl; else fileAttachment"
+              class="max-w-sm overflow-hidden rounded-2xl border border-gray-200 bg-white"
             >
-              <svg class="text-[#2e6276]" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-            </a>
+              <img [src]="msg.attachment.previewUrl" [alt]="msg.attachment.name" class="block w-full max-h-72 object-cover" />
+              <div class="flex items-center gap-3 px-3 py-2.5 border-t border-gray-100">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[14px] font-semibold text-gray-700 leading-tight truncate">{{ msg.attachment.name }}</p>
+                  <p *ngIf="msg.attachment.size" class="text-[12px] text-gray-400 mt-0.5">{{ msg.attachment.size }}</p>
+                </div>
+                <a
+                  *ngIf="msg.attachment.downloadUrl"
+                  href="#"
+                  (click)="attachmentDownload.emit({ attachment: msg.attachment, event: $event })"
+                  class="ml-auto flex-shrink-0 w-8 h-8 rounded-lg bg-[#2e6276]/10 hover:bg-[#2e6276]/20 flex items-center justify-center transition-colors"
+                  title="Download"
+                >
+                  <svg class="text-[#2e6276]" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <ng-template #fileAttachment>
+              <div class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl w-fit max-w-sm">
+                <div class="w-9 h-9 rounded-lg bg-[#2e6276]/10 flex items-center justify-center flex-shrink-0">
+                  <svg class="text-[#2e6276]" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                    />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[14px] font-semibold text-gray-700 leading-tight truncate">{{ msg.attachment.name }}</p>
+                  <p *ngIf="msg.attachment.size" class="text-[12px] text-gray-400 mt-0.5">{{ msg.attachment.size }}</p>
+                </div>
+                <a
+                  *ngIf="msg.attachment.downloadUrl"
+                  href="#"
+                  (click)="attachmentDownload.emit({ attachment: msg.attachment, event: $event })"
+                  class="ml-auto flex-shrink-0 w-8 h-8 rounded-lg bg-[#2e6276]/10 hover:bg-[#2e6276]/20 flex items-center justify-center transition-colors"
+                  title="Download"
+                >
+                  <svg class="text-[#2e6276]" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </a>
+              </div>
+            </ng-template>
           </div>
 
           <!-- Action buttons -->
@@ -263,6 +292,14 @@
                 </div>
               </div>
             </ng-container>
+          </div>
+
+          <div
+            *ngIf="isOwnMessage(msg)"
+            class="mt-1 text-[11px] font-medium"
+            [ngClass]="getReadCount(msg) > 0 ? 'text-emerald-600' : 'text-gray-400'"
+          >
+            {{ readReceiptLabel(msg) }}
           </div>
 
           <!-- Thread preview: first 2 replies inline -->

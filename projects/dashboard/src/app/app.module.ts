@@ -107,7 +107,6 @@ import { FeedComponent } from './feed/feed.component';
   ],
   imports: [
     MarkdownModule.forRoot(),
-    // BrowserModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -136,7 +135,6 @@ import { FeedComponent } from './feed/feed.component';
     ButtonModule,
     NgSelectModule,
     NgApexchartsModule,
-    // BrowserAnimationsModule
   ],
   providers: [
     {

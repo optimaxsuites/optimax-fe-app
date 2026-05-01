@@ -9,10 +9,12 @@ import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
 import { CommunicationComponent } from './communication/communication.component';
 import { FeedComponent } from './feed/feed.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
+
+// damilola worked on this: collaboration now lands on the enterprise feed route by default.
 const routes: Routes = [
   {
     path:'',
-    redirectTo: '/uu',
+    redirectTo: 'feed/uu',
     pathMatch: 'full'
   },
   {
@@ -31,25 +33,21 @@ const routes: Routes = [
       component: EmployeePayslipsListComponent,
   },
   {
-    path: ':uuid',
-    component: GeneraldashboardComponent,
+    path: 'optimaxai/:uuid',
+    component: OptimaxaiComponent
   },
-//   {
-//   path: 'dashboard/communication/:uuid',
-//   component: CommunicationComponent
-// },
-{
-  path: 'optimaxai/:uuid',
-  component: OptimaxaiComponent
-},
-{
-  path: 'analytics/:uuid',
-  component: AnalyticsComponent
-},
-{
-  path: 'feed/:uuid',
-  component: FeedComponent
-}
+  {
+    path: 'analytics/:uuid',
+    component: AnalyticsComponent
+  },
+  {
+    path: 'feed/:uuid',
+    component: FeedComponent
+  },
+  {
+    path: ':uuid',
+    redirectTo: 'feed/:uuid',
+  },
 ];
 
 @NgModule({
