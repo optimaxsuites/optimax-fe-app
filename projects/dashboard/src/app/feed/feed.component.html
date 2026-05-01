@@ -1,464 +1,440 @@
 <!-- ===== MAIN 3-COLUMN LAYOUT ===== -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white">
-  <!-- LEFT COLUMN: To-Do List + Quick Actions + Upcoming Events -->
-  <div class="lg:col-span-3 space-y-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-transparent font-sans h-screen overflow-hidden">
+
+  <!-- ══════════════════════════════════════════════
+       LEFT COLUMN: To-Do List + Quick Actions + Events
+  ══════════════════════════════════════════════ -->
+  <div class="lg:col-span-3 space-y-5 overflow-y-auto h-full sidebar-scroll">
+
     <!-- To-Do List -->
-    <div class="p-6 bg-white rounded-2xl border shadow-sm">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-medium text-gray-700 flex items-center gap-2">
-          <svg
-            class="w-5 h-5 text-indigo-600"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M9 11l3 3L22 4" />
-            <path d="M3 17h3l3 3 4-4" />
-          </svg>
-          To-Do List
-        </h3>
-        <span class="text-sm text-gray-500">{{ tasks.length }} tasks</span>
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-gray-900 flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </span>
+            My Tasks
+          </h3>
+          <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+            {{ tasks.length }} tasks
+          </span>
+        </div>
       </div>
 
-      <div class="flex gap-2 mb-4">
-        <input
-          type="text"
-          [(ngModel)]="newTask"
-          placeholder="Enter new task"
-          (keyup.enter)="addTask(newTask)"
-          class="flex-1 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        <button
-          class="px-3 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover font-medium text-sm"
-          (click)="addTask(newTask)"
-        >
-          Add
-        </button>
-      </div>
+      <div class="px-5 py-4">
+        <div class="flex gap-2 mb-4">
+          <input
+            type="text"
+            [(ngModel)]="newTask"
+            placeholder="Add a new task…"
+            (keyup.enter)="addTask(newTask)"
+            class="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-gray-50"
+          />
+          <button
+            class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-semibold text-sm transition-colors"
+            (click)="addTask(newTask)"
+          >Add</button>
+        </div>
 
-      <ul class="space-y-3">
-        <li
-          *ngFor="let task of tasks"
-          class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition"
-        >
-          <div
-            (click)="openTaskModal(task)"
-            class="cursor-pointer flex-1 min-w-0"
+        <ul class="space-y-2.5">
+          <li
+            *ngFor="let task of tasks"
+            class="flex items-center gap-3 p-3 bg-gray-50 hover:bg-indigo-50 rounded-xl border border-transparent hover:border-indigo-100 transition-all group cursor-pointer"
           >
-            <div class="flex items-center gap-2">
+            <div
+              (click)="openTaskModal(task)"
+              class="flex items-center gap-3 flex-1 min-w-0"
+            >
+              <!-- Status dot -->
               <span
+                class="w-2.5 h-2.5 rounded-full flex-shrink-0"
                 [ngClass]="{
-                  'text-green-600': task.status === 'Completed',
-                  'text-yellow-500': task.status === 'In Progress',
-                  'text-gray-400': task.status === 'Pending',
+                  'bg-emerald-500': task.status === 'Completed',
+                  'bg-amber-400': task.status === 'In Progress',
+                  'bg-gray-300': task.status === 'Pending'
                 }"
-                class="text-lg leading-none"
-                >●</span
-              >
+              ></span>
               <div class="min-w-0">
-                <div class="font-medium text-gray-800 text-sm truncate">
-                  {{ task.title }}
-                </div>
-                <div class="text-xs text-gray-500 mt-0.5">
-                  {{ task.time || "No time set" }} •
-                  {{ task.status || "Pending" }}
+                <div class="text-sm font-medium text-gray-800 truncate">{{ task.title }}</div>
+                <div class="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ task.time || 'No time' }}
+                  <span class="text-gray-300">·</span>
+                  <span [ngClass]="{
+                    'text-emerald-600': task.status === 'Completed',
+                    'text-amber-500': task.status === 'In Progress',
+                    'text-gray-400': task.status === 'Pending'
+                  }">{{ task.status || 'Pending' }}</span>
                 </div>
               </div>
             </div>
-          </div>
-          <button
-            class="ml-2 px-2 py-1 text-xs bg-red-100 text-red-600 rounded-md hover:bg-red-200 shrink-0"
-            (click)="removeTaskById(task.id); $event.stopPropagation()"
-          >
-            Remove
-          </button>
-        </li>
-      </ul>
+            <button
+              class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+              (click)="removeTaskById(task.id); $event.stopPropagation()"
+              title="Remove"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <!-- Quick Actions -->
-    <div class="p-6 bg-white rounded-2xl border shadow-sm">
-      <h3 class="text-lg font-medium text-gray-700 mb-4">Quick Actions</h3>
-      <div class="space-y-3">
+    <!-- <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100">
+        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </span>
+          Quick Actions
+        </h3>
+      </div>
+      <div class="p-4 space-y-2.5">
         <button
           (click)="openPayslipModal()"
-          class="w-full px-4 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 flex items-center justify-between"
+          class="w-full px-4 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 rounded-xl hover:from-purple-100 hover:to-indigo-100 flex items-center justify-between border border-purple-100 transition-all group"
         >
-          <span>View Payslips</span>
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
+          <div class="flex items-center gap-2.5">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+            </svg>
+            <span class="text-sm font-semibold">View Payslips</span>
+          </div>
+          <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </button>
 
         <button
           (click)="openAttendanceModal()"
-          class="w-full px-4 py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 flex items-center justify-between"
+          class="w-full px-4 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 rounded-xl hover:from-emerald-100 hover:to-teal-100 flex items-center justify-between border border-emerald-100 transition-all group"
         >
-          <span>Check Attendance</span>
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
+          <div class="flex items-center gap-2.5">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-sm font-semibold">Check Attendance</span>
+          </div>
+          <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </button>
       </div>
-    </div>
+    </div> -->
 
     <!-- Upcoming Events -->
-    <div class="p-6 bg-white rounded-2xl border shadow-sm">
-      <h3 class="text-lg font-medium text-gray-700 mb-4">Upcoming Events</h3>
-      <ul class="space-y-3">
-        <li *ngFor="let event of events" class="flex items-start gap-3">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 pt-5 pb-4 border-b border-gray-100">
+        <h3 class="text-base font-bold text-gray-900 flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </span>
+          Upcoming Events
+        </h3>
+      </div>
+      <ul class="divide-y divide-gray-50">
+        <li *ngFor="let event of events" class="flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
           <div
-            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
             [ngClass]="event.color || 'bg-blue-100'"
           >
-            <svg
-              class="w-4 h-4"
-              [ngClass]="event.iconColor || 'text-blue-600'"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
+            <svg class="w-4.5 h-4.5" [ngClass]="event.iconColor || 'text-blue-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
           </div>
-          <div>
-            <div class="font-medium text-gray-800 text-sm">
-              {{ event.title }}
-            </div>
-            <div class="text-xs text-gray-500">{{ event.date }}</div>
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-gray-800">{{ event.title }}</div>
+            <div class="text-xs text-gray-500 mt-0.5">{{ event.date }}</div>
           </div>
         </li>
       </ul>
     </div>
   </div>
 
-  <!-- CENTER COLUMN: Activity Feed -->
-  <div class="lg:col-span-6 space-y-4">
-    <!-- Share / Post Composer -->
-    <div class="bg-white rounded-2xl border shadow-sm p-4">
-      <div class="flex items-start gap-3 mb-3">
-        <!-- Avatar -->
-        <div
-          class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1 text-indigo-700 font-semibold text-sm"
-        >
+
+  <!-- ══════════════════════════════════════════════
+       CENTER COLUMN: Activity Feed
+  ══════════════════════════════════════════════ -->
+  <div class="lg:col-span-6 space-y-5 overflow-y-auto h-full sidebar-scroll">
+
+    <!-- Composer -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <div class="flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 text-white font-bold text-sm">
           {{ getUserInitials() }}
         </div>
-        <!-- Auto-grow textarea -->
-        <textarea
-          #postTextarea
-          [(ngModel)]="newPostText"
-          placeholder="Share an update..."
-          rows="1"
-          (input)="autoGrow(postTextarea)"
-          (keydown.enter)="onPostEnter($event)"
-          class="flex-1 bg-gray-100 rounded-2xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none overflow-hidden leading-relaxed transition-all duration-150"
-          style="min-height: 40px; max-height: 200px"
-        >
-        </textarea>
-      </div>
+        <div class="flex-1">
+          <textarea
+            #postTextarea
+            [(ngModel)]="newPostText"
+            placeholder="What's happening at work?"
+            rows="1"
+            (input)="autoGrow(postTextarea)"
+            (keydown.enter)="onPostEnter($event)"
+            class="w-full bg-gray-50 rounded-xl px-4 py-3 text-[15px] text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:bg-white resize-none overflow-hidden leading-relaxed transition-all border border-gray-200 focus:border-indigo-300"
+            style="min-height: 48px; max-height: 200px"
+          ></textarea>
 
-      <div
-        class="flex items-center justify-between border-t border-gray-100 pt-3"
-      >
-        <!-- Media buttons -->
-        <div class="flex items-center gap-3">
-          <button
-            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition px-2 py-1 rounded-lg hover:bg-blue-50"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            Photo
-          </button>
-          <button
-            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition px-2 py-1 rounded-lg hover:bg-blue-50"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M4 6h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"
-              />
-            </svg>
-            Video
-          </button>
-          <button
-            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition px-2 py-1 rounded-lg hover:bg-blue-50"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Article
-          </button>
+          <div class="flex items-center justify-between mt-3">
+            <div class="flex items-center gap-1">
+              <button class="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-blue-600 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-50 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Photo
+              </button>
+              <button class="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-blue-600 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-50 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M4 6h8a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+                </svg>
+                Video
+              </button>
+              <button class="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-blue-600 transition px-2.5 py-1.5 rounded-lg hover:bg-blue-50 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Article
+              </button>
+            </div>
+            <button
+              (click)="submitPost()"
+              [disabled]="!newPostText.trim()"
+              class="px-5 py-2 rounded-full text-sm font-bold transition-all"
+              [ngClass]="newPostText.trim()
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+            >Post</button>
+          </div>
         </div>
-
-        <!-- Post button -->
-        <button
-          (click)="submitPost()"
-          [disabled]="!newPostText.trim()"
-          class="px-5 py-2 rounded-full text-sm font-semibold transition-all duration-150"
-          [ngClass]="
-            newPostText.trim()
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          "
-        >
-          Post
-        </button>
       </div>
     </div>
 
     <!-- Feed Posts -->
     <div
       *ngFor="let post of feedPosts"
-      class="bg-white rounded-2xl border shadow-sm p-5"
+      class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
     >
       <!-- Post Header -->
-      <div class="flex items-start justify-between mb-3">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0"
-            [ngStyle]="{ 'background-color': post.avatarColor }"
-          >
-            {{ post.authorInitials }}
+      <div class="px-6 pt-5 pb-0">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3.5">
+            <div
+              class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+              [ngStyle]="{ 'background-color': post.avatarColor }"
+            >{{ post.authorInitials }}</div>
+            <div>
+              <p class="font-bold text-gray-900 text-[15px] leading-tight">{{ post.author }}</p>
+              <p class="text-[13px] text-gray-500 mt-0.5">
+                <span class="font-medium text-gray-600">{{ post.role }}</span>
+                <span class="text-gray-300 mx-1.5">·</span>
+                {{ post.timeAgo }}
+              </p>
+            </div>
           </div>
-          <div>
-            <p class="font-semibold text-gray-800 text-sm">
-              {{ post.author }}
-            </p>
-            <p class="text-xs text-gray-500 uppercase tracking-wide">
-              {{ post.role }} • {{ post.timeAgo }}
-            </p>
-          </div>
+          <button class="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+            </svg>
+          </button>
         </div>
-        <button class="text-gray-400 hover:text-gray-600 p-1">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="5" cy="12" r="1.5" />
-            <circle cx="12" cy="12" r="1.5" />
-            <circle cx="19" cy="12" r="1.5" />
-          </svg>
-        </button>
+
+        <!-- Post Content -->
+        <p class="text-[15px] text-gray-800 leading-relaxed mt-4 mb-4">{{ post.content }}</p>
       </div>
 
-      <!-- Post Content -->
-      <p class="text-gray-700 text-sm leading-relaxed mb-3">
-        {{ post.content }}
-      </p>
+      <!-- Post Image -->
+      <div *ngIf="post.image" class="mx-6 mb-4 rounded-xl overflow-hidden bg-gray-100" style="max-height: 280px;">
+        <img [src]="post.image" [alt]="post.author" class="w-full object-cover" style="max-height: 280px;"
+          onerror="this.parentElement.style.display='none'"/>
+      </div>
 
-      <!-- Post Image (if any) -->
-      <div
-        *ngIf="post.image"
-        class="mb-3 rounded-xl overflow-hidden bg-amber-50 h-48 flex items-center justify-center"
-      >
-        <img
-          [src]="post.image"
-          [alt]="post.author"
-          class="h-full object-cover w-full"
-          onerror="this.parentElement.style.display = 'none'"
-        />
+      <!-- Engagement bar -->
+      <div class="px-6 pb-3 flex items-center text-[13px] text-gray-500 gap-4 border-b border-gray-100">
+        <span class="flex items-center gap-1">
+          <span class="text-red-400">♥</span> {{ post.likes }} likes
+        </span>
+        <span>{{ post.commentList.length }} comment{{ post.commentList.length !== 1 ? 's' : '' }}</span>
+        <span>{{ post.shares }} shares</span>
       </div>
 
       <!-- Post Actions -->
-      <div class="flex items-center gap-5 pt-3 border-t border-gray-100">
+      <div class="flex items-center px-2 py-1.5">
         <button
-          class="flex items-center gap-1.5 text-sm transition"
-          [ngClass]="
-            post.liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-          "
+          class="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-medium rounded-xl transition-colors"
+          [ngClass]="post.liked ? 'text-red-500 bg-red-50' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500'"
           (click)="toggleLike(post)"
         >
-          <svg
-            class="w-4 h-4"
-            [ngClass]="post.liked ? 'fill-red-500' : 'fill-none'"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-            />
+          <svg class="w-5 h-5" [ngClass]="post.liked ? 'fill-red-500' : 'fill-none'" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
           </svg>
-          {{ post.likes }}
+          Like
         </button>
-
         <button
-          class="flex items-center gap-1.5 text-sm transition"
-          [ngClass]="
-            post.showComments
-              ? 'text-blue-600'
-              : 'text-gray-500 hover:text-blue-500'
-          "
+          class="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-medium rounded-xl transition-colors"
+          [ngClass]="post.showComments ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50 hover:text-blue-600'"
           (click)="toggleComments(post)"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
-          {{ post.commentList.length }} Comment{{
-            post.commentList.length !== 1 ? "s" : ""
-          }}
+          Comment
         </button>
-
-        <button
-          class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-green-500 transition"
-        >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-            />
+        <button class="flex-1 flex items-center justify-center gap-2 py-2 text-[14px] font-medium text-gray-600 hover:bg-gray-50 hover:text-green-600 rounded-xl transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
           </svg>
-          {{ post.shares }}
+          Share
         </button>
       </div>
 
       <!-- Comments Section -->
-      <div
-        *ngIf="post.showComments"
-        class="mt-4 pt-4 border-t border-gray-100 space-y-3"
-      >
-        <!-- Existing comments -->
-        <div
-          *ngFor="let comment of post.commentList"
-          class="flex items-start gap-2.5"
-        >
+      <div *ngIf="post.showComments" class="border-t border-gray-100 bg-gray-50/50 px-5 pt-4 pb-4 space-y-3">
+        <div *ngFor="let comment of post.commentList" class="flex items-start gap-3">
           <div
-            class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
             [ngStyle]="{ 'background-color': comment.avatarColor }"
-          >
-            {{ comment.authorInitials }}
-          </div>
-          <div class="flex-1 bg-gray-50 rounded-2xl rounded-tl-sm px-3 py-2">
-            <div class="flex items-baseline gap-2 mb-0.5">
-              <span class="text-sm font-semibold text-gray-800">{{
-                comment.author
-              }}</span>
+          >{{ comment.authorInitials }}</div>
+          <div class="flex-1 bg-white rounded-2xl rounded-tl-sm px-4 py-2.5 border border-gray-200">
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="text-[14px] font-semibold text-gray-900">{{ comment.author }}</span>
               <span class="text-xs text-gray-400">{{ comment.timeAgo }}</span>
             </div>
-            <p class="text-sm text-gray-700 leading-relaxed">
-              {{ comment.text }}
-            </p>
+            <p class="text-[14px] text-gray-700 leading-relaxed">{{ comment.text }}</p>
           </div>
         </div>
 
-        <!-- New comment input -->
-        <div class="flex items-start gap-2.5 pt-1">
-          <div
-            class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-semibold shrink-0 mt-1"
-          >
+        <!-- Comment input -->
+        <div class="flex items-start gap-3 pt-1">
+          <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-1">
             {{ getUserInitials() }}
           </div>
           <div class="flex-1 relative">
             <textarea
               #commentArea
               [(ngModel)]="post.newCommentText"
-              placeholder="Write a comment..."
+              placeholder="Add a comment…"
               rows="1"
               (input)="autoGrow(commentArea)"
               (keydown.enter)="onCommentEnter($event, post)"
-              class="w-full bg-gray-100 rounded-2xl px-4 py-2 pr-12 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none overflow-hidden leading-relaxed"
-              style="min-height: 36px; max-height: 120px"
-            >
-            </textarea>
+              class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-2.5 pr-12 text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 resize-none overflow-hidden leading-relaxed"
+              style="min-height: 40px; max-height: 120px"
+            ></textarea>
             <button
               (click)="submitComment(post)"
               [disabled]="!post.newCommentText.trim()"
-              class="absolute right-2 bottom-2 p-1.5 rounded-full transition"
-              [ngClass]="
-                post.newCommentText.trim()
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-400 cursor-not-allowed'
-              "
+              class="absolute right-2 bottom-2 w-7 h-7 rounded-full flex items-center justify-center transition"
+              [ngClass]="post.newCommentText.trim() ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
             >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
               </svg>
             </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       RIGHT COLUMN: Trending + Suggestions + Who to Follow
+  ══════════════════════════════════════════════ -->
+<div class="lg:col-span-3 space-y-5 overflow-y-auto h-full sidebar-scroll">
+
+    <!-- Search bar -->
+    <div class="relative">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        placeholder="Search the workspace…"
+        class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 shadow-sm"
+      />
+    </div>
+
+    <!-- Trending Topics -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 pt-5 pb-3 border-b border-gray-100">
+        <h3 class="text-base font-bold text-gray-900">Trending at Work</h3>
+        <p class="text-xs text-gray-500 mt-0.5">Popular discussions right now</p>
+      </div>
+      <ul class="divide-y divide-gray-50">
+        <li *ngFor="let trend of trendingTopics; let i = index"
+          class="px-5 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer group"
+        >
+          <div class="flex items-start justify-between">
+            <div class="flex-1 min-w-0">
+              <div class="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">
+                {{ trend.category }} · Trending
+              </div>
+              <div class="text-[14px] font-bold text-gray-800 group-hover:text-indigo-600 transition-colors leading-snug">
+                {{ trend.tag }}
+              </div>
+              <div class="text-xs text-gray-500 mt-0.5">{{ trend.postCount }} posts</div>
+            </div>
+            <span class="text-lg font-black text-gray-200 ml-3 mt-0.5 group-hover:text-indigo-200 transition-colors">#{{ i + 1 }}</span>
+          </div>
+        </li>
+      </ul>
+      <div class="px-5 py-3 border-t border-gray-100">
+        <button class="text-[13px] text-indigo-600 font-semibold hover:underline">Show more</button>
+      </div>
+    </div>
+
+    <!-- People to Follow -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 pt-5 pb-3 border-b border-gray-100">
+        <h3 class="text-base font-bold text-gray-900">Colleagues to Connect</h3>
+        <p class="text-xs text-gray-500 mt-0.5">People you may know</p>
+      </div>
+      <ul class="divide-y divide-gray-50">
+        <li *ngFor="let person of suggestedPeople" class="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+          <div
+            class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+            [ngStyle]="{ 'background-color': person.avatarColor }"
+          >{{ person.initials }}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[14px] font-semibold text-gray-900 truncate">{{ person.name }}</div>
+            <div class="text-xs text-gray-500 truncate">{{ person.role }}</div>
+          </div>
+          <button
+            (click)="person.following = !person.following"
+            class="px-3 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0"
+            [ngClass]="person.following
+              ? 'border-gray-300 text-gray-600 hover:border-red-300 hover:text-red-500'
+              : 'border-indigo-600 text-indigo-600 hover:bg-indigo-600 hover:text-white'"
+          >{{ person.following ? 'Following' : 'Follow' }}</button>
+        </li>
+      </ul>
+      <div class="px-5 py-3 border-t border-gray-100">
+        <button class="text-[13px] text-indigo-600 font-semibold hover:underline">View all colleagues</button>
+      </div>
+    </div>
+
+
+    <!-- Footer links -->
+    <div class="px-2">
+      <p class="text-[11px] text-gray-400 leading-relaxed">
+        <a href="#" class="hover:text-gray-600 transition">Privacy</a> ·
+        <a href="#" class="hover:text-gray-600 transition">Terms</a> ·
+        <a href="#" class="hover:text-gray-600 transition">Help Center</a> ·
+        <a href="#" class="hover:text-gray-600 transition">About</a>
+      </p>
+      <p class="text-[11px] text-gray-400 mt-1">© 2025 Your Company, Inc.</p>
+    </div>
+
   </div>
 </div>

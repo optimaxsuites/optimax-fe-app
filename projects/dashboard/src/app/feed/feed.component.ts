@@ -51,65 +51,58 @@ export class FeedComponent implements OnInit {
     }>;
   }> = [];
 
-  // Outputs — emit upward so parent can open modals
-  openPayslipModal() {
-    // Parent listens via (openPayslipModal) output or you can use EventEmitter
-  }
+  // ── Right Column Data ──────────────────────────────────────
 
-  openAttendanceModal() {
-    // Parent listens via (openAttendanceModal) output or you can use EventEmitter
-  }
+  trendingTopics: Array<{
+    tag: string;
+    category: string;
+    postCount: string;
+  }> = [];
 
-  openTaskModal(task: any) {
-    // Parent listens via (openTaskModal) output or you can use EventEmitter
-  }
+  suggestedPeople: Array<{
+    name: string;
+    initials: string;
+    avatarColor: string;
+    role: string;
+    following: boolean;
+  }> = [];
+
+  companyStats: Array<{
+    label: string;
+    value: string;
+    trend: 'up' | 'down';
+    change: string;
+  }> = [];
+
+  // ── Modal hooks ────────────────────────────────────────────
+
+  openPayslipModal() {}
+  openAttendanceModal() {}
+  openTaskModal(task: any) {}
 
   ngOnInit(): void {
     this.loadTasks();
     this.loadEvents();
     this.loadFeedPosts();
+    this.loadTrendingTopics();
+    this.loadSuggestedPeople();
+    this.loadCompanyStats();
   }
 
-  // ===== TASKS =====
+  // ── Tasks ──────────────────────────────────────────────────
 
   loadTasks() {
     this.tasks = [
-      {
-        id: 1,
-        title: 'Review daily sales report',
-        time: '09:00',
-        description: 'Check and validate daily sales figures',
-        status: 'Pending',
-      },
-      {
-        id: 2,
-        title: 'Verify staff attendance',
-        time: '10:30',
-        description: 'Review attendance records for the week',
-        status: 'Pending',
-      },
-      {
-        id: 3,
-        title: 'Prepare monthly report',
-        time: '14:00',
-        description: 'Compile data for monthly performance review',
-        status: 'In Progress',
-      },
+      { id: 1, title: 'Review daily sales report', time: '09:00', description: 'Check and validate daily sales figures', status: 'Pending' },
+      { id: 2, title: 'Verify staff attendance', time: '10:30', description: 'Review attendance records for the week', status: 'Pending' },
+      { id: 3, title: 'Prepare monthly report', time: '14:00', description: 'Compile data for monthly performance review', status: 'In Progress' },
     ];
   }
 
   addTask(title: string) {
     if (!title.trim()) return;
-    const nextId = this.tasks.length
-      ? Math.max(...this.tasks.map((t) => t.id)) + 1
-      : 1;
-    this.tasks.push({
-      id: nextId,
-      title: title.trim(),
-      time: '09:00',
-      description: '',
-      status: 'Pending',
-    });
+    const nextId = this.tasks.length ? Math.max(...this.tasks.map((t) => t.id)) + 1 : 1;
+    this.tasks.push({ id: nextId, title: title.trim(), time: '09:00', description: '', status: 'Pending' });
     this.newTask = '';
   }
 
@@ -117,32 +110,17 @@ export class FeedComponent implements OnInit {
     this.tasks = this.tasks.filter((t) => t.id !== id);
   }
 
-  // ===== EVENTS =====
+  // ── Events ─────────────────────────────────────────────────
 
   loadEvents() {
     this.events = [
-      {
-        title: 'Quarterly Review Meeting',
-        date: 'March 10, 2025',
-        color: 'bg-blue-100',
-        iconColor: 'text-blue-600',
-      },
-      {
-        title: 'Team Building Event',
-        date: 'March 15, 2025',
-        color: 'bg-orange-100',
-        iconColor: 'text-orange-500',
-      },
-      {
-        title: 'Monthly Audit',
-        date: 'March 25, 2025',
-        color: 'bg-indigo-100',
-        iconColor: 'text-indigo-600',
-      },
+      { title: 'Quarterly Review Meeting', date: 'March 10, 2025', color: 'bg-blue-100', iconColor: 'text-blue-600' },
+      { title: 'Team Building Event', date: 'March 15, 2025', color: 'bg-orange-100', iconColor: 'text-orange-500' },
+      { title: 'Monthly Audit', date: 'March 25, 2025', color: 'bg-indigo-100', iconColor: 'text-indigo-600' },
     ];
   }
 
-  // ===== FEED =====
+  // ── Feed ───────────────────────────────────────────────────
 
   loadFeedPosts() {
     this.feedPosts = [
@@ -153,30 +131,15 @@ export class FeedComponent implements OnInit {
         avatarColor: '#6366f1',
         role: 'HR Manager',
         timeAgo: '2 hours ago',
-        content:
-          'Exciting news! We are happy to announce the new health benefit packages available for all employees starting next month. Check your internal portal for details.',
+        content: 'Exciting news! We are happy to announce the new health benefit packages available for all employees starting next month. Check your internal portal for details.',
         likes: 24,
         shares: 8,
         liked: false,
         showComments: false,
         newCommentText: '',
         commentList: [
-          {
-            id: 1,
-            author: 'Ogah Steve',
-            authorInitials: 'OS',
-            avatarColor: '#f59e0b',
-            text: 'This is great news! Thanks for sharing, Toye.',
-            timeAgo: '1 hour ago',
-          },
-          {
-            id: 2,
-            author: 'Michael Okafor',
-            authorInitials: 'MO',
-            avatarColor: '#10b981',
-            text: 'Looking forward to reviewing the new packages!',
-            timeAgo: '45 min ago',
-          },
+          { id: 1, author: 'Ogah Steve', authorInitials: 'OS', avatarColor: '#f59e0b', text: 'This is great news! Thanks for sharing, Toye.', timeAgo: '1 hour ago' },
+          { id: 2, author: 'Michael Okafor', authorInitials: 'MO', avatarColor: '#10b981', text: 'Looking forward to reviewing the new packages!', timeAgo: '45 min ago' },
         ],
       },
       {
@@ -186,8 +149,7 @@ export class FeedComponent implements OnInit {
         avatarColor: '#f59e0b',
         role: 'Product Lead',
         timeAgo: '5 hours ago',
-        content:
-          'Great session today on the Q3 roadmap! Thanks to everyone for the valuable feedback. 🚀',
+        content: 'Great session today on the Q3 roadmap! Thanks to everyone for the valuable feedback. 🚀',
         image: 'assets/images/meeting-placeholder.jpg',
         likes: 45,
         shares: 3,
@@ -195,14 +157,7 @@ export class FeedComponent implements OnInit {
         showComments: false,
         newCommentText: '',
         commentList: [
-          {
-            id: 1,
-            author: 'Jessica Damilola',
-            authorInitials: 'JD',
-            avatarColor: '#6366f1',
-            text: 'Excellent work Akin! The roadmap looks solid.',
-            timeAgo: '4 hours ago',
-          },
+          { id: 1, author: 'Jessica Damilola', authorInitials: 'JD', avatarColor: '#6366f1', text: 'Excellent work Akin! The roadmap looks solid.', timeAgo: '4 hours ago' },
         ],
       },
       {
@@ -212,8 +167,7 @@ export class FeedComponent implements OnInit {
         avatarColor: '#10b981',
         role: 'Finance Officer',
         timeAgo: '1 day ago',
-        content:
-          'Reminder: Q1 budget submissions are due this Friday. Please ensure all department heads have submitted their reports. Reach out if you need any assistance.',
+        content: 'Reminder: Q1 budget submissions are due this Friday. Please ensure all department heads have submitted their reports. Reach out if you need any assistance.',
         likes: 18,
         shares: 2,
         liked: false,
@@ -224,20 +178,46 @@ export class FeedComponent implements OnInit {
     ];
   }
 
+  // ── Right Column ───────────────────────────────────────────
+
+  loadTrendingTopics() {
+    this.trendingTopics = [
+      { tag: 'Q3 Roadmap', category: 'Product', postCount: '48 posts' },
+      { tag: 'Health Benefits 2025', category: 'HR', postCount: '36 posts' },
+      { tag: 'Team Building', category: 'Culture', postCount: '24 posts' },
+      { tag: 'Budget Submission', category: 'Finance', postCount: '19 posts' },
+      { tag: 'Remote Work Policy', category: 'HR', postCount: '15 posts' },
+    ];
+  }
+
+  loadSuggestedPeople() {
+    this.suggestedPeople = [
+      { name: 'Ogah Steve', initials: 'OS', avatarColor: '#f59e0b', role: 'Sales Executive', following: false },
+      { name: 'Jessica Damilola', initials: 'JD', avatarColor: '#6366f1', role: 'UX Designer', following: false },
+      { name: 'Tunde Bello', initials: 'TB', avatarColor: '#ec4899', role: 'DevOps Engineer', following: false },
+      { name: 'Amaka Nwosu', initials: 'AN', avatarColor: '#14b8a6', role: 'Data Analyst', following: false },
+    ];
+  }
+
+  loadCompanyStats() {
+    this.companyStats = [
+      { label: 'Active Employees', value: '248', trend: 'up', change: '3%' },
+      { label: 'Avg. Attendance', value: '94%', trend: 'up', change: '2%' },
+      { label: 'Open Positions', value: '12', trend: 'down', change: '2' },
+      { label: 'Tasks Completed', value: '87%', trend: 'up', change: '5%' },
+    ];
+  }
+
+  // ── Post / Comment actions ─────────────────────────────────
+
   onPostEnter(event: Event) {
     const ke = event as KeyboardEvent;
-    if (!ke.shiftKey) {
-      event.preventDefault();
-      this.submitPost();
-    }
+    if (!ke.shiftKey) { event.preventDefault(); this.submitPost(); }
   }
 
   onCommentEnter(event: Event, post: any) {
     const ke = event as KeyboardEvent;
-    if (!ke.shiftKey) {
-      event.preventDefault();
-      this.submitComment(post);
-    }
+    if (!ke.shiftKey) { event.preventDefault(); this.submitComment(post); }
   }
 
   toggleLike(post: any) {
@@ -252,16 +232,14 @@ export class FeedComponent implements OnInit {
   submitPost() {
     const text = this.newPostText.trim();
     if (!text) return;
-
     const name = this.userInfo?.username || this.userInfo?.fullname || 'You';
     const role = this.userInfo?.role || 'User';
-
     this.feedPosts.unshift({
       id: Date.now(),
       author: name,
       authorInitials: this.getUserInitials(),
       avatarColor: '#6366f1',
-      role: role,
+      role,
       timeAgo: 'Just now',
       content: text,
       likes: 0,
@@ -277,14 +255,13 @@ export class FeedComponent implements OnInit {
   submitComment(post: any) {
     const text = (post.newCommentText || '').trim();
     if (!text) return;
-
     const name = this.userInfo?.username || this.userInfo?.fullname || 'You';
     post.commentList.push({
       id: Date.now(),
       author: name,
       authorInitials: this.getUserInitials(),
       avatarColor: '#6366f1',
-      text: text,
+      text,
       timeAgo: 'Just now',
     });
     post.newCommentText = '';
