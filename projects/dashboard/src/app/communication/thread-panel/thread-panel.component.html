@@ -25,7 +25,7 @@
           </span>
         </div>
         <button
-          *ngIf="isChannelOwner()"
+          *ngIf="canAdministerChannel()"
           (click)="editChannelClicked.emit($event)"
           class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50 flex-shrink-0"
         >
@@ -71,7 +71,7 @@
               {{ m.role }}<span *ngIf="m.userId === activeChannel.createdBy" class="ml-1 text-[#2e6276] font-semibold">· Owner</span>
             </p>
           </div>
-          <div *ngIf="isChannelOwner() && m.userId !== myUserId" class="relative flex-shrink-0">
+          <div *ngIf="canAdministerChannel() && m.userId !== myUserId" class="relative flex-shrink-0">
             <button
               (click)="memberMenuOpened.emit({ member: m, event: $event })"
               class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -105,8 +105,53 @@
                   />
                 </svg>Remove
               </button>
+              <button
+                (click)="banMember.emit(m)"
+                class="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"
+                  />
+                </svg>Ban
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Banned members -->
+    <div *ngIf="bannedChannelMembers.length" class="min-w-0">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-[14px] font-semibold text-gray-700">Banned Members ({{ bannedChannelMembers.length }})</h4>
+      </div>
+      <div class="flex flex-col gap-2 min-w-0">
+        <div
+          *ngFor="let m of bannedChannelMembers"
+          class="flex items-center gap-3 px-3 py-2.5 bg-white border border-red-100 rounded-xl relative min-w-0"
+        >
+          <div class="relative flex-shrink-0">
+            <img *ngIf="getMemberAvatarUrl(m.userId)" [src]="getMemberAvatarUrl(m.userId)" alt="" class="w-8 h-8 rounded-full object-cover" />
+            <div
+              *ngIf="!getMemberAvatarUrl(m.userId)"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+              [style.background]="colorFor(m.userId)"
+            >{{ getMemberName(m.userId) | slice:0:1 }}</div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[14px] font-medium text-gray-800 truncate">{{ getMemberName(m.userId) }}</p>
+            <p class="text-[11px] text-red-500 font-medium">Banned from channel</p>
+          </div>
+          <button
+            *ngIf="canAdministerChannel()"
+            (click)="unbanMember.emit(m)"
+            class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>Unban
+          </button>
         </div>
       </div>
     </div>
@@ -150,7 +195,7 @@
         </svg>Leave Channel
       </button>
       <button
-        *ngIf="isChannelOwner()"
+        *ngIf="canAdministerChannel()"
         (click)="deleteChannel.emit()"
         class="w-full flex items-center justify-center gap-2 py-2.5 text-red-500 hover:bg-red-50 rounded-xl text-[13px] font-semibold transition-colors border border-red-200"
       >

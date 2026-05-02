@@ -411,6 +411,7 @@ export class CommunicationComponent
   channelMessages: Record<string, Message[]> = {};
   dmMessages: Record<string, Message[]> = {};
   channelMembers: CollabMember[] = [];
+  bannedChannelMembers: CollabMember[] = [];
   channelMembersLoading = false;
 
   channelsLoading = true;
@@ -585,6 +586,10 @@ export class CommunicationComponent
   get canManageChannels(): boolean {
     const rawRole = sessionStorage.getItem('role') || '';
     return rawRole.toUpperCase().includes('ROLE_ADMIN');
+  }
+
+  get canAdministerActiveChannel(): boolean {
+    return this.canManageChannels || this.isChannelOwner();
   }
 
   get selectedFeedPost(): CollabFeedPost | undefined {
@@ -2378,6 +2383,9 @@ export class CommunicationComponent
 
   openEditChannelModal(ch: Channel, e: Event): void {
     e.stopPropagation();
+    if (!(this.canManageChannels || Number(ch.createdBy) === Number(this.me.userId))) {
+      return;
+    }
     this.channelModal = {
       open: true,
       mode: 'edit',
@@ -2412,8 +2420,14 @@ export class CommunicationComponent
   }
 
   saveChannelModal(): void {
-    if (!this.canManageChannels) {
-      this.channelModal.error = 'Only administrators can create channels.';
+    if (
+      (this.channelModal.mode === 'create' && !this.canManageChannels) ||
+      (this.channelModal.mode === 'edit' && !this.canAdministerActiveChannel)
+    ) {
+      this.channelModal.error =
+        this.channelModal.mode === 'create'
+          ? 'Only administrators can create channels.'
+          : 'Only channel owners or administrators can edit this channel.';
       this.cdr.detectChanges();
       return;
     }
@@ -2481,7 +2495,7 @@ export class CommunicationComponent
 
   deleteActiveChannel(): void {
     const ch = this.activeChannel;
-    if (!ch || !this.canManageChannels) return;
+    if (!ch || !this.canAdministerActiveChannel) return;
     if (!confirm(`Delete channel #${ch.name}? This cannot be undone.`)) return;
     this.collabService.deleteChannel(ch.backendId).subscribe({
       next: () => {
@@ -2506,13 +2520,27 @@ export class CommunicationComponent
     this.channelMembersLoading = true;
     this.collabService.getChannelMembers(channelId).subscribe({
       next: (members) => {
-        this.channelMembers = members;
-        this.channelMembersLoading = false;
-        this.loadMemberAvatars(members.map((m) => m.userId));
-        this.cdr.detectChanges();
+        this.channelMembers = members.filter((member) => member.status !== 'BANNED');
+        this.collabService.getChannelMembersByStatus(channelId, 'BANNED').subscribe({
+          next: (bannedMembers) => {
+            this.bannedChannelMembers = bannedMembers;
+            this.channelMembersLoading = false;
+            this.loadMemberAvatars(
+              [...this.channelMembers, ...this.bannedChannelMembers].map((m) => m.userId),
+            );
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.bannedChannelMembers = [];
+            this.channelMembersLoading = false;
+            this.loadMemberAvatars(this.channelMembers.map((m) => m.userId));
+            this.cdr.detectChanges();
+          },
+        });
       },
       error: () => {
         this.channelMembersLoading = false;
+        this.bannedChannelMembers = [];
         this.cdr.detectChanges();
       },
     });
@@ -2561,20 +2589,29 @@ export class CommunicationComponent
 
   addMemberToActiveChannel(userId: number): void {
     const ch = this.activeChannel;
-    if (!ch) return;
+    if (!ch || !this.canAdministerActiveChannel) return;
     this.collabService.addChannelMember(ch.backendId, userId).subscribe({
       next: (m) => {
+        this.bannedChannelMembers = this.bannedChannelMembers.filter(
+          (member) => member.userId !== userId,
+        );
         this.channelMembers.push(m);
         this.loadMemberAvatars([userId]);
         this.cdr.detectChanges();
       },
-      error: (err) => console.error(err),
+      error: (err) => {
+        console.error(err);
+        const message =
+          err?.error?.message || err?.error?.detail || 'Unable to add member.';
+        alert(message);
+      },
     });
   }
 
   removeMemberFromChannel(member: CollabMember, e?: Event): void {
     e?.stopPropagation();
-    if (!member.id) return;
+    if (!member.id || !this.canAdministerActiveChannel) return;
+    this.closeMemberMenu();
     this.collabService.removeChannelMember(member.id).subscribe({
       next: () => {
         this.channelMembers = this.channelMembers.filter(
@@ -2586,10 +2623,46 @@ export class CommunicationComponent
     });
   }
 
+  banMemberFromChannel(member: CollabMember, e?: Event): void {
+    e?.stopPropagation();
+    if (!member.id || !this.canAdministerActiveChannel) return;
+    if (!confirm(`Ban ${this.getMemberName(member.userId)} from this channel?`)) {
+      return;
+    }
+    this.closeMemberMenu();
+    this.collabService.banChannelMember(member.id).subscribe({
+      next: () => {
+        this.channelMembers = this.channelMembers.filter((m) => m.id !== member.id);
+        this.bannedChannelMembers = [
+          ...this.bannedChannelMembers,
+          { ...member, status: 'BANNED' },
+        ];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error(err),
+    });
+  }
+
+  unbanMemberFromChannel(member: CollabMember, e?: Event): void {
+    e?.stopPropagation();
+    if (!member.id || !this.canAdministerActiveChannel) return;
+    this.collabService.unbanChannelMember(member.id).subscribe({
+      next: () => {
+        this.bannedChannelMembers = this.bannedChannelMembers.filter(
+          (m) => m.id !== member.id,
+        );
+        this.channelMembers.push({ ...member, status: 'ACTIVE' });
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error(err),
+    });
+  }
+
   makeChannelOwner(userId: number): void {
     const ch = this.activeChannel;
     if (
       !ch ||
+      !this.canAdministerActiveChannel ||
       !confirm(`Make ${this.getMemberName(userId)} the channel owner?`)
     )
       return;
@@ -4504,10 +4577,12 @@ export class CommunicationComponent
 
   get nonMembers(): EmployeeProfile[] {
     const memberUserIds = new Set(this.channelMembers.map((m) => m.userId));
+    const bannedUserIds = new Set(this.bannedChannelMembers.map((m) => m.userId));
     return this.allEmployees.filter(
       (e) =>
         e.user?.userId != null &&
         !memberUserIds.has(Number(e.user.userId)) &&
+        !bannedUserIds.has(Number(e.user.userId)) &&
         Number(e.user.userId) !== this.me.userId,
     );
   }
