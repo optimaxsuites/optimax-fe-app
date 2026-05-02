@@ -90,6 +90,14 @@ export class HeaderStateService {
       createdAt: Date.now(),
       read: false,
       ...item,
+      title: this.stringifyNotificationField(item.title, 'New update'),
+      body: this.stringifyNotificationField(
+        item.body,
+        'A new module event is available.',
+      ),
+      contextLabel: item.contextLabel
+        ? this.stringifyNotificationField(item.contextLabel, '')
+        : item.contextLabel,
     };
     const notifications = [nextItem, ...this.state$.value.notifications].slice(
       0,
@@ -183,11 +191,43 @@ export class HeaderStateService {
     const detail = event.detail || {};
     this.ngZone.run(() => {
       this.pushNotification({
-        title: detail.title || 'New update',
-        body: detail.body || 'A new module event is available.',
+        title: this.stringifyNotificationField(detail.title, 'New update'),
+        body: this.stringifyNotificationField(
+          detail.body,
+          'A new module event is available.',
+        ),
         category: detail.category || 'module',
         route: detail.route,
       });
     });
   };
+
+  private stringifyNotificationField(
+    value: unknown,
+    fallback: string,
+  ): string {
+    if (typeof value === 'string') {
+      const cleaned = value.trim();
+      return cleaned || fallback;
+    }
+    if (value == null) {
+      return fallback;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((entry) => this.stringifyNotificationField(entry, ''))
+        .filter(Boolean);
+      return parts.length ? parts.join(', ') : fallback;
+    }
+    if (typeof value === 'object') {
+      const candidate = (value as any).title || (value as any).name || (value as any).label || (value as any).message;
+      if (candidate) {
+        return this.stringifyNotificationField(candidate, fallback);
+      }
+    }
+    return fallback;
+  }
 }

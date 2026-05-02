@@ -61,6 +61,12 @@ export interface Message {
   threadRootMessageId?: number;
   deleting?: boolean;
   deliveryState?: 'SENDING' | 'DELIVERED' | 'READ';
+  sourceType?: 'channel' | 'dm';
+  sourceLabel?: string;
+  sourceSecondaryLabel?: string;
+  threadSummary?: string;
+  threadReplyCount?: number;
+  threadLastActivityRaw?: string | number[];
 }
 
 export interface Channel {
@@ -90,6 +96,8 @@ export interface DmContact {
   hasUnread?: boolean;
   unreadCount?: number;
   dmChannelId?: number;
+  lastMessagePreview?: string;
+  lastMessageTime?: string;
 }
 
 interface CollaborationFeedHighlight {
@@ -292,6 +300,7 @@ export class CommunicationComponent
     'reporting',
   ];
   feedThreads: Record<number, FeedThreadState> = {};
+  threadInboxQuery = '';
 
   activeView: 'channel' | 'dm' | 'threads' = 'channel';
   activeChannelId = '';
@@ -386,11 +395,11 @@ export class CommunicationComponent
   ];
 
   sidebarWidth = 240;
-  threadPanelWidth = 380;
+  threadPanelWidth = 460;
   readonly SIDEBAR_MIN = 200;
   readonly SIDEBAR_MAX = 340;
-  readonly THREAD_MIN = 300;
-  readonly THREAD_MAX = 560;
+  readonly THREAD_MIN = 360;
+  readonly THREAD_MAX = 720;
   isResizingSidebar = false;
   isResizingThread = false;
   private resizeStartX = 0;
@@ -556,6 +565,28 @@ export class CommunicationComponent
     return 'Channel collaboration';
   }
 
+  get filteredThreadMessages(): Message[] {
+    const query = this.threadInboxQuery.trim().toLowerCase();
+    if (!query) return this.threadMessages;
+    return this.threadMessages.filter((message) =>
+      [
+        message.author,
+        message.content,
+        message.sourceLabel,
+        message.sourceSecondaryLabel,
+        message.threadSummary,
+        ...(message.replies || []).map((reply) => reply.content),
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }
+
+  get canManageChannels(): boolean {
+    const rawRole = sessionStorage.getItem('role') || '';
+    return rawRole.toUpperCase().includes('ROLE_ADMIN');
+  }
+
   get selectedFeedPost(): CollabFeedPost | undefined {
     return this.feedPosts.find((post) => post.id === this.selectedFeedPostId);
   }
@@ -567,6 +598,12 @@ export class CommunicationComponent
 
   highlightToneClass(tone: CollaborationFeedHighlight['tone']): string {
     return `highlight-${tone}`;
+  }
+
+  highlightToneLabel(tone: CollaborationFeedHighlight['tone']): string {
+    if (tone === 'focus') return 'Needs attention';
+    if (tone === 'success') return 'Positive momentum';
+    return 'Team update';
   }
 
   focusStatusClass(status: CollaborationFocusItem['status']): string {
@@ -1984,6 +2021,7 @@ export class CommunicationComponent
       this.dmMessages[contact.id] = [
         ...this.applyServerMessages(existing, serverMessages),
       ];
+      this.updateDmConversationMeta(contact, this.dmMessages[contact.id]);
       this.buildReadStateMap(serverMessages, snap.readStates || []);
       this.applyReadStateToMessages(this.dmMessages[contact.id]);
       if (serverMessages.length) {
@@ -2118,6 +2156,9 @@ export class CommunicationComponent
         const list: EmployeeProfile[] = Array.isArray(res)
           ? res
           : (res?.content ?? res?.data ?? []);
+        const existingContacts = new Map(
+          this.dmContacts.map((contact) => [Number(contact.userId), contact]),
+        );
         this.allEmployees = list;
         this.dmContacts = list
           .filter(
@@ -2145,6 +2186,13 @@ export class CommunicationComponent
               department: e.department?.name,
               online: false,
             };
+            const existing = existingContacts.get(contact.userId);
+            if (existing) {
+              contact.dmChannelId = existing.dmChannelId;
+              contact.unreadCount = existing.unreadCount;
+              contact.hasUnread = existing.hasUnread;
+              contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
+            }
             if (e.user?.email)
               this.userEmailCache[contact.userId] = e.user.email;
             if (e.employeeMedia?.mediaNo) {
@@ -2258,7 +2306,13 @@ export class CommunicationComponent
         };
       });
     this.channelsLoading = false;
-    if (this.channels.length > 0 && !this.activeChannelId)
+    if (
+      this.channels.length > 0 &&
+      !this.activeChannelId &&
+      !this.activeDmId &&
+      this.activeView === 'channel' &&
+      this.workspaceMode === 'chat'
+    )
       this.selectChannel(this.channels[0].id);
     this.syncHeaderState();
     this.cdr.detectChanges();
@@ -2306,6 +2360,7 @@ export class CommunicationComponent
   // ── Channel management ────────────────────────────────
 
   openCreateChannelModal(): void {
+    if (!this.canManageChannels) return;
     this.channelModal = {
       open: true,
       mode: 'create',
@@ -2357,6 +2412,11 @@ export class CommunicationComponent
   }
 
   saveChannelModal(): void {
+    if (!this.canManageChannels) {
+      this.channelModal.error = 'Only administrators can create channels.';
+      this.cdr.detectChanges();
+      return;
+    }
     const m = this.channelModal;
     if (!m.name.trim()) {
       m.error = 'Channel name is required.';
@@ -2421,7 +2481,7 @@ export class CommunicationComponent
 
   deleteActiveChannel(): void {
     const ch = this.activeChannel;
-    if (!ch || ch.createdBy !== this.me.userId) return;
+    if (!ch || !this.canManageChannels) return;
     if (!confirm(`Delete channel #${ch.name}? This cannot be undone.`)) return;
     this.collabService.deleteChannel(ch.backendId).subscribe({
       next: () => {
@@ -2595,7 +2655,7 @@ export class CommunicationComponent
   selectChannel(id: string, switchWorkspace = false): void {
     this.cancelEdit();
     this.confirmDeleteId = null;
-    if (switchWorkspace) this.workspaceMode = 'chat';
+    this.workspaceMode = 'chat';
     this.showChannelDetails = false;
     this.activeChannelId = id;
     this.activeView = 'channel';
@@ -2626,7 +2686,7 @@ export class CommunicationComponent
   selectDm(contactId: string, switchWorkspace = false): void {
     this.cancelEdit();
     this.confirmDeleteId = null;
-    if (switchWorkspace) this.workspaceMode = 'chat';
+    this.workspaceMode = 'chat';
     this.activeDmId = contactId;
     this.activeView = 'dm';
     this.activeChannelId = '';
@@ -2646,6 +2706,7 @@ export class CommunicationComponent
   }
 
   setView(v: 'threads'): void {
+    this.workspaceMode = 'chat';
     this.activeView = v;
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
@@ -2654,9 +2715,18 @@ export class CommunicationComponent
     this.showChannelDetails = false;
     this.cancelEdit();
     this.confirmDeleteId = null;
+    this.threadInboxQuery = '';
     for (const ch of this.channels) {
       if (this.channelMessages[ch.id] === undefined)
         this.loadChannelMessages(ch);
+    }
+    for (const dm of this.dmContacts) {
+      if (
+        dm.dmChannelId &&
+        this.dmMessages[dm.id] === undefined
+      ) {
+        this.loadDmMessages(dm, dm.dmChannelId);
+      }
     }
     this.cdr.detectChanges();
   }
@@ -2735,6 +2805,7 @@ export class CommunicationComponent
             snap.reactions || [],
             snap.attachments || [],
           );
+          this.updateDmConversationMeta(contact, this.dmMessages[contact.id]);
           this.buildReadStateMap(snap.messages, snap.readStates || []);
           this.lastMessageBackendId = snap.messages[snap.messages.length - 1].id;
           if (this.lastMessageBackendId) {
@@ -3523,10 +3594,11 @@ export class CommunicationComponent
       rootMsg = this.activeThread;
     if (!text || !rootMsg || this.sendingReply) return;
 
-    const isDm = this.activeView === 'dm';
+    const source = this.resolveThreadMessageSource(rootMsg);
+    const isDm = source?.type === 'dm';
     const channelId = isDm
-      ? this.activeDmContact?.dmChannelId
-      : this.activeChannel?.backendId;
+      ? source?.dmChannelId
+      : source?.channelBackendId;
 
     const replyTarget = this.activeThreadReplyToId
       ? (this.findMsgInTree(rootMsg.replies, this.activeThreadReplyToId) ??
@@ -4241,9 +4313,43 @@ export class CommunicationComponent
     return this.dmContacts.find((d) => d.id === this.activeDmId);
   }
   get rawMessages(): Message[] {
+    if (this.activeView === 'threads') {
+      return this.filteredThreadMessages;
+    }
     return this.activeView === 'dm'
       ? this.dmMessages[this.activeDmId] || []
       : this.channelMessages[this.activeChannelId] || [];
+  }
+
+  get threadMessages(): Message[] {
+    const channelThreads = this.channels.flatMap((channel) =>
+      (this.channelMessages[channel.id] || [])
+        .filter((message) => (message.replies || []).length > 0 && !message.isSystem)
+        .map((message) =>
+          this.decorateThreadMessage(message, {
+            sourceType: 'channel',
+            sourceLabel: channel.name,
+            sourceSecondaryLabel: channel.description || 'Channel discussion',
+          }),
+        ),
+    );
+    const dmThreads = this.dmContacts.flatMap((contact) =>
+      (this.dmMessages[contact.id] || [])
+        .filter((message) => (message.replies || []).length > 0 && !message.isSystem)
+        .map((message) =>
+          this.decorateThreadMessage(message, {
+            sourceType: 'dm',
+            sourceLabel: contact.fullName,
+            sourceSecondaryLabel: contact.jobTitle || 'Direct conversation',
+          }),
+        ),
+    );
+    return [...channelThreads, ...dmThreads]
+      .sort((left, right) => {
+        const leftTime = this.latestThreadTimestamp(left);
+        const rightTime = this.latestThreadTimestamp(right);
+        return rightTime - leftTime;
+      });
   }
   get pinnedMessages(): Message[] {
     return this.rawMessages
@@ -4289,6 +4395,102 @@ export class CommunicationComponent
     if (this.showPinnedPanel) return 'pinned';
     if (this.activeThreadId) return 'thread';
     return null;
+  }
+
+  private latestThreadTimestamp(message: Message): number {
+    const ownTime = this.messageTimestamp(message);
+    const replyTimes = (message.replies || []).map((reply) =>
+      this.latestThreadTimestamp(reply),
+    );
+    return Math.max(ownTime, ...replyTimes, 0);
+  }
+
+  private messageTimestamp(message: Message): number {
+    const parsed = parseServerDate(message.sentAtRaw);
+    return parsed?.getTime() || message.createdAt?.getTime() || 0;
+  }
+
+  private decorateThreadMessage(
+    message: Message,
+    metadata: {
+      sourceType: 'channel' | 'dm';
+      sourceLabel: string;
+      sourceSecondaryLabel: string;
+    },
+  ): Message {
+    const replies = this.flattenThreadReplies(message);
+    const latestReply = replies[replies.length - 1];
+    const summary = replies
+      .slice(0, 2)
+      .map((reply) => `${reply.author}: ${reply.content}`)
+      .join(' • ');
+    return {
+      ...message,
+      sourceType: metadata.sourceType,
+      sourceLabel: metadata.sourceLabel,
+      sourceSecondaryLabel: metadata.sourceSecondaryLabel,
+      threadSummary: summary || message.content,
+      threadReplyCount: replies.length,
+      threadLastActivityRaw: latestReply?.sentAtRaw || message.sentAtRaw,
+    };
+  }
+
+  private flattenThreadReplies(message: Message): Message[] {
+    const output: Message[] = [];
+    const walk = (items: Message[]) => {
+      for (const item of items) {
+        output.push(item);
+        if (item.replies?.length) {
+          walk(item.replies);
+        }
+      }
+    };
+    walk(message.replies || []);
+    return output;
+  }
+
+  private resolveThreadMessageSource(message: Message): {
+    type: 'channel' | 'dm';
+    channelBackendId?: number;
+    dmChannelId?: number;
+  } | null {
+    for (const channel of this.channels) {
+      if (this.findMsgInTree(this.channelMessages[channel.id] || [], message.id)) {
+        return { type: 'channel', channelBackendId: channel.backendId };
+      }
+    }
+    for (const contact of this.dmContacts) {
+      if (this.findMsgInTree(this.dmMessages[contact.id] || [], message.id)) {
+        return { type: 'dm', dmChannelId: contact.dmChannelId };
+      }
+    }
+    return null;
+  }
+
+  private updateDmConversationMeta(contact: DmContact, messages: Message[]): void {
+    const latest = this.findLatestMessage(messages);
+    if (!latest) return;
+    contact.lastMessagePreview = latest.attachment?.name
+      ? `Attachment: ${latest.attachment.name}`
+      : latest.content;
+    contact.lastMessageTime = latest.time;
+  }
+
+  private findLatestMessage(messages: Message[]): Message | null {
+    const output: Message[] = [];
+    const walk = (items: Message[]) => {
+      for (const item of items) {
+        output.push(item);
+        if (item.replies?.length) {
+          walk(item.replies);
+        }
+      }
+    };
+    walk(messages || []);
+    if (!output.length) return null;
+    return output.sort(
+      (left, right) => this.messageTimestamp(right) - this.messageTimestamp(left),
+    )[0];
   }
 
   get allThreaded(): { msg: Message; channelName: string }[] {
@@ -4668,6 +4870,9 @@ export class CommunicationComponent
     if (/^https?:\/\//i.test(url) && !url.includes('/x/api/v2/')) {
       return url;
     }
+    const absoluteUrl = /^https?:\/\//i.test(url)
+      ? url
+      : `${this.collabService.apiBaseUrl}${url}`;
     if (this.attachmentPreviewCache[url]) {
       return this.attachmentPreviewCache[url];
     }
@@ -4682,7 +4887,7 @@ export class CommunicationComponent
           this.attachmentPreviewLoading.delete(url);
         });
     }
-    return '';
+    return absoluteUrl;
   }
 
   trackById(_: number, m: { id: string }): string {

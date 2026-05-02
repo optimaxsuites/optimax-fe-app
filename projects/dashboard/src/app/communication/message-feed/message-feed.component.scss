@@ -1,0 +1,165 @@
+/* damilola worked on this: thread inbox card styling for channel and DM conversations. */
+.msg-row {
+  align-items: flex-start;
+  min-width: 0;
+  border: 1px solid transparent;
+
+  &:hover {
+    border-color: #edf2f7;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+}
+
+.msg-row .flex-1,
+.msg-row p,
+.thread-preview-line,
+.thread-summary-root,
+.thread-summary-preview {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.thread-summary-card,
+.thread-preview-line {
+  min-width: 0;
+}
+
+.thread-inbox {
+  display: grid;
+  gap: 1rem;
+  padding: 0.25rem 0.25rem 1rem;
+}
+
+.thread-summary-card {
+  border: 1px solid #dbe5ec;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  padding: 1rem 1.05rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover,
+  &.active {
+    border-color: rgba(46, 98, 118, 0.38);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+.thread-summary-topline,
+.thread-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.thread-source-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: #e8f1f5;
+  color: #2e6276;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+
+  &.dm {
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+}
+
+.thread-summary-time,
+.thread-summary-copy span,
+.thread-summary-preview,
+.thread-preview-line span {
+  color: #64748b;
+}
+
+.thread-summary-time {
+  font-size: 0.78rem;
+}
+
+.thread-summary-header {
+  margin-top: 0.8rem;
+}
+
+.thread-summary-avatar {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.thread-summary-copy {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+
+  strong {
+    color: #0f172a;
+    font-size: 0.96rem;
+  }
+
+  span {
+    font-size: 0.82rem;
+  }
+}
+
+.thread-summary-stats {
+  strong {
+    color: #2e6276;
+    font-size: 0.8rem;
+  }
+}
+
+.thread-summary-body {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.thread-summary-root,
+.thread-summary-preview {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.thread-summary-root,
+.thread-preview-line strong {
+  color: #334155;
+}
+
+.thread-summary-replies {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.thread-preview-line {
+  display: flex;
+  gap: 0.45rem;
+  align-items: baseline;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+  font-size: 0.84rem;
+}

@@ -1,4 +1,4 @@
-<!-- dami just modified this to fix collaboration feed/chat flow and improve the workspace layout. -->
+<!-- dami just modified this to fix collaboration feed/chat flow, improve thread discovery, and sharpen the workspace layout. -->
 <div
   class="comm-shell flex overflow-hidden font-sans select-none"
   style="height: calc(100vh - 57px)"
@@ -21,6 +21,7 @@
       [employeesLoading]="employeesLoading"
       [employeesError]="employeesError"
       [soundEnabled]="soundEnabled"
+      [canCreateChannels]="canManageChannels"
       [searchQuery]="searchQuery"
       [showSearch]="showSearch"
       [searchResults]="searchResults"
@@ -818,7 +819,12 @@
       </aside>
     </section>
 
-    <section *ngIf="workspaceMode === 'chat'" class="chat-workspace">
+    <section
+      *ngIf="workspaceMode === 'chat'"
+      class="chat-workspace"
+      [class.right-panel-open]="rightPanelOpen"
+      [style.--thread-panel-width.px]="threadPanelWidth"
+    >
       <div class="chat-panel">
         <div class="chat-topbar">
           <div>
@@ -826,15 +832,43 @@
             <h2>
               <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.name || 'Select a channel' }}</ng-container>
               <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.fullName || 'Select a contact' }}</ng-container>
+              <ng-container *ngIf="activeView === 'threads'">All threads</ng-container>
             </h2>
             <span class="chat-subtitle">
               <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.description }}</ng-container>
-              <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.jobTitle }}</ng-container>
+              <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}</ng-container>
+              <ng-container *ngIf="activeView === 'threads'">Grouped replies from channels and direct conversations in one searchable inbox.</ng-container>
             </span>
           </div>
-          <button type="button" class="toolbar-action primary" (click)="setWorkspaceMode('feed')">
-            Return to feed
-          </button>
+          <div class="workspace-toolbar-actions">
+            <input
+              *ngIf="activeView === 'threads'"
+              type="search"
+              class="workspace-search-input"
+              placeholder="Search threads, people, channels, replies"
+              [(ngModel)]="threadInboxQuery"
+            />
+            <button
+              *ngIf="activeView === 'channel'"
+              type="button"
+              class="toolbar-action"
+              (click)="togglePinnedPanel()"
+            >
+              Pinned
+            </button>
+            <button
+              *ngIf="activeView === 'channel'"
+              type="button"
+              class="toolbar-action"
+              [class.active]="showChannelDetails"
+              (click)="toggleChannelDetails()"
+            >
+              Channel details
+            </button>
+            <button type="button" class="toolbar-action primary" (click)="setWorkspaceMode('feed')">
+              Return to feed
+            </button>
+          </div>
         </div>
 
         <div #feedEl class="chat-feed">
@@ -870,6 +904,7 @@
         </div>
 
         <app-message-composer
+          *ngIf="activeView !== 'threads'"
           [draft]="draft"
           [placeholder]="composerPlaceholder()"
           [sendingMessage]="sendingMessage"
@@ -894,9 +929,12 @@
           (composerTyping)="onComposerTyping()"
           (aiOutputUsed)="onAiOutputUsed($event)"
         ></app-message-composer>
+        <div *ngIf="activeView === 'threads'" class="threads-inline-note">
+          Pick any thread card to open the full conversation and reply from the thread panel.
+        </div>
       </div>
 
-      <aside class="chat-thread-shell" *ngIf="rightPanelOpen" [style.width.px]="threadPanelWidth">
+      <aside class="chat-thread-shell" *ngIf="rightPanelOpen">
         <div
           class="chat-thread-resizer"
           (mousedown)="startResizeThread($event)"
@@ -961,14 +999,17 @@
           <div class="rail-card-header">
             <div>
               <p class="rail-label">Highlights</p>
-              <h3>Integrated collaboration context</h3>
+              <h3>Live collaboration pulse</h3>
             </div>
           </div>
           <article *ngFor="let highlight of workspaceHighlights" class="rail-highlight" [ngClass]="highlightToneClass(highlight.tone)">
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">{{ highlight.role }}</span>
+              <time>{{ highlight.timeAgo }}</time>
+            </div>
             <div class="rail-highlight-meta">
               <strong>{{ highlight.author }}</strong>
-              <span>{{ highlight.role }}</span>
-              <time>{{ highlight.timeAgo }}</time>
+              <span>{{ highlightToneLabel(highlight.tone) }}</span>
             </div>
             <p>{{ highlight.content }}</p>
           </article>
