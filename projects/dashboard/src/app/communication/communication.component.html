@@ -173,6 +173,20 @@
                   {{ feedMentionLabel(employee) }}
                 </button>
               </div>
+              <a
+                *ngIf="feedComposerLinkPreview() as preview"
+                class="feed-link-preview draft"
+                [href]="preview.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                <span class="feed-link-preview-copy">
+                  <strong>{{ preview.title }}</strong>
+                  <small>{{ preview.subtitle }}</small>
+                  <em>{{ preview.displayUrl }}</em>
+                </span>
+              </a>
             </div>
           </div>
 
@@ -358,10 +372,24 @@
                 </div>
               </header>
 
-              <div class="feed-post-body">
-                <h3 *ngIf="post.title">{{ post.title }}</h3>
-                <div class="feed-body-html" [innerHTML]="feedDisplayBody(post)"></div>
-                <div class="feed-post-media" *ngIf="feedMediaItems(post).length; else feedCoverOnly">
+                <div class="feed-post-body">
+                  <h3 *ngIf="post.title">{{ post.title }}</h3>
+                  <div class="feed-body-html" [innerHTML]="feedDisplayBody(post)"></div>
+                  <a
+                    *ngIf="feedPostLinkPreview(post) as preview"
+                    class="feed-link-preview"
+                    [href]="preview.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                    <span class="feed-link-preview-copy">
+                      <strong>{{ preview.title }}</strong>
+                      <small>{{ preview.subtitle }}</small>
+                      <em>{{ preview.displayUrl }}</em>
+                    </span>
+                  </a>
+                  <div class="feed-post-media" *ngIf="feedMediaItems(post).length; else feedCoverOnly">
                   <div
                     class="feed-post-collage"
                     *ngIf="feedImageItems(post).length"
@@ -515,6 +543,20 @@
                         <span>{{ feedPublishedLabel(comment.createdAt) }}</span>
                       </div>
                       <p>{{ comment.content }}</p>
+                      <a
+                        *ngIf="feedCommentLinkPreview(comment) as preview"
+                        class="feed-link-preview compact"
+                        [href]="preview.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                        <span class="feed-link-preview-copy">
+                          <strong>{{ preview.title }}</strong>
+                          <small>{{ preview.subtitle }}</small>
+                          <em>{{ preview.displayUrl }}</em>
+                        </span>
+                      </a>
                       <div class="feed-comment-media" *ngIf="comment.mediaItems?.length">
                         <ng-container *ngFor="let media of comment.mediaItems">
                           <img *ngIf="isFeedImageItem(media) && feedMediaUrl(media) as imageUrl" [src]="imageUrl" alt="" class="feed-comment-media-image" />
@@ -561,6 +603,20 @@
                               {{ feedMentionLabel(employee) }}
                             </button>
                           </div>
+                          <a
+                            *ngIf="feedReplyDraftLinkPreview(comment) as preview"
+                            class="feed-link-preview compact draft"
+                            [href]="preview.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                            <span class="feed-link-preview-copy">
+                              <strong>{{ preview.title }}</strong>
+                              <small>{{ preview.subtitle }}</small>
+                              <em>{{ preview.displayUrl }}</em>
+                            </span>
+                          </a>
                           <div class="feed-inline-media-toolbar">
                             <label class="toolbar-icon small" [for]="'feed-reply-media-' + comment.id" title="Attach image or file">
                               <i class="pi pi-image"></i>
@@ -601,6 +657,20 @@
                               <span>{{ feedPublishedLabel(reply.createdAt) }}</span>
                             </div>
                             <p>{{ reply.content }}</p>
+                            <a
+                              *ngIf="feedCommentLinkPreview(reply) as preview"
+                              class="feed-link-preview compact"
+                              [href]="preview.url"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                              <span class="feed-link-preview-copy">
+                                <strong>{{ preview.title }}</strong>
+                                <small>{{ preview.subtitle }}</small>
+                                <em>{{ preview.displayUrl }}</em>
+                              </span>
+                            </a>
                             <div class="feed-comment-media" *ngIf="reply.mediaItems?.length">
                               <ng-container *ngFor="let media of reply.mediaItems">
                                 <img *ngIf="isFeedImageItem(media) && feedMediaUrl(media) as imageUrl" [src]="imageUrl" alt="" class="feed-comment-media-image" />
@@ -643,6 +713,20 @@
                                     {{ feedMentionLabel(employee) }}
                                   </button>
                                 </div>
+                                <a
+                                  *ngIf="feedReplyDraftLinkPreview(reply) as preview"
+                                  class="feed-link-preview compact draft"
+                                  [href]="preview.url"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                                  <span class="feed-link-preview-copy">
+                                    <strong>{{ preview.title }}</strong>
+                                    <small>{{ preview.subtitle }}</small>
+                                    <em>{{ preview.displayUrl }}</em>
+                                  </span>
+                                </a>
                                 <div class="feed-inline-media-toolbar">
                                   <label class="toolbar-icon small" [for]="'feed-reply-media-' + reply.id" title="Attach image or file">
                                     <i class="pi pi-image"></i>
@@ -681,6 +765,20 @@
                                     <span>{{ feedPublishedLabel(replyLevel3.createdAt) }}</span>
                                   </div>
                                   <p>{{ replyLevel3.content }}</p>
+                                  <a
+                                    *ngIf="feedCommentLinkPreview(replyLevel3) as preview"
+                                    class="feed-link-preview compact"
+                                    [href]="preview.url"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                                    <span class="feed-link-preview-copy">
+                                      <strong>{{ preview.title }}</strong>
+                                      <small>{{ preview.subtitle }}</small>
+                                      <em>{{ preview.displayUrl }}</em>
+                                    </span>
+                                  </a>
                                   <div class="feed-comment-media" *ngIf="replyLevel3.mediaItems?.length">
                                     <ng-container *ngFor="let media of replyLevel3.mediaItems">
                                       <img *ngIf="isFeedImageItem(media) && feedMediaUrl(media) as imageUrl" [src]="imageUrl" alt="" class="feed-comment-media-image" />
@@ -731,6 +829,20 @@
                         {{ feedMentionLabel(employee) }}
                       </button>
                     </div>
+                    <a
+                      *ngIf="feedCommentDraftLinkPreview(post.id) as preview"
+                      class="feed-link-preview compact draft"
+                      [href]="preview.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <img [src]="preview.thumbnailUrl" [alt]="preview.title" class="feed-link-preview-thumb" />
+                      <span class="feed-link-preview-copy">
+                        <strong>{{ preview.title }}</strong>
+                        <small>{{ preview.subtitle }}</small>
+                        <em>{{ preview.displayUrl }}</em>
+                      </span>
+                    </a>
                     <div class="feed-inline-media-toolbar">
                       <label class="toolbar-icon small" [for]="'feed-comment-media-' + post.id" title="Attach image or file">
                         <i class="pi pi-image"></i>
