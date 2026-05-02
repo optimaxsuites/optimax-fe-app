@@ -19,7 +19,7 @@ export class MenuItemsService {
         {
           label: 'Communications',
           code: 'DASH_COMM',
-          route: this.navigationLink.getLink('dashboardLink'),
+          route: this.navigationLink.getLink('communicationsLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
           description: 'View and manage communications across the organization.'
@@ -41,12 +41,12 @@ export class MenuItemsService {
           description: 'BUSINESS ANALYTICS.'
         },
         {
-          label: 'Feeds',
+          label: 'Tasks and Routines',
           code: 'DASH_FEED',
           route: this.navigationLink.getLink('feedLink'), 
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage organization feeds.'
+          icon: 'pi pi-calendar-plus',
+          description: 'Plan daily tasks, routines, and personal work targets.'
         }
       ]
     },

@@ -63,7 +63,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openMessages(): void {
     sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    this.router.navigateByUrl(`/admin/dashboard/feed/${this.currentUserId}`).catch(() => {});
+    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   openNotifications(): void {
@@ -90,13 +90,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
   viewAllNotifications(): void {
     this.headerStateService.markAllNotificationsRead();
     if (typeof window !== 'undefined') {
-      const target = { workspaceMode: 'feed', route: `/admin/dashboard/feed/${this.currentUserId}` };
+      const target = { workspaceMode: 'feed', route: `/admin/dashboard/communications/${this.currentUserId}` };
       sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
       window.dispatchEvent(
         new CustomEvent('optimax-open-collab-target', { detail: target }),
       );
     }
-    this.router.navigateByUrl(`/admin/dashboard/feed/${this.currentUserId}`).catch(() => {});
+    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   logout(): void {

@@ -24,9 +24,10 @@ import {
   CollabFeedComment,
   CollabFeedMediaItem,
   CollabFeedReactionUser,
+  TaskRoutineSummary,
 } from '../ui/services/collaboration.service';
 import { firstValueFrom } from 'rxjs';
-import { HeaderStateService } from 'src/app/ui/shared/service/header-state.service';
+import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
 
 // damilola worked on this: feed-first collaboration, unread syncing, read receipts, and richer notifications.
 // ── Local interfaces ──────────────────────────────────────────────────────────
@@ -397,6 +398,7 @@ export class CommunicationComponent
   memberMenu = { open: false, memberId: 0, userId: 0 };
 
   workspaceHighlights: CollaborationFeedHighlight[] = [];
+  taskRoutineTodos: TaskRoutineSummary[] = [];
 
   workspaceFocusItems: CollaborationFocusItem[] = [];
 
@@ -804,6 +806,7 @@ export class CommunicationComponent
         if (!this.selectedFeedPostId && this.feedPosts.length) {
           this.selectedFeedPostId = this.feedPosts[0].id;
         }
+        this.loadTaskRoutineSummaries();
         this.feedHomeLoading = false;
         this.cdr.detectChanges();
       },
@@ -837,6 +840,7 @@ export class CommunicationComponent
             if (!this.selectedFeedPostId && this.feedPosts.length) {
               this.selectedFeedPostId = this.feedPosts[0].id;
             }
+            this.loadTaskRoutineSummaries();
             this.feedHomeLoading = false;
             this.feedHomeError = this.feedPosts.length ? null : 'Could not load enterprise feed.';
             this.cdr.detectChanges();
@@ -1422,6 +1426,19 @@ export class CommunicationComponent
     }));
   }
 
+  private loadTaskRoutineSummaries(): void {
+    this.collabService.getTaskRoutineTopTodos(5).subscribe({
+      next: (todos) => {
+        this.taskRoutineTodos = todos || [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.taskRoutineTodos = [];
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   clearPendingAttachment(refresh = true): void {
     if (this.pendingAttachment?.previewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(this.pendingAttachment.previewUrl);
@@ -1830,7 +1847,7 @@ export class CommunicationComponent
               title: payload.senderName || `#${ch.name}`,
               body: payload.content || `New message in #${ch.name}`,
               category: 'chat',
-              route: `/admin/dashboard/feed/${this.me.userId}`,
+              route: `/admin/dashboard/tasks-routines/${this.me.userId}`,
               avatarUrl: payload.avatarUrl,
               contextLabel: ch.name,
               workspaceMode: 'chat',
@@ -1887,7 +1904,7 @@ export class CommunicationComponent
                 title: payload.senderName || contact.fullName,
                 body: payload.content || 'Sent you a direct message.',
                 category: 'chat',
-                route: `/admin/dashboard/feed/${this.me.userId}`,
+                route: `/admin/dashboard/tasks-routines/${this.me.userId}`,
                 avatarUrl: payload.avatarUrl || contact.avatarUrl,
                 contextLabel: 'Direct message',
                 workspaceMode: 'chat',

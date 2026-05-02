@@ -259,6 +259,121 @@ export interface AnalyticsModuleCard {
   starterPrompts: string[];
 }
 
+export interface TaskRoutineAttachment {
+  id?: string;
+  name?: string;
+  size?: string;
+  type?: string;
+  previewUrl?: string;
+}
+
+export interface TaskRoutineWorkItem {
+  id?: string;
+  title: string;
+  ownerUserId?: number | null;
+  ownerName?: string;
+  timelineStart?: string;
+  timelineDue?: string;
+  dependency?: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE';
+  progress?: number;
+}
+
+export interface TaskRoutineUpdate {
+  id?: string;
+  authorUserId?: number | null;
+  authorName?: string;
+  note: string;
+  progress?: number;
+  createdAt?: string;
+}
+
+export interface TaskRoutineReview {
+  id?: string;
+  reviewerUserId?: number | null;
+  reviewerName?: string;
+  decision: 'APPROVED' | 'CHANGES' | 'NOTED';
+  note: string;
+  createdAt?: string;
+  emailPreview?: string;
+  attachments?: TaskRoutineAttachment[];
+}
+
+export interface TaskRoutineUser {
+  id?: number;
+  userId?: number;
+  fullname?: string;
+  username?: string;
+  email?: string;
+}
+
+export interface TaskRoutinePlan {
+  id?: number;
+  owner?: TaskRoutineUser;
+  assignee?: TaskRoutineUser;
+  supervisor?: TaskRoutineUser;
+  ownerUserId?: number | null;
+  assigneeUserId?: number | null;
+  supervisorUserId?: number | null;
+  title: string;
+  description?: string;
+  lane?: 'BACKLOG' | 'TODAY' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+  status?: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  progress?: number;
+  timelineStart?: string;
+  timelineDue?: string;
+  routineType?: 'Daily' | 'Routine' | 'Workplan';
+  priority?: 'Low' | 'Medium' | 'High';
+  dependencyType?: 'NONE' | 'PROJECT' | 'PERSON';
+  dependencyValue?: string;
+  projectName?: string;
+  tags?: string[];
+  attachments?: TaskRoutineAttachment[];
+  workItems?: TaskRoutineWorkItem[];
+  updates?: TaskRoutineUpdate[];
+  reviews?: TaskRoutineReview[];
+  sharedWithSupervisor?: boolean;
+  supervisorApproved?: boolean;
+  linkedToProductivity?: boolean;
+  linkedToPayroll?: boolean;
+  payrollMonth?: string;
+  productivityWeight?: number;
+  emailQueuedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  blockedCount?: number;
+  openChildCount?: number;
+}
+
+export interface TaskRoutineStaffOption {
+  employeeId?: number;
+  userId?: number;
+  firstName?: string;
+  lastName?: string;
+  fullname?: string;
+  role?: string;
+  department?: string;
+}
+
+export interface TaskRoutineSummary {
+  id: number;
+  title: string;
+  assigneeName?: string;
+  lane?: 'BACKLOG' | 'TODAY' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+  status?: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+  progress?: number;
+  blockedCount?: number;
+  openChildCount?: number;
+  timelineDue?: string;
+  projectName?: string;
+}
+
+export interface TaskRoutineHome {
+  plans: PaginationResult<TaskRoutinePlan>;
+  staffOptions: TaskRoutineStaffOption[];
+  topTodos: TaskRoutineSummary[];
+}
+
 export interface AnalyticsWorkspace {
   workspaceCode: string;
   timeframe: string;
@@ -933,6 +1048,86 @@ export class CollaborationService {
     return this.http.get<CollabFeedReactionUser[]>(
       `${this.baseUrl}/x/api/v2/ai/collab/feed/reaction/comment/${commentId}`,
       { headers: this.headers },
+    );
+  }
+
+  // ── Tasks and routines ─────────────────────────────
+
+  getTaskRoutineHome(
+    query = '',
+    status = 'ALL',
+    page = 1,
+    size = 10,
+  ): Observable<TaskRoutineHome> {
+    return this.http.get<TaskRoutineHome>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/home/me?query=${encodeURIComponent(query || '')}&status=${encodeURIComponent(status)}&page=${page}&size=${size}`,
+      { headers: this.headers },
+    );
+  }
+
+  getTaskRoutinePlans(
+    query = '',
+    status = 'ALL',
+    page = 1,
+    size = 10,
+  ): Observable<PaginationResult<TaskRoutinePlan>> {
+    return this.http.get<PaginationResult<TaskRoutinePlan>>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/plans?query=${encodeURIComponent(query || '')}&status=${encodeURIComponent(status)}&page=${page}&size=${size}`,
+      { headers: this.headers },
+    );
+  }
+
+  getTaskRoutinePlan(id: number): Observable<TaskRoutinePlan> {
+    return this.http.get<TaskRoutinePlan>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/plans/${id}`,
+      { headers: this.headers },
+    );
+  }
+
+  createTaskRoutinePlan(payload: TaskRoutinePlan): Observable<TaskRoutinePlan> {
+    return this.http.post<TaskRoutinePlan>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/plans`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  updateTaskRoutinePlan(id: number, payload: TaskRoutinePlan): Observable<TaskRoutinePlan> {
+    return this.http.put<TaskRoutinePlan>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/plans/${id}`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  deleteTaskRoutinePlan(id: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/plans/${id}`,
+      { headers: this.headers },
+    );
+  }
+
+  getTaskRoutineStaffOptions(): Observable<TaskRoutineStaffOption[]> {
+    return this.http.get<TaskRoutineStaffOption[]>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/staff-options`,
+      { headers: this.headers },
+    );
+  }
+
+  getTaskRoutineTopTodos(size = 5): Observable<TaskRoutineSummary[]> {
+    return this.http.get<TaskRoutineSummary[]>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/top-todos/me?size=${size}`,
+      { headers: this.headers },
+    );
+  }
+
+  uploadTaskRoutineAttachment(file: File): Observable<TaskRoutineAttachment> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<TaskRoutineAttachment>(
+      `${this.baseUrl}/x/api/v2/ai/tasks-routines/attachments/upload`,
+      fd,
+      { headers: this.multipartHeaders },
     );
   }
 
