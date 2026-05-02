@@ -2,7 +2,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-// dami just modified this to align dashboard switching with feed-first collaboration navigation.
+// dami just modified this to reflect separate dashboard destinations for communications and tasks and routines.
 @Component({
   selector: 'app-dashboard-dropdown',
   templateUrl: './dashboard-dropdown.component.html',
@@ -10,12 +10,13 @@ import { filter } from 'rxjs/operators';
 })
 export class DashboardDropdownComponent implements OnInit {
   dropdownOpen = false;
-  selectedModule = 'Feed';
+  selectedModule = 'Communications';
   currentUuid = 'uu';
 
   get modules() {
     return [
-      { name: 'Feed', route: `/admin/dashboard/feed/${this.currentUuid}` },
+      { name: 'Communications', route: `/admin/dashboard/communications/${this.currentUuid}` },
+      { name: 'Tasks and Routines', route: `/admin/dashboard/tasks-routines/${this.currentUuid}` },
       { name: 'Analytics', route: `/admin/dashboard/analytics/${this.currentUuid}` },
       { name: 'POS', route: `/admin/dashboard/POS/${this.currentUuid}` },
       { name: 'HR', route: `/admin/dashboard/HR/${this.currentUuid}` },
@@ -78,7 +79,8 @@ export class DashboardDropdownComponent implements OnInit {
       
       return modulePath === currentPath || 
              currentRoute.includes(module.route) ||
-             (currentRoute.includes('/admin/dashboard/feed/') && module.name === 'Feed');
+             (currentRoute.includes('/admin/dashboard/tasks-routines/') && module.name === 'Tasks and Routines') ||
+             (currentRoute.includes('/admin/dashboard/communications/') && module.name === 'Communications');
     });
     
     // Update selected module if found

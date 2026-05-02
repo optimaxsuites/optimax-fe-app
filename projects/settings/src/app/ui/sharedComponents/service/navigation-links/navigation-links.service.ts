@@ -14,10 +14,11 @@ export class NavigationLinksService {
   }
 
   private generateLinks(): void {
-    this.links['dashboardLink'] = '/admin/dashboard/' + uuidV4();
+    this.links['dashboardLink'] = '/admin/dashboard/communications/' + uuidV4();
+    this.links['communicationsLink'] = '/admin/dashboard/communications/' + uuidV4();
     this.links['optimaXAILink'] = '/admin/dashboard/optimaxai/' + uuidV4();
     this.links['analyticsLink'] = '/admin/dashboard/analytics/' + uuidV4();
-    this.links['feedLink'] = '/admin/dashboard/feed/' + uuidV4();
+    this.links['feedLink'] = '/admin/dashboard/tasks-routines/' + uuidV4();
 
 
     this.links['userRegistrationLink'] = '/admin/settings/user-reg/' + uuidV4();

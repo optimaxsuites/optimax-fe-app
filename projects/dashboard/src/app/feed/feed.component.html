@@ -1,1 +1,827 @@
-<app-communication class="block h-full min-h-screen"></app-communication>
+<!-- dami just modified this to add sticky-board and gantt planning for large-organisation task execution. -->
+<div class="tasks-shell">
+  <section class="hero-card">
+    <div class="hero-copy">
+      <p class="eyebrow">Tasks and Routines</p>
+      <h1>Plan work once, break it into delivery streams, then monitor it through review and reporting.</h1>
+      <p>
+        Build parent plans with nested work items, dependencies, owners, attachments, and supervisor reviews. Teams can switch between
+        a visual sticky board and a gantt timeline without losing detail.
+      </p>
+    </div>
+
+    <div class="hero-metrics">
+      <article class="metric-card" *ngFor="let metric of reminderMetrics">
+        <strong>{{ metric.value }}</strong>
+        <span>{{ metric.label }}</span>
+        <small>{{ metric.caption }}</small>
+      </article>
+    </div>
+  </section>
+
+  <section class="top-toolbar">
+    <div class="workspace-tabs">
+      <button type="button" class="tab-pill" [class.active]="activePage === 'planner'" (click)="setActivePage('planner')">
+        <i class="pi pi-list-check"></i>
+        Planner
+      </button>
+      <button type="button" class="tab-pill" [class.active]="activePage === 'reviews'" (click)="setActivePage('reviews')" *ngIf="isSupervisor">
+        <i class="pi pi-check-square"></i>
+        Supervisor Review
+      </button>
+      <button type="button" class="tab-pill" [class.active]="activePage === 'reports'" (click)="setActivePage('reports')">
+        <i class="pi pi-chart-bar"></i>
+        Reports
+      </button>
+    </div>
+
+    <div class="planner-toggles" *ngIf="activePage === 'planner'">
+      <div class="composer-switch">
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'sticky'" (click)="setComposeMode('sticky')">Sticky note</button>
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'form'" (click)="setComposeMode('form')">Form</button>
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'batch'" (click)="setComposeMode('batch')">Batch table</button>
+      </div>
+      <div class="visual-switch">
+        <button type="button" class="mode-pill" [class.active]="visualMode === 'sticky'" (click)="setVisualMode('sticky')">
+          <i class="pi pi-th-large"></i>
+          Sticky board
+        </button>
+        <button type="button" class="mode-pill" [class.active]="visualMode === 'gantt'" (click)="setVisualMode('gantt')">
+          <i class="pi pi-chart-line"></i>
+          Gantt
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="planner-toolbar" *ngIf="activePage === 'planner'">
+    <label class="field search-field">
+      <span>Search tasks and sticky notes</span>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Search by title, assignee, project, workstream, tag, or status" />
+    </label>
+
+    <div class="status-inline-filter">
+      <button type="button" class="filter-pill" [class.active]="selectedStatusBucket === 'ALL'" (click)="setStatusBucket('ALL')">All</button>
+      <button type="button" class="filter-pill" [class.active]="selectedStatusBucket === 'OPEN'" (click)="setStatusBucket('OPEN')">Open</button>
+      <button type="button" class="filter-pill" [class.active]="selectedStatusBucket === 'IN_PROGRESS'" (click)="setStatusBucket('IN_PROGRESS')">
+        In Progress
+      </button>
+      <button type="button" class="filter-pill" [class.active]="selectedStatusBucket === 'CLOSED'" (click)="setStatusBucket('CLOSED')">Closed</button>
+    </div>
+  </section>
+
+  <ng-container *ngIf="activePage === 'planner'">
+    <section class="planner-grid">
+      <div class="workspace-main">
+        <section class="launcher-card">
+          <button type="button" class="sticky-launcher" (click)="openComposer()">
+            <span class="pin-head"></span>
+            <span class="pin-string"></span>
+            <small class="sticky-kicker">{{ composeMode | titlecase }} capture</small>
+            <strong>Pin a new task plan</strong>
+            <p>Click to open a full task sheet with workstreams, dates, dependencies, and supervisor routing.</p>
+            <span class="sticky-action">Open planner form</span>
+          </button>
+
+          <div class="launcher-copy">
+            <p class="eyebrow">How it works</p>
+            <h2>One task can carry several delivery items from start to finish.</h2>
+            <ul class="journey-list">
+              <li>Create the parent task and add nested workstreams such as UI, backend linking, or vendor actions.</li>
+              <li>Assign each workstream to a real staff owner, set dates, and mark dependencies.</li>
+              <li>Share the parent plan with a supervisor, capture feedback, then keep progress and review history in one place.</li>
+            </ul>
+          </div>
+        </section>
+
+        <ng-container *ngIf="visualMode === 'sticky'; else ganttView">
+          <section class="board-shell">
+            <div
+              class="lane-card"
+              *ngFor="let lane of lanes"
+              cdkDropList
+              [id]="dropListId(lane.key)"
+              [cdkDropListData]="tasksForLane(lane.key)"
+              [cdkDropListConnectedTo]="dropListIds"
+              (cdkDropListDropped)="drop($event, lane.key)"
+            >
+              <header class="lane-head">
+                <div>
+                  <p class="lane-label" [ngClass]="lane.accent">
+                    <i [class]="lane.icon"></i>
+                    {{ lane.label }}
+                  </p>
+                  <h3>{{ tasksForLane(lane.key).length }} items</h3>
+                </div>
+                <div class="lane-progress">
+                  <strong>{{ laneProgress(lane.key) }}%</strong>
+                  <small>{{ lane.subtitle }}</small>
+                </div>
+              </header>
+
+              <article class="task-card sticky-card" *ngFor="let task of tasksForLane(lane.key); trackBy: trackTask" cdkDrag [ngClass]="taskStatusTone(task)">
+                <div class="task-topline">
+                  <span class="task-badge">{{ task.routineType }}</span>
+                  <span class="task-priority" [ngClass]="'priority-' + task.priority.toLowerCase()">{{ task.priority }}</span>
+                </div>
+
+                <h4>{{ task.title }}</h4>
+                <p>{{ task.description }}</p>
+
+                <div class="task-meta">
+                  <span><i class="pi pi-user"></i> {{ task.assignee }}</span>
+                  <span><i class="pi pi-calendar"></i> {{ task.timelineStart }} to {{ task.timelineDue }}</span>
+                  <span *ngIf="task.projectName"><i class="pi pi-briefcase"></i> {{ task.projectName }}</span>
+                  <span *ngIf="task.dependencyType !== 'NONE'"><i class="pi pi-link"></i> {{ task.dependencyValue }}</span>
+                </div>
+
+                <div class="task-tags" *ngIf="task.tags.length">
+                  <span *ngFor="let tag of task.tags">#{{ tag }}</span>
+                </div>
+
+                <div class="task-attachments" *ngIf="task.attachments.length">
+                  <article class="task-attachment" *ngFor="let attachment of task.attachments">
+                    <div class="attachment-preview compact" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
+                      <img [src]="attachment.previewUrl" alt="" />
+                    </div>
+                    <div class="attachment-copy">
+                      <strong>{{ attachment.name }}</strong>
+                      <small>{{ attachment.size }}</small>
+                    </div>
+                  </article>
+                </div>
+
+                <section class="workstream-preview" *ngIf="task.workItems.length">
+                  <div class="workstream-head">
+                    <strong>Workstreams</strong>
+                    <span>{{ taskCompletionLabel(task) }}</span>
+                  </div>
+                  <div class="rollup-strip">
+                    <span class="rollup-pill">{{ taskRollupPercent(task) }}% rollup</span>
+                    <span class="rollup-pill warning" *ngIf="taskBlockedCount(task)">Blocked: {{ taskBlockedCount(task) }}</span>
+                    <span class="rollup-pill neutral" *ngIf="!taskBlockedCount(task)">Open: {{ taskOpenCount(task) }}</span>
+                  </div>
+                  <article class="workstream-chip" *ngFor="let item of task.workItems.slice(0, 3)" [class.is-blocked]="item.status === 'BLOCKED'">
+                    <span class="workstream-state" [ngClass]="workItemTone(item.status)"></span>
+                    <div>
+                      <strong>{{ item.title }}</strong>
+                      <small>{{ item.owner }} · {{ item.timelineStart }} to {{ item.timelineDue }}</small>
+                    </div>
+                  </article>
+                  <div class="more-items" *ngIf="task.workItems.length > 3">+{{ task.workItems.length - 3 }} more workstreams</div>
+                </section>
+
+                <div class="task-progress">
+                  <div class="progress-track">
+                    <span [style.width.%]="task.progress"></span>
+                  </div>
+                  <strong>{{ taskRollupPercent(task) }}%</strong>
+                </div>
+
+                <div class="task-update-box">
+                  <textarea [(ngModel)]="updateDrafts[task.id]" rows="2" placeholder="Add a daily progress update for this task..."></textarea>
+                  <div class="task-actions">
+                    <button type="button" class="ghost-btn" (click)="nudgeProgress(task, -10)">-10</button>
+                    <button type="button" class="ghost-btn" (click)="nudgeProgress(task, 10)">+10</button>
+                    <button type="button" class="ghost-btn" (click)="addDailyUpdate(task)">Add update</button>
+                    <button type="button" class="ghost-btn" (click)="shareWithSupervisor(task)" [disabled]="task.sharedWithSupervisor">
+                      {{ task.sharedWithSupervisor ? 'Shared' : 'Share' }}
+                    </button>
+                    <button type="button" class="ghost-btn" (click)="openTaskDialog(task)">Open details</button>
+                  </div>
+                </div>
+
+                <div class="task-updates" *ngIf="task.updates.length">
+                  <article class="update-row" *ngFor="let update of task.updates.slice(0, 2)">
+                    <strong>{{ update.author }}</strong>
+                    <p>{{ update.note }}</p>
+                    <small>{{ update.createdAt | date: 'MMM d, h:mm a' }}</small>
+                  </article>
+                </div>
+              </article>
+            </div>
+          </section>
+        </ng-container>
+
+        <ng-template #ganttView>
+          <section class="gantt-shell">
+            <div class="gantt-header">
+              <div class="gantt-title-cell">Task plan</div>
+              <div class="gantt-days" [style.grid-template-columns]="'repeat(' + ganttDayLabels.length + ', minmax(56px, 1fr))'">
+                <span *ngFor="let day of ganttDayLabels">{{ day.label }}</span>
+              </div>
+            </div>
+
+            <article class="gantt-row" *ngFor="let task of ganttTasks">
+              <button type="button" class="gantt-summary" (click)="openTaskDialog(task)">
+                <strong>{{ task.title }}</strong>
+                <small>{{ task.assignee }} · {{ task.progress }}% · {{ taskCompletionLabel(task) }}</small>
+              </button>
+              <div class="gantt-body">
+                <div class="gantt-track" [style.grid-template-columns]="'repeat(' + ganttDayLabels.length + ', minmax(56px, 1fr))'">
+                  <div class="gantt-bar parent-bar" [style.grid-column]="ganttColumn(task.timelineStart, task.timelineDue)">
+                    {{ task.projectName || task.routineType }} · {{ taskRollupPercent(task) }}%
+                  </div>
+                </div>
+
+                <div class="gantt-item" *ngFor="let item of task.workItems">
+                  <div class="gantt-item-copy">
+                    <span class="workstream-state" [ngClass]="workItemTone(item.status)"></span>
+                    <div>
+                      <strong>{{ item.title }}</strong>
+                      <small>{{ item.owner }} <span *ngIf="item.dependency">· Depends on {{ item.dependency }}</span></small>
+                    </div>
+                  </div>
+                  <div class="gantt-item-rail">
+                    <div class="gantt-dependency" *ngIf="item.dependency">
+                      <span class="dependency-from">{{ item.dependency }}</span>
+                      <span class="dependency-arrow"></span>
+                      <span class="dependency-to">{{ item.title }}</span>
+                    </div>
+                    <div class="gantt-track sub-track" [style.grid-template-columns]="'repeat(' + ganttDayLabels.length + ', minmax(56px, 1fr))'">
+                      <div
+                        class="gantt-connector-line"
+                        *ngIf="ganttDependencyLine(task, item) as connector"
+                        [style.left.%]="connector.left"
+                        [style.width.%]="connector.width"
+                      ></div>
+                      <div class="gantt-bar child-bar" [ngClass]="workItemTone(item.status)" [style.grid-column]="ganttColumn(item.timelineStart, item.timelineDue)">
+                        {{ item.progress }}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+        </ng-template>
+      </div>
+
+      <aside class="workspace-rail">
+        <section class="rail-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Loaded reminders</p>
+              <h2>At-login routine awareness</h2>
+            </div>
+          </div>
+
+          <article class="reminder-card" *ngFor="let reminder of reminders" [ngClass]="'tone-' + reminder.tone">
+            <strong>{{ reminder.title }}</strong>
+            <small>{{ reminder.caption }}</small>
+          </article>
+        </section>
+
+        <section class="rail-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Status navigator</p>
+              <h2>Open, in-progress, and closed drilldown</h2>
+            </div>
+          </div>
+
+          <div class="status-stack">
+            <button type="button" class="status-card" *ngFor="let bucket of statusBuckets" [class.active]="selectedStatusBucket === bucket.key" (click)="setStatusBucket(bucket.key)">
+              <div class="status-card-head">
+                <span class="status-icon"><i [class]="bucket.icon"></i></span>
+                <strong>{{ bucket.label }}</strong>
+                <span class="status-count">{{ bucket.count }}</span>
+              </div>
+              <small>{{ bucket.caption }}</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="rail-card">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Task list</p>
+              <h2>{{ selectedStatusTitle }}</h2>
+            </div>
+          </div>
+
+          <div class="task-list-rail" *ngIf="selectedStatusTasks.length; else noStatusTasks">
+            <button type="button" class="task-list-row" *ngFor="let task of selectedStatusTasks" (click)="openTaskDialog(task)">
+              <div class="task-list-copy">
+                <strong>{{ task.title }}</strong>
+                <span>{{ task.assignee }} · {{ task.timelineStart }} to {{ task.timelineDue }}</span>
+                <small>{{ taskCompletionLabel(task) }}</small>
+              </div>
+              <span class="task-list-state">{{ task.lane }}</span>
+            </button>
+          </div>
+          <ng-template #noStatusTasks>
+            <div class="empty-state-card">No tasks match the current search or status selection.</div>
+          </ng-template>
+        </section>
+      </aside>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="activePage === 'reviews' && isSupervisor">
+    <section class="review-page">
+      <section class="review-header-card">
+        <div>
+          <p class="eyebrow">Supervisor desk</p>
+          <h2>Review task plans by subordinate, inspect workstreams, then approve or redirect with context.</h2>
+        </div>
+
+        <label class="field review-filter">
+          <span>Subordinate</span>
+          <select [(ngModel)]="selectedReviewOwner">
+            <option value="All">All</option>
+            <option *ngFor="let person of people" [value]="person.name">{{ person.name }}</option>
+          </select>
+        </label>
+      </section>
+
+      <div class="review-grid">
+        <article class="review-task-card" *ngFor="let task of visibleReviewTasks">
+          <div class="review-task-head">
+            <div>
+              <span class="task-badge">{{ task.routineType }}</span>
+              <h3>{{ task.title }}</h3>
+              <p>{{ task.assignee }} · {{ task.projectName || 'No project' }}</p>
+            </div>
+            <span class="approval-state" [ngClass]="task.supervisorApproved ? 'approved' : 'pending'">
+              {{ task.supervisorApproved ? 'Approved' : 'Pending review' }}
+            </span>
+          </div>
+
+          <p class="review-description">{{ task.description }}</p>
+
+          <div class="review-timeline">
+            <span><i class="pi pi-calendar"></i> {{ task.timelineStart }} to {{ task.timelineDue }}</span>
+            <span><i class="pi pi-link"></i> {{ task.dependencyType === 'NONE' ? 'No dependency' : task.dependencyValue }}</span>
+          </div>
+
+          <section class="review-workstreams" *ngIf="task.workItems.length">
+            <article class="workstream-chip" *ngFor="let item of task.workItems" [class.is-blocked]="item.status === 'BLOCKED'">
+              <span class="workstream-state" [ngClass]="workItemTone(item.status)"></span>
+              <div>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.owner }} · {{ item.timelineStart }} to {{ item.timelineDue }}</small>
+              </div>
+              <span class="workstream-progress">{{ item.progress }}%</span>
+            </article>
+          </section>
+
+          <div class="rollup-strip review-rollup" *ngIf="task.workItems.length">
+            <span class="rollup-pill">{{ taskRollupPercent(task) }}% rollup</span>
+            <span class="rollup-pill warning" *ngIf="taskBlockedCount(task)">Blocked: {{ taskBlockedCount(task) }}</span>
+            <span class="rollup-pill neutral" *ngIf="!taskBlockedCount(task)">Open: {{ taskOpenCount(task) }}</span>
+          </div>
+
+          <div class="review-updates" *ngIf="task.updates.length">
+            <article class="update-row" *ngFor="let update of task.updates.slice(0, 3)">
+              <strong>{{ update.author }}</strong>
+              <p>{{ update.note }}</p>
+              <small>{{ update.createdAt | date: 'MMM d, h:mm a' }}</small>
+            </article>
+          </div>
+
+          <label class="field">
+            <span>Supervisor note</span>
+            <textarea [(ngModel)]="supervisorNotes[task.id]" rows="3" placeholder="Add your feedback, approval note, or requested changes."></textarea>
+          </label>
+
+          <div class="review-actions">
+            <button type="button" class="primary-btn compact" (click)="applyReview(task, 'APPROVED')">Approve</button>
+            <button type="button" class="ghost-btn" (click)="applyReview(task, 'CHANGES')">Request changes</button>
+            <button type="button" class="ghost-btn" (click)="applyReview(task, 'NOTED')">Note only</button>
+            <button type="button" class="ghost-btn" (click)="openTaskDialog(task)">Open details</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="activePage === 'reports'">
+    <section class="reports-page">
+      <section class="review-header-card">
+        <div>
+          <p class="eyebrow">Performance rollup</p>
+          <h2>Daily updates and supervisor outcomes accumulate into weekly and monthly assessment cards.</h2>
+        </div>
+      </section>
+
+      <div class="report-grid">
+        <article class="report-card" *ngFor="let card of reportCards">
+          <div class="report-head">
+            <div>
+              <h3>{{ card.name }}</h3>
+              <small>{{ card.role }}</small>
+            </div>
+            <span class="report-pill">{{ card.weeklyScore }}%</span>
+          </div>
+
+          <div class="report-metrics">
+            <div>
+              <strong>{{ card.weeklyScore }}%</strong>
+              <span>Weekly score</span>
+            </div>
+            <div>
+              <strong>{{ card.monthlyScore }}%</strong>
+              <span>Monthly score</span>
+            </div>
+            <div>
+              <strong>{{ card.completed }}</strong>
+              <span>Completed</span>
+            </div>
+            <div>
+              <strong>{{ card.awaitingReview }}</strong>
+              <span>In review</span>
+            </div>
+          </div>
+
+          <p class="report-footnote">Latest update: {{ card.lastUpdate }}</p>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+
+  <p-dialog
+    [(visible)]="composerVisible"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(1120px, 96vw)' }"
+    styleClass="task-composer-dialog"
+    (onHide)="closeComposer()"
+  >
+    <ng-template pTemplate="header">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Pinned planner form</p>
+          <h2>Create a task plan and its delivery workstreams</h2>
+          <small>Use sticky, detailed, or batch capture and keep all items review-ready.</small>
+        </div>
+      </div>
+    </ng-template>
+
+    <section class="composer-dialog">
+      <div class="composer-switch modal-switch">
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'sticky'" (click)="setComposeMode('sticky')">Sticky note</button>
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'form'" (click)="setComposeMode('form')">Form</button>
+        <button type="button" class="mode-pill" [class.active]="composeMode === 'batch'" (click)="setComposeMode('batch')">Batch table</button>
+      </div>
+
+      <ng-container *ngIf="composeMode !== 'batch'; else batchDialog">
+        <div class="dialog-grid">
+          <section class="composer-pane">
+            <label class="field field-span-2">
+              <span>Task title</span>
+              <input type="text" [(ngModel)]="draft.title" placeholder="Continue work on IAAS for OptimaXCloud" />
+            </label>
+
+            <label class="field field-span-2">
+              <span>Description</span>
+              <textarea [(ngModel)]="draft.description" rows="4" placeholder="Describe the delivery outcome, organisational context, risks, and what success looks like."></textarea>
+            </label>
+
+            <div class="form-grid">
+              <label class="field">
+                <span>Routine type</span>
+                <select [(ngModel)]="draft.routineType">
+                  <option value="Daily">Daily</option>
+                  <option value="Routine">Routine</option>
+                  <option value="Workplan">Workplan</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Priority</span>
+                <select [(ngModel)]="draft.priority">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Timeline start</span>
+                <input type="date" [(ngModel)]="draft.timelineStart" />
+              </label>
+
+              <label class="field">
+                <span>Timeline due</span>
+                <input type="date" [(ngModel)]="draft.timelineDue" />
+              </label>
+
+              <label class="field">
+                <span>Assignee</span>
+                <select [(ngModel)]="draft.assignee">
+                  <option *ngFor="let person of people" [value]="person.name">{{ person.name }} · {{ person.role }}</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Project</span>
+                <select [(ngModel)]="draft.projectName">
+                  <option value="">No project</option>
+                  <option *ngFor="let project of enterpriseProjects" [value]="project">{{ project }}</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Dependency type</span>
+                <select [(ngModel)]="draft.dependencyType">
+                  <option value="NONE">None</option>
+                  <option value="PROJECT">Project</option>
+                  <option value="PERSON">Person</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Depends on</span>
+                <input type="text" [(ngModel)]="draft.dependencyValue" placeholder="Project dependency or supervising owner" />
+              </label>
+            </div>
+
+            <label class="field field-span-2">
+              <span>Tags</span>
+              <input type="text" [(ngModel)]="draft.tags" placeholder="cloud, delivery, urgent" />
+            </label>
+
+            <div class="attachment-row">
+              <label class="attach-btn">
+                <i class="pi pi-paperclip"></i>
+                Attach files
+                <input type="file" multiple hidden (change)="onAttachmentSelected($event)" />
+              </label>
+              <div class="attachment-list" *ngIf="pendingAttachments.length">
+                <article class="attachment-chip" *ngFor="let attachment of pendingAttachments">
+                  <div class="attachment-preview" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
+                    <img [src]="attachment.previewUrl" alt="" />
+                  </div>
+                  <div class="attachment-copy">
+                    <strong>{{ attachment.name }}</strong>
+                    <small>{{ attachment.size }}</small>
+                  </div>
+                  <button type="button" class="ghost-btn danger" (click)="removePendingAttachment(attachment)">Remove</button>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <aside class="workstream-pane">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Workstream breakdown</p>
+                <h2>Nested delivery items</h2>
+              </div>
+              <button type="button" class="ghost-btn" (click)="addDraftWorkItem()">Add item</button>
+            </div>
+
+            <article class="workstream-form-card" *ngFor="let item of draft.workItems; let index = index; trackBy: trackWorkItem">
+              <div class="workstream-form-head">
+                <strong>Item {{ index + 1 }}</strong>
+                <button type="button" class="ghost-btn danger" (click)="removeDraftWorkItem(index)" *ngIf="draft.workItems.length > 1">Remove</button>
+              </div>
+
+              <label class="field">
+                <span>Workstream title</span>
+                <input type="text" [(ngModel)]="item.title" placeholder="Develop UI" />
+              </label>
+
+              <div class="workstream-grid">
+                <label class="field">
+                  <span>Owner</span>
+                  <select [(ngModel)]="item.owner">
+                    <option *ngFor="let person of people" [value]="person.name">{{ person.name }}</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Status</span>
+                  <select [(ngModel)]="item.status">
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="BLOCKED">Blocked</option>
+                    <option value="DONE">Done</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Start</span>
+                  <input type="date" [(ngModel)]="item.timelineStart" />
+                </label>
+
+                <label class="field">
+                  <span>End</span>
+                  <input type="date" [(ngModel)]="item.timelineDue" />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Dependency</span>
+                <input type="text" [(ngModel)]="item.dependency" placeholder="Link backend to UI depends on Develop UI" />
+              </label>
+            </article>
+          </aside>
+        </div>
+      </ng-container>
+
+      <ng-template #batchDialog>
+        <div class="batch-editor">
+          <p class="batch-help">One task per line. Use: <code>Title | Assignee | Due Date | Project | Depends On</code></p>
+          <textarea [(ngModel)]="batchRows" rows="10" placeholder="Task title | Assignee name | 2026-05-12 | Project name | Dependency owner or project"></textarea>
+        </div>
+      </ng-template>
+
+      <div class="composer-actions">
+        <button type="button" class="ghost-btn" (click)="closeComposer()">Cancel</button>
+        <button type="button" class="primary-btn" (click)="createTask()">{{ composeMode === 'batch' ? 'Persist batch rows' : 'Save task note' }}</button>
+      </div>
+    </section>
+  </p-dialog>
+
+  <p-dialog
+    [(visible)]="taskDialogVisible"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(1160px, 96vw)' }"
+    styleClass="task-detail-dialog"
+    (onHide)="closeTaskDialog()"
+  >
+    <ng-template pTemplate="header">
+      <div class="dialog-header" *ngIf="selectedTask as task">
+        <div>
+          <p class="eyebrow">Task review detail</p>
+          <h2>{{ task.title }}</h2>
+          <small>{{ task.assignee }} · {{ task.timelineStart }} to {{ task.timelineDue }}</small>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="task-detail-grid" *ngIf="selectedTask as task">
+      <section class="task-detail-main">
+        <article class="detail-block">
+          <div class="detail-meta">
+            <span class="task-badge">{{ task.routineType }}</span>
+            <span class="task-priority" [ngClass]="'priority-' + task.priority.toLowerCase()">{{ task.priority }}</span>
+            <span class="task-list-state">{{ task.lane }}</span>
+          </div>
+          <div class="rollup-strip">
+            <span class="rollup-pill">{{ taskRollupPercent(task) }}% parent rollup</span>
+            <span class="rollup-pill warning" *ngIf="taskBlockedCount(task)">Blocked: {{ taskBlockedCount(task) }}</span>
+            <span class="rollup-pill neutral" *ngIf="!taskBlockedCount(task)">Open: {{ taskOpenCount(task) }}</span>
+          </div>
+          <p class="detail-description">{{ task.description }}</p>
+          <div class="task-meta">
+            <span><i class="pi pi-user"></i> {{ task.assignee }}</span>
+            <span><i class="pi pi-briefcase"></i> {{ task.projectName || 'No project' }}</span>
+            <span *ngIf="task.dependencyType !== 'NONE'"><i class="pi pi-link"></i> {{ task.dependencyValue }}</span>
+          </div>
+        </article>
+
+        <article class="detail-block" *ngIf="task.workItems.length">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Delivery workstreams</p>
+              <h2>Track nested items</h2>
+            </div>
+          </div>
+
+          <div class="detail-workstreams">
+            <article class="detail-workstream-row" *ngFor="let item of task.workItems; trackBy: trackWorkItem" [class.is-blocked]="item.status === 'BLOCKED'">
+              <div class="detail-workstream-copy">
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.owner }} <span *ngIf="item.dependency">· Depends on {{ item.dependency }}</span></small>
+              </div>
+              <div class="detail-dependency" *ngIf="item.dependency">
+                <span class="dependency-from">{{ item.dependency }}</span>
+                <span class="dependency-arrow"></span>
+                <span class="dependency-to">{{ item.title }}</span>
+              </div>
+              <div class="detail-workstream-grid">
+                <label class="field compact-field">
+                  <span>Status</span>
+                  <select [(ngModel)]="item.status" (ngModelChange)="updateWorkItem(task, item)">
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="BLOCKED">Blocked</option>
+                    <option value="DONE">Done</option>
+                  </select>
+                </label>
+                <label class="field compact-field">
+                  <span>Start</span>
+                  <input type="date" [(ngModel)]="item.timelineStart" (ngModelChange)="updateWorkItem(task, item)" />
+                </label>
+                <label class="field compact-field">
+                  <span>End</span>
+                  <input type="date" [(ngModel)]="item.timelineDue" (ngModelChange)="updateWorkItem(task, item)" />
+                </label>
+                <label class="field compact-field">
+                  <span>Progress</span>
+                  <input type="number" min="0" max="100" [(ngModel)]="item.progress" (ngModelChange)="updateWorkItem(task, item)" />
+                </label>
+              </div>
+            </article>
+          </div>
+        </article>
+
+        <article class="detail-block" *ngIf="task.attachments.length">
+          <h3>Task attachments</h3>
+          <div class="task-attachments">
+            <article class="task-attachment" *ngFor="let attachment of task.attachments">
+              <div class="attachment-preview compact" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
+                <img [src]="attachment.previewUrl" alt="" />
+              </div>
+              <div class="attachment-copy">
+                <strong>{{ attachment.name }}</strong>
+                <small>{{ attachment.size }}</small>
+              </div>
+            </article>
+          </div>
+        </article>
+
+        <article class="detail-block">
+          <h3>Daily updates</h3>
+          <label class="field">
+            <span>Add update</span>
+            <textarea [(ngModel)]="updateDrafts[task.id]" rows="4" placeholder="Provide a fuller work update, blockers, risks, and next steps."></textarea>
+          </label>
+          <div class="dialog-actions">
+            <button type="button" class="ghost-btn" (click)="nudgeProgress(task, -10)">-10</button>
+            <button type="button" class="ghost-btn" (click)="nudgeProgress(task, 10)">+10</button>
+            <button type="button" class="primary-btn compact" (click)="addDailyUpdate(task)">Save update</button>
+          </div>
+
+          <div class="detail-timeline" *ngIf="selectedTaskUpdates.length">
+            <article class="update-row" *ngFor="let update of selectedTaskUpdates">
+              <strong>{{ update.author }}</strong>
+              <p>{{ update.note }}</p>
+              <small>{{ update.createdAt | date: 'MMM d, h:mm a' }} · {{ update.progress }}%</small>
+            </article>
+          </div>
+        </article>
+      </section>
+
+      <aside class="task-detail-side">
+        <article class="detail-block">
+          <h3>Supervisor feedback</h3>
+          <label class="field">
+            <span>Review note</span>
+            <textarea [(ngModel)]="supervisorNotes[task.id]" rows="5" placeholder="Give detailed feedback, approval context, corrections, or coaching notes."></textarea>
+          </label>
+
+          <div class="attachment-row compact-row">
+            <label class="attach-btn">
+              <i class="pi pi-paperclip"></i>
+              Attach review files
+              <input type="file" multiple hidden (change)="onReviewAttachmentSelected($event)" />
+            </label>
+            <div class="attachment-list" *ngIf="pendingReviewAttachments.length">
+              <article class="attachment-chip" *ngFor="let attachment of pendingReviewAttachments">
+                <div class="attachment-preview" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
+                  <img [src]="attachment.previewUrl" alt="" />
+                </div>
+                <div class="attachment-copy">
+                  <strong>{{ attachment.name }}</strong>
+                  <small>{{ attachment.size }}</small>
+                </div>
+                <button type="button" class="ghost-btn danger" (click)="removeReviewAttachment(attachment)">Remove</button>
+              </article>
+            </div>
+          </div>
+
+          <div class="review-actions" *ngIf="isSupervisor">
+            <button type="button" class="primary-btn compact" (click)="addDetailedReview(task, 'APPROVED')">Approve</button>
+            <button type="button" class="ghost-btn" (click)="addDetailedReview(task, 'CHANGES')">Request changes</button>
+            <button type="button" class="ghost-btn" (click)="addDetailedReview(task, 'NOTED')">Note only</button>
+          </div>
+          <div class="dialog-actions" *ngIf="!isSupervisor">
+            <button type="button" class="ghost-btn" (click)="shareWithSupervisor(task)" [disabled]="task.sharedWithSupervisor">
+              {{ task.sharedWithSupervisor ? 'Shared to supervisor' : 'Share with supervisor' }}
+            </button>
+          </div>
+        </article>
+
+        <article class="detail-block" *ngIf="selectedTaskReviews.length">
+          <h3>Review history</h3>
+          <div class="review-history">
+            <article class="review-note" *ngFor="let review of selectedTaskReviews" [ngClass]="toneClass(review)">
+              <div class="review-note-head">
+                <strong>{{ review.reviewer }}</strong>
+                <span class="review-stamp" [ngClass]="toneClass(review)">{{ reviewDecisionStamp(review.decision) }}</span>
+              </div>
+              <p>{{ review.note }}</p>
+              <div class="email-preview">
+                <strong>Email preview</strong>
+                <small>{{ review.emailPreview || supervisorEmailPreview(task) }}</small>
+              </div>
+              <div class="review-file-list" *ngIf="review.attachments?.length">
+                <span *ngFor="let attachment of review.attachments">{{ attachment.name }}</span>
+              </div>
+              <small>{{ review.createdAt | date: 'MMM d, h:mm a' }}</small>
+            </article>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </p-dialog>
+</div>

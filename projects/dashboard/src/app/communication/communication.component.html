@@ -1111,6 +1111,31 @@
       </aside>
 
       <aside class="feed-rail" *ngIf="!rightPanelOpen">
+        <section class="rail-card" *ngIf="taskRoutineTodos.length">
+          <div class="rail-card-header">
+            <div>
+              <p class="rail-label">Tasks and Routines</p>
+              <h3>Top 5 active ToDos</h3>
+            </div>
+          </div>
+          <a
+            *ngFor="let todo of taskRoutineTodos"
+            class="rail-highlight"
+            [ngClass]="todo.blockedCount ? 'tone-focus' : todo.status === 'IN_PROGRESS' ? 'tone-info' : 'tone-success'"
+            [routerLink]="['/admin/dashboard/tasks-routines', me.userId]"
+          >
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">{{ todo.status || todo.lane || 'OPEN' }}</span>
+              <time>{{ todo.timelineDue || 'No due date' }}</time>
+            </div>
+            <div class="rail-highlight-meta">
+              <strong>{{ todo.assigneeName || 'Unassigned' }}</strong>
+              <span>{{ todo.progress || 0 }}% complete</span>
+            </div>
+            <p>{{ todo.title }}</p>
+          </a>
+        </section>
+
         <section class="rail-card">
           <div class="rail-card-header">
             <div>

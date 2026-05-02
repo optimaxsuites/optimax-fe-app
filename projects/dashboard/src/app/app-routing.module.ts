@@ -10,11 +10,11 @@ import { CommunicationComponent } from './communication/communication.component'
 import { FeedComponent } from './feed/feed.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 
-// damilola worked on this: collaboration now lands on the enterprise feed route by default.
+// damilola worked on this: communications and tasks now have separate dashboard routes.
 const routes: Routes = [
   {
     path:'',
-    redirectTo: 'feed/uu',
+    redirectTo: 'communications/uu',
     pathMatch: 'full'
   },
   {
@@ -41,12 +41,16 @@ const routes: Routes = [
     component: AnalyticsComponent
   },
   {
-    path: 'feed/:uuid',
+    path: 'communications/:uuid',
+    component: CommunicationComponent
+  },
+  {
+    path: 'tasks-routines/:uuid',
     component: FeedComponent
   },
   {
     path: ':uuid',
-    redirectTo: 'feed/:uuid',
+    redirectTo: 'communications/:uuid',
   },
 ];
 
