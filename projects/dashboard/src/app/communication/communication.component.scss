@@ -394,6 +394,7 @@
   line-height: 1.7;
   outline: none;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 
   &:empty::before {
     content: attr(data-placeholder);
@@ -743,6 +744,75 @@
   margin-top: 0.95rem;
 }
 
+.feed-link-preview {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid #dbe5ec;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fcfdff 0%, #f8fbfc 100%);
+  text-decoration: none;
+  min-width: 0;
+
+  &.compact {
+    grid-template-columns: 4.4rem minmax(0, 1fr);
+    margin-top: 0.75rem;
+  }
+
+  &.draft {
+    background: #f8fbfc;
+  }
+}
+
+.feed-link-preview-thumb {
+  width: 100%;
+  height: 5.5rem;
+  border-radius: 0.9rem;
+  object-fit: cover;
+  border: 1px solid #dbe5ec;
+  background: #fff;
+}
+
+.feed-link-preview.compact .feed-link-preview-thumb {
+  height: 4.4rem;
+}
+
+.feed-link-preview-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+
+  strong,
+  small,
+  em {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  strong {
+    color: #0f172a;
+    font-size: 0.92rem;
+    font-style: normal;
+    white-space: nowrap;
+  }
+
+  small {
+    color: #64748b;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  em {
+    color: #2e6276;
+    font-size: 0.78rem;
+    font-style: normal;
+    white-space: nowrap;
+  }
+}
+
 .feed-media-card {
   border-radius: 1rem;
   overflow: hidden;
@@ -915,9 +985,11 @@
 
 .feed-thread-search,
 .feed-thread-compose {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: flex-start;
+  width: 100%;
 }
 
 .main-comment-compose,
@@ -1166,7 +1238,8 @@
 
 .feed-reply-box {
   position: relative;
-  flex: 1;
+  display: grid;
+  gap: 0.7rem;
   width: 100%;
   min-width: 0;
 }
@@ -1182,6 +1255,7 @@
   resize: vertical;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow-wrap: anywhere;
 }
 
 .feed-thread-compose textarea:focus {
@@ -1192,6 +1266,27 @@
 .reply-submit {
   min-width: 6.5rem;
   align-self: flex-start;
+}
+
+@media (max-width: 920px) {
+  .feed-link-preview,
+  .feed-link-preview.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .feed-link-preview-thumb,
+  .feed-link-preview.compact .feed-link-preview-thumb {
+    height: 12rem;
+  }
+
+  .feed-thread-search,
+  .feed-thread-compose {
+    grid-template-columns: 1fr;
+  }
+
+  .reply-submit {
+    width: 100%;
+  }
 }
 
 .reaction-chip[data-tooltip] {

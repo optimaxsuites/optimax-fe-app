@@ -160,6 +160,15 @@ interface FeedMediaDraft {
   previewUrl?: string;
 }
 
+interface FeedLinkPreview {
+  url: string;
+  displayUrl: string;
+  title: string;
+  subtitle: string;
+  thumbnailUrl: string;
+  kind: 'image' | 'video' | 'youtube' | 'website';
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
   '#10b981',
@@ -171,6 +180,7 @@ const AVATAR_COLORS = [
   '#8b5cf6',
   '#0ea5e9',
 ];
+const FEED_URL_REGEX = /((https?:\/\/|www\.)[^\s<]+)/gi;
 
 export function _colorFor(seed: number): string {
   return AVATAR_COLORS[Math.abs(seed) % AVATAR_COLORS.length];
@@ -282,6 +292,8 @@ export class CommunicationComponent
   expandedFeedMediaLabel = '';
   feedMediaViewerOpen = false;
   private feedReactionHoverCache: Record<string, string> = {};
+  private protectedMediaUrlCache: Record<string, string> = {};
+  private protectedMediaLoading = new Set<string>();
   readonly feedReactionOptions = [
     { code: 'LIKE', label: 'Like', icon: 'pi pi-thumbs-up' },
     { code: 'CELEBRATE', label: 'Celebrate', icon: 'pi pi-star-fill' },
@@ -493,6 +505,9 @@ export class CommunicationComponent
       URL.revokeObjectURL(url),
     );
     Object.values(this.attachmentPreviewCache).forEach((url) =>
+      URL.revokeObjectURL(url),
+    );
+    Object.values(this.protectedMediaUrlCache).forEach((url) =>
       URL.revokeObjectURL(url),
     );
     this.clearFeedMediaSelection();
@@ -782,6 +797,8 @@ export class CommunicationComponent
         this.featuredFeedPosts = home?.featuredPosts || [];
         this.feedPosts = home?.feed?.content || [];
         this.trendingTags = home?.trendingTags || [];
+        this.preloadFeedMediaUrls(this.feedPosts);
+        this.preloadFeedMediaUrls(this.featuredFeedPosts);
         this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
         this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
         if (!this.selectedFeedPostId && this.feedPosts.length) {
@@ -795,6 +812,8 @@ export class CommunicationComponent
           next: (result) => {
             this.feedPosts = result?.content || [];
             this.featuredFeedPosts = this.feedPosts.filter((post) => post.featured).slice(0, 4);
+            this.preloadFeedMediaUrls(this.feedPosts);
+            this.preloadFeedMediaUrls(this.featuredFeedPosts);
             this.trendingTags = this.buildTrendingTags(this.feedPosts);
             this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
             this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
@@ -1529,6 +1548,26 @@ export class CommunicationComponent
     return `Attachment ${index + 1}`;
   }
 
+  feedComposerLinkPreview(): FeedLinkPreview | null {
+    return this.linkPreviewFromText(this.extractTextFromHtml(this.postComposer.body || ''));
+  }
+
+  feedPostLinkPreview(post: CollabFeedPost): FeedLinkPreview | null {
+    return this.linkPreviewFromText(this.extractTextFromHtml(post.body || post.summary || ''));
+  }
+
+  feedCommentLinkPreview(comment: { content?: string }): FeedLinkPreview | null {
+    return this.linkPreviewFromText(comment.content || '');
+  }
+
+  feedCommentDraftLinkPreview(postId: number): FeedLinkPreview | null {
+    return this.linkPreviewFromText(this.feedThreads[postId]?.draft || '');
+  }
+
+  feedReplyDraftLinkPreview(comment: FeedCommentNode): FeedLinkPreview | null {
+    return this.linkPreviewFromText(comment.replyDraft || '');
+  }
+
   feedDisplayBody(post: CollabFeedPost): string {
     const rawBody = (post.body || post.summary || '').trim();
     if (!rawBody) return '';
@@ -1583,6 +1622,88 @@ export class CommunicationComponent
     const element = document.createElement('div');
     element.innerHTML = source || '';
     return (element.textContent || element.innerText || '').trim();
+  }
+
+  private linkPreviewFromText(source: string): FeedLinkPreview | null {
+    const match = (source || '').match(FEED_URL_REGEX);
+    const rawUrl = match?.[0]?.trim();
+    if (!rawUrl) return null;
+    return this.buildLinkPreview(rawUrl);
+  }
+
+  private buildLinkPreview(rawUrl: string): FeedLinkPreview | null {
+    const normalized = this.normalizePreviewUrl(rawUrl);
+    if (!normalized) return null;
+    try {
+      const parsed = new URL(normalized);
+      const hostname = parsed.hostname.replace(/^www\./i, '');
+      const path = `${parsed.pathname || ''}${parsed.search || ''}` || '/';
+      const displayUrl = `${hostname}${path === '/' ? '' : path}`;
+      const imageMatch = parsed.pathname.match(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i);
+      if (imageMatch) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: this.previewFileName(parsed.pathname) || hostname,
+          subtitle: 'Direct image link',
+          thumbnailUrl: normalized,
+          kind: 'image',
+        };
+      }
+      const youtubeId = this.extractYoutubeId(parsed);
+      if (youtubeId) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: 'YouTube video',
+          subtitle: hostname,
+          thumbnailUrl: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
+          kind: 'youtube',
+        };
+      }
+      const videoMatch = parsed.pathname.match(/\.(mp4|webm|mov|m4v|ogg)$/i);
+      if (videoMatch) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: this.previewFileName(parsed.pathname) || hostname,
+          subtitle: 'Direct video link',
+          thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
+          kind: 'video',
+        };
+      }
+      return {
+        url: normalized,
+        displayUrl,
+        title: hostname,
+        subtitle: path === '/' ? 'Website link' : path,
+        thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
+        kind: 'website',
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizePreviewUrl(rawUrl: string): string {
+    const value = (rawUrl || '').trim();
+    if (!value) return '';
+    return /^https?:\/\//i.test(value) ? value : `https://${value.replace(/^\/+/, '')}`;
+  }
+
+  private previewFileName(pathname: string): string {
+    const segments = pathname.split('/').filter(Boolean);
+    return decodeURIComponent(segments[segments.length - 1] || '');
+  }
+
+  private extractYoutubeId(parsed: URL): string {
+    if (parsed.hostname.includes('youtu.be')) {
+      return parsed.pathname.replace(/\//g, '').trim();
+    }
+    if (parsed.hostname.includes('youtube.com')) {
+      return parsed.searchParams.get('v') || '';
+    }
+    return '';
   }
 
   private extractTags(source: string): string[] {
@@ -4984,24 +5105,45 @@ export class CommunicationComponent
     if (/^https?:\/\//i.test(url) && !url.includes('/x/api/v2/')) {
       return url;
     }
-    const absoluteUrl = /^https?:\/\//i.test(url)
-      ? url
-      : `${this.collabService.apiBaseUrl}${url}`;
-    if (this.attachmentPreviewCache[url]) {
-      return this.attachmentPreviewCache[url];
+    if (this.protectedMediaUrlCache[url]) {
+      return this.protectedMediaUrlCache[url];
     }
-    if (!this.attachmentPreviewLoading.has(url)) {
-      this.attachmentPreviewLoading.add(url);
+    if (!this.protectedMediaLoading.has(url)) {
+      this.protectedMediaLoading.add(url);
       this.fetchAttachmentBlobUrl(url)
         .then((blobUrl) => {
-          this.attachmentPreviewCache[url] = blobUrl;
+          this.protectedMediaUrlCache[url] = blobUrl;
           this.cdr.detectChanges();
         })
+        .catch(() => {})
         .finally(() => {
-          this.attachmentPreviewLoading.delete(url);
+          this.protectedMediaLoading.delete(url);
         });
     }
-    return absoluteUrl;
+    return '';
+  }
+
+  private preloadFeedMediaUrls(posts: CollabFeedPost[]): void {
+    for (const post of posts || []) {
+      for (const media of post.mediaItems || []) {
+        if (media.url) {
+          this.resolveProtectedMediaUrl(media.url);
+        }
+        if (media.thumbnailUrl) {
+          this.resolveProtectedMediaUrl(media.thumbnailUrl);
+        }
+      }
+      for (const comment of post.recentComments || []) {
+        for (const media of comment.mediaItems || []) {
+          if (media.url) {
+            this.resolveProtectedMediaUrl(media.url);
+          }
+          if (media.thumbnailUrl) {
+            this.resolveProtectedMediaUrl(media.thumbnailUrl);
+          }
+        }
+      }
+    }
   }
 
   trackById(_: number, m: { id: string }): string {
