@@ -955,6 +955,45 @@ export class CommunicationComponent
     );
   }
 
+  private applyFeedReactionDelta<T extends { reactionCount?: number; reactionBreakdown?: Record<string, number>; actorReactionCode?: string | null }>(
+    item: T,
+    reactionCode: string,
+  ): T {
+    const nextCode = reactionCode.toUpperCase();
+    const currentCode = (item.actorReactionCode || '').toUpperCase();
+    const breakdown = { ...(item.reactionBreakdown || {}) };
+    let reactionCount = Number(item.reactionCount || 0);
+
+    if (currentCode && breakdown[currentCode]) {
+      breakdown[currentCode] = Math.max(0, Number(breakdown[currentCode] || 0) - 1);
+      reactionCount = Math.max(0, reactionCount - 1);
+      if (breakdown[currentCode] === 0) {
+        delete breakdown[currentCode];
+      }
+    }
+
+    if (currentCode !== nextCode) {
+      breakdown[nextCode] = Number(breakdown[nextCode] || 0) + 1;
+      reactionCount += 1;
+    }
+
+    return {
+      ...item,
+      reactionCount,
+      reactionBreakdown: breakdown,
+      actorReactionCode: currentCode === nextCode ? null : nextCode,
+    };
+  }
+
+  private syncFeedPostReaction(postId: number, reactionCode: string): void {
+    this.feedPosts = this.feedPosts.map((post) =>
+      post.id === postId ? this.applyFeedReactionDelta(post, reactionCode) : post,
+    );
+    this.featuredFeedPosts = this.featuredFeedPosts.map((post) =>
+      post.id === postId ? this.applyFeedReactionDelta(post, reactionCode) : post,
+    );
+  }
+
   async submitFeedPost(): Promise<void> {
     const body = this.postComposer.body.trim();
     if (!body || this.creatingPost) return;
@@ -1132,10 +1171,9 @@ export class CommunicationComponent
 
     request.subscribe({
       next: () => {
-        this.loadFeedHome();
-        if (this.feedThreads[post.id]?.expanded) {
-          this.loadFeedComments(post.id);
-        }
+        this.syncFeedPostReaction(post.id, reactionCode);
+        this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
+        this.cdr.detectChanges();
       },
       error: () => this.cdr.detectChanges(),
     });
@@ -1153,8 +1191,9 @@ export class CommunicationComponent
 
     request.subscribe({
       next: () => {
-        this.loadFeedComments(post.id);
-        this.loadFeedHome();
+        const updated = this.applyFeedReactionDelta(comment, reactionCode);
+        Object.assign(comment, updated);
+        this.cdr.detectChanges();
       },
       error: () => this.cdr.detectChanges(),
     });
