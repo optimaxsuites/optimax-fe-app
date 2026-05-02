@@ -59,6 +59,7 @@ export interface CollabMember {
   userId: number;
   channelId: number;
   role: string;
+  status?: 'ACTIVE' | 'BANNED' | 'LEFT' | 'REMOVED';
 }
 
 export interface CollabChannelSnap {
@@ -443,6 +444,16 @@ export class CollaborationService {
     );
   }
 
+  getChannelMembersByStatus(
+    channelId: number,
+    status: 'ACTIVE' | 'BANNED' | 'LEFT' | 'REMOVED',
+  ): Observable<CollabMember[]> {
+    return this.http.get<CollabMember[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/channel/${channelId}/status/${status}`,
+      { headers: this.headers },
+    );
+  }
+
   addChannelMember(
     channelId: number,
     userId: number,
@@ -458,6 +469,22 @@ export class CollaborationService {
   removeChannelMember(memberId: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/${memberId}`,
+      { headers: this.headers },
+    );
+  }
+
+  banChannelMember(memberId: number): Observable<void> {
+    return this.http.patch<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/${memberId}/ban`,
+      {},
+      { headers: this.headers },
+    );
+  }
+
+  unbanChannelMember(memberId: number): Observable<void> {
+    return this.http.patch<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel-member/${memberId}/unban`,
+      {},
       { headers: this.headers },
     );
   }

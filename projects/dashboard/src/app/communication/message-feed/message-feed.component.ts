@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { Message } from '../communication.component';
 
-// damilola worked on this: attachment previews plus delivered/seen receipt labels.
+// damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
   templateUrl: './message-feed.component.html',
@@ -149,5 +149,18 @@ export class MessageFeedComponent {
 
   isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
     return Boolean(attachment?.type?.toLowerCase().startsWith('image/'));
+  }
+
+  threadSourceLabel(msg: Message): string {
+    return msg.sourceType === 'dm' ? 'Direct message' : 'Channel thread';
+  }
+
+  threadReplyCountLabel(msg: Message): string {
+    const count = Number(msg.threadReplyCount || msg.replies.length || 0);
+    return count === 1 ? '1 reply' : `${count} replies`;
+  }
+
+  threadPreviewReplies(msg: Message): Message[] {
+    return (msg.replies || []).slice(0, 2);
   }
 }

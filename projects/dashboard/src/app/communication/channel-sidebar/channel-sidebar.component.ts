@@ -36,6 +36,7 @@ export class ChannelSidebarComponent {
   @Input() employeesLoading = false;
   @Input() employeesError: string | null = null;
   @Input() soundEnabled = true;
+  @Input() canCreateChannels = false;
   @Input() searchQuery = '';
   @Input() showSearch = false;
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];

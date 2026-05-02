@@ -1,20 +1,22 @@
+<!-- damilola worked on this: refined the thread panel layout so replies and the composer stop clipping on the right rail. -->
 <!-- ══════════════  CHANNEL DETAILS  ══════════════ -->
 <ng-container *ngIf="mode === 'details' && activeChannel">
-  <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
-    <h3 class="text-[16px] font-bold text-gray-800">Channel Details</h3>
-    <button (click)="detailsClosed.emit()" class="panel-close-btn">
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+  <div class="thread-panel-shell flex flex-col h-full overflow-hidden">
+    <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
+      <h3 class="text-[16px] font-bold text-gray-800">Channel Details</h3>
+      <button (click)="detailsClosed.emit()" class="panel-close-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-  <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5" style="scrollbar-width: thin" (click)="memberMenuClosed.emit()">
+    <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5 min-w-0" style="scrollbar-width: thin" (click)="memberMenuClosed.emit()">
     <!-- Info card -->
-    <div class="p-4 bg-white border border-gray-200 rounded-2xl">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <p class="text-[18px] font-bold text-gray-900">{{ activeChannel.name }}</p>
+    <div class="p-4 bg-white border border-gray-200 rounded-2xl min-w-0">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="min-w-0">
+          <p class="text-[18px] font-bold text-gray-900 break-words">{{ activeChannel.name }}</p>
           <span
             class="text-[12px] px-2 py-0.5 rounded-full font-medium mt-1 inline-block"
             [ngClass]="activeChannel.channelType === 'PUBLIC' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'"
@@ -23,9 +25,9 @@
           </span>
         </div>
         <button
-          *ngIf="isChannelOwner()"
+          *ngIf="canAdministerChannel()"
           (click)="editChannelClicked.emit($event)"
-          class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50"
+          class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50 flex-shrink-0"
         >
           <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -34,22 +36,22 @@
           </svg>Edit
         </button>
       </div>
-      <p *ngIf="activeChannel.description" class="text-[14px] text-gray-600 leading-relaxed">{{ activeChannel.description }}</p>
+      <p *ngIf="activeChannel.description" class="text-[14px] text-gray-600 leading-relaxed break-words">{{ activeChannel.description }}</p>
       <p *ngIf="!activeChannel.description" class="text-[14px] text-gray-400 italic">No description set.</p>
     </div>
 
     <!-- Members -->
-    <div>
+    <div class="min-w-0">
       <div class="flex items-center justify-between mb-3">
         <h4 class="text-[14px] font-semibold text-gray-700">Members ({{ channelMembers.length }})</h4>
       </div>
       <div *ngIf="channelMembersLoading" class="flex flex-col gap-2">
         <div *ngFor="let i of [1,2,3]" class="h-10 bg-gray-100 rounded-xl animate-pulse"></div>
       </div>
-      <div *ngIf="!channelMembersLoading" class="flex flex-col gap-2">
+      <div *ngIf="!channelMembersLoading" class="flex flex-col gap-2 min-w-0">
         <div
           *ngFor="let m of channelMembers"
-          class="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-xl relative"
+          class="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-xl relative min-w-0"
         >
           <div class="relative flex-shrink-0">
             <img *ngIf="getMemberAvatarUrl(m.userId)" [src]="getMemberAvatarUrl(m.userId)" alt="" class="w-8 h-8 rounded-full object-cover" />
@@ -69,7 +71,7 @@
               {{ m.role }}<span *ngIf="m.userId === activeChannel.createdBy" class="ml-1 text-[#2e6276] font-semibold">· Owner</span>
             </p>
           </div>
-          <div *ngIf="isChannelOwner() && m.userId !== myUserId" class="relative flex-shrink-0">
+          <div *ngIf="canAdministerChannel() && m.userId !== myUserId" class="relative flex-shrink-0">
             <button
               (click)="memberMenuOpened.emit({ member: m, event: $event })"
               class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -103,20 +105,65 @@
                   />
                 </svg>Remove
               </button>
+              <button
+                (click)="banMember.emit(m)"
+                class="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"
+                  />
+                </svg>Ban
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Banned members -->
+    <div *ngIf="bannedChannelMembers.length" class="min-w-0">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-[14px] font-semibold text-gray-700">Banned Members ({{ bannedChannelMembers.length }})</h4>
+      </div>
+      <div class="flex flex-col gap-2 min-w-0">
+        <div
+          *ngFor="let m of bannedChannelMembers"
+          class="flex items-center gap-3 px-3 py-2.5 bg-white border border-red-100 rounded-xl relative min-w-0"
+        >
+          <div class="relative flex-shrink-0">
+            <img *ngIf="getMemberAvatarUrl(m.userId)" [src]="getMemberAvatarUrl(m.userId)" alt="" class="w-8 h-8 rounded-full object-cover" />
+            <div
+              *ngIf="!getMemberAvatarUrl(m.userId)"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+              [style.background]="colorFor(m.userId)"
+            >{{ getMemberName(m.userId) | slice:0:1 }}</div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[14px] font-medium text-gray-800 truncate">{{ getMemberName(m.userId) }}</p>
+            <p class="text-[11px] text-red-500 font-medium">Banned from channel</p>
+          </div>
+          <button
+            *ngIf="canAdministerChannel()"
+            (click)="unbanMember.emit(m)"
+            class="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 hover:bg-gray-50 flex-shrink-0"
+          >
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>Unban
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Add members -->
-    <div *ngIf="nonMembers.length">
+    <div *ngIf="nonMembers.length" class="min-w-0">
       <h4 class="text-[14px] font-semibold text-gray-700 mb-3">Add Members</h4>
-      <div class="flex flex-col gap-1.5 max-h-52 overflow-y-auto" style="scrollbar-width: thin">
+      <div class="flex flex-col gap-1.5 max-h-52 overflow-y-auto min-w-0" style="scrollbar-width: thin">
         <button
           *ngFor="let emp of nonMembers"
           (click)="addMember.emit(emp.user!.userId)"
-          class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
+          class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors text-left min-w-0"
         >
           <img *ngIf="getEmpImageUrl(emp)" [src]="getEmpImageUrl(emp)" alt="" class="w-7 h-7 rounded-full object-cover flex-shrink-0" />
           <div
@@ -135,7 +182,7 @@
       </div>
     </div>
 
-    <!-- Leave / Delete -->
+    <!-- Leave / Retire -->
     <div class="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2">
       <button
         (click)="leaveChannel.emit()"
@@ -148,7 +195,7 @@
         </svg>Leave Channel
       </button>
       <button
-        *ngIf="isChannelOwner()"
+        *ngIf="canAdministerChannel()"
         (click)="deleteChannel.emit()"
         class="w-full flex items-center justify-center gap-2 py-2.5 text-red-500 hover:bg-red-50 rounded-xl text-[13px] font-semibold transition-colors border border-red-200"
       >
@@ -156,40 +203,42 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
           />
-        </svg>Delete Channel
+        </svg>Retire Channel
       </button>
     </div>
   </div>
+</div>
 </ng-container>
 
 <!-- ══════════════  PINNED MESSAGES  ══════════════ -->
 <ng-container *ngIf="mode === 'pinned'">
-  <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
-    <div class="flex items-center gap-2.5">
-      <svg class="text-amber-500" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-      <h3 class="text-[16px] font-bold text-gray-800">Pinned Messages</h3>
-      <span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[12px] font-semibold rounded-lg border border-amber-200">
-        {{ pinnedMessages.length }}
-      </span>
+  <div class="thread-panel-shell flex flex-col h-full overflow-hidden">
+    <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <svg class="text-amber-500" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+        <h3 class="text-[16px] font-bold text-gray-800">Pinned Messages</h3>
+        <span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-[12px] font-semibold rounded-lg border border-amber-200">
+          {{ pinnedMessages.length }}
+        </span>
+      </div>
+      <button (click)="pinnedPanelClosed.emit()" class="panel-close-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
-    <button (click)="pinnedPanelClosed.emit()" class="panel-close-btn">
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
-  <div class="flex-1 overflow-y-auto px-4 py-4" style="scrollbar-width: thin">
+    <div class="flex-1 overflow-y-auto px-4 py-4 min-w-0" style="scrollbar-width: thin">
     <div *ngIf="!pinnedMessages.length" class="text-center py-12">
       <p class="text-[14px] text-gray-400">No pinned messages.</p>
     </div>
     <div
       *ngFor="let msg of pinnedMessages; trackBy: trackById"
-      class="pinned-card mb-3 p-4 rounded-2xl border border-gray-200 bg-white cursor-pointer transition-all"
+      class="pinned-card mb-3 p-4 rounded-2xl border border-gray-200 bg-white cursor-pointer transition-all min-w-0"
       (click)="pinnedJumpTo.emit(msg)"
     >
-      <div class="flex items-center gap-2.5 mb-2.5">
+      <div class="flex items-center gap-2.5 mb-2.5 min-w-0">
         <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         <div
           *ngIf="!msg.avatarUrl"
@@ -199,7 +248,7 @@
         <span class="text-[14px] font-medium text-gray-800 flex-1 min-w-0 truncate">{{ msg.author }}</span>
         <span class="text-[12px] text-gray-400 flex-shrink-0">{{ msg.time }}</span>
       </div>
-      <p class="text-[14px] text-gray-700 leading-relaxed">{{ msg.content }}</p>
+      <p class="text-[14px] text-gray-700 leading-relaxed break-words">{{ msg.content }}</p>
       <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
         <button
           (click)="pinnedUnpin.emit({ msg, event: $event })"
@@ -218,11 +267,12 @@
       </div>
     </div>
   </div>
+</div>
 </ng-container>
 
 <!-- ══════════════  THREAD  ══════════════ -->
 <ng-container *ngIf="mode === 'thread' && activeThread">
-  <div class="flex flex-col h-full overflow-hidden">
+  <div class="thread-panel-shell flex flex-col h-full overflow-hidden">
 
     <!-- Header -->
     <div class="flex items-center justify-between px-5 h-14 border-b border-gray-200 flex-shrink-0">
@@ -240,10 +290,10 @@
     </div>
 
     <!-- Scrollable messages -->
-    <div class="flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin">
+    <div class="thread-scroll flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin">
 
       <!-- Root message -->
-      <div class="flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">
+      <div class="thread-root-card flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">
         <img *ngIf="activeThread.avatarUrl" [src]="activeThread.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-0.5" />
         <div
           *ngIf="!activeThread.avatarUrl"
@@ -255,7 +305,7 @@
             <span class="text-[15px] font-medium text-gray-800">{{ activeThread.author }}</span>
             <span class="text-[12px] text-gray-400">{{ activeThread.time }}</span>
           </div>
-          <p class="text-[14px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
+          <p class="thread-message-copy text-[14px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
         </div>
       </div>
 
@@ -272,8 +322,8 @@
       </div>
 
       <!-- Reply list with edit / delete / like -->
-      <div *ngFor="let r of activeThread.replies; trackBy: trackById" class="mb-4 group">
-        <div class="flex gap-3">
+      <div *ngFor="let r of activeThread.replies; trackBy: trackById" class="thread-reply-block mb-4 group">
+        <div class="thread-reply-card flex gap-3">
           <img *ngIf="r.avatarUrl" [src]="r.avatarUrl" alt="" class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
           <div
             *ngIf="!r.avatarUrl"
@@ -318,7 +368,7 @@
             </ng-container>
 
             <ng-template #replyNormal>
-              <p class="text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }">{{ r.content }}</p>
+              <p class="thread-message-copy text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }">{{ r.content }}</p>
 
               <!-- Reply action row -->
               <div class="flex items-center gap-0 mt-1 flex-wrap">
@@ -405,8 +455,8 @@
             </ng-template>
 
             <!-- Nested replies (second level) -->
-            <div *ngIf="r.replies.length" class="mt-3 pl-4 border-l-2 border-gray-100 flex flex-col gap-3">
-              <div *ngFor="let r2 of r.replies; trackBy: trackById" class="flex gap-2.5">
+            <div *ngIf="r.replies.length" class="thread-nested-list mt-3 pl-4 border-l-2 border-gray-100 flex flex-col gap-3">
+              <div *ngFor="let r2 of r.replies; trackBy: trackById" class="thread-nested-card flex gap-2.5">
                 <img *ngIf="r2.avatarUrl" [src]="r2.avatarUrl" alt="" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
                 <div
                   *ngIf="!r2.avatarUrl"
@@ -418,7 +468,7 @@
                     <span class="text-[13px] font-bold text-gray-800">{{ r2.author }}</span>
                     <span class="text-[11px] text-gray-400">{{ r2.time }}</span>
                   </div>
-                  <p class="text-[13px] text-gray-600 leading-relaxed">{{ r2.content }}</p>
+                  <p class="thread-message-copy text-[13px] text-gray-600 leading-relaxed">{{ r2.content }}</p>
                 </div>
               </div>
             </div>
@@ -428,7 +478,7 @@
     </div>
 
     <!-- Composer -->
-    <div class="border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white">
+    <div class="thread-composer-shell border-t border-gray-200 px-4 py-4 flex-shrink-0 bg-white">
       <!-- Replying-to banner -->
       <div
         *ngIf="activeThreadReplyToId && activeThreadReplyTarget"
@@ -444,18 +494,18 @@
           </svg>
         </button>
       </div>
-      <div class="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all">
-        <input
-          type="text"
+      <div class="thread-compose-row flex items-end gap-3 border border-gray-200 rounded-2xl px-4 py-3 bg-white focus-within:border-[#2e6276]/40 transition-all">
+        <textarea
           [value]="threadReplyDraft"
           (input)="threadReplyDraftChange.emit($any($event.target).value)"
           [placeholder]="activeThreadReplyToId && activeThreadReplyTarget ? 'Reply to ' + activeThreadReplyTarget.author + '…' : 'Reply in thread…'"
           (keydown)="onThreadKey($event)"
-          class="flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
-        />
+          rows="1"
+          class="thread-compose-input flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
+        ></textarea>
         <button
           (click)="replySent.emit()"
-          class="send-btn w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+          class="send-btn thread-compose-send w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
           [ngClass]="{ ready: threadReplyDraft.trim() }"
           [disabled]="sendingReply"
         >
