@@ -231,6 +231,20 @@ export interface CollabFeedHome {
   activeChatCount: number;
 }
 
+export interface CollabFeedNotification {
+  id: number;
+  recipientUserId: number;
+  actorUserId: number;
+  postId?: number;
+  commentId?: number;
+  notificationType: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt?: string | number[];
+  actor?: CollabFeedUser;
+}
+
 export interface AnalyticsInsight {
   title: string;
   value: string;
@@ -1047,6 +1061,21 @@ export class CollaborationService {
   getFeedCommentReactions(commentId: number): Observable<CollabFeedReactionUser[]> {
     return this.http.get<CollabFeedReactionUser[]>(
       `${this.baseUrl}/x/api/v2/ai/collab/feed/reaction/comment/${commentId}`,
+      { headers: this.headers },
+    );
+  }
+
+  getFeedNotifications(): Observable<CollabFeedNotification[]> {
+    return this.http.get<CollabFeedNotification[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/feed/notification/me`,
+      { headers: this.headers },
+    );
+  }
+
+  markFeedNotificationRead(id: number): Observable<CollabFeedNotification> {
+    return this.http.post<CollabFeedNotification>(
+      `${this.baseUrl}/x/api/v2/ai/collab/feed/notification/${id}/read`,
+      {},
       { headers: this.headers },
     );
   }

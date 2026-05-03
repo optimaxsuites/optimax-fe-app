@@ -445,6 +445,11 @@
 
   &.single {
     grid-template-columns: minmax(0, 1fr);
+
+    .feed-upload-collage-item,
+    .feed-media-card.image-card {
+      min-height: 22rem;
+    }
   }
 
   &.duo {
@@ -503,7 +508,7 @@
   min-height: 14rem;
   border-radius: 1rem;
   background: #fff;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .feed-media-preview.existing-preview {
@@ -640,6 +645,17 @@
   margin-top: 1rem;
 }
 
+.feed-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.load-more-btn {
+  min-width: 12rem;
+  justify-content: center;
+}
+
 .feed-post-card {
   border: 1px solid #e2e8f0;
   border-radius: 1.25rem;
@@ -674,6 +690,17 @@
 .feed-stat-row,
 .feed-action-row {
   justify-content: space-between;
+}
+
+.feed-action-row {
+  flex-wrap: wrap;
+}
+
+.social-share {
+  width: 2.25rem;
+  min-width: 2.25rem;
+  justify-content: center;
+  padding-inline: 0;
 }
 
 .feed-post-avatar {
@@ -733,7 +760,7 @@
   margin-top: 0.9rem;
   border-radius: 1rem;
   max-height: 32rem;
-  object-fit: contain;
+  object-fit: cover;
   background: #f8fbfc;
   border: 1px solid #e2e8f0;
 }
@@ -854,6 +881,14 @@
   text-decoration: none;
 }
 
+.feed-file-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
 .feed-file-icon {
   width: 2.6rem;
   height: 2.6rem;
@@ -868,6 +903,12 @@
   i {
     font-size: 1rem;
   }
+}
+
+.feed-file-icon.office-doc,
+.feed-media-file.office-doc {
+  background: #eef2ff;
+  color: #3730a3;
 }
 
 .feed-file-copy {
@@ -894,6 +935,14 @@
     font-size: 0.75rem;
     letter-spacing: 0.04em;
   }
+}
+
+.feed-doc-preview {
+  width: 100%;
+  min-height: 14rem;
+  border: 1px solid #dbe5ec;
+  border-radius: 1rem;
+  background: #fff;
 }
 
 .feed-post-tags {
@@ -1226,6 +1275,8 @@
   min-height: 65vh;
   padding: 1rem;
   background: #edf2f5;
+  position: relative;
+  gap: 1rem;
 }
 
 .feed-media-dialog-image {
@@ -1234,6 +1285,41 @@
   object-fit: contain;
   border-radius: 1rem;
   background: #fff;
+}
+
+.feed-media-dialog-video,
+.feed-media-dialog-doc {
+  width: min(100%, 980px);
+  max-height: calc(90vh - 9rem);
+  min-height: 70vh;
+  border: 0;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.feed-media-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.85rem;
+  height: 2.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.74);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+
+  &.prev {
+    left: 1rem;
+  }
+
+  &.next {
+    right: 1rem;
+  }
 }
 
 .feed-reply-box {
