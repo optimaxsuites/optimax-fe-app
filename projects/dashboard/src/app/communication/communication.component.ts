@@ -20,6 +20,7 @@ import {
   AiSummaryResponse,
   AiEmailComposeResponse,
   CollabFeedHome,
+  CollabFeedNotification,
   CollabFeedPost,
   CollabFeedComment,
   CollabFeedMediaItem,
@@ -278,6 +279,10 @@ export class CommunicationComponent
   featuredFeedPosts: CollabFeedPost[] = [];
   trendingTags: string[] = [];
   selectedFeedPostId: number | null = null;
+  feedPage = 1;
+  feedPageSize = 10;
+  feedHasMore = false;
+  loadingMoreFeed = false;
   creatingPost = false;
   feedMediaError = '';
   postComposer = {
@@ -292,7 +297,10 @@ export class CommunicationComponent
   expandedFeedMediaUrl = '';
   expandedFeedMediaLabel = '';
   feedMediaViewerOpen = false;
+  expandedFeedMediaItems: Array<{ url: string; label: string; mediaType: string }> = [];
+  expandedFeedMediaIndex = 0;
   private feedReactionHoverCache: Record<string, string> = {};
+  private seenFeedNotificationIds = new Set<number>();
   private protectedMediaUrlCache: Record<string, string> = {};
   private protectedMediaLoading = new Set<string>();
   readonly feedReactionOptions = [
@@ -468,6 +476,7 @@ export class CommunicationComponent
   ) {}
 
   ngOnInit() {
+    this.restoreSeenFeedNotificationIds();
     this.workspaceMode =
       sessionStorage.getItem('optimax_workspace_mode') === 'chat'
         ? 'chat'
@@ -790,30 +799,42 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
-  loadFeedHome(page = 1): void {
-    this.feedHomeLoading = true;
+  loadFeedHome(page = 1, append = false): void {
+    this.feedHomeLoading = !append;
+    this.loadingMoreFeed = append;
     this.feedHomeError = null;
-    this.collabService.getFeedHome(this.feedQuery, page, 10).subscribe({
+    this.collabService.getFeedHome(this.feedQuery, page, this.feedPageSize).subscribe({
       next: (home) => {
+        const nextPosts = home?.feed?.content || [];
+        const mergedPosts = append ? [...this.feedPosts, ...nextPosts.filter((post) => !this.feedPosts.some((existing) => existing.id === post.id))] : nextPosts;
         this.feedHome = home;
+        this.feedPage = page;
         this.featuredFeedPosts = home?.featuredPosts || [];
-        this.feedPosts = home?.feed?.content || [];
+        this.feedPosts = mergedPosts;
         this.trendingTags = home?.trendingTags || [];
         this.preloadFeedMediaUrls(this.feedPosts);
         this.preloadFeedMediaUrls(this.featuredFeedPosts);
         this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
         this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
+        const total = Number(home?.feed?.totalSize || mergedPosts.length);
+        this.feedHasMore = this.feedPosts.length < total;
         if (!this.selectedFeedPostId && this.feedPosts.length) {
           this.selectedFeedPostId = this.feedPosts[0].id;
         }
         this.loadTaskRoutineSummaries();
+        this.loadFeedNotifications();
         this.feedHomeLoading = false;
+        this.loadingMoreFeed = false;
         this.cdr.detectChanges();
       },
       error: () => {
-        this.collabService.getFeedPosts(this.feedQuery, undefined, page, 10, true).subscribe({
+        this.collabService.getFeedPosts(this.feedQuery, undefined, page, this.feedPageSize, true).subscribe({
           next: (result) => {
-            this.feedPosts = result?.content || [];
+            const nextPosts = result?.content || [];
+            this.feedPage = page;
+            this.feedPosts = append
+              ? [...this.feedPosts, ...nextPosts.filter((post) => !this.feedPosts.some((existing) => existing.id === post.id))]
+              : nextPosts;
             this.featuredFeedPosts = this.feedPosts.filter((post) => post.featured).slice(0, 4);
             this.preloadFeedMediaUrls(this.feedPosts);
             this.preloadFeedMediaUrls(this.featuredFeedPosts);
@@ -837,17 +858,21 @@ export class CommunicationComponent
               })),
               activeChatCount: this.dmContacts.length,
             };
+            this.feedHasMore = this.feedPosts.length < Number(result?.totalSize || this.feedPosts.length);
             if (!this.selectedFeedPostId && this.feedPosts.length) {
               this.selectedFeedPostId = this.feedPosts[0].id;
             }
             this.loadTaskRoutineSummaries();
+            this.loadFeedNotifications();
             this.feedHomeLoading = false;
+            this.loadingMoreFeed = false;
             this.feedHomeError = this.feedPosts.length ? null : 'Could not load enterprise feed.';
             this.cdr.detectChanges();
           },
           error: () => {
             this.feedHomeError = 'Could not load enterprise feed.';
             this.feedHomeLoading = false;
+            this.loadingMoreFeed = false;
             this.cdr.detectChanges();
           },
         });
@@ -856,13 +881,22 @@ export class CommunicationComponent
   }
 
   refreshFeed(): void {
-    this.loadFeedHome();
+    this.feedPage = 1;
+    this.feedHasMore = false;
+    this.loadFeedHome(1, false);
   }
 
   onFeedSearchEnter(event: Event): void {
     const keyboardEvent = event as KeyboardEvent;
     keyboardEvent.preventDefault();
-    this.loadFeedHome();
+    this.feedPage = 1;
+    this.feedHasMore = false;
+    this.loadFeedHome(1, false);
+  }
+
+  loadMoreFeedPosts(): void {
+    if (this.loadingMoreFeed || !this.feedHasMore) return;
+    this.loadFeedHome(this.feedPage + 1, true);
   }
 
   selectFeedPost(post: CollabFeedPost): void {
@@ -907,6 +941,32 @@ export class CommunicationComponent
       return;
     }
     this.cdr.detectChanges();
+  }
+
+  shareFeedPost(post: CollabFeedPost, platform: 'facebook' | 'linkedin' | 'twitter' | 'instagram'): void {
+    const shareUrl = this.shareableFeedPostUrl(post);
+    const rawText = `${post.title || 'Enterprise update'} ${this.extractTextFromHtml(post.summary || post.body || '').slice(0, 120)}`.trim();
+    const shareText = encodeURIComponent(rawText);
+    let targetUrl = '';
+    if (platform === 'facebook') {
+      targetUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${shareText}`;
+    } else if (platform === 'linkedin') {
+      targetUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    } else if (platform === 'twitter') {
+      targetUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareText}`;
+    } else {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(`${rawText}\n${shareUrl}`).catch(() => {});
+      }
+      targetUrl = `https://www.instagram.com/`;
+    }
+    window.open(targetUrl, '_blank', 'noopener,noreferrer,width=720,height=640');
+  }
+
+  private shareableFeedPostUrl(post: CollabFeedPost): string {
+    const base = window.location.origin || '';
+    const path = `/admin/dashboard/communications/${this.me.userId}#post-${post.id}`;
+    return `${base}${path}`;
   }
 
   private loadFeedComments(postId: number): void {
@@ -1439,6 +1499,52 @@ export class CommunicationComponent
     });
   }
 
+  private loadFeedNotifications(): void {
+    this.collabService.getFeedNotifications().subscribe({
+      next: (notifications) => {
+        (notifications || []).forEach((notification) => this.publishFeedNotification(notification));
+        this.cdr.detectChanges();
+      },
+      error: () => {},
+    });
+  }
+
+  private publishFeedNotification(notification: CollabFeedNotification): void {
+    if (notification.read || this.seenFeedNotificationIds.has(notification.id)) {
+      return;
+    }
+    this.seenFeedNotificationIds.add(notification.id);
+    this.persistSeenFeedNotificationIds();
+    this.headerStateService.pushNotification({
+      title: `${this.feedAuthorName(notification.actor)} mentioned everyone`,
+      body: notification.body || notification.title || '@all notification',
+      category: 'feed',
+      route: `/admin/dashboard/communications/${this.me.userId}`,
+      avatarUrl: this.feedAuthorAvatarUrl(notification.actor),
+      contextLabel: 'Enterprise feed',
+      workspaceMode: 'feed',
+    });
+    this.playNotificationSound();
+  }
+
+  private restoreSeenFeedNotificationIds(): void {
+    try {
+      const raw = sessionStorage.getItem('optimax_seen_feed_notifications');
+      if (!raw) return;
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) {
+        this.seenFeedNotificationIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
+      }
+    } catch (_) {}
+  }
+
+  private persistSeenFeedNotificationIds(): void {
+    sessionStorage.setItem(
+      'optimax_seen_feed_notifications',
+      JSON.stringify(Array.from(this.seenFeedNotificationIds).slice(-100)),
+    );
+  }
+
   clearPendingAttachment(refresh = true): void {
     if (this.pendingAttachment?.previewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(this.pendingAttachment.previewUrl);
@@ -1537,15 +1643,47 @@ export class CommunicationComponent
 
   openFeedMediaDialog(url: string, label = 'Image preview'): void {
     if (!url) return;
+    this.expandedFeedMediaItems = [{ url, label, mediaType: 'IMAGE' }];
+    this.expandedFeedMediaIndex = 0;
     this.expandedFeedMediaUrl = url;
     this.expandedFeedMediaLabel = label;
     this.feedMediaViewerOpen = true;
+  }
+
+  openFeedMediaCarousel(items: CollabFeedMediaItem[], startIndex = 0): void {
+    const mediaItems = items
+      .map((item, index) => ({
+        url: this.feedMediaUrl(item),
+        label: this.feedMediaLabel(item, index),
+        mediaType: (item.mediaType || 'FILE').toUpperCase(),
+      }))
+      .filter((item) => !!item.url);
+    if (!mediaItems.length) return;
+    this.expandedFeedMediaItems = mediaItems;
+    this.expandedFeedMediaIndex = Math.min(Math.max(0, startIndex), mediaItems.length - 1);
+    this.syncExpandedFeedMedia();
+    this.feedMediaViewerOpen = true;
+  }
+
+  previousFeedMedia(): void {
+    if (!this.expandedFeedMediaItems.length) return;
+    this.expandedFeedMediaIndex =
+      (this.expandedFeedMediaIndex - 1 + this.expandedFeedMediaItems.length) % this.expandedFeedMediaItems.length;
+    this.syncExpandedFeedMedia();
+  }
+
+  nextFeedMedia(): void {
+    if (!this.expandedFeedMediaItems.length) return;
+    this.expandedFeedMediaIndex = (this.expandedFeedMediaIndex + 1) % this.expandedFeedMediaItems.length;
+    this.syncExpandedFeedMedia();
   }
 
   closeFeedMediaDialog(): void {
     this.feedMediaViewerOpen = false;
     this.expandedFeedMediaUrl = '';
     this.expandedFeedMediaLabel = '';
+    this.expandedFeedMediaItems = [];
+    this.expandedFeedMediaIndex = 0;
   }
 
   isFeedImageItem(item?: CollabFeedMediaItem): boolean {
@@ -1554,6 +1692,43 @@ export class CommunicationComponent
 
   isFeedVideoItem(item?: CollabFeedMediaItem): boolean {
     return (item?.mediaType || '').toUpperCase() === 'VIDEO';
+  }
+
+  isFeedPdfItem(item?: CollabFeedMediaItem): boolean {
+    return (item?.mediaType || '').toUpperCase() === 'PDF' || (item?.url || '').toLowerCase().endsWith('.pdf');
+  }
+
+  isFeedOfficeItem(item?: CollabFeedMediaItem): boolean {
+    const mediaType = (item?.mediaType || '').toUpperCase();
+    const url = (item?.url || '').toLowerCase();
+    return mediaType === 'DOCX' || mediaType === 'PPTX' || url.endsWith('.docx') || url.endsWith('.pptx') || url.endsWith('.doc') || url.endsWith('.ppt');
+  }
+
+  isDraftPdf(media: FeedMediaDraft): boolean {
+    return media.type === 'application/pdf' || media.name.toLowerCase().endsWith('.pdf');
+  }
+
+  isDraftOffice(media: FeedMediaDraft): boolean {
+    const lower = media.name.toLowerCase();
+    return lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.ppt') || lower.endsWith('.pptx');
+  }
+
+  officeFileBadge(name: string): string {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.doc') || lower.endsWith('.docx')) return 'DOCX';
+    if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) return 'PPTX';
+    if (lower.endsWith('.pdf')) return 'PDF';
+    return 'FILE';
+  }
+
+  currentExpandedFeedMediaType(): string {
+    return this.expandedFeedMediaItems[this.expandedFeedMediaIndex]?.mediaType || 'IMAGE';
+  }
+
+  private syncExpandedFeedMedia(): void {
+    const current = this.expandedFeedMediaItems[this.expandedFeedMediaIndex];
+    this.expandedFeedMediaUrl = current?.url || '';
+    this.expandedFeedMediaLabel = current?.label || '';
   }
 
   feedMediaLabel(item?: CollabFeedMediaItem, index = 0): string {

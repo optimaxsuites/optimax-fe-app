@@ -2,6 +2,11 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
 import { environment } from '../ui/sharedComponent/service/environments/environment';
 import {
@@ -18,13 +23,14 @@ import {
 // damilola worked on this: rebuilt tasks and routines into an enterprise planner with sticky-board and gantt views.
 type TaskLane = 'BACKLOG' | 'TODAY' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
 type ComposeMode = 'sticky' | 'form' | 'batch';
-type PlannerVisualMode = 'sticky' | 'gantt';
+type PlannerVisualMode = 'sticky' | 'gantt' | 'tree';
 type ReviewDecision = 'APPROVED' | 'CHANGES' | 'NOTED';
 type DependencyType = 'NONE' | 'PROJECT' | 'PERSON';
 type TaskPriority = 'Low' | 'Medium' | 'High';
 type RoutineType = 'Daily' | 'Routine' | 'Workplan';
 type TaskStatusBucket = 'ALL' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
 type WorkItemStatus = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE';
+type TaskStage = 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
 
 interface TaskAttachment {
   id: string;
@@ -112,6 +118,29 @@ interface ReminderCard {
   title: string;
   caption: string;
   tone: 'due' | 'review' | 'routine';
+  taskId?: string;
+}
+
+interface DemoTaskBlueprint {
+  title: string;
+  description: string;
+  routineType: RoutineType;
+  priority: TaskPriority;
+  projectName: string;
+  lane: TaskLane;
+  progress: number;
+  dueInDays: number;
+  sharedWithSupervisor?: boolean;
+  supervisorApproved?: boolean;
+  tags: string[];
+  workItems: Array<{
+    title: string;
+    dependency?: string;
+    status: WorkItemStatus;
+    startOffset: number;
+    dueOffset: number;
+    progress: number;
+  }>;
 }
 
 interface PerformanceCard {
@@ -133,6 +162,7 @@ interface PersonOption {
 interface DraftState {
   title: string;
   description: string;
+  stage: TaskStage;
   routineType: RoutineType;
   priority: TaskPriority;
   timelineStart: string;
@@ -149,6 +179,7 @@ interface DraftState {
   selector: 'app-feed',
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.scss'],
+  providers: [MessageService],
 })
 export class FeedComponent implements OnInit, OnDestroy {
   @Input() userInfo: any = {};
@@ -177,7 +208,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     {
       key: 'IN_PROGRESS',
       label: 'In progress',
-      subtitle: 'Workstreams actively moving across teams.',
+      subtitle: 'Sub tasks actively moving across teams.',
       icon: 'pi pi-play-circle',
       accent: 'tone-progress',
     },
@@ -204,13 +235,24 @@ export class FeedComponent implements OnInit, OnDestroy {
     'Terminal Safety Dashboard',
     'Vendor Compliance Programme',
   ];
+  readonly routineTypeOptions: RoutineType[] = ['Daily', 'Routine', 'Workplan'];
+  readonly dependencyTypeOptions: Array<{ label: string; value: DependencyType }> = [
+    { label: 'None', value: 'NONE' },
+    { label: 'Project', value: 'PROJECT' },
+    { label: 'Person', value: 'PERSON' },
+  ];
+  readonly stageOptions: Array<{ label: string; value: TaskStage }> = [
+    { label: 'Open', value: 'OPEN' },
+    { label: 'In Progress', value: 'IN_PROGRESS' },
+    { label: 'Closed', value: 'CLOSED' },
+  ];
 
   currentUuid = 'uu';
   isSupervisor = false;
   isLoading = false;
   activePage: 'planner' | 'reviews' | 'reports' = 'planner';
   composeMode: ComposeMode = 'sticky';
-  visualMode: PlannerVisualMode = 'sticky';
+  visualMode: PlannerVisualMode = 'tree';
   composerVisible = false;
   taskDialogVisible = false;
   taskBoard: Record<TaskLane, RoutineTask[]> = {
@@ -233,16 +275,30 @@ export class FeedComponent implements OnInit, OnDestroy {
   searchTerm = '';
   selectedStatusBucket: TaskStatusBucket = 'ALL';
   selectedTask: RoutineTask | null = null;
+  selectedTaskSubTaskDraft: DraftWorkItem | null = null;
+  expandedTreeTaskIds = new Set<string>();
+  metadataDialogVisible = false;
+  historyFilter = '';
+  projectOptions: string[] = [...this.enterpriseProjects];
+  newMetadata = {
+    project: '',
+  };
+  reminderDialogVisible = false;
+  reminderDialogTitle = '';
+  reminderDialogBody = '';
+  readonly demoProjects = ['Siemens Delivery Office', 'Glo Nigeria Network PMO', 'MTN Nigeria Experience Hub', 'CAC Digital Filing Programme'];
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly headerStateService: HeaderStateService,
     private readonly collaborationService: CollaborationService,
+    private readonly messageService: MessageService,
   ) {}
 
   ngOnInit(): void {
     this.currentUuid = this.route.snapshot.paramMap.get('uuid') || 'uu';
     this.isSupervisor = this.readRole().includes('ROLE_ADMIN') || this.readRole().includes('SUPERVISOR');
+    this.loadMetadataConfig();
     this.loadHomeData();
   }
 
@@ -281,7 +337,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         caption: 'parent tasks moving across the organisation',
       },
       {
-        label: 'Tracked workstreams',
+        label: 'Tracked sub tasks',
         value: String(workstreams),
         caption: 'child items monitored from start to finish',
       },
@@ -299,11 +355,20 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   get visibleReviewTasks(): RoutineTask[] {
-    const reviewTasks = this.tasks.filter(
+    const reviewTasks = this.reviewTasks;
+    if (this.selectedReviewOwner === 'All') return reviewTasks;
+    return reviewTasks.filter((task) => task.assignee?.trim() === this.selectedReviewOwner);
+  }
+
+  get reviewTasks(): RoutineTask[] {
+    return this.tasks.filter(
       (task) => task.sharedWithSupervisor || task.lane === 'REVIEW' || task.supervisorApproved,
     );
-    if (this.selectedReviewOwner === 'All') return reviewTasks;
-    return reviewTasks.filter((task) => task.assignee === this.selectedReviewOwner);
+  }
+
+  get reviewAssignees(): string[] {
+    return [...new Set(this.reviewTasks.map((task) => task.assignee?.trim()).filter((name): name is string => !!name))]
+      .sort((left, right) => left.localeCompare(right));
   }
 
   get filteredTasks(): RoutineTask[] {
@@ -335,7 +400,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         label: 'In Progress',
         count: this.tasks.filter((task) => this.belongsToStatusBucket(task, 'IN_PROGRESS')).length,
         icon: 'pi pi-chart-line',
-        caption: 'Execution and review workstreams in motion.',
+        caption: 'Execution and review sub tasks in motion.',
       },
       {
         key: 'CLOSED',
@@ -350,7 +415,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   get selectedStatusTasks(): RoutineTask[] {
     return this.filteredTasks
       .slice()
-      .sort((left, right) => left.timelineDue.localeCompare(right.timelineDue) || right.progress - left.progress);
+      .sort((left, right) => this.normalizeIsoDate(left.timelineDue).localeCompare(this.normalizeIsoDate(right.timelineDue)) || right.progress - left.progress);
   }
 
   get selectedStatusTitle(): string {
@@ -374,7 +439,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       const weeklyScore = Math.min(100, Math.round(progressBase));
       const latestUpdate = rows
         .flatMap((task) => task.updates)
-        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+        .sort((left, right) => this.normalizeDateTimeValue(right.createdAt).localeCompare(this.normalizeDateTimeValue(left.createdAt)))[0];
 
       return {
         name,
@@ -393,6 +458,21 @@ export class FeedComponent implements OnInit, OnDestroy {
           : 'No updates yet',
       };
     });
+  }
+
+  get historyCards(): RoutineTask[] {
+    const query = this.historyFilter.trim().toLowerCase();
+    const rows = this.tasks
+      .slice()
+      .sort((left, right) => {
+        const leftTime = new Date(left.emailQueuedAt || left.timelineDue || left.timelineStart).getTime();
+        const rightTime = new Date(right.emailQueuedAt || right.timelineDue || right.timelineStart).getTime();
+        return rightTime - leftTime;
+      });
+    if (!query) {
+      return rows;
+    }
+    return rows.filter((task) => this.matchesTaskQuery(task, query));
   }
 
   get ganttDayLabels(): Array<{ iso: string; label: string }> {
@@ -451,31 +531,142 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.visualMode = mode;
   }
 
+  toggleTreeTask(taskId: string): void {
+    if (this.expandedTreeTaskIds.has(taskId)) {
+      this.expandedTreeTaskIds.delete(taskId);
+      return;
+    }
+    this.expandedTreeTaskIds.add(taskId);
+  }
+
+  isTreeTaskExpanded(taskId: string): boolean {
+    return this.expandedTreeTaskIds.has(taskId);
+  }
+
+  stageLabelForTask(task: RoutineTask): string {
+    return this.stageForTask(task).replace('_', ' ');
+  }
+
+  setTaskStageFromTree(task: RoutineTask, stage: TaskStage): void {
+    task.lane = this.stageToLane(stage);
+    if (stage === 'CLOSED') {
+      task.progress = 100;
+    } else if (stage === 'IN_PROGRESS' && task.progress < 35) {
+      task.progress = 35;
+    }
+    this.syncTaskProgress(task);
+    this.moveTaskForProgress(task);
+    this.saveTask(task);
+  }
+
+  updateTaskFromTree(task: RoutineTask): void {
+    const assignee = this.findPersonByName(task.assignee);
+    task.assignee = assignee?.name || task.assignee || this.currentActor();
+    task.assigneeUserId = assignee?.userId ?? task.assigneeUserId ?? null;
+    task.timelineStart = this.normalizeIsoDate(task.timelineStart);
+    task.timelineDue = this.normalizeIsoDate(task.timelineDue || task.timelineStart);
+    task.progress = Math.max(0, Math.min(100, Number(task.progress || 0)));
+    this.syncTaskProgress(task);
+    this.moveTaskForProgress(task);
+    this.saveTask(task);
+  }
+
+  canEditParentProgress(task: RoutineTask): boolean {
+    return !task.workItems.length;
+  }
+
   setStatusBucket(bucket: TaskStatusBucket): void {
     this.selectedStatusBucket = bucket;
   }
 
+  openReminderDigest(): void {
+    const reviewCount = this.tasks.filter((task) => task.sharedWithSupervisor && !task.supervisorApproved).length;
+    const dueToday = this.tasks.filter((task) => task.timelineDue === this.todayIso() && task.lane !== 'DONE').length;
+    const upcomingCount = this.tasks.filter((task) => this.daysBetween(this.todayIso(), task.timelineDue) <= 2 && task.lane !== 'DONE').length;
+    this.showReminderDialog(
+      this.isSupervisor ? 'Supervisor reminder centre' : 'Daily reminder centre',
+      this.isSupervisor
+        ? `${reviewCount} shared plan${reviewCount === 1 ? '' : 's'} need review, ${dueToday} task${dueToday === 1 ? '' : 's'} are due today, and ${upcomingCount} plan${upcomingCount === 1 ? '' : 's'} need close monitoring.`
+        : `${dueToday} task${dueToday === 1 ? '' : 's'} are due today, ${reviewCount} item${reviewCount === 1 ? '' : 's'} are awaiting supervisor response, and ${upcomingCount} plan${upcomingCount === 1 ? '' : 's'} need follow-up.`,
+    );
+  }
+
+  loadDemoData(): void {
+    if (!this.people.length) {
+      this.toast('warn', 'HR staff unavailable', 'Load staff options first before generating demo tasks.');
+      return;
+    }
+
+    const requests = this.demoBlueprints().map((blueprint, index) => {
+      const existing = this.findExistingDemoTask(blueprint.title);
+      const demoTask = this.buildDemoTask(blueprint, index, existing || undefined);
+      const payload = this.toApiPlan(demoTask);
+      return existing && /^\d+$/.test(existing.id)
+        ? this.collaborationService.updateTaskRoutinePlan(Number(existing.id), payload)
+        : this.collaborationService.createTaskRoutinePlan(payload);
+    });
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.projectOptions = [...new Set([...this.projectOptions, ...this.demoProjects])].sort((a, b) => a.localeCompare(b));
+        this.persistMetadataConfig();
+        this.loadHomeData();
+        this.toast('success', 'Demo data loaded', 'Tasks and routines demo data has been refreshed from HR staff records.');
+        setTimeout(() => this.openReminderDigest(), 250);
+      },
+      error: (error) => {
+        this.toast('error', 'Demo load failed', this.errorDetail(error, 'The demo task data could not be generated.'));
+      },
+    });
+  }
+
+  deleteDemoData(): void {
+    const demoTasks = this.tasks.filter((task) => task.tags.includes('demo-seed') && /^\d+$/.test(task.id));
+    if (!demoTasks.length) {
+      this.toast('info', 'No demo data', 'There are no persisted demo tasks to remove.');
+      return;
+    }
+
+    forkJoin(demoTasks.map((task) => this.collaborationService.deleteTaskRoutinePlan(Number(task.id)))).subscribe({
+      next: () => {
+        this.loadHomeData();
+        this.toast('success', 'Demo data removed', 'All seeded demo task plans have been deleted.');
+      },
+      error: (error) => {
+        this.toast('error', 'Delete failed', this.errorDetail(error, 'The demo task data could not be deleted.'));
+      },
+    });
+  }
+
   openTaskDialog(task: RoutineTask): void {
     this.selectedTask = task;
+    this.selectedTaskSubTaskDraft = this.emptyDraftWorkItem(task.assignee || this.currentActor());
     this.taskDialogVisible = true;
   }
 
   closeTaskDialog(): void {
     this.taskDialogVisible = false;
     this.selectedTask = null;
+    this.selectedTaskSubTaskDraft = null;
     this.revokeAttachmentUrls(this.pendingReviewAttachments);
     this.pendingReviewAttachments = [];
+  }
+
+  closeReminderDialog(): void {
+    this.reminderDialogVisible = false;
   }
 
   createTask(): void {
     if (this.composeMode === 'batch') {
       this.createBatchTasks();
-      this.closeComposer();
       return;
     }
 
     const title = this.draft.title.trim();
-    if (!title) return;
+    if (!title) {
+      this.toast('warn', 'Task title required', 'Enter a task title before saving.');
+      return;
+    }
 
     const task = this.buildTaskFromDraft(title);
     this.syncTaskProgress(task);
@@ -483,6 +674,10 @@ export class FeedComponent implements OnInit, OnDestroy {
       next: () => {
         this.closeComposer();
         this.loadHomeData();
+        this.toast('success', 'Task saved', 'The task plan has been saved successfully.');
+      },
+      error: (error) => {
+        this.toast('error', 'Save failed', this.errorDetail(error, 'The task note could not be saved.'));
       },
     });
   }
@@ -608,10 +803,60 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.saveTask(task);
   }
 
+  addSubTaskToSelectedTask(task: RoutineTask): void {
+    const draft = this.selectedTaskSubTaskDraft;
+    if (!draft) return;
+    const title = draft.title.trim();
+    if (!title) {
+      this.toast('warn', 'Sub task description required', 'Enter a sub task description before saving.');
+      return;
+    }
+
+    const owner = this.findPersonByName(draft.owner || task.assignee || this.currentActor());
+    task.workItems.push({
+      id: this.makeId('wi'),
+      title,
+      ownerUserId: owner?.userId ?? null,
+      owner: owner?.name || draft.owner || task.assignee || this.currentActor(),
+      timelineStart: this.normalizeIsoDate(draft.timelineStart || task.timelineStart || this.todayIso()),
+      timelineDue: this.normalizeIsoDate(draft.timelineDue || draft.timelineStart || task.timelineDue || this.todayIso()),
+      dependency: draft.dependency.trim(),
+      status: draft.status,
+      progress: this.statusProgress(draft.status, draft.progress),
+    });
+    this.syncTaskProgress(task);
+    this.moveTaskForProgress(task);
+    this.selectedTaskSubTaskDraft = this.emptyDraftWorkItem(task.assignee || this.currentActor());
+    this.saveTask(task);
+    this.toast('success', 'Sub task added', 'The sub task has been added to the task.');
+  }
+
   taskCompletionLabel(task: RoutineTask): string {
-    if (!task.workItems.length) return 'No workstreams added yet';
+    if (!task.workItems.length) return 'No sub tasks added yet';
     const completed = task.workItems.filter((item) => item.status === 'DONE').length;
-    return `${completed}/${task.workItems.length} workstreams closed`;
+    return `${completed}/${task.workItems.length} sub tasks closed`;
+  }
+
+  downloadTaskReminder(task: RoutineTask): void {
+    this.downloadIcs(
+      task.title,
+      task.description,
+      task.timelineStart,
+      task.timelineDue,
+    );
+  }
+
+  downloadSubTaskReminder(task: RoutineTask, item: TaskWorkItem): void {
+    this.downloadIcs(
+      `${task.title} - ${item.title}`,
+      `${item.owner} | ${item.dependency || 'No dependency'}`,
+      item.timelineStart,
+      item.timelineDue,
+    );
+  }
+
+  findTaskById(taskId: string): RoutineTask | undefined {
+    return this.tasks.find((task) => task.id === taskId);
   }
 
   taskRollupPercent(task: RoutineTask): number {
@@ -718,15 +963,20 @@ export class FeedComponent implements OnInit, OnDestroy {
         }
         this.taskBoard = { BACKLOG: [], TODAY: [], IN_PROGRESS: [], REVIEW: [], DONE: [] };
         (home.plans?.content || []).map((plan) => this.fromApiPlan(plan)).forEach((task) => this.taskBoard[task.lane].push(task));
+        this.mergeProjectOptions();
+        if (this.selectedReviewOwner !== 'All' && !this.reviewAssignees.includes(this.selectedReviewOwner)) {
+          this.selectedReviewOwner = 'All';
+        }
         this.draft = this.emptyDraft();
         this.loadReminderCards();
         this.notifyAtLogin();
         this.isLoading = false;
       },
-      error: () => {
+      error: (error) => {
         this.people = [];
         this.taskBoard = { BACKLOG: [], TODAY: [], IN_PROGRESS: [], REVIEW: [], DONE: [] };
         this.isLoading = false;
+        this.toast('error', 'Tasks unavailable', this.errorDetail(error, 'Tasks and routines could not be loaded.'));
       },
     });
   }
@@ -738,6 +988,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       : this.collaborationService.updateTaskRoutinePlan(Number(task.id), payload);
     request$.subscribe({
       next: (saved) => this.replaceTaskWithApi(saved),
+      error: (error) => this.toast('error', 'Update failed', this.errorDetail(error, 'The task update could not be saved.')),
     });
   }
 
@@ -748,6 +999,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       : this.collaborationService.updateTaskRoutinePlan(Number(task.id), payload);
     request$.subscribe({
       next: () => this.loadHomeData(),
+      error: (error) => this.toast('error', 'Refresh failed', this.errorDetail(error, 'The task could not be refreshed from the server.')),
     });
   }
 
@@ -795,7 +1047,12 @@ export class FeedComponent implements OnInit, OnDestroy {
     forkJoin(payloads.map((payload) => this.collaborationService.createTaskRoutinePlan(payload))).subscribe({
       next: () => {
         this.batchRows = '';
+        this.closeComposer();
         this.loadHomeData();
+        this.toast('success', 'Batch saved', 'Batch task rows have been persisted.');
+      },
+      error: (error) => {
+        this.toast('error', 'Batch save failed', this.errorDetail(error, 'One or more batch task rows could not be saved.'));
       },
     });
   }
@@ -809,7 +1066,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       ownerUserId: this.meUserId(),
       assigneeUserId: assignee?.userId ?? this.meUserId(),
       supervisorUserId: this.supervisorUserId(),
-      lane: 'BACKLOG',
+      lane: this.stageToLane(this.draft.stage),
       progress: 10,
       owner: this.currentActor(),
       assignee: assignee?.name || this.draft.assignee || this.currentActor(),
@@ -860,8 +1117,8 @@ export class FeedComponent implements OnInit, OnDestroy {
       progress: plan.progress || 0,
       owner: this.displayNameFromUser(plan.owner, plan.ownerUserId),
       assignee: this.displayNameFromUser(plan.assignee, plan.assigneeUserId),
-      timelineStart: plan.timelineStart || this.todayIso(),
-      timelineDue: plan.timelineDue || plan.timelineStart || this.todayIso(),
+      timelineStart: this.normalizeIsoDate(plan.timelineStart || this.todayIso()),
+      timelineDue: this.normalizeIsoDate(plan.timelineDue || plan.timelineStart || this.todayIso()),
       routineType: plan.routineType || 'Daily',
       priority: plan.priority || 'Medium',
       dependencyType: plan.dependencyType || 'NONE',
@@ -875,7 +1132,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         author: update.authorName || this.personNameByUserId(update.authorUserId) || 'Staff',
         note: update.note,
         progress: Number(update.progress || 0),
-        createdAt: update.createdAt || new Date().toISOString(),
+        createdAt: this.normalizeDateTimeValue(update.createdAt || new Date().toISOString()),
       })),
       reviews: (plan.reviews || []).map((review) => ({
         id: review.id || this.makeId('rev'),
@@ -883,7 +1140,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         reviewer: review.reviewerName || this.personNameByUserId(review.reviewerUserId) || 'Reviewer',
         decision: review.decision,
         note: review.note,
-        createdAt: review.createdAt || new Date().toISOString(),
+        createdAt: this.normalizeDateTimeValue(review.createdAt || new Date().toISOString()),
         emailPreview: review.emailPreview,
         attachments: (review.attachments || []).map((attachment) => this.mapAttachmentFromApi(attachment)),
       })),
@@ -892,8 +1149,8 @@ export class FeedComponent implements OnInit, OnDestroy {
         title: item.title,
         ownerUserId: item.ownerUserId ?? null,
         owner: item.ownerName || this.personNameByUserId(item.ownerUserId) || 'Staff',
-        timelineStart: item.timelineStart || plan.timelineStart || this.todayIso(),
-        timelineDue: item.timelineDue || item.timelineStart || plan.timelineDue || this.todayIso(),
+        timelineStart: this.normalizeIsoDate(item.timelineStart || plan.timelineStart || this.todayIso()),
+        timelineDue: this.normalizeIsoDate(item.timelineDue || item.timelineStart || plan.timelineDue || this.todayIso()),
         dependency: item.dependency || '',
         status: item.status,
         progress: this.statusProgress(item.status, Number(item.progress || 0)),
@@ -904,7 +1161,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       linkedToPayroll: !!plan.linkedToPayroll,
       payrollMonth: plan.payrollMonth || '',
       productivityWeight: Number(plan.productivityWeight || 0),
-      emailQueuedAt: plan.emailQueuedAt,
+      emailQueuedAt: this.normalizeDateTimeValue(plan.emailQueuedAt),
     });
   }
 
@@ -990,6 +1247,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         title: task.title,
         caption: `Due today for ${task.assignee}`,
         tone: 'due',
+        taskId: task.id,
       });
     });
 
@@ -999,6 +1257,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         title: task.title,
         caption: `Awaiting supervisor action for ${task.assignee}`,
         tone: 'review',
+        taskId: task.id,
       });
     });
 
@@ -1017,6 +1276,12 @@ export class FeedComponent implements OnInit, OnDestroy {
     const reviewCount = this.tasks.filter((task) => task.sharedWithSupervisor && !task.supervisorApproved).length;
     const dueToday = this.tasks.filter((task) => task.timelineDue === this.todayIso() && task.lane !== 'DONE').length;
     if (reviewCount || dueToday) {
+      this.showReminderDialog(
+        this.isSupervisor ? 'Supervisor review reminders' : 'Today’s routine reminders',
+        this.isSupervisor
+          ? `${reviewCount} shared plan${reviewCount === 1 ? '' : 's'} need review and ${dueToday} task${dueToday === 1 ? '' : 's'} are due today.`
+          : `${dueToday} task${dueToday === 1 ? '' : 's'} are due today and ${reviewCount} shared item${reviewCount === 1 ? '' : 's'} are in review.`,
+      );
       this.headerStateService.pushNotification({
         title: this.isSupervisor ? 'Supervisor review reminders' : 'Today’s routine reminders',
         body: this.isSupervisor
@@ -1028,6 +1293,169 @@ export class FeedComponent implements OnInit, OnDestroy {
       });
       sessionStorage.setItem(key, '1');
     }
+  }
+
+  // damilola worked on this: use live HR staff names to seed enterprise demo plans instead of hardcoded sample users.
+  private demoBlueprints(): DemoTaskBlueprint[] {
+    return [
+      {
+        title: 'Continue work on IAAS for OptimaXCloud',
+        description: 'Coordinate UI, backend integration, and vendor subscription sub tasks into one supervised delivery track.',
+        routineType: 'Workplan',
+        priority: 'High',
+        projectName: 'Siemens Delivery Office',
+        lane: 'IN_PROGRESS',
+        progress: 48,
+        dueInDays: 0,
+        sharedWithSupervisor: true,
+        tags: ['demo-seed', 'cloud', 'iaas'],
+        workItems: [
+          { title: 'Develop UI', status: 'IN_PROGRESS', startOffset: -2, dueOffset: 1, progress: 45 },
+          { title: 'Link backend to UI', dependency: 'Develop UI', status: 'OPEN', startOffset: 1, dueOffset: 4, progress: 10 },
+          { title: 'Subscribe to hyperscaler vendors', dependency: 'Link backend to UI', status: 'BLOCKED', startOffset: 3, dueOffset: 6, progress: 0 },
+        ],
+      },
+      {
+        title: 'Review telecom partner onboarding checklist',
+        description: 'Daily routine to clear outstanding onboarding, compliance, and dependency tasks for network partners.',
+        routineType: 'Daily',
+        priority: 'Medium',
+        projectName: 'Glo Nigeria Network PMO',
+        lane: 'TODAY',
+        progress: 24,
+        dueInDays: 0,
+        tags: ['demo-seed', 'daily', 'partner'],
+        workItems: [
+          { title: 'Validate onboarding dossier', status: 'DONE', startOffset: -1, dueOffset: 0, progress: 100 },
+          { title: 'Confirm dependency on legal clearance', status: 'IN_PROGRESS', startOffset: 0, dueOffset: 1, progress: 35 },
+        ],
+      },
+      {
+        title: 'Track digital experience stabilisation sub tasks',
+        description: 'Supervisor-facing coordination board for mobile touchpoints, support flows, and rollout sequencing.',
+        routineType: 'Routine',
+        priority: 'High',
+        projectName: 'MTN Nigeria Experience Hub',
+        lane: 'REVIEW',
+        progress: 76,
+        dueInDays: 1,
+        sharedWithSupervisor: true,
+        tags: ['demo-seed', 'review', 'experience'],
+        workItems: [
+          { title: 'Complete support journey fixes', status: 'DONE', startOffset: -4, dueOffset: -1, progress: 100 },
+          { title: 'Validate release dependencies', dependency: 'Complete support journey fixes', status: 'IN_PROGRESS', startOffset: -1, dueOffset: 1, progress: 70 },
+          { title: 'Prepare rollout report', dependency: 'Validate release dependencies', status: 'OPEN', startOffset: 1, dueOffset: 2, progress: 10 },
+        ],
+      },
+      {
+        title: 'Close statutory filing readiness tasks',
+        description: 'Bring filing sub tasks into one plan with compliance milestones, reminders, and supervisor checkpoints.',
+        routineType: 'Workplan',
+        priority: 'Medium',
+        projectName: 'CAC Digital Filing Programme',
+        lane: 'BACKLOG',
+        progress: 12,
+        dueInDays: 4,
+        tags: ['demo-seed', 'compliance', 'filing'],
+        workItems: [
+          { title: 'Compile filing pack', status: 'OPEN', startOffset: 0, dueOffset: 2, progress: 15 },
+          { title: 'Confirm payment evidence', dependency: 'Compile filing pack', status: 'OPEN', startOffset: 2, dueOffset: 3, progress: 0 },
+          { title: 'Submit final filing', dependency: 'Confirm payment evidence', status: 'OPEN', startOffset: 3, dueOffset: 4, progress: 0 },
+        ],
+      },
+    ];
+  }
+
+  private buildDemoTask(blueprint: DemoTaskBlueprint, index: number, existing?: RoutineTask): RoutineTask {
+    const assignee = this.people[index % this.people.length];
+    const owner = this.people[(index + 1) % this.people.length] || assignee;
+    const supervisor = this.demoSupervisor(assignee?.userId ?? null, owner?.userId ?? null);
+    const startIso = this.plusDaysIso(Math.min(...blueprint.workItems.map((item) => item.startOffset), 0));
+    const dueIso = this.plusDaysIso(blueprint.dueInDays);
+    return this.normalizeTask({
+      id: existing?.id || this.makeId('task'),
+      title: blueprint.title,
+      description: blueprint.description,
+      ownerUserId: owner?.userId ?? this.meUserId(),
+      assigneeUserId: assignee?.userId ?? this.meUserId(),
+      supervisorUserId: supervisor?.userId ?? this.supervisorUserId(),
+      lane: blueprint.lane,
+      progress: blueprint.progress,
+      owner: owner?.name || assignee?.name || this.currentActor(),
+      assignee: assignee?.name || this.currentActor(),
+      timelineStart: startIso,
+      timelineDue: dueIso,
+      routineType: blueprint.routineType,
+      priority: blueprint.priority,
+      dependencyType: 'PROJECT',
+      dependencyValue: blueprint.projectName,
+      projectName: blueprint.projectName,
+      tags: blueprint.tags,
+      attachments: [],
+      updates: [
+        {
+          id: existing?.updates?.[0]?.id || this.makeId('upd'),
+          authorUserId: assignee?.userId ?? this.meUserId(),
+          author: assignee?.name || this.currentActor(),
+          note: `${blueprint.title} is progressing with cross-team follow-up and monitored milestones.`,
+          progress: blueprint.progress,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      reviews: blueprint.sharedWithSupervisor
+        ? [
+            {
+              id: existing?.reviews?.[0]?.id || this.makeId('rev'),
+              reviewerUserId: supervisor?.userId ?? null,
+              reviewer: supervisor?.name || this.supervisorName(),
+              decision: blueprint.supervisorApproved ? 'APPROVED' : 'NOTED',
+              note: blueprint.supervisorApproved
+                ? 'Approved for execution tracking.'
+                : 'Shared for review and awaiting detailed supervisor direction.',
+              createdAt: new Date().toISOString(),
+              emailPreview: `${supervisor?.name || this.supervisorName()} received a review update for ${assignee?.name || this.currentActor()}.`,
+              attachments: [],
+            },
+          ]
+        : [],
+      workItems: blueprint.workItems.map((item, itemIndex) => {
+        const itemOwner = this.people[(index + itemIndex) % this.people.length] || assignee;
+        return {
+          id: this.makeId('wi'),
+          title: item.title,
+          ownerUserId: itemOwner?.userId ?? assignee?.userId ?? null,
+          owner: itemOwner?.name || assignee?.name || this.currentActor(),
+          timelineStart: this.plusDaysIso(item.startOffset),
+          timelineDue: this.plusDaysIso(item.dueOffset),
+          dependency: item.dependency || '',
+          status: item.status,
+          progress: this.statusProgress(item.status, item.progress),
+        };
+      }),
+      sharedWithSupervisor: !!blueprint.sharedWithSupervisor,
+      supervisorApproved: !!blueprint.supervisorApproved,
+      linkedToProductivity: true,
+      linkedToPayroll: false,
+      productivityWeight: 1,
+    });
+  }
+
+  private findExistingDemoTask(title: string): RoutineTask | null {
+    return this.tasks.find((task) => task.tags.includes('demo-seed') && task.title.trim().toLowerCase() === title.trim().toLowerCase()) || null;
+  }
+
+  private demoSupervisor(...excludedUserIds: Array<number | null | undefined>): PersonOption | undefined {
+    const excluded = new Set(excludedUserIds.filter((value): value is number => !!value));
+    return (
+      this.people.find((person) => /manager|lead|supervisor|partner|head|admin/i.test(person.role) && !excluded.has(person.userId || -1)) ||
+      this.people.find((person) => !excluded.has(person.userId || -1))
+    );
+  }
+
+  private daysBetween(startIso: string, endIso: string): number {
+    const start = new Date(`${startIso}T00:00:00`);
+    const end = new Date(`${endIso}T00:00:00`);
+    return Math.round((end.getTime() - start.getTime()) / 86400000);
   }
 
   private matchesTaskQuery(task: RoutineTask, query: string): boolean {
@@ -1115,12 +1543,14 @@ export class FeedComponent implements OnInit, OnDestroy {
         ? task.updates.map((update: any) => ({
             ...update,
             authorUserId: update.authorUserId ?? null,
+            createdAt: this.normalizeDateTimeValue(update.createdAt || new Date().toISOString()),
           }))
         : [],
       reviews: Array.isArray(task.reviews)
         ? task.reviews.map((review: any) => ({
             ...review,
             reviewerUserId: review.reviewerUserId ?? null,
+            createdAt: this.normalizeDateTimeValue(review.createdAt || new Date().toISOString()),
             attachments: Array.isArray(review.attachments)
               ? review.attachments.map((attachment: any) => ({
                   ...attachment,
@@ -1135,8 +1565,8 @@ export class FeedComponent implements OnInit, OnDestroy {
             title: item.title || 'Work item',
             ownerUserId: item.ownerUserId ?? null,
             owner: item.owner || task.assignee || this.currentActor(),
-            timelineStart: item.timelineStart || task.timelineStart || this.todayIso(),
-            timelineDue: item.timelineDue || item.timelineStart || task.timelineDue || this.todayIso(),
+            timelineStart: this.normalizeIsoDate(item.timelineStart || task.timelineStart || this.todayIso()),
+            timelineDue: this.normalizeIsoDate(item.timelineDue || item.timelineStart || task.timelineDue || this.todayIso()),
             dependency: item.dependency || '',
             status: (item.status || 'OPEN') as WorkItemStatus,
             progress: this.statusProgress((item.status || 'OPEN') as WorkItemStatus, Number(item.progress || 0)),
@@ -1154,6 +1584,41 @@ export class FeedComponent implements OnInit, OnDestroy {
     return normalized;
   }
 
+  private normalizeIsoDate(value: any): string {
+    if (!value) return this.todayIso();
+    if (typeof value === 'string') {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? this.todayIso() : parsed.toISOString().slice(0, 10);
+    }
+    if (Array.isArray(value) && value.length >= 3) {
+      const [year, month, day] = value;
+      if ([year, month, day].every((part) => typeof part === 'number')) {
+        return `${year}`.padStart(4, '0') + `-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? this.todayIso() : parsed.toISOString().slice(0, 10);
+  }
+
+  private normalizeDateTimeValue(value: any): string {
+    if (!value) return new Date().toISOString();
+    if (typeof value === 'string') {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+    }
+    if (Array.isArray(value) && value.length >= 6) {
+      const [year, month, day, hour, minute, second, nano = 0] = value;
+      if ([year, month, day, hour, minute, second].every((part) => typeof part === 'number')) {
+        const millis = Math.floor(Number(nano || 0) / 1000000);
+        const parsed = new Date(year, Math.max(0, month - 1), day, hour, minute, second, millis);
+        return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+      }
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+  }
+
   private resetDraft(): void {
     this.revokeAttachmentUrls(this.pendingAttachments);
     this.pendingAttachments = [];
@@ -1164,12 +1629,13 @@ export class FeedComponent implements OnInit, OnDestroy {
     return {
       title: '',
       description: '',
+      stage: 'OPEN',
       routineType: 'Daily',
       priority: 'Medium',
       timelineStart: this.todayIso(),
       timelineDue: this.plusDaysIso(5),
       assignee: this.currentActor(),
-      projectName: '',
+      projectName: this.projectOptions?.[0] || this.enterpriseProjects?.[0] || '',
       dependencyType: 'NONE',
       dependencyValue: '',
       tags: '',
@@ -1304,6 +1770,9 @@ export class FeedComponent implements OnInit, OnDestroy {
             target.push(merged);
           }
         },
+        error: (error) => {
+          this.toast('error', 'Attachment failed', this.errorDetail(error, `Could not upload ${file.name}.`));
+        },
       });
     });
     input.value = '';
@@ -1403,6 +1872,183 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (lane === 'DONE') return 'CLOSED';
     if (lane === 'IN_PROGRESS' || lane === 'REVIEW') return 'IN_PROGRESS';
     return 'OPEN';
+  }
+
+  openMetadataDialog(): void {
+    this.metadataDialogVisible = true;
+  }
+
+  addProjectMetadata(): void {
+    const value = this.newMetadata.project.trim();
+    if (!value) return;
+    if (!this.projectOptions.includes(value)) {
+      this.projectOptions = [...this.projectOptions, value].sort((a, b) => a.localeCompare(b));
+      this.persistMetadataConfig();
+      this.toast('success', 'Project added', `${value} is now available in task metadata.`);
+    }
+    this.newMetadata.project = '';
+  }
+
+  exportHistoryExcel(): void {
+    const rows = this.historyCards.map((task) => ({
+      Title: task.title,
+      Assignee: task.assignee,
+      Owner: task.owner,
+      Stage: this.stageForTask(task),
+      Progress: `${task.progress}%`,
+      StartDate: task.timelineStart,
+      EndDate: task.timelineDue,
+      Project: task.projectName,
+      RoutineType: task.routineType,
+      DependencyType: task.dependencyType,
+      DependencyValue: task.dependencyValue,
+      SubTasks: task.workItems.length,
+      Blocked: this.taskBlockedCount(task),
+      SharedToSupervisor: task.sharedWithSupervisor ? 'Yes' : 'No',
+      Approved: task.supervisorApproved ? 'Yes' : 'No',
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, 'Task History');
+    XLSX.writeFile(book, `tasks-routines-history-${this.todayIso()}.xlsx`);
+  }
+
+  exportHistoryPdf(): void {
+    const pdf = new jsPDF({ orientation: 'landscape' });
+    pdf.setFontSize(16);
+    pdf.text('Tasks and Routines History', 14, 16);
+    autoTable(pdf, {
+      startY: 24,
+      head: [['Title', 'Assignee', 'Stage', 'Progress', 'Timeline', 'Project', 'Sub tasks']],
+      body: this.historyCards.map((task) => [
+        task.title,
+        task.assignee,
+        this.stageForTask(task),
+        `${task.progress}%`,
+        `${task.timelineStart} - ${task.timelineDue}`,
+        task.projectName || 'No project',
+        `${task.workItems.length}`,
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [34, 92, 114] },
+    });
+    pdf.save(`tasks-routines-history-${this.todayIso()}.pdf`);
+  }
+
+  stageForTask(task: RoutineTask): TaskStage {
+    return this.taskStatusForLane(task.lane);
+  }
+
+  private stageToLane(stage: TaskStage): TaskLane {
+    if (stage === 'CLOSED') return 'DONE';
+    if (stage === 'IN_PROGRESS') return 'IN_PROGRESS';
+    return 'BACKLOG';
+  }
+
+  private mergeProjectOptions(): void {
+    const liveProjects = this.tasks.map((task) => task.projectName).filter(Boolean);
+    this.projectOptions = [...new Set([...this.projectOptions, ...liveProjects])].sort((a, b) => a.localeCompare(b));
+  }
+
+  private metadataStorageKey(): string {
+    return 'optimax_tasks_routines_metadata';
+  }
+
+  private loadMetadataConfig(): void {
+    try {
+      const raw = localStorage.getItem(this.metadataStorageKey());
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { projects?: unknown[] };
+      if (Array.isArray(parsed?.projects)) {
+        this.projectOptions = [
+          ...new Set(parsed.projects.filter((project): project is string => typeof project === 'string' && !!project.trim())),
+        ];
+      }
+    } catch (_) {}
+  }
+
+  private persistMetadataConfig(): void {
+    localStorage.setItem(this.metadataStorageKey(), JSON.stringify({ projects: this.projectOptions }));
+  }
+
+  private toast(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string): void {
+    this.messageService.add({ key: 'tasks-routines', severity, summary, detail, life: 4000 });
+  }
+
+  private errorDetail(error: any, fallback: string): string {
+    return error?.error?.message || error?.message || fallback;
+  }
+
+  private showReminderDialog(title: string, body: string): void {
+    this.reminderDialogTitle = title;
+    this.reminderDialogBody = body;
+    this.reminderDialogVisible = true;
+    this.playReminderTone();
+  }
+
+  private playReminderTone(): void {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.85);
+
+      const first = ctx.createOscillator();
+      first.type = 'sine';
+      first.frequency.setValueAtTime(880, ctx.currentTime);
+      first.connect(gain);
+      const second = ctx.createOscillator();
+      second.type = 'triangle';
+      second.frequency.setValueAtTime(660, ctx.currentTime + 0.18);
+      second.connect(gain);
+
+      first.start();
+      second.start(ctx.currentTime + 0.18);
+      first.stop(ctx.currentTime + 0.28);
+      second.stop(ctx.currentTime + 0.62);
+      second.onended = () => ctx.close();
+    } catch (_) {}
+  }
+
+  private downloadIcs(title: string, description: string, startDate: string, endDate: string): void {
+    const start = this.icsDate(startDate, 9);
+    const end = this.icsDate(endDate || startDate, 17);
+    const content = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//OptimaX//Tasks and Routines//EN',
+      'BEGIN:VEVENT',
+      `UID:${this.makeId('ics')}`,
+      `DTSTAMP:${this.icsDate(this.todayIso(), 0)}`,
+      `DTSTART:${start}`,
+      `DTEND:${end}`,
+      `SUMMARY:${this.escapeIcs(title)}`,
+      `DESCRIPTION:${this.escapeIcs(description || title)}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT30M',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${this.escapeIcs(title)}`,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    saveAs(blob, `${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'task-reminder'}.ics`);
+  }
+
+  private icsDate(isoDate: string, hour: number): string {
+    const date = new Date(`${isoDate}T00:00:00`);
+    date.setHours(hour, 0, 0, 0);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+  }
+
+  private escapeIcs(value: string): string {
+    return (value || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
   }
 }
 

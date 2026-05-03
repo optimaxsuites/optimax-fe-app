@@ -253,8 +253,14 @@
                 controls
                 muted
               ></video>
-              <div class="feed-media-file" *ngIf="!media.previewUrl || !media.type.startsWith('video/')">
-                {{ media.type || 'file' }}
+              <iframe
+                *ngIf="media.previewUrl && isDraftPdf(media)"
+                [src]="media.previewUrl"
+                class="feed-doc-preview"
+                title="PDF preview"
+              ></iframe>
+              <div class="feed-media-file office-doc" *ngIf="!media.type.startsWith('video/') && !isDraftPdf(media)">
+                {{ officeFileBadge(media.name) }}
               </div>
               <div class="feed-media-meta">
                 <strong>{{ media.name }}</strong>
@@ -285,7 +291,16 @@
                 controls
                 muted
               ></video>
-              <div class="feed-media-file" *ngIf="!isFeedImageItem(media) && !isFeedVideoItem(media)">
+              <iframe
+                *ngIf="isFeedPdfItem(media) && feedMediaUrl(media) as pdfUrl"
+                [src]="pdfUrl"
+                class="feed-doc-preview existing-preview"
+                title="PDF preview"
+              ></iframe>
+              <div class="feed-media-file office-doc" *ngIf="isFeedOfficeItem(media)">
+                {{ officeFileBadge(feedMediaLabel(media, i)) }}
+              </div>
+              <div class="feed-media-file" *ngIf="!isFeedImageItem(media) && !isFeedVideoItem(media) && !isFeedPdfItem(media) && !isFeedOfficeItem(media)">
                 {{ media.mediaType || 'file' }}
               </div>
               <div class="feed-media-meta">
@@ -330,6 +345,7 @@
           <div class="feed-post-list" *ngIf="!feedHomeLoading && !feedHomeError">
             <article
               *ngFor="let post of feedPosts"
+              [attr.id]="'post-' + post.id"
               class="feed-post-card"
               [class.selected]="selectedFeedPostId === post.id"
             >
@@ -403,7 +419,7 @@
                         type="button"
                         class="feed-media-expand"
                         *ngIf="feedMediaUrl(media) as imageUrl"
-                        (click)="openFeedMediaDialog(imageUrl, feedMediaLabel(media, mediaIndex))"
+                        (click)="openFeedMediaCarousel(feedImageItems(post), mediaIndex)"
                       >
                         <img
                           [src]="imageUrl"
@@ -427,7 +443,7 @@
                       <source [src]="videoUrl" />
                     </video>
                     <a
-                      *ngIf="!isFeedVideoItem(media) && feedMediaUrl(media) as fileUrl"
+                      *ngIf="!isFeedVideoItem(media) && !isFeedPdfItem(media) && !isFeedOfficeItem(media) && feedMediaUrl(media) as fileUrl"
                       class="feed-file-card"
                       [href]="fileUrl"
                       target="_blank"
@@ -439,6 +455,37 @@
                       <span class="feed-file-copy">
                         <strong>{{ feedMediaLabel(media, mediaIndex) }}</strong>
                         <small>{{ media.mediaType || 'FILE' }}</small>
+                      </span>
+                      <i class="pi pi-arrow-up-right"></i>
+                    </a>
+                    <button
+                      *ngIf="isFeedPdfItem(media) && feedMediaUrl(media) as pdfUrl"
+                      type="button"
+                      class="feed-file-card feed-file-button"
+                      (click)="openFeedMediaCarousel([media], 0)"
+                    >
+                      <span class="feed-file-icon">
+                        <i class="pi pi-file-pdf"></i>
+                      </span>
+                      <span class="feed-file-copy">
+                        <strong>{{ feedMediaLabel(media, mediaIndex) }}</strong>
+                        <small>PDF PREVIEW</small>
+                      </span>
+                      <i class="pi pi-eye"></i>
+                    </button>
+                    <a
+                      *ngIf="isFeedOfficeItem(media) && feedMediaUrl(media) as officeUrl"
+                      class="feed-file-card"
+                      [href]="officeUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span class="feed-file-icon office-doc">
+                        <i class="pi pi-file"></i>
+                      </span>
+                      <span class="feed-file-copy">
+                        <strong>{{ feedMediaLabel(media, mediaIndex) }}</strong>
+                        <small>{{ officeFileBadge(feedMediaLabel(media, mediaIndex)) }} DOWNLOAD</small>
                       </span>
                       <i class="pi pi-arrow-up-right"></i>
                     </a>
@@ -490,6 +537,18 @@
                   </button>
                   <button type="button" class="toolbar-action" (click)="toggleFeedThread(post)">
                     {{ feedThreads[post.id] && feedThreads[post.id].expanded ? 'Hide replies' : 'Reply' }}
+                  </button>
+                  <button type="button" class="toolbar-action social-share" title="Share to Facebook" (click)="shareFeedPost(post, 'facebook')">
+                    <i class="fab fa-facebook-f"></i>
+                  </button>
+                  <button type="button" class="toolbar-action social-share" title="Share to LinkedIn" (click)="shareFeedPost(post, 'linkedin')">
+                    <i class="fab fa-linkedin-in"></i>
+                  </button>
+                  <button type="button" class="toolbar-action social-share" title="Share to X" (click)="shareFeedPost(post, 'twitter')">
+                    <i class="fab fa-x-twitter"></i>
+                  </button>
+                  <button type="button" class="toolbar-action social-share" title="Open Instagram" (click)="shareFeedPost(post, 'instagram')">
+                    <i class="fab fa-instagram"></i>
                   </button>
                   <button
                     type="button"
@@ -868,6 +927,12 @@
                 </div>
               </section>
             </article>
+
+            <div class="feed-load-more" *ngIf="feedHasMore">
+              <button type="button" class="toolbar-action load-more-btn" (click)="loadMoreFeedPosts()" [disabled]="loadingMoreFeed">
+                {{ loadingMoreFeed ? 'Loading more…' : 'Load more posts' }}
+              </button>
+            </div>
           </div>
         </section>
       </div>
@@ -1206,14 +1271,46 @@
   <ng-template pTemplate="header">
     <div class="feed-media-dialog-header">
       <strong>{{ expandedFeedMediaLabel || 'Image preview' }}</strong>
+      <span *ngIf="expandedFeedMediaItems.length > 1">
+        {{ expandedFeedMediaIndex + 1 }} / {{ expandedFeedMediaItems.length }}
+      </span>
     </div>
   </ng-template>
   <div class="feed-media-dialog-body">
+    <button
+      *ngIf="expandedFeedMediaItems.length > 1"
+      type="button"
+      class="feed-media-nav prev"
+      (click)="previousFeedMedia()"
+    >
+      <i class="pi pi-chevron-left"></i>
+    </button>
     <img
-      *ngIf="expandedFeedMediaUrl"
+      *ngIf="expandedFeedMediaUrl && currentExpandedFeedMediaType() === 'IMAGE'"
       [src]="expandedFeedMediaUrl"
       [alt]="expandedFeedMediaLabel || 'Image preview'"
       class="feed-media-dialog-image"
     />
+    <video
+      *ngIf="expandedFeedMediaUrl && currentExpandedFeedMediaType() === 'VIDEO'"
+      [src]="expandedFeedMediaUrl"
+      class="feed-media-dialog-video"
+      controls
+      autoplay
+    ></video>
+    <iframe
+      *ngIf="expandedFeedMediaUrl && currentExpandedFeedMediaType() === 'PDF'"
+      [src]="expandedFeedMediaUrl"
+      class="feed-media-dialog-doc"
+      title="Document preview"
+    ></iframe>
+    <button
+      *ngIf="expandedFeedMediaItems.length > 1"
+      type="button"
+      class="feed-media-nav next"
+      (click)="nextFeedMedia()"
+    >
+      <i class="pi pi-chevron-right"></i>
+    </button>
   </div>
 </p-dialog>
