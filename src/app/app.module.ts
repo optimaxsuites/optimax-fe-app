@@ -205,7 +205,6 @@ import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/works
 import { JoinCooperativeGroupComponent } from './ui/view/loan-management/join-cooperative-group/join-cooperative-group.component';
 import { CooperativeMembershipApplicationsComponent } from './ui/view/loan-management/cooperative-membership-applications/cooperative-membership-applications.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
-import { EmployeeInterestAcceptanceComponent } from './ui/view/loan-management/employee-interest-acceptance/employee-interest-acceptance.component';
 
 import { MenuModule } from 'primeng/menu';
 import { AdHocComponent } from './ui/view/payrol-extras/ad-hoc/ad-hoc.component';
@@ -358,7 +357,6 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     ShiftCalendarComponent,
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
-    EmployeeInterestAcceptanceComponent,
     AdHocComponent,
     QueryComponent,
     PayrolExtrasComponent,

@@ -197,6 +197,14 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
   ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+
+       // TEMP: diagnostic log
+      console.log('=== FETCH BY EMPLOYEE ===');
+      console.log('Records returned:', mapped.map((r: AttendanceTableRecord) => ({ 
+        id: r.id, 
+        employee: r.employee,
+        date: r.date 
+      })));
       
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },

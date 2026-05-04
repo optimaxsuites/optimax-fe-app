@@ -4,8 +4,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { switchMap, map, catchError } from 'rxjs/operators';
 import { LoanApplication, RepaymentScheduleItem, StatusChange, LoanStatus, LoanStatusUpdate } from './loan.types';
 import { LoanApplicationService } from './loan-application.service';
-import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
 import { LoanPurposeService } from './loan-purpose.service';
+import { AdvanceInterestAgreementService } from './loan-interest-agreement.service';
 import {
   normalizeLoanRepaymentStartDate,
   readPersistedLoanLateFeeGracePeriodDays,
@@ -28,8 +28,8 @@ import {
 export class LoanApprovalService {
   constructor(
     private loanApplicationService: LoanApplicationService,
-    private interestAgreementService: AdvanceInterestAgreementService,
-    private loanPurposeService: LoanPurposeService
+    private loanPurposeService: LoanPurposeService,
+    private interestAgreementService: AdvanceInterestAgreementService
   ) {}
 
   updateApplicationStatus(

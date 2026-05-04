@@ -1,5 +1,4 @@
-// import { IDelay } from './../../../../../../node_modules/exponential-backoff/dist/delay/delay.interface.d';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router'; 
 import { Subscription } from 'rxjs';
@@ -33,33 +32,50 @@ interface EmployeeLoanHistoryRow {
 @Component({
   selector: 'app-employee-dashboard',
   templateUrl: './employee-loan-dashboard.component.html',
-  styleUrls: ['./employee-loan-dashboard.component.scss']
+  styleUrls: ['./employee-loan-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None 
 })
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
+  private hasInitializedLoanSubscription = false;
+  tableRefreshInProgress = false;
 
   openGracePeriodRequest(): void {
-    this.router.navigate(['/admin/hr/loan-management/grace-period-requests', this.employeeId]);
+    const activeLoans = this.getActiveLoansForExtension();
+
+    if (!activeLoans.length) {
+      this.messages = [{
+        severity: 'warn',
+        summary: 'Extension Unavailable',
+        detail: 'You can only request a payment extension when you have at least one active loan.'
+      }];
+      return;
+    }
+
+    this.activeGracePeriodLoans = activeLoans;
+    this.selectedGracePeriodLoan = activeLoans[0];
+    this.selectedGracePeriodInstallment = this.getNextOpenInstallmentForLoan(activeLoans[0]);
+    this.showGracePeriodModal = true;
   }
 
-    /**
-     * Checks if a value is a valid date for use with Angular DatePipe.
-     * Accepts Date, string, or number. Returns true if valid, false otherwise.
-     */
-    isValidDate(value: any): boolean {
-      if (!value) return false;
-      const date = value instanceof Date ? value : new Date(value);
-      return !isNaN(date.getTime());
-    }
+  isValidDate(value: any): boolean {
+    if (!value) return false;
+    const date = value instanceof Date ? value : new Date(value);
+    return !isNaN(date.getTime());
+  }
+
   employeeName: string = 'Employee Name';
   employeeId: string = 'EMP-123';
   employeeDepartment: string = '';
   isLoading: boolean = false;
+  isDataLoaded: boolean = false; 
+  isInitialLoad: boolean = true;
   uuid: string = '';
   
   showHistory: boolean = true;
   showStatusUpdates: boolean = true;
   showLoanForm: boolean = false;
   showPaymentForm: boolean = false;
+  showGracePeriodModal: boolean = false;
   
   loanCounts = {
     pending: 0,
@@ -82,31 +98,22 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   selectedLoanForDetails: LoanApplication | null = null;
   selectedPaymentLoan: LoanApplication | null = null;
   selectedPaymentInstallment: RepaymentScheduleItem | null = null;
+  selectedGracePeriodLoan: LoanApplication | null = null;
+  selectedGracePeriodInstallment: RepaymentScheduleItem | null = null;
   allowPaymentLoanSelection = false;
   showLoanDetailsModal: boolean = false;
   messages: Message[] = [];
   payableLoans: LoanApplication[] = [];
-  applicationUpdates: Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> = [];
+  activeGracePeriodLoans: LoanApplication[] = [];
+  applicationUpdates: Array<{ 
+    loanId: string; 
+    status: LoanApplication['status']; 
+    changedAt: string; 
+    message: string;
+    iconClass: string;
+  }> = [];
   historySortField: string = 'requestDate';
   historySortDirection: 'asc' | 'desc' = 'desc';
-
-  historyColumns = [
-    { header: 'Loan ID', field: 'loanCode' },
-    {
-      header: 'Date',
-      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
-    },
-    { header: 'Purpose', field: 'purpose' },
-    {
-      header: 'Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
-    },
-    {
-      header: 'Status',
-      formatter: (row: LoanApplication) => this.getStatusDisplay(row.status),
-      badgeClass: (row: LoanApplication) => `status-badge status-${this.getStatusClass(row.status)}`
-    }
-  ];
 
   constructor(
     private location: Location,
@@ -118,8 +125,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadEmployeeData();
-    // Only subscribe to loan updates once (cached, fast)
-    this.setupLoanSubscription();
   }
 
   ngOnDestroy(): void {
@@ -128,57 +133,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string }> {
+  get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string; iconClass: string }> {
     return this.applicationUpdates.slice(0, 3);
   }
 
-  get dashboardStatusCards(): Array<{
-    label: string;
-    value: number;
-    tone: string;
-    icon: string;
-    note: string;
-  }> {
-    return [
-      { label: 'Pending', value: this.loanCounts.pending, tone: 'pending', icon: 'fa-hourglass-half', note: 'Submitted and waiting for review' },
-      { label: 'Awaiting Interest', value: this.loanCounts.awaitingInterestAcceptance, tone: 'awaiting', icon: 'fa-percent', note: 'Awaiting your decision on interest' },
-      { label: 'Ready To Disburse', value: this.loanCounts.readyForDisbursement, tone: 'ready', icon: 'fa-hand-holding-dollar', note: 'Approved and lined up for release' },
-      { label: 'Active', value: this.loanCounts.active, tone: 'active', icon: 'fa-check-circle', note: 'Repayments currently running' },
-      { label: 'Skipped', value: this.loanCounts.skipped, tone: 'skipped', icon: 'fa-forward', note: 'Grace-adjusted repayment windows' },
-      { label: 'Overdue', value: this.loanCounts.overdue, tone: 'overdue', icon: 'fa-triangle-exclamation', note: 'Repayments behind schedule' },
-      { label: 'Paused', value: this.loanCounts.paused, tone: 'paused', icon: 'fa-circle-pause', note: 'Admin has temporarily locked actions' },
-      { label: 'Defaulted', value: this.loanCounts.defaulted, tone: 'defaulted', icon: 'fa-shield-halved', note: 'Repayment is locked pending admin action' },
-      { label: 'Rejected', value: this.loanCounts.rejected, tone: 'rejected', icon: 'fa-ban', note: 'Requests that did not pass review' },
-      { label: 'Completed', value: this.loanCounts.completed, tone: 'completed', icon: 'fa-flag-checkered', note: `Total requests: ${this.getTotalRequests()}` }
-    ];
-  }
-
-  get primaryDashboardStatusCards() {
-    return this.dashboardStatusCards.filter((card) =>
-      ['awaiting', 'ready', 'active', 'overdue'].includes(card.tone)
-    );
-  }
-
-  get secondaryDashboardStatusCards() {
-    return this.dashboardStatusCards.filter((card) =>
-      !['awaiting', 'ready', 'active', 'overdue'].includes(card.tone)
-    );
-  }
-
-  get employeeDashboardCards(): Array<{
-    label: string;
-    value: number;
-    tone: string;
-    icon: string;
-    note: string;
-  }> {
-    return [
-      { label: 'Pending', value: this.loanCounts.pending, tone: 'pending', icon: 'fa-hourglass-half', note: 'Submitted and waiting for review' },
-      { label: 'Approved', value: this.loanCounts.approved, tone: 'approved', icon: 'fa-check-circle', note: 'Approved and awaiting next step' },
-      { label: 'Active', value: this.loanCounts.active, tone: 'active', icon: 'fa-check-circle', note: 'Repayments currently running' },
-      { label: 'Rejected', value: this.loanCounts.rejected, tone: 'rejected', icon: 'fa-ban', note: 'Requests that did not pass review' },
-      { label: 'Completed', value: this.loanCounts.completed, tone: 'completed', icon: 'fa-flag-checkered', note: `Total requests: ${this.getTotalRequests()}` }
-    ];
+  get totalBalanceSum(): number {
+    return this.allLoans
+      .filter(loan => loan.status === 'ACTIVE')
+      .reduce((sum, loan) => sum + (loan.currentBalance || 0), 0);
   }
 
   getLoanTotalRepayable(loan: LoanApplication): number {
@@ -189,13 +151,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     if (!loan) {
       return '';
     }
-
     const rawCode = String(loan.loanCode || loan.id || '').trim();
     if (!rawCode) {
       return '';
     }
-
-    return /^ADVLO-/i.test(rawCode) ? rawCode : `ADVLO-${rawCode}`;
+    return /^ADV-/i.test(rawCode) ? rawCode : `ADV-${rawCode}`;
   }
 
   getShortAdvanceLoanDisplayId(loan: LoanApplication | undefined | null, maxLength = 14): string {
@@ -211,7 +171,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       if (dateDiff !== 0) {
         return dateDiff;
       }
-
       return compareLoanSortValues(String(b.loanCode || b.id), String(a.loanCode || a.id));
     });
   }
@@ -223,7 +182,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       this.historySortField = field;
       this.historySortDirection = field === 'requestDate' ? 'desc' : 'asc';
     }
-
     this.refreshRecentLoanRows();
   }
 
@@ -231,12 +189,15 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     if (this.historySortField !== field) {
       return 'fa-sort';
     }
-
     return this.historySortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
   setupLoanSubscription(): void {
-    // Subscribe to loan updates for real-time data
+    if (this.hasInitializedLoanSubscription) {
+      return;
+    }
+
+    this.hasInitializedLoanSubscription = true;
     this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
         const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
@@ -246,6 +207,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         this.calculateLoanCounts();
         this.refreshApplicationUpdates();
         this.refreshRecentLoanRows();
+        if (this.allLoans.length > 0 || !this.isInitialLoad) {
+          this.isDataLoaded = true;
+          this.isLoading = false;
+          this.tableRefreshInProgress = false;
+        }
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
@@ -259,63 +225,76 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       this.uuid = params['uuid'];
 
-      const userId = (sessionStorage.getItem('userid') || '').trim();
+      const userId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+      
+      if (!userId) {
+        console.error('No user ID found in session');
+        this.isLoading = false;
+        return;
+      }
 
       this.employeeService.getEmployeeByUserId(userId).subscribe({
         next: (response) => {
-          // const employees = this.extractEmployees(response);
-          // const matchedEmployee = this.resolveCurrentEmployee(employees);
+          if (response) {
+            this.employeeId = String(response.id || response.employeeId || '');
+            this.employeeName = `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.fullName || 'Employee';
+            this.employeeDepartment = response.department?.name || response.department || '';
+          }
 
-          // if (matchedEmployee) {
-          //   this.employeeName = this.getEmployeeFullName(matchedEmployee) || this.employeeName;
-          //   this.employeeId = String(
-          //     matchedEmployee?.id ?? matchedEmployee?.employeeId ?? matchedEmployee?.employeeCode ?? this.employeeId
-          //   ).trim() || this.employeeId;
-          //   this.employeeDepartment = String(
-          //     matchedEmployee?.department?.name ?? matchedEmployee?.department ?? this.employeeDepartment
-          //   ).trim();
-          // }
-
-          this.employeeId = response.id
-          this.employeeName = `${response.firstName} ${response.lastName}`
-
+          this.setupLoanSubscription();
           this.loadLoanData();
         },
         error: (error) => {
-          console.error('Error resolving current employee:', error);
-          this.loadLoanData();
+          console.error('Error loading employee:', error);
+          this.isLoading = false;
         }
       });
     });
   }
 
-  loadLoanData(): void {
-    // Manual refresh only: triggers backend reload and updates cache
-    const loadProfiler = startLoanLoadProfiler('employee-loan-dashboard');
+  private processLoadedData(): void {
+    this.allLoans = this.sortLoansByRecent(this.allLoans);
+    this.syncSelectedLoanDetails();
+    this.refreshPayableLoans();
+    this.calculateLoanCounts();
+    this.refreshApplicationUpdates();
+    this.refreshRecentLoanRows();
+    this.isDataLoaded = true;
+  }
+
+  loadLoanData(showTableSpinner = false): void {
+  const loadProfiler = startLoanLoadProfiler('employee-loan-dashboard');
+  this.tableRefreshInProgress = showTableSpinner;
+  if (!this.isDataLoaded) {
     this.isLoading = true;
-    this.loanApplicationService.refreshApplications().subscribe({
-      next: (applications) => {
-        // Filter for this employee after refresh
-        const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
-        this.allLoans = this.sortLoansByRecent(employeeLoans);
-        this.syncSelectedLoanDetails();
-        this.refreshPayableLoans();
-        this.calculateLoanCounts();
-        this.refreshApplicationUpdates();
-        this.refreshRecentLoanRows();
-        loadProfiler.success({ loans: this.allLoans.length, payable: this.payableLoans.length });
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading loan data:', error);
-        loadProfiler.error({ message: 'Failed to load employee loan dashboard' });
-        this.isLoading = false;
-      }
-    });
+  }
+  this.loanApplicationService.refreshApplications().subscribe({
+    next: (applications) => {
+      const employeeLoans = applications.filter((loan) => this.isCurrentEmployeeLoan(loan));
+      this.allLoans = this.sortLoansByRecent(employeeLoans);
+      this.processLoadedData();
+      loadProfiler.success({ loans: this.allLoans.length, payable: this.payableLoans.length });
+      this.isLoading = false;
+      this.isInitialLoad = false;
+      this.isDataLoaded = true;
+      this.tableRefreshInProgress = false;
+    },
+    error: (error) => {
+      console.error('Error loading loan data:', error);
+      loadProfiler.error({ message: 'Failed to load employee loan dashboard' });
+      this.isLoading = false;
+      this.tableRefreshInProgress = false;
+    }
+  });
+}
+
+  refreshLoanData(showTableSpinner = false): void {
+    this.loadLoanData(showTableSpinner);
   }
 
   private refreshRecentLoanRows(): void {
-    this.recentLoanRows = this.sortHistoryLoans(this.allLoans).slice(0, 5).map((loan) => ({
+    const sortedLoans = this.sortHistoryLoans(this.allLoans);
+    this.recentLoanRows = sortedLoans.slice(0, 5).map((loan) => ({
       loan,
       displayId: this.getShortAdvanceLoanDisplayId(loan),
       purposeDisplay: this.formatPurposeDisplay(loan.purpose),
@@ -324,7 +303,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       repaymentDay: this.formatRepaymentDay(loan.repaymentDay),
       overduePolicySummary: this.getOverduePolicySummary(loan),
       totalRepayableDisplay: this.formatCurrency(this.getLoanTotalRepayable(loan)),
-      statusClass: this.getStatusClass(loan.status),
+      statusClass: this.getStatusClass(loan.status).toLowerCase(),
       statusLabel: this.getStatusDisplay(loan.status)
     }));
   }
@@ -333,83 +312,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     if (String(loan.employeeId) === this.employeeId) {
       return true;
     }
-
     return (loan.fullName ?? '').trim().toLowerCase() === this.employeeName.trim().toLowerCase();
-  }
-
-  private extractEmployees(response: any): any[] {
-    if (Array.isArray(response)) {
-      return response;
-    }
-
-    if (Array.isArray(response?.content)) {
-      return response.content;
-    }
-
-    if (Array.isArray(response?.data)) {
-      return response.data;
-    }
-
-    return [];
-  }
-
-  private resolveCurrentEmployee(employees: any[]): any | undefined {
-    const userRegData = this.readStoredUserRegData();
-    const sessionUsername = String(sessionStorage.getItem('username') || localStorage.getItem('username') || '').trim().toLowerCase();
-    const sessionUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
-    const regEmail = String(userRegData?.email || '').trim().toLowerCase();
-    const regUsername = String(userRegData?.username || '').trim().toLowerCase();
-
-    return employees.find((employee) => {
-      const identifiers = [
-        employee?.id,
-        employee?.userId,
-        employee?.user?.id,
-        employee?.employeeId,
-        employee?.employeeCode,
-        employee?.staffId
-      ]
-        .map((value) => String(value ?? '').trim())
-        .filter(Boolean);
-      const employeeEmail = String(employee?.email || employee?.workEmail || '').trim().toLowerCase();
-      const employeeUsername = String(employee?.username || employee?.userName || '').trim().toLowerCase();
-      const employeeFullName = this.getEmployeeFullName(employee).toLowerCase();
-
-      if (sessionUserId && identifiers.includes(sessionUserId)) {
-        return true;
-      }
-
-      if (regEmail && employeeEmail === regEmail) {
-        return true;
-      }
-
-      if (sessionUsername && (employeeUsername === sessionUsername || employeeEmail === sessionUsername || employeeFullName === sessionUsername)) {
-        return true;
-      }
-
-      if (regUsername && (employeeUsername === regUsername || employeeEmail === regUsername || employeeFullName === regUsername)) {
-        return true;
-      }
-
-      return false;
-    });
-  }
-
-  private readStoredUserRegData(): any | null {
-    // Removed all localStorage/sessionStorage usage. No local user registration data is available.
-    return null;
-  }
-
-  private getEmployeeFullName(employee: any): string {
-    const fullName = String(employee?.fullName || '').trim();
-    if (fullName) {
-      return fullName;
-    }
-
-    return [employee?.firstName, employee?.lastName]
-      .map((value) => String(value || '').trim())
-      .filter(Boolean)
-      .join(' ');
   }
 
   calculateLoanCounts(): void {
@@ -540,9 +443,21 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.allowPaymentLoanSelection = false;
   }
 
+  closeGracePeriodModal(): void {
+    this.showGracePeriodModal = false;
+    this.selectedGracePeriodLoan = null;
+    this.selectedGracePeriodInstallment = null;
+    this.activeGracePeriodLoans = [];
+  }
+
   handlePaymentSuccess(): void {
     this.closePaymentFormModal();
-    this.loadLoanData();
+    this.refreshLoanData(true);
+  }
+
+  onGracePeriodSubmitted(): void {
+    this.closeGracePeriodModal();
+    this.refreshLoanData(true);
   }
 
   closeLoanFormModal(): void {
@@ -557,9 +472,14 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.showStatusUpdates = !this.showStatusUpdates;
   }
 
-  onLoanSubmitted(): void {
+  onLoanSubmitted(submittedLoan?: LoanApplication): void {
     this.showLoanForm = false;
-    this.loadLoanData();
+
+    if (submittedLoan && this.isCurrentEmployeeLoan(submittedLoan)) {
+      this.upsertLoanInDashboard(submittedLoan);
+    }
+
+    this.refreshLoanData(false);
     this.messages = [{
       severity: 'success',
       summary: 'Loan Submitted',
@@ -584,7 +504,6 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       this.location.back();
       return;
     }
-
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
 
@@ -634,46 +553,45 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     return this.allLoans.length;
   }
 
-  // getStatusDisplay(status: string): string {
-  //   switch (status) {
-  //     case 'PENDING': return 'Pending';
-  //     case 'AWAITING_INTEREST_ACCEPTANCE': return 'Awaiting Interest';
-  //     case 'APPROVED': return 'Approved';
-  //     case 'READY_FOR_DISBURSEMENT': return 'Ready for Disbursement';
-  //     case 'ACTIVE': return 'Active';
-  //     case 'REJECTED': return 'Rejected';
-  //     case 'COMPLETED': return 'Completed';
-  //     case 'SKIPPED': return 'Skipped';
-  //     case 'OVERDUE': return 'Overdue';
-  //     case 'DEFAULTED': return 'Defaulted';
-  //     case 'PAUSED': return 'Paused';
-  //     default: return status;
-  //   }
-  // }
-
-getStatusClass(status: string): string {
-  switch(status) {
-    case 'PENDING': return 'pending';
-    case 'APPROVED': return 'approved';
-    case 'READY_FOR_DISBURSEMENT': return 'ready_for_disbursement';
-    case 'ACTIVE': return 'active';
-    case 'REJECTED': return 'rejected';
-    case 'COMPLETED': return 'completed';
-    case 'SKIPPED': return 'skipped';
-    case 'OVERDUE': return 'overdue';
-    case 'DEFAULTED': return 'defaulted';
-    case 'PAUSED': return 'paused';
-    default: return status.toLowerCase();
+  getStatusClass(status: string): string {
+    switch(status) {
+      case 'PENDING': return 'pending';
+      case 'APPROVED': return 'approved';
+      case 'READY_FOR_DISBURSEMENT': return 'ready_for_disbursement';
+      case 'ACTIVE': return 'active';
+      case 'REJECTED': return 'rejected';
+      case 'COMPLETED': return 'completed';
+      case 'SKIPPED': return 'skipped';
+      case 'OVERDUE': return 'overdue';
+      case 'DEFAULTED': return 'defaulted';
+      case 'PAUSED': return 'paused';
+      default: return status?.toLowerCase() || '';
+    }
   }
-}
 
-getStatusDisplay(status: string): string {
-  if (!status) return '';
-  return String(status)
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
+  getStatusDisplay(status: string): string {
+    if (!status) return '';
+    return String(status)
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  getStatusIconClass(status: string): string {
+    switch(status) {
+      case 'PENDING': return 'pending';
+      case 'APPROVED': return 'approved';
+      case 'ACTIVE': return 'active';
+      case 'READY_FOR_DISBURSEMENT': return 'ready';
+      case 'COMPLETED': return 'completed';
+      case 'REJECTED': return 'rejected';
+      case 'SKIPPED': return 'skipped';
+      case 'OVERDUE': return 'overdue';
+      case 'DEFAULTED': return 'defaulted';
+      case 'PAUSED': return 'paused';
+      default: return 'pending';
+    }
+  }
 
   viewLoanDetails(loan: LoanApplication): void {
     this.selectedLoanForDetails = loan;
@@ -684,7 +602,6 @@ getStatusDisplay(status: string): string {
         if (!latestLoan) {
           return;
         }
-
         this.selectedLoanForDetails = latestLoan;
         this.replaceLoanInDashboard(latestLoan);
         this.refreshPayableLoans();
@@ -703,23 +620,21 @@ getStatusDisplay(status: string): string {
   }
 
   viewRepaymentSchedule(loan: LoanApplication): void {
+    console.log('viewRepaymentSchedule called with loan:', loan);
     this.selectedLoanForSchedule = loan;
-
+    
     this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
       next: (latestLoan) => {
-        if (!latestLoan) {
-          return;
+        if (latestLoan) {
+          this.selectedLoanForSchedule = latestLoan;
+          this.replaceLoanInDashboard(latestLoan);
         }
-
-        this.selectedLoanForSchedule = latestLoan;
-        this.replaceLoanInDashboard(latestLoan);
       },
       error: (error) => {
         console.error('Error refreshing repayment schedule loan:', error);
       }
     });
   }
-
 
   closeRepaymentSchedule(): void {
     this.selectedLoanForSchedule = null;
@@ -736,6 +651,10 @@ getStatusDisplay(status: string): string {
     this.payableLoans = this.allLoans.filter(loan =>
       (loan.status === 'ACTIVE' || loan.status === 'SKIPPED' || loan.status === 'OVERDUE') && loan.currentBalance > 0
     );
+  }
+
+  private getActiveLoansForExtension(): LoanApplication[] {
+    return this.allLoans.filter((loan) => loan.status === 'ACTIVE');
   }
 
   private getPreferredPayableLoan(): LoanApplication | null {
@@ -765,11 +684,9 @@ getStatusDisplay(status: string): string {
     if (this.payableLoans.length > 0) {
       return `You can pay ${this.payableLoans.length} loan${this.payableLoans.length > 1 ? 's' : ''} right now.`;
     }
-
     if (this.hasRepaymentActionLock()) {
       return 'One or more loans are paused or defaulted. Repayment actions stay locked until admin restores the loan.';
     }
-
     return 'No repayment is due right now. Payment opens automatically when a loan becomes active, skipped, or overdue.';
   }
 
@@ -778,7 +695,6 @@ getStatusDisplay(status: string): string {
       const refreshedDetailLoan = this.allLoans.find((loan) =>
         loan.id === this.selectedLoanForDetails?.id || loan.loanCode === this.selectedLoanForDetails?.loanCode
       );
-
       if (refreshedDetailLoan) {
         this.selectedLoanForDetails = refreshedDetailLoan;
       }
@@ -788,7 +704,6 @@ getStatusDisplay(status: string): string {
       const refreshedScheduleLoan = this.allLoans.find((loan) =>
         loan.id === this.selectedLoanForSchedule?.id || loan.loanCode === this.selectedLoanForSchedule?.loanCode
       );
-
       if (refreshedScheduleLoan) {
         this.selectedLoanForSchedule = refreshedScheduleLoan;
       }
@@ -799,34 +714,79 @@ getStatusDisplay(status: string): string {
     const loanIndex = this.allLoans.findIndex((loan) =>
       loan.id === updatedLoan.id || loan.loanCode === updatedLoan.loanCode
     );
-
     if (loanIndex < 0) {
       return;
     }
-
     const nextLoans = [...this.allLoans];
     nextLoans[loanIndex] = updatedLoan;
     this.allLoans = this.sortLoansByRecent(nextLoans);
     this.syncSelectedLoanDetails();
   }
 
+  private upsertLoanInDashboard(loan: LoanApplication): void {
+    const loanIndex = this.allLoans.findIndex((existingLoan) =>
+      existingLoan.id === loan.id || existingLoan.loanCode === loan.loanCode
+    );
+
+    if (loanIndex >= 0) {
+      this.replaceLoanInDashboard(loan);
+    } else {
+      this.allLoans = this.sortLoansByRecent([loan, ...this.allLoans]);
+      this.syncSelectedLoanDetails();
+    }
+
+    this.refreshPayableLoans();
+    this.calculateLoanCounts();
+    this.refreshApplicationUpdates();
+    this.refreshRecentLoanRows();
+    this.isDataLoaded = true;
+  }
+
   private refreshApplicationUpdates(): void {
-    const updates = this.allLoans
-      .flatMap(loan =>
-        (loan.statusHistory || [])
-          .filter(item => item.status !== 'PENDING')
-          .map(item => ({
+    const allUpdates: Array<{ 
+      loanId: string; 
+      status: LoanApplication['status']; 
+      changedAt: string; 
+      message: string;
+      iconClass: string;
+    }> = [];
+    
+    this.allLoans.forEach(loan => {
+      const historyEntries = loan.statusHistory || [];
+      historyEntries.forEach(item => {
+        if (item.changedAt && this.isValidDate(item.changedAt)) {
+          allUpdates.push({
             loanId: this.formatAdvanceLoanDisplayId(loan),
             status: item.status,
             changedAt: item.changedAt,
-            message: item.notes || `Loan ${this.formatAdvanceLoanDisplayId(loan)} status updated to ${item.status}.`
-          }))
-      )
-      .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
-      .slice(0, 5);
-
-    this.applicationUpdates = updates.map((item) => ({ ...item, loanId: String(item.loanId) }));
+            message: item.notes ? item.notes : `Loan ${this.formatAdvanceLoanDisplayId(loan)} status updated to ${this.getStatusDisplay(item.status)}.`,
+            iconClass: this.getStatusIconClass(item.status)
+          });
+        }
+      });
+    });
+    
+    this.allLoans.forEach(loan => {
+      if (loan.status !== 'PENDING' && loan.requestDate) {
+        const alreadyExists = allUpdates.some(update => 
+          update.loanId === this.formatAdvanceLoanDisplayId(loan) && 
+          update.status === loan.status &&
+          Math.abs(new Date(update.changedAt).getTime() - new Date(loan.requestDate).getTime()) < 60000
+        );
+        if (!alreadyExists) {
+          allUpdates.push({
+            loanId: this.formatAdvanceLoanDisplayId(loan),
+            status: loan.status,
+            changedAt: loan.requestDate,
+            message: `Loan ${this.formatAdvanceLoanDisplayId(loan)} is currently ${this.getStatusDisplay(loan.status)}.`,
+            iconClass: this.getStatusIconClass(loan.status)
+          });
+        }
+      }
+    });
+    
+    const sortedUpdates = allUpdates.sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime());
+    this.applicationUpdates = sortedUpdates;
+    console.log('Status updates loaded:', this.applicationUpdates.length);
   }
-
-  
 }

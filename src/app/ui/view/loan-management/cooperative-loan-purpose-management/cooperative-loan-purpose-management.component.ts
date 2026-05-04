@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,11 +9,13 @@ import { CreatePurposePayload, LoanPurposeData } from '../../../service/loan/loa
 @Component({
   selector: 'app-cooperative-loan-purpose-management',
   templateUrl: './cooperative-loan-purpose-management.component.html',
-  styleUrls: ['./cooperative-loan-purpose-management.component.scss']
+  styleUrls: ['./cooperative-loan-purpose-management.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDestroy {
   purposes: LoanPurposeData[] = [];
   filteredPurposes: LoanPurposeData[] = [];
+  paginatedPurposes: LoanPurposeData[] = [];
   isLoading = false;
   showPurposeModal = false;
   isEditing = false;
@@ -22,10 +24,18 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   messages: Message[] = [];
   searchTerm = ''; 
   currentUuid = '';
+
+  currentPage = 1;
+  pageSize = 10;
+  totalPages = 1;
   
   showDeleteModal = false;
   purposeToDelete: LoanPurposeData | null = null;
   isDeleting = false;
+
+  trackById(index: number, item: LoanPurposeData): number | undefined {
+  return item.id;
+}
 
   private subscriptions = new Subscription();
 
@@ -146,6 +156,7 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
           console.error('Error loading cooperative purposes:', error);
           this.purposes = [];
           this.filteredPurposes = [];
+          this.updatePagination();
           this.isLoading = false;
         }
       })
@@ -155,15 +166,38 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
   applyFilter(): void {
     if (!this.searchTerm) {
       this.filteredPurposes = [...this.purposes];
+    } else {
+      const term = this.searchTerm.toLowerCase();
+      this.filteredPurposes = this.purposes.filter(purpose =>
+        purpose.name.toLowerCase().includes(term) ||
+        purpose.code.toLowerCase().includes(term) ||
+        (purpose.description && purpose.description.toLowerCase().includes(term))
+      );
+    }
+
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+  console.log('Filtered purposes length:', this.filteredPurposes.length);
+  this.totalPages = Math.max(1, Math.ceil(this.filteredPurposes.length / this.pageSize));
+  if (this.currentPage > this.totalPages) {
+    this.currentPage = this.totalPages;
+  }
+  const startIndex = (this.currentPage - 1) * this.pageSize;
+  const endIndex = startIndex + this.pageSize;
+  this.paginatedPurposes = this.filteredPurposes.slice(startIndex, endIndex);
+  console.log('Paginated purposes length:', this.paginatedPurposes.length);
+}
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
       return;
     }
 
-    const term = this.searchTerm.toLowerCase();
-    this.filteredPurposes = this.purposes.filter(purpose =>
-      purpose.name.toLowerCase().includes(term) ||
-      purpose.code.toLowerCase().includes(term) ||
-      (purpose.description && purpose.description.toLowerCase().includes(term))
-    );
+    this.currentPage = page;
+    this.updatePagination();
   }
 
   openCreateModal(): void {
@@ -193,16 +227,11 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
       maxLoanAmount: purpose.maxLoanAmount || null,
       minLoanAmount: purpose.minLoanAmount || null,
       defaultInterestRate: purpose.defaultInterestRate || null,
-      requiresDocumentation: purpose.requiresDocumentation
+      requiresDocumentation: false
     });
 
     while (this.documentationTypes.length) {
       this.documentationTypes.removeAt(0);
-    }
-    if (purpose.documentationTypes && purpose.documentationTypes.length > 0) {
-      purpose.documentationTypes.forEach((docType: string) => {
-        this.documentationTypes.push(this.fb.control(docType, Validators.required));
-      });
     }
 
     this.showPurposeModal = true;
@@ -237,8 +266,8 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
       code: formattedCode,
       description: formValue.description || '',
       isActive: formValue.isActive,
-      requiresDocumentation: formValue.requiresDocumentation,
-      documentationTypes: formValue.documentationTypes.filter((docType: string) => docType && docType.trim()),
+      requiresDocumentation: false,
+      documentationTypes: [],
       minLoanAmount: formValue.minLoanAmount || null,
       maxLoanAmount: formValue.maxLoanAmount || null,
       defaultInterestRate: formValue.defaultInterestRate || null
@@ -405,6 +434,7 @@ export class CooperativeLoanPurposeManagementComponent implements OnInit, OnDest
         this.showMessage('success', 'Success', `Purpose "${this.purposeToDelete?.name}" deleted successfully`);
         this.purposes = this.purposes.filter(p => p.id !== this.purposeToDelete?.id);
         this.filteredPurposes = this.filteredPurposes.filter(p => p.id !== this.purposeToDelete?.id);
+        this.updatePagination();
         this.closeDeleteModal();
       },
       error: (error: Error) => {

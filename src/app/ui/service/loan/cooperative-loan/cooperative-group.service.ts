@@ -194,6 +194,19 @@ export class CooperativeGroupService {
       );
     }
 
+    deleteCooperativeGroup(id: number): Observable<void> {
+      const url = `${this.groupsUrl}/${id}`;
+      console.log(`[CooperativeGroupService] Deleting group ${id} from: ${url}`);
+      const headers = this.getAuthHeaders();
+      return this.http.delete<void>(url, { headers }).pipe(
+        map(() => void 0),
+        catchError((error: HttpErrorResponse) => {
+          console.error(`[CooperativeGroupService] Error deleting group ${id}:`, error);
+          return throwError(() => error);
+        })
+      );
+    }
+
   getEligibleGroupsForMember(
     context: CooperativeGroupContext,
     memberId: number,

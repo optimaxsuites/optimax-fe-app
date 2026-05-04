@@ -1,11 +1,12 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { forkJoin, of, timeout, catchError } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Message } from 'primeng/api';
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -36,6 +37,7 @@ interface GroupTableRow {
   totalContribution: number;
   monthlyContributionAmount: number;
   withdrawCap: number;
+  memberLimit?: number;
   contributionsBankName?: string;
   contributionsAccount?: string;
   principalBankName?: string;
@@ -68,12 +70,6 @@ interface GroupInviteEmployeeRow {
   monthlySalary: number;
 }
 
-interface SalaryLookupResponse {
-  baseSalary?: number;
-  monthlySalary?: number;
-  salary?: number;
-}
-
 type GroupFormValueSource = Omit<Partial<CooperativeLoanGroup>, 'memberLimit'> & {
   code?: string;
   name?: string;
@@ -85,9 +81,11 @@ type GroupFormValueSource = Omit<Partial<CooperativeLoanGroup>, 'memberLimit'> &
 @Component({
   selector: 'app-cooperative-loan-groups',
   templateUrl: './cooperative-loan-groups.component.html',
-  styleUrls: ['./cooperative-loan-groups.component.scss']
+  styleUrls: ['./cooperative-loan-groups.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanGroupsComponent implements OnInit {
+  // ==================== PROPERTIES ====================
   inviteLevelOptions: string[] = [];
   currentUuid = uuidV4();
   private readonly bankAccountPattern = /^\d{10}$/;
@@ -97,6 +95,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   employeeSalaryById: Record<number, number> = {};
   groupMetricsById: Record<number, GroupMetrics> = {};
   groupSummaryRows: GroupTableRow[] = [];
+  filteredGroups: GroupTableRow[] = [];
   showGroupForm = false;
   showGroupDetails = false;
   showInviteMembersModal = false;
@@ -113,6 +112,12 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   isSendingInviteEmails = false;
   formMessage = '';
   formMessageSeverity: 'success' | 'error' | 'info' | 'warn' = 'info';
+  messages: Message[] = [];
+  searchTerm = '';
+  isSubmitting = false;
+  isDeleting = false;
+  groupToDelete: GroupTableRow | null = null;
+  showDeleteModal = false;
   
   // Loading states
   isLoading = true;
@@ -121,6 +126,14 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   isLoadingEmployees = true;
   loadError = '';
   errorDetails = '';
+  currentPage = 1;
+  pageSize = 10;
+  currentInvitePage = 1;
+  invitePageSize = 10;
+  
+  // Sorting properties
+  sortField = 'name';
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   readonly inviteTenureOptions: Array<{ value: InviteTenureFilter; label: string }> = [
     { value: 'ALL', label: 'All tenures' },
@@ -130,6 +143,95 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     { value: 'OVER_THREE_YEARS', label: 'Over 3 years' }
   ];
 
+  // ==================== COMPUTED PROPERTIES ====================
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredGroups.length / this.pageSize));
+  }
+
+  get paginatedGroupRows(): GroupTableRow[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredGroups.slice(start, start + this.pageSize);
+  }
+
+  get inviteTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredInviteEmployees.length / this.invitePageSize));
+  }
+
+  get paginatedInviteEmployees(): GroupInviteEmployeeRow[] {
+    const start = (this.currentInvitePage - 1) * this.invitePageSize;
+    return this.filteredInviteEmployees.slice(start, start + this.invitePageSize);
+  }
+
+  get activeGroupCount(): number {
+    return this.groups.filter(group => group.status === 'ACTIVE').length;
+  }
+
+  get inactiveGroupCount(): number {
+    return this.groups.filter(group => group.status !== 'ACTIVE').length;
+  }
+
+  get totalMembersAcrossGroups(): number {
+    return this.groupSummaryRows.reduce((sum, row) => sum + row.memberCount, 0);
+  }
+
+  get totalContributionsAcrossGroups(): number {
+    return this.groupSummaryRows.reduce((sum, row) => sum + row.totalContribution, 0);
+  }
+
+  get configuredAccountingGroupCount(): number {
+    return this.groupSummaryRows.filter(row => row.hasAccountingConfiguration).length;
+  }
+
+  get inviteDepartmentOptions(): string[] {
+    return [...new Set(this.employeeDirectory.map(employee => employee.department).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+  }
+
+  get filteredInviteEmployees(): GroupInviteEmployeeRow[] {
+    const invitedIds = this.selectedGroupForInvite
+      ? new Set(this.selectedGroupInviteHistory.map(entry => entry.employeeId))
+      : new Set<number>();
+    return this.employeeDirectory.filter(employee => {
+      if (invitedIds.has(employee.employeeId)) return false;
+      const matchesDepartment = this.inviteDepartmentFilter === 'ALL' || employee.department === this.inviteDepartmentFilter;
+      const matchesLevel = this.inviteLevelFilter === 'ALL' || (employee.level && employee.level.toLowerCase() === String(this.inviteLevelFilter).toLowerCase());
+      const matchesTenure = this.matchesTenureFilter(employee.tenureMonths, this.inviteTenureFilter);
+      return matchesDepartment && matchesLevel && matchesTenure;
+    });
+  }
+
+  get selectableFilteredInviteEmployees(): GroupInviteEmployeeRow[] {
+    return this.filteredInviteEmployees.filter(employee => this.canInviteEmployee(employee));
+  }
+
+  get selectedInviteCount(): number {
+    return this.selectedInviteEmployeeIds.size;
+  }
+
+  get isAllVisibleInviteEmployeesSelected(): boolean {
+    return this.selectableFilteredInviteEmployees.length > 0 &&
+      this.selectableFilteredInviteEmployees.every(employee => this.selectedInviteEmployeeIds.has(employee.employeeId));
+  }
+
+  get inviteEmailSubject(): string {
+    if (!this.selectedGroupForInvite) return 'New cooperative group available';
+    return `New cooperative group available: ${this.selectedGroupForInvite.name}`;
+  }
+
+  get inviteEmailBodyPreview(): string {
+    if (!this.selectedGroupForInvite) return '';
+    return `A new cooperative group, ${this.selectedGroupForInvite.name}, is now open for applications. Visit your "My Membership" dashboard to review the group and submit an application if you are interested. Please note that applications still go through the normal review process and may be declined if the group criteria are not met.`;
+  }
+
+  get inviteActionLabel(): string {
+    return this.selectedInviteCount === 1 ? 'Send Invite Email' : 'Send Invite Emails';
+  }
+
+  // ==================== GETTERS FOR FORM CONTROL ====================
+  get nameControl() { return this.groupForm.get('name'); }
+  get codeControl() { return this.groupForm.get('code'); }
+  get descriptionControl() { return this.groupForm.get('description'); }
+
+  // ==================== CONSTRUCTOR ====================
   constructor(
     private cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
@@ -142,6 +244,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     private backNavigationService: BackNavigationService
   ) {}
 
+  // ==================== LIFECYCLE HOOKS ====================
   ngOnInit(): void {
     const routeUuid = this.route.snapshot.paramMap.get('uuid');
     if (routeUuid) {
@@ -153,6 +256,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.loadInitialData();
   }
 
+  // ==================== INITIALIZATION METHODS ====================
   private loadLevels(): void {
     this.employeeLoanService.getAllLevels().subscribe({
       next: (levels: any[]) => {
@@ -168,6 +272,53 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     });
   }
 
+  initializeForm(): void {
+    this.groupForm = this.fb.group({
+      code: ['', Validators.required],
+      name: ['', Validators.required],
+      description: ['', Validators.required],
+      monthlyContributionAmount: [1000, [Validators.required, Validators.min(1)]],
+      withdrawCap: [0, [Validators.required, Validators.min(0)]],
+      interestRate: [0, [Validators.required, Validators.min(0)]],
+      memberLimit: [null, Validators.min(1)],
+      contributionsBankName: ['', Validators.required],
+      contributionsAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      principalBankName: ['', Validators.required],
+      principalCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      interestBankName: ['', Validators.required],
+      interestCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      lateFeePercentage: [0, [Validators.required, Validators.min(0)]],
+      lateFeeBankName: ['', Validators.required],
+      lateFeeCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
+      lateFeeGraceDays: [0, [Validators.required, Validators.min(0)]],
+      accountingEmail: ['', [Validators.required, Validators.email]],
+      accountingWebhookUrl: [''],
+      requiresGuarantors: [false],
+      minimumGuarantors: [0],
+      patronageEligible: [true],
+      patronageRate: [0, [Validators.required, Validators.min(0)]],
+      status: ['ACTIVE', Validators.required]
+    });
+
+    this.groupForm.get('requiresGuarantors')?.valueChanges.subscribe((enabled) => {
+      const minimumGuarantorsControl = this.groupForm.get('minimumGuarantors');
+      if (!minimumGuarantorsControl) return;
+      if (enabled) {
+        minimumGuarantorsControl.setValidators([Validators.required, Validators.min(1)]);
+        if (Number(minimumGuarantorsControl.value || 0) < 1) minimumGuarantorsControl.setValue(1);
+      } else {
+        minimumGuarantorsControl.clearValidators();
+        minimumGuarantorsControl.setValue(0);
+      }
+      minimumGuarantorsControl.updateValueAndValidity({ emitEvent: false });
+    });
+
+    this.groupForm.get('patronageEligible')?.valueChanges.subscribe(enabled => {
+      if (!enabled) this.groupForm.get('patronageRate')?.setValue(0);
+    });
+  }
+
+  // ==================== DATA LOADING METHODS ====================
   public loadInitialData(): void {
     this.isLoading = true;
     this.isLoadingGroups = true;
@@ -176,30 +327,20 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.loadError = '';
     this.errorDetails = '';
     
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔍 COOPERATIVE GROUPS DEBUG - LOAD STARTED');
-    console.log('═══════════════════════════════════════════════════════');
-    
     this.cooperativeService.loadGroups().pipe(timeout(30000)).subscribe({
       next: (apiGroups: any[]) => {
-        console.log(' Groups loaded:', apiGroups?.length || 0);
         this.groups = (apiGroups || []).map((apiGroup: any) => this.mapApiGroupToCooperativeLoanGroup(apiGroup));
         this.isLoadingGroups = false;
         
         this.cooperativeService.getMembers().pipe(timeout(30000)).subscribe({
           next: (members: CooperativeMember[]) => {
-            console.log(' Members loaded:', members?.length || 0);
             this.members = members || [];
             this.isLoadingMembers = false;
             
             this.cooperativeService.loadGroupMemberships().pipe(timeout(30000)).subscribe({
               next: () => {
-                console.log('Memberships loaded');
-                
                 this.employeeService.getAllEmployee().pipe(timeout(30000)).subscribe({
                   next: (employees: any[]) => {
-                    console.log('Employees loaded:', employees?.length || 0);
-                    
                     this.employeeDirectory = (Array.isArray(employees) ? employees : [])
                       .map((employee: any) => this.mapEmployeeToInviteRow(employee))
                       .filter((employee): employee is GroupInviteEmployeeRow => !!employee)
@@ -213,7 +354,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
                     }
                     
                     this.isLoading = false;
-                    console.log('ALL DATA LOADED SUCCESSFULLY');
                   },
                   error: (error) => {
                     console.error('Failed to load employees:', error);
@@ -265,12 +405,14 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   }
 
   private mapApiGroupToCooperativeLoanGroup(apiGroup: any): CooperativeLoanGroup {
+    const monthlyContributionAmount = this.resolveMonthlyContributionAmount(apiGroup);
+
     return {
       id: apiGroup.id || apiGroup.groupId,
       code: apiGroup.code || '',
       name: apiGroup.name || '',
       description: apiGroup.description || '',
-      monthlyContributionAmount: apiGroup.monthlyAmount || apiGroup.monthlyContributionAmount || 0,
+      monthlyContributionAmount,
       withdrawCap: apiGroup.withdrawCap || 0,
       maxBorrowingPercentage: apiGroup.withdrawCap || 0,
       interestRate: apiGroup.interestRate || 0,
@@ -299,7 +441,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       maxDuration: 0,
       requiresShares: false,
       groupId: apiGroup.id || apiGroup.groupId,
-      monthlyAmount: apiGroup.monthlyAmount || apiGroup.monthlyContributionAmount || 0,
+      monthlyAmount: monthlyContributionAmount,
       currentBalance: apiGroup.currentBalance || 0,
       contributionHistory: apiGroup.contributionHistory || [],
       loanHistory: apiGroup.loanHistory || [],
@@ -308,90 +450,12 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     } as CooperativeLoanGroup;
   }
 
-  private loadEmployeeSalariesDebug(): void {
-    if (this.employeeDirectory.length === 0) return;
-    
-    this.employeeDirectory.forEach((employee) => {
-      this.employeeLoanService.getSalaryByEmployeeId(employee.employeeId).pipe(
-        timeout(10000),
-        catchError(() => of({ baseSalary: employee.monthlySalary }))
-      ).subscribe({
-        next: (salaryData: any) => {
-          const salary = Number(salaryData?.baseSalary || salaryData?.monthlySalary || salaryData?.salary || employee.monthlySalary || 0);
-          this.employeeSalaryById[employee.employeeId] = salary;
-          const empIndex = this.employeeDirectory.findIndex(e => e.employeeId === employee.employeeId);
-          if (empIndex !== -1) this.employeeDirectory[empIndex].monthlySalary = salary;
-        }
-      });
-    });
-  }
-
-  public testApiConnectivity(): void {
-    console.log('🔌 TESTING API CONNECTIVITY');
-    this.cooperativeService.loadGroups().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('Groups endpoint:', result?.length || 0, 'groups'),
-      error: (error) => console.error('Groups endpoint FAILED:', error.status, error.message)
-    });
-    this.cooperativeService.getMembers().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('Members endpoint:', result?.length || 0, 'members'),
-      error: (error) => console.error(' Members endpoint FAILED:', error.status, error.message)
-    });
-    this.employeeService.getAllEmployee().pipe(timeout(5000)).subscribe({
-      next: (result) => console.log('Employees endpoint:', (result as any[])?.length || 0, 'employees'),
-      error: (error) => console.error('Employees endpoint FAILED:', error.status, error.message)
-    });
-  }
-
-  initializeForm(): void {
-    this.groupForm = this.fb.group({
-      code: ['', Validators.required],
-      name: ['', Validators.required],
-      description: ['', Validators.required],
-      monthlyContributionAmount: [1000, [Validators.required, Validators.min(1)]],
-      withdrawCap: [0, [Validators.required, Validators.min(0)]],
-      interestRate: [0, [Validators.required, Validators.min(0)]],
-      memberLimit: [null, Validators.min(1)],
-      contributionsBankName: ['', Validators.required],
-      contributionsAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
-      principalBankName: ['', Validators.required],
-      principalCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
-      interestBankName: ['', Validators.required],
-      interestCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
-      lateFeePercentage: [0, [Validators.required, Validators.min(0)]],
-      lateFeeBankName: ['', Validators.required],
-      lateFeeCollectionAccount: ['', [Validators.required, Validators.pattern(this.bankAccountPattern)]],
-      lateFeeGraceDays: [0, [Validators.required, Validators.min(0)]],
-      accountingEmail: ['', [Validators.required, Validators.email]],
-      accountingWebhookUrl: [''],
-      requiresGuarantors: [false],
-      minimumGuarantors: [0],
-      patronageEligible: [true],
-      patronageRate: [0, [Validators.required, Validators.min(0)]],
-      status: ['ACTIVE', Validators.required]
-    });
-
-    this.groupForm.get('requiresGuarantors')?.valueChanges.subscribe((enabled) => {
-      const minimumGuarantorsControl = this.groupForm.get('minimumGuarantors');
-      if (!minimumGuarantorsControl) return;
-      if (enabled) {
-        minimumGuarantorsControl.setValidators([Validators.required, Validators.min(1)]);
-        if (Number(minimumGuarantorsControl.value || 0) < 1) minimumGuarantorsControl.setValue(1);
-      } else {
-        minimumGuarantorsControl.clearValidators();
-        minimumGuarantorsControl.setValue(0);
-      }
-      minimumGuarantorsControl.updateValueAndValidity({ emitEvent: false });
-    });
-
-    this.groupForm.get('patronageEligible')?.valueChanges.subscribe(enabled => {
-      if (!enabled) this.groupForm.get('patronageRate')?.setValue(0);
-    });
-  }
-
+  // ==================== DATA PROCESSING METHODS ====================
   private rebuildGroupMetrics(): void {
     if (this.groups.length === 0) {
       this.groupMetricsById = {};
       this.groupSummaryRows = [];
+      this.filteredGroups = [];
       return;
     }
 
@@ -423,8 +487,9 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       description: String(group.description || '').trim(),
       memberCount: this.getGroupMetrics(group.id).memberCount,
       totalContribution: this.getGroupMetrics(group.id).totalContribution,
-      monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
+      monthlyContributionAmount: this.resolveMonthlyContributionAmount(group),
       withdrawCap: Number(group.withdrawCap || group.maxBorrowingPercentage || 0),
+      memberLimit: group.memberLimit,
       contributionsBankName: String(group.contributionsBankName || '').trim(),
       contributionsAccount: String(group.contributionsAccount || '').trim(),
       principalBankName: String(group.principalBankName || '').trim(),
@@ -443,30 +508,35 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       hasAccountingConfiguration: this.hasAccountingConfiguration(group),
       status: group.status
     }));
+    
+    this.applyFilters();
   }
 
+  private loadEmployeeSalariesDebug(): void {
+    if (this.employeeDirectory.length === 0) return;
+    
+    this.employeeDirectory.forEach((employee) => {
+      this.employeeLoanService.getSalaryByEmployeeId(employee.employeeId).pipe(
+        timeout(10000),
+        catchError(() => of({ baseSalary: employee.monthlySalary }))
+      ).subscribe({
+        next: (salaryData: any) => {
+          const salary = Number(salaryData?.baseSalary || salaryData?.monthlySalary || salaryData?.salary || employee.monthlySalary || 0);
+          this.employeeSalaryById[employee.employeeId] = salary;
+          const empIndex = this.employeeDirectory.findIndex(e => e.employeeId === employee.employeeId);
+          if (empIndex !== -1) this.employeeDirectory[empIndex].monthlySalary = salary;
+        }
+      });
+    });
+  }
+
+  // ==================== HELPER METHODS ====================
   getGroupMetrics(groupId: number): GroupMetrics {
     return this.groupMetricsById[groupId] || { memberCount: 0, totalContribution: 0, members: [] };
   }
 
-  get activeGroupCount(): number {
-    return this.groups.filter(group => group.status === 'ACTIVE').length;
-  }
-
-  get inactiveGroupCount(): number {
-    return this.groups.filter(group => group.status !== 'ACTIVE').length;
-  }
-
-  get totalMembersAcrossGroups(): number {
-    return this.groupSummaryRows.reduce((sum, row) => sum + row.memberCount, 0);
-  }
-
-  get totalContributionsAcrossGroups(): number {
-    return this.groupSummaryRows.reduce((sum, row) => sum + row.totalContribution, 0);
-  }
-
-  get configuredAccountingGroupCount(): number {
-    return this.groupSummaryRows.filter(row => row.hasAccountingConfiguration).length;
+  getGroupById(id: number): CooperativeLoanGroup | undefined {
+    return this.groups.find(g => g.id === id);
   }
 
   hasAccountingConfiguration(group: CooperativeLoanGroup | GroupTableRow): boolean {
@@ -489,28 +559,100 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     return `${fee}% after ${graceDays} day${graceDays === 1 ? '' : 's'}`;
   }
 
-  getBorrowCapPercentage(group: CooperativeLoanGroup | GroupTableRow): number {
-    return Number(group.withdrawCap || (group as CooperativeLoanGroup).maxBorrowingPercentage || 0);
-  }
-
   getBorrowCapSummary(group: CooperativeLoanGroup | GroupTableRow): string {
-    return `${this.getBorrowCapPercentage(group)}% of total group contributions`;
+    const percentage = Number(group.withdrawCap || 0);
+    return `${percentage}% of total group contributions`;
   }
 
-  getSettlementAccountSummary(group: CooperativeLoanGroup | GroupTableRow): string {
-    const accountCount = [
-      group.contributionsAccount,
-      group.principalCollectionAccount,
-      group.interestCollectionAccount,
-      group.lateFeeCollectionAccount
-    ].filter(value => String(value || '').trim().length > 0).length;
-    return `${accountCount}/4 settlement accounts configured`;
+  formatCurrency(amount: number): string {
+    return this.cooperativeService.formatCurrency(amount);
   }
 
-  getGroupById(groupId: number): CooperativeLoanGroup | undefined {
-    return this.groups.find(group => group.id === groupId);
+  trackByGroupId(index: number, item: GroupTableRow): number {
+    return item.id;
   }
 
+  // ==================== FILTER AND SORT METHODS ====================
+  applyFilters(): void {
+    let filtered = [...this.groupSummaryRows];
+    
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(group =>
+        group.name.toLowerCase().includes(term) ||
+        group.code.toLowerCase().includes(term)
+      );
+    }
+    
+    this.filteredGroups = filtered;
+    this.currentPage = 1;
+  }
+
+  setSort(field: string): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    this.sortGroupRows();
+    this.currentPage = 1;
+  }
+
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) return 'fa-sort';
+    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  sortGroupRows(): void {
+    this.groupSummaryRows.sort((a, b) => {
+      let valA: any, valB: any;
+      switch (this.sortField) {
+        case 'name':
+          valA = a.name.toLowerCase();
+          valB = b.name.toLowerCase();
+          break;
+        case 'code':
+          valA = a.code.toLowerCase();
+          valB = b.code.toLowerCase();
+          break;
+        case 'monthlyContributionAmount':
+          valA = a.monthlyContributionAmount;
+          valB = b.monthlyContributionAmount;
+          break;
+        case 'interestRate':
+          valA = a.interestRate;
+          valB = b.interestRate;
+          break;
+        case 'memberCount':
+          valA = a.memberCount;
+          valB = b.memberCount;
+          break;
+        case 'status':
+          valA = a.status;
+          valB = b.status;
+          break;
+        default:
+          return 0;
+      }
+      if (valA < valB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    this.applyFilters();
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  changeInvitePage(page: number): void {
+    if (page < 1 || page > this.inviteTotalPages) return;
+    this.currentInvitePage = page;
+  }
+
+  // ==================== GROUP CRUD OPERATIONS ====================
   openAddForm(): void {
     this.editingGroupId = null;
     this.showGroupForm = true;
@@ -543,7 +685,8 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     });
   }
 
-  openEditForm(group: CooperativeLoanGroup): void {
+  openEditForm(group: CooperativeLoanGroup | undefined): void {
+    if (!group) return;
     this.editingGroupId = group.id;
     this.showGroupForm = true;
     this.clearFormMessage();
@@ -553,26 +696,14 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   saveGroup(): void {
     if (this.groupForm.invalid) {
       this.groupForm.markAllAsTouched();
+      this.showMessage('Please fill in all required fields', 'error');
       return;
     }
 
+    this.isSubmitting = true;
     const formValue = this.groupForm.getRawValue();
-    console.log('=== SAVING GROUP - FORM VALUES ===');
-    console.log('Contributions Bank:', formValue['contributionsBankName']);
-    console.log('Contributions Account:', formValue['contributionsAccount']);
-    console.log('Principal Bank:', formValue['principalBankName']);
-    console.log('Principal Account:', formValue['principalCollectionAccount']);
-    console.log('Interest Bank:', formValue['interestBankName']);
-    console.log('Interest Account:', formValue['interestCollectionAccount']);
-    console.log('Late Fee Bank:', formValue['lateFeeBankName']);
-    console.log('Late Fee Account:', formValue['lateFeeCollectionAccount']);
-    console.log('Accounting Email:', formValue['accountingEmail']);
-    
     const existingGroup = this.editingGroupId ? this.groups.find((group) => group.id === this.editingGroupId) : undefined;
     const payload = this.buildGroupPayload(formValue, existingGroup);
-    
-    console.log('=== PAYLOAD BEING SENT TO API ===');
-    console.log('Payload:', JSON.stringify(payload, null, 2));
     
     const isUpdate = typeof this.editingGroupId === 'number';
     const request = isUpdate
@@ -580,24 +711,26 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       : this.cooperativeService.createGroup(payload);
 
     request.subscribe({
-      next: (response) => {
-        console.log('=== API RESPONSE ===', response);
+      next: () => {
         this.cooperativeService.refreshGroups().subscribe({
           next: (groups) => {
             this.groups = groups;
             this.rebuildGroupMetrics();
             this.showMessage(isUpdate ? 'Group updated successfully.' : 'Group created successfully.', 'success');
             setTimeout(() => this.cancelForm(), 1200);
+            this.isSubmitting = false;
           },
           error: () => {
             this.showMessage((isUpdate ? 'Group updated' : 'Group created') + ', but the refreshed group list could not be loaded immediately.', 'error');
             setTimeout(() => this.cancelForm(), 1800);
+            this.isSubmitting = false;
           }
         });
       },
       error: (error) => {
         console.error('Error saving group:', error);
         this.showMessage('Failed to save group. Review the fields and try again.', 'error');
+        this.isSubmitting = false;
       }
     });
   }
@@ -605,14 +738,18 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   private buildGroupPayload(formValue: Record<string, unknown>, existingGroup?: CooperativeLoanGroup): any {
     const requiresGuarantors = Boolean(formValue['requiresGuarantors']);
     const minimumGuarantors = requiresGuarantors ? Math.max(1, Number(formValue['minimumGuarantors'] || 0)) : 0;
+    const monthlyContributionAmount = Number(formValue['monthlyContributionAmount'] || 0);
 
     return {
       code: String(formValue['code'] || '').trim(),
       name: String(formValue['name'] || '').trim(),
       description: String(formValue['description'] || '').trim(),
-      monthlyAmount: Number(formValue['monthlyContributionAmount'] || 0),
+      monthlyContributionAmount,
+      // Keep legacy API naming for compatibility with any downstream adapters.
+      monthlyAmount: monthlyContributionAmount,
       memberLimit: formValue['memberLimit'] !== undefined && formValue['memberLimit'] !== null && formValue['memberLimit'] !== '' ? Number(formValue['memberLimit']) : undefined,
       withdrawCap: Number(formValue['withdrawCap'] || 0),
+      maxBorrowingPercentage: Number(formValue['withdrawCap'] || 0),
       interestRate: Number(formValue['interestRate'] || 0),
       status: (formValue['status'] as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
       requiresGuarantors: requiresGuarantors,
@@ -634,17 +771,12 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     };
   }
 
-  private showMessage(message: string, type: 'success' | 'error'): void {
-    this.formMessage = message;
-    this.formMessageSeverity = type;
-  }
-
   toGroupFormValue(group: GroupFormValueSource): Record<string, unknown> {
     return {
       code: String(group.code || '').trim(),
       name: String(group.name || '').trim(),
       description: String(group.description || '').trim(),
-      monthlyContributionAmount: Number(group.monthlyContributionAmount || 0),
+      monthlyContributionAmount: this.resolveMonthlyContributionAmount(group),
       withdrawCap: Number(group.withdrawCap || group.maxBorrowingPercentage || 0),
       interestRate: Number(group.interestRate || 0),
       memberLimit: group.memberLimit ?? null,
@@ -666,6 +798,56 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       patronageRate: Number(group.patronageRate || 0),
       status: group.status || 'ACTIVE'
     };
+  }
+
+  private resolveMonthlyContributionAmount(source: unknown): number {
+    const valueSource = (source || {}) as Record<string, unknown>;
+    const candidates: unknown[] = [
+      valueSource['monthlyContributionAmount'],
+      valueSource['monthlyAmount'],
+      valueSource['monthlyContribution'],
+      valueSource['contributionAmount'],
+      valueSource['amountPerMonth'],
+      valueSource['monthly_contribution_amount']
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = this.parseNumberCandidate(candidate);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+
+    return 0;
+  }
+
+  private parseNumberCandidate(value: unknown): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '').trim();
+      if (!normalized) {
+        return null;
+      }
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
+  }
+
+  cancelForm(delayMs = 0): void {
+    const finalize = (): void => {
+      this.showGroupForm = false;
+      this.editingGroupId = null;
+    };
+    if (delayMs > 0) {
+      window.setTimeout(finalize, delayMs);
+      return;
+    }
+    finalize();
   }
 
   clearFormMessage(): void {
@@ -720,7 +902,9 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     return 'Enter a valid value.';
   }
 
-  viewGroupDetails(group: CooperativeLoanGroup): void {
+  // ==================== MODAL METHODS ====================
+  viewGroupDetails(group: CooperativeLoanGroup | undefined): void {
+    if (!group) return;
     this.selectedGroupForDetails = group;
     this.showGroupDetails = true;
   }
@@ -730,7 +914,36 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.selectedGroupForDetails = null;
   }
 
-  openInviteMembersModal(group: CooperativeLoanGroup): void {
+  confirmDelete(group: GroupTableRow): void {
+    this.groupToDelete = group;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.groupToDelete = null;
+    this.isDeleting = false;
+  }
+
+  deleteGroup(): void {
+    if (!this.groupToDelete) return;
+    this.isDeleting = true;
+    this.cooperativeService.deleteGroup(this.groupToDelete.id).subscribe({
+      next: () => {
+        this.showMessage('Group deleted successfully', 'success');
+        this.loadInitialData();
+        this.closeDeleteModal();
+      },
+      error: () => {
+        this.showMessage('Failed to delete group', 'error');
+        this.isDeleting = false;
+      }
+    });
+  }
+
+  // ==================== INVITE MEMBERS METHODS ====================
+  openInviteMembersModal(group: CooperativeLoanGroup | undefined): void {
+    if (!group) return;
     this.selectedGroupForInvite = group;
     this.selectedGroupInviteHistory = this.cooperativeService.getGroupInviteHistory(group.id);
     this.showInviteMembersModal = true;
@@ -739,6 +952,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.inviteTenureFilter = 'ALL';
     this.selectedInviteEmployeeIds.clear();
     this.inviteMessage = '';
+    this.currentInvitePage = 1;
   }
 
   closeInviteMembersModal(): void {
@@ -747,50 +961,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.selectedGroupInviteHistory = [];
     this.selectedInviteEmployeeIds.clear();
     this.inviteMessage = '';
-  }
-
-  get inviteDepartmentOptions(): string[] {
-    return [...new Set(this.employeeDirectory.map(employee => employee.department).filter(Boolean))].sort((left, right) => left.localeCompare(right));
-  }
-
-  get filteredInviteEmployees(): GroupInviteEmployeeRow[] {
-    const invitedIds = this.selectedGroupForInvite
-      ? new Set(this.selectedGroupInviteHistory.map(entry => entry.employeeId))
-      : new Set<number>();
-    return this.employeeDirectory.filter(employee => {
-      if (invitedIds.has(employee.employeeId)) return false;
-      const matchesDepartment = this.inviteDepartmentFilter === 'ALL' || employee.department === this.inviteDepartmentFilter;
-      const matchesLevel = this.inviteLevelFilter === 'ALL' || (employee.level && employee.level.toLowerCase() === String(this.inviteLevelFilter).toLowerCase());
-      const matchesTenure = this.matchesTenureFilter(employee.tenureMonths, this.inviteTenureFilter);
-      return matchesDepartment && matchesLevel && matchesTenure;
-    });
-  }
-
-  get selectableFilteredInviteEmployees(): GroupInviteEmployeeRow[] {
-    return this.filteredInviteEmployees.filter(employee => this.canInviteEmployee(employee));
-  }
-
-  get selectedInviteCount(): number {
-    return this.selectedInviteEmployeeIds.size;
-  }
-
-  get isAllVisibleInviteEmployeesSelected(): boolean {
-    return this.selectableFilteredInviteEmployees.length > 0 &&
-      this.selectableFilteredInviteEmployees.every(employee => this.selectedInviteEmployeeIds.has(employee.employeeId));
-  }
-
-  get inviteEmailSubject(): string {
-    if (!this.selectedGroupForInvite) return 'New cooperative group available';
-    return `New cooperative group available: ${this.selectedGroupForInvite.name}`;
-  }
-
-  get inviteEmailBodyPreview(): string {
-    if (!this.selectedGroupForInvite) return '';
-    return `A new cooperative group, ${this.selectedGroupForInvite.name}, is now open for applications. Visit your "My Membership" dashboard to review the group and submit an application if you are interested. Please note that applications still go through the normal review process and may be declined if the group criteria are not met.`;
-  }
-
-  get inviteActionLabel(): string {
-    return this.selectedInviteCount === 1 ? 'Send Invite Email' : 'Send Invite Emails';
   }
 
   getVisibleInviteSelectionLabel(): string {
@@ -811,6 +981,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     } else {
       this.selectedInviteEmployeeIds.add(employeeId);
     }
+    this.currentInvitePage = 1;
   }
 
   toggleAllVisibleInviteSelection(): void {
@@ -930,14 +1101,6 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     );
   }
 
-  get groupInviteHistoryCount(): number {
-    return this.selectedGroupInviteHistory.length;
-  }
-
-  getHistoryDateLabel(sentAt: string): string {
-    return new Date(sentAt).toLocaleString();
-  }
-
   getInviteTenureLabel(employee: GroupInviteEmployeeRow): string {
     return this.getTenureLabel(employee.tenureMonths);
   }
@@ -960,32 +1123,10 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     return 'Eligible';
   }
 
-  cancelForm(delayMs = 0): void {
-    const finalize = (): void => {
-      this.showGroupForm = false;
-      this.editingGroupId = null;
-    };
-    if (delayMs > 0) {
-      window.setTimeout(finalize, delayMs);
-      return;
-    }
-    finalize();
-  }
-
-  formatCurrency(amount: number): string {
-    return this.cooperativeService.formatCurrency(amount);
-  }
-
-  openGroupJoinHistory(): void {
-    this.router.navigate(['/admin/hr/cooperative/group-join-applications', this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
-    });
-  }
-
-  goBack(): void {
-    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
-      queryParams: { dashboard: 'cooperative' }
-    });
+  // ==================== PRIVATE HELPER METHODS ====================
+  private showMessage(detail: string, severity: 'success' | 'error'): void {
+    this.messages = [{ severity, summary: severity === 'success' ? 'Success' : 'Error', detail }];
+    setTimeout(() => { this.messages = []; }, 5000);
   }
 
   private mapEmployeeToInviteRow(employee: any): GroupInviteEmployeeRow | null {
@@ -1057,5 +1198,12 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   private getMemberByEmployeeEmail(email: string): CooperativeMember | undefined {
     const normalizedEmail = email.trim().toLowerCase();
     return this.members.find(member => member.email.trim().toLowerCase() === normalizedEmail);
+  }
+
+  // ==================== NAVIGATION ====================
+  goBack(): void {
+    this.router.navigate(['/admin/hr/loan', this.currentUuid], {
+      queryParams: { dashboard: 'cooperative' }
+    });
   }
 }

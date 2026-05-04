@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
@@ -8,7 +8,7 @@ import { LoanApplicationService } from '../../../service/loan/loan-application.s
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { AdvanceDisbursementConfirmationService, CreateDisbursementPayload } from '../../../service/loan/loan-disbursement-confirmation.service';
-import { resolveLoanTotalRepayableAmount } from '../../../service/loan/loan-display.util';
+import { resolveLoanTotalRepayableAmount, formatAdvancedLoanCode } from '../../../service/loan/loan-display.util';
 import { environment } from '../../../shared-component/environments/environment';
 
 type QueueSortKey = 'loanId' | 'employee' | 'department' | 'amount' | 'approvedDate' | 'readyDate' | 'status';
@@ -28,10 +28,10 @@ interface LoanDisbursementViewState {
 @Component({
   selector: 'app-loan-disbursement-ui',
   templateUrl: './loan-disbursement-ui.component.html',
-  styleUrls: ['./loan-disbursement-ui.component.scss']
+  styleUrls: ['./loan-disbursement-ui.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class LoanDisbursementUiComponent implements OnInit {
-  private readonly defaultAccountingEmail = 'eseosehodion@gmail.com';
   private readonly viewStateStorageKeyPrefix = 'loan-disbursement-ui-state';
   readonly queuePageSize = 5;
   currentUuid = uuidV4();
@@ -51,12 +51,9 @@ export class LoanDisbursementUiComponent implements OnInit {
   approvedSortDirection: QueueSortDirection = 'desc';
   readySortDirection: QueueSortDirection = 'desc';
   
-  // Single declaration of selectedApprovedLoanIdsMap
-  selectedApprovedLoanIdsMap: { [id: string]: boolean } = {};
-
   // Email fields
-  accountingEmail: string = this.defaultAccountingEmail;
   emailNotes: string = '';
+  emailNotesError: boolean = false;
   
   // Disbursement tracking
   disbursementInstructionReference: string = '';
@@ -91,150 +88,13 @@ export class LoanDisbursementUiComponent implements OnInit {
     this.loadApprovedLoans();
   }
 
-  // Helper method to get selected loan IDs
-  getSelectedApprovedLoanIds(): number[] {
-    return Object.entries(this.selectedApprovedLoanIdsMap)
-      .filter(([_, checked]) => checked)
-      .map(([id, _]) => Number(id));
-  }
-
-  sendSelectedToAccounting(): void {
-    const selectedIds = this.getSelectedApprovedLoanIds();
-    if (!selectedIds.length || this.isSubmittingDisbursement) return;
-    
-    this.isSubmittingDisbursement = true;
-    const selectedLoans = this.approvedLoans.filter(loan => selectedIds.includes(loan.id));
-    let processed = 0;
-    let errors: string[] = [];
-    let successCount = 0;
-    
-    const processNext = () => {
-      if (processed >= selectedLoans.length) {
-        this.isSubmittingDisbursement = false;
-        if (errors.length) {
-          this.messages = [{
-            severity: 'error',
-            summary: 'Batch Partially Failed',
-            detail: `${successCount} succeeded, ${errors.length} failed: ${errors.join('; ')}`
-          }];
-        } else {
-          this.messages = [{
-            severity: 'success',
-            summary: 'Batch Sent Successfully',
-            detail: `All ${successCount} loans sent to accounting.`
-          }];
-        }
-        this.selectedApprovedLoanIdsMap = {};
-        this.loadApprovedLoans();
-        return;
-      }
-      
-      const loan = selectedLoans[processed];
-      const disbursementInitiatedAt = new Date().toISOString();
-      const disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
-      const approvedAmount = this.getApprovedAmount(loan);
-      const totalRepayable = resolveLoanTotalRepayableAmount(loan);
-      const disbursementInstructionReference = this.generateBatchDisbursementReference(loan);
-      const disbursementReference = `PENDING-${disbursementInstructionReference}`;
-      const paymentMethod = this.paymentMethod || 'BANK_TRANSFER';
-      const notes = this.emailNotes || '';
-      
-      this.employeeLoanService.getEmployeeById(loan.employeeId).subscribe({
-        next: (employee) => {
-          const payload: CreateDisbursementPayload = {
-            loanId: loan.id,
-            disbursedAmount: approvedAmount,
-            disbursementInstructionReference,
-            disbursementReference,
-            paymentMethod,
-            notes
-          };
-          
-          this.disbursementConfirmationService.createConfirmation(payload).subscribe({
-            next: () => {
-              const accountingPayload = {
-                id: 0,
-                sourceModule: 'HR',
-                eventType: 'LOAN_DISBURSEMENT',
-                amount: totalRepayable,
-                currency: 'NGN',
-                reference: disbursementInstructionReference,
-                description: notes || '',
-                transactionDate: disbursementInitiatedAt,
-                metadata: {
-                  loanId: loan.id,
-                  employeeName: loan.fullName,
-                  employeeId: loan.employeeId,
-                  department: loan.department,
-                  approvedAmount: approvedAmount,
-                  interest: loan.interestRate,
-                  repaymentPeriod: loan.repaymentTime,
-                  modeOfPayment: loan.modeOfPayment,
-                  purpose: loan.purpose,
-                  approvedDate: loan.approvedDate,
-                  approvedBy: this.getApprovedByName(),
-                  bankName: employee?.bankName,
-                  paymentMethod: paymentMethod,
-                  initiatedBy: disbursementInitiatedBy,
-                  initiatedAt: disbursementInitiatedAt
-                }
-              };
-              
-              const apiBaseUrl = environment.apiBaseUrl || '';
-              const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
-              const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-              
-              this.http.post(url, accountingPayload, { headers }).subscribe({
-                next: () => {
-                  this.loanApprovalService.updateApplicationStatus(loan.id, {
-                    status: 'READY_FOR_DISBURSEMENT',
-                    changedAt: disbursementInitiatedAt,
-                    disbursementInitiatedAt: disbursementInitiatedAt,
-                    disbursementInitiatedBy: this.getCurrentUserId(),
-                    disbursementInstructionReference: disbursementInstructionReference,
-                    notes: notes?.trim()
-                      ? `Sent to accounting for disbursement. Reference: ${disbursementInstructionReference}. ${notes.trim()}`
-                      : `Sent to accounting for disbursement. Reference: ${disbursementInstructionReference}.`
-                  }).subscribe({
-                    next: () => {
-                      successCount++;
-                      processed++;
-                      processNext();
-                    },
-                    error: (err) => {
-                      errors.push(`Loan ${loan.id}: status update failed`);
-                      processed++;
-                      processNext();
-                    }
-                  });
-                },
-                error: (error) => {
-                  errors.push(`Loan ${loan.id}: accounting event failed`);
-                  processed++;
-                  processNext();
-                }
-              });
-            },
-            error: (err) => {
-              errors.push(`Loan ${loan.id}: confirmation failed`);
-              processed++;
-              processNext();
-            }
-          });
-        },
-        error: (err) => {
-          errors.push(`Loan ${loan.id}: failed to load employee details`);
-          processed++;
-          processNext();
-        }
-      });
-    };
-    
-    processNext();
-  }
-
-  generateBatchDisbursementReference(loan: LoanApplication): string {
-    return `DISB-BATCH-${loan.id}-${Date.now()}`;
+  // Helper method to generate unique reference
+  generateUniqueDisbursementReference(loan: LoanApplication): string {
+    const loanCode = this.getFormattedLoanCode(loan);
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const uuid = uuidV4().substring(0, 8);
+    return `DISB-${loanCode}-${timestamp}-${random}-${uuid}`;
   }
 
   loadApprovedLoans(): void {
@@ -260,23 +120,42 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   selectLoan(loan: LoanApplication): void {
-    this.selectedDisbursementLoan = loan;
-    this.selectedEmployeeDetails = null;
-    this.populateDisbursementTrackingFromLoan(loan);
-    
-    // Reset disbursement form
-    this.disbursementAmount = loan.amount;
-    this.paymentMethod = 'BANK_TRANSFER';
-    this.disbursementReference = '';
-    
-    // Load employee details including bank info
-    this.loadEmployeeDetails(loan.employeeId);
+    // Always fetch the latest loan data by id from backend
+    this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
+      next: (freshLoan) => {
+        if (freshLoan) {
+          this.selectedDisbursementLoan = freshLoan;
+          this.selectedEmployeeDetails = null;
+          this.populateDisbursementTrackingFromLoan(freshLoan);
+          // Reset disbursement form
+          this.disbursementAmount = freshLoan.amount;
+          this.paymentMethod = 'BANK_TRANSFER';
+          this.disbursementReference = '';
+          this.emailNotes = '';
+          this.emailNotesError = false;
+          // Load employee details including bank info
+          this.loadEmployeeDetails(freshLoan.employeeId);
+        }
+      },
+      error: () => {
+        // fallback to local loan if backend fails
+        this.selectedDisbursementLoan = loan;
+        this.selectedEmployeeDetails = null;
+        this.populateDisbursementTrackingFromLoan(loan);
+        this.disbursementAmount = loan.amount;
+        this.paymentMethod = 'BANK_TRANSFER';
+        this.disbursementReference = '';
+        this.emailNotes = '';
+        this.emailNotesError = false;
+        this.loadEmployeeDetails(loan.employeeId);
+      }
+    });
   }
   
   generateDisbursementReference(): void {
-    const timestamp = new Date().getTime();
-    const random = Math.floor(Math.random() * 10000);
-    this.disbursementInstructionReference = `DISB-${timestamp}-${random}`;
+    if (this.selectedDisbursementLoan) {
+      this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
+    }
   }
   
   loadEmployeeDetails(employeeId: number): void {
@@ -295,13 +174,15 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   sendToAccounting(): void {
-    if (!this.selectedDisbursementLoan || !this.accountingEmail || this.isSubmittingDisbursement) {
+    if (!this.selectedDisbursementLoan || !this.emailNotes?.trim() || this.isSubmittingDisbursement) {
+      this.emailNotesError = !this.emailNotes?.trim();
       return;
     }
 
     // Record disbursement initiation
     this.disbursementInitiatedAt = new Date().toISOString();
     this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+    this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
 
     // Get approved amount
     const approvedAmount = this.getApprovedAmount(this.selectedDisbursementLoan);
@@ -329,10 +210,11 @@ export class LoanDisbursementUiComponent implements OnInit {
           amount: totalRepayable,
           currency: 'NGN',
           reference: this.disbursementInstructionReference,
-          description: this.emailNotes || '',
+          description: this.emailNotes, // Now properly mapped
           transactionDate: this.disbursementInitiatedAt,
           metadata: {
             loanId: this.selectedDisbursementLoan!.id,
+            loanCode: this.getFormattedLoanCode(this.selectedDisbursementLoan!),
             employeeName: this.selectedDisbursementLoan!.fullName,
             employeeId: this.selectedDisbursementLoan!.employeeId,
             employeeEmail: this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || '',
@@ -348,7 +230,8 @@ export class LoanDisbursementUiComponent implements OnInit {
             accountName: `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || this.selectedDisbursementLoan!.fullName,
             paymentMethod: this.paymentMethod,
             initiatedBy: this.disbursementInitiatedBy,
-            initiatedAt: this.disbursementInitiatedAt
+            initiatedAt: this.disbursementInitiatedAt,
+            notes: this.emailNotes
           }
         };
 
@@ -358,7 +241,7 @@ export class LoanDisbursementUiComponent implements OnInit {
 
         this.http.post(url, accountingPayload, { headers }).subscribe({
           next: () => {
-            // Step 3: Only now update loan status to READY_FOR_DISBURSEMENT
+            // Step 3: Update loan status to READY_FOR_DISBURSEMENT
             this.moveLoanToReadyForDisbursement();
           },
           error: (error) => {
@@ -390,28 +273,62 @@ export class LoanDisbursementUiComponent implements OnInit {
       return;
     }
 
+    // Prepare statusHistory entry for READY_FOR_DISBURSEMENT (frontend only)
+    const statusHistoryEntry = {
+      status: 'READY_FOR_DISBURSEMENT' as any, // Cast as LoanStatus if needed
+      changedAt: this.disbursementInitiatedAt,
+      changedBy: this.getCurrentUserId(),
+      notes: this.emailNotes?.trim()
+        ? `Sent to accounting for disbursement. Reference: ${this.disbursementInstructionReference}. Notes: ${this.emailNotes.trim()}`
+        : `Sent to accounting for disbursement. Reference: ${this.disbursementInstructionReference}.`
+    };
+
+    // Ensure date fields are in ISO 8601 format with time (backend expects this)
+    const isoDisbursementInitiatedAt = this.disbursementInitiatedAt ? new Date(this.disbursementInitiatedAt).toISOString() : new Date().toISOString();
+
+    // Debugger for inspecting payload before sending to backend
+    debugger;
+
     this.loanApprovalService.updateApplicationStatus(this.selectedDisbursementLoan.id, {
       status: 'READY_FOR_DISBURSEMENT',
-      changedAt: this.disbursementInitiatedAt,
-      disbursementInitiatedAt: this.disbursementInitiatedAt,
+      changedAt: isoDisbursementInitiatedAt,
+      disbursementInitiatedAt: isoDisbursementInitiatedAt,
       disbursementInitiatedBy: this.getCurrentUserId(),
       disbursementInstructionReference: this.disbursementInstructionReference,
-      notes: this.emailNotes?.trim()
-        ? `Sent to accounting for disbursement. Reference: ${this.disbursementInstructionReference}. ${this.emailNotes.trim()}`
-        : `Sent to accounting for disbursement. Reference: ${this.disbursementInstructionReference}.`
+      notes: statusHistoryEntry.notes
     }).subscribe({
       next: (updatedLoan) => {
-        // Update the selected loan with additional properties
+        // Ensure statusHistory entry for READY_FOR_DISBURSEMENT is present in both selectedDisbursementLoan and readyForDisbursementLoans
+        if (!updatedLoan.statusHistory) {
+          updatedLoan.statusHistory = [];
+        }
+        if (!updatedLoan.statusHistory.some((entry: any) => entry.status === 'READY_FOR_DISBURSEMENT')) {
+          updatedLoan.statusHistory.push(statusHistoryEntry);
+        }
         this.selectedDisbursementLoan = updatedLoan;
         (this.selectedDisbursementLoan as any).disbursementInitiatedAt = this.disbursementInitiatedAt;
         (this.selectedDisbursementLoan as any).disbursementInitiatedBy = this.disbursementInitiatedBy;
         (this.selectedDisbursementLoan as any).disbursementInstructionReference = this.disbursementInstructionReference;
-        
+
+        // Patch the readyForDisbursementLoans array for UI display
+        this.readyForDisbursementLoans = this.readyForDisbursementLoans.map(loan => {
+          if (loan.id === updatedLoan.id) {
+            // Ensure statusHistory entry is present
+            const patchedLoan = { ...updatedLoan };
+            if (!patchedLoan.statusHistory) patchedLoan.statusHistory = [];
+            if (!patchedLoan.statusHistory.some((entry: any) => entry.status === 'READY_FOR_DISBURSEMENT')) {
+              patchedLoan.statusHistory.push(statusHistoryEntry);
+            }
+            return patchedLoan;
+          }
+          return loan;
+        });
+
         this.replaceQueueLoan(updatedLoan);
         this.messages = [{
           severity: 'success',
           summary: 'Request Sent',
-          detail: `Disbursement request sent to ${this.accountingEmail}. Reference: ${this.disbursementInstructionReference}`
+          detail: `Disbursement request sent. Reference: ${this.disbursementInstructionReference}`
         }];
         this.isSubmittingDisbursement = false;
       },
@@ -468,7 +385,7 @@ export class LoanDisbursementUiComponent implements OnInit {
             this.messages = [{
               severity: 'success',
               summary: 'Loan Activated',
-              detail: `Loan ${updatedLoan.loanCode || updatedLoan.id} has been set to ACTIVE. Repayment schedule is now available.`
+              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been set to ACTIVE. Repayment schedule is now available.`
             }];
             this.isSubmittingDisbursement = false;
             this.loadApprovedLoans();
@@ -499,7 +416,7 @@ export class LoanDisbursementUiComponent implements OnInit {
             this.messages = [{
               severity: 'success',
               summary: 'Loan Disbursed',
-              detail: `Loan ${updatedLoan.loanCode || updatedLoan.id} has been marked as disbursed.`
+              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been marked as disbursed.`
             }];
             this.isSubmittingDisbursement = false;
             this.loadApprovedLoans();
@@ -518,6 +435,11 @@ export class LoanDisbursementUiComponent implements OnInit {
     });
   }
   
+  // Helper method to format loan code
+  getFormattedLoanCode(loan: LoanApplication): string {
+    return formatAdvancedLoanCode(loan.loanCode || loan.id);
+  }
+
   getApprovedByName(): string {
     const approvedBy = this.selectedDisbursementLoan?.approvedBy;
     if (typeof approvedBy === 'object' && approvedBy !== null) {
@@ -540,7 +462,9 @@ export class LoanDisbursementUiComponent implements OnInit {
 
   formatDate(value?: string | null): string {
     if (!value) return 'N/A';
-    return new Date(value).toLocaleDateString('en-NG', {
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleDateString('en-NG', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -702,11 +626,26 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   getReadyForDisbursementDate(loan: LoanApplication): string | null {
-    const readyEntry = [...(loan.statusHistory || [])]
-      .filter((entry) => entry.status === 'READY_FOR_DISBURSEMENT' && !!entry.changedAt)
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0];
+    const readyEntries = (loan.statusHistory || [])
+      .filter((entry) => entry.status === 'READY_FOR_DISBURSEMENT' && !!entry.changedAt);
 
-    return readyEntry?.changedAt || loan.approvedDate || loan.requestDate || null;
+    let readyEntry = readyEntries.find(e => typeof e.changedAt === 'string');
+    if (!readyEntry && readyEntries.length > 0) {
+      readyEntry = readyEntries[0];
+    }
+
+    let changedAt: string | null = null;
+    if (readyEntry) {
+      if (typeof readyEntry.changedAt === 'string') {
+        changedAt = readyEntry.changedAt;
+      } else if (Array.isArray(readyEntry.changedAt)) {
+        const arr = readyEntry.changedAt;
+        const dateObj = new Date(arr[0], arr[1] - 1, arr[2], arr[3], arr[4], arr[5], arr[6]);
+        changedAt = dateObj.toISOString();
+      }
+    }
+
+    return changedAt || loan.approvedDate || loan.requestDate || null;
   }
 
   private getCurrentUserId(): number {
@@ -868,104 +807,30 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   private populateDisbursementTrackingFromLoan(loan: LoanApplication): void {
-    this.accountingEmail = this.defaultAccountingEmail;
     this.emailNotes = '';
 
-    const readyEntry = [...(loan.statusHistory || [])]
-      .filter((entry) => entry.status === 'READY_FOR_DISBURSEMENT' && !!entry.changedAt)
-      .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0];
+    // Map Initiated Date to the same value as Sent Date in the table
+    this.disbursementInitiatedAt = this.getReadyForDisbursementDate(loan) || '';
 
-    if (readyEntry) {
-      this.disbursementInitiatedAt = readyEntry.changedAt;
-      this.disbursementInitiatedBy = typeof readyEntry.changedBy === 'string'
-        ? readyEntry.changedBy
-        : 'Admin';
-      const referenceMatch = String(readyEntry.notes || '').match(/Reference:\s*([^\.]+)/i);
-      this.disbursementInstructionReference = referenceMatch?.[1]?.trim() || this.disbursementInstructionReference || '';
-      if (!this.disbursementInstructionReference) {
-        this.generateDisbursementReference();
-      }
-      return;
+    // Optionally, still map InitiatedBy and Reference if needed (using previous logic)
+    const readyEntries = [...(loan.statusHistory || [])]
+      .filter((entry) => entry.status === 'READY_FOR_DISBURSEMENT' && !!entry.changedAt)
+      .sort((left, right) => new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime());
+
+    let readyEntry = readyEntries.find(e => typeof e.changedAt === 'string');
+    if (!readyEntry && readyEntries.length > 0) {
+      readyEntry = readyEntries[0];
     }
 
-    this.disbursementInitiatedAt = '';
-    this.disbursementInitiatedBy = '';
-    this.generateDisbursementReference();
-  }
-
-  private sendAccountingMail(body: { name: string; recieverEmail: string; subject: string; body: string }) {
-    const rawApiKey = String(environment.apiKey || '').trim();
-    const apiKey = rawApiKey.startsWith('ApiKey ') ? rawApiKey : `ApiKey ${rawApiKey}`;
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey
-    });
-
-    return this.http.post(
-      'https://automation.optimaxsuites.com/webhook/735f4d81-3f63-4390-9b03-098be2a31469',
-      body,
-      { headers }
-    );
-  }
-
-  private buildAccountingMailBody(approvedAmount: number, totalRepayable: number): { name: string; recieverEmail: string; subject: string; body: string } {
-    const loanId = this.selectedDisbursementLoan?.loanCode || this.selectedDisbursementLoan?.id || '';
-    const employeeName = this.selectedDisbursementLoan?.fullName || 'Employee';
-    const employeeEmail = this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || 'N/A';
-    const accountName = `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || employeeName;
-
-    return {
-      name: 'Accounting Team',
-      recieverEmail: this.accountingEmail,
-      subject: `Loan Disbursement Request - ${loanId}`,
-      body: `
-        <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #333;">
-          <p>Dear Accounting Team,</p>
-
-          <p>
-            A loan has been approved and is ready for disbursement processing. Please review the details below.
-          </p>
-
-          <ul>
-            <li><strong>Loan ID:</strong> ${loanId}</li>
-            <li><strong>Employee:</strong> ${employeeName}</li>
-            <li><strong>Employee ID:</strong> ${this.selectedDisbursementLoan?.employeeId || 'N/A'}</li>
-            <li><strong>Employee Email:</strong> ${employeeEmail}</li>
-            <li><strong>Department:</strong> ${this.selectedDisbursementLoan?.department || 'N/A'}</li>
-            <li><strong>Approved Amount:</strong> ${this.formatCurrency(approvedAmount)}</li>
-            <li><strong>Interest Rate:</strong> ${this.selectedDisbursementLoan?.interestRate || 0}%</li>
-            <li><strong>Total Repayable:</strong> ${this.formatCurrency(totalRepayable)}</li>
-            <li><strong>Repayment Period:</strong> ${this.selectedDisbursementLoan?.repaymentTime || 0} months</li>
-            <li><strong>Mode of Payment:</strong> ${this.selectedDisbursementLoan?.modeOfPayment === 'MONTHLY' ? 'Monthly Installments' : 'One-off Payment'}</li>
-            <li><strong>Purpose:</strong> ${this.selectedDisbursementLoan?.purpose || 'N/A'}</li>
-            <li><strong>Approved Date:</strong> ${this.formatDate(this.selectedDisbursementLoan?.approvedDate)}</li>
-            <li><strong>Approved By:</strong> ${this.getApprovedByName()}</li>
-            <li><strong>Bank Name:</strong> ${this.selectedEmployeeDetails?.bankName || 'N/A'}</li>
-            <li><strong>Account Number:</strong> ${this.selectedEmployeeDetails?.accountNumber || 'N/A'}</li>
-            <li><strong>Account Name:</strong> ${accountName}</li>
-            <li><strong>Disbursement Reference:</strong> ${this.disbursementInstructionReference}</li>
-            <li><strong>Payment Method:</strong> ${this.paymentMethod.replace('_', ' ')}</li>
-            <li><strong>Initiated By:</strong> ${this.disbursementInitiatedBy}</li>
-            <li><strong>Initiated At:</strong> ${this.formatDate(this.disbursementInitiatedAt)}</li>
-          </ul>
-
-          ${this.emailNotes?.trim() ? `<p><strong>Additional Notes:</strong> ${this.emailNotes.trim()}</p>` : ''}
-          ${this.selectedDisbursementLoan?.adminComment?.trim() ? `<p><strong>Admin Comment:</strong> ${this.selectedDisbursementLoan.adminComment}</p>` : ''}
-
-          <p>Please process this disbursement and confirm once completed.</p>
-
-          <br/>
-
-          <p>Regards,<br/>
-          <strong>HR Management</strong></p>
-
-          <hr style="border:none; border-top:1px solid #eee; margin:20px 0;" />
-
-          <p style="font-size:12px; color:#777;">
-            This is an automated message. Please do not reply to this email.
-          </p>
-        </div>
-      `
-    };
+    if (readyEntry) {
+      this.disbursementInitiatedBy = typeof readyEntry.changedBy === 'string'
+        ? readyEntry.changedBy
+        : '';
+      const referenceMatch = String(readyEntry.notes || '').match(/Reference:\s*([^\.]+)/i);
+      this.disbursementInstructionReference = referenceMatch?.[1]?.trim() || '';
+    } else {
+      this.disbursementInitiatedBy = '';
+      this.disbursementInstructionReference = '';
+    }
   }
 }

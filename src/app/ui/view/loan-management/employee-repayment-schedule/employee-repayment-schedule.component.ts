@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+// employee-repayment-schedule.component.ts
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
@@ -10,20 +11,17 @@ import {
   resolveLoanOutstandingBalance,
   resolveLoanRepaymentProgress,
   resolveLoanTotalPaid,
-  resolveLoanTotalRepayableAmount
+  resolveLoanTotalRepayableAmount,
+  resolveLoanInterestAmount
 } from '../../../service/loan/loan-display.util';
 
 @Component({
   selector: 'app-employee-repayment-schedule',
   templateUrl: './employee-repayment-schedule.component.html',
-  styleUrls: ['./employee-repayment-schedule.component.scss']
+  styleUrls: ['./employee-repayment-schedule.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
-    // Track which installments have a pending or approved extension
-    isInstallmentExtensionPending(item: RepaymentScheduleItem): boolean {
-      // No extensionStatus property exists; always return false
-      return false;
-    }
   @Input() loan!: LoanApplication;
   @Input() paymentMode: 'advance' | 'cooperative' = 'advance';
   @Input() cooperativeLoan: CooperativeLoan | null = null;
@@ -58,6 +56,45 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
       this.calculateStats();
     }
   }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 2
+    }).format(amount);
+  }
+
+  getFormattedLoanCode(): string {
+    if (!this.loan) return '';
+    const rawCode = String(this.loan.loanCode || this.loan.id || '').trim();
+    if (!rawCode) return '';
+    return /^ADV-/i.test(rawCode) ? rawCode : `ADV-${rawCode}`;
+  }
+
+  getStatusDisplay(status: string | undefined): string {
+    if (!status) return '';
+    return String(status)
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  getStatusClass(status: string | undefined): string {
+    const statusMap: Record<string, string> = {
+      'PENDING': 'pending',
+      'APPROVED': 'approved',
+      'READY_FOR_DISBURSEMENT': 'ready_for_disbursement',
+      'ACTIVE': 'active',
+      'REJECTED': 'rejected',
+      'COMPLETED': 'completed',
+      'SKIPPED': 'skipped',
+      'OVERDUE': 'overdue',
+      'DEFAULTED': 'defaulted',
+      'PAUSED': 'paused'
+    };
+    return statusMap[status || ''] || 'default';
+  }
   
   calculateStats(): void {
     if (!this.loan?.repaymentSchedule?.length) {
@@ -88,7 +125,6 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
 
     this.completionPercentage = resolveLoanRepaymentProgress(this.loan);
     
-    // Find next payment
     const nextPayment = this.loan.repaymentSchedule
       .find(item => item.status === 'PENDING');
     
@@ -101,16 +137,12 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     }
   }
   
-  // Open payment modal for a specific installment
   openPaymentModal(installment?: RepaymentScheduleItem): void {
-    if (!this.canTakeRepaymentActions()) {
-      return;
-    }
+    if (!this.canTakeRepaymentActions()) return;
 
     if (installment) {
       this.selectedInstallment = installment;
     } else {
-      // Find the next pending installment
       this.selectedInstallment = this.loan?.repaymentSchedule
         .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
     }
@@ -120,46 +152,43 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     this.showPaymentModal = true;
   }
   
-  // Close payment modal
   closePaymentModal(): void {
     this.showPaymentModal = false;
     this.selectedInstallment = null;
     this.selectedCooperativeInstallment = null;
   }
   
-  // Open grace period modal
   openGracePeriodModal(installment?: RepaymentScheduleItem): void {
-    if (!this.canTakeRepaymentActions()) {
-      return;
-    }
+    if (!this.canTakeRepaymentActions()) return;
 
     if (installment) {
       this.selectedInstallment = installment;
     } else {
-      // Find the next pending installment
       this.selectedInstallment = this.loan?.repaymentSchedule
         .find(item => item.status === 'PENDING' || item.status === 'OVERDUE') || null;
     }
-    this.showGracePeriodModal = true;
+    
+    // Use setTimeout to ensure modal renders properly
+    setTimeout(() => {
+      this.showGracePeriodModal = true;
+    }, 0);
   }
   
-  // Close grace period modal
   closeGracePeriodModal(): void {
     this.showGracePeriodModal = false;
     this.selectedInstallment = null;
   }
   
-  // Handle successful payment
   onPaymentSuccess(): void {
     this.closePaymentModal();
     this.calculateStats();
     this.repaymentUpdated.emit();
   }
   
-  // Handle successful grace period request
   onGracePeriodSubmitted(): void {
     this.closeGracePeriodModal();
-    // Show success message
+    this.calculateStats();
+    this.repaymentUpdated.emit();
   }
   
   getStatusIcon(status: string): string {
@@ -170,23 +199,6 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
       case 'SKIPPED': return 'fas fa-ban';
       default: return 'fas fa-circle';
     }
-  }
-  
-  getStatusClass(status: string): string {
-    switch(status) {
-      case 'PAID': return 'status-paid';
-      case 'PENDING': return 'status-pending';
-      case 'OVERDUE': return 'status-overdue';
-      case 'SKIPPED': return 'status-skipped';
-      default: return '';
-    }
-  }
-  
-  getProgressColor(): string {
-    if (this.overdueCount > 0) return '#ea580c';
-    if (this.completionPercentage >= 100) return '#059669';
-    if (this.completionPercentage >= 50) return '#f59e0b';
-    return '#3b82f6';
   }
   
   formatDate(date: string): string {
@@ -213,10 +225,6 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     return getLoanRepaymentStatusTitle(this.loan);
   }
 
-  getLoanStatusDisplay(): string {
-    return String(this.loan?.status || '').replace(/_/g, ' ');
-  }
-
   canTakeRepaymentActions(): boolean {
     return this.loan?.status === 'ACTIVE' || this.loan?.status === 'SKIPPED' || this.loan?.status === 'OVERDUE';
   }
@@ -241,21 +249,11 @@ export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
     if (this.loan?.status === 'DEFAULTED') {
       return 'This loan has been marked as defaulted. You can still review the schedule, but payment and extension requests stay locked until admin intervenes.';
     }
-
     return 'This loan is currently paused by admin. You can review the repayment schedule, but payment and extension requests are temporarily unavailable.';
-  }
-  
-  isOverdue(item: RepaymentScheduleItem): boolean {
-    if (item.status !== 'PENDING') return false;
-    const dueDate = new Date(item.dueDate);
-    const today = new Date();
-    return dueDate < today;
   }
 
   private mapToCooperativeInstallment(installment: RepaymentScheduleItem | null): CooperativeRepayment | null {
-    if (!installment || !this.cooperativeLoan) {
-      return null;
-    }
+    if (!installment || !this.cooperativeLoan) return null;
 
     return {
       id: Number(installment.id || installment.installmentNo || 0),

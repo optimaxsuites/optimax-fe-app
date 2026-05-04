@@ -1,5 +1,5 @@
 // grace-period-request.component.ts
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnInit, SimpleChanges, ViewEncapsulation, AfterViewInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { AdvanceGracePeriodService, CreateGracePeriodRequestPayload } from '../../../service/loan/loan-grace-period.service';
@@ -11,14 +11,17 @@ import { CooperativeRepayment } from '../../../service/loan/cooperative-loan/coo
 @Component({
   selector: 'app-grace-period-requests',
   templateUrl: './grace-period-requests.component.html',
-  styleUrls: ['./grace-period-requests.component.scss']
+  styleUrls: ['./grace-period-requests.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
-export class GracePeriodRequestsComponent implements OnInit {
+export class GracePeriodRequestsComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() loan: LoanApplication | null = null;
   @Input() installment: RepaymentScheduleItem | null = null;
+  @Input() availableLoans: LoanApplication[] = [];
   @Input() cooperativeLoan: CooperativeLoan | null = null;
   @Input() cooperativeInstallment: CooperativeRepayment | null = null;
   @Input() member: any = null;
+  @Input() isModal = false;
   @Output() close = new EventEmitter<void>();
   @Output() requestSubmitted = new EventEmitter<void>();
 
@@ -27,6 +30,8 @@ export class GracePeriodRequestsComponent implements OnInit {
   messages: Message[] = [];
   maxRequestableDays = 30;
   minRequestableDays = 7;
+  selectedLoan: LoanApplication | null = null;
+  selectedInstallment: RepaymentScheduleItem | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -36,7 +41,34 @@ export class GracePeriodRequestsComponent implements OnInit {
     this.gracePeriodForm = this.createForm();
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.initializeLoanSelection();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['loan'] || changes['installment'] || changes['availableLoans']) {
+      this.initializeLoanSelection();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    if (this.isModal) {
+      this.adjustModalSize();
+    }
+  }
+
+  private adjustModalSize(): void {
+    setTimeout(() => {
+      const dialog = document.querySelector('.p-dialog');
+      if (dialog) {
+        dialog.setAttribute('style', 'width: 90vw !important; max-width: 1200px !important;');
+      }
+      const dialogContent = document.querySelector('.p-dialog-content');
+      if (dialogContent) {
+        dialogContent.setAttribute('style', 'padding: 0 !important; max-height: 85vh !important; overflow-y: auto !important;');
+      }
+    }, 100);
+  }
 
   createForm(): FormGroup {
     return this.fb.group({
@@ -47,7 +79,7 @@ export class GracePeriodRequestsComponent implements OnInit {
   }
 
   get dueDate(): string {
-    const dueDate = this.installment?.dueDate || this.cooperativeInstallment?.dueDate;
+    const dueDate = this.selectedResolvedInstallment?.dueDate || this.cooperativeInstallment?.dueDate;
     if (!dueDate) return 'N/A';
     return new Date(dueDate).toLocaleDateString('en-NG', {
       year: 'numeric',
@@ -57,7 +89,7 @@ export class GracePeriodRequestsComponent implements OnInit {
   }
 
   get amountDue(): number {
-    return this.installment?.totalAmount || this.cooperativeInstallment?.amount || 0;
+    return this.selectedResolvedInstallment?.totalAmount || this.cooperativeInstallment?.amount || 0;
   }
 
   get isCooperativeRequest(): boolean {
@@ -79,8 +111,28 @@ export class GracePeriodRequestsComponent implements OnInit {
         ];
   }
 
+  get availableActiveLoans(): LoanApplication[] {
+    return (this.availableLoans || []).filter((loan) => loan.status === 'ACTIVE');
+  }
+
+  get showLoanSelector(): boolean {
+    return !this.isCooperativeRequest && this.availableActiveLoans.length > 1;
+  }
+
+  get selectedLoanId(): string {
+    return String(this.selectedResolvedLoan?.id || '');
+  }
+
+  get hasSelectableInstallment(): boolean {
+    if (this.isCooperativeRequest) {
+      return !!this.cooperativeLoan && !!this.cooperativeInstallment;
+    }
+
+    return !!this.selectedResolvedLoan && !!this.selectedResolvedInstallment;
+  }
+
   onSubmit(): void {
-    if (this.gracePeriodForm.invalid || (!this.isCooperativeRequest && (!this.loan || !this.installment)) || (this.isCooperativeRequest && (!this.cooperativeLoan || !this.cooperativeInstallment))) {
+    if (this.gracePeriodForm.invalid || (!this.isCooperativeRequest && (!this.selectedResolvedLoan || !this.selectedResolvedInstallment)) || (this.isCooperativeRequest && (!this.cooperativeLoan || !this.cooperativeInstallment))) {
       this.gracePeriodForm.markAllAsTouched();
       return;
     }
@@ -116,8 +168,8 @@ export class GracePeriodRequestsComponent implements OnInit {
       return;
     }
 
-    const loan = this.loan;
-    const installment = this.installment;
+    const loan = this.selectedResolvedLoan;
+    const installment = this.selectedResolvedInstallment;
     if (!loan || !installment) {
       this.isLoading = false;
       return;
@@ -146,6 +198,22 @@ export class GracePeriodRequestsComponent implements OnInit {
     this.close.emit();
   }
 
+  onLoanSelectionChange(event: Event): void {
+    const selectedId = Number((event.target as HTMLSelectElement).value);
+    this.selectedLoan = this.availableActiveLoans.find((loan) => loan.id === selectedId) || null;
+    this.selectedInstallment = this.resolveInstallmentForLoan(this.selectedLoan);
+  }
+
+  formatLoanOptionLabel(loan: LoanApplication): string {
+    const amount = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0
+    }).format(Number(loan.amount || 0));
+
+    return `ADV-${loan.loanCode || loan.id} • ${loan.purpose || 'Loan'} • ${amount}`;
+  }
+
   private handleSuccess(detail: string): void {
     this.isLoading = false;
     this.messages = [{
@@ -167,6 +235,46 @@ export class GracePeriodRequestsComponent implements OnInit {
       summary: 'Submission Failed',
       detail: 'Failed to submit grace period request. Please try again.'
     }];
+  }
+
+  private get selectedResolvedLoan(): LoanApplication | null {
+    return this.selectedLoan || this.loan;
+  }
+
+  private get selectedResolvedInstallment(): RepaymentScheduleItem | null {
+    return this.selectedInstallment || this.installment;
+  }
+
+  private initializeLoanSelection(): void {
+    if (this.isCooperativeRequest) {
+      return;
+    }
+
+    if (this.availableActiveLoans.length) {
+      this.selectedLoan = this.availableActiveLoans.find((entry) => entry.id === this.loan?.id) || this.availableActiveLoans[0];
+      this.selectedInstallment = this.resolveInstallmentForLoan(this.selectedLoan, this.installment);
+      return;
+    }
+
+    this.selectedLoan = this.loan;
+    this.selectedInstallment = this.resolveInstallmentForLoan(this.loan, this.installment);
+  }
+
+  private resolveInstallmentForLoan(
+    loan: LoanApplication | null,
+    preferredInstallment?: RepaymentScheduleItem | null
+  ): RepaymentScheduleItem | null {
+    if (!loan) {
+      return null;
+    }
+
+    if (preferredInstallment && (loan.repaymentSchedule || []).some((item) => item.installmentNo === preferredInstallment.installmentNo)) {
+      return preferredInstallment;
+    }
+
+    return [...(loan.repaymentSchedule || [])]
+      .filter((item) => item.status === 'PENDING' || item.status === 'OVERDUE')
+      .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0] || null;
   }
 
   private resolveCooperativeInstallmentNumber(loan: CooperativeLoan, installment: CooperativeRepayment): number {

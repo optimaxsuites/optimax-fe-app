@@ -2,7 +2,7 @@
   <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
   <form [formGroup]="loanRequestForm" (ngSubmit)="onSubmit()" class="loan-request-form">
-    <!-- Elegant Warning Banner -->
+    <!-- Warning Banner -->
     <div class="warning-banner">
       <div class="warning-icon">
         <i class="fas fa-info-circle"></i>
@@ -90,6 +90,9 @@
             <div class="field-hint" *ngIf="selectedPurposeDescription">
               <i class="fas fa-info-circle"></i> {{ selectedPurposeDescription }}
             </div>
+            <div class="field-hint" *ngIf="hasPurposeAmountConstraints">
+              <i class="fas fa-scale-balanced"></i> {{ selectedPurposeAmountRangeMessage }}
+            </div>
             <div class="error" *ngIf="purpose?.invalid && purpose?.touched">
               <i class="fas fa-exclamation-circle"></i> Loan purpose is required
             </div>
@@ -103,65 +106,67 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Loan Amount <span class="required">*</span></label>
-              <div class="input-with-symbol">
-                <span class="input-symbol">₦</span>
-                <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" min="10000" [max]="maxLoanAmount" step="1000">
-              </div>
-              <div class="error" *ngIf="amount?.invalid && amount?.touched">
-                <span *ngIf="amount?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Loan amount is required</span>
-                <span *ngIf="amount?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum amount is ₦10,000</span>
-                <span *ngIf="amount?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Maximum is {{ maxLoanAmount | currency:'NGN':'symbol':'1.0-0' }}</span>
-              </div>
+          <!-- FIXED: Removed form-row wrapper to allow full width -->
+          <div class="form-group-full">
+            <label>Loan Amount <span class="required">*</span></label>
+            <div class="input-with-symbol">
+              <span class="input-symbol">₦</span>
+              <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" [min]="minLoanAmount" [max]="maxLoanAmount" step="1000">
             </div>
-
-            <div class="form-group">
-              <label>Repayment Period <span class="required">*</span></label>
-              <div class="input-with-suffix">
-                <input type="number" formControlName="repaymentTime" class="form-control" placeholder="e.g., 12" min="1" max="60" step="1">
-                <span class="input-suffix">months</span>
-              </div>
-              <div class="field-hint">
-                <i class="fas fa-info-circle"></i> Enter between 1 and 60 months
-              </div>
-              <div class="error" *ngIf="repaymentTime?.invalid && repaymentTime?.touched">
-                <span *ngIf="repaymentTime?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Repayment period is required</span>
-                <span *ngIf="repaymentTime?.errors?.['min'] || repaymentTime?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Enter 1-60 months</span>
-              </div>
+            <div class="field-hint" *ngIf="hasPurposeAmountConstraints">
+              <i class="fas fa-circle-info"></i> {{ selectedPurposeAmountRangeMessage }}
+            </div>
+            <div class="error" *ngIf="amount?.invalid && amount?.touched">
+              <span *ngIf="amount?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Loan amount is required</span>
+              <span *ngIf="amount?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum amount is {{ minLoanAmount | currency:'NGN':'symbol':'1.0-0' }}</span>
+              <span *ngIf="amount?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Maximum is {{ maxLoanAmount | currency:'NGN':'symbol':'1.0-0' }}</span>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Repayment Start Date <span class="required">*</span></label>
-              <input type="date" formControlName="repaymentStartDate" class="form-control" [min]="getMinRepaymentDate()">
-              <div class="field-hint">
-                <i class="fas fa-calendar-alt"></i> First repayment due date
-              </div>
-              <div class="error" *ngIf="repaymentStartDate?.invalid && repaymentStartDate?.touched">
-                <i class="fas fa-exclamation-circle"></i> Start date is required
-              </div>
+          <!-- FIXED: Individual full-width fields instead of form-row -->
+          <div class="form-group-full">
+            <label>Repayment Period (Months) <span class="required">*</span></label>
+            <div class="input-with-suffix">
+              <input type="number" formControlName="repaymentTime" class="form-control" placeholder="e.g., 12" min="1" max="60" step="1">
+              <span class="input-suffix">months</span>
             </div>
-
-            <div class="form-group" *ngIf="modeOfPayment?.value === 'MONTHLY'">
-              <label>Monthly Payment Day <span class="required">*</span></label>
-              <div class="input-with-suffix">
-                <input type="number" formControlName="repaymentDay" class="form-control" placeholder="e.g., 15" min="1" max="31" step="1">
-                <span class="input-suffix">of each month</span>
-              </div>
-              <div class="field-hint">
-                <i class="fas fa-calendar-alt"></i> Defaults to the day from your start date
-              </div>
-              <div class="error" *ngIf="repaymentDay?.invalid && repaymentDay?.touched">
-                <span *ngIf="repaymentDay?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Payment day is required</span>
-                <span *ngIf="repaymentDay?.errors?.['min'] || repaymentDay?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Day must be between 1 and 31</span>
-              </div>
+            <div class="field-hint">
+              <i class="fas fa-info-circle"></i> Enter between 1 and 60 months
+            </div>
+            <div class="error" *ngIf="repaymentTime?.invalid && repaymentTime?.touched">
+              <span *ngIf="repaymentTime?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Repayment period is required</span>
+              <span *ngIf="repaymentTime?.errors?.['min'] || repaymentTime?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Enter 1-60 months</span>
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group-full">
+            <label>Repayment Start Date <span class="required">*</span></label>
+            <input type="date" formControlName="repaymentStartDate" class="form-control" [min]="getMinRepaymentDate()">
+            <div class="field-hint">
+              <i class="fas fa-calendar-alt"></i> First repayment due date
+            </div>
+            <div class="error" *ngIf="repaymentStartDate?.invalid && repaymentStartDate?.touched">
+              <i class="fas fa-exclamation-circle"></i> Start date is required
+            </div>
+          </div>
+
+          <!-- FIXED: Monthly Payment Day - properly styled -->
+          <div class="form-group-full" *ngIf="modeOfPayment?.value === 'MONTHLY'">
+            <label>Monthly Payment Day <span class="required">*</span></label>
+            <div class="input-with-suffix">
+              <input type="number" formControlName="repaymentDay" class="form-control" placeholder="e.g., 15" min="1" max="31" step="1">
+              <span class="input-suffix">of each month</span>
+            </div>
+            <div class="field-hint">
+              <i class="fas fa-calendar-alt"></i> Defaults to the day from your start date
+            </div>
+            <div class="error" *ngIf="repaymentDay?.invalid && repaymentDay?.touched">
+              <span *ngIf="repaymentDay?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Payment day is required</span>
+              <span *ngIf="repaymentDay?.errors?.['min'] || repaymentDay?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Day must be between 1 and 31</span>
+            </div>
+          </div>
+
+          <div class="form-group-full">
             <label>Repayment Mode <span class="required">*</span></label>
             <div class="mode-toggle">
               <button type="button" class="mode-option" [class.active]="modeOfPayment?.value === 'MONTHLY'" (click)="setModeOfPayment('MONTHLY')">
@@ -321,6 +326,7 @@
       
       <div class="interest-modal-message">
         <p>This loan purpose comes with a <strong>fixed interest rate of {{ defaultInterestRate }}%</strong> that will be applied to your loan.</p>
+        <p *ngIf="hasPurposeAmountConstraints"><strong>{{ selectedPurposeAmountRangeMessage }}</strong></p>
         <p>You must acknowledge this rate to proceed with the application. If you do not wish to continue, please select a different loan purpose.</p>
       </div>
       

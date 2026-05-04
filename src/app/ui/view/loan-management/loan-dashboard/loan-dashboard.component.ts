@@ -1,5 +1,4 @@
-// ...existing code...
-import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
@@ -72,12 +71,16 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
 @Component({
   selector: 'app-loan-dashboard',
   templateUrl: './loan-dashboard.component.html',
-  styleUrls: ['./loan-dashboard.component.scss']
+  styleUrls: ['./loan-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class LoanDashboardComponent implements OnInit, OnDestroy {
   readonly recentLoanLimit = 5;
   readonly dashboardTableRowsPerPage = 10;
+  private hasInitializedLoanSubscription = false;
   isLoading = false;
+  isDataLoaded = false;
+  isInitialLoad = true;
   selectedDashboard: 'advance' | 'cooperative' = 'advance';
   searchTerm: string = '';
   isDashboardMenuOpen = false;
@@ -108,151 +111,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   selectedLoan: LoanApplication | null = null;
   showLoanDetailsModal = false;
 
-  recentLoanColumns = [
-    { header: 'Loan ID', field: 'loanCode' },
-    { header: 'Employee', field: 'fullName' },
-    { header: 'Employee ID', field: 'employeeId' },
-    { header: 'Department', field: 'department' },
-    {
-      header: 'Amount',
-      formatter: (row: LoanApplication) => this.formatCurrency(row.amount)
-    },
-    {
-      header: 'Status',
-      field: 'status',
-      badgeClass: (row: LoanApplication) => `status-badge ${this.getStatusClass(row.status)}`
-    },
-    {
-      header: 'Date',
-      formatter: (row: LoanApplication) => new Date(row.requestDate).toLocaleDateString()
-    }
-  ];
-
-  recentLoanActions = [
-    { id: 'view', label: 'View Details', className: 'btn-view' },
-    { id: 'history', label: 'History', className: 'btn-history' }
-  ];
-
-  get adminDisplayName(): string {
-    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
-    const username = String(sessionStorage.getItem('username') || '').trim();
-    const fallbackName = fullName || username || 'Admin';
-
-    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
-  }
-
-  formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {
-    if (!loan) {
-      return '';
-    }
-
-    const rawCode = String(loan.loanCode || loan.id || '').trim();
-    if (!rawCode) {
-      return '';
-    }
-
-    return /^ADVLO-/i.test(rawCode) ? rawCode : `ADVLO-${rawCode}`;
-  }
-
-  getShortAdvanceLoanDisplayId(loan: LoanApplication | undefined | null, maxLength = 14): string {
-    const displayId = this.formatAdvanceLoanDisplayId(loan);
-    return displayId.length > maxLength ? `${displayId.slice(0, maxLength)}...` : displayId;
-  }
-
-  get statusSummaryCards(): Array<{
-    title: string;
-    value: number | string;
-    note: string;
-    iconClass: string;
-    accentClass: string;
-    filter: LoanApplication['status'] | 'ALL';
-  }> {
-    return [
-      {
-        title: 'Pending Review',
-        value: this.dashboardStats.pendingApplications,
-        note: 'Fresh applications awaiting decision',
-        iconClass: 'fa-hourglass-half',
-        accentClass: 'pending',
-        filter: 'PENDING'
-      },
-      {
-        title: 'Ready To Disburse',
-        value: this.dashboardStats.readyForDisbursement,
-        note: 'Approved and queued for release',
-        iconClass: 'fa-hand-holding-dollar',
-        accentClass: 'ready',
-        filter: 'READY_FOR_DISBURSEMENT'
-      },
-      {
-        title: 'Active',
-        value: this.dashboardStats.activeLoans,
-        note: 'Loans currently in repayment',
-        iconClass: 'fa-check-circle',
-        accentClass: 'active',
-        filter: 'ACTIVE'
-      },
-      {
-        title: 'Skipped',
-        value: this.dashboardStats.skippedLoans,
-        note: 'Grace-approved repayment shifts',
-        iconClass: 'fa-forward',
-        accentClass: 'skipped',
-        filter: 'SKIPPED'
-      },
-      {
-        title: 'Overdue',
-        value: this.dashboardStats.overdueLoans,
-        note: 'Repayments needing urgent follow-up',
-        iconClass: 'fa-triangle-exclamation',
-        accentClass: 'overdue',
-        filter: 'OVERDUE'
-      },
-      {
-        title: 'Paused',
-        value: this.dashboardStats.pausedLoans,
-        note: 'Admin hold currently in effect',
-        iconClass: 'fa-circle-pause',
-        accentClass: 'paused',
-        filter: 'PAUSED'
-      },
-      {
-        title: 'Defaulted',
-        value: this.dashboardStats.defaultedLoans,
-        note: 'Critical accounts requiring escalation',
-        iconClass: 'fa-shield-halved',
-        accentClass: 'defaulted',
-        filter: 'DEFAULTED'
-      },
-      {
-        title: 'Outstanding Balance',
-        value: this.formatCurrency(this.dashboardStats.totalBalance),
-        note: 'Current exposure across active and at-risk loans',
-        iconClass: 'fa-wallet',
-        accentClass: 'balance',
-        filter: 'ALL'
-      }
-    ];
-  }
-
-  get primaryStatusSummaryCards() {
-    return this.statusSummaryCards.filter((card) =>
-      ['pending', 'ready', 'active', 'balance'].includes(card.accentClass)
-    );
-  }
-
-  get secondaryStatusSummaryCards() {
-    return this.statusSummaryCards.filter((card) =>
-      !['pending', 'ready', 'active', 'balance'].includes(card.accentClass)
-    );
-  }
-
-  get adminDashboardCards() {
-    return this.statusSummaryCards.filter((card) =>
-      ['pending', 'active', 'balance'].includes(card.accentClass)
-    );
-  }
-  
   private loanSubscription!: Subscription;
   private readonly routeSubscription = new Subscription();
   private readonly employeeLookup = new Map<string, any>();
@@ -298,6 +156,85 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.isDashboardMenuOpen = false;
   }
 
+  getInitials(name: string): string {
+    if (!name) return 'AD';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  }
+
+  get adminDisplayName(): string {
+    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
+    const username = String(sessionStorage.getItem('username') || '').trim();
+    const fallbackName = fullName || username || 'Admin';
+
+    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+  }
+
+  formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {
+    if (!loan) {
+      return '';
+    }
+
+    const rawCode = String(loan.loanCode || loan.id || '').trim();
+    if (!rawCode) {
+      return '';
+    }
+
+    return /^ADV-/i.test(rawCode) ? rawCode : `ADV-${rawCode}`;
+  }
+
+  getShortAdvanceLoanDisplayId(loan: LoanApplication | undefined | null, maxLength = 14): string {
+    const displayId = this.formatAdvanceLoanDisplayId(loan);
+    return displayId.length > maxLength ? `${displayId.slice(0, maxLength)}...` : displayId;
+  }
+
+  get statusSummaryCards(): Array<{
+    title: string;
+    value: number | string;
+    note: string;
+    iconClass: string;
+    accentClass: string;
+    filter: LoanApplication['status'] | 'ALL';
+  }> {
+    return [
+      {
+        title: 'Pending Review',
+        value: this.dashboardStats.pendingApplications,
+        note: 'Fresh applications awaiting decision',
+        iconClass: 'fa-hourglass-half',
+        accentClass: 'pending',
+        filter: 'PENDING'
+      },
+      {
+        title: 'Ready To Disburse',
+        value: this.dashboardStats.readyForDisbursement,
+        note: 'Approved and queued for release',
+        iconClass: 'fa-hand-holding-dollar',
+        accentClass: 'ready',
+        filter: 'READY_FOR_DISBURSEMENT'
+      },
+      {
+        title: 'Active',
+        value: this.dashboardStats.activeLoans,
+        note: 'Loans currently in repayment',
+        iconClass: 'fa-check-circle',
+        accentClass: 'active',
+        filter: 'ACTIVE'
+      },
+      {
+        title: 'Outstanding Balance',
+        value: this.formatCurrency(this.dashboardStats.totalBalance),
+        note: 'Current exposure across active and at-risk loans',
+        iconClass: 'fa-chart-line',
+        accentClass: 'balance',
+        filter: 'ALL'
+      }
+    ];
+  }
+
+  get adminDashboardCards() {
+    return this.statusSummaryCards;
+  }
+  
   navigateToCurrentDashboard(): void {
     this.onDashboardSelect(this.selectedDashboard);
   }
@@ -324,55 +261,90 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     return formatLoanPurposeDisplay(purpose);
   }
 
+  // ============================================
+  // CACHING METHODS - Load data once, use cached data
+  // ============================================
+  
   loadDashboardData(): void {
-    const loadProfiler = startLoanLoadProfiler('advance-admin-dashboard');
-    this.isLoading = true;
-    forkJoin({
-      applications: this.loanApplicationService.getAllApplications(),
-      employees: this.employeeService.getAllEmployee().pipe(catchError(() => of([])))
-    }).subscribe({
-      next: ({ applications, employees }) => {
+    this.setupLoanSubscription();
+    this.refreshLoanData();
+  }
+
+  private processApplications(applications: LoanApplication[], onComplete?: () => void): void {
+    // First load employees to enrich loan data
+    this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe({
+      next: (employees) => {
         this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
-        this.refreshDashboardState(applications);
-        if (!this.loanSubscription) {
-          this.setupLoanSubscription();
-        }
-        loadProfiler.success({ loans: this.allLoans.length, filtered: this.filteredLoans.length });
-        this.isLoading = false;
+        this.allLoans = this.enrichLoansWithEmployeeData(
+          applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
+        );
+        this.processLoadedData();
+        this.isDataLoaded = true;
+        onComplete?.();
       },
       error: (error) => {
-        console.error('Error loading dashboard data:', error);
-        if (!this.loanSubscription) {
-          this.setupLoanSubscription();
-        }
-        loadProfiler.error({ message: 'Failed to load advance dashboard data' });
+        console.error('Error loading employees:', error);
+        this.allLoans = applications;
+        this.processLoadedData();
+        this.isDataLoaded = true;
+        onComplete?.();
+      }
+    });
+  }
+
+  private processLoadedData(): void {
+    this.syncSelectedLoan();
+    this.updateDashboardStats();
+    this.applyFilter();
+    this.updateRecentActivities();
+  }
+
+  refreshLoanData(): void {
+    const loadProfiler = startLoanLoadProfiler('advance-admin-dashboard');
+    if (!this.isDataLoaded) {
+      this.isLoading = true;
+    }
+    this.loanApplicationService.refreshApplications().subscribe({
+      next: (applications) => {
+        this.processApplications(applications || [], () => {
+          loadProfiler.success({ loans: this.allLoans.length, filtered: this.filteredLoans.length });
+          this.isLoading = false;
+          this.isInitialLoad = false;
+          this.isDataLoaded = true;
+        });
+      },
+      error: (error) => {
+        console.error('Error refreshing applications:', error);
+        loadProfiler.error({ message: 'Failed to load advance admin dashboard' });
         this.isLoading = false;
       }
     });
   }
 
   setupLoanSubscription(): void {
+    if (this.hasInitializedLoanSubscription) {
+      return;
+    }
+
+    this.hasInitializedLoanSubscription = true;
     this.loanSubscription = this.loanApplicationService.getApplicationsObservable().subscribe({
       next: (applications) => {
         this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe((employees) => {
           this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
-          this.refreshDashboardState(applications);
+          this.allLoans = this.enrichLoansWithEmployeeData(
+            applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
+          );
+          this.processLoadedData();
+          if (this.allLoans.length > 0 || !this.isInitialLoad) {
+            this.isDataLoaded = true;
+            this.isLoading = false;
+          }
         });
       },
       error: (error) => {
         console.error('Error in loan subscription:', error);
       }
     });
-  }
-
-  private refreshDashboardState(applications: LoanApplication[]): void {
-    this.allLoans = this.enrichLoansWithEmployeeData(
-      applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
-    );
-    this.syncSelectedLoan();
-    this.updateDashboardStats();
-    this.applyFilter();
-    this.updateRecentActivities();
   }
 
   private rebuildEmployeeLookup(employees: any[]): void {
@@ -402,8 +374,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.dashboardStats.pendingApplications = this.allLoans.filter(loan => 
       loan.status === 'PENDING'
     ).length;
-
-    // removed awaitingInterestAcceptance
 
     this.dashboardStats.readyForDisbursement = this.allLoans.filter(loan =>
       loan.status === 'READY_FOR_DISBURSEMENT'
@@ -464,8 +434,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       overduePolicySummary: this.getOverduePolicySummary(loan),
       statusClass: this.getStatusClass(loan.status),
       statusLabel: this.getStatusDisplay(loan.status)
-      // removed Awaiting Interest card
-      // removed nextAlerts and overdueLoansCount logic
     };
   }
 
@@ -492,8 +460,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
             id: `${loan.id}-payment-${payment.id || index}`,
             type: 'PAYMENT',
             level: 'info',
-            message: `Repayment alert: ${loan.fullName || 'An employee'} posted ${this.formatCurrency(paymentAmount)} to loan ${loan.loanCode} this month.`,
-            loanId: loan.loanCode,
+            message: `Repayment alert: ${(loan && loan.fullName) ? loan.fullName : 'An employee'} posted ${this.formatCurrency(paymentAmount)} to loan ${(loan && loan.loanCode) ? loan.loanCode : ''} this month.`,
+            loanId: (loan && loan.loanCode) ? loan.loanCode : '',
             loanApplicationId: loan.id,
             occurredAt: payment.paidAt
           });
@@ -513,16 +481,15 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
             type: threshold === 100 ? 'COMPLETION' : 'MILESTONE',
             level: 'success',
             message: threshold === 100
-              ? `Repayment milestone: ${loan.fullName || 'An employee'} has fully repaid loan ${loan.loanCode}.`
-              : `Repayment milestone: ${loan.fullName || 'An employee'} has reached ${threshold}% repayment on loan ${loan.loanCode}.`,
-            loanId: loan.loanCode,
+              ? `Repayment milestone: ${(loan && loan.fullName) ? loan.fullName : 'An employee'} has fully repaid loan ${(loan && loan.loanCode) ? loan.loanCode : ''}.`
+              : `Repayment milestone: ${(loan && loan.fullName) ? loan.fullName : 'An employee'} has reached ${threshold}% repayment on loan ${(loan && loan.loanCode) ? loan.loanCode : ''}.`,
+            loanId: (loan && loan.loanCode) ? loan.loanCode : '',
             loanApplicationId: loan.id,
             occurredAt: threshold === 100 && loan.completedDate ? loan.completedDate : payment.paidAt
           });
         });
       });
     });
-
 
     this.recentActivities = activities
       .sort((first, second) => new Date(second.occurredAt).getTime() - new Date(first.occurredAt).getTime())
@@ -587,52 +554,8 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  isLoanOverdue(loan: LoanApplication): boolean {
-    if (loan.status === 'OVERDUE' || loan.status === 'DEFAULTED') {
-      return true;
-    }
-
-    if (loan.status !== 'ACTIVE' && loan.status !== 'SKIPPED') {
-      return false;
-    }
-
-    const hasOverdueInstallment = loan.repaymentSchedule?.some(item => item.status === 'OVERDUE');
-    if (hasOverdueInstallment) {
-      return true;
-    }
-
-    if (loan.completedDate) {
-      return new Date(loan.completedDate ?? '').getTime() < Date.now();
-    }
-
-    return false;
-  }
-
   private isSameMonth(left: Date, right: Date): boolean {
     return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth();
-  }
-
-  private getLatestSubmittedLoans(): LoanApplication[] {
-    return [...this.allLoans]
-      .sort((first, second) => {
-        const firstTime = new Date(first.requestDate).getTime();
-        const secondTime = new Date(second.requestDate).getTime();
-        return secondTime - firstTime;
-      })
-      .slice(0, this.recentLoanLimit);
-  }
-
-  // Filter methods
-  showPendingLoans(): void {
-    this.setStatusFilter('PENDING');
-  }
-
-  showActiveLoans(): void {
-    this.setStatusFilter('ACTIVE');
-  }
-
-  showAllLoans(): void {
-    this.setStatusFilter('ALL');
   }
 
   setStatusFilter(status: LoanApplication['status'] | 'ALL'): void {
@@ -641,7 +564,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   getStatusDisplay(status: LoanApplication['status'] | undefined): string {
-    // Generic Title Case for any status
     if (!status) return '';
     return String(status)
       .toLowerCase()
@@ -653,7 +575,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (this.displayedLoanSubset === 'ALL') {
       return 'all';
     }
-
     return this.getStatusDisplay(this.displayedLoanSubset).toLowerCase();
   }
 
@@ -668,7 +589,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       this.sortField = field;
       this.sortDirection = field === 'requestDate' ? 'desc' : 'asc';
     }
-
     this.applyFilter();
   }
 
@@ -676,7 +596,6 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     if (this.sortField !== field) {
       return 'fa-sort';
     }
-
     return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
   }
 
@@ -691,14 +610,13 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/admin/hr/loan-management/loan-approval', uuidV4()]);
   }
 
-    openPurposeManagement(): void {
-      this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
-    }
+  openPurposeManagement(): void {
+    this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
+  }
 
-getStatusClass(status: string | undefined): string {
+  getStatusClass(status: string | undefined): string {
   switch (status) {
     case 'PENDING': return 'status-pending';
-    case 'AWAITING_INTEREST_ACCEPTANCE': return 'status-awaiting_interest_acceptance';
     case 'APPROVED': return 'status-approved';
     case 'READY_FOR_DISBURSEMENT': return 'status-ready_for_disbursement';
     case 'ACTIVE': return 'status-active';
@@ -733,20 +651,6 @@ getStatusClass(status: string | undefined): string {
     return `${this.getLateFeePercentageDisplay(loan)} after ${this.getLateFeeGracePeriodDisplay(loan)} grace`;
   }
 
-  handleRecentLoanAction(event: { actionId: string; row: LoanApplication }) {
-    if (event.actionId === 'view') {
-      this.viewLoanDetails(event.row.id);
-      return;
-    }
-    if (event.actionId === 'history') {
-      this.seeLoanHistory(event.row.employeeId);
-    }
-  }
-
-  selectLoan(loan: LoanApplication): void {
-    this.selectedLoan = loan;
-  }
-
   viewLoanDetails(loanId: string | number) {
     const loan = this.allLoans.find(l => l.id === loanId);
     if (loan) {
@@ -758,7 +662,6 @@ getStatusClass(status: string | undefined): string {
           if (!latestLoan) {
             return;
           }
-
           this.selectedLoan = latestLoan;
           this.replaceLoanInDashboard(latestLoan);
         },
@@ -866,7 +769,6 @@ getStatusClass(status: string | undefined): string {
     if (displayedStatus !== 'APPROVED' && displayedStatus !== 'ACTIVE' && displayedStatus !== 'COMPLETED') {
       return 0;
     }
-
     return Number(loan.interestRate || 0);
   }
 
@@ -897,7 +799,6 @@ getStatusClass(status: string | undefined): string {
     if (!timeline.length) {
       return null;
     }
-
     return [...timeline].sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.changedAt || null;
   }
 
@@ -905,8 +806,30 @@ getStatusClass(status: string | undefined): string {
     const timeline = this.buildStatusTimeline(loan)
       .filter((item) => statuses.includes(item.status))
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
-
     return timeline[0]?.changedAt || null;
+  }
+
+  getPreviewRecentPayments(loan: LoanApplication): PaymentRecord[] {
+    return [...(loan.paymentHistory || [])]
+      .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())
+      .slice(0, 5);
+  }
+
+  getPaymentMethodLabel(method?: string): string {
+    switch (String(method || '').toUpperCase()) {
+      case 'BANK_TRANSFER':
+        return 'Bank Transfer';
+      case 'CASH':
+        return 'Cash';
+      case 'PAYROLL_DEDUCTION':
+        return 'Payroll Deduction';
+      case 'CHEQUE':
+        return 'Cheque';
+      case 'MOBILE_MONEY':
+        return 'Mobile Money';
+      default:
+        return method || 'Not specified';
+    }
   }
 
   getOverdueInstallmentsCount(loan: LoanApplication): number {
@@ -971,15 +894,12 @@ getStatusClass(status: string | undefined): string {
     if (item.status === 'PAID') {
       return 'Paid';
     }
-
     if (item.status === 'OVERDUE') {
       return `Overdue (${this.getOverdueDays(item)}d)`;
     }
-
     if (item.reminderSentAt) {
       return 'Grace Reminder Sent';
     }
-
     return 'Upcoming';
   }
 
@@ -1042,7 +962,6 @@ getStatusClass(status: string | undefined): string {
         if (!normalizedDate) {
           return false;
         }
-
         return index === entries.findIndex((candidate) =>
           candidate.status === entry.status && this.normalizeDate(candidate.changedAt) === normalizedDate
         );
@@ -1052,7 +971,6 @@ getStatusClass(status: string | undefined): string {
         if (statusOrderDifference !== 0) {
           return statusOrderDifference;
         }
-
         return new Date(left.changedAt).getTime() - new Date(right.changedAt).getTime();
       });
 
@@ -1073,28 +991,17 @@ getStatusClass(status: string | undefined): string {
 
   private getStatusProgressionOrder(status: LoanApplication['status']): number {
     switch (status) {
-      case 'PENDING':
-        return 1;
-      case 'APPROVED':
-        return 2;
-      case 'READY_FOR_DISBURSEMENT':
-        return 3;
-      case 'ACTIVE':
-        return 4;
-      case 'SKIPPED':
-        return 5;
-      case 'OVERDUE':
-        return 6;
-      case 'PAUSED':
-        return 7;
-      case 'DEFAULTED':
-        return 8;
-      case 'COMPLETED':
-        return 9;
-      case 'REJECTED':
-        return 10;
-      default:
-        return 99;
+      case 'PENDING': return 1;
+      case 'APPROVED': return 2;
+      case 'READY_FOR_DISBURSEMENT': return 3;
+      case 'ACTIVE': return 4;
+      case 'SKIPPED': return 5;
+      case 'OVERDUE': return 6;
+      case 'PAUSED': return 7;
+      case 'DEFAULTED': return 8;
+      case 'COMPLETED': return 9;
+      case 'REJECTED': return 10;
+      default: return 99;
     }
   }
 
@@ -1104,63 +1011,24 @@ getStatusClass(status: string | undefined): string {
       .filter((item) => !!this.normalizeDate(item.changedAt))
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime())[0]?.status;
 
-    if (explicitStatus === 'COMPLETED') {
-      return 'COMPLETED';
-    }
-
-    if (explicitStatus === 'DEFAULTED') {
-      return 'DEFAULTED';
-    }
-
-    if (explicitStatus === 'PAUSED') {
-      return 'PAUSED';
-    }
-
-    if (explicitStatus === 'OVERDUE') {
-      return 'OVERDUE';
-    }
-
-    if (explicitStatus === 'SKIPPED') {
-      return 'SKIPPED';
-    }
-
-    if (explicitStatus === 'ACTIVE') {
-      return 'ACTIVE';
-    }
-
-    if (explicitStatus === 'REJECTED') {
-      return 'REJECTED';
-    }
-
-    if (explicitStatus === 'READY_FOR_DISBURSEMENT') {
-      return 'READY_FOR_DISBURSEMENT';
-    }
-
-    if (explicitStatus === 'APPROVED') {
-      return 'APPROVED';
-    }
-
-    // removed 'AWAITING_INTEREST_ACCEPTANCE'
+    if (explicitStatus === 'COMPLETED') return 'COMPLETED';
+    if (explicitStatus === 'DEFAULTED') return 'DEFAULTED';
+    if (explicitStatus === 'PAUSED') return 'PAUSED';
+    if (explicitStatus === 'OVERDUE') return 'OVERDUE';
+    if (explicitStatus === 'SKIPPED') return 'SKIPPED';
+    if (explicitStatus === 'ACTIVE') return 'ACTIVE';
+    if (explicitStatus === 'REJECTED') return 'REJECTED';
+    if (explicitStatus === 'READY_FOR_DISBURSEMENT') return 'READY_FOR_DISBURSEMENT';
+    if (explicitStatus === 'APPROVED') return 'APPROVED';
 
     if (latestTimelineStatus && latestTimelineStatus !== 'PENDING') {
       return latestTimelineStatus;
     }
 
-    if (this.normalizeDate(loan.completedDate)) {
-      return 'COMPLETED';
-    }
-
-    if (this.normalizeDate(loan.disbursedDate)) {
-      return 'ACTIVE';
-    }
-
-    if (this.normalizeDate(loan.rejectedDate)) {
-      return 'REJECTED';
-    }
-
-    if (this.normalizeDate(loan.approvedDate)) {
-      return 'APPROVED';
-    }
+    if (this.normalizeDate(loan.completedDate)) return 'COMPLETED';
+    if (this.normalizeDate(loan.disbursedDate)) return 'ACTIVE';
+    if (this.normalizeDate(loan.rejectedDate)) return 'REJECTED';
+    if (this.normalizeDate(loan.approvedDate)) return 'APPROVED';
 
     return explicitStatus || latestTimelineStatus || 'PENDING';
   }
@@ -1169,7 +1037,6 @@ getStatusClass(status: string | undefined): string {
     const timeline = this.buildStatusTimeline(loan)
       .filter((item) => item.status === status)
       .sort((left, right) => new Date(right.changedAt).getTime() - new Date(left.changedAt).getTime());
-
     return timeline[0] ?? null;
   }
 
@@ -1194,14 +1061,12 @@ getStatusClass(status: string | undefined): string {
     if (!rawValue || rawValue.toLowerCase() === 'null' || rawValue.toLowerCase() === 'undefined') {
       return '';
     }
-
     const timestamp = new Date(rawValue).getTime();
     return Number.isFinite(timestamp) ? rawValue : '';
   }
 
   private normalizeStatus(status: string | undefined): LoanApplication['status'] | null {
     const normalizedStatus = String(status || '').trim().toUpperCase();
-
     switch (normalizedStatus) {
       case 'PENDING':
       case 'APPROVED':
@@ -1229,11 +1094,9 @@ getStatusClass(status: string | undefined): string {
     if (!this.selectedLoan) {
       return;
     }
-
     const refreshedLoan = this.allLoans.find((loan) =>
       loan.id === this.selectedLoan?.id || loan.loanCode === this.selectedLoan?.loanCode
     );
-
     if (refreshedLoan) {
       this.selectedLoan = refreshedLoan;
     }
@@ -1243,11 +1106,9 @@ getStatusClass(status: string | undefined): string {
     const loanIndex = this.allLoans.findIndex((loan) =>
       loan.id === updatedLoan.id || loan.loanCode === updatedLoan.loanCode
     );
-
     if (loanIndex < 0) {
       return;
     }
-
     const nextLoans = [...this.allLoans];
     nextLoans[loanIndex] = updatedLoan;
     this.allLoans = nextLoans;
@@ -1259,12 +1120,10 @@ getStatusClass(status: string | undefined): string {
     if (item.status !== 'OVERDUE') {
       return 0;
     }
-
     const dueDate = new Date(item.dueDate);
     dueDate.setHours(0, 0, 0, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     return Math.max(Math.floor((today.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)), 0);
   }
 
@@ -1281,9 +1140,12 @@ getStatusClass(status: string | undefined): string {
     });
   }
 
-  searchLoans(event: any) {
-    this.searchTerm = event.target.value;
-    this.applyFilter();
+  openGracePeriodRequests(): void {
+    this.router.navigate(['/admin/hr/loan-management/grace-period-requests', uuidV4()]);
+  }
+
+  generateReports(): void {
+    this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
   }
 
   formatDepartmentDisplay(department?: unknown): string {
@@ -1343,28 +1205,15 @@ getStatusClass(status: string | undefined): string {
     });
   }
 
-  generateReports() {
-    this.router.navigate(['/admin/hr/loan-management/reports', uuidV4()]);
-  }
-
-
-  openGracePeriodRequests(): void {
-  this.router.navigate(['/admin/hr/loan-management/grace-period-requests', uuidV4()]);
-}
-
   goBack(): void {
     if (window.history.length > 1) {
       this.location.back();
       return;
     }
-
     this.router.navigate(['/admin/hr/loan', uuidV4()]);
   }
 
   get approvedLoansCount(): number {
     return this.allLoans.filter(loan => loan.status === 'APPROVED').length;
   }
-
-  
 }
-

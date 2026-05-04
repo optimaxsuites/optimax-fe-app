@@ -1,6 +1,6 @@
 // ...existing code...
 // ...existing code...
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Subscription } from 'rxjs';
@@ -87,7 +87,8 @@ interface GroupActivityItem {
 @Component({
   selector: 'app-cooperative-member-group-dashboard',
   templateUrl: './cooperative-member-group-dashboard.component.html',
-  styleUrls: ['./cooperative-member-group-dashboard.component.scss']
+  styleUrls: ['./cooperative-member-group-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.Emulated
 })
 export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestroy {
 
@@ -1011,17 +1012,15 @@ getMemberByBorrowerRow(borrower: GroupBorrowerRow): CooperativeMember | null {
   }
 
   goBack(): void {
-    this.router.navigate(['/member/cooperative/dashboard', this.currentUuid], {
-      replaceUrl: true,
-      state: {
-        memberId: Number(this.currentMember?.id || this.currentMemberId || 0) || undefined,
-        source: 'group-dashboard'
+    this.backNavigationService.goBack(
+      ['/member/cooperative/dashboard', this.currentUuid],
+      {
+        state: {
+          memberId: Number(this.currentMember?.id || this.currentMemberId || 0) || undefined,
+          source: 'group-dashboard'
+        }
       }
-    }).then((navigated) => {
-      if (navigated) {
-        window.dispatchEvent(new Event('resize'));
-      }
-    });
+    );
   }
 
   formatCurrency(amount: number): string {

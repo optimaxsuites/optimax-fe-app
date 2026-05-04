@@ -66,7 +66,7 @@ const routes: Routes = [
   {
     path: '',
     // redirectTo: DEFAULT_LOAN_ROUTE,
-    redirectTo: 'leave/uu',
+    redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
   },
   // {
