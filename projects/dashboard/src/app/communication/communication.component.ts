@@ -469,6 +469,8 @@ export class CommunicationComponent
   private pendingNotificationMessageBackendId: number | null = null;
   private scrollFeed = false;
   private scrollThread = false;
+  private chatResourcesLoaded = false;
+  private chatRealtimeStarted = false;
 
   private stompClient: any = null;
   private wsConnected = false;
@@ -505,7 +507,11 @@ export class CommunicationComponent
     this.loadFeedHome();
     this.loadChannels();
     this.loadEmployees();
-    this.startPresencePoll();
+    this.chatResourcesLoaded = true;
+    this.connectWebSocket();
+    if (this.workspaceMode === 'chat') {
+      this.startPresencePoll();
+    }
   }
 
   ngOnDestroy() {
@@ -654,6 +660,12 @@ export class CommunicationComponent
 
   setWorkspaceMode(mode: 'feed' | 'chat'): void {
     this.workspaceMode = mode;
+    if (mode === 'chat') {
+      this.ensureChatBootstrap();
+      return;
+    }
+    this.stopPresencePolling();
+    this.unsubscribeChatStreams();
   }
 
   onFeedComposerInput(event: Event): void {
@@ -1934,9 +1946,15 @@ export class CommunicationComponent
   // ── WebSocket ─────────────────────────────────────────
 
   private connectWebSocket(): void {
+    if (this.chatRealtimeStarted && this.stompClient) {
+      return;
+    }
     const token = sessionStorage.getItem('token') || '';
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const userId = sessionStorage.getItem('userid') || '';
+    const userId =
+      sessionStorage.getItem('userid') ||
+      sessionStorage.getItem('userId') ||
+      '';
     const baseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
     const wsUrl = baseUrl.startsWith('https://')
       ? `wss://${baseUrl.replace('https://', '')}/x/ws/collab`
@@ -1952,6 +1970,7 @@ export class CommunicationComponent
       },
     });
     this.stompClient = client;
+    this.chatRealtimeStarted = true;
 
     client.onConnect = () => {
       this.wsConnected = true;
@@ -1961,12 +1980,14 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
-      if (this.activeChannelId) {
+      if (this.workspaceMode === 'chat' && this.activeChannelId) {
         const ch = this.activeChannel;
         if (ch) this.subscribeToChannel(ch.backendId);
       }
-      for (const dm of this.dmContacts) {
-        if (dm.dmChannelId) this.subscribeToDmChannel(dm);
+      if (this.workspaceMode === 'chat') {
+        for (const dm of this.dmContacts) {
+          if (dm.dmChannelId) this.subscribeToDmChannel(dm);
+        }
       }
     };
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
@@ -1976,31 +1997,41 @@ export class CommunicationComponent
 
   private disconnectWebSocket(): void {
     try {
-      if (this.channelSub) {
-        this.channelSub.unsubscribe();
-        this.channelSub = null;
-      }
-      if (this.channelPresenceSub) {
-        this.channelPresenceSub.unsubscribe();
-        this.channelPresenceSub = null;
-      }
-      this.dmChannelSubs.forEach((s) => {
-        try {
-          s.unsubscribe();
-        } catch (_) {}
-      });
-      this.dmChannelSubs.clear();
-      this.dmPresenceSubs.forEach((s) => {
-        try {
-          s.unsubscribe();
-        } catch (_) {}
-      });
-      this.dmPresenceSubs.clear();
+      this.unsubscribeChatStreams();
       if (this.stompClient) {
         this.stompClient.disconnect();
         this.stompClient = null;
       }
+      this.wsConnected = false;
+      this.chatRealtimeStarted = false;
     } catch (_) {}
+  }
+
+  private unsubscribeChatStreams(): void {
+    if (this.channelSub) {
+      try {
+        this.channelSub.unsubscribe();
+      } catch (_) {}
+      this.channelSub = null;
+    }
+    if (this.channelPresenceSub) {
+      try {
+        this.channelPresenceSub.unsubscribe();
+      } catch (_) {}
+      this.channelPresenceSub = null;
+    }
+    this.dmChannelSubs.forEach((s) => {
+      try {
+        s.unsubscribe();
+      } catch (_) {}
+    });
+    this.dmChannelSubs.clear();
+    this.dmPresenceSubs.forEach((s) => {
+      try {
+        s.unsubscribe();
+      } catch (_) {}
+    });
+    this.dmPresenceSubs.clear();
   }
 
   private subscribeToChannel(channelId: number): void {
@@ -2521,7 +2552,12 @@ export class CommunicationComponent
             .catch(() => {});
         }
         this.cdr.detectChanges();
-        this.connectWebSocket();
+        if (!this.chatRealtimeStarted) {
+          this.connectWebSocket();
+        }
+        if (this.workspaceMode === 'chat') {
+          this.startPresencePoll();
+        }
       },
       error: () => {},
     });
@@ -3537,6 +3573,9 @@ export class CommunicationComponent
   // ── Presence ──────────────────────────────────────────
 
   private startPresencePoll(): void {
+    if (this.presencePollTimer) {
+      return;
+    }
     this.presencePollTimer = setInterval(() => {
       this.collabService.getAllPresence().subscribe({
         next: (list: any[]) => {
@@ -3558,6 +3597,19 @@ export class CommunicationComponent
       if (this.presenceChannelId)
         this.pollChannelPresence(this.presenceChannelId);
     }, 15_000);
+  }
+
+  private stopPresencePolling(): void {
+    if (this.presencePollTimer) {
+      clearInterval(this.presencePollTimer);
+      this.presencePollTimer = null;
+    }
+  }
+
+  private ensureChatBootstrap(): void {
+    this.chatResourcesLoaded = true;
+    this.startPresencePoll();
+    this.connectWebSocket();
   }
 
   private pollChannelPresence(channelId: number): void {

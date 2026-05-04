@@ -430,6 +430,25 @@ export class CollaborationService {
 
   constructor(private http: HttpClient) {}
 
+  private currentUserId(): number {
+    const direct =
+      sessionStorage.getItem('userid') ||
+      sessionStorage.getItem('userId') ||
+      '';
+    const parsedDirect = Number(direct || 0);
+    if (parsedDirect) {
+      return parsedDirect;
+    }
+    try {
+      const raw = sessionStorage.getItem('userRegData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return Number(parsed?.userId || parsed?.id || 0) || 0;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
   private get headers(): HttpHeaders {
     const token = sessionStorage.getItem('token') || '';
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
@@ -736,7 +755,7 @@ export class CollaborationService {
   // ── Mark read ─────────────────────────────────────────
 
   markRead(channelId: number, lastReadMessageId: number): Observable<any> {
-    const userId = Number(sessionStorage.getItem('userid') || 0);
+    const userId = this.currentUserId();
     return this.http.post<any>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/read/mark`,
       { channelId, userId, lastReadMessageId },
@@ -747,7 +766,7 @@ export class CollaborationService {
   // ── Presence ──────────────────────────────────────────
 
   setPresenceOnline(channelId: number): Observable<any> {
-    const userId = Number(sessionStorage.getItem('userid') || 0);
+    const userId = this.currentUserId();
     return this.http.post<any>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/upsert`,
       { channelId, userId, presenceStatus: 'ONLINE', typing: false },
@@ -756,7 +775,7 @@ export class CollaborationService {
   }
 
   upsertPresence(channelId: number, presenceStatus: string): Observable<any> {
-    const userId = Number(sessionStorage.getItem('userid') || 0);
+    const userId = this.currentUserId();
     return this.http.post<any>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/upsert`,
       { channelId, userId, presenceStatus, typing: false },
@@ -765,7 +784,7 @@ export class CollaborationService {
   }
 
   setTyping(channelId: number, typing: boolean): Observable<any> {
-    const userId = Number(sessionStorage.getItem('userid') || 0);
+    const userId = this.currentUserId();
     return this.http.patch<any>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/presence/typing`,
       { channelId, userId, typing },
