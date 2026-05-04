@@ -385,6 +385,14 @@
         />
       </svg>
     </button>
+    <select
+      class="min-w-[128px] text-[12px] border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white"
+      [ngModel]="selectedRingtone"
+      (ngModelChange)="ringtoneChanged.emit($event)"
+      title="Message tone"
+    >
+      <option *ngFor="let tone of ringtoneOptions" [value]="tone.value">{{ tone.label }}</option>
+    </select>
   </div>
 </aside>
 

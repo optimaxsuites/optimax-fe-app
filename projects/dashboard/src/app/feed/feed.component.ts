@@ -31,6 +31,8 @@ type RoutineType = 'Daily' | 'Routine' | 'Workplan';
 type TaskStatusBucket = 'ALL' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
 type WorkItemStatus = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE';
 type TaskStage = 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
+type TreeSortField = 'title' | 'owner' | 'stage' | 'timeline' | 'progress' | 'dependency' | 'updatedAt';
+type TaskDetailViewMode = 'overview' | 'activity';
 
 interface TaskAttachment {
   id: string;
@@ -47,6 +49,7 @@ interface TaskUpdate {
   note: string;
   progress: number;
   createdAt: string;
+  attachments?: TaskAttachment[];
 }
 
 interface TaskReview {
@@ -57,6 +60,17 @@ interface TaskReview {
   note: string;
   createdAt: string;
   emailPreview?: string;
+  attachments: TaskAttachment[];
+}
+
+interface TaskActivityEntry {
+  id: string;
+  type: 'update' | 'review';
+  actor: string;
+  stamp: string;
+  progress?: number;
+  decision?: ReviewDecision;
+  body: string;
   attachments: TaskAttachment[];
 }
 
@@ -73,6 +87,7 @@ interface TaskWorkItem {
 }
 
 interface DraftWorkItem {
+  id: string;
   title: string;
   owner: string;
   timelineStart: string;
@@ -112,6 +127,8 @@ interface RoutineTask {
   payrollMonth?: string;
   productivityWeight?: number;
   emailQueuedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ReminderCard {
@@ -235,13 +252,13 @@ export class FeedComponent implements OnInit, OnDestroy {
     'Terminal Safety Dashboard',
     'Vendor Compliance Programme',
   ];
-  readonly routineTypeOptions: RoutineType[] = ['Daily', 'Routine', 'Workplan'];
-  readonly dependencyTypeOptions: Array<{ label: string; value: DependencyType }> = [
+  routineTypeOptions: RoutineType[] = ['Daily', 'Routine', 'Workplan'];
+  dependencyTypeOptions: Array<{ label: string; value: DependencyType }> = [
     { label: 'None', value: 'NONE' },
     { label: 'Project', value: 'PROJECT' },
     { label: 'Person', value: 'PERSON' },
   ];
-  readonly stageOptions: Array<{ label: string; value: TaskStage }> = [
+  stageOptions: Array<{ label: string; value: TaskStage }> = [
     { label: 'Open', value: 'OPEN' },
     { label: 'In Progress', value: 'IN_PROGRESS' },
     { label: 'Closed', value: 'CLOSED' },
@@ -255,6 +272,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   visualMode: PlannerVisualMode = 'tree';
   composerVisible = false;
   taskDialogVisible = false;
+  taskDetailViewMode: TaskDetailViewMode = 'overview';
   taskBoard: Record<TaskLane, RoutineTask[]> = {
     BACKLOG: [],
     TODAY: [],
@@ -267,26 +285,43 @@ export class FeedComponent implements OnInit, OnDestroy {
   draft: DraftState = this.emptyDraft();
   batchRows = '';
   pendingAttachments: TaskAttachment[] = [];
+  pendingUpdateAttachments: TaskAttachment[] = [];
   pendingReviewAttachments: TaskAttachment[] = [];
   reminders: ReminderCard[] = [];
   updateDrafts: Record<string, string> = {};
   supervisorNotes: Record<string, string> = {};
+  highlightedUpdateId: string | null = null;
+  highlightedReviewId: string | null = null;
   selectedReviewOwner = 'All';
   searchTerm = '';
   selectedStatusBucket: TaskStatusBucket = 'ALL';
   selectedTask: RoutineTask | null = null;
   selectedTaskSubTaskDraft: DraftWorkItem | null = null;
   expandedTreeTaskIds = new Set<string>();
+  treeSortField: TreeSortField = 'updatedAt';
+  treeSortDirection: 'asc' | 'desc' = 'desc';
+  treeFilterOwner = '';
+  treeFilterStage: TaskStage | 'ALL' = 'ALL';
   metadataDialogVisible = false;
   historyFilter = '';
   projectOptions: string[] = [...this.enterpriseProjects];
   newMetadata = {
     project: '',
+    stage: '',
+    routineType: '',
+    dependencyLabel: '',
+    dependencyValue: 'PROJECT' as DependencyType,
   };
   reminderDialogVisible = false;
   reminderDialogTitle = '';
   reminderDialogBody = '';
   readonly demoProjects = ['Siemens Delivery Office', 'Glo Nigeria Network PMO', 'MTN Nigeria Experience Hub', 'CAC Digital Filing Programme'];
+  private readonly notificationTargetListener = (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (detail?.taskRoutineId) {
+      this.applyNotificationTarget(detail);
+    }
+  };
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -299,11 +334,18 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.currentUuid = this.route.snapshot.paramMap.get('uuid') || 'uu';
     this.isSupervisor = this.readRole().includes('ROLE_ADMIN') || this.readRole().includes('SUPERVISOR');
     this.loadMetadataConfig();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('optimax-open-collab-target', this.notificationTargetListener as EventListener);
+    }
     this.loadHomeData();
   }
 
   ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('optimax-open-collab-target', this.notificationTargetListener as EventListener);
+    }
     this.revokeAttachmentUrls(this.pendingAttachments);
+    this.revokeAttachmentUrls(this.pendingUpdateAttachments);
     this.revokeAttachmentUrls(this.pendingReviewAttachments);
     this.tasks.forEach((task) => this.revokeAttachmentUrls(task.attachments));
     this.tasks.forEach((task) => task.reviews.forEach((review) => this.revokeAttachmentUrls(review.attachments || [])));
@@ -323,6 +365,29 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   get selectedTaskReviews(): TaskReview[] {
     return this.selectedTask?.reviews || [];
+  }
+
+  get selectedTaskActivityTimeline(): TaskActivityEntry[] {
+    if (!this.selectedTask) return [];
+    const updates = this.selectedTask.updates.map((update) => ({
+      id: update.id,
+      type: 'update' as const,
+      actor: this.updateAuthorLabel(update),
+      stamp: update.createdAt,
+      progress: update.progress,
+      body: update.note,
+      attachments: update.attachments || [],
+    }));
+    const reviews = this.selectedTask.reviews.map((review) => ({
+      id: review.id,
+      type: 'review' as const,
+      actor: this.reviewReviewerLabel(review),
+      stamp: review.createdAt,
+      decision: review.decision,
+      body: review.note,
+      attachments: review.attachments || [],
+    }));
+    return [...updates, ...reviews].sort((left, right) => right.stamp.localeCompare(left.stamp));
   }
 
   get reminderMetrics(): { label: string; value: string; caption: string }[] {
@@ -413,9 +478,15 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   get selectedStatusTasks(): RoutineTask[] {
+    const ownerQuery = this.treeFilterOwner.trim().toLowerCase();
     return this.filteredTasks
+      .filter((task) => {
+        const matchesOwner = !ownerQuery || (task.owner || '').toLowerCase().includes(ownerQuery) || (task.assignee || '').toLowerCase().includes(ownerQuery);
+        const matchesStage = this.treeFilterStage === 'ALL' || this.stageForTask(task) === this.treeFilterStage;
+        return matchesOwner && matchesStage;
+      })
       .slice()
-      .sort((left, right) => this.normalizeIsoDate(left.timelineDue).localeCompare(this.normalizeIsoDate(right.timelineDue)) || right.progress - left.progress);
+      .sort((left, right) => this.compareTreeTasks(left, right));
   }
 
   get selectedStatusTitle(): string {
@@ -531,6 +602,19 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.visualMode = mode;
   }
 
+  setTreeSort(field: TreeSortField): void {
+    if (this.treeSortField === field) {
+      this.treeSortDirection = this.treeSortDirection === 'asc' ? 'desc' : 'asc';
+      return;
+    }
+    this.treeSortField = field;
+    this.treeSortDirection = field === 'updatedAt' ? 'desc' : 'asc';
+  }
+
+  isTreeSort(field: TreeSortField, direction?: 'asc' | 'desc'): boolean {
+    return this.treeSortField === field && (!direction || this.treeSortDirection === direction);
+  }
+
   toggleTreeTask(taskId: string): void {
     if (this.expandedTreeTaskIds.has(taskId)) {
       this.expandedTreeTaskIds.delete(taskId);
@@ -560,6 +644,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   updateTaskFromTree(task: RoutineTask): void {
+    const owner = this.findPersonByName(task.owner || this.currentActor());
+    task.owner = owner?.name || task.owner || this.currentActor();
+    task.ownerUserId = owner?.userId ?? task.ownerUserId ?? this.meUserId();
     const assignee = this.findPersonByName(task.assignee);
     task.assignee = assignee?.name || task.assignee || this.currentActor();
     task.assigneeUserId = assignee?.userId ?? task.assigneeUserId ?? null;
@@ -569,6 +656,51 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.syncTaskProgress(task);
     this.moveTaskForProgress(task);
     this.saveTask(task);
+  }
+
+  deleteTask(task: RoutineTask): void {
+    if (!/^\d+$/.test(task.id)) {
+      for (const lane of this.lanes) {
+        this.taskBoard[lane.key] = this.taskBoard[lane.key].filter((row) => row.id !== task.id);
+      }
+      if (this.selectedTask?.id === task.id) this.closeTaskDialog();
+      this.loadReminderCards();
+      this.toast('success', 'Task deleted', 'The task has been removed.');
+      return;
+    }
+    this.collaborationService.deleteTaskRoutinePlan(Number(task.id)).subscribe({
+      next: () => {
+        for (const lane of this.lanes) {
+          this.taskBoard[lane.key] = this.taskBoard[lane.key].filter((row) => row.id !== task.id);
+        }
+        if (this.selectedTask?.id === task.id) this.closeTaskDialog();
+        this.loadReminderCards();
+        this.toast('success', 'Task deleted', 'The task has been removed.');
+      },
+      error: (error) => this.toast('error', 'Delete failed', this.errorDetail(error, 'The task could not be deleted.')),
+    });
+  }
+
+  private compareTreeTasks(left: RoutineTask, right: RoutineTask): number {
+    let result = 0;
+    if (this.treeSortField === 'title') {
+      result = (left.title || '').localeCompare(right.title || '');
+    } else if (this.treeSortField === 'owner') {
+      result = (left.owner || '').localeCompare(right.owner || '');
+    } else if (this.treeSortField === 'stage') {
+      result = this.stageForTask(left).localeCompare(this.stageForTask(right));
+    } else if (this.treeSortField === 'timeline') {
+      result = this.normalizeIsoDate(left.timelineDue).localeCompare(this.normalizeIsoDate(right.timelineDue));
+    } else if (this.treeSortField === 'progress') {
+      result = Number(left.progress || 0) - Number(right.progress || 0);
+    } else if (this.treeSortField === 'dependency') {
+      result = (left.dependencyValue || '').localeCompare(right.dependencyValue || '');
+    } else {
+      result = this.normalizeDateTimeValue(left.updatedAt || left.createdAt || left.emailQueuedAt).localeCompare(
+        this.normalizeDateTimeValue(right.updatedAt || right.createdAt || right.emailQueuedAt),
+      );
+    }
+    return this.treeSortDirection === 'asc' ? result : -result;
   }
 
   canEditParentProgress(task: RoutineTask): boolean {
@@ -641,13 +773,22 @@ export class FeedComponent implements OnInit, OnDestroy {
   openTaskDialog(task: RoutineTask): void {
     this.selectedTask = task;
     this.selectedTaskSubTaskDraft = this.emptyDraftWorkItem(task.assignee || this.currentActor());
+    this.taskDetailViewMode = 'overview';
     this.taskDialogVisible = true;
+  }
+
+  openTaskHistory(task: RoutineTask): void {
+    this.openTaskDialog(task);
+    this.taskDetailViewMode = 'activity';
   }
 
   closeTaskDialog(): void {
     this.taskDialogVisible = false;
     this.selectedTask = null;
     this.selectedTaskSubTaskDraft = null;
+    this.taskDetailViewMode = 'overview';
+    this.revokeAttachmentUrls(this.pendingUpdateAttachments);
+    this.pendingUpdateAttachments = [];
     this.revokeAttachmentUrls(this.pendingReviewAttachments);
     this.pendingReviewAttachments = [];
   }
@@ -698,8 +839,24 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.collectAttachments(event, this.pendingReviewAttachments, true);
   }
 
+  onUpdateAttachmentSelected(event: Event): void {
+    this.collectAttachments(event, this.pendingUpdateAttachments, true);
+  }
+
+  onUpdateEditorPaste(event: ClipboardEvent): void {
+    this.collectPastedAttachments(event, this.pendingUpdateAttachments);
+  }
+
+  onReviewEditorPaste(event: ClipboardEvent): void {
+    this.collectPastedAttachments(event, this.pendingReviewAttachments);
+  }
+
   removeReviewAttachment(attachment: TaskAttachment): void {
     this.removeAttachmentFromCollection(attachment, 'pendingReviewAttachments');
+  }
+
+  removeUpdateAttachment(attachment: TaskAttachment): void {
+    this.removeAttachmentFromCollection(attachment, 'pendingUpdateAttachments');
   }
 
   removePendingAttachment(attachment: TaskAttachment): void {
@@ -732,15 +889,35 @@ export class FeedComponent implements OnInit, OnDestroy {
     const note = (this.updateDrafts[task.id] || '').trim();
     if (!note) return;
     this.syncTaskProgress(task);
+    const currentProgress = task.workItems.length ? this.taskRollupPercent(task) : Number(task.progress || 0);
+    const authorUserId = this.meUserId();
+    const updateAttachments = this.pendingUpdateAttachments.map((attachment) => ({ ...attachment }));
+    const updateId = this.makeId('upd');
+    task.progress = currentProgress;
     task.updates.unshift({
-      id: this.makeId('upd'),
+      id: updateId,
+      authorUserId,
       author: this.currentActor(),
       note,
-      progress: task.progress,
+      progress: currentProgress,
       createdAt: new Date().toISOString(),
+      attachments: updateAttachments,
     });
     this.moveTaskForProgress(task);
     this.updateDrafts[task.id] = '';
+    this.revokeAttachmentUrls(this.pendingUpdateAttachments);
+    this.pendingUpdateAttachments = [];
+    if (task.assignee !== this.currentActor() || this.isSupervisor) {
+      this.headerStateService.pushNotification({
+        title: `${this.currentActor()} added a task update`,
+        body: `${task.title}: ${this.stripHtml(note).slice(0, 120) || 'A new update was added.'}`,
+        category: 'module',
+        route: `/admin/dashboard/tasks-routines/${this.currentUuid}`,
+        contextLabel: 'Tasks and Routines',
+        taskRoutineId: task.id,
+        taskUpdateId: updateId,
+      });
+    }
     this.saveTask(task);
   }
 
@@ -749,7 +926,16 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   nudgeProgress(task: RoutineTask, step: number): void {
-    task.progress = Math.max(0, Math.min(100, task.progress + step));
+    if (task.workItems.length) {
+      const distributed = Math.max(0, Math.min(100, this.taskRollupPercent(task) + step));
+      task.workItems = task.workItems.map((item) => ({
+        ...item,
+        progress: item.status === 'DONE' ? 100 : distributed,
+      }));
+      this.syncTaskProgress(task);
+    } else {
+      task.progress = Math.max(0, Math.min(100, Number(task.progress || 0) + step));
+    }
     this.moveTaskForProgress(task);
     this.saveTask(task);
   }
@@ -772,8 +958,10 @@ export class FeedComponent implements OnInit, OnDestroy {
   applyReview(task: RoutineTask, decision: ReviewDecision): void {
     const note = (this.supervisorNotes[task.id] || '').trim();
     const reviewAttachments = this.pendingReviewAttachments.map((attachment) => ({ ...attachment }));
+    const reviewId = this.makeId('rev');
     task.reviews.unshift({
-      id: this.makeId('rev'),
+      id: reviewId,
+      reviewerUserId: this.meUserId(),
       reviewer: this.currentActor(),
       decision,
       note: note || this.defaultReviewMessage(decision),
@@ -792,11 +980,48 @@ export class FeedComponent implements OnInit, OnDestroy {
       category: 'module',
       route: `/admin/dashboard/tasks-routines/${this.currentUuid}`,
       contextLabel: 'Supervisor review',
+      taskRoutineId: task.id,
+      taskReviewId: reviewId,
     });
     this.saveTask(task);
   }
 
+  rewriteUpdateDraft(task: RoutineTask): void {
+    const draft = (this.updateDrafts[task.id] || '').trim();
+    if (!draft) {
+      this.toast('warn', 'Nothing to rewrite', 'Enter an update before using AI rewrite.');
+      return;
+    }
+    this.collaborationService.aiRewrite(this.stripHtml(draft)).subscribe({
+      next: (res) => {
+        this.updateDrafts[task.id] = res.body || res.rewrittenText || res.content || draft;
+        this.toast('success', 'Update polished', 'The task update has been rewritten with clearer semantics.');
+      },
+      error: (error) => this.toast('error', 'Rewrite failed', this.errorDetail(error, 'AI rewrite could not update the task note.')),
+    });
+  }
+
+  rewriteSupervisorNote(task: RoutineTask): void {
+    const draft = (this.supervisorNotes[task.id] || '').trim();
+    if (!draft) {
+      this.toast('warn', 'Nothing to rewrite', 'Enter supervisor feedback before using AI rewrite.');
+      return;
+    }
+    this.collaborationService.aiRewrite(this.stripHtml(draft)).subscribe({
+      next: (res) => {
+        this.supervisorNotes[task.id] = res.body || res.rewrittenText || res.content || draft;
+        this.toast('success', 'Review polished', 'The supervisor note has been rewritten with clearer semantics.');
+      },
+      error: (error) => this.toast('error', 'Rewrite failed', this.errorDetail(error, 'AI rewrite could not update the supervisor feedback.')),
+    });
+  }
+
   updateWorkItem(task: RoutineTask, item: TaskWorkItem): void {
+    const owner = this.findPersonByName(item.owner || task.assignee || this.currentActor());
+    item.owner = owner?.name || item.owner || task.assignee || this.currentActor();
+    item.ownerUserId = owner?.userId ?? item.ownerUserId ?? null;
+    item.timelineStart = this.normalizeIsoDate(item.timelineStart || task.timelineStart || this.todayIso());
+    item.timelineDue = this.normalizeIsoDate(item.timelineDue || item.timelineStart || task.timelineDue || this.todayIso());
     item.progress = this.statusProgress(item.status, item.progress);
     this.syncTaskProgress(task);
     this.moveTaskForProgress(task);
@@ -829,6 +1054,14 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.selectedTaskSubTaskDraft = this.emptyDraftWorkItem(task.assignee || this.currentActor());
     this.saveTask(task);
     this.toast('success', 'Sub task added', 'The sub task has been added to the task.');
+  }
+
+  deleteSubTask(task: RoutineTask, item: TaskWorkItem): void {
+    task.workItems = task.workItems.filter((row) => row.id !== item.id);
+    this.syncTaskProgress(task);
+    this.moveTaskForProgress(task);
+    this.saveTask(task);
+    this.toast('success', 'Sub task deleted', 'The sub task has been removed.');
   }
 
   taskCompletionLabel(task: RoutineTask): string {
@@ -881,6 +1114,22 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   workItemTone(status: WorkItemStatus): string {
     return `work-${status.toLowerCase()}`;
+  }
+
+  updateAuthorLabel(update: TaskUpdate): string {
+    return this.cleanDisplayName(update.author) || this.personNameByUserId(update.authorUserId) || 'Staff';
+  }
+
+  reviewReviewerLabel(review: TaskReview): string {
+    return this.cleanDisplayName(review.reviewer) || this.personNameByUserId(review.reviewerUserId) || 'Supervisor';
+  }
+
+  latestTaskUpdate(task: RoutineTask): TaskUpdate | null {
+    return task.updates?.length ? task.updates[0] : null;
+  }
+
+  latestTaskReview(task: RoutineTask): TaskReview | null {
+    return task.reviews?.length ? task.reviews[0] : null;
   }
 
   reviewDecisionStamp(decision: ReviewDecision): string {
@@ -970,6 +1219,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.draft = this.emptyDraft();
         this.loadReminderCards();
         this.notifyAtLogin();
+        this.applyNotificationTargetIfPresent();
         this.isLoading = false;
       },
       error: (error) => {
@@ -1129,15 +1379,16 @@ export class FeedComponent implements OnInit, OnDestroy {
       updates: (plan.updates || []).map((update) => ({
         id: update.id || this.makeId('upd'),
         authorUserId: update.authorUserId ?? null,
-        author: update.authorName || this.personNameByUserId(update.authorUserId) || 'Staff',
+        author: this.cleanDisplayName(update.authorName) || this.personNameByUserId(update.authorUserId) || 'Staff',
         note: update.note,
         progress: Number(update.progress || 0),
         createdAt: this.normalizeDateTimeValue(update.createdAt || new Date().toISOString()),
+        attachments: (update.attachments || []).map((attachment) => this.mapAttachmentFromApi(attachment)),
       })),
       reviews: (plan.reviews || []).map((review) => ({
         id: review.id || this.makeId('rev'),
         reviewerUserId: review.reviewerUserId ?? null,
-        reviewer: review.reviewerName || this.personNameByUserId(review.reviewerUserId) || 'Reviewer',
+        reviewer: this.cleanDisplayName(review.reviewerName) || this.personNameByUserId(review.reviewerUserId) || 'Reviewer',
         decision: review.decision,
         note: review.note,
         createdAt: this.normalizeDateTimeValue(review.createdAt || new Date().toISOString()),
@@ -1146,9 +1397,9 @@ export class FeedComponent implements OnInit, OnDestroy {
       })),
       workItems: (plan.workItems || []).map((item) => ({
         id: item.id || this.makeId('wi'),
-        title: item.title,
+        title: item.title || 'Untitled sub task',
         ownerUserId: item.ownerUserId ?? null,
-        owner: item.ownerName || this.personNameByUserId(item.ownerUserId) || 'Staff',
+        owner: item.ownerName || this.personNameByUserId(item.ownerUserId) || this.displayNameFromUser(plan.assignee, plan.assigneeUserId) || this.currentActor(),
         timelineStart: this.normalizeIsoDate(item.timelineStart || plan.timelineStart || this.todayIso()),
         timelineDue: this.normalizeIsoDate(item.timelineDue || item.timelineStart || plan.timelineDue || this.todayIso()),
         dependency: item.dependency || '',
@@ -1162,6 +1413,8 @@ export class FeedComponent implements OnInit, OnDestroy {
       payrollMonth: plan.payrollMonth || '',
       productivityWeight: Number(plan.productivityWeight || 0),
       emailQueuedAt: this.normalizeDateTimeValue(plan.emailQueuedAt),
+      createdAt: this.normalizeDateTimeValue(plan.createdAt),
+      updatedAt: this.normalizeDateTimeValue(plan.updatedAt),
     });
   }
 
@@ -1199,15 +1452,16 @@ export class FeedComponent implements OnInit, OnDestroy {
       updates: task.updates.map((update) => ({
         id: update.id,
         authorUserId: update.authorUserId ?? this.findPersonByName(update.author)?.userId ?? this.meUserId(),
-        authorName: update.author,
+        authorName: this.updateAuthorLabel(update),
         note: update.note,
         progress: update.progress,
         createdAt: update.createdAt,
+        attachments: (update.attachments || []).map((attachment) => this.mapAttachmentToApi(attachment)),
       })),
       reviews: task.reviews.map((review) => ({
         id: review.id,
         reviewerUserId: review.reviewerUserId ?? this.findPersonByName(review.reviewer)?.userId ?? this.meUserId(),
-        reviewerName: review.reviewer,
+        reviewerName: this.reviewReviewerLabel(review),
         decision: review.decision,
         note: review.note,
         createdAt: review.createdAt,
@@ -1523,7 +1777,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       supervisorUserId: task.supervisorUserId ?? null,
       lane: (task.lane || 'BACKLOG') as TaskLane,
       progress: Number(task.progress || 0),
-      owner: task.owner || this.currentActor(),
+      owner: task.owner || this.personNameByUserId(task.ownerUserId) || task.assignee || this.currentActor(),
       assignee: task.assignee || task.owner || this.currentActor(),
       timelineStart: task.timelineStart || this.todayIso(),
       timelineDue: task.timelineDue || task.timelineStart || this.todayIso(),
@@ -1543,13 +1797,21 @@ export class FeedComponent implements OnInit, OnDestroy {
         ? task.updates.map((update: any) => ({
             ...update,
             authorUserId: update.authorUserId ?? null,
+            author: this.cleanDisplayName(update.author) || this.personNameByUserId(update.authorUserId) || this.currentActor(),
             createdAt: this.normalizeDateTimeValue(update.createdAt || new Date().toISOString()),
+            attachments: Array.isArray(update.attachments)
+              ? update.attachments.map((attachment: any) => ({
+                  ...attachment,
+                  previewUrl: this.normalizeAttachmentUrl(attachment.previewUrl),
+                }))
+              : [],
           }))
         : [],
       reviews: Array.isArray(task.reviews)
         ? task.reviews.map((review: any) => ({
             ...review,
             reviewerUserId: review.reviewerUserId ?? null,
+            reviewer: this.cleanDisplayName(review.reviewer) || this.personNameByUserId(review.reviewerUserId) || this.currentActor(),
             createdAt: this.normalizeDateTimeValue(review.createdAt || new Date().toISOString()),
             attachments: Array.isArray(review.attachments)
               ? review.attachments.map((attachment: any) => ({
@@ -1562,9 +1824,9 @@ export class FeedComponent implements OnInit, OnDestroy {
       workItems: Array.isArray(task.workItems)
         ? task.workItems.map((item: any) => ({
             id: item.id || this.makeId('wi'),
-            title: item.title || 'Work item',
+            title: item.title || 'Untitled sub task',
             ownerUserId: item.ownerUserId ?? null,
-            owner: item.owner || task.assignee || this.currentActor(),
+            owner: item.owner || this.personNameByUserId(item.ownerUserId) || task.assignee || this.currentActor(),
             timelineStart: this.normalizeIsoDate(item.timelineStart || task.timelineStart || this.todayIso()),
             timelineDue: this.normalizeIsoDate(item.timelineDue || item.timelineStart || task.timelineDue || this.todayIso()),
             dependency: item.dependency || '',
@@ -1579,6 +1841,8 @@ export class FeedComponent implements OnInit, OnDestroy {
       payrollMonth: task.payrollMonth || '',
       productivityWeight: Number(task.productivityWeight || 0),
       emailQueuedAt: task.emailQueuedAt,
+      createdAt: this.normalizeDateTimeValue(task.createdAt),
+      updatedAt: this.normalizeDateTimeValue(task.updatedAt),
     };
     this.syncTaskProgress(normalized);
     return normalized;
@@ -1648,6 +1912,7 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   private emptyDraftWorkItem(owner: string, dayOffset = 0): DraftWorkItem {
     return {
+      id: this.makeId('dwi'),
       title: '',
       owner,
       timelineStart: this.plusDaysIso(dayOffset),
@@ -1778,9 +2043,47 @@ export class FeedComponent implements OnInit, OnDestroy {
     input.value = '';
   }
 
+  private collectPastedAttachments(event: ClipboardEvent, target: TaskAttachment[]): void {
+    const items = Array.from(event.clipboardData?.items || []);
+    const files = items
+      .filter((item) => item.kind === 'file')
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => !!file);
+    if (!files.length) {
+      return;
+    }
+    event.preventDefault();
+    files.forEach((file) => {
+      const preview = this.localAttachmentFromFile(file);
+      target.push(preview);
+      this.collaborationService.uploadTaskRoutineAttachment(file).subscribe({
+        next: (saved) => {
+          const index = target.findIndex((row) => row.id === preview.id);
+          const merged = this.mapAttachmentFromApi(saved, preview.previewUrl);
+          if (index >= 0) {
+            target[index] = merged;
+          } else {
+            target.push(merged);
+          }
+        },
+        error: (error) => {
+          this.toast('error', 'Paste upload failed', this.errorDetail(error, `Could not upload ${file.name}.`));
+        },
+      });
+    });
+  }
+
+  insertUpdateTable(task: RoutineTask): void {
+    this.updateDrafts[task.id] = `${this.updateDrafts[task.id] || ''}<table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Step</th><th>Owner</th><th>Status</th></tr><tr><td></td><td></td><td></td></tr></table>`;
+  }
+
+  insertReviewTable(task: RoutineTask): void {
+    this.supervisorNotes[task.id] = `${this.supervisorNotes[task.id] || ''}<table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Observation</th><th>Action</th><th>Owner</th></tr><tr><td></td><td></td><td></td></tr></table>`;
+  }
+
   private removeAttachmentFromCollection(
     attachment: TaskAttachment,
-    collection: 'pendingAttachments' | 'pendingReviewAttachments',
+    collection: 'pendingAttachments' | 'pendingReviewAttachments' | 'pendingUpdateAttachments',
   ): void {
     const rows = this[collection];
     const index = rows.findIndex((row) => row.id === attachment.id);
@@ -1852,6 +2155,14 @@ export class FeedComponent implements OnInit, OnDestroy {
     return this.people.find((person) => Number(person.userId || 0) === Number(userId))?.name || '';
   }
 
+  private cleanDisplayName(value?: string | null): string {
+    const cleaned = String(value || '').trim();
+    if (!cleaned || cleaned.toLowerCase() === 'undefined' || cleaned.toLowerCase() === 'null') {
+      return '';
+    }
+    return cleaned;
+  }
+
   private displayNameFromUser(user?: { fullname?: string; username?: string }, userId?: number | null): string {
     return user?.fullname || user?.username || this.personNameByUserId(userId) || this.currentActor();
   }
@@ -1887,6 +2198,42 @@ export class FeedComponent implements OnInit, OnDestroy {
       this.toast('success', 'Project added', `${value} is now available in task metadata.`);
     }
     this.newMetadata.project = '';
+  }
+
+  addStageMetadata(): void {
+    const value = this.newMetadata.stage.trim();
+    if (!value) return;
+    const normalized = value.toUpperCase().replace(/\s+/g, '_') as TaskStage;
+    if (!this.stageOptions.some((stage) => stage.value === normalized || stage.label.toLowerCase() === value.toLowerCase())) {
+      this.stageOptions = [...this.stageOptions, { label: value, value: normalized }].sort((a, b) => a.label.localeCompare(b.label));
+      this.persistMetadataConfig();
+      this.toast('success', 'Stage added', `${value} is now available in stage selection.`);
+    }
+    this.newMetadata.stage = '';
+  }
+
+  addRoutineTypeMetadata(): void {
+    const value = this.newMetadata.routineType.trim();
+    if (!value) return;
+    if (!this.routineTypeOptions.some((type) => type.toLowerCase() === value.toLowerCase())) {
+      this.routineTypeOptions = [...this.routineTypeOptions, value as RoutineType].sort((a, b) => a.localeCompare(b));
+      this.persistMetadataConfig();
+      this.toast('success', 'Routine type added', `${value} is now available in routine type selection.`);
+    }
+    this.newMetadata.routineType = '';
+  }
+
+  addDependencyTypeMetadata(): void {
+    const label = this.newMetadata.dependencyLabel.trim();
+    if (!label) return;
+    const value = (this.newMetadata.dependencyValue || 'PROJECT') as DependencyType;
+    if (!this.dependencyTypeOptions.some((dependency) => dependency.label.toLowerCase() === label.toLowerCase())) {
+      this.dependencyTypeOptions = [...this.dependencyTypeOptions, { label, value }];
+      this.persistMetadataConfig();
+      this.toast('success', 'Dependency type added', `${label} is now available in dependency selection.`);
+    }
+    this.newMetadata.dependencyLabel = '';
+    this.newMetadata.dependencyValue = 'PROJECT';
   }
 
   exportHistoryExcel(): void {
@@ -1958,17 +2305,37 @@ export class FeedComponent implements OnInit, OnDestroy {
     try {
       const raw = localStorage.getItem(this.metadataStorageKey());
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { projects?: unknown[] };
+      const parsed = JSON.parse(raw) as { projects?: unknown[]; stages?: any[]; routineTypes?: unknown[]; dependencyTypes?: any[] };
       if (Array.isArray(parsed?.projects)) {
         this.projectOptions = [
           ...new Set(parsed.projects.filter((project): project is string => typeof project === 'string' && !!project.trim())),
         ];
       }
+      if (Array.isArray(parsed?.stages)) {
+        this.stageOptions = parsed.stages
+          .filter((stage: any) => stage && typeof stage.label === 'string' && typeof stage.value === 'string')
+          .map((stage: any) => ({ label: stage.label, value: stage.value as TaskStage }));
+      }
+      if (Array.isArray(parsed?.routineTypes)) {
+        this.routineTypeOptions = [
+          ...new Set(parsed.routineTypes.filter((type): type is RoutineType => typeof type === 'string' && !!type.trim())),
+        ];
+      }
+      if (Array.isArray(parsed?.dependencyTypes)) {
+        this.dependencyTypeOptions = parsed.dependencyTypes
+          .filter((dependency: any) => dependency && typeof dependency.label === 'string' && typeof dependency.value === 'string')
+          .map((dependency: any) => ({ label: dependency.label, value: dependency.value as DependencyType }));
+      }
     } catch (_) {}
   }
 
   private persistMetadataConfig(): void {
-    localStorage.setItem(this.metadataStorageKey(), JSON.stringify({ projects: this.projectOptions }));
+    localStorage.setItem(this.metadataStorageKey(), JSON.stringify({
+      projects: this.projectOptions,
+      stages: this.stageOptions,
+      routineTypes: this.routineTypeOptions,
+      dependencyTypes: this.dependencyTypeOptions,
+    }));
   }
 
   private toast(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string): void {
@@ -1977,6 +2344,36 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   private errorDetail(error: any, fallback: string): string {
     return error?.error?.message || error?.message || fallback;
+  }
+
+  private stripHtml(value: string): string {
+    return String(value || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private applyNotificationTargetIfPresent(): void {
+    try {
+      const raw = sessionStorage.getItem('optimax_notification_target');
+      if (!raw) return;
+      const target = JSON.parse(raw);
+      if (!target?.taskRoutineId) return;
+      sessionStorage.removeItem('optimax_notification_target');
+      this.applyNotificationTarget(target);
+    } catch (_) {}
+  }
+
+  private applyNotificationTarget(target: any): void {
+    const task = this.findTaskById(String(target?.taskRoutineId || ''));
+    if (!task) return;
+    this.openTaskDialog(task);
+    this.highlightedUpdateId = target.taskUpdateId || null;
+    this.highlightedReviewId = target.taskReviewId || null;
+    setTimeout(() => {
+      this.highlightedUpdateId = null;
+      this.highlightedReviewId = null;
+    }, 5000);
   }
 
   private showReminderDialog(title: string, body: string): void {

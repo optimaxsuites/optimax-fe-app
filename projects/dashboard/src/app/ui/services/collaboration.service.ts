@@ -300,6 +300,7 @@ export interface TaskRoutineUpdate {
   note: string;
   progress?: number;
   createdAt?: string;
+  attachments?: TaskRoutineAttachment[];
 }
 
 export interface TaskRoutineReview {
@@ -793,7 +794,7 @@ export class CollaborationService {
       `${this.baseUrl}/x/api/v2/ai/collab/email/rewrite`,
       {
         operation: 'REWRITE',
-        purpose: 'Rewrite chat draft',
+        purpose: 'Rewrite collaboration message with clearer grammar and professional semantics',
         context: content,
         tone: 'professional',
         language: 'en',

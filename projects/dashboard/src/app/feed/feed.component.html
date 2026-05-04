@@ -220,8 +220,8 @@
 
                 <div class="task-updates" *ngIf="task.updates.length">
                   <article class="update-row" *ngFor="let update of task.updates.slice(0, 2)">
-                    <strong>{{ update.author }}</strong>
-                    <p>{{ update.note }}</p>
+                    <strong>{{ updateAuthorLabel(update) }}</strong>
+                    <div [innerHTML]="update.note"></div>
                     <small>{{ update.createdAt | date: 'MMM d, h:mm a' }}</small>
                   </article>
                 </div>
@@ -234,12 +234,34 @@
           <ng-container *ngIf="visualMode === 'tree'; else ganttView">
             <section class="tree-shell">
               <div class="tree-header">
-                <div class="tree-col tree-col-title">Task / Sub task</div>
-                <div class="tree-col">Owner</div>
-                <div class="tree-col">Stage</div>
-                <div class="tree-col">Timeline</div>
-                <div class="tree-col">Progress</div>
-                <div class="tree-col">Dependency</div>
+                <button type="button" class="tree-col tree-header-btn tree-col-title" (click)="setTreeSort('title')">Task / Sub task</button>
+                <button type="button" class="tree-col tree-header-btn" (click)="setTreeSort('owner')">Owner</button>
+                <button type="button" class="tree-col tree-header-btn" (click)="setTreeSort('stage')">Stage</button>
+                <button type="button" class="tree-col tree-header-btn" (click)="setTreeSort('timeline')">Timeline</button>
+                <button type="button" class="tree-col tree-header-btn" (click)="setTreeSort('progress')">Progress</button>
+                <button type="button" class="tree-col tree-header-btn" (click)="setTreeSort('dependency')">Dependency</button>
+                <span class="tree-col tree-header-btn tree-col-actions">Actions</span>
+              </div>
+
+              <div class="tree-filter-row">
+                <div class="tree-col tree-col-title">
+                  <input type="text" [(ngModel)]="searchTerm" placeholder="Filter tasks and sub tasks" />
+                </div>
+                <div class="tree-col">
+                  <input type="text" [(ngModel)]="treeFilterOwner" placeholder="Filter owner" />
+                </div>
+                <div class="tree-col">
+                  <select [(ngModel)]="treeFilterStage">
+                    <option value="ALL">All stages</option>
+                    <option *ngFor="let stage of stageOptions" [value]="stage.value">{{ stage.label }}</option>
+                  </select>
+                </div>
+                <div class="tree-col">
+                  <button type="button" class="ghost-btn compact" (click)="setTreeSort('updatedAt')">Most recent first</button>
+                </div>
+                <div class="tree-col"></div>
+                <div class="tree-col"></div>
+                <div class="tree-col"></div>
               </div>
 
               <div class="tree-body">
@@ -253,7 +275,7 @@
                       </div>
                     </button>
                     <div class="tree-col">
-                      <select [(ngModel)]="task.assignee" (ngModelChange)="updateTaskFromTree(task)">
+                      <select [(ngModel)]="task.owner" (ngModelChange)="updateTaskFromTree(task)">
                         <option *ngFor="let person of people" [value]="person.name">{{ person.name }}</option>
                       </select>
                     </div>
@@ -277,9 +299,45 @@
                     <div class="tree-col">
                       <input type="text" [(ngModel)]="task.dependencyValue" (blur)="updateTaskFromTree(task)" placeholder="No dependency" />
                     </div>
+                    <div class="tree-col tree-col-actions tree-icon-actions">
+                      <button type="button" class="icon-action-btn" title="Open task details" (click)="openTaskDialog(task)">
+                        <i class="pi pi-folder-open"></i>
+                      </button>
+                      <button type="button" class="icon-action-btn" title="Open activity history" (click)="openTaskHistory(task)">
+                        <i class="pi pi-sitemap"></i>
+                      </button>
+                      <button type="button" class="icon-action-btn danger" title="Delete task" (click)="deleteTask(task)">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </div>
                   </article>
 
                   <div class="tree-subrows" *ngIf="isTreeTaskExpanded(task.id)">
+                    <article class="tree-preview-card">
+                      <div class="tree-preview-section" *ngIf="latestTaskUpdate(task) as latestUpdate">
+                        <div class="tree-preview-head">
+                          <strong>Latest update</strong>
+                          <small>{{ latestUpdate.createdAt | date: 'MMM d, h:mm a' }}</small>
+                        </div>
+                        <div [innerHTML]="latestUpdate.note"></div>
+                        <div class="tree-preview-meta">
+                          <span><i class="pi pi-user"></i> {{ updateAuthorLabel(latestUpdate) }}</span>
+                          <span><i class="pi pi-chart-line"></i> {{ latestUpdate.progress }}%</span>
+                        </div>
+                      </div>
+                      <div class="tree-preview-section" *ngIf="latestTaskReview(task) as latestReview">
+                        <div class="tree-preview-head">
+                          <strong>Supervisor review</strong>
+                          <small>{{ latestReview.createdAt | date: 'MMM d, h:mm a' }}</small>
+                        </div>
+                        <div [innerHTML]="latestReview.note"></div>
+                        <div class="tree-preview-meta">
+                          <span><i class="pi pi-check-square"></i> {{ reviewDecisionStamp(latestReview.decision) }}</span>
+                          <span><i class="pi pi-user"></i> {{ reviewReviewerLabel(latestReview) }}</span>
+                        </div>
+                      </div>
+                    </article>
+
                     <article class="tree-row child-row" *ngFor="let item of task.workItems; trackBy: trackWorkItem" [class.is-blocked]="item.status === 'BLOCKED'">
                       <div class="tree-col tree-col-title child-title">
                         <i class="pi pi-arrow-right"></i>
@@ -310,6 +368,17 @@
                       </div>
                       <div class="tree-col">
                         <input type="text" [(ngModel)]="item.dependency" (blur)="updateWorkItem(task, item)" placeholder="None" />
+                      </div>
+                      <div class="tree-col tree-col-actions tree-icon-actions">
+                        <button type="button" class="icon-action-btn" title="Open task details" (click)="openTaskDialog(task)">
+                          <i class="pi pi-folder-open"></i>
+                        </button>
+                        <button type="button" class="icon-action-btn" title="Open activity history" (click)="openTaskHistory(task)">
+                          <i class="pi pi-sitemap"></i>
+                        </button>
+                        <button type="button" class="icon-action-btn danger" title="Delete sub task" (click)="deleteSubTask(task, item)">
+                          <i class="pi pi-trash"></i>
+                        </button>
                       </div>
                     </article>
 
@@ -505,8 +574,8 @@
 
           <div class="review-updates" *ngIf="task.updates.length">
             <article class="update-row" *ngFor="let update of task.updates.slice(0, 3)">
-              <strong>{{ update.author }}</strong>
-              <p>{{ update.note }}</p>
+              <strong>{{ updateAuthorLabel(update) }}</strong>
+              <div [innerHTML]="update.note"></div>
               <small>{{ update.createdAt | date: 'MMM d, h:mm a' }}</small>
             </article>
           </div>
@@ -867,8 +936,8 @@
             <div class="sheet-subtasks">
               <div class="section-head">
                 <div>
-                  <p class="eyebrow">Project sheet</p>
-                  <h2>Plan sub tasks in a structured grid</h2>
+                <p class="eyebrow">Execution planning grid</p>
+                <h2>Build the task schedule and its sub tasks</h2>
                 </div>
                 <button type="button" class="ghost-btn" (click)="addDraftWorkItem()">Add sub task</button>
               </div>
@@ -978,10 +1047,10 @@
         </div>
       </div>
 
-      <div class="metadata-section">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Fixed metadata</p>
+        <div class="metadata-section">
+          <div class="section-head">
+            <div>
+            <p class="eyebrow">Planning metadata</p>
             <h3>Dependency, routine, and stage catalogues</h3>
           </div>
         </div>
@@ -989,14 +1058,31 @@
           <article class="metadata-card">
             <strong>Dependency type</strong>
             <small *ngFor="let dependency of dependencyTypeOptions">{{ dependency.label }}</small>
+            <div class="metadata-add-row">
+              <input type="text" [(ngModel)]="newMetadata.dependencyLabel" placeholder="Add a dependency type label" />
+              <select [(ngModel)]="newMetadata.dependencyValue">
+                <option value="PROJECT">Project</option>
+                <option value="PERSON">Person</option>
+                <option value="NONE">None</option>
+              </select>
+              <button type="button" class="primary-btn compact" (click)="addDependencyTypeMetadata()">Add type</button>
+            </div>
           </article>
           <article class="metadata-card">
             <strong>Routine type</strong>
             <small *ngFor="let type of routineTypeOptions">{{ type }}</small>
+            <div class="metadata-add-row">
+              <input type="text" [(ngModel)]="newMetadata.routineType" placeholder="Add a routine type" />
+              <button type="button" class="primary-btn compact" (click)="addRoutineTypeMetadata()">Add type</button>
+            </div>
           </article>
           <article class="metadata-card">
             <strong>Stage</strong>
             <small *ngFor="let stage of stageOptions">{{ stage.label }}</small>
+            <div class="metadata-add-row">
+              <input type="text" [(ngModel)]="newMetadata.stage" placeholder="Add a stage" />
+              <button type="button" class="primary-btn compact" (click)="addStageMetadata()">Add stage</button>
+            </div>
           </article>
         </div>
       </div>
@@ -1020,10 +1106,15 @@
           <h2>{{ task.title }}</h2>
           <small>{{ task.assignee }} · {{ task.timelineStart }} to {{ task.timelineDue }}</small>
         </div>
+        <div class="composer-switch modal-switch">
+          <button type="button" class="mode-pill" [class.active]="taskDetailViewMode === 'overview'" (click)="taskDetailViewMode = 'overview'">Overview</button>
+          <button type="button" class="mode-pill" [class.active]="taskDetailViewMode === 'activity'" (click)="taskDetailViewMode = 'activity'">Activity</button>
+        </div>
       </div>
     </ng-template>
 
     <div class="task-detail-grid" *ngIf="selectedTask as task">
+      <ng-container *ngIf="taskDetailViewMode === 'overview'; else taskActivityView">
       <section class="task-detail-main">
         <article class="detail-block">
           <div class="detail-meta">
@@ -1088,6 +1179,7 @@
               </div>
               <div class="dialog-actions">
                 <button type="button" class="ghost-btn compact" (click)="downloadSubTaskReminder(task, item)">Download reminder</button>
+                <button type="button" class="ghost-btn danger compact" (click)="deleteSubTask(task, item)">Delete sub task</button>
               </div>
             </article>
           </div>
@@ -1219,8 +1311,40 @@
           <h3>Daily updates</h3>
           <label class="field">
             <span>Add update</span>
-            <textarea [(ngModel)]="updateDrafts[task.id]" rows="4" placeholder="Provide a fuller work update, blockers, risks, and next steps."></textarea>
+            <div class="rich-editor-shell" (paste)="onUpdateEditorPaste($event)">
+              <p-editor
+                [(ngModel)]="updateDrafts[task.id]"
+                [style]="{ height: '220px' }"
+              ></p-editor>
+            </div>
           </label>
+          <div class="attachment-row compact-row">
+            <label class="attach-btn">
+              <i class="pi pi-paperclip"></i>
+              Attach update files
+              <input type="file" multiple hidden (change)="onUpdateAttachmentSelected($event)" />
+            </label>
+            <button type="button" class="ghost-btn compact" (click)="rewriteUpdateDraft(task)">
+              <i class="pi pi-sparkles"></i>
+              Polish
+            </button>
+            <button type="button" class="ghost-btn compact" (click)="insertUpdateTable(task)">
+              <i class="pi pi-table"></i>
+              Table
+            </button>
+            <div class="attachment-list" *ngIf="pendingUpdateAttachments.length">
+              <article class="attachment-chip" *ngFor="let attachment of pendingUpdateAttachments">
+                <div class="attachment-preview" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
+                  <img [src]="attachment.previewUrl" alt="" />
+                </div>
+                <div class="attachment-copy">
+                  <strong>{{ attachment.name }}</strong>
+                  <small>{{ attachment.size }}</small>
+                </div>
+                <button type="button" class="ghost-btn danger" (click)="removeUpdateAttachment(attachment)">Remove</button>
+              </article>
+            </div>
+          </div>
           <div class="dialog-actions">
             <button type="button" class="ghost-btn" (click)="nudgeProgress(task, -10)">-10</button>
             <button type="button" class="ghost-btn" (click)="nudgeProgress(task, 10)">+10</button>
@@ -1228,9 +1352,19 @@
           </div>
 
           <div class="detail-timeline" *ngIf="selectedTaskUpdates.length">
-            <article class="update-row" *ngFor="let update of selectedTaskUpdates">
-              <strong>{{ update.author }}</strong>
-              <p>{{ update.note }}</p>
+            <article class="update-row" *ngFor="let update of selectedTaskUpdates" [class.is-highlighted]="highlightedUpdateId === update.id">
+              <strong>{{ updateAuthorLabel(update) }}</strong>
+              <div [innerHTML]="update.note"></div>
+              <div class="review-file-list" *ngIf="update.attachments?.length">
+                <ng-container *ngFor="let attachment of update.attachments">
+                  <div class="history-image" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl; else updateAttachmentName">
+                    <img [src]="attachment.previewUrl" alt="" />
+                  </div>
+                  <ng-template #updateAttachmentName>
+                    <span>{{ attachment.name }}</span>
+                  </ng-template>
+                </ng-container>
+              </div>
               <small>{{ update.createdAt | date: 'MMM d, h:mm a' }} · {{ update.progress }}%</small>
             </article>
           </div>
@@ -1242,7 +1376,12 @@
           <h3>Supervisor feedback</h3>
           <label class="field">
             <span>Review note</span>
-            <textarea [(ngModel)]="supervisorNotes[task.id]" rows="5" placeholder="Give detailed feedback, approval context, corrections, or coaching notes."></textarea>
+            <div class="rich-editor-shell" (paste)="onReviewEditorPaste($event)">
+              <p-editor
+                [(ngModel)]="supervisorNotes[task.id]"
+                [style]="{ height: '220px' }"
+              ></p-editor>
+            </div>
           </label>
 
           <div class="attachment-row compact-row">
@@ -1251,6 +1390,14 @@
               Attach review files
               <input type="file" multiple hidden (change)="onReviewAttachmentSelected($event)" />
             </label>
+            <button type="button" class="ghost-btn compact" (click)="rewriteSupervisorNote(task)">
+              <i class="pi pi-sparkles"></i>
+              Polish
+            </button>
+            <button type="button" class="ghost-btn compact" (click)="insertReviewTable(task)">
+              <i class="pi pi-table"></i>
+              Table
+            </button>
             <div class="attachment-list" *ngIf="pendingReviewAttachments.length">
               <article class="attachment-chip" *ngFor="let attachment of pendingReviewAttachments">
                 <div class="attachment-preview" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl">
@@ -1280,25 +1427,61 @@
         <article class="detail-block" *ngIf="selectedTaskReviews.length">
           <h3>Review history</h3>
           <div class="review-history">
-            <article class="review-note" *ngFor="let review of selectedTaskReviews" [ngClass]="toneClass(review)">
+            <article class="review-note" *ngFor="let review of selectedTaskReviews" [ngClass]="toneClass(review)" [class.is-highlighted]="highlightedReviewId === review.id">
               <div class="review-note-head">
-                <strong>{{ review.reviewer }}</strong>
+                <strong>{{ reviewReviewerLabel(review) }}</strong>
                 <span class="review-stamp" [ngClass]="toneClass(review)">{{ reviewDecisionStamp(review.decision) }}</span>
               </div>
-              <p>{{ review.note }}</p>
+              <div [innerHTML]="review.note"></div>
               <div class="email-preview">
                 <strong>Email preview</strong>
                 <small>{{ review.emailPreview || supervisorEmailPreview(task) }}</small>
               </div>
               <div class="review-file-list" *ngIf="review.attachments?.length">
-                <span *ngFor="let attachment of review.attachments">{{ attachment.name }}</span>
+                <ng-container *ngFor="let attachment of review.attachments">
+                  <div class="history-image" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl; else reviewAttachmentName">
+                    <img [src]="attachment.previewUrl" alt="" />
+                  </div>
+                  <ng-template #reviewAttachmentName>
+                    <span>{{ attachment.name }}</span>
+                  </ng-template>
+                </ng-container>
               </div>
               <small>{{ review.createdAt | date: 'MMM d, h:mm a' }}</small>
             </article>
           </div>
         </article>
       </aside>
+      </ng-container>
     </div>
+    <ng-template #taskActivityView>
+      <section class="task-activity-view">
+        <article class="activity-card" *ngFor="let entry of selectedTaskActivityTimeline" [ngClass]="entry.type === 'review' ? 'is-review' : 'is-update'">
+          <div class="activity-head">
+            <div>
+              <p class="eyebrow">{{ entry.type === 'review' ? 'Supervisor review' : 'Task update' }}</p>
+              <h3>{{ entry.actor }}</h3>
+            </div>
+            <div class="activity-meta">
+              <span *ngIf="entry.progress != null">{{ entry.progress }}%</span>
+              <span *ngIf="entry.decision">{{ reviewDecisionStamp(entry.decision) }}</span>
+              <small>{{ entry.stamp | date: 'MMM d, h:mm a' }}</small>
+            </div>
+          </div>
+          <div [innerHTML]="entry.body"></div>
+          <div class="review-file-list" *ngIf="entry.attachments.length">
+            <ng-container *ngFor="let attachment of entry.attachments">
+              <div class="history-image" *ngIf="attachmentLooksLikeImage(attachment) && attachment.previewUrl; else activityAttachmentName">
+                <img [src]="attachment.previewUrl" alt="" />
+              </div>
+              <ng-template #activityAttachmentName>
+                <span>{{ attachment.name }}</span>
+              </ng-template>
+            </ng-container>
+          </div>
+        </article>
+      </section>
+    </ng-template>
   </p-dialog>
 
   <p-dialog

@@ -15,6 +15,11 @@ export interface HeaderNotificationItem {
   workspaceMode?: 'feed' | 'chat';
   channelBackendId?: number;
   dmUserId?: number;
+  messageBackendId?: number;
+  threadRootMessageBackendId?: number;
+  taskRoutineId?: string;
+  taskUpdateId?: string;
+  taskReviewId?: string;
 }
 
 export interface HeaderProfileState {
@@ -118,6 +123,17 @@ export class HeaderStateService {
         ...entry,
         read: true,
       })),
+    });
+  }
+
+  markNotificationRead(notificationId: string): void {
+    const notifications = this.state$.value.notifications.map((entry) =>
+      entry.id === notificationId ? { ...entry, read: true } : entry,
+    );
+    this.commit({
+      ...this.state$.value,
+      notifications,
+      unreadNotifications: notifications.filter((entry) => !entry.read).length,
     });
   }
 
