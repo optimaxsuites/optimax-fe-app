@@ -36,8 +36,8 @@
             <p class="text-3xl font-bold text-customBlue mt-1">
               {{ getTotalPlannedDays() }} /
               {{
-                planningPolicy?.maxDaysPerMonth *
-                  planningPolicy?.maxMonthPerYear
+                planningPolicy.maxDaysPerMonth *
+                  planningPolicy.maxMonthPerYear
               }}
             </p>
           </div>
@@ -45,19 +45,19 @@
             <p class="text-sm text-customBlue font-medium">Months Used</p>
             <p class="text-3xl font-bold text-customBlue mt-1">
               {{ monthlyPlanSummary.length }} /
-              {{ planningPolicy?.maxMonthPerYear || 3 }}
+              {{ planningPolicy.maxMonthPerYear || 3 }}
             </p>
           </div>
           <div class="border rounded-lg p-4">
             <p class="text-sm text-customBlue font-medium">Max Days/Month</p>
             <p class="text-3xl font-bold text-customBlue mt-1">
-              {{ planningPolicy?.maxDaysPerMonth || 10 }}
+              {{ planningPolicy.maxDaysPerMonth || 10 }}
             </p>
           </div>
           <div class="border rounded-lg p-4">
             <p class="text-sm text-customBlue font-medium">Emergency Days</p>
             <p class="text-3xl font-bold text-customBlue mt-1">
-              {{ planningPolicy?.emergencyLeaveDaysAllowed || 5 }}
+              {{ planningPolicy.emergencyLeaveDaysAllowed || 5 }}
             </p>
           </div>
         </ng-template>
@@ -427,7 +427,7 @@
       <br />
       <strong
         >Maximum allowed:
-        {{ planningPolicy?.emergencyLeaveDaysAllowed || 5 }} days</strong
+        {{ planningPolicy.emergencyLeaveDaysAllowed || 5 }} days</strong
       >
     </p>
   </div>
