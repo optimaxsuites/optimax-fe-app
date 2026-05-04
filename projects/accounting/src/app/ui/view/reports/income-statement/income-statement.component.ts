@@ -126,10 +126,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   data: IncomeStatementData | null = null;
 
-  comments: Comment[] = [
-    { id: 1, author: 'Jane Smith', text: 'Gross profit margin is improving nicely', timestamp: '2025-05-28T14:25:00' },
-    { id: 2, author: 'John Doe', text: 'We should look into the increased maintenance costs', timestamp: '2025-05-29T09:10:00' }
-  ];
+  comments: Comment[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -716,7 +713,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   private toIncomeStatementData(report: IncomeStatementReportDTO): IncomeStatementData {
     return {
-      period: report.reportPeriod,
+      period: new Date(report.reportPeriod),
       revenue: this.mapLineItems(report.revenue),
       cogs: this.mapLineItems(report.cogs),
       administrativeExpenses: this.mapLineItems(report.administrativeExpenses),
@@ -740,7 +737,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         otherItems: this.mapComparison(report.totals.otherItems),
         nibt: this.mapComparison(report.totals.nibt),
         cit: this.mapComparison(report.totals.cit),
-        educationTax: this.mapComparison(report.totals.educationTax),
+        educationTax: this.mapComparison(report.totals.educationTaxLevy),
         naseniLevy: this.mapComparison(report.totals.naseniLevy),
         totalTax: this.mapComparison(report.totals.totalTax),
         netIncome: this.mapComparison(report.totals.netIncome),

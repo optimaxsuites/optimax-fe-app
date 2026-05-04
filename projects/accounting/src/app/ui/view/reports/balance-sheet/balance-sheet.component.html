@@ -29,6 +29,8 @@
     </div>
   </section>
 
+  <app-accounting-diagnostics [diagnostics]="diagnostics"></app-accounting-diagnostics>
+
   <section class="status-banner success" *ngIf="statusMessage">
     {{ statusMessage }}
   </section>
@@ -46,7 +48,7 @@
 
   <section class="empty-card" *ngIf="!loading && !hasReportData">
     <h2>No data available for this period</h2>
-    <p>No posted report data exists for {{ periodLabel }}. Try another month or save a balance sheet snapshot first.</p>
+    <p>No posted report data exists for {{ periodLabel }}. Try another month or confirm that accounting transactions have been posted into the backend.</p>
   </section>
 
   <ng-container *ngIf="!loading && hasReportData && report">
@@ -258,15 +260,16 @@
 
       <div class="saved-list" *ngIf="filteredSavedReports.length; else noSavedReports">
         <button type="button" class="saved-item" *ngFor="let snapshot of filteredSavedReports" (click)="openSavedReport(snapshot)">
-          <strong>{{ snapshot.periodLabel }}</strong>
+          <strong>{{ snapshot.reportLabel || snapshot.periodLabel }}</strong>
+          <span>{{ snapshot.periodLabel }}</span>
           <span>Saved {{ snapshot.savedAt | date:'medium' }}</span>
-          <span>Total Assets: {{ fmt.formatCurrency(snapshot.report.totalAssets) }}</span>
+          <span>Total Summary: {{ fmt.formatCurrency(snapshot.summaryTotal) }}</span>
         </button>
       </div>
 
       <ng-template #noSavedReports>
         <div class="empty-saved">
-          No monthly balance sheet snapshots have been saved yet.
+          No backend balance sheet snapshots are available yet.
         </div>
       </ng-template>
     </div>
