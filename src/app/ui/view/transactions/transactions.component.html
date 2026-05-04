@@ -99,7 +99,9 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr *ngFor="let tx of transactions" class="hover:bg-gray-50 transition-all">
+            <tr *ngFor="let tx of transactions"
+                class="hover:bg-gray-50 transition-all cursor-pointer group"
+                (click)="openTxDetail(tx)">
               <td class="px-8 py-6 font-mono font-black text-customBlue uppercase">{{ tx.transactionReference }}</td>
               <td class="px-8 py-6">
                 <p class="text-lg font-bold text-gray-900">{{ tx.description }}</p>
@@ -112,10 +114,14 @@
               </td>
               <td class="px-8 py-6 text-right text-lg font-black text-red-500 italic">₦{{ tx.debitAmount | number:'1.2-2' }}</td>
               <td class="px-8 py-6 text-right text-lg font-black text-emerald-600 italic">₦{{ tx.creditAmount | number:'1.2-2' }}</td>
-              <td class="px-8 py-6 text-right">
+              <td class="px-8 py-6 text-right" (click)="$event.stopPropagation()">
                 <button *ngIf="tx.reviewStatus === 'UNREVIEWED'" (click)="approveTransaction(tx)"
-                  class="bg-emerald-500 text-white px-6 py-2 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/10">
+                  class="bg-emerald-500 text-white px-6 py-2 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/10 mr-2">
                   Approve
+                </button>
+                <button (click)="openTxDetail(tx)"
+                  class="bg-gray-100 text-gray-500 px-4 py-2 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-customBlue hover:text-white transition-all">
+                  <i class="pi pi-info-circle"></i>
                 </button>
               </td>
             </tr>
@@ -131,45 +137,81 @@
     <div *ngIf="activeTab === 'mappings'" class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <div *ngFor="let map of mappings" 
-             class="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all group">
+             class="bg-white p-8 rounded-[2.5rem] border shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all group"
+             [ngClass]="{
+               'border-amber-200': map.status === MappingStatus.PENDING,
+               'border-emerald-200': map.status === MappingStatus.APPROVED,
+               'border-red-200': map.status === MappingStatus.REJECTED,
+               'border-gray-100': !map.status
+             }">
           <div class="flex items-center justify-between mb-8">
             <div class="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-customBlue group-hover:text-white transition-colors">
               <i class="pi pi-code text-lg"></i>
             </div>
-            <span class="text-[10px] font-black tracking-[0.2em] text-gray-300 uppercase">Rule {{ map.id }}</span>
+            <!-- Status Badge -->
+            <span class="px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase"
+              [ngClass]="{
+                'bg-amber-50 text-amber-600 border border-amber-200': map.status === MappingStatus.PENDING,
+                'bg-emerald-50 text-emerald-700 border border-emerald-200': map.status === MappingStatus.APPROVED,
+                'bg-red-50 text-red-600 border border-red-200': map.status === MappingStatus.REJECTED,
+                'bg-gray-50 text-gray-400 border border-gray-200': !map.status
+              }">
+              <span *ngIf="map.status === MappingStatus.PENDING"><i class="pi pi-clock mr-1"></i>Pending</span>
+              <span *ngIf="map.status === MappingStatus.APPROVED"><i class="pi pi-check-circle mr-1"></i>Approved</span>
+              <span *ngIf="map.status === MappingStatus.REJECTED"><i class="pi pi-times-circle mr-1"></i>Rejected</span>
+              <span *ngIf="!map.status">Active</span>
+            </span>
           </div>
           
           <div class="space-y-4">
             <div>
               <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Source Trigger</p>
               <h4 class="text-2xl font-black text-gray-900 group-hover:text-customBlue transition-colors">{{ map.sourceModule }}</h4>
+              <p class="text-sm text-gray-400 mt-1">{{ map.eventType }}</p>
             </div>
             
             <div class="flex items-center gap-4 py-4">
               <div class="flex-1 p-4 bg-red-50 rounded-2xl border border-red-100">
                 <p class="text-[10px] font-black text-red-400 uppercase mb-1">Debit Account</p>
-                <p class="text-xs font-black text-red-900 leading-tight">{{ map.debitAccount.accountName || '—' }}</p>
+                <p class="text-xs font-black text-red-900 leading-tight">{{ map.debitAccount?.accountName || '—' }}</p>
               </div>
               <i class="pi pi-sync text-gray-300"></i>
               <div class="flex-1 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                 <p class="text-[10px] font-black text-emerald-400 uppercase mb-1">Credit Account</p>
-                <p class="text-xs font-black text-emerald-900 leading-tight">{{ map.creditAccount.accountName || '—' }}</p>
+                <p class="text-xs font-black text-emerald-900 leading-tight">{{ map.creditAccount?.accountName || '—' }}</p>
               </div>
+            </div>
+
+            <!-- Approved-by provenance (shown when APPROVED) -->
+            <div *ngIf="map.status === MappingStatus.APPROVED && (map.approvedBy || map.approvalDate)"
+                 class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 space-y-1">
+              <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Approved By</p>
+              <p class="text-sm font-black text-emerald-900">{{ map.approvedBy?.fullname || map.approvedBy?.username || '—' }}</p>
+              <p *ngIf="map.approvalDate" class="text-xs text-emerald-600">{{ map.approvalDate | date:'dd MMM yyyy, HH:mm' }}</p>
             </div>
           </div>
           
           <div class="mt-8 pt-8 border-t border-gray-50 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span class="text-xs font-black text-gray-400 uppercase">Active Rule</span>
+            <!-- Approve / Reject buttons (PENDING only) -->
+            <div *ngIf="map.status === MappingStatus.PENDING" class="flex items-center gap-2">
+              <button (click)="approveMapping(map.id)" [disabled]="loading"
+                class="px-4 py-2 bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-emerald-600 transition-all disabled:opacity-50 flex items-center gap-1">
+                <i class="pi pi-check"></i> Approve
+              </button>
+              <button (click)="rejectMapping(map.id)" [disabled]="loading"
+                class="px-4 py-2 border-2 border-red-200 text-red-500 rounded-xl font-black text-xs uppercase tracking-wider hover:bg-red-50 transition-all disabled:opacity-50 flex items-center gap-1">
+                <i class="pi pi-times"></i> Reject
+              </button>
+            </div>
+            <div *ngIf="map.status !== MappingStatus.PENDING" class="flex items-center gap-2">
+              <span *ngIf="map.status === MappingStatus.APPROVED" class="text-xs font-black text-emerald-500 uppercase"><i class="pi pi-lock mr-1"></i>Locked</span>
+              <span *ngIf="map.status === MappingStatus.REJECTED" class="text-xs font-black text-red-400 uppercase"><i class="pi pi-ban mr-1"></i>Retired</span>
+              <span *ngIf="!map.status" class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-xs font-black text-gray-400 uppercase">Active</span></span>
             </div>
             <div class="flex items-center gap-2">
               <button (click)="deleteMapping(map)" 
                 class="text-rose-500 font-black text-sm uppercase tracking-widest flex items-center gap-1 hover:bg-rose-50 p-2 rounded-lg transition-all">
                 Retire
-              </button>
-              <button class="text-customBlue font-black text-sm uppercase tracking-widest flex items-center gap-1 hover:underline p-2">
-                Edit <i class="pi pi-chevron-right text-sm"></i>
               </button>
             </div>
           </div>
@@ -257,6 +299,118 @@
       <button (click)="saveMapping()" 
               class="bg-customBlue text-white px-10 py-4 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl shadow-customBlue/20 hover:scale-105 active:scale-95 transition-all">
         Establish Rule
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Transaction Detail Side Panel ── -->
+<div *ngIf="isTxDetailOpen && selectedTxDetail"
+     class="fixed inset-0 z-50 flex justify-end"
+     (click)="closeTxDetail()">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"></div>
+
+  <!-- Panel -->
+  <div class="relative w-full max-w-xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-black text-gray-900 leading-none">Transaction Detail</h2>
+        <p class="text-sm text-gray-400 font-mono font-bold uppercase mt-1">{{ selectedTxDetail.transactionReference }}</p>
+      </div>
+      <button (click)="closeTxDetail()" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+        <i class="pi pi-times text-2xl text-gray-400"></i>
+      </button>
+    </div>
+
+    <!-- Amount Hero -->
+    <div class="mx-8 mt-8 rounded-2xl p-8 text-white" style="background: linear-gradient(135deg, #2E6276, #1d4a5c);">
+      <p class="text-xs font-black uppercase tracking-wider opacity-60 mb-2">Transaction Amount</p>
+      <h3 class="text-5xl font-black tracking-tighter leading-none mb-4">₦{{ selectedTxDetail.amount | number:'1.2-2' }}</h3>
+      <div class="flex flex-wrap gap-3">
+        <span class="px-3 py-1 rounded-lg bg-white/15 text-xs font-black uppercase tracking-wider">{{ selectedTxDetail.sourceModule }}</span>
+        <span class="px-3 py-1 rounded-lg bg-white/15 text-xs font-black uppercase tracking-wider" [ngClass]="getStatusBadge(selectedTxDetail.reviewStatus)"
+              style="background: rgba(255,255,255,0.15); color: white;">{{ selectedTxDetail.reviewStatus }}</span>
+      </div>
+    </div>
+
+    <div class="flex-1 px-8 py-8 space-y-8">
+
+      <!-- Description -->
+      <div *ngIf="selectedTxDetail.description" class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</p>
+        <p class="text-base font-semibold text-gray-800">{{ selectedTxDetail.description }}</p>
+      </div>
+
+      <!-- ── Provenance Section ── -->
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(46,98,118,0.1); color: #2E6276;">
+            <i class="pi pi-shield text-sm"></i>
+          </div>
+          <h3 class="font-black text-gray-900 uppercase tracking-wider text-sm">Audit Provenance</h3>
+        </div>
+        <div class="divide-y divide-gray-50">
+          <!-- Mapped By -->
+          <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-user text-gray-300"></i>
+              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Mapped By</span>
+            </div>
+            <span class="text-sm font-black text-gray-900">{{ getTxMappedBy(selectedTxDetail) }}</span>
+          </div>
+          <!-- Approved By -->
+          <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-verified text-gray-300"></i>
+              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Approved By</span>
+            </div>
+            <span class="text-sm font-black text-gray-900">{{ getTxApprovedBy(selectedTxDetail) }}</span>
+          </div>
+          <!-- Approval Date -->
+          <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-calendar text-gray-300"></i>
+              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Approval Date</span>
+            </div>
+            <span class="text-sm font-black text-gray-900">{{ getTxApprovalDate(selectedTxDetail) }}</span>
+          </div>
+          <!-- Mapping Rule -->
+          <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-link text-gray-300"></i>
+              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Mapping Rule</span>
+            </div>
+            <span *ngIf="getTxMappingId(selectedTxDetail)" 
+                  class="text-sm font-black font-mono px-3 py-1 rounded-lg cursor-pointer hover:underline"
+                  style="background: rgba(46,98,118,0.08); color: #2E6276;">
+              #MAP-{{ getTxMappingId(selectedTxDetail) }}
+            </span>
+            <span *ngIf="!getTxMappingId(selectedTxDetail)" class="text-sm text-gray-400">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date info -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Transaction Date</p>
+          <p class="font-black text-gray-900">{{ selectedTxDetail.date | date:'dd MMM yyyy' }}</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Created At</p>
+          <p class="font-black text-gray-900">{{ selectedTxDetail.createdAt | date:'dd MMM yyyy' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-6">
+      <button (click)="closeTxDetail()" class="w-full py-3 border-2 border-gray-200 rounded-xl font-black uppercase tracking-wider text-gray-500 hover:bg-gray-50 transition-all">
+        Close
       </button>
     </div>
   </div>

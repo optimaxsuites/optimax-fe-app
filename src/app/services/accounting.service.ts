@@ -74,6 +74,22 @@ export class AccountingService {
     return this.http.delete<void>(`${this.baseUrl}/account-mappings/${id}`, { headers: this.getHeaders() });
   }
 
+  approveMapping(mappingId: number): Observable<AccountMappingDTO> {
+    return this.http.post<AccountMappingDTO>(
+      `${this.baseUrl}/account-mappings/${mappingId}/approve`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
+  rejectMapping(mappingId: number): Observable<AccountMappingDTO> {
+    return this.http.post<AccountMappingDTO>(
+      `${this.baseUrl}/account-mappings/${mappingId}/reject`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
   // ── Accounting Events ────────────────────────────────
   getEvents(page: number = 0, size: number = 10): Observable<PaginationResult<AccountingEventDTO>> {
     const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());
@@ -103,8 +119,12 @@ export class AccountingService {
     return this.http.post<AccountingTransactionDTO>(`${this.baseUrl}/transactions`, tx, { headers: this.getHeaders() });
   }
 
-  approveTransaction(transactionId: number): Observable<AccountingTransactionDTO> {
-    return this.http.post<AccountingTransactionDTO>(`${this.baseUrl}/transactions/${transactionId}/approve`, {}, { headers: this.getHeaders() });
+  approveTransaction(tx: AccountingTransactionDTO): Observable<AccountingTransactionDTO> {
+    return this.http.put<AccountingTransactionDTO>(
+      `${this.baseUrl}/transactions/${tx.id}`, 
+      { ...tx, status: TransactionReviewStatus.APPROVED }, 
+      { headers: this.getHeaders() }
+    );
   }
 
   // ── Journal Entries ──────────────────────────────────
