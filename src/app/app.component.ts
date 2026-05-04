@@ -145,6 +145,13 @@ export class AppComponent implements OnInit {
       localStorage.setItem('Token2', data.accessToken);
     }
 
+    const entityId = this.extractEntityId(data);
+    if (entityId) {
+      sessionStorage.setItem('entityId', entityId);
+      localStorage.setItem('entityId', entityId);
+      console.log('[Optimax Accounting] Stored entityId:', entityId);
+    }
+
     if (data.ecode && data.ecode !== 'null') {
       localStorage.setItem('tenantId', data.ecode);
     }
@@ -160,5 +167,30 @@ export class AppComponent implements OnInit {
         error: () => { /* Branch info is optional */ }
       });
     }
+  }
+
+  private extractEntityId(data: any): string | null {
+    if (!data) {
+      return null;
+    }
+
+    const keys = [
+      'entityId', 'EntityId', 'entityID', 'entity_id',
+      'entity', 'clientId', 'clientID', 'client_id', 'clientid',
+      'companyId', 'companyID', 'company_id', 'companyid'
+    ];
+
+    for (const key of keys) {
+      const value = data[key];
+      if (value !== undefined && value !== null && String(value).trim()) {
+        return String(value).trim();
+      }
+    }
+
+    if (typeof data === 'object') {
+      return this.extractEntityId(data.data) || this.extractEntityId(data.user) || this.extractEntityId(data.response) || null;
+    }
+
+    return null;
   }
 }

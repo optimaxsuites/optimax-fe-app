@@ -85,6 +85,7 @@ import { IncomeStatementComponent } from './ui/view/reports/income-statement/inc
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
 import { ReportContextComponent } from './ui/view/reports/report-context.component';
+import { AccountingDiagnosticsComponent } from './ui/view/reports/accounting-diagnostics.component';
 import { TaxTypeFilterPipe } from './ui/view/reports/tax-type-filter.pipe';
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
@@ -143,6 +144,7 @@ import { BankConnectionSettingsComponent } from './ui/view/bank-connection-setti
     ConnectMonoComponent,
     ReportTabsComponent,
     BalanceSheetComponent,
+    AccountingDiagnosticsComponent,
     IncomeStatementComponent,
     TaxSummaryComponent,
     CashFlowComponent,

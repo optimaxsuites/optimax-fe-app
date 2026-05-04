@@ -259,12 +259,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let row of report.wht.rateBreakdown">
+            <tr *ngFor="let row of whtBreakdownRows">
               <td>{{ row.rate }}</td>
-              <td>{{ row.description }}</td>
+              <td>{{ row.category }}</td>
               <td>{{ row.description }}</td>
               <td class="text-right">{{ row.transactionCount }}</td>
-              <td class="text-right strong">{{ fmt.formatCurrency(row.totalAmount) }}</td>
+              <td class="text-right strong">{{ fmt.formatCurrency(row.amount) }}</td>
             </tr>
             <tr class="total-row">
               <td colspan="4">Total Withheld</td>

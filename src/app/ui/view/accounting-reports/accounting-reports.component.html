@@ -39,6 +39,11 @@
     </div>
   </section>
 
+  <!-- Fallback notices — shown when report engine errored but ledger fallback succeeded -->
+  <section class="status-panel warning" *ngIf="fallbackNotices.length && !loading">
+    <p *ngFor="let notice of fallbackNotices">⚠ {{ notice }}</p>
+  </section>
+
   <section class="status-panel error" *ngIf="errorMessage">
     {{ errorMessage }}
   </section>
@@ -56,14 +61,17 @@
         *ngFor="let card of reportCards"
         [class.active]="focusedReport === card.key"
         [class.empty]="card.state === 'empty'"
+        [class.fallback]="card.isFallback"
         (click)="changeFocusedReport(card.key)"
       >
         <span class="report-card__title">{{ card.title }}</span>
         <strong class="report-card__value">{{ card.primaryValue }}</strong>
         <span class="report-card__subtitle">{{ card.subtitle }}</span>
+        <span class="report-card__badge" *ngIf="card.isFallback">Derived</span>
       </button>
     </section>
 
+    <!-- ── Financial Statement ──────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'financial-statement'">
       <div class="panel-header">
         <div>
@@ -74,10 +82,10 @@
       </div>
 
       <div class="empty-panel" *ngIf="!hasFinancialStatementData">
-        No data available for this period.
+        No data available for this period. The report engine may still be processing transactions.
       </div>
 
-      <ng-container *ngIf="hasFinancialStatementData && incomeStatementReport && cashFlowReport">
+      <ng-container *ngIf="hasFinancialStatementData">
         <div class="kpi-grid">
           <article class="kpi-card">
             <span>Income</span>
@@ -98,11 +106,15 @@
         </div>
 
         <div class="table-grid">
-          <article class="table-card">
+          <!-- Income Statement -->
+          <article class="table-card" *ngIf="incomeStatementReport">
             <header>
               <h3>Income Statement</h3>
             </header>
-            <table>
+            <div class="empty-panel" *ngIf="incomeStatementRows.length === 0">
+              No line items for this period.
+            </div>
+            <table *ngIf="incomeStatementRows.length > 0">
               <thead>
                 <tr>
                   <th>Account</th>
@@ -124,11 +136,15 @@
             </table>
           </article>
 
-          <article class="table-card">
+          <!-- Cash Flow -->
+          <article class="table-card" *ngIf="cashFlowReport">
             <header>
               <h3>Cash Flow Summary</h3>
             </header>
-            <table>
+            <div class="empty-panel" *ngIf="cashFlowRows.length === 0">
+              No cash flow activities for this period.
+            </div>
+            <table *ngIf="cashFlowRows.length > 0">
               <thead>
                 <tr>
                   <th>Activity</th>
@@ -153,6 +169,7 @@
       </ng-container>
     </section>
 
+    <!-- ── Balance Sheet ────────────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'balance-sheet'">
       <div class="panel-header">
         <div>
@@ -177,21 +194,22 @@
             <span>{{ snapshot.savedAt | date:'medium' }}</span>
           </div>
           <div class="snapshot-metrics">
-            <span>Total Assets</span>
-            <strong>{{ fmt.formatCurrency(snapshot.report.totalAssets) }}</strong>
+            <span>Report Type</span>
+            <strong>{{ snapshot.reportLabel }}</strong>
           </div>
           <div class="snapshot-metrics">
-            <span>Total Liabilities</span>
-            <strong>{{ fmt.formatCurrency(snapshot.report.totalLiabilities) }}</strong>
+            <span>Saved Summary</span>
+            <strong>{{ fmt.formatCurrency(snapshot.summaryTotal) }}</strong>
           </div>
           <div class="snapshot-metrics">
-            <span>Total Equity</span>
-            <strong>{{ fmt.formatCurrency(snapshot.report.totalEquity) }}</strong>
+            <span>Report Window</span>
+            <strong>{{ snapshot.periodStart | date:'dd MMM yyyy' }} - {{ snapshot.periodEnd | date:'dd MMM yyyy' }}</strong>
           </div>
         </article>
       </div>
     </section>
 
+    <!-- ── Annual Tax ───────────────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'annual-tax'">
       <div class="panel-header">
         <div>
@@ -202,7 +220,7 @@
       </div>
 
       <div class="empty-panel" *ngIf="!annualTaxTotal">
-        No data available for this period.
+        No tax data available for {{ selectedYear }}. This is expected if no tax-mapped transactions have been posted yet.
       </div>
 
       <ng-container *ngIf="annualTaxTotal">
@@ -241,18 +259,11 @@
       </ng-container>
     </section>
 
+    <!-- ── Report Context / Audit Trail ────────────────────────────────── -->
     <section class="content-panel" *ngIf="currentMetadata">
-      <div class="panel-header">
-        <!-- <div>
-          <p class="eyebrow">Report Details</p>
-          <h2>Metadata and Source Transactions</h2>
-          <p class="subtitle">DTO-derived context for the currently selected financial statement period.</p>
-        </div> -->
-      </div>
-
       <app-report-context [context]="currentMetadata"></app-report-context>
 
-      <article class="table-card">
+      <article class="table-card" *ngIf="metadataTransactions.length > 0">
         <header>
           <h3>Included Transactions</h3>
         </header>
@@ -268,9 +279,9 @@
           </thead>
           <tbody>
             <tr *ngFor="let transaction of metadataTransactions">
-              <td>{{ transaction.reference }}</td>
+              <td>{{ transaction.reference ?? transaction.transactionReference ?? transaction.id }}</td>
               <td>{{ transaction.sourceModule }}</td>
-              <td>{{ transaction.reviewStatus }}</td>
+              <td>{{ transaction.reviewStatus ?? transaction.status ?? '—' }}</td>
               <td>{{ transaction.transactionDate | date:'mediumDate' }}</td>
               <td>{{ transaction.description }}</td>
             </tr>
