@@ -485,6 +485,29 @@
       </div>
     </div>
   </div>
+  <div style="height: 1px; background: #f3f4f6; margin-bottom: 20px"></div>
+
+<div>
+  <p style="font-size: 11px; color: #9ca3af; text-transform: uppercase;
+            letter-spacing: 0.07em; margin: 0 0 8px; font-weight: 500;">
+    Attachment
+  </p>
+  <div *ngIf="requestInView?.attachment; else noAttachment">
+    
+      [href]="'data:application/octet-stream;base64,' + requestInView.attachment"
+      download="leave-attachment"
+      style="display: inline-flex; align-items: center; gap: 6px;
+             font-size: 13px; color: #2563eb; text-decoration: underline;"
+    >
+      <i class="pi pi-download"></i>
+      Download attachment
+  </div>
+  <ng-template #noAttachment>
+    <p style="font-size: 13px; color: #d1d5db; font-style: italic;">
+      No attachment
+    </p>
+  </ng-template>
+</div>
 </app-modal>
 
 <app-modal *ngIf="openApplyLeave" (close)="openApplyLeave = false">
