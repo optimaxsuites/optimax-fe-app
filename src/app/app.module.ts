@@ -1,9 +1,11 @@
+import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
+import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 
 ////primeng
 import { ButtonModule } from 'primeng/button';
@@ -225,6 +227,7 @@ import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-managemen
 import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management/cooperative-repayment-schedule/cooperative-repayment-schedule.component';
 import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
 import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
+import { BrowserModule } from '@angular/platform-browser';
 
 @NgModule({
   declarations: [
@@ -375,21 +378,23 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
     MyScheduleComponent,
     MySchedulesComponent,
     CooperativePatronageDistributionComponent,
-    InterviewInviteComponent,
-    InterviewResponseComponent
+    ProductivityWorkspaceComponent,
+    InterviewResponseComponent,
+    InviteModalComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    AppHrRoutingModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
     TableModule,
-    RouterModule.forRoot([], {
-      bindToComponentInputs: true,
-      enableTracing: false,
-      useHash: false,
-    }),
+    // RouterModule.forChild([], {
+    //   bindToComponentInputs: true,
+    //   enableTracing: false,
+    //   useHash: false,
+    // }),
     RippleModule,
     DialogModule,
     CalendarModule,

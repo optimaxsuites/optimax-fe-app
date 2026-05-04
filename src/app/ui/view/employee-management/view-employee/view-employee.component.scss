@@ -208,3 +208,35 @@ p {
 .info-card {
   @apply overflow-hidden;
 }
+
+.dashboard-loading-card {
+  @apply animate-pulse;
+}
+
+.loading-line {
+  @apply h-4 rounded-full bg-slate-200;
+}
+
+.loading-avatar-lg {
+  @apply h-24 w-24 rounded-2xl bg-slate-200 flex-shrink-0;
+}
+
+.loading-chip {
+  @apply h-7 w-20 rounded-full bg-slate-200;
+}
+
+.loading-detail-card {
+  @apply rounded-xl bg-slate-100 border border-slate-200 min-h-[72px];
+}
+
+.loading-stack {
+  @apply flex flex-col gap-3;
+}
+
+.loading-metric {
+  @apply h-20 rounded-xl bg-slate-100 border border-slate-200;
+}
+
+.loading-list-block {
+  @apply min-h-[110px] rounded-xl bg-slate-100 border border-slate-200;
+}

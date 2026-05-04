@@ -337,8 +337,8 @@
 
       <!-- Tab: Decision History -->
       <div *ngIf="activeTab === 'decisionHistory'" class="tab-panel">
-        <div class="section-block">
-          <div class="section-block__title">Decision History</div>
+        <!-- <div class="section-block">
+          <div class="section-block__title">Decision History</div> -->
           <div class="timeline" *ngIf="selectedCandidate.decisionHistory && selectedCandidate.decisionHistory.length > 0">
             <div class="timeline-item" *ngFor="let item of selectedCandidate.decisionHistory; let i = index">
               <div class="timeline-marker">
@@ -363,9 +363,9 @@
           <div *ngIf="!selectedCandidate.decisionHistory || selectedCandidate.decisionHistory.length === 0" class="list-empty">
             No decision history available
           </div>
-        </div>
-      </div>
-
+        <!-- </div>
+      </div> -->
+</div>
     </div>
   </div>
 
@@ -380,45 +380,14 @@
   </div>
 </div>
 
+<app-invite-modal
+  *ngIf="showInviteModal"
+  [visible]="showInviteModal"
+  [header]="'Interview Invitation for ' + selectedCandidate?.fullName"
+  [candidate]="selectedCandidate"
+  [currentAction]="currentAction"
+  (close)="showInviteModal = false"
+  (inviteSent)="refreshCandidateData()">
+</app-invite-modal>
 
-<p-dialog [(visible)]="showInviteModal" [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vw', 'max-height': '90vh', 'min-height': '35vh', overflow: 'auto'}" >
-  
-  <div class="flex flex-col justify-between" *ngIf="!isStepTwo">
-    <div>
-   <label class="block mb-2 font-semibold">Select a Template</label>
-    <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
-                optionLabel="name" placeholder="Choose a template..."
-                styleClass="w-full mb-4">
-    </p-dropdown>
-    </div>
- 
-    
-    <div class="flex justify-end items-end gap-2">
-      <button class="btn-secondary" (click)="showInviteModal = false">Cancel</button>
-      <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
-    </div>
-  </div>
 
-  <div *ngIf="isStepTwo">
-    <div class="mb-4">
-      <h3 class="font-semibold mb-2">Required Information</h3>
-      <div *ngFor="let field of selectedInviteTemplate?.customPlaceholders" class="mb-3 w-96">
-        <label class="block text-sm text-gray-600">{{field.label}}</label>
-        <input type="text" [(ngModel)]="manualPlaceholderValues[field.key]" class="w-full p-2 border rounded">
-      </div>
-    </div>
-
-    <div class="preview-box p-4 bg-gray-50 rounded border">
-      <h4 class="font-bold border-b pb-1 mb-2">{{resolveFinalContent(selectedInviteTemplate?.subject || '')}}</h4>
-      <div class="text-wrap" [innerHTML]="resolveFinalContent(selectedInviteTemplate?.body || '')"></div>
-    </div>
-
-    <div class="flex justify-end gap-2 mt-4">
-      <button class="btn-secondary" (click)="isStepTwo = false">Back</button>
-      <button class="btn-primary disabled:cursor-not-allowed disabled:bg-customBlueHover" (click)="sendFinalMail()" [disabled]="sendLoading">
-        <span *ngIf="!sendLoading">Send</span>
-        <span *ngIf="sendLoading">Sending...</span>
-      </button>
-    </div>
-  </div>
-</p-dialog>

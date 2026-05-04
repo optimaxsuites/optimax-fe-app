@@ -6,7 +6,12 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 @Component({
   selector: 'app-employee-profile-dashboard',
@@ -19,6 +24,9 @@ export class EmployeeProfileDashboardComponent {
   loading = false;
   saving = false;
   isEditOpen = false;
+  isStaffIdOpen = false;
+  staffIdQrDataUrl = '';
+  staffIdBarcodeDataUrl = '';
   editForm: FormGroup;
   pendingProfilePhotoDataUrl: string | null = null;
   pendingProfilePhotoName: string | null = null;
@@ -28,6 +36,7 @@ export class EmployeeProfileDashboardComponent {
   private readonly bonusNameCache = new Map<string, Observable<string>>();
   private readonly deductionNameCache = new Map<string, Observable<string>>();
   private readonly overtimeNameCache = new Map<string, Observable<string>>();
+  private readonly minimumLoaderDurationMs = 900;
 
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
@@ -36,7 +45,8 @@ export class EmployeeProfileDashboardComponent {
     private employeeService: EmployeeService,
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private router: Router
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -182,10 +192,158 @@ export class EmployeeProfileDashboardComponent {
     });
   }
 
+  get profileCompletionScore(): number {
+    const employee = this.employeeInView || {};
+    const checks = [
+      employee?.firstName,
+      employee?.lastName,
+      employee?.phone,
+      employee?.email,
+      employee?.workEmail,
+      employee?.address,
+      employee?.department?.name || employee?.department,
+      employee?.level?.name || employee?.level,
+      employee?.jobTitle,
+      employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate,
+      employee?.bankName,
+      employee?.accountNumber,
+      employee?.nin,
+      employee?.bvn,
+      employee?.nextOfKin?.length ? 'yes' : '',
+      employee?.guarantor?.length ? 'yes' : '',
+      employee?.employeeMedia?.mediaNo || employee?.imageUrl,
+    ];
+    const complete = checks.filter((value) => String(value ?? '').trim() !== '').length;
+    return Math.round((complete / checks.length) * 100);
+  }
+
+  get roleTrendLabel(): string {
+    return this.employeeInView?.department?.name || this.employeeInView?.department
+      ? 'Current assignment'
+      : 'Needs assignment';
+  }
+
+  get salaryTrendLabel(): string {
+    const base = Number(this.employeeInView?.salaryDetails?.baseSalary || 0);
+    const net = Number(
+      this.employeeInView?.salaryDetails?.netSalaryComputed ??
+      this.employeeInView?.salaryDetails?.netSalary ??
+      0
+    );
+    if (!base || !net) return 'Awaiting payroll data';
+    const ratio = Math.round((net / base) * 100);
+    return `${ratio}% of base retained`;
+  }
+
+  get leaveTrendLabel(): string {
+    const assigned = Number(this.employeeInView?.leaveDetails?.assignedLeaves || 0);
+    const remaining = Number(this.employeeInView?.leaveDetails?.leavesRemaining || 0);
+    if (!assigned) return 'Leave cycle pending';
+    const ratio = Math.round((remaining / assigned) * 100);
+    return `${ratio}% balance remaining`;
+  }
+
+  get attendanceTrendLabel(): string {
+    const late = Number(this.employeeInView?.attendance?.lateArrivals || 0);
+    const present = Number(this.employeeInView?.attendance?.daysPresent || 0);
+    if (!present) return 'No attendance captured';
+    return late === 0 ? 'Perfect punctuality logged' : `${late} late arrival(s) tracked`;
+  }
+
+  get printableStaffId(): string {
+    return String(this.employeeInView?.id ?? '-');
+  }
+
+  get printableStaffName(): string {
+    return `${this.employeeInView?.firstName ?? ''} ${this.employeeInView?.lastName ?? ''}`.trim();
+  }
+
+  openStaffId(): void {
+    this.generateStaffQrCode(this.employeeInView);
+    this.generateStaffBarcode(this.employeeInView);
+    this.isStaffIdOpen = true;
+  }
+
+  closeStaffId(): void {
+    this.isStaffIdOpen = false;
+  }
+
+  async printStaffId(): Promise<void> {
+    const target = document.getElementById('staff-id-download');
+    if (!target) return;
+
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+    });
+    const imageData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imageData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`staff-id-${this.printableStaffId}.pdf`);
+  }
+
+  private generateStaffQrCode(employee: any): void {
+    const payload = JSON.stringify({
+      id: employee?.id ?? null,
+      name: `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim(),
+      role: employee?.jobTitle ?? '',
+      department: employee?.department?.name || employee?.department || '',
+      email: employee?.workEmail || employee?.email || '',
+    });
+
+    QRCode.toDataURL(payload, {
+      width: 160,
+      margin: 1,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    }).then((dataUrl) => {
+      this.staffIdQrDataUrl = dataUrl;
+    }).catch(() => {
+      this.staffIdQrDataUrl = '';
+    });
+  }
+
+  private generateStaffBarcode(employee: any): void {
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, String(employee?.id ?? '000000'), {
+        format: 'CODE128',
+        displayValue: false,
+        background: '#f8fafc',
+        lineColor: '#0f172a',
+        margin: 0,
+        width: 2,
+        height: 72,
+      });
+      this.staffIdBarcodeDataUrl = canvas.toDataURL('image/png');
+    } catch {
+      this.staffIdBarcodeDataUrl = '';
+    }
+  }
+
   private fetchEmployeeForCurrentUser(): void {
+    const selectedEmployee = localStorage.getItem('employeeInView');
+    if (selectedEmployee && this.isEmployeeManagementContext()) {
+      try {
+        const parsedEmployee = JSON.parse(selectedEmployee);
+        if (parsedEmployee) {
+          this.applyEmployeeView(parsedEmployee);
+          return;
+        }
+      } catch {
+        localStorage.removeItem('employeeInView');
+      }
+    }
+
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     if (storedUserId) {
-      this.loading = true;
+      const startedAt = this.startLoading();
       this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
         next: (data) => {
           const employee = data?.data ?? data ?? null;
@@ -209,7 +367,7 @@ export class EmployeeProfileDashboardComponent {
           });
         },
         complete: () => {
-          this.loading = false;
+          this.finishLoading(startedAt);
         },
       });
       return;
@@ -218,8 +376,12 @@ export class EmployeeProfileDashboardComponent {
     this.fetchFirstEmployee();
   }
 
+  private isEmployeeManagementContext(): boolean {
+    return this.router.url.includes('/admin/hr/employee-management/');
+  }
+
   private fetchFirstEmployee(): void {
-    this.loading = true;
+    const startedAt = this.startLoading();
     this.employeeService.getAllEmployee().subscribe({
       next: (employees) => {
         const sortedEmployees = this.sortEmployeesLatest(employees);
@@ -246,9 +408,22 @@ export class EmployeeProfileDashboardComponent {
         });
       },
       complete: () => {
-        this.loading = false;
+        this.finishLoading(startedAt);
       },
     });
+  }
+
+  private startLoading(): number {
+    this.loading = true;
+    return Date.now();
+  }
+
+  private finishLoading(startedAt: number): void {
+    const elapsed = Date.now() - startedAt;
+    const delay = Math.max(0, this.minimumLoaderDurationMs - elapsed);
+    window.setTimeout(() => {
+      this.loading = false;
+    }, delay);
   }
 
   private applyEmployeeView(employee: any): void {

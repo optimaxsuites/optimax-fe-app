@@ -18,6 +18,16 @@ export class EmployeeService {
   
   constructor(private http: HttpClient) { }
 
+  private getActiveSessionUserId(): string {
+    return String(sessionStorage.getItem('userid') || '').trim();
+  }
+
+  private clearStaleCurrentEmployeeCache(): void {
+    localStorage.removeItem('currentEmployee');
+    sessionStorage.removeItem('currentEmployee');
+    sessionStorage.removeItem('currentEmployeeUserId');
+  }
+
   addEmployee(data: any): Observable<any>{
     return this.http
         .post<any>(
@@ -123,11 +133,23 @@ export class EmployeeService {
     
     console.log('Getting employee ID for user ID:', userId);
     
-    // Strategy 1: Try to get from stored employee ID (set during login)
+    // Strategy 1: Try to get from stored employee ID scoped to active user session
     const storedEmployeeId = sessionStorage.getItem('employeeId');
-    if (storedEmployeeId && storedEmployeeId !== 'undefined' && storedEmployeeId !== 'null') {
+    const storedEmployeeUserId = sessionStorage.getItem('employeeUserId');
+    if (
+      storedEmployeeId
+      && storedEmployeeId !== 'undefined'
+      && storedEmployeeId !== 'null'
+      && storedEmployeeUserId
+      && String(storedEmployeeUserId) === String(userId)
+    ) {
       console.log('Using stored employee ID:', storedEmployeeId);
       return of(Number(storedEmployeeId));
+    }
+
+    // Clear stale employee cache when switching users.
+    if (storedEmployeeId && storedEmployeeUserId && String(storedEmployeeUserId) !== String(userId)) {
+      sessionStorage.removeItem('employeeId');
     }
     
     // Strategy 2: Try to get from the loan list (which we know works)
@@ -150,6 +172,8 @@ export class EmployeeService {
         if (employee && employee.id) {
           console.log('Found employee via list search:', employee);
           console.log('Employee ID:', employee.id);
+          sessionStorage.setItem('employeeId', String(employee.id));
+          sessionStorage.setItem('employeeUserId', String(userId));
           return employee.id;
         }
         
@@ -177,6 +201,7 @@ export class EmployeeService {
         if (fallbackEmployeeId) {
           console.log(`Using fallback employee ID ${fallbackEmployeeId} for user ${userId}`);
           sessionStorage.setItem('employeeId', String(fallbackEmployeeId));
+          sessionStorage.setItem('employeeUserId', String(userId));
           return of(fallbackEmployeeId);
         }
         
@@ -189,8 +214,11 @@ export class EmployeeService {
    * Get the full employee object for the current user
    */
   getCurrentEmployee(): Observable<any> {
+    const activeUserId = this.getActiveSessionUserId();
+    const cachedUserId = String(sessionStorage.getItem('currentEmployeeUserId') || '').trim();
     const storedEmployee = localStorage.getItem('currentEmployee') || sessionStorage.getItem('currentEmployee');
-    if (storedEmployee) {
+
+    if (storedEmployee && activeUserId && cachedUserId && cachedUserId === activeUserId) {
       try {
         const employee = JSON.parse(storedEmployee);
         if (employee && employee.id) {
@@ -199,6 +227,9 @@ export class EmployeeService {
         }
       } catch(e) {}
     }
+
+    // Cache belongs to a different user (or cannot be validated), force refresh.
+    this.clearStaleCurrentEmployeeCache();
     
     return this.getEmployeeIdForCurrentUser().pipe(
       switchMap(employeeId => this.getEmployeeById(employeeId)),
@@ -206,8 +237,14 @@ export class EmployeeService {
         console.log('Fetched current employee:', employee);
         localStorage.setItem('currentEmployee', JSON.stringify(employee));
         sessionStorage.setItem('currentEmployee', JSON.stringify(employee));
+        if (activeUserId) {
+          sessionStorage.setItem('currentEmployeeUserId', activeUserId);
+        }
         if (employee.id) {
           sessionStorage.setItem('employeeId', String(employee.id));
+          if (activeUserId) {
+            sessionStorage.setItem('employeeUserId', activeUserId);
+          }
         }
       })
     );

@@ -14,6 +14,12 @@ export interface QuestionItemDTO {
     requestDate: string; 
     criteria?: QuestionDTO;
     totalScore?: number | null;
+    interviewStage?: number;
+    sessionId?: string;
+    interviewerId?: string;
+    interviewerName?: string;
+    interviewerEmail?: string;
+    interviewerRole?: string;
   }
   
   export interface ScoreSheetByIdDTO {

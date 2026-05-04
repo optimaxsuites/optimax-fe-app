@@ -1,48 +1,78 @@
-<div *ngIf="onboardingStatus == 'inProgress'" class="flex justify-center items-center h-[80vh]">
-    <div class="flex flex-col gap-4 justify-center items-center h-full text-customBlue">
-        <i class="fa-solid fa-lock text-5xl"></i>
-        <p class="text-3xl font-bold text-center text-customBlue">Employee has not completed their onboarding process, click <span routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j" class="text-customGreen font-bold cursor-pointer">here</span> to continue the process</p>
-
+<div *ngIf="onboardingStatus == 'inProgress'" class="drawer-state">
+  <div class="drawer-state-card">
+    <i class="fa-solid fa-lock"></i>
+    <div>
+      <h3>Onboarding still in progress</h3>
+      <p>Next of kin and emergency contact details will appear here when onboarding is completed.</p>
     </div>
+    <a class="drawer-link" routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j">Continue onboarding</a>
+  </div>
 </div>
-<div *ngIf="onboardingStatus == 'completed'" class="grid grid-cols-2 gap-5 py-3">
 
-    <div *ngFor="let kin of employeeInView.nextOfKin" class="bg-white shadow-sm rounded-xl">
-        <p class="text-gray-50 font-semibold text-lg text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Next of Kin</p>
+<div *ngIf="onboardingStatus == 'completed'" class="drawer-stack">
+  <section class="drawer-summary-grid">
+    <article class="drawer-summary-card">
+      <span class="drawer-summary-label">Next of kin</span>
+      <strong class="drawer-summary-value">{{ employeeInView?.nextOfKin?.length || 0 }}</strong>
+    </article>
+    <article class="drawer-summary-card">
+      <span class="drawer-summary-label">Emergency contacts</span>
+      <strong class="drawer-summary-value">{{ emergencyContacts?.length || 0 }}</strong>
+    </article>
+  </section>
 
-        <div class="px-5 py-3">
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Full Name:</span> {{ kin.fullName }}</p>
-        
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Relationship:</span> {{ kin.relationship }}</p>
-            
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">DOB:</span> {{ kin.DOB | date:'yyyy-MM-dd' }}</p>
-            
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Email:</span> {{ kin.email }}</p>
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Phone:</span> {{ kin.phone }}</p>
-            
-            <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Address:</span> {{ kin.address }}</p>
+  <section class="drawer-grid">
+    <article *ngFor="let kin of employeeInView.nextOfKin" class="drawer-card">
+      <div class="drawer-card-header">
+        <div>
+          <p class="drawer-card-eyebrow">Next of kin</p>
+          <h3>{{ kin.fullName || 'Unnamed contact' }}</h3>
         </div>
-       
+        <span class="drawer-badge">{{ kin.relationship || 'Relationship pending' }}</span>
       </div>
 
-
-
-      
-      <div  class="bg-white shadow-sm rounded-xl">
-        <p class="text-gray-50 font-semibold text-lg text-center py-2 bg-customBlue w-52 rounded-tl-xl rounded-br-xl">Emergency Contact(s)</p>
-        <div *ngIf="emergencyContacts.length > 0; else noEmergencyContact" class="grid grid-cols-2">
-            <div *ngFor="let contact of emergencyContacts" class="px-5 py-3">
-                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Full Name:</span> {{ contact.fullName }}</p>
-                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Relationship:</span> {{ contact.relationship }}</p>            
-                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Email:</span> {{ contact.email }}</p>
-                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Phone:</span> {{ contact.phone }}</p>
-                <p class="ml-1 font-normal text-customBlue"><span class="font-bold text-customBlue/70">Address:</span> {{ contact.address }}</p>
-            </div>
-         </div>
-
-        <ng-template #noEmergencyContact>
-            <p class="px-5 py-3 ml-1 font-normal text-customBlue">No emergency contact on file.</p>
-       </ng-template>
-       
+      <div class="drawer-detail-grid">
+        <div class="drawer-detail-item">
+          <span>Email</span>
+          <strong>{{ kin.email || '-' }}</strong>
+        </div>
+        <div class="drawer-detail-item">
+          <span>Phone</span>
+          <strong>{{ kin.phone || '-' }}</strong>
+        </div>
+        <div class="drawer-detail-item">
+          <span>Date of birth</span>
+          <strong>{{ kin.DOB | date:'yyyy-MM-dd' }}</strong>
+        </div>
+        <div class="drawer-detail-item">
+          <span>Address</span>
+          <strong>{{ kin.address || '-' }}</strong>
+        </div>
       </div>
+    </article>
+  </section>
+
+  <section class="drawer-card">
+    <div class="drawer-card-header">
+      <div>
+        <p class="drawer-card-eyebrow">Emergency response</p>
+        <h3>Emergency contact roster</h3>
+      </div>
+      <span class="drawer-badge">{{ emergencyContacts?.length || 0 }} active</span>
+    </div>
+
+    <div *ngIf="emergencyContacts.length > 0; else noEmergencyContact" class="drawer-grid compact">
+      <article *ngFor="let contact of emergencyContacts" class="drawer-mini-card">
+        <strong>{{ contact.fullName || 'Unnamed contact' }}</strong>
+        <span>{{ contact.relationship || '-' }}</span>
+        <span>{{ contact.phone || '-' }}</span>
+        <span>{{ contact.email || '-' }}</span>
+        <p>{{ contact.address || '-' }}</p>
+      </article>
+    </div>
+
+    <ng-template #noEmergencyContact>
+      <p class="drawer-empty-text">No emergency contact on file.</p>
+    </ng-template>
+  </section>
 </div>

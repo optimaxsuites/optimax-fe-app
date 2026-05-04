@@ -48,8 +48,10 @@ export class AppHrComponent {
     console.log("Signing in user with hardcoded credentials for testing...");
     const loginDetails = {
       // username: 'Ayaobasheba',
-      username: 'developer',
-      password: '123456',
+      // username: 'developer',
+      // password: '123456',
+      username: 'Eseose',
+      password: 'soyBTY86b*rC',
       project: 'ERP',
       apiKey: environment.apiKey,
     };
@@ -169,8 +171,10 @@ return rawToken;
   async switchToUser(): Promise<void> {
     console.log('Switching to user account...');
     const loginDetails = {
-      username: 'developer',
-      password: '123456',
+      // username: 'developer',
+      // password: '123456',
+      username: 'Eseose',
+      password: 'soyBTY86b*rC',
       project: 'ERP',
       apiKey: environment.apiKey,
     };

@@ -6,5 +6,14 @@ import { Component } from '@angular/core';
   styleUrl: './employee-offboarding.component.scss'
 })
 export class EmployeeOffboardingComponent {
+  employeeInView: any;
 
+  ngOnInit(): void {
+    const employee = localStorage.getItem('employeeInView');
+    this.employeeInView = employee ? JSON.parse(employee) : null;
+  }
+
+  get offboardingStatus(): string {
+    return this.employeeInView?.employmentEndDate ? 'Scheduled' : 'Not started';
+  }
 }

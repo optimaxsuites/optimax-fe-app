@@ -66,8 +66,18 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
-  getEmployeePayrollBonuses(page = 1, size = 10): Observable<any> {
-    return this.http.get(`${this.baseUrl}/x/api/v2/hr/employeePayrollBonuss`, { params: { page, size } })
+  getEmployeePayrollBonuses(filters: any = {}): Observable<any> {
+    const params = {
+      page: filters.page ?? 1,
+      size: filters.size ?? 200,
+      ...(filters.sourceType ? { sourceType: filters.sourceType } : {}),
+      ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
+      ...(filters.createdById ? { createdById: filters.createdById } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.verdict ? { verdict: filters.verdict } : {}),
+      ...(filters.applied !== undefined && filters.applied !== null ? { applied: filters.applied } : {})
+    };
+    return this.http.get(`${this.baseUrl}/x/api/v2/hr/employeePayrollBonuss`, { params })
       .pipe(catchError(this.handleError));
   }
 
@@ -180,6 +190,11 @@ export class PayrollService {
       .pipe(catchError(this.handleError));
   }
 
+  updateEmployeePayrollBonus(id: number, payload: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/x/api/v2/hr/employeePayrollBonuss/${id}`, payload)
+      .pipe(catchError(this.handleError));
+  }
+
   postEmployeePayrollDeduction(payload: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/x/api/v2/hr/employeePayrollDeductionss`, payload)
       .pipe(catchError(this.handleError));
@@ -196,8 +211,17 @@ export class PayrollService {
   }
 
   approvePayroll(id: number, payload: any): Observable<any> {
-     return this.http.post(`${this.baseUrl}/x/api/v2/hr/payrollGenerationResponses/${id}/approvalCallback`, payload)
+     return this.http.post(`${this.baseUrl}/x/api/v2/workflow/approvalInstances/${id}/approve`, payload)
       .pipe(catchError(this.handleError));
+  }
+
+  rejectPayroll(id: number, payload: any): Observable<any> {
+     return this.http.post(`${this.baseUrl}/x/api/v2/workflow/approvalInstances/${id}/reject`, payload)
+      .pipe(catchError(this.handleError));
+  }
+
+  getApprovalDocumentUrl(fileName: string): string {
+    return `${this.baseUrl}/x/api/v2/workflow/approvalInstances/documents/${encodeURIComponent(fileName)}`;
   }
 
 

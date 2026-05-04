@@ -1,6 +1,18 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
+import {
+  ApplicantDTO,
+  ApplicationStage,
+  AttachmentDTO,
+  InterviewHistoryItemDTO,
+  InterviewMeetingDetailsDTO,
+  InterviewOutcomeDTO,
+  InterviewPanelMemberDTO,
+  InterviewScoreAssignmentDTO,
+  InterviewScoreStatusDTO,
+  InterviewStageSummaryDTO
+} from '../../../domain/applicant.dto';
+import { ScoreSheetDTO } from '../../../domain/questions.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 import {jsPDF} from 'jspdf';
 import 'jspdf-autotable';
@@ -41,6 +53,31 @@ export interface Candidate {
   aiVetting: AiVetting | null;
 }
 
+type InterviewStage = ApplicationStage | 'Awaiting Response' | 'Accepted' | 'Declined';
+
+type InterviewRecord = Omit<ApplicantDTO, 'stage'> & {
+  appliedDate?: string;
+  candidateResponse?: string;
+  documents?: CandidateDocument[];
+  formResponses?: FormResponse[];
+  fullName?: string;
+  job?: any;
+  jobVacancy?: any;
+  phone?: string;
+  position?: string;
+  scheduledDate?: string;
+  stage?: InterviewStage;
+  meetingDetails?: InterviewMeetingDetailsDTO;
+  interviewPanel?: InterviewPanelMemberDTO[];
+  interviewHistory?: InterviewHistoryItemDTO[];
+  interviewStageSummaries?: InterviewStageSummaryDTO[];
+  interviewScoreAssignments?: InterviewScoreAssignmentDTO[];
+  interviewCurrentSessionId?: string;
+  latestInterviewOutcome?: InterviewOutcomeDTO;
+  scoreSheetStatus?: InterviewScoreStatusDTO;
+  aiVetting?: AiVetting | null;
+};
+
 @Component({
   selector: 'app-scheduled-interview',
   templateUrl: './scheduled-interview.component.html',
@@ -48,27 +85,52 @@ export interface Candidate {
   providers: [MessageService, ConfirmationService]
 })
 export class ScheduledInterviewComponent {
-  onActionSelected(arg0: string) {
-    throw new Error('Method not implemented.');
+  private readonly interviewStorageKey = 'upcomingInvite';
+
+  onActionSelected(action: string) {
+    switch (action) {
+      case 'Send Offer':
+        if (this.activeItem?.id) {
+          this.openOfferLetter(this.activeItem);
+        }
+        break;
+      case 'Shortlist':
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Not Available Here',
+          detail: 'Shortlisting is handled before a candidate enters the interview pipeline.'
+        });
+        break;
+      case 'Request Docs':
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Pending',
+          detail: 'Document requests are not wired into the interview stage yet.'
+        });
+        break;
+      default:
+        break;
+    }
   }
   activeItem: any = {};
   searchTerm: string = '';
-  interviews: any[] = [];
+  interviews: InterviewRecord[] = [];
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
+   currentAction: string = '';
   showScoreSheet: boolean = false;
   showOfferLetter: boolean = false;
   viewModal: boolean = false;
   showAppointment: boolean = false;
-  positions: any[] =[]; // Extract unique positions
+  positions: string[] = [];
   selectedPositions: string[] = [];
-  filteredCandidates: ApplicantDTO[] = [];
+  filteredCandidates: InterviewRecord[] = [];
   candidateData: any = {};
   interviewColumns: TableColumn[] = [
-    { header: 'Name', field: 'firstname', sortable: true, className: 'table-item' },
+    { header: 'Name', field: 'fullName', sortable: true, className: 'table-item' },
     { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
-    { header: 'Position', field: 'job.jobVacancy.jobCategory.name', sortable: true, className: 'table-item' },
-    { header: 'Date Applied', field: 'dateApplied', sortable: true, className: 'table-item' },
+    { header: 'Position', field: 'position', sortable: true, className: 'table-item' },
+    { header: 'Date Applied', field: 'appliedDate', sortable: true, className: 'table-item' },
     { header: 'Scheduled Date', field: 'scheduledDate', sortable: true, className: 'table-item' },
     { header: 'Interview Type', field: 'interviewType', sortable: true, className: 'table-item' },
     { header: 'Interview Stage', field: 'interviewStage', sortable: true, className: 'table-item' },
@@ -127,6 +189,12 @@ export class ScheduledInterviewComponent {
 
   getStatusClass(stage: string) {
     switch (stage) {
+      case 'Awaiting Response':
+        return 'badge badge-lightblue';
+      case 'Accepted':
+        return 'badge badge-lightgreen';
+      case 'Declined':
+        return 'badge badge-lightred';
       case 'Scheduled':
         return 'badge badge-lightgrey';
       case 'In-Progress':
@@ -155,22 +223,9 @@ export class ScheduledInterviewComponent {
 
 // ==============================================get candidate
   getCandidateData(){
-    // Retrieve candidates from localStorage
-    const storedCandidates = localStorage.getItem('upcomingInvite');
-    if (storedCandidates) {
-      this.interviews = JSON.parse(storedCandidates);
-    }
-
-    // Extract unique positions
-    this.positions = [...new Set(this.interviews.map(c => c.job.category))];
-
-    const candidates = this.interviews.map(interview => interview.candidate);
-    // Reverse the order of candidates to implement LIFO
-    this.filteredCandidates = [...this.interviews].reverse();
-    
-
-    console.log(this.filteredCandidates);
-
+    this.interviews = this.getStoredInterviews().map(interview => this.normalizeInterviewRecord(interview));
+    this.positions = [...new Set(this.interviews.map(interview => interview.position).filter(Boolean) as string[])];
+    this.applyFilters();
   }
 // ============================================================
 
@@ -185,29 +240,44 @@ export class ScheduledInterviewComponent {
     this.showAppointment = false;
   }
   sendOffer(offerDetails: ApplicantDTO){
-    const offerLetterSent: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    const interviews = this.getStoredInterviews();
     
     // Find the candidate to update
-    const index = offerLetterSent.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    const index = interviews.findIndex(c => c['id'] === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
+      const currentStage = Number(interviews[index]['interviewStage'] || 1);
       const updatedOfferLetterSent: ApplicantDTO = {
-        ...offerLetterSent[index],
+        ...interviews[index],
         stage:  ApplicationStage.OfferSent,
         offerSubject: offerDetails.offerSubject,
         offerLetter: offerDetails.offerLetter,
-        offerAttachments: offerDetails.offerAttachments
+        offerAttachments: offerDetails.offerAttachments,
+        interviewHistory: [
+          ...(interviews[index].interviewHistory || []),
+          this.createInterviewHistoryEntry(
+            currentStage,
+            'Offer Letter Sent',
+            `Offer letter sent after interview ${currentStage}.`,
+            offerDetails.offerAttachments || [],
+            this.getLatestSummary(interviews[index])?.averageScore,
+            this.getLatestSummary(interviews[index])?.outcome
+          )
+        ]
       };
 
       // Update the existing candidate at the found index
-      offerLetterSent[index] = updatedOfferLetterSent;
-      console.log("Inteview-Candidate Info", offerLetterSent)
-      localStorage.setItem('scheduledCandidate', JSON.stringify(offerLetterSent));
+      interviews[index] = updatedOfferLetterSent;
+      this.persistInterviews(interviews);
+      this.syncCandidateLifecycle(interviews[index]['id'], {
+        status: 'Offered',
+        interviewStatus: 'Completed'
+      }, 'Offer Letter Sent', `Offer letter sent after interview ${currentStage}.`);
 
       // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
         summary: 'Offer Letter Sent',
-        detail: `${this.activeItem.candidateName} has successfully been sent an offer letter.`
+        detail: `${this.getCandidateName(this.activeItem)} has successfully been sent an offer letter.`
       });
       
     }
@@ -222,7 +292,8 @@ export class ScheduledInterviewComponent {
 
 // ====================================================view modal
   openViewModal(candidate: any, op?: any) {
-    this.activeItem = candidate
+    this.activeItem = candidate;
+    this.activeTab = 'form';
     this.showInterviewList = true;
     this.showInterviewInvite = false;
     this.viewModal = true;
@@ -247,35 +318,68 @@ export class ScheduledInterviewComponent {
     this.showAppointment = false;
   }
   sendInvite(interviewDetails: ApplicantDTO) {
-    // Update the candidate's stage to "Scheduled"
-    // const candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
-    const scheduledCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    const interviews = this.getStoredInterviews();
     
     // Find the candidate to update
-    const index = scheduledCandidates.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    const index = interviews.findIndex(c => c['id'] === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
-      // Increment the interviewStage
-      const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
-      const updatedCandidate: ApplicantDTO = {
-        ...scheduledCandidates[index],
+      const currentStage = this.activeItem['interviewStage'] || interviews[index]['interviewStage'] || 0;
+      const nextStage = currentStage + 1;
+      const meetingDetails: InterviewMeetingDetailsDTO = {
+        date: interviewDetails['scheduledDate'] || interviews[index]['scheduledDate'],
+        time: interviewDetails['scheduledTime'] || interviews[index].meetingDetails?.time || '',
+        location: interviewDetails['location'] || interviews[index].meetingDetails?.location || '',
+        interviewType: interviewDetails.interviewType || interviews[index].meetingDetails?.interviewType || '',
+        notes: interviewDetails['notes'] || interviews[index].meetingDetails?.notes || ''
+      };
+      const latestSummary = this.getLatestSummary(interviews[index], currentStage);
+      const updatedCandidate: InterviewRecord = {
+        ...interviews[index],
         stage: ApplicationStage.Scheduled,
-        interviewStage: currentStage + 1,  // Increment the interview stage
+        interviewStage: nextStage,
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
         inviteAttachments: interviewDetails.inviteAttachments,
-        scheduledDate: interviewDetails['scheduledDate']
+        scheduledDate: meetingDetails.date,
+        candidateResponse: undefined,
+        meetingDetails,
+        interviewPanel: (interviewDetails['panelMembers'] as InterviewPanelMemberDTO[]) || interviews[index].interviewPanel || [],
+        interviewCurrentSessionId: undefined,
+        latestInterviewOutcome: 'Pending',
+        scoreSheetStatus: 'Not Started',
+        interviewScoreAssignments: [
+          ...(interviews[index].interviewScoreAssignments || []).filter(assignment => assignment.stageNumber !== nextStage)
+        ],
+        interviewHistory: [
+          ...(interviews[index].interviewHistory || []),
+          this.createInterviewHistoryEntry(
+            nextStage,
+            `Interview ${nextStage} Scheduled`,
+            latestSummary
+              ? `Candidate progressed from interview ${currentStage} with ${latestSummary.averageScore?.toFixed(1) || '0.0'} average and ${latestSummary.outcome} outcome.`
+              : `Candidate progressed to interview ${nextStage}.`,
+            interviewDetails.inviteAttachments || []
+          )
+        ]
       };
 
-      // Update the existing candidate at the found index
-      scheduledCandidates[index] = updatedCandidate;
-      console.log("Inteview-Candidate Info", scheduledCandidates)
-      localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledCandidates));
+      interviews[index] = updatedCandidate;
+      this.persistInterviews(interviews);
+      this.syncCandidateLifecycle(interviews[index]['id'], {
+        status: 'Invited',
+        interviewStatus: 'Invited',
+        interviewDetails: {
+          scheduledDate: meetingDetails.date,
+          location: meetingDetails.location,
+          format: meetingDetails.interviewType,
+          notes: meetingDetails.notes
+        }
+      }, `Interview ${nextStage} Scheduled`, `Candidate moved to interview ${nextStage}.`);
 
-      // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
         summary: 'Candidate Invited',
-        detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
+        detail: `${this.getCandidateName(this.activeItem)} has been successfully invited for the interview.`
       });
       
     }
@@ -298,7 +402,41 @@ export class ScheduledInterviewComponent {
     this.showOfferLetter = false;
     this.showAppointment = false;
   }
-  SaveScoreSheet(){
+  SaveScoreSheet(scoreSubmission?: ScoreSheetDTO & { outcome?: InterviewOutcomeDTO }){
+    if (scoreSubmission && this.activeItem?.['id']) {
+      const interviews = this.getStoredInterviews();
+      const index = interviews.findIndex(candidate => candidate['id'] === this.activeItem['id']);
+      if (index !== -1) {
+        const stageNumber = scoreSubmission.interviewStage || interviews[index]['interviewStage'] || 1;
+        const sessionId = scoreSubmission.sessionId || interviews[index].interviewCurrentSessionId || '';
+        const assignments = this.updateAssignmentsWithSubmission(interviews[index], scoreSubmission);
+        const summary = this.buildStageSummary(interviews[index], stageNumber, sessionId, assignments);
+
+        interviews[index] = {
+          ...interviews[index],
+          interviewScoreAssignments: assignments,
+          interviewStageSummaries: this.upsertStageSummary(interviews[index].interviewStageSummaries || [], summary),
+          latestInterviewOutcome: summary.outcome,
+          scoreSheetStatus: summary.totalSubmissions > 0 ? 'In Progress' : interviews[index].scoreSheetStatus,
+          interviewHistory: [
+            ...(interviews[index].interviewHistory || []),
+            this.createInterviewHistoryEntry(
+              stageNumber,
+              'Score Sheet Submitted',
+              `${scoreSubmission.interviewerName || 'An interviewer'} submitted ${scoreSubmission.criteria?.title || 'a score sheet'} for interview ${stageNumber}.`,
+              [],
+              scoreSubmission.totalScore || undefined,
+              scoreSubmission.outcome
+            )
+          ]
+        };
+
+        this.persistInterviews(interviews);
+        this.syncCandidateLifecycle(interviews[index]['id'], {
+          interviewStatus: 'Invited'
+        }, 'Score Sheet Submitted', `${scoreSubmission.interviewerName || 'An interviewer'} submitted an interview ${stageNumber} score sheet.`);
+      }
+    }
     this.close();
   }
 // ========================================================================
@@ -314,29 +452,41 @@ export class ScheduledInterviewComponent {
     this.showAppointment = true;
   }
   sendAppointment(appointmentDetails: ApplicantDTO){
-    const offerLetterSent: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    const interviews = this.getStoredInterviews();
     
     // Find the candidate to update
-    const index = offerLetterSent.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    const index = interviews.findIndex(c => c['id'] === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
+      const currentStage = Number(interviews[index]['interviewStage'] || 1);
       const updatedOfferLetterSent: ApplicantDTO = {
-        ...offerLetterSent[index],
+        ...interviews[index],
         stage:  ApplicationStage.AppointmentLetterSent,
         appointmentSubject: appointmentDetails.appointmentSubject,
         appointmentLetter: appointmentDetails.appointmentLetter,
-        appointmentAttachments: appointmentDetails.appointmentAttachments
+        appointmentAttachments: appointmentDetails.appointmentAttachments,
+        interviewHistory: [
+          ...(interviews[index].interviewHistory || []),
+          this.createInterviewHistoryEntry(
+            currentStage,
+            'Appointment Letter Sent',
+            `Appointment letter sent after interview ${currentStage}.`,
+            appointmentDetails.appointmentAttachments || [],
+            this.getLatestSummary(interviews[index])?.averageScore,
+            this.getLatestSummary(interviews[index])?.outcome
+          )
+        ]
       };
 
-      // Update the existing candidate at the found index
-      offerLetterSent[index] = updatedOfferLetterSent;
-      console.log("Inteview-Candidate Info", offerLetterSent)
-      localStorage.setItem('scheduledCandidate', JSON.stringify(offerLetterSent));
+      interviews[index] = updatedOfferLetterSent;
+      this.persistInterviews(interviews);
+      this.syncCandidateLifecycle(interviews[index]['id'], {
+        interviewStatus: 'Completed'
+      }, 'Appointment Letter Sent', `Appointment letter sent after interview ${currentStage}.`);
 
-      // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
-        summary: 'Offer Letter Sent',
-        detail: `${this.activeItem.candidate} has successfully been sent an offer letter.`
+        summary: 'Appointment Letter Sent',
+        detail: `${this.getCandidateName(this.activeItem)} has successfully been sent an appointment letter.`
       });
       
     }
@@ -351,14 +501,73 @@ export class ScheduledInterviewComponent {
 // ===========================================================Start/End Interview
   startInterview(interview: any){
     if (interview) {
-      interview.stage = 'In-Progress';
-      this.updateLocalStorage()
+      const stageNumber = Number(interview['interviewStage'] || 1);
+      const sessionId = this.generateId(`session-${stageNumber}`);
+      const panel = (interview.interviewPanel || []).length
+        ? interview.interviewPanel || []
+        : [{ id: this.generateId('panel'), name: 'Interview Panel', role: 'Interviewer', email: '' }];
+      const scoreAssignments = [
+        ...(interview.interviewScoreAssignments || []).filter((assignment: InterviewScoreAssignmentDTO) => assignment.stageNumber !== stageNumber),
+        ...panel.map((member: InterviewPanelMemberDTO) => ({
+          id: this.generateId('assignment'),
+          sessionId,
+          stageNumber,
+          participantName: member.name,
+          participantRole: member.role,
+          participantEmail: member.email,
+          status: 'Pending' as const
+        }))
+      ];
+
+      this.updateInterviewRecord(interview['id'], {
+        stage: ApplicationStage.InProgress,
+        interviewCurrentSessionId: sessionId,
+        scoreSheetStatus: 'Ready',
+        interviewScoreAssignments: scoreAssignments,
+        interviewHistory: [
+          ...(interview.interviewHistory || []),
+          this.createInterviewHistoryEntry(
+            stageNumber,
+            'Interview Started',
+            `Interview ${stageNumber} started. ${panel.length} score sheet assignment(s) were created for the panel.`
+          )
+        ]
+      });
+      this.syncCandidateLifecycle(interview['id'], {
+        interviewStatus: 'Invited'
+      }, 'Interview Started', `Interview ${stageNumber} started and score sheets were created for the panel.`);
     }
   }
   endInterview(interview: any){
     if (interview) {
-      interview.stage = `Completed`;
-      this.updateLocalStorage()
+      const stageNumber = Number(interview['interviewStage'] || 1);
+      const sessionId = interview.interviewCurrentSessionId || '';
+      const assignments = interview.interviewScoreAssignments || [];
+      const summary = this.buildStageSummary(interview, stageNumber, sessionId, assignments);
+
+      this.updateInterviewRecord(interview['id'], {
+        stage: ApplicationStage.Completed,
+        scoreSheetStatus: 'Completed',
+        latestInterviewOutcome: summary.outcome,
+        interviewStageSummaries: this.upsertStageSummary(interview.interviewStageSummaries || [], {
+          ...summary,
+          completedAt: new Date().toISOString()
+        }),
+        interviewHistory: [
+          ...(interview.interviewHistory || []),
+          this.createInterviewHistoryEntry(
+            stageNumber,
+            'Interview Completed',
+            `Interview ${stageNumber} completed with ${summary.averageScore?.toFixed(1) || '0.0'} average score and ${summary.outcome} outcome.`,
+            [],
+            summary.averageScore,
+            summary.outcome
+          )
+        ]
+      });
+      this.syncCandidateLifecycle(interview['id'], {
+        interviewStatus: 'Completed'
+      }, 'Interview Completed', `Interview ${stageNumber} completed with ${summary.outcome} outcome.`);
     }
   }
 // ======================================================================================
@@ -377,29 +586,15 @@ export class ScheduledInterviewComponent {
   }
 
   updateLocalStorage() {
-    localStorage.setItem('scheduledCandidate', JSON.stringify(this.interviews));
+    this.persistInterviews(this.interviews);
   }
 
 // =========================Function to filter candidates by selected positions
   filterCandidatesByPosition() {
-    if (this.selectedPositions.length > 0) {
-      this.filteredCandidates = this.interviews.filter(interview =>
-        this.selectedPositions.includes(interview.position!)
-      );
-    } else {
-      this.filteredCandidates = [...this.interviews]; // Show all if no position is selected
-    }
+    this.applyFilters();
   }
   filterCandidates() {
-    this.filteredCandidates = this.interviews.filter(interview => {
-      // Check if the candidate matches the search term
-      const matchesSearchTerm = interview.candidateName!.toLowerCase().includes(this.searchTerm.toLowerCase());
-  
-      // Check if the candidate matches one of the selected positions (if any)
-      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position!);
-  
-      return matchesSearchTerm && matchesPosition;
-    });
+    this.applyFilters();
   }
 //====================================================================================== 
 
@@ -593,12 +788,14 @@ export class ScheduledInterviewComponent {
       pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 50, pdfHeight - 10);
     }
   
-    pdf.save(`${this.candidateData.candidateName} scoresheet.pdf`);
+    const candidateName = this.getCandidateName(this.interviews.find(candidate => candidate['id'] === candidateId)) || 'Candidate';
+
+    pdf.save(`${candidateName} scoresheet.pdf`);
 
     this.messageService.add({
       severity: 'success',
       summary: 'Download Complete',
-      detail: `Scoresheet for ${this.candidateData.candidateName} has been downloaded successfully.`,
+      detail: `Scoresheet for ${candidateName} has been downloaded successfully.`,
     });
   }
 
@@ -616,6 +813,396 @@ export class ScheduledInterviewComponent {
     ];
     
     return Object.keys(this.activeItem).filter(key => !predefinedKeys.includes(key));
+  }
+
+  getDisplayStage(interview: InterviewRecord): string {
+    return interview?.stage || 'Awaiting Response';
+  }
+
+  canStartInterview(interview: InterviewRecord): boolean {
+    return ['Accepted', ApplicationStage.Scheduled].includes(this.getDisplayStage(interview));
+  }
+
+  canCreateScoreSheet(interview: InterviewRecord): boolean {
+    return [ApplicationStage.InProgress, ApplicationStage.Completed].includes(this.getDisplayStage(interview) as ApplicationStage);
+  }
+
+  canEndInterview(interview: InterviewRecord): boolean {
+    return this.getDisplayStage(interview) === ApplicationStage.InProgress;
+  }
+
+  canMoveToNextStage(interview: InterviewRecord): boolean {
+    return this.getDisplayStage(interview) === ApplicationStage.Completed && this.getLatestSummary(interview)?.outcome === 'Pass';
+  }
+
+  canSendOffer(interview: InterviewRecord): boolean {
+    return this.getDisplayStage(interview) === ApplicationStage.Completed && this.getLatestSummary(interview)?.outcome === 'Pass';
+  }
+
+  canSendAppointmentLetter(interview: InterviewRecord): boolean {
+    return [ApplicationStage.OfferSent, ApplicationStage.OfferAccepted].includes(this.getDisplayStage(interview) as ApplicationStage);
+  }
+
+  canDownloadScoreSheet(interview: InterviewRecord): boolean {
+    return [ApplicationStage.InProgress, ApplicationStage.Completed, ApplicationStage.OfferSent, ApplicationStage.AppointmentLetterSent].includes(
+      this.getDisplayStage(interview) as ApplicationStage
+    );
+  }
+
+  getInterviewHistory(): InterviewHistoryItemDTO[] {
+    return [...(this.activeItem?.interviewHistory || [])].reverse();
+  }
+
+  getInterviewStageSummaries(): InterviewStageSummaryDTO[] {
+    return [...(this.activeItem?.interviewStageSummaries || [])].sort((left, right) => right.stageNumber - left.stageNumber);
+  }
+
+  getScoreAssignmentsForActiveStage(): InterviewScoreAssignmentDTO[] {
+    const stageNumber = Number(this.activeItem?.['interviewStage'] || 1);
+    return (this.activeItem?.interviewScoreAssignments || []).filter((assignment: InterviewScoreAssignmentDTO) => assignment.stageNumber === stageNumber);
+  }
+
+  getOutcomeClass(outcome?: InterviewOutcomeDTO): string {
+    switch (outcome) {
+      case 'Pass':
+        return 'badge badge-lightgreen';
+      case 'Borderline':
+        return 'badge badge-lightyellow';
+      case 'Fail':
+        return 'badge badge-lightred';
+      default:
+        return 'badge badge-lightgrey';
+    }
+  }
+
+  getHistoryIcon(action: string): string {
+    if (action.includes('Scheduled')) return 'fas fa-calendar-check';
+    if (action.includes('Started')) return 'fas fa-play-circle';
+    if (action.includes('Score Sheet')) return 'fas fa-clipboard-check';
+    if (action.includes('Completed')) return 'fas fa-flag-checkered';
+    if (action.includes('Offer')) return 'fas fa-envelope-open-text';
+    if (action.includes('Appointment')) return 'fas fa-file-signature';
+    return 'fas fa-circle';
+  }
+
+  private applyFilters(): void {
+    const searchTerm = this.searchTerm.trim().toLowerCase();
+
+    this.filteredCandidates = [...this.interviews]
+      .filter(interview => {
+        const matchesPosition =
+          this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position || '');
+        const matchesSearchTerm =
+          !searchTerm ||
+          this.getCandidateName(interview).toLowerCase().includes(searchTerm) ||
+          (interview['email'] || '').toLowerCase().includes(searchTerm) ||
+          (interview.position || '').toLowerCase().includes(searchTerm);
+
+        return matchesPosition && matchesSearchTerm;
+      })
+      .reverse();
+  }
+
+  private updateInterviewRecord(candidateId: string | undefined, updates: Partial<InterviewRecord>): void {
+    if (!candidateId) {
+      return;
+    }
+
+    const interviews = this.getStoredInterviews();
+    const index = interviews.findIndex(interview => interview['id'] === candidateId);
+
+    if (index === -1) {
+      return;
+    }
+
+    interviews[index] = {
+      ...interviews[index],
+      ...updates,
+    };
+
+    this.persistInterviews(interviews);
+
+    if (this.activeItem?.id === candidateId) {
+      this.activeItem = this.interviews.find(interview => interview['id'] === candidateId) || this.activeItem;
+    }
+  }
+
+  private getStoredInterviews(): InterviewRecord[] {
+    const storedInterviews = localStorage.getItem(this.interviewStorageKey);
+
+    if (!storedInterviews) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(storedInterviews) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  private persistInterviews(interviews: InterviewRecord[]): void {
+    localStorage.setItem(this.interviewStorageKey, JSON.stringify(interviews));
+    this.interviews = interviews.map(interview => this.normalizeInterviewRecord(interview));
+    this.positions = [...new Set(this.interviews.map(interview => interview.position).filter(Boolean) as string[])];
+    this.applyFilters();
+  }
+
+  private normalizeInterviewRecord(interview: InterviewRecord): InterviewRecord {
+    const fullName = this.getCandidateName(interview);
+    const appliedDate = interview.appliedDate || interview['dateApplied'] || '';
+    const position = this.getCandidatePosition(interview);
+    const stage = this.resolveInterviewStage(interview);
+
+    return {
+      ...interview,
+      appliedDate,
+      candidateName: interview['candidateName'] || fullName,
+      contactNo: interview['contactNo'] || interview.phone || '',
+      dateApplied: interview['dateApplied'] || appliedDate,
+      documents: interview.documents || [],
+      formResponses: interview.formResponses || [],
+      fullName,
+      fullname: interview['fullname'] || fullName,
+      phone: interview.phone || interview['contactNo'] || '',
+      position,
+      meetingDetails: interview.meetingDetails || {
+        date: interview['scheduledDate'] || '',
+        time: '',
+        location: '',
+        interviewType: interview['interviewType'] || '',
+        notes: ''
+      },
+      interviewPanel: interview.interviewPanel || [],
+      interviewHistory: interview.interviewHistory || [],
+      interviewStageSummaries: interview.interviewStageSummaries || [],
+      interviewScoreAssignments: interview.interviewScoreAssignments || [],
+      latestInterviewOutcome: interview.latestInterviewOutcome || 'Pending',
+      scoreSheetStatus: interview.scoreSheetStatus || 'Not Started',
+      aiVetting: interview.aiVetting || null,
+      stage,
+    };
+  }
+
+  private resolveInterviewStage(interview: InterviewRecord): InterviewStage {
+    const stage = interview.stage?.toString();
+
+    if (stage && ['Accepted', 'Declined', 'Awaiting Response', ...Object.values(ApplicationStage)].includes(stage)) {
+      return stage as InterviewStage;
+    }
+
+    const response = interview.candidateResponse?.toLowerCase();
+    if (response === 'accept') {
+      return 'Accepted';
+    }
+
+    if (response === 'decline') {
+      return 'Declined';
+    }
+
+    return (stage || 'Awaiting Response') as InterviewStage;
+  }
+
+  private getCandidateName(candidate?: InterviewRecord): string {
+    if (!candidate) {
+      return '';
+    }
+
+    return (
+      candidate.fullName ||
+      candidate['fullname'] ||
+      candidate['candidateName'] ||
+      `${candidate['firstname'] || candidate['firstName'] || ''} ${candidate['lastname'] || candidate['lastName'] || ''}`.trim()
+    );
+  }
+
+  private getCandidatePosition(candidate?: InterviewRecord): string {
+    if (!candidate) {
+      return '';
+    }
+
+    return (
+      candidate.position ||
+      candidate['jobVacancy']?.jobTitle ||
+      candidate['job']?.title ||
+      candidate['jobVacancy']?.jobCategory?.name ||
+      candidate['job']?.jobVacancy?.jobCategory?.name ||
+      ''
+    );
+  }
+
+  private buildStageSummary(
+    interview: InterviewRecord,
+    stageNumber: number,
+    sessionId: string,
+    assignments: InterviewScoreAssignmentDTO[]
+  ): InterviewStageSummaryDTO {
+    const submissions = this.getScoreSubmissions(interview['id'] || '', stageNumber, sessionId);
+    const averageScore = submissions.length
+      ? submissions.reduce((total, submission) => total + Number(submission.totalScore || 0), 0) / submissions.length
+      : 0;
+
+    return {
+      stageNumber,
+      sessionId,
+      startedAt: interview.interviewStageSummaries?.find(summary => summary.stageNumber === stageNumber)?.startedAt || new Date().toISOString(),
+      averageScore,
+      totalSubmissions: submissions.length,
+      panelSize: assignments.filter(assignment => assignment.stageNumber === stageNumber).length,
+      submittedBy: submissions.map(submission => submission.interviewerName || submission.interviewerEmail || 'Interviewer'),
+      outcome: submissions.length ? this.getOutcomeForScore(averageScore) : 'Pending'
+    };
+  }
+
+  private getScoreSubmissions(candidateId: string, stageNumber: number, sessionId: string): ScoreSheetDTO[] {
+    const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
+    const candidateSubmissions: ScoreSheetDTO[] = allSubmittedCriteria[candidateId] || [];
+    return candidateSubmissions.filter(submission =>
+      submission.interviewStage === stageNumber && (!sessionId || submission.sessionId === sessionId)
+    );
+  }
+
+  private upsertStageSummary(existing: InterviewStageSummaryDTO[], summary: InterviewStageSummaryDTO): InterviewStageSummaryDTO[] {
+    const summaryIndex = existing.findIndex(item => item.stageNumber === summary.stageNumber);
+    if (summaryIndex === -1) {
+      return [...existing, summary];
+    }
+
+    const updated = [...existing];
+    updated[summaryIndex] = {
+      ...updated[summaryIndex],
+      ...summary
+    };
+    return updated;
+  }
+
+  private updateAssignmentsWithSubmission(interview: InterviewRecord, submission: ScoreSheetDTO): InterviewScoreAssignmentDTO[] {
+    const existingAssignments = [...(interview.interviewScoreAssignments || [])];
+    const assignmentIndex = existingAssignments.findIndex(assignment =>
+      assignment.stageNumber === submission.interviewStage &&
+      assignment.sessionId === submission.sessionId &&
+      (assignment.participantEmail === submission.interviewerEmail || assignment.participantName === submission.interviewerName)
+    );
+
+    if (assignmentIndex === -1) {
+      existingAssignments.push({
+        id: this.generateId('assignment'),
+        sessionId: submission.sessionId || '',
+        stageNumber: submission.interviewStage || Number(interview['interviewStage'] || 1),
+        participantName: submission.interviewerName || 'Interviewer',
+        participantRole: submission.interviewerRole || 'Interviewer',
+        participantEmail: submission.interviewerEmail || '',
+        status: 'Submitted',
+        submittedAt: submission.requestDate,
+        totalScore: submission.totalScore
+      });
+      return existingAssignments;
+    }
+
+    existingAssignments[assignmentIndex] = {
+      ...existingAssignments[assignmentIndex],
+      status: 'Submitted',
+      submittedAt: submission.requestDate,
+      totalScore: submission.totalScore
+    };
+    return existingAssignments;
+  }
+
+  private createInterviewHistoryEntry(
+    stageNumber: number,
+    action: string,
+    details: string,
+    documents: AttachmentDTO[] = [],
+    averageScore?: number,
+    outcome?: InterviewOutcomeDTO
+  ): InterviewHistoryItemDTO {
+    return {
+      id: this.generateId('history'),
+      date: new Date().toISOString(),
+      action,
+      details,
+      stageNumber,
+      documents,
+      averageScore,
+      outcome
+    };
+  }
+
+  private syncCandidateLifecycle(
+    candidateId: string | undefined,
+    updates: {
+      status?: string;
+      interviewStatus?: string;
+      interviewDetails?: { scheduledDate?: string; location?: string; format?: string; notes?: string; };
+    },
+    historyAction: string,
+    details: string
+  ): void {
+    if (!candidateId) {
+      return;
+    }
+
+    const storedCandidates = localStorage.getItem('candidateData');
+    if (!storedCandidates) {
+      return;
+    }
+
+    try {
+      const candidates = JSON.parse(storedCandidates);
+      const candidateIndex = candidates.findIndex((candidate: any) => candidate.id === candidateId);
+
+      if (candidateIndex === -1) {
+        return;
+      }
+
+      if (updates.status) {
+        candidates[candidateIndex].status = updates.status;
+      }
+
+      if (updates.interviewStatus) {
+        candidates[candidateIndex].interviewStatus = updates.interviewStatus;
+      }
+
+      if (updates.interviewDetails) {
+        candidates[candidateIndex].interviewDetails = {
+          ...(candidates[candidateIndex].interviewDetails || {}),
+          ...updates.interviewDetails
+        };
+      }
+
+      if (!candidates[candidateIndex].decisionHistory) {
+        candidates[candidateIndex].decisionHistory = [];
+      }
+
+      candidates[candidateIndex].decisionHistory.push({
+        date: new Date().toISOString(),
+        action: historyAction,
+        details
+      });
+
+      localStorage.setItem('candidateData', JSON.stringify(candidates));
+    } catch (error) {
+      console.error('Error syncing candidate lifecycle:', error);
+    }
+  }
+
+  private getLatestSummary(interview: InterviewRecord, stageNumber?: number): InterviewStageSummaryDTO | undefined {
+    const summaries = interview.interviewStageSummaries || [];
+    if (typeof stageNumber === 'number') {
+      return summaries.find(summary => summary.stageNumber === stageNumber);
+    }
+
+    return [...summaries].sort((left, right) => right.stageNumber - left.stageNumber)[0];
+  }
+
+  private getOutcomeForScore(score: number): InterviewOutcomeDTO {
+    if (score >= 70) return 'Pass';
+    if (score >= 50) return 'Borderline';
+    return 'Fail';
+  }
+
+  private generateId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
   generateBlobUrl(dataUrl: string): string {
     const byteString = atob(dataUrl.split(',')[1]);
@@ -657,7 +1244,7 @@ export class ScheduledInterviewComponent {
   
     // Step 4: Map the data to return the relevant criteria and totalScore
     return candidateData.map((item: any) => ({
-      criteria: item.criteria ? item.criteria.title : 'Unknown Criteria',
+      criteria: item.criteria ? `${item.criteria.title} (Interview ${item.interviewStage || 1})` : 'Unknown Criteria',
       totalScore: item.totalScore || 0,
     }));
   }
@@ -684,10 +1271,10 @@ export class ScheduledInterviewComponent {
   
   
       getInitials(candidate: any): string {
-       const fullName = `${candidate?.firstname || ''} ${candidate?.lastname || ''}`.trim();
+       const fullName = `${candidate?.firstname || candidate?.firstName || ''} ${candidate?.lastname || candidate?.lastName || ''}`.trim() || candidate?.fullName || candidate?.candidateName || '';
       return fullName
         .split(' ')
-        .map(n => n[0])
+        .map((namePart: string) => namePart[0])
         .slice(0, 2)
         .join('')
         .toUpperCase();

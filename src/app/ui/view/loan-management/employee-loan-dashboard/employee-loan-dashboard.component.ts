@@ -63,8 +63,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     return !isNaN(date.getTime());
   }
 
-  employeeName: string = 'Employee Name';
-  employeeId: string = 'EMP-123';
+  employeeName: string = '';
+  employeeId: string = '';
   employeeDepartment: string = '';
   isLoading: boolean = false;
   isDataLoaded: boolean = false; 
@@ -124,13 +124,98 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.hydrateEmployeeIdentityFromSession();
     this.loadEmployeeData();
+  }
+
+  private buildFullNameFromEmployeePayload(employee: any): string {
+    const firstName = String(employee?.firstName || '').trim();
+    const lastName = String(employee?.lastName || '').trim();
+    const joinedName = `${firstName} ${lastName}`.trim();
+    return joinedName || String(employee?.fullName || employee?.name || '').trim();
+  }
+
+  private hydrateEmployeeIdentityFromSession(): void {
+    const storedFullName = String(sessionStorage.getItem('fullname') || '').trim();
+    const storedEmployeeId = String(sessionStorage.getItem('employeeId') || '').trim();
+    const cachedCurrentEmployeeRaw = sessionStorage.getItem('currentEmployee') || localStorage.getItem('currentEmployee');
+
+    let fullNameFromCachedEmployee = '';
+    try {
+      if (cachedCurrentEmployeeRaw) {
+        const cachedEmployee = JSON.parse(cachedCurrentEmployeeRaw);
+        fullNameFromCachedEmployee = this.buildFullNameFromEmployeePayload(cachedEmployee);
+      }
+    } catch {
+      // Ignore malformed cached employee payload.
+    }
+
+    let fullNameFromRegistration = '';
+    try {
+      const rawUserRegData = sessionStorage.getItem('userRegData');
+      if (rawUserRegData) {
+        const parsed = JSON.parse(rawUserRegData);
+        fullNameFromRegistration = String(parsed?.fullName || parsed?.fullname || parsed?.name || '').trim();
+      }
+    } catch {
+      // Ignore malformed registration payload and continue with other safe fallbacks.
+    }
+
+    const immediateName = fullNameFromCachedEmployee || storedFullName || fullNameFromRegistration;
+    if (immediateName) {
+      this.employeeName = immediateName;
+    }
+
+    if (storedEmployeeId && storedEmployeeId !== 'undefined' && storedEmployeeId !== 'null') {
+      this.employeeId = storedEmployeeId;
+    }
   }
 
   ngOnDestroy(): void {
     if (this.loanSubscription) {
       this.loanSubscription.unsubscribe();
     }
+  }
+
+  get displayEmployeeName(): string {
+    const directName = String(this.employeeName || '').trim();
+    if (directName) {
+      return directName;
+    }
+
+    const cachedCurrentEmployeeRaw = sessionStorage.getItem('currentEmployee') || localStorage.getItem('currentEmployee');
+    if (cachedCurrentEmployeeRaw) {
+      try {
+        const cachedEmployee = JSON.parse(cachedCurrentEmployeeRaw);
+        const cachedEmployeeName = this.buildFullNameFromEmployeePayload(cachedEmployee);
+        if (cachedEmployeeName) {
+          return cachedEmployeeName;
+        }
+      } catch {
+        // Ignore malformed cached employee payload.
+      }
+    }
+
+    const sessionFullName = String(sessionStorage.getItem('fullname') || '').trim();
+    if (sessionFullName) {
+      return sessionFullName;
+    }
+
+    return '';
+  }
+
+  get displayEmployeeId(): string {
+    const directEmployeeId = String(this.employeeId || '').trim();
+    if (directEmployeeId && directEmployeeId !== 'undefined' && directEmployeeId !== 'null') {
+      return directEmployeeId;
+    }
+
+    const sessionEmployeeId = String(sessionStorage.getItem('employeeId') || '').trim();
+    if (sessionEmployeeId && sessionEmployeeId !== 'undefined' && sessionEmployeeId !== 'null') {
+      return sessionEmployeeId;
+    }
+
+    return '';
   }
 
   get recentApplicationUpdates(): Array<{ loanId: string; status: LoanApplication['status']; changedAt: string; message: string; iconClass: string }> {
@@ -237,7 +322,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response) {
             this.employeeId = String(response.id || response.employeeId || '');
-            this.employeeName = `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.fullName || 'Employee';
+            this.employeeName = `${response.firstName || ''} ${response.lastName || ''}`.trim() || response.fullName || this.displayEmployeeName;
             this.employeeDepartment = response.department?.name || response.department || '';
           }
 

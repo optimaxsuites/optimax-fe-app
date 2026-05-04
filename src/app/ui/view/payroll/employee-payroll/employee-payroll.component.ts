@@ -1,13 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
 import { EmployeeService } from '../../../service/employee.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
 import { Employee, Payroll } from '../../../domain/payroll.dto';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { MessageService } from 'primeng/api';
+import { RolesService } from '../../../service/roles.service';
 interface Allowances {
     housingAllowance: number;
     transportationAllowance: number;
@@ -70,9 +71,15 @@ interface PayrollSettings {
 })
 export class EmployeePayrollComponent {
 private readonly payrollLoanDeductionService = inject(PayrollLoanDeductionService);
+private readonly rolesService = inject(RolesService);
+private readonly toastKey = 'tf';
 isApplyingLoanDeductions = false;
 loanDeductionSyncMessage = '';
 autoApplyLoanDeductions = true;
+isLoadingPayroll = false;
+isApprovingPayroll = false;
+private readonly approverNameByUserId = new Map<string, string>();
+private readonly approverRoleNameByRoleId = new Map<string, string>();
 
 payType: string[] = [];
 selectedPayType: string[] = [];
@@ -89,6 +96,9 @@ currentEmployeeInView: any = {};
 payrollInView: any = {};
 canSeeApproveButton = false;
 openApproveModal = false
+openRejectModal = false
+approvalComment = '';
+currentStageRequiresComment = false;
 
   uniqueLevels: any;
   uniquePositions: any;
@@ -270,12 +280,14 @@ constructor(   private employeeService: EmployeeService,  private sanitizer: Dom
 ngOnInit(){
     // this.handlePeriodChange()
     //    this.fetchEmployees()
-  const userId = sessionStorage.getItem('userid')
-  this.currentUserId = userId ? Number(userId) : null;
-  this.employeeService.getEmployeeByUserId(Number(userId)).subscribe({  
+  const userId = sessionStorage.getItem('userid') || localStorage.getItem('userid')
+  this.currentUserId = this.extractUserId(userId);
+  this.employeeService.getEmployeeByUserId(this.currentUserId).subscribe({  
     next: data => {this.currentUser = data; console.log(data)},
     error: err => console.log(err)
   })
+  this.loadApproverDirectory();
+  this.loadApproverRoles();
   this.generatePayrolls()    
 }
 
@@ -292,7 +304,7 @@ formatCurrency(value: number | null | undefined): string {
 }
 
 generatePayrolls(){
-
+    this.isLoadingPayroll = true;
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
             this.payrollRecords = response
@@ -302,16 +314,16 @@ generatePayrolls(){
             const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
             console.log(currentStage)
 
-            const assignments = currentStage?.assignment || [];
+            const assignments = this.getStageAssignments(currentStage);
 
             const currentUserId = this.currentUserId; 
-            this.canSeeApprovalButton = assignments.some(
-              (a: any) => a.userId?.id === currentUserId
-            );
+            this.canSeeApprovalButton = assignments.some((a: any) => this.canCurrentUserApproveAssignment(a));
             this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
+            this.currentStageRequiresComment = currentStage?.requiresComment ?? false;
             this.canEditRecord = currentStage?.canEditRecord ?? false;
             this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
-            if (this.canEditRecord) {
+            const hasEditAction = this.payrollActions.some(action => action.id === 'edit');
+            if (this.canEditRecord && !hasEditAction) {
               this.payrollActions.push({
                 id: 'edit',
                 label: 'Edit',
@@ -327,8 +339,66 @@ generatePayrolls(){
             this.selectedYear = this.years[this.years.length - 1]
             
         },
-        error: err => console.log(err)
+        error: err => {
+          console.log(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Load failed',
+            detail: 'Unable to load payroll records right now.',
+            key: this.toastKey
+          });
+        },
+        complete: () => {
+          this.isLoadingPayroll = false;
+        }
     })
+}
+
+private loadApproverDirectory(): void {
+  this.employeeService.getAllEmployee().subscribe({
+    next: (employees) => {
+      (employees || []).forEach((employee: any) => {
+        const name = this.buildEmployeeFullName(employee);
+        if (!name) {
+          return;
+        }
+
+        [
+          employee?.user?.id,
+          employee?.userId,
+          employee?.user?.userId
+        ].forEach((id) => {
+          if (id !== null && id !== undefined && String(id).trim() !== '') {
+            this.approverNameByUserId.set(String(id), name);
+          }
+        });
+      });
+    },
+    error: (err) => console.log(err)
+  });
+}
+
+private loadApproverRoles(): void {
+  this.rolesService.getRoles().subscribe({
+    next: (roles) => {
+      (roles || []).forEach((role: any) => {
+        if (role?.id !== null && role?.id !== undefined) {
+          const roleName = role?.name || role?.roleName || role?.code || role?.roleCode;
+          if (roleName) {
+            this.approverRoleNameByRoleId.set(String(role.id), roleName);
+          }
+        }
+      });
+    },
+    error: (err) => console.log(err)
+  });
+}
+
+private buildEmployeeFullName(employee: any): string {
+  const firstName = employee?.firstName ?? '';
+  const lastName = employee?.lastName ?? '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || employee?.workEmail || employee?.email || '';
 }
 
  
@@ -563,7 +633,430 @@ generatePayrolls(){
   }
 
   confirmApprovePayroll(){
+    if (this.isApprovingPayroll) {
+      return;
+    }
+    if (this.openApproveModal) {
+      this.selectedFile = null;
+      this.approvalComment = '';
+    }
     this.openApproveModal = !this.openApproveModal
+  }
+
+  confirmRejectPayroll() {
+    if (this.isApprovingPayroll) {
+      return;
+    }
+    if (this.openRejectModal) {
+      this.approvalComment = '';
+    }
+    this.openRejectModal = !this.openRejectModal;
+  }
+
+  get approvalStages(): any[] {
+    return this.payrollInView?.payrollApprovalInstance?.approval?.stages ?? [];
+  }
+
+  get approvalActions(): any[] {
+    return this.payrollInView?.payrollApprovalInstance?.actions ?? [];
+  }
+
+  get currentApprovalStageOrder(): number | null {
+    return this.payrollInView?.payrollApprovalInstance?.currentStage?.orderIndex ?? null;
+  }
+
+  get overallApprovalStatus(): 'completed' | 'current' | 'pending' {
+    const stages = this.approvalStages;
+    if (!stages.length) {
+      return 'pending';
+    }
+
+    const statuses = stages.map((stage) => this.getStageStatus(stage));
+    if (statuses.every((status) => status === 'completed')) {
+      return 'completed';
+    }
+
+    if (statuses.some((status) => status === 'current')) {
+      return 'current';
+    }
+
+    return 'pending';
+  }
+
+  get overallApprovalStatusLabel(): string {
+    if (this.overallApprovalStatus === 'completed') {
+      return 'COMPLETED';
+    }
+
+    if (this.overallApprovalStatus === 'current') {
+      return 'IN PROGRESS';
+    }
+
+    return (this.payrollInView?.payrollApprovalInstance?.status || 'PENDING').toUpperCase();
+  }
+
+  getStageStatus(stage: any): 'completed' | 'current' | 'pending' {
+    const stageOrder = stage?.orderIndex;
+    if (stageOrder == null) {
+      return 'pending';
+    }
+
+    const hasApprovedAction = this.approvalActions.some(
+      (action: any) => action?.stageOrder === stageOrder && action?.actionType === 'APPROVED'
+    );
+
+    if (hasApprovedAction) {
+      return 'completed';
+    }
+
+    if (this.currentApprovalStageOrder === stageOrder) {
+      return 'current';
+    }
+
+    return 'pending';
+  }
+
+  getStageStatusLabel(stage: any): string {
+    const status = this.getStageStatus(stage);
+    if (status === 'completed') {
+      return 'Completed';
+    }
+    if (status === 'current') {
+      return 'Current';
+    }
+    return 'Pending';
+  }
+
+  getStageAssignments(stage: any): any[] {
+    return stage?.assignment ?? stage?.assignments ?? stage?.approvers ?? [];
+  }
+
+  getStageAction(stage: any): any {
+    const stageOrder = stage?.orderIndex;
+    if (stageOrder == null) {
+      return null;
+    }
+
+    return this.approvalActions.find((action: any) => action?.stageOrder === stageOrder) ?? null;
+  }
+
+  getStageDocuments(stage: any): any[] {
+    const stageOrder = stage?.orderIndex;
+    if (stageOrder == null) {
+      return [];
+    }
+    return this.approvalActions.filter((action: any) => action?.stageOrder === stageOrder && action?.documentMediaNo);
+  }
+
+  hasStageDocuments(stage: any): boolean {
+    return this.getStageDocuments(stage).length > 0;
+  }
+
+  getApprovalDocumentUrl(documentMediaNo: string): string {
+    return this.payrollService.getApprovalDocumentUrl(documentMediaNo);
+  }
+
+  getUserDisplayName(user: any): string {
+    if (!user) {
+      return 'Unassigned';
+    }
+
+    if (typeof user === 'number' || typeof user === 'string') {
+      const mappedName = this.approverNameByUserId.get(String(user));
+      return mappedName ? `${mappedName} (User #${user})` : `User #${user}`;
+    }
+
+    const firstName = user?.firstName ?? '';
+    const lastName = user?.lastName ?? '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    if (fullName) {
+      return fullName;
+    }
+
+    if (user?.id !== null && user?.id !== undefined) {
+      const directoryName = this.approverNameByUserId.get(String(user.id));
+      if (directoryName) {
+        return `${directoryName} (User #${user.id})`;
+      }
+    }
+
+    return user?.email || user?.username || `User #${user?.id ?? ''}`.trim();
+  }
+
+  getStageApproverNames(stage: any): string {
+    const names = this.getStageAssignments(stage)
+      .map((assignment: any) => this.resolveAssignmentDisplayName(assignment))
+      .filter((name: string) => !!name);
+
+    return names.length ? names.join(', ') : 'No approver assigned';
+  }
+
+  private extractUserId(value: any): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (/^\d+$/.test(trimmed)) {
+        return Number(trimmed);
+      }
+      return null;
+    }
+
+    if (value && typeof value === 'object') {
+      const nestedId = Number(value.id ?? value.userId ?? value.actorUserId ?? 0);
+      return Number.isFinite(nestedId) && nestedId > 0 ? nestedId : null;
+    }
+
+    return null;
+  }
+
+  private extractAssignmentUserId(assignment: any): number | null {
+    if (!assignment) {
+      return null;
+    }
+
+    const directCandidates = [
+      assignment.userId,
+      assignment.user,
+      assignment.approver,
+      assignment.actorUser,
+      assignment.assignedUser
+    ];
+
+    for (const candidate of directCandidates) {
+      const extracted = this.extractUserId(candidate);
+      if (extracted) {
+        return extracted;
+      }
+    }
+
+    return null;
+  }
+
+  private extractRoleId(value: any): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (/^\d+$/.test(trimmed)) {
+        return Number(trimmed);
+      }
+      return null;
+    }
+
+    if (value && typeof value === 'object') {
+      const nestedId = Number(value.id ?? value.roleId ?? 0);
+      return Number.isFinite(nestedId) && nestedId > 0 ? nestedId : null;
+    }
+
+    return null;
+  }
+
+  private extractAssignmentRoleId(assignment: any): number | null {
+    if (!assignment) {
+      return null;
+    }
+
+    const directCandidates = [
+      assignment.roleId,
+      assignment.role,
+      assignment.approverRole,
+      assignment.assignedRole
+    ];
+
+    for (const candidate of directCandidates) {
+      const extracted = this.extractRoleId(candidate);
+      if (extracted) {
+        return extracted;
+      }
+    }
+
+    return null;
+  }
+
+  private getCurrentRoleTokens(): string[] {
+    const tokens = new Set<string>();
+    const rawRole = sessionStorage.getItem('role') || localStorage.getItem('role') || '';
+
+    rawRole
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach((item) => this.pushNormalizedRoleToken(tokens, item));
+
+    const userApplicationRoleRaw = sessionStorage.getItem('userApplicationRole');
+    if (userApplicationRoleRaw) {
+      try {
+        const parsed = JSON.parse(userApplicationRoleRaw);
+        const appRole = parsed?.appRole;
+        const candidates = [
+          appRole?.name,
+          appRole?.code,
+          appRole?.roleName,
+          appRole?.roleCode
+        ];
+        candidates
+          .map((item: any) => (typeof item === 'string' ? item.trim() : ''))
+          .filter(Boolean)
+          .forEach((item: string) => this.pushNormalizedRoleToken(tokens, item));
+      } catch {
+        // ignore malformed session payload
+      }
+    }
+
+    return Array.from(tokens);
+  }
+
+  private getCurrentRoleIds(): number[] {
+    const roleIds = new Set<number>();
+    const userApplicationRoleRaw = sessionStorage.getItem('userApplicationRole');
+    if (!userApplicationRoleRaw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(userApplicationRoleRaw);
+      const appRole = parsed?.appRole;
+      const candidates = [
+        appRole?.id,
+        appRole?.roleId,
+        parsed?.roleId,
+        parsed?.id
+      ];
+
+      candidates.forEach((candidate: any) => {
+        const parsedId = Number(candidate);
+        if (Number.isFinite(parsedId) && parsedId > 0) {
+          roleIds.add(parsedId);
+        }
+      });
+    } catch {
+      // ignore malformed session payload
+    }
+
+    return Array.from(roleIds);
+  }
+
+  private pushNormalizedRoleToken(target: Set<string>, value: string): void {
+    const normalized = value.trim().toUpperCase();
+    if (!normalized) {
+      return;
+    }
+
+    target.add(normalized);
+    target.add(normalized.replace(/^ROLE_/, ''));
+  }
+
+  private getRoleDisplayName(role: any): string {
+    if (!role) {
+      return '';
+    }
+
+    if (typeof role === 'string') {
+      return role.trim();
+    }
+
+    const roleId = role?.id ?? role?.roleId ?? null;
+    const mappedName = role?.id !== null && role?.id !== undefined
+      ? this.approverRoleNameByRoleId.get(String(role.id))
+      : null;
+    if (mappedName) {
+      return roleId ? `${mappedName} (Role #${roleId})` : mappedName;
+    }
+
+    const rawName =
+      role?.name ||
+      role?.roleName ||
+      role?.code ||
+      role?.roleCode ||
+      '';
+
+    if (rawName && roleId) {
+      return `${rawName} (Role #${roleId})`;
+    }
+
+    return rawName || (roleId ? `Role #${roleId}` : '');
+  }
+
+  private canCurrentUserApproveAssignment(assignment: any): boolean {
+    const currentUserId = this.currentUserId;
+    const assignedUserId = this.extractAssignmentUserId(assignment);
+    if (currentUserId && assignedUserId && assignedUserId === currentUserId) {
+      return true;
+    }
+
+    const currentRoleTokens = this.getCurrentRoleTokens();
+    const currentRoleIds = this.getCurrentRoleIds();
+    if (!currentRoleTokens.length && !currentRoleIds.length) {
+      return false;
+    }
+
+    const roleCandidates = [
+      assignment?.roleId,
+      assignment?.role,
+      assignment?.approverRole,
+      assignment?.assignedRole
+    ];
+
+    const assignedRoleId = this.extractAssignmentRoleId(assignment);
+    const assignedRoleNames = roleCandidates
+      .map((candidate) => this.getRoleDisplayName(candidate))
+      .filter(Boolean)
+      .flatMap((item) => {
+        const normalized = item.toUpperCase();
+        return [normalized, normalized.replace(/^ROLE_/, '')];
+      });
+
+    return assignedRoleNames.some((item) => currentRoleTokens.includes(item))
+      || (assignedRoleId !== null && currentRoleTokens.includes(`ROLE#${assignedRoleId}`))
+      || (assignedRoleId !== null && currentRoleIds.includes(assignedRoleId));
+  }
+
+  private resolveAssignmentDisplayName(assignment: any): string {
+    if (!assignment) {
+      return '';
+    }
+
+    const directCandidates = [
+      assignment.userId,
+      assignment.user,
+      assignment.approver,
+      assignment.actorUser,
+      assignment.assignedUser
+    ];
+
+    for (const candidate of directCandidates) {
+      const name = this.getUserDisplayName(candidate);
+      if (name && name !== 'Unassigned') {
+        return name;
+      }
+    }
+
+    const roleCandidates = [
+      assignment.roleId,
+      assignment.role,
+      assignment.approverRole,
+      assignment.assignedRole
+    ];
+
+    for (const candidate of roleCandidates) {
+      const roleName = this.getRoleDisplayName(candidate);
+      if (roleName) {
+        return roleName;
+      }
+    }
+
+    const fallbackId = this.extractAssignmentUserId(assignment);
+    if (fallbackId) {
+      return this.getUserDisplayName(fallbackId);
+    }
+
+    const fallbackRoleId = this.extractAssignmentRoleId(assignment);
+    return fallbackRoleId ? `Role #${fallbackRoleId}` : '';
   }
 
 
@@ -1158,71 +1651,153 @@ download(format: string) {
     }
 
     onFileSelected(event: any) {
-  const file = event.target.files?.[0];
-  this.selectedFile = file ?? null;
-}
+      const file = event.target.files?.[0];
+      this.selectedFile = file ?? null;
+    }
     onApprove() {
-      if (this.isDocumentRequired && !this.selectedFile) {
+      if (this.isApprovingPayroll) {
         return;
       }
 
-      const payload = {
-        id: this.payrollInView.payrollApprovalInstance.id,
-        approvalId: this.payrollInView.payrollApprovalInstance.approval.id,
-        currentStageId: this.payrollInView.payrollApprovalInstance.currentStage.id,
-        status: "PENDING",
-        approversAccount: [
-          {
-            "id": 0,
-            "userId": this.currentUser.user,
-            "action": "APPROVED",
-            "comment": "",
-            "createdAt": "2026-04-13T12:50:30.809Z",
-            "completedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ],
-        isCompleted: true,
-        "startedAt": "2026-04-13T12:50:30.809Z",
-        "completedAt": "2026-04-13T12:50:30.809Z",
-        "approvalLookupId": 0,
-        "approvalCode": "string",
-        "moduleName": "string",
-        "serviceName": "string",
-        "resourceName": "string",
-        "operationType": "POST",
-        "referenceType": "string",
-        "referenceId": "string",
-        "targetId": "string",
-        "summary": "string",
-        "payloadJson": "string",
-        "callbackUrl": "string",
-        "callbackMethod": "string",
-        "callbackPayloadJson": "string",
-        "currentStageOrder": 0,
-        "requestedBy": 0,
-        "requestedAt": "2026-04-13T12:50:30.809Z",
-        "actions": [
-          {
-            "id": 0,
-            "approvalInstanceId": this.payrollInView.payrollApprovalInstance.approval.id,
-            "stageId": this.payrollInView.payrollApprovalInstance.currentStage.id,
-            "stageOrder": this.payrollInView.payrollApprovalInstance.currentStage.orderIndex,
-            "actionType": "APPROVED",
-            "actorUserId": this.currentUserId,
-            "actorRoleCode": "string",
-            "comment": "string",
-            "actedAt": "2026-04-13T12:50:30.809Z"
-          }
-        ]
-      };
+      const approvalInstanceId = this.payrollInView?.payrollApprovalInstance?.id;
+      if (!approvalInstanceId || !this.currentUserId) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Approval data is incomplete', key: this.toastKey });
+        return;
+      }
 
-      console.log(payload)
-      this.payrollService.approvePayroll(this.payrollInView.payrollApprovalInstance.id, payload).subscribe({
+    if (this.isDocumentRequired && !this.selectedFile) {
+        this.messageService.add({ severity: 'warn', summary: 'Document required', detail: 'Attach a supporting document before approving this payroll', key: this.toastKey });
+        return;
+      }
+      if (this.currentStageRequiresComment && !this.approvalComment.trim()) {
+        this.messageService.add({ severity: 'warn', summary: 'Comment required', detail: 'Enter a comment before approving this payroll', key: this.toastKey });
+        return;
+      }
+
+      const userApplicationRoleRaw = sessionStorage.getItem('userApplicationRole');
+      let actorRoleCode: string | null = sessionStorage.getItem('role') || null;
+      let actorRoleId: number | null = null;
+
+      if (userApplicationRoleRaw) {
+        try {
+          const parsed = JSON.parse(userApplicationRoleRaw);
+          actorRoleCode =
+            parsed?.appRole?.code ||
+            parsed?.appRole?.roleCode ||
+            parsed?.appRole?.name ||
+            actorRoleCode;
+
+          const parsedRoleId = Number(parsed?.appRole?.id ?? parsed?.appRole?.roleId ?? 0);
+          actorRoleId = Number.isFinite(parsedRoleId) && parsedRoleId > 0 ? parsedRoleId : null;
+        } catch {
+          // ignore malformed session payload
+        }
+      }
+
+      const payload = new FormData();
+      payload.append('actorUserId', String(this.currentUserId));
+      if (actorRoleCode) {
+        payload.append('actorRoleCode', actorRoleCode);
+      }
+      if (actorRoleId !== null) {
+        payload.append('actorRoleId', String(actorRoleId));
+      }
+      payload.append('comment', this.approvalComment.trim());
+      if (this.selectedFile) {
+        payload.append('file', this.selectedFile);
+      }
+
+      this.isApprovingPayroll = true;
+      this.payrollService.approvePayroll(approvalInstanceId, payload)
+      .pipe(finalize(() => {
+        this.isApprovingPayroll = false;
+      }))
+      .subscribe({
         next: () => {
           this.openApproveModal = false;
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: 'tl' });
+          this.selectedFile = null;
+          this.approvalComment = '';
+          this.generatePayrolls();
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: this.toastKey });
         },
-        error: (err: any) => console.log(err)
+        error: (err: any) => {
+          console.log(err);
+          const detail =
+            err?.error?.message ||
+            err?.error?.detail ||
+            err?.error?.error ||
+            'Unable to approve payroll';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: this.toastKey });
+        }
       });
+    }
+
+    onReject() {
+      if (this.isApprovingPayroll) {
+        return;
+      }
+
+      const approvalInstanceId = this.payrollInView?.payrollApprovalInstance?.id;
+      if (!approvalInstanceId || !this.currentUserId) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Approval data is incomplete', key: this.toastKey });
+        return;
+      }
+
+      if (!this.approvalComment.trim()) {
+        this.messageService.add({ severity: 'warn', summary: 'Comment required', detail: 'Enter a reason before rejecting this payroll', key: this.toastKey });
+        return;
+      }
+
+      const userApplicationRoleRaw = sessionStorage.getItem('userApplicationRole');
+      let actorRoleCode: string | null = sessionStorage.getItem('role') || null;
+      let actorRoleId: number | null = null;
+
+      if (userApplicationRoleRaw) {
+        try {
+          const parsed = JSON.parse(userApplicationRoleRaw);
+          actorRoleCode =
+            parsed?.appRole?.code ||
+            parsed?.appRole?.roleCode ||
+            parsed?.appRole?.name ||
+            actorRoleCode;
+
+          const parsedRoleId = Number(parsed?.appRole?.id ?? parsed?.appRole?.roleId ?? 0);
+          actorRoleId = Number.isFinite(parsedRoleId) && parsedRoleId > 0 ? parsedRoleId : null;
+        } catch {
+          // ignore malformed session payload
+        }
+      }
+
+      const payload: any = {
+        actorUserId: this.currentUserId,
+        actorRoleCode,
+        comment: this.approvalComment.trim()
+      };
+
+      if (actorRoleId !== null) {
+        payload.actorRoleId = actorRoleId;
+      }
+
+      this.isApprovingPayroll = true;
+      this.payrollService.rejectPayroll(approvalInstanceId, payload)
+        .pipe(finalize(() => {
+          this.isApprovingPayroll = false;
+        }))
+        .subscribe({
+          next: () => {
+            this.openRejectModal = false;
+            this.approvalComment = '';
+            this.generatePayrolls();
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll rejected successfully', key: this.toastKey });
+          },
+          error: (err: any) => {
+            const detail =
+              err?.error?.message ||
+              err?.error?.detail ||
+              err?.error?.error ||
+              'Unable to reject payroll';
+            this.messageService.add({ severity: 'error', summary: 'Error', detail, key: this.toastKey });
+          }
+        });
     }
 }

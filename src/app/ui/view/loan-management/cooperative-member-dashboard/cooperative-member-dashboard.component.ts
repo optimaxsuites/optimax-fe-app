@@ -534,10 +534,21 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       source: 'SELF' as CooperativeMembershipRequestSource
     };
     this.cooperativeService.applyForMembership(application).then(result => {
-      if (result.success) {
+      if (result.success || result.status === 'ALREADY_MEMBER') {
         this.actionMessage = '';
         this.actionMessageTone = 'success';
-        this.showMembershipConfirmationModal = true;
+        // Seed currentMemberId only when the returned member matches the current user's profile.
+        if (result.member && this.memberMatchesCurrentProfile(result.member)) {
+          const resolvedId = Number(result.member.id || result.member.memberId || 0);
+          if (resolvedId > 0) {
+            this.currentMemberId = resolvedId;
+          }
+        }
+        this.cooperativeService.invalidateMembersCache();
+        if (result.success) {
+          this.showMembershipConfirmationModal = true;
+        }
+        this.loadMemberData();
       } else {
         this.actionMessage = result.message;
         this.actionMessageTone = 'error';
@@ -585,16 +596,42 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     return Number(this.currentEmployeeProfile.employeeId || 0);
   }
 
+  private memberMatchesCurrentProfile(member: CooperativeMember | undefined): boolean {
+    if (!member) {
+      return false;
+    }
+
+    const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
+    const memberEmployeeId = Number(member.employeeId || 0);
+    if (currentEmployeeId > 0 && memberEmployeeId > 0 && memberEmployeeId === currentEmployeeId) {
+      return true;
+    }
+
+    const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
+    const memberEmail = String(member.email || '').trim().toLowerCase();
+    if (normalizedEmail && memberEmail && memberEmail !== 'string' && memberEmail === normalizedEmail) {
+      return true;
+    }
+
+    const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
+    const memberFullName = String(member.fullName || '').trim().toLowerCase();
+    return Boolean(normalizedFullName && memberFullName && memberFullName === normalizedFullName);
+  }
+
   private resolveDashboardMember(members: CooperativeMember[]): CooperativeMember | undefined {
     const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
     const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
     const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
 
-    return this.cooperativeService.resolveCurrentSessionMember(members)
-      || members.find((member) => Number(member.employeeId || 0) === currentEmployeeId)
+    const seededMember = this.currentMemberId > 0
+      ? this.cooperativeService.getMemberById(Number(this.currentMemberId))
+      : undefined;
+
+    return members.find((member) => Number(member.employeeId || 0) === currentEmployeeId)
       || members.find((member) => String(member.email || '').trim().toLowerCase() === normalizedEmail)
       || members.find((member) => String(member.fullName || '').trim().toLowerCase() === normalizedFullName)
-      || (this.currentMemberId > 0 ? this.cooperativeService.getMemberById(Number(this.currentMemberId)) : undefined);
+      || (this.memberMatchesCurrentProfile(seededMember) ? seededMember : undefined)
+      || this.cooperativeService.resolveCurrentSessionMember(members);
   }
 
   private isResolvedMemberActive(member: CooperativeMember | undefined): boolean {

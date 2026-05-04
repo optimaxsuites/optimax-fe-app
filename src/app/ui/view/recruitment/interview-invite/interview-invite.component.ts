@@ -1,192 +1,133 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ApplicantDTO, AttachmentDTO } from '../../../domain/applicant.dto';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import { ApplicantDTO, InterviewPanelMemberDTO } from '../../../domain/applicant.dto';
+import { MailNotificationService } from '../../../service/mailNotification.service';
+import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-interview-invite',
-  templateUrl: './interview-invite.component.html',
-  styleUrl: './interview-invite.component.scss',
-  providers: [MessageService]
+  templateUrl: './interview-invite.component.html'
 })
-export class InterviewInviteComponent {
-  @Output() back = new EventEmitter<void>();
-  @Input() interview: any; // Ensure this input property is set
-  @Output() sendInterviewInvite = new EventEmitter<any>();
-  @Input() candidate: ApplicantDTO = {};
-  activeTemplateIndex: number | null = null;
-  selectedTemplate?: string;
-  processedTemplate?: string;
-  selectedInterviewType?: string;
-  attachments?: AttachmentDTO[] = [];
+export class InterviewInviteComponent implements OnInit {
+  @Input() visible: boolean = false;
+  @Input() candidate: any;
+  @Input() currentAction: string = 'Interview Invite';
+  @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() onComplete = new EventEmitter<any>();
+
+  templates: any[] = [];
+  selectedInviteTemplate: any;
+  isStepTwo: boolean = false;
+  sendLoading: boolean = false;
+  availablePanelUsers: any[] = [];
+  regData = {}
+
+  interviewInviteSetup = {
+    panelMembers: [] as InterviewPanelMemberDTO[],
+    customResponses: {} as Record<string, string>
+  };
 
   constructor(
-    private messageService: MessageService,
-  ){}
+    private mailService: MailNotificationService,
+    private authService: AuthenticationService,
+    private messageService: MessageService
+  ) {}
 
-  ngOnInit(): void {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
-    this.setTemplate(0)
-    console.log("active candidate", this.candidate)
+  ngOnInit() {
+    this.loadTemplates();
+    this.loadPanelUsers();
+    this.addPanelMember(); // Initialize with one member
   }
 
+  loadTemplates() {
+    const saved = localStorage.getItem('settings.hr.mailTemplates');
+    this.templates = saved ? JSON.parse(saved) : [];
 
-  handleSendInvite() {
-    const isValid = this.validateForm();
-    if (!isValid) {
-      this.messageService.add({
-        severity: 'error', 
-        summary: 'Validation Failed',
-        detail: 'Please fill out all fields before submitting the form.' 
-      });    
-      return; 
+    const userPrimaryInfoRegData = localStorage.getItem('userPrimaryInfoRegData');
+    this.regData = userPrimaryInfoRegData ? JSON.parse(userPrimaryInfoRegData) : null;
+
+  }
+
+  loadPanelUsers() {
+    this.authService.getUsers().subscribe(users => {
+      this.availablePanelUsers = users.map((u: { username: any; id: any; email: any; }) => ({
+        label: u.username,
+        id: u.id,
+        email: u.email
+      }));
+    });
+  }
+
+  goToPreview() {
+    if (this.selectedInviteTemplate) {
+      this.isStepTwo = true;
     }
-    const inviteDetails = {
-      interviewType: this.selectedInterviewType,
-      interviewInvite: this.processedTemplate,
-      inviteAttachments: this.attachments,
+  }
+
+  addPanelMember() {
+    const member: InterviewPanelMemberDTO = {
+      id: Math.random().toString(36).substr(2, 9),
+      userId: '',
+      role: 'Interviewer',
+      email: '',
+      panelId: "",
+      name: ""
+    };
+    this.interviewInviteSetup.panelMembers.push(member);
+  }
+
+  removePanelMember(index: number) {
+    if (this.interviewInviteSetup.panelMembers.length > 1) {
+      this.interviewInviteSetup.panelMembers.splice(index, 1);
+    }
+  }
+
+  onUserSelect(member: any) {
+    const user = this.availablePanelUsers.find(u => u.id === member.userId);
+    if (user) {
+      member.email = user.email;
+    }
+  }
+
+  resolveFinalContent(content: string): string {
+    if (!content) return '';
+    let processed = content;
+    // Replace placeholders like {{name}} or {{job}} based on candidate input
+    processed = processed.replace(/{{name}}/g, `${this.candidate?.firstname} ${this.candidate?.lastname}`);
+    
+    // Map custom field responses
+    Object.keys(this.interviewInviteSetup.customResponses).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      processed = processed.replace(regex, this.interviewInviteSetup.customResponses[key]);
+    });
+    
+    return processed;
+  }
+
+  sendFinalMail() {
+    this.sendLoading = true;
+    const payload = {
+      templateId: this.selectedInviteTemplate.id,
+      candidateId: this.candidate.id,
+      panel: this.interviewInviteSetup.panelMembers,
+      content: this.resolveFinalContent(this.selectedInviteTemplate.body)
     };
 
-    console.log("invite info from interview-Invite-component", inviteDetails)
+    this.onComplete.emit(payload);
 
-    this.sendInterviewInvite.emit(inviteDetails);
+    // this.mailService.sendInterviewInvite(payload).subscribe({
+    //   next: () => {
+    //     this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Invite Sent' });
+    //     this.close();
+        
+    //   },
+    //   error: () => { this.sendLoading = false; }
+    // });
   }
 
-  // Validation function
-  validateForm(): boolean {
-    const requiredFields = [
-      this.processedTemplate,
-      this.selectedInterviewType
-    ];
-
-    return requiredFields.every(field => field);
+  close() {
+    this.visible = false;
+    this.visibleChange.emit(false);
+    this.isStepTwo = false;
   }
-
-
-  // Method to trigger back button event
-  goBack() {
-    this.back.emit();
-  }
-
-
-  templates: string[] = [
-    `<p>Dear <b>[Candidate Name]</b>,</p>
-    <p>We are pleased to inform you that you have been shortlisted for an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
-    <p><b>Interview Details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Type: <b>[In-person/Virtual]</b></p>
-    <p>Please let us know if the scheduled time works for you or if you need to reschedule.</p>
-    <p>If the interview is virtual, kindly ensure you have a stable internet connection and the necessary software installed. Attached are instructions for joining the online meeting.</p>
-    <p>We look forward to speaking with you and learning more about your qualifications.</p>
-    <p>Best regards,<br />
-    [Your Name]<br />
-    [Your Job Title]<br />
-    [Company Name]<br />
-    [Contact Information]</p>`,
-  
-    `<p>Dear <b>[Candidate Name]</b>,</p>
-    <p>We are excited to invite you to an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>. Your application has impressed us, and we are eager to learn more about you.</p>
-    <p><b>Interview Details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Format: <b>[In-person/Virtual]</b><br />
-    Duration: <b>[Estimated Interview Duration]</b></p>
-    <p>Please confirm your availability for this date and time. If you are unable to attend, let us know as soon as possible, and we will do our best to accommodate a rescheduled interview.</p>
-    <p>If this is a virtual interview, please ensure your setup includes a quiet environment and a reliable internet connection. Further instructions will be provided in a follow-up email.</p>
-    <p>We look forward to speaking with you soon!</p>
-    <p>Best regards,<br />
-    [Your Name]<br />
-    [Your Job Title]<br />
-    [Company Name]<br />
-    [Contact Information]</p>`,
-  
-    `<p>Hi <b>[Candidate Name]</b>,</p>
-    <p>Great news! We’d love to get to know you better and chat about the <b>[Job Title]</b> role at <b>[Company Name]</b>. Your application stood out, and we think you could be a great fit for the team.</p>
-    <p><b>Here are the interview details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Style: <b>[In-person/Virtual]</b></p>
-    <p>We’re excited to hear more about your experience and what you’d bring to the team. If the time doesn’t work for you, no worries! Just let us know, and we’ll find another time that suits you.</p>
-    <p>For virtual interviews, make sure you’re in a quiet space with a good internet connection. We’ll send any necessary links and instructions ahead of time.</p>
-    <p>Looking forward to our chat!</p>
-    <p>Best,<br />
-    [Your Name]<br />
-    [Your Job Title]<br />
-    [Company Name]<br />
-    [Contact Information]</p>`
-  ];
-
-
-
-  // Function to replace placeholders with actual data
-  replacePlaceholders(template: string, candidate: any): string {
-    return template
-      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
-      .replace(/\[Job Title\]/g, candidate.position)
-      // .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
-  }
-
-  // Call this when initializing or changing template
-  setTemplate(templateIndex: number) {
-    if (this.candidate) {
-      this.selectedTemplate = this.templates[templateIndex];
-      this.processedTemplate = this.replacePlaceholders(this.selectedTemplate, this.candidate);
-      this.activeTemplateIndex = templateIndex;
-    }
-  }
-  // This function is called when the textarea is edited
-  onTemplateEdit(newTemplate: string) {
-    this.processedTemplate = newTemplate; // Update processed template with user edits
-  }
-
-  onFileSelected(event: any) {
-    const file = event.target.files[0]; // Get the selected file
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-            const attachment: AttachmentDTO = {
-                name: file.name,
-                url: e.target.result, // Create a URL for the file\
-                size: file.size, // Add the file size
-                type: file.type  // Add the file type
-            };
-
-            // Initialize attachments if it is undefined
-            if (!this.attachments) {
-                this.attachments = []; // Initialize as an empty array
-            }
-
-            this.attachments.push(attachment); // Add attachment to the array
-            console.log("this is the attached file", this.attachments); // This should show the correct value
-        };
-        reader.readAsDataURL(file); // Read the file as a data URL
-    }
-  } 
-
-  getTemplateName(index: number): string {
-    const templateNames = [
-      'Formal Invitation Template',
-      'Excited Invitation Template',
-      'Casual Chat Invitation Template'
-    ];
-    return templateNames[index];
-  }
-
-  // Define all interview types
-  interviewType = [
-    { id: 1, type: 'Virtual Interview' },
-    { id: 2, type: 'Physical Interview' },
-  ];
-
-
-
-  interviewTypeChange() {
-    console.log('Selected Interview Type(s):', this.selectedInterviewType);
-  }
-
-
 }
