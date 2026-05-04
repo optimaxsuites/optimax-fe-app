@@ -3,19 +3,22 @@ import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
-import { switchMap } from 'rxjs/operators';
-import { AdvanceGracePeriodService, GracePeriodRequest } from '../../../service/loan/loan-grace-period.service';
+import { switchMap, map } from 'rxjs/operators';
+import { AdvanceGracePeriodService } from '../../../service/loan/loan-grace-period.service';
+import type { GracePeriodRequest } from '../../../service/loan/loan-grace-period.service';
+import { formatAdvancedLoanCode } from '../../../service/loan/loan-display.util';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanRepaymentService } from '../../../service/loan/loan-repayment.service';
 
 @Component({
-  selector: 'app-loan-grace-period-request',
+  selector: 'app-loan-grace-period-requests-management',
   templateUrl: './loan-grace-period-requests-management.component.html',
   styleUrls: ['./loan-grace-period-requests-management.component.scss']
 })
 export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   requests: GracePeriodRequest[] = [];
   filteredRequests: GracePeriodRequest[] = [];
+  paginatedRequests: GracePeriodRequest[] = [];
   isLoading = false;
   messages: Message[] = [];
   selectedRequest: GracePeriodRequest | null = null;
@@ -25,11 +28,15 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   approvedDays: number = 0;
   reviewNote: string = '';
   rejectionReason: string = '';
+  selectedInstallmentDueDate: string | null = null;
   
   searchTerm: string = '';
   statusFilter: string = '';
   sortField: string = 'requestedAt';
   sortDirection: 'asc' | 'desc' = 'desc';
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 1;
   
   statusOptions = [
     { label: 'All', value: '' },
@@ -62,14 +69,34 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   loadRequests(): void {
     this.isLoading = true;
     this.gracePeriodService.getAllRequests().subscribe({
-      next: (requests) => {
-        this.requests = requests;
+      next: (requests: GracePeriodRequest[]) => {
+        // Convert array-formatted requestedAt to ISO string
+        const normalized = requests.map((r: GracePeriodRequest) => {
+          let requestedAt = r.requestedAt;
+          if (Array.isArray(requestedAt)) {
+            // JS months are 0-based, backend is likely 1-based, so subtract 1 from month
+            const [year, month, day, hour, min, sec, ms] = requestedAt;
+            requestedAt = new Date(year, month - 1, day, hour, min, sec, Math.floor(ms / 1000000)).toISOString();
+          }
+          return { ...r, requestedAt };
+        });
+        console.log('Normalized requests:', normalized);
+        this.requests = normalized;
         this.applyFilter();
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading grace period requests:', error);
+        this.messages = [{
+          severity: 'error',
+          summary: 'Load Failed',
+          detail: 'Failed to load grace period requests. Please try again.'
+        }];
         this.isLoading = false;
+        
+        setTimeout(() => {
+          this.messages = [];
+        }, 5000);
       }
     });
   }
@@ -85,11 +112,26 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
       const term = this.searchTerm.toLowerCase();
       results = results.filter(r => 
         String(r.loanId).toLowerCase().includes(term) ||
-        (r.reason && r.reason.toLowerCase().includes(term))
+        (r.reason && r.reason.toLowerCase().includes(term)) ||
+        this.getEmployeeName(r).toLowerCase().includes(term)
       );
     }
     
     this.filteredRequests = this.sortData(results);
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+    this.totalPages = Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedRequests = this.filteredRequests.slice(startIndex, endIndex);
   }
 
   sortData(data: GracePeriodRequest[]): GracePeriodRequest[] {
@@ -116,6 +158,15 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
       this.sortDirection = 'asc';
     }
     this.applyFilter();
+  }
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+
+    this.currentPage = page;
+    this.updatePagination();
   }
 
   getSortIcon(field: string): string {
@@ -158,9 +209,11 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     }
   }
 
-  formatDate(date: string | undefined): string {
+  formatDate(date: string | undefined | null): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-NG', {
+    const parsed = new Date(date);
+    if (isNaN(parsed.getTime())) return 'N/A';
+    return parsed.toLocaleDateString('en-NG', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -177,30 +230,94 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
     }
   }
 
+  formatStatus(status: string): string {
+    if (!status) return '';
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+
   getNewDueDate(): string {
-    if (!this.selectedRequest) return '';
-    const currentDueDate = new Date(this.selectedRequest.requestedAt);
-    currentDueDate.setDate(currentDueDate.getDate() + this.approvedDays);
-    return currentDueDate.toISOString().split('T')[0];
+    const baseDueDate = this.getSelectedInstallmentDueDate();
+    if (!baseDueDate) return '';
+
+    const recalculatedDueDate = new Date(baseDueDate);
+    recalculatedDueDate.setDate(recalculatedDueDate.getDate() + this.approvedDays);
+    return recalculatedDueDate.toISOString().split('T')[0];
   }
 
   openApprovalModal(request: GracePeriodRequest): void {
     this.selectedRequest = request;
     this.approvedDays = request.requestedDays;
     this.reviewNote = '';
+    this.selectedInstallmentDueDate = null;
     this.showApprovalModal = true;
+
+    this.loanApplicationService.getApplicationById(String(request.loanId)).subscribe({
+      next: (loan) => {
+        if (!loan) {
+          return;
+        }
+
+        const matchingInstallment = [...(loan.repaymentSchedule || [])]
+          .sort((left, right) => left.installmentNo - right.installmentNo)
+          .find((item) => item.installmentNo === Number(request.installmentNumber));
+
+        this.selectedInstallmentDueDate = this.normalizeDateValue(matchingInstallment?.dueDate) || null;
+      },
+      error: (error) => {
+        console.error('Error loading installment due date for grace period approval:', error);
+        this.selectedInstallmentDueDate = null;
+      }
+    });
   }
 
   closeApprovalModal(): void {
     this.showApprovalModal = false;
     this.selectedRequest = null;
+    this.approvedDays = 0;
+    this.reviewNote = '';
+    this.selectedInstallmentDueDate = null;
+  }
+
+  formatLoanCode(raw: string | number | undefined | null): string {
+    return formatAdvancedLoanCode(raw);
   }
 
   approveRequest(): void {
-    if (!this.selectedRequest || !this.selectedRequest.loanId) return;
+    if (!this.selectedRequest || !this.selectedRequest.loanId) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Approval Failed',
+        detail: 'Invalid request data.'
+      }];
+      return;
+    }
 
-    const newDueDate = new Date();
+    if (this.approvedDays < 1 || this.approvedDays > 60) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Invalid Days',
+        detail: 'Approved grace days must be between 1 and 60.'
+      }];
+      return;
+    }
+
+    const installmentDueDate = this.getSelectedInstallmentDueDate();
+    if (!installmentDueDate) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Approval Failed',
+        detail: 'Unable to resolve the installment due date for this request.'
+      }];
+      return;
+    }
+
+    const newDueDate = new Date(installmentDueDate);
     newDueDate.setDate(newDueDate.getDate() + this.approvedDays);
+    
+    // Store the original request data before approval
+    const originalRequest = { ...this.selectedRequest };
+    const loanId = originalRequest.loanId;
+    const installmentNumber = originalRequest.installmentNumber;
 
     this.gracePeriodService.approveRequest(
       this.selectedRequest.id!,
@@ -208,34 +325,44 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
       newDueDate.toISOString(),
       this.reviewNote
     ).pipe(
-      switchMap((approvedRequest) => this.loanRepaymentService.applyApprovedGracePeriod({
-        loanId: Number(approvedRequest.loanId),
-        installmentNumber: Number(approvedRequest.installmentNumber),
-        newDueDate: approvedRequest.newDueDate || newDueDate.toISOString(),
-        approvedGraceDays: approvedRequest.approvedGraceDays || this.approvedDays,
-        reviewNote: this.reviewNote || approvedRequest.reviewNote
-      }))
+      switchMap((approvedRequest: GracePeriodRequest) => {
+        // Call the existing applyApprovedGracePeriod method with the expected payload structure
+        return this.loanRepaymentService.applyApprovedGracePeriod({
+          loanId: Number(loanId),
+          installmentNumber: Number(installmentNumber),
+          newDueDate: newDueDate.toISOString(),
+          approvedGraceDays: this.approvedDays,
+          reviewNote: this.reviewNote || `Grace period of ${this.approvedDays} days approved for installment ${installmentNumber}`
+        }).pipe(
+          map(() => approvedRequest)
+        );
+      })
     ).subscribe({
-      next: () => {
+      next: (approvedRequest: GracePeriodRequest) => {
         this.messages = [{
           severity: 'success',
           summary: 'Request Approved',
-          detail: `Grace period of ${this.approvedDays} days approved. Loan moved to skipped status.`
+          detail: `Grace period of ${this.approvedDays} days approved successfully for installment ${installmentNumber}.`
         }];
-        const approvedRequest = this.selectedRequest;
         this.closeApprovalModal();
         this.loadRequests();
-        if (approvedRequest) {
-          this.sendEmailNotification(approvedRequest, 'approved');
-        }
+        this.sendEmailNotification(approvedRequest, 'approved');
+        
+        setTimeout(() => {
+          this.messages = [];
+        }, 5000);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error approving request:', error);
         this.messages = [{
           severity: 'error',
           summary: 'Approval Failed',
-          detail: 'Failed to approve grace period request.'
+          detail: error.message || 'Failed to approve grace period request. Please try again.'
         }];
+        
+        setTimeout(() => {
+          this.messages = [];
+        }, 5000);
       }
     });
   }
@@ -249,36 +376,60 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
   closeRejectModal(): void {
     this.showRejectModal = false;
     this.selectedRequest = null;
+    this.rejectionReason = '';
   }
 
   rejectRequest(): void {
-    if (!this.selectedRequest || !this.rejectionReason.trim()) return;
+    if (!this.selectedRequest) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Rejection Failed',
+        detail: 'Invalid request data.'
+      }];
+      return;
+    }
+
+    if (!this.rejectionReason.trim()) {
+      this.messages = [{
+        severity: 'error',
+        summary: 'Reason Required',
+        detail: 'Please provide a reason for rejection.'
+      }];
+      return;
+    }
+
+    const originalRequest = { ...this.selectedRequest };
 
     this.gracePeriodService.rejectRequest(
       this.selectedRequest.id!,
       this.rejectionReason,
       this.rejectionReason
     ).subscribe({
-      next: () => {
+      next: (rejectedRequest: GracePeriodRequest) => {
         this.messages = [{
           severity: 'success',
           summary: 'Request Rejected',
-          detail: 'Grace period request rejected.'
+          detail: `Grace period request for loan ${originalRequest.loanId}, installment ${originalRequest.installmentNumber} has been rejected.`
         }];
-        const rejectedRequest = this.selectedRequest;
         this.closeRejectModal();
         this.loadRequests();
-        if (rejectedRequest) {
-          this.sendEmailNotification(rejectedRequest, 'rejected');
-        }
+        this.sendEmailNotification(rejectedRequest, 'rejected');
+        
+        setTimeout(() => {
+          this.messages = [];
+        }, 5000);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error rejecting request:', error);
         this.messages = [{
           severity: 'error',
           summary: 'Rejection Failed',
-          detail: 'Failed to reject grace period request.'
+          detail: error.message || 'Failed to reject grace period request. Please try again.'
         }];
+        
+        setTimeout(() => {
+          this.messages = [];
+        }, 5000);
       }
     });
   }
@@ -295,6 +446,28 @@ export class LoanGracePeriodRequestsManagementComponent implements OnInit {
 
   private sendEmailNotification(request: GracePeriodRequest, status: string): void {
     console.log(`Sending ${status} email notification for grace period request ${request.id}`);
-    // Implement actual email sending logic here
+  }
+
+  private getSelectedInstallmentDueDate(): string | null {
+    return this.normalizeDateValue(this.selectedInstallmentDueDate);
+  }
+
+  private normalizeDateValue(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+
+    if (Array.isArray(value) && value.length >= 3) {
+      const [year, month, day, hour = 0, minute = 0, second = 0, nanoseconds = 0] = value as number[];
+      const parsed = new Date(year, month - 1, day, hour, minute, second, Math.floor(Number(nanoseconds || 0) / 1000000));
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+
+    return null;
   }
 }

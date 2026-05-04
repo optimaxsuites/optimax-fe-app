@@ -840,6 +840,36 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
     return this.updateGroup(updatedGroup);
   }
 
+  public deleteGroup(id: number): Observable<void> {
+    const groupId = Number(id || 0);
+    if (!groupId) {
+      return of(void 0);
+    }
+
+    return this.cooperativeGroupService.deleteCooperativeGroup(groupId).pipe(
+      map(() => {
+        this.groups = this.groups.filter((group) => Number(group.id) !== groupId);
+        this.groupMemberships = this.groupMemberships.filter((membership) => Number(membership.groupId) !== groupId);
+        this.contributionEntries = this.contributionEntries.filter((entry) => Number(entry.groupId) !== groupId);
+        this.groupInviteHistory = this.groupInviteHistory.filter((entry) => Number(entry.groupId) !== groupId);
+        delete this.groupApiRecords[String(groupId)];
+        delete this.persistedGroupOverrides[String(groupId)];
+        try {
+          const serialized = JSON.stringify(this.persistedGroupOverrides);
+          localStorage.setItem(this.persistedGroupOverridesStorageKey, serialized);
+          sessionStorage.setItem(this.persistedGroupOverridesStorageKey, serialized);
+        } catch {
+          // Ignore storage write failures.
+        }
+        this.markGroupsCacheFresh();
+        this.markGroupMembershipsCacheFresh();
+        this.markContributionEntriesCacheFresh();
+        this.saveToStorage();
+        this.publishState();
+      })
+    );
+  }
+
   public getGroups(): CooperativeLoanGroup[] {
     return [...this.groups];
   }
@@ -1086,10 +1116,16 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
         this.groupMembershipChangedSubject.next();
         return approvedMembership;
       }),
-      switchMap((approvedMembership) => this.persistGroupMembershipHistory(approvedMembership, 'ACTIVE', note?.trim()).pipe(
-        map(() => approvedMembership),
-        catchError(() => of(approvedMembership))
-      ))
+      switchMap((approvedMembership) => {
+        const validMembershipId = Number(approvedMembership.membershipId || approvedMembership.id);
+        if (!validMembershipId) {
+          return of(approvedMembership);
+        }
+        return this.persistGroupMembershipHistory(approvedMembership, 'ACTIVE', note?.trim()).pipe(
+          map(() => approvedMembership),
+          catchError(() => of(approvedMembership))
+        );
+      })
     );
   }
 
@@ -1117,11 +1153,8 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
         this.upsertGroupMembershipInCache(rejectedMembership, true, rawMembership);
         this.groupMembershipChangedSubject.next();
         return rejectedMembership;
-      }),
-      switchMap((rejectedMembership) => this.persistGroupMembershipHistory(rejectedMembership, 'REJECTED', rejectionReason).pipe(
-        map(() => rejectedMembership),
-        catchError(() => of(rejectedMembership))
-      ))
+      })
+      // No history writing for rejection
     );
   }
 
@@ -2444,6 +2477,7 @@ public sendLoanToAccountingForDisbursement(
 private buildGroupApiPayload(
   group: Omit<CooperativeLoanGroup, 'id'> | CooperativeLoanGroup
 ): CooperativeGroupApiPayload {
+  const groupLike = group as CooperativeLoanGroup & { monthlyAmount?: number };
   const groupId = 'id' in group ? Number(group.id || 0) : 0;
   const memberIds = [...new Set(
     this.groupMemberships
@@ -2467,7 +2501,7 @@ private buildGroupApiPayload(
     code: group.code || undefined,
     name: group.name,
     minEligibleSalary: Number(group.minEligibleSalary || 0),
-    monthlyAmount: Number(group.monthlyContributionAmount || 0),
+    monthlyAmount: Number(groupLike.monthlyContributionAmount ?? groupLike.monthlyAmount ?? 0),
     maxBorrowingPercentage: Number(group.maxBorrowingPercentage || 0),
     minAmount: Number(group.minAmount || 0),
     maxAmount: Number(group.maxAmount || group.withdrawCap || 0),

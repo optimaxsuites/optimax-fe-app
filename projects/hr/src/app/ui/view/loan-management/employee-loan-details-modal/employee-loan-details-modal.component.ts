@@ -6,7 +6,6 @@ import { Component, EventEmitter, Input, Output, OnChanges, OnInit, SimpleChange
 import { LoanApplication, StatusChange, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { LoanApprovalService } from '../../../service/loan/loan-approval.service';
-import { AdvanceInterestAgreementService, AdvanceInterestAgreement } from '../../../service/loan/loan-interest-agreement.service';
 import {
   formatLoanRepaymentDayDisplay,
   formatLoanPaymentModeDisplay,
@@ -54,7 +53,6 @@ export class EmployeeLoanDetailsModalComponent implements OnInit, OnChanges {
   constructor(
     private loanApplicationService: LoanApplicationService,
     private loanApprovalService: LoanApprovalService,
-    private interestAgreementService: AdvanceInterestAgreementService
   ) {}
 
   ngOnInit(): void {

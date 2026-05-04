@@ -196,16 +196,31 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           this.actionMessage = 'Unable to approve the selected join request.';
           return;
         }
-
-        const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
-        const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
-        this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
-        this.loadApplications();
-        
-        // Clear message after 5 seconds
-        setTimeout(() => {
-          this.actionMessage = '';
-        }, 5000);
+        // Force reload all relevant data from backend before updating applications
+        this.isLoading = true;
+        forkJoin({
+          groups: this.cooperativeService.refreshGroups(),
+          members: this.cooperativeService.getMembers(),
+          memberships: this.cooperativeService.loadGroupMemberships()
+        }).subscribe({
+          next: () => {
+            this.loadApplications();
+            this.isLoading = false;
+            const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
+            const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
+            this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
+            setTimeout(() => {
+              this.actionMessage = '';
+            }, 5000);
+          },
+          error: () => {
+            this.isLoading = false;
+            this.actionMessage = 'Unable to refresh data after approval.';
+            setTimeout(() => {
+              this.actionMessage = '';
+            }, 5000);
+          }
+        });
       },
       error: () => {
         this.actionMessage = 'Unable to approve the selected join request.';
@@ -232,15 +247,31 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           this.actionMessage = 'Unable to reject the selected join request.';
           return;
         }
-
-        const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
-        const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
-        this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
-        this.loadApplications();
-        
-        setTimeout(() => {
-          this.actionMessage = '';
-        }, 5000);
+        // Force reload all relevant data from backend before updating applications
+        this.isLoading = true;
+        forkJoin({
+          groups: this.cooperativeService.refreshGroups(),
+          members: this.cooperativeService.getMembers(),
+          memberships: this.cooperativeService.loadGroupMemberships()
+        }).subscribe({
+          next: () => {
+            this.loadApplications();
+            this.isLoading = false;
+            const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
+            const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
+            this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
+            setTimeout(() => {
+              this.actionMessage = '';
+            }, 5000);
+          },
+          error: () => {
+            this.isLoading = false;
+            this.actionMessage = 'Unable to refresh data after rejection.';
+            setTimeout(() => {
+              this.actionMessage = '';
+            }, 5000);
+          }
+        });
       },
       error: () => {
         this.actionMessage = 'Unable to reject the selected join request.';
