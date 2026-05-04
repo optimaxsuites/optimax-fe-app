@@ -1093,13 +1093,23 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   openPurposeManagement(): void {
-    this.router.navigate(['/admin/hr/cooperative/loan-purposes', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/loan-purposes`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
   openGracePeriodRequests(): void {
-    this.router.navigate(['/admin/hr/cooperative/grace-period-requests', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/grace-period-requests`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
