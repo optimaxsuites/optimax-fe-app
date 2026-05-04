@@ -486,203 +486,203 @@ app-employee-repayment-schedule .summary-card .card-icon {
 }
 
 /* Loan Management unified status badge colors */
-app-loan-dashboard .status-badge,
-app-cooperative-dashboard .status-badge,
-app-cooperative-member-dashboard .status-badge,
-app-loan-reports .status-badge,
-app-cooperative-loans .status-badge,
-app-cooperative-members .status-badge,
-app-cooperative-member-detail .status-badge,
-app-loan-approval-ui .status-badge,
-app-employee-dashboard .status-badge,
-app-employee-history .status-badge,
-app-loan-details .status-badge,
-app-cooperative-member-form .status-badge,
-app-cooperative-loan-detail .status-badge,
-app-cooperative-loan-groups .status-badge,
-app-cooperative-member-loans .status-badge,
-app-loan-request-form .status-badge,
-app-cooperative-loan-application .status-badge,
-app-employee-repayment-schedule .loan-status-badge,
-app-repayment-schedule-view .status-badge {
-  display: inline-block;
-  border-radius: 20px;
-  font-weight: 600;
-  /* text-transform: uppercase; */
-}
+// app-loan-dashboard .status-badge,
+// app-cooperative-dashboard .status-badge,
+// app-cooperative-member-dashboard .status-badge,
+// app-loan-reports .status-badge,
+// app-cooperative-loans .status-badge,
+// app-cooperative-members .status-badge,
+// app-cooperative-member-detail .status-badge,
+// app-loan-approval-ui .status-badge,
+// app-employee-dashboard .status-badge,
+// app-employee-history .status-badge,
+// app-loan-details .status-badge,
+// app-cooperative-member-form .status-badge,
+// app-cooperative-loan-detail .status-badge,
+// app-cooperative-loan-groups .status-badge,
+// app-cooperative-member-loans .status-badge,
+// app-loan-request-form .status-badge,
+// app-cooperative-loan-application .status-badge,
+// app-employee-repayment-schedule .loan-status-badge,
+// app-repayment-schedule-view .status-badge {
+//   display: inline-block;
+//   border-radius: 20px;
+//   font-weight: 600;
+//   /* text-transform: uppercase; */
+// }
 
-app-loan-dashboard .status-badge.status-pending,
-app-cooperative-dashboard .status-badge.status-pending,
-app-cooperative-member-dashboard .status-badge.status-pending,
-app-loan-reports .status-badge.status-pending,
-app-cooperative-loans .status-badge.status-pending,
-app-cooperative-members .status-badge.status-pending,
-app-cooperative-member-detail .status-badge.status-pending,
-app-loan-approval-ui .status-badge.status-pending,
-app-employee-dashboard .status-badge.status-pending,
-app-employee-history .status-badge.status-pending,
-app-loan-details .status-badge.status-pending,
-app-cooperative-member-form .status-badge.status-pending,
-app-cooperative-loan-detail .status-badge.status-pending,
-app-cooperative-loan-groups .status-badge.status-pending,
-app-cooperative-member-loans .status-badge.status-pending,
-app-loan-request-form .status-badge.status-pending,
-app-cooperative-loan-application .status-badge.status-pending,
-app-employee-repayment-schedule .loan-status-badge.status-pending,
-app-repayment-schedule-view .status-badge.status-pending {
-  background-color: rgba(231, 222, 101, 0.2) !important;
-  color: #8f8500 !important;
-  border: 1px solid rgba(231, 222, 101, 0.3) !important;
-}
+// app-loan-dashboard .status-badge.status-pending,
+// app-cooperative-dashboard .status-badge.status-pending,
+// app-cooperative-member-dashboard .status-badge.status-pending,
+// app-loan-reports .status-badge.status-pending,
+// app-cooperative-loans .status-badge.status-pending,
+// app-cooperative-members .status-badge.status-pending,
+// app-cooperative-member-detail .status-badge.status-pending,
+// app-loan-approval-ui .status-badge.status-pending,
+// app-employee-dashboard .status-badge.status-pending,
+// app-employee-history .status-badge.status-pending,
+// app-loan-details .status-badge.status-pending,
+// app-cooperative-member-form .status-badge.status-pending,
+// app-cooperative-loan-detail .status-badge.status-pending,
+// app-cooperative-loan-groups .status-badge.status-pending,
+// app-cooperative-member-loans .status-badge.status-pending,
+// app-loan-request-form .status-badge.status-pending,
+// app-cooperative-loan-application .status-badge.status-pending,
+// app-employee-repayment-schedule .loan-status-badge.status-pending,
+// app-repayment-schedule-view .status-badge.status-pending {
+//   background-color: rgba(231, 222, 101, 0.2) !important;
+//   color: #8f8500 !important;
+//   border: 1px solid rgba(231, 222, 101, 0.3) !important;
+// }
 
-app-loan-dashboard .status-badge.status-approved,
-app-cooperative-dashboard .status-badge.status-approved,
-app-cooperative-member-dashboard .status-badge.status-approved,
-app-loan-reports .status-badge.status-approved,
-app-cooperative-loans .status-badge.status-approved,
-app-cooperative-members .status-badge.status-approved,
-app-cooperative-member-detail .status-badge.status-approved,
-app-loan-approval-ui .status-badge.status-approved,
-app-employee-dashboard .status-badge.status-approved,
-app-employee-history .status-badge.status-approved,
-app-loan-details .status-badge.status-approved,
-app-cooperative-member-form .status-badge.status-approved,
-app-cooperative-loan-detail .status-badge.status-approved,
-app-cooperative-loan-groups .status-badge.status-approved,
-app-cooperative-member-loans .status-badge.status-approved,
-app-loan-request-form .status-badge.status-approved,
-app-cooperative-loan-application .status-badge.status-approved,
-app-employee-repayment-schedule .loan-status-badge.status-approved,
-app-repayment-schedule-view .status-badge.status-approved {
-  background-color: rgba(79, 124, 255, 0.14) !important;
-  color: #4f7cff !important;
-  border: 1px solid rgba(79, 124, 255, 0.28) !important;
-}
+// app-loan-dashboard .status-badge.status-approved,
+// app-cooperative-dashboard .status-badge.status-approved,
+// app-cooperative-member-dashboard .status-badge.status-approved,
+// app-loan-reports .status-badge.status-approved,
+// app-cooperative-loans .status-badge.status-approved,
+// app-cooperative-members .status-badge.status-approved,
+// app-cooperative-member-detail .status-badge.status-approved,
+// app-loan-approval-ui .status-badge.status-approved,
+// app-employee-dashboard .status-badge.status-approved,
+// app-employee-history .status-badge.status-approved,
+// app-loan-details .status-badge.status-approved,
+// app-cooperative-member-form .status-badge.status-approved,
+// app-cooperative-loan-detail .status-badge.status-approved,
+// app-cooperative-loan-groups .status-badge.status-approved,
+// app-cooperative-member-loans .status-badge.status-approved,
+// app-loan-request-form .status-badge.status-approved,
+// app-cooperative-loan-application .status-badge.status-approved,
+// app-employee-repayment-schedule .loan-status-badge.status-approved,
+// app-repayment-schedule-view .status-badge.status-approved {
+//   background-color: rgba(79, 124, 255, 0.14) !important;
+//   color: #4f7cff !important;
+//   border: 1px solid rgba(79, 124, 255, 0.28) !important;
+// }
 
-app-loan-dashboard .status-badge.status-active,
-app-cooperative-dashboard .status-badge.status-active,
-app-cooperative-member-dashboard .status-badge.status-active,
-app-loan-reports .status-badge.status-active,
-app-cooperative-loans .status-badge.status-active,
-app-cooperative-members .status-badge.status-active,
-app-cooperative-member-detail .status-badge.status-active,
-app-loan-approval-ui .status-badge.status-active,
-app-employee-dashboard .status-badge.status-active,
-app-employee-history .status-badge.status-active,
-app-loan-details .status-badge.status-active,
-app-cooperative-member-form .status-badge.status-active,
-app-cooperative-loan-detail .status-badge.status-active,
-app-cooperative-loan-groups .status-badge.status-active,
-app-cooperative-member-loans .status-badge.status-active,
-app-loan-request-form .status-badge.status-active,
-app-cooperative-loan-application .status-badge.status-active,
-app-employee-repayment-schedule .loan-status-badge.status-active,
-app-repayment-schedule-view .status-badge.status-active {
-  background-color: rgba(56, 189, 248, 0.14) !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.32) !important;
-}
+// app-loan-dashboard .status-badge.status-active,
+// app-cooperative-dashboard .status-badge.status-active,
+// app-cooperative-member-dashboard .status-badge.status-active,
+// app-loan-reports .status-badge.status-active,
+// app-cooperative-loans .status-badge.status-active,
+// app-cooperative-members .status-badge.status-active,
+// app-cooperative-member-detail .status-badge.status-active,
+// app-loan-approval-ui .status-badge.status-active,
+// app-employee-dashboard .status-badge.status-active,
+// app-employee-history .status-badge.status-active,
+// app-loan-details .status-badge.status-active,
+// app-cooperative-member-form .status-badge.status-active,
+// app-cooperative-loan-detail .status-badge.status-active,
+// app-cooperative-loan-groups .status-badge.status-active,
+// app-cooperative-member-loans .status-badge.status-active,
+// app-loan-request-form .status-badge.status-active,
+// app-cooperative-loan-application .status-badge.status-active,
+// app-employee-repayment-schedule .loan-status-badge.status-active,
+// app-repayment-schedule-view .status-badge.status-active {
+//   background-color: rgba(56, 189, 248, 0.14) !important;
+//   color: #38bdf8 !important;
+//   border: 1px solid rgba(56, 189, 248, 0.32) !important;
+// }
 
-app-loan-dashboard .status-badge.status-completed,
-app-cooperative-dashboard .status-badge.status-completed,
-app-cooperative-member-dashboard .status-badge.status-completed,
-app-loan-reports .status-badge.status-completed,
-app-cooperative-loans .status-badge.status-completed,
-app-cooperative-members .status-badge.status-completed,
-app-cooperative-member-detail .status-badge.status-completed,
-app-loan-approval-ui .status-badge.status-completed,
-app-employee-dashboard .status-badge.status-completed,
-app-employee-history .status-badge.status-completed,
-app-loan-details .status-badge.status-completed,
-app-cooperative-member-form .status-badge.status-completed,
-app-cooperative-loan-detail .status-badge.status-completed,
-app-cooperative-loan-groups .status-badge.status-completed,
-app-cooperative-member-loans .status-badge.status-completed,
-app-loan-request-form .status-badge.status-completed,
-app-cooperative-loan-application .status-badge.status-completed,
-app-employee-repayment-schedule .loan-status-badge.status-completed,
-app-repayment-schedule-view .status-badge.status-completed {
-  background-color: rgba(128, 128, 128, 0.1) !important;
-  color: #4d4d4d !important;
-  border: 1px solid rgba(128, 128, 128, 0.3) !important;
-}
+// app-loan-dashboard .status-badge.status-completed,
+// app-cooperative-dashboard .status-badge.status-completed,
+// app-cooperative-member-dashboard .status-badge.status-completed,
+// app-loan-reports .status-badge.status-completed,
+// app-cooperative-loans .status-badge.status-completed,
+// app-cooperative-members .status-badge.status-completed,
+// app-cooperative-member-detail .status-badge.status-completed,
+// app-loan-approval-ui .status-badge.status-completed,
+// app-employee-dashboard .status-badge.status-completed,
+// app-employee-history .status-badge.status-completed,
+// app-loan-details .status-badge.status-completed,
+// app-cooperative-member-form .status-badge.status-completed,
+// app-cooperative-loan-detail .status-badge.status-completed,
+// app-cooperative-loan-groups .status-badge.status-completed,
+// app-cooperative-member-loans .status-badge.status-completed,
+// app-loan-request-form .status-badge.status-completed,
+// app-cooperative-loan-application .status-badge.status-completed,
+// app-employee-repayment-schedule .loan-status-badge.status-completed,
+// app-repayment-schedule-view .status-badge.status-completed {
+//   background-color: rgba(128, 128, 128, 0.1) !important;
+//   color: #4d4d4d !important;
+//   border: 1px solid rgba(128, 128, 128, 0.3) !important;
+// }
 
-app-loan-dashboard .status-badge.status-rejected,
-app-cooperative-dashboard .status-badge.status-rejected,
-app-cooperative-member-dashboard .status-badge.status-rejected,
-app-loan-reports .status-badge.status-rejected,
-app-cooperative-loans .status-badge.status-rejected,
-app-cooperative-members .status-badge.status-rejected,
-app-cooperative-member-detail .status-badge.status-rejected,
-app-loan-approval-ui .status-badge.status-rejected,
-app-employee-dashboard .status-badge.status-rejected,
-app-employee-history .status-badge.status-rejected,
-app-loan-details .status-badge.status-rejected,
-app-cooperative-member-form .status-badge.status-rejected,
-app-cooperative-loan-detail .status-badge.status-rejected,
-app-cooperative-loan-groups .status-badge.status-rejected,
-app-cooperative-member-loans .status-badge.status-rejected,
-app-loan-request-form .status-badge.status-rejected,
-app-cooperative-loan-application .status-badge.status-rejected,
-app-employee-repayment-schedule .loan-status-badge.status-rejected,
-app-repayment-schedule-view .status-badge.status-rejected {
-  background-color: rgba(233, 55, 55, 0.1) !important;
-  color: #b30000 !important;
-  border: 1px solid rgba(233, 55, 55, 0.3) !important;
-}
+// app-loan-dashboard .status-badge.status-rejected,
+// app-cooperative-dashboard .status-badge.status-rejected,
+// app-cooperative-member-dashboard .status-badge.status-rejected,
+// app-loan-reports .status-badge.status-rejected,
+// app-cooperative-loans .status-badge.status-rejected,
+// app-cooperative-members .status-badge.status-rejected,
+// app-cooperative-member-detail .status-badge.status-rejected,
+// app-loan-approval-ui .status-badge.status-rejected,
+// app-employee-dashboard .status-badge.status-rejected,
+// app-employee-history .status-badge.status-rejected,
+// app-loan-details .status-badge.status-rejected,
+// app-cooperative-member-form .status-badge.status-rejected,
+// app-cooperative-loan-detail .status-badge.status-rejected,
+// app-cooperative-loan-groups .status-badge.status-rejected,
+// app-cooperative-member-loans .status-badge.status-rejected,
+// app-loan-request-form .status-badge.status-rejected,
+// app-cooperative-loan-application .status-badge.status-rejected,
+// app-employee-repayment-schedule .loan-status-badge.status-rejected,
+// app-repayment-schedule-view .status-badge.status-rejected {
+//   background-color: rgba(233, 55, 55, 0.1) !important;
+//   color: #b30000 !important;
+//   border: 1px solid rgba(233, 55, 55, 0.3) !important;
+// }
 
-app-cooperative-dashboard .status-badge.status-defaulted,
-app-cooperative-loans .status-badge.status-defaulted,
-app-cooperative-loan-detail .status-badge.status-defaulted,
-app-cooperative-member-loans .status-badge.status-defaulted {
-  background-color: rgba(217, 83, 79, 0.16) !important;
-  color: #a11f1b !important;
-  border: 1px solid rgba(217, 83, 79, 0.35) !important;
-}
+// app-cooperative-dashboard .status-badge.status-defaulted,
+// app-cooperative-loans .status-badge.status-defaulted,
+// app-cooperative-loan-detail .status-badge.status-defaulted,
+// app-cooperative-member-loans .status-badge.status-defaulted {
+//   background-color: rgba(217, 83, 79, 0.16) !important;
+//   color: #a11f1b !important;
+//   border: 1px solid rgba(217, 83, 79, 0.35) !important;
+// }
 
-@media (max-width: 768px) {
-  app-loan-dashboard .lm-header-card,
-  app-cooperative-dashboard .lm-header-card,
-  app-cooperative-member-dashboard .lm-header-card,
-  app-loan-reports .lm-header-card,
-  app-cooperative-loans .lm-header-card,
-  app-cooperative-members .lm-header-card,
-  app-cooperative-member-detail .lm-header-card,
-  app-loan-approval-ui .lm-header-card,
-  app-employee-dashboard .lm-header-card,
-  app-employee-history .lm-header-card,
-  app-loan-details .lm-header-card,
-  app-cooperative-member-form .lm-header-card,
-  app-cooperative-loan-detail .lm-header-card,
-  app-cooperative-loan-groups .lm-header-card,
-  app-cooperative-member-loans .lm-header-card,
-  app-loan-request-form .lm-header-card,
-  app-cooperative-loan-application .lm-header-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 16px !important;
-  }
+// @media (max-width: 768px) {
+//   app-loan-dashboard .lm-header-card,
+//   app-cooperative-dashboard .lm-header-card,
+//   app-cooperative-member-dashboard .lm-header-card,
+//   app-loan-reports .lm-header-card,
+//   app-cooperative-loans .lm-header-card,
+//   app-cooperative-members .lm-header-card,
+//   app-cooperative-member-detail .lm-header-card,
+//   app-loan-approval-ui .lm-header-card,
+//   app-employee-dashboard .lm-header-card,
+//   app-employee-history .lm-header-card,
+//   app-loan-details .lm-header-card,
+//   app-cooperative-member-form .lm-header-card,
+//   app-cooperative-loan-detail .lm-header-card,
+//   app-cooperative-loan-groups .lm-header-card,
+//   app-cooperative-member-loans .lm-header-card,
+//   app-loan-request-form .lm-header-card,
+//   app-cooperative-loan-application .lm-header-card {
+//     flex-direction: column !important;
+//     align-items: stretch !important;
+//     padding: 16px !important;
+//   }
 
-  app-loan-dashboard .lm-header-card h1,
-  app-cooperative-dashboard .lm-header-card h1,
-  app-cooperative-member-dashboard .lm-header-card h1,
-  app-loan-reports .lm-header-card h1,
-  app-cooperative-loans .lm-header-card h1,
-  app-cooperative-members .lm-header-card h1,
-  app-cooperative-member-detail .lm-header-card h1,
-  app-loan-approval-ui .lm-header-card h1,
-  app-employee-dashboard .lm-header-card h1,
-  app-employee-history .lm-header-card h1,
-  app-loan-details .lm-header-card h1,
-  app-cooperative-member-form .lm-header-card h1,
-  app-cooperative-loan-detail .lm-header-card h1,
-  app-cooperative-loan-groups .lm-header-card h1,
-  app-cooperative-member-loans .lm-header-card h1,
-  app-loan-request-form .lm-header-card h1,
-  app-cooperative-loan-application .lm-header-card h1 {
-    font-size: 1.6rem !important;
-  }
-}
+//   app-loan-dashboard .lm-header-card h1,
+//   app-cooperative-dashboard .lm-header-card h1,
+//   app-cooperative-member-dashboard .lm-header-card h1,
+//   app-loan-reports .lm-header-card h1,
+//   app-cooperative-loans .lm-header-card h1,
+//   app-cooperative-members .lm-header-card h1,
+//   app-cooperative-member-detail .lm-header-card h1,
+//   app-loan-approval-ui .lm-header-card h1,
+//   app-employee-dashboard .lm-header-card h1,
+//   app-employee-history .lm-header-card h1,
+//   app-loan-details .lm-header-card h1,
+//   app-cooperative-member-form .lm-header-card h1,
+//   app-cooperative-loan-detail .lm-header-card h1,
+//   app-cooperative-loan-groups .lm-header-card h1,
+//   app-cooperative-member-loans .lm-header-card h1,
+//   app-loan-request-form .lm-header-card h1,
+//   app-cooperative-loan-application .lm-header-card h1 {
+//     font-size: 1.6rem !important;
+//   }
+// }
 
 // ==========================================
 // REMOVE ALL FOCUS RINGS & NOTIFICATION LINES
