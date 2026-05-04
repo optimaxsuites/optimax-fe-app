@@ -650,4 +650,16 @@ export class LeaveApiService {
       decisionOn: this.convertDateArrayToISO(record.decisionOn),
     };
   }
+  fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the data:...;base64, prefix, keep only the base64 string
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 }
