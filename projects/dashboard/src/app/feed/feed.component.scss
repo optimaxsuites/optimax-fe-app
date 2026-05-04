@@ -674,6 +674,12 @@
   padding: 0.9rem;
 }
 
+.update-row.is-highlighted,
+.review-note.is-highlighted {
+  border: 1px solid rgba(40, 141, 102, 0.35);
+  box-shadow: 0 0 0 3px rgba(40, 141, 102, 0.12);
+}
+
 .reminder-card {
   display: grid;
   gap: 0.25rem;
@@ -971,9 +977,10 @@
 }
 
 .tree-header,
+.tree-filter-row,
 .tree-row {
   display: grid;
-  grid-template-columns: minmax(280px, 1.8fr) repeat(5, minmax(110px, 1fr));
+  grid-template-columns: minmax(280px, 1.8fr) repeat(5, minmax(110px, 1fr)) minmax(90px, 120px);
   gap: 0.75rem;
   align-items: center;
 }
@@ -987,6 +994,23 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #587287;
+}
+
+.tree-filter-row {
+  padding: 0.7rem 1rem 0;
+}
+
+.tree-header-btn {
+  padding: 0;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
 }
 
 .tree-row {
@@ -1083,6 +1107,81 @@
   display: flex;
   justify-content: flex-end;
   padding: 0.3rem 0 0;
+}
+
+.tree-col-actions {
+  justify-self: end;
+}
+
+.tree-icon-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.icon-action-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(52, 86, 114, 0.12);
+  border-radius: 12px;
+  background: rgba(244, 248, 251, 0.98);
+  color: #31516a;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.icon-action-btn:hover {
+  background: rgba(227, 238, 244, 0.98);
+}
+
+.icon-action-btn.danger {
+  color: #9b4747;
+  background: rgba(248, 231, 231, 0.95);
+}
+
+.tree-preview-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0.65rem 0;
+}
+
+.tree-preview-section {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(243, 247, 251, 0.95);
+  border: 1px solid rgba(30, 58, 83, 0.08);
+}
+
+.tree-preview-head,
+.tree-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tree-preview-section p {
+  margin: 0.45rem 0;
+  color: #304f67;
+  line-height: 1.6;
+}
+
+.tree-preview-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  color: #647a90;
+  font-size: 0.82rem;
+}
+
+.tree-preview-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
 }
 
 .composer-dialog,
@@ -1238,6 +1337,76 @@
 
 .review-note.review-noted {
   border-left: 4px solid #a67b2e;
+}
+
+.history-image {
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(216, 228, 239, 0.95);
+}
+
+.history-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rich-editor-shell {
+  display: block;
+}
+
+.task-activity-view {
+  display: grid;
+  gap: 1rem;
+}
+
+.activity-card {
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(245, 249, 252, 0.98);
+  border: 1px solid rgba(30, 58, 83, 0.08);
+}
+
+.activity-card.is-review {
+  border-left: 4px solid #a67b2e;
+}
+
+.activity-card.is-update {
+  border-left: 4px solid #2d925a;
+}
+
+.activity-head,
+.activity-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.activity-meta {
+  flex-direction: column;
+  align-items: flex-end;
+  color: #647a90;
+}
+
+:host ::ng-deep .p-editor-container {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(52, 86, 114, 0.14);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:host ::ng-deep .p-editor-toolbar {
+  border: 0;
+  border-bottom: 1px solid rgba(52, 86, 114, 0.1);
+  background: rgba(244, 248, 251, 0.96);
+}
+
+:host ::ng-deep .p-editor-content {
+  border: 0;
+  color: #18344a;
 }
 
 .review-stamp.review-approved {

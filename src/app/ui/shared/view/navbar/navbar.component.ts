@@ -67,11 +67,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   openNotifications(): void {
-    this.headerStateService.markAllNotificationsRead();
   }
 
   openNotification(item: HeaderNotificationItem): void {
-    this.headerStateService.markAllNotificationsRead();
+    this.headerStateService.markNotificationRead(item.id);
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
       window.dispatchEvent(
@@ -88,7 +87,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   viewAllNotifications(): void {
-    this.headerStateService.markAllNotificationsRead();
     if (typeof window !== 'undefined') {
       const target = { workspaceMode: 'feed', route: `/admin/dashboard/communications/${this.currentUserId}` };
       sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));

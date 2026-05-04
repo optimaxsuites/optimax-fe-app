@@ -442,6 +442,13 @@ export class CommunicationComponent
   employeesError: string | null = null;
   messagesLoading = false;
   soundEnabled = true;
+  selectedRingtone = 'classic';
+  readonly ringtoneOptions = [
+    { value: 'classic', label: 'Classic ping' },
+    { value: 'soft', label: 'Soft chime' },
+    { value: 'crystal', label: 'Crystal bell' },
+    { value: 'pulse', label: 'Pulse' },
+  ];
 
   presenceMap: Record<number, string> = {};
   typingMap: Record<number, boolean> = {};
@@ -459,6 +466,7 @@ export class CommunicationComponent
   private attachmentPreviewLoading = new Set<string>();
   private flashId: string | null = null;
   private flashTimer: any;
+  private pendingNotificationMessageBackendId: number | null = null;
   private scrollFeed = false;
   private scrollThread = false;
 
@@ -476,6 +484,7 @@ export class CommunicationComponent
   ) {}
 
   ngOnInit() {
+    this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'classic';
     this.restoreSeenFeedNotificationIds();
     this.workspaceMode =
       sessionStorage.getItem('optimax_workspace_mode') === 'chat'
@@ -581,6 +590,8 @@ export class CommunicationComponent
     workspaceMode?: 'feed' | 'chat';
     channelBackendId?: number;
     dmUserId?: number;
+    messageBackendId?: number;
+    threadRootMessageBackendId?: number;
   }): void {
     this.headerStateService.pushNotification(payload);
   }
@@ -731,6 +742,8 @@ export class CommunicationComponent
     }
     if (!target) return;
     sessionStorage.removeItem('optimax_notification_target');
+    this.pendingNotificationMessageBackendId =
+      Number(target.messageBackendId || target.threadRootMessageBackendId || 0) || null;
     if (target.workspaceMode === 'chat') {
       this.workspaceMode = 'chat';
       if (target.dmUserId) {
@@ -1426,6 +1439,8 @@ export class CommunicationComponent
     senderUserId?: number;
     avatarUrl?: string;
     contextLabel?: string;
+    messageBackendId?: number;
+    threadRootMessageBackendId?: number;
   } {
     try {
       const payload = JSON.parse(frameBody || '{}');
@@ -1445,6 +1460,8 @@ export class CommunicationComponent
         senderUserId,
         avatarUrl: this.userAvatarCache[senderUserId],
         contextLabel: payload.channelName || payload.channelCode || payload.channelType || 'New message',
+        messageBackendId: Number(payload.id ?? payload.messageId ?? 0) || undefined,
+        threadRootMessageBackendId: Number(payload.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
       return { senderName: 'New message', content: '', contextLabel: 'New message' };
@@ -2022,11 +2039,13 @@ export class CommunicationComponent
               title: payload.senderName || `#${ch.name}`,
               body: payload.content || `New message in #${ch.name}`,
               category: 'chat',
-              route: `/admin/dashboard/tasks-routines/${this.me.userId}`,
+              route: `/admin/dashboard/communications/${this.me.userId}`,
               avatarUrl: payload.avatarUrl,
               contextLabel: ch.name,
               workspaceMode: 'chat',
               channelBackendId: ch.backendId,
+              messageBackendId: payload.messageBackendId,
+              threadRootMessageBackendId: payload.threadRootMessageBackendId,
             });
           }
           this.syncHeaderState();
@@ -2079,11 +2098,13 @@ export class CommunicationComponent
                 title: payload.senderName || contact.fullName,
                 body: payload.content || 'Sent you a direct message.',
                 category: 'chat',
-                route: `/admin/dashboard/tasks-routines/${this.me.userId}`,
+                route: `/admin/dashboard/communications/${this.me.userId}`,
                 avatarUrl: payload.avatarUrl || contact.avatarUrl,
                 contextLabel: 'Direct message',
                 workspaceMode: 'chat',
                 dmUserId: contact.userId,
+                messageBackendId: payload.messageBackendId,
+                threadRootMessageBackendId: payload.threadRootMessageBackendId,
               });
             }
             this.syncHeaderState();
@@ -2133,11 +2154,13 @@ export class CommunicationComponent
   ): Message[] {
     const serverIds = new Set(serverMessages.map((m) => m.id));
     const serverMap = new Map(serverMessages.map((m) => [m.id, m]));
+    const existingPersistedCount = existing.filter((message) => !!message.backendId).length;
+    const looksPartialSnapshot = serverMessages.length > 0 && serverMessages.length < existingPersistedCount;
 
     // 1. Remove deleted messages (not in server list). Keep local-only (no backendId).
-    let filtered = existing.filter(
-      (m) => !m.backendId || serverIds.has(m.backendId),
-    );
+    let filtered = looksPartialSnapshot
+      ? [...existing]
+      : existing.filter((m) => !m.backendId || serverIds.has(m.backendId));
 
     // 2. Apply edits + remove deleted replies
     for (const msg of filtered) {
@@ -3158,10 +3181,11 @@ export class CommunicationComponent
 
   // ── DM ────────────────────────────────────────────────
 
-  private getOrCreateDmChannel(contact: DmContact): void {
+  private getOrCreateDmChannel(contact: DmContact, onReady?: (channelId: number) => void): void {
     if (contact.dmChannelId) {
       this.subscribeToDmChannel(contact);
       this.loadDmMessages(contact, contact.dmChannelId);
+      onReady?.(contact.dmChannelId);
       return;
     }
     const meId = this.me.userId,
@@ -3177,6 +3201,7 @@ export class CommunicationComponent
           contact.dmChannelId = chId;
           this.loadDmMessages(contact, chId);
           this.subscribeToDmChannel(contact);
+          onReady?.(chId);
         } else {
           this.collabService
             .createChannel({
@@ -3194,6 +3219,7 @@ export class CommunicationComponent
                   .subscribe({ error: () => {} });
                 this.loadDmMessages(contact, chId);
                 this.subscribeToDmChannel(contact);
+                onReady?.(chId);
               },
               error: () => {
                 this.messagesLoading = false;
@@ -3238,11 +3264,14 @@ export class CommunicationComponent
               .markRead(channelId, this.lastMessageBackendId)
               .subscribe({ error: () => {} });
           }
-          contact.hasUnread = false;
-          contact.unreadCount = undefined;
-          this.syncHeaderState();
+          if (contact.id === this.activeDmId && this.activeView === 'dm') {
+            contact.hasUnread = false;
+            contact.unreadCount = undefined;
+            this.syncHeaderState();
+          }
           this.scrollFeed = true;
           this.cdr.detectChanges();
+          this.consumePendingNotificationHighlight(this.dmMessages[contact.id]);
         });
       },
       error: () => {
@@ -3427,12 +3456,52 @@ export class CommunicationComponent
       .subscribe({ error: () => {} });
     this.presenceChannelId = channel.backendId;
     this.pollChannelPresence(channel.backendId);
-    channel.hasUnread = false;
-    channel.unreadCount = undefined;
-    this.syncHeaderState();
+    if (channel.id === this.activeChannelId && this.activeView === 'channel') {
+      channel.hasUnread = false;
+      channel.unreadCount = undefined;
+      this.syncHeaderState();
+    }
     this.subscribeToChannel(channel.backendId);
     this.scrollFeed = true;
     this.cdr.detectChanges();
+    this.consumePendingNotificationHighlight(this.channelMessages[channel.id]);
+  }
+
+  private consumePendingNotificationHighlight(messages: Message[]): void {
+    if (!this.pendingNotificationMessageBackendId) {
+      return;
+    }
+    const target = this.findMsgByBackendId(messages, this.pendingNotificationMessageBackendId);
+    if (!target) {
+      return;
+    }
+    this.pendingNotificationMessageBackendId = null;
+    this.flashId = target.id;
+    clearTimeout(this.flashTimer);
+    setTimeout(() => {
+      const el = document.getElementById('msg-' + target.id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      this.cdr.detectChanges();
+    }, 180);
+    this.flashTimer = setTimeout(() => {
+      this.flashId = null;
+      this.cdr.detectChanges();
+    }, 5000);
+  }
+
+  private findMsgByBackendId(messages: Message[], backendId: number): Message | null {
+    for (const message of messages || []) {
+      if (Number(message.backendId) === Number(backendId)) {
+        return message;
+      }
+      const child = this.findMsgByBackendId(message.replies || [], backendId);
+      if (child) {
+        return child;
+      }
+    }
+    return null;
   }
 
   private buildReadStateMap(messages: CollabMessage[], readStates: any[] = []): void {
@@ -3550,26 +3619,47 @@ export class CommunicationComponent
       const master = ctx.createGain();
       master.gain.setValueAtTime(0.0001, ctx.currentTime);
       master.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
-      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.48);
       master.connect(ctx.destination);
-
-      const noteA = ctx.createOscillator();
-      noteA.type = 'triangle';
-      noteA.frequency.setValueAtTime(740, ctx.currentTime);
-      noteA.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.18);
-      noteA.connect(master);
-
-      const noteB = ctx.createOscillator();
-      noteB.type = 'sine';
-      noteB.frequency.setValueAtTime(988, ctx.currentTime + 0.03);
-      noteB.connect(master);
-
-      noteA.start();
-      noteB.start(ctx.currentTime + 0.03);
-      noteA.stop(ctx.currentTime + 0.28);
-      noteB.stop(ctx.currentTime + 0.22);
-      noteA.onended = () => ctx.close();
+      const tones =
+        this.selectedRingtone === 'crystal'
+          ? [
+              { type: 'sine' as OscillatorType, frequency: 1046, start: 0, stop: 0.18 },
+              { type: 'triangle' as OscillatorType, frequency: 1318, start: 0.05, stop: 0.32 },
+            ]
+          : this.selectedRingtone === 'pulse'
+            ? [
+                { type: 'square' as OscillatorType, frequency: 620, start: 0, stop: 0.12 },
+                { type: 'square' as OscillatorType, frequency: 620, start: 0.16, stop: 0.28 },
+                { type: 'triangle' as OscillatorType, frequency: 880, start: 0.31, stop: 0.46 },
+              ]
+            : this.selectedRingtone === 'soft'
+              ? [
+                  { type: 'sine' as OscillatorType, frequency: 660, start: 0, stop: 0.22 },
+                  { type: 'sine' as OscillatorType, frequency: 784, start: 0.08, stop: 0.3 },
+                ]
+              : [
+                  { type: 'triangle' as OscillatorType, frequency: 740, start: 0, stop: 0.28 },
+                  { type: 'sine' as OscillatorType, frequency: 988, start: 0.03, stop: 0.22 },
+                ];
+      tones.forEach((tone, index) => {
+        const oscillator = ctx.createOscillator();
+        oscillator.type = tone.type;
+        oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + tone.start);
+        oscillator.connect(master);
+        oscillator.start(ctx.currentTime + tone.start);
+        oscillator.stop(ctx.currentTime + tone.stop);
+        if (index === tones.length - 1) {
+          oscillator.onended = () => ctx.close();
+        }
+      });
     } catch (_) {}
+  }
+
+  setRingtone(tone: string): void {
+    this.selectedRingtone = tone || 'classic';
+    localStorage.setItem('optimax_message_ringtone', this.selectedRingtone);
+    this.playNotificationSound();
   }
 
   // ── Messaging ─────────────────────────────────────────
@@ -3638,13 +3728,11 @@ export class CommunicationComponent
       return;
     const chId = contact.dmChannelId;
     if (!chId) {
-      (this.dmMessages[contact.id] ??= []).push(
-        this.makeLocalMsg(text || '(file)'),
-      );
-      this.draft = '';
-      this.pendingFile = null;
-      this.pendingAttachment = null;
-      this.scrollFeed = true;
+      this.getOrCreateDmChannel(contact, (resolvedChannelId) => {
+        if (contact.id !== this.activeDmId) return;
+        contact.dmChannelId = resolvedChannelId;
+        this.sendDmMessage();
+      });
       return;
     }
     this.sendingMessage = true;
