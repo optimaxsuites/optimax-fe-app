@@ -611,7 +611,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   openPurposeManagement(): void {
-    this.router.navigate(['/admin/hr/loan-management/loan-purposes', uuidV4()]);
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/loan-management'
+      : '/loan-management';
+    this.router.navigate([`${routeBase}/loan-purposes`, uuidV4()]);
   }
 
   getStatusClass(status: string | undefined): string {
@@ -1141,7 +1144,10 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   openGracePeriodRequests(): void {
-    this.router.navigate(['/admin/hr/loan-management/grace-period-requests', uuidV4()]);
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/loan-management'
+      : '/loan-management';
+    this.router.navigate([`${routeBase}/grace-period-requests`, uuidV4()]);
   }
 
   generateReports(): void {

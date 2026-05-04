@@ -143,9 +143,17 @@ const routes: Routes = [
     component: LoanDisbursementUiComponent,
   },
     {
+      path: 'loan-management/loan-purposes/:uuid',
+      component: LoanPurposeManagementComponent,
+    },
+    {
     path: 'admin/hr/loan-management/loan-purposes/:uuid',
     component: LoanPurposeManagementComponent,
   },
+    {
+      path: 'cooperative/loan-purposes/:uuid',
+      component: CooperativeLoanPurposeManagementComponent,
+    },
     {
       path: 'admin/hr/cooperative/loan-purposes/:uuid',
       component: CooperativeLoanPurposeManagementComponent,
@@ -156,10 +164,18 @@ const routes: Routes = [
   },
 
   {
+    path: 'loan-management/grace-period-requests/:uuid',
+    component: LoanGracePeriodRequestsManagementComponent,
+  },
+  {
     path: 'admin/hr/loan-management/grace-period-requests/:uuid',
     component: LoanGracePeriodRequestsManagementComponent,
   },
   // Added missing route for loan-grace-period-requests (with 'loan-' in path)
+  {
+    path: 'loan-management/loan-grace-period-requests/:uuid',
+    component: LoanGracePeriodRequestsManagementComponent,
+  },
   {
     path: 'admin/hr/loan-management/loan-grace-period-requests/:uuid',
     component: LoanGracePeriodRequestsManagementComponent,
@@ -281,6 +297,10 @@ const routes: Routes = [
   {
     path: 'admin/hr/cooperative/group-join-applications/:uuid',
     component: CooperativeGroupJoinHistoryComponent,
+  },
+  {
+    path: 'cooperative/grace-period-requests/:uuid',
+    component: CooperativeGracePeriodRequestsManagementComponent,
   },
   {
     path: 'admin/hr/cooperative/grace-period-requests/:uuid',
