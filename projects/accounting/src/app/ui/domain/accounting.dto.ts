@@ -32,6 +32,12 @@ export enum TransactionReviewStatus {
   DISBURSED = 'DISBURSED'
 }
 
+export enum MappingStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
+}
+
 export enum JournalEntryStatus {
   DRAFT = 'DRAFT',
   POSTED = 'POSTED',
@@ -129,6 +135,11 @@ export interface AccountMappingDTO {
   description?: string;
   createdBy?: UserDTO;
   createdAt: string;
+  status?: MappingStatus;
+  mappedBy?: UserDTO;
+  approvedBy?: UserDTO;
+  approvalDate?: string | Date;
+  metadata?: any;
 }
 
 export interface AccountingTransactionDTO {
@@ -151,18 +162,37 @@ export interface AccountingTransactionDTO {
   date?: string | Date; // Template alias
   createdBy: UserDTO | any;
   createdAt: string | Date;
-  approvedBy?: string;
+  mappedBy?: UserDTO;
+  approvedBy?: UserDTO;
+  approvalDate?: string | Date;
+  mapping?: AccountMappingDTO;
+  mappingMetadata?: AccountMappingDTO;
+  accountingEvent?: AccountingEventDTO;
   metadata?: any;
+}
+
+export interface DisbursementRecipientDTO {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  bankName: string;
+  accountNumber: string;
+  amount: number;
+  currency: string;
+  status: DisbursementStatus;
+  monifyReference?: string;
+  disbursedAt?: string | Date;
 }
 
 export interface DisbursementDTO {
   id: number;
-  transaction: AccountingTransactionDTO; // Real API uses 'transaction', not 'transactionId'
-  disbursementAmount: number;
-  status: 'PENDING' | 'PROCESSING' | 'DISBURSED' | 'FAILED';
-  disbursedFrom: string; // name of funding account / bank connection providerName
-  monifyReference: string | null;
-  disbursedAt: string | null; // ISO string from API
+  transactions: AccountingTransactionDTO[]; // Batch support
+  recipients: DisbursementRecipientDTO[]; // Per-recipient details
+  totalDisbursementAmount: number;
+  status: DisbursementStatus;
+  disbursedFrom: string; // CASH or ACCOUNT
+  monifyReference?: string | null;
+  disbursedAt?: string | null;
   createdBy: UserDTO | any;
   createdAt: string;
 }
@@ -200,8 +230,14 @@ export interface CreateTransactionPayload {
 }
 
 export interface CreateDisbursementPayload {
-  transaction: { id: number };
-  disbursementAmount: number;
+  // Single-recipient payout
+  transaction?: { id: number };
+  disbursementAmount?: number;
+  // Batch / multi-recipient payout
+  transactions?: { id: number }[];
+  recipients?: { employeeId: number; amount: number }[];
+  totalDisbursementAmount?: number;
+  // Common
   status: 'PENDING';
   disbursedFrom: string;
 }
