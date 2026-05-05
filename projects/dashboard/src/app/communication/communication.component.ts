@@ -29,6 +29,7 @@ import {
 } from '../ui/services/collaboration.service';
 import { firstValueFrom } from 'rxjs';
 import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
+import { ComposerLinkPreview } from './message-composer/message-composer.component';
 
 // damilola worked on this: feed-first collaboration, unread syncing, read receipts, and richer notifications.
 // ── Local interfaces ──────────────────────────────────────────────────────────
@@ -1103,17 +1104,24 @@ export class CommunicationComponent
   }
 
   async submitFeedPost(): Promise<void> {
-    const body = this.postComposer.body.trim();
-    if (!body || this.creatingPost) return;
+    const body = (this.postComposer.body || '').trim();
+    const bodyText = this.extractTextFromHtml(body);
+    if (this.creatingPost) return;
     this.creatingPost = true;
     this.feedMediaError = '';
     try {
-      const bodyText = this.extractTextFromHtml(body);
       const parsedPostType = this.extractPostType(bodyText) || this.postComposer.postType;
       const newMediaItems = await this.uploadSelectedFeedMedia();
       const mediaItems = [...this.editingFeedPostMedia, ...newMediaItems];
+      if (!bodyText && !mediaItems.length) {
+        this.feedMediaError = 'Add text or upload media before posting.';
+        this.creatingPost = false;
+        this.cdr.detectChanges();
+        return;
+      }
       const payload = {
-        body,
+        // damilola worked on this: image-first feed posts should submit without forcing visible text.
+        body: body || '<p></p>',
         coverImageUrl: mediaItems[0]?.thumbnailUrl || mediaItems[0]?.url,
         mediaItems,
         tags: this.extractTags(bodyText),
@@ -1628,7 +1636,9 @@ export class CommunicationComponent
   }
 
   feedMediaItems(post: CollabFeedPost): CollabFeedMediaItem[] {
-    return (post.mediaItems || []).filter((item) => Boolean(item?.url));
+    return (post.mediaItems || []).filter((item) =>
+      Boolean(item?.url || item?.thumbnailUrl),
+    );
   }
 
   feedImageItems(post: CollabFeedPost): CollabFeedMediaItem[] {
@@ -1663,7 +1673,9 @@ export class CommunicationComponent
   }
 
   feedMediaUrl(item?: CollabFeedMediaItem): string {
-    return this.resolveProtectedMediaUrl(item?.url || '');
+    return this.resolveProtectedMediaUrl(
+      item?.url || item?.thumbnailUrl || '',
+    );
   }
 
   feedMediaPoster(item?: CollabFeedMediaItem): string {
@@ -1716,21 +1728,51 @@ export class CommunicationComponent
   }
 
   isFeedImageItem(item?: CollabFeedMediaItem): boolean {
-    return (item?.mediaType || '').toUpperCase() === 'IMAGE';
+    return (
+      (item?.mediaType || '').toUpperCase() === 'IMAGE' ||
+      this.isImageType(item?.contentType) ||
+      this.looksLikeImageFile(
+        item?.fileName || item?.url || item?.thumbnailUrl,
+      )
+    );
   }
 
   isFeedVideoItem(item?: CollabFeedMediaItem): boolean {
-    return (item?.mediaType || '').toUpperCase() === 'VIDEO';
+    return (
+      (item?.mediaType || '').toUpperCase() === 'VIDEO' ||
+      (item?.contentType || '').startsWith('video/') ||
+      this.looksLikeVideoFile(
+        item?.fileName || item?.url || item?.thumbnailUrl,
+      )
+    );
   }
 
   isFeedPdfItem(item?: CollabFeedMediaItem): boolean {
-    return (item?.mediaType || '').toUpperCase() === 'PDF' || (item?.url || '').toLowerCase().endsWith('.pdf');
+    return (
+      (item?.mediaType || '').toUpperCase() === 'PDF' ||
+      (item?.contentType || '').toLowerCase() === 'application/pdf' ||
+      this.looksLikePdfFile(
+        item?.fileName || item?.url || item?.thumbnailUrl,
+      )
+    );
   }
 
   isFeedOfficeItem(item?: CollabFeedMediaItem): boolean {
     const mediaType = (item?.mediaType || '').toUpperCase();
-    const url = (item?.url || '').toLowerCase();
-    return mediaType === 'DOCX' || mediaType === 'PPTX' || url.endsWith('.docx') || url.endsWith('.pptx') || url.endsWith('.doc') || url.endsWith('.ppt');
+    const fileRef = (
+      item?.fileName ||
+      item?.url ||
+      item?.thumbnailUrl ||
+      ''
+    ).toLowerCase();
+    return (
+      mediaType === 'DOCX' ||
+      mediaType === 'PPTX' ||
+      fileRef.endsWith('.docx') ||
+      fileRef.endsWith('.pptx') ||
+      fileRef.endsWith('.doc') ||
+      fileRef.endsWith('.ppt')
+    );
   }
 
   isDraftPdf(media: FeedMediaDraft): boolean {
@@ -1763,14 +1805,33 @@ export class CommunicationComponent
   feedMediaLabel(item?: CollabFeedMediaItem, index = 0): string {
     const caption = (item?.caption || '').trim();
     if (caption) return caption;
+    const fileName = (item?.fileName || '').trim();
+    if (fileName) return fileName;
     const type = (item?.mediaType || 'FILE').toUpperCase();
     if (type === 'IMAGE') return `Image ${index + 1}`;
     if (type === 'VIDEO') return `Video ${index + 1}`;
     return `Attachment ${index + 1}`;
   }
 
+  private looksLikeImageFile(value?: string): boolean {
+    return /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(value || '');
+  }
+
+  private looksLikeVideoFile(value?: string): boolean {
+    return /\.(mp4|webm|mov|m4v|ogg)$/i.test(value || '');
+  }
+
+  private looksLikePdfFile(value?: string): boolean {
+    return /\.pdf$/i.test(value || '');
+  }
+
   feedComposerLinkPreview(): FeedLinkPreview | null {
     return this.linkPreviewFromText(this.extractTextFromHtml(this.postComposer.body || ''));
+  }
+
+  chatDraftLinkPreview(): ComposerLinkPreview | null {
+    const preview = this.linkPreviewFromText(this.draft || '');
+    return preview ? { ...preview } : null;
   }
 
   feedPostLinkPreview(post: CollabFeedPost): FeedLinkPreview | null {
@@ -1984,10 +2045,8 @@ export class CommunicationComponent
         const ch = this.activeChannel;
         if (ch) this.subscribeToChannel(ch.backendId);
       }
-      if (this.workspaceMode === 'chat') {
-        for (const dm of this.dmContacts) {
-          if (dm.dmChannelId) this.subscribeToDmChannel(dm);
-        }
+      for (const dm of this.dmContacts) {
+        if (dm.dmChannelId) this.subscribeToDmChannel(dm);
       }
     };
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
@@ -2634,17 +2693,45 @@ export class CommunicationComponent
             }
             return contact;
           });
-        this.collabService.getChannels().subscribe({
-          next: (channels) => {
-            this.mapDirectMessageChannels(channels);
+        this.collabService.getHomeChannels().subscribe({
+          next: (data) => {
+            this.mapDirectMessageChannels(data.channels || []);
+            const activeDm = this.activeDmContact;
+            if (
+              activeDm &&
+              activeDm.dmChannelId &&
+              this.activeView === 'dm' &&
+              this.dmMessages[activeDm.id] === undefined
+            ) {
+              this.loadDmMessages(activeDm, activeDm.dmChannelId);
+            }
             this.syncHeaderState();
             this.employeesLoading = false;
             this.cdr.detectChanges();
           },
           error: () => {
-            this.syncHeaderState();
-            this.employeesLoading = false;
-            this.cdr.detectChanges();
+            this.collabService.getChannels().subscribe({
+              next: (channels) => {
+                this.mapDirectMessageChannels(channels);
+                const activeDm = this.activeDmContact;
+                if (
+                  activeDm &&
+                  activeDm.dmChannelId &&
+                  this.activeView === 'dm' &&
+                  this.dmMessages[activeDm.id] === undefined
+                ) {
+                  this.loadDmMessages(activeDm, activeDm.dmChannelId);
+                }
+                this.syncHeaderState();
+                this.employeesLoading = false;
+                this.cdr.detectChanges();
+              },
+              error: () => {
+                this.syncHeaderState();
+                this.employeesLoading = false;
+                this.cdr.detectChanges();
+              },
+            });
           },
         });
       },
@@ -2755,9 +2842,11 @@ export class CommunicationComponent
       );
       if (!contact) continue;
       contact.dmChannelId = Number(channel.channelId ?? channel.id);
-      const unreadCount = Number(channel.unreadCount || 0);
-      contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
-      contact.hasUnread = unreadCount > 0;
+      if (channel.unreadCount != null) {
+        const unreadCount = Number(channel.unreadCount || 0);
+        contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
+        contact.hasUnread = unreadCount > 0;
+      }
     }
   }
 
@@ -3279,6 +3368,13 @@ export class CommunicationComponent
         this.readStateMap = {};
         if (!snap.messages?.length) {
           this.dmMessages[contact.id] = [];
+          if (contact.id === this.activeDmId && (contact.lastMessagePreview || contact.hasUnread)) {
+            setTimeout(() => {
+              if (contact.id === this.activeDmId) {
+                this.fetchAndReconcileDm(contact, channelId);
+              }
+            }, 700);
+          }
           this.cdr.detectChanges();
           return;
         }
@@ -5322,11 +5418,50 @@ export class CommunicationComponent
     );
     const results = await Promise.all(uploads);
     return results.map((item) => ({
-      mediaType: item.mediaType || this.mapMediaType(item.contentType),
+      mediaType: this.normalizeFeedMediaType(
+        item.mediaType,
+        item.contentType,
+        item.fileName || item.url,
+      ),
       url: item.url,
       thumbnailUrl: item.thumbnailUrl || item.url,
       caption: item.caption,
+      fileName: item.fileName,
+      contentType: item.contentType,
+      fileSize: item.fileSize,
     }));
+  }
+
+  private normalizeFeedMediaType(
+    mediaType?: string,
+    contentType?: string,
+    fileNameOrUrl?: string,
+  ): string {
+    const upperType = (mediaType || '').toUpperCase();
+    if (
+      upperType === 'IMAGE' ||
+      upperType === 'VIDEO' ||
+      upperType === 'PDF' ||
+      upperType === 'FILE'
+    ) {
+      return upperType;
+    }
+    if (this.isImageType(contentType) || this.looksLikeImageFile(fileNameOrUrl)) {
+      return 'IMAGE';
+    }
+    if (
+      (contentType || '').startsWith('video/') ||
+      this.looksLikeVideoFile(fileNameOrUrl)
+    ) {
+      return 'VIDEO';
+    }
+    if (
+      (contentType || '').toLowerCase() === 'application/pdf' ||
+      this.looksLikePdfFile(fileNameOrUrl)
+    ) {
+      return 'PDF';
+    }
+    return 'FILE';
   }
 
   private mapMediaType(contentType?: string): string {

@@ -24,6 +24,14 @@ export interface PendingAttachment {
   previewUrl?: string;
 }
 
+export interface ComposerLinkPreview {
+  url: string;
+  displayUrl: string;
+  title: string;
+  subtitle: string;
+  thumbnailUrl: string;
+}
+
 @Component({
   selector: 'app-message-composer',
   templateUrl: './message-composer.component.html',
@@ -51,6 +59,7 @@ export class MessageComposerComponent {
   @Input() voiceListening = false;
   @Input() voiceSupported = false;
   @Input() typingUsersLabel = '';
+  @Input() linkPreview: ComposerLinkPreview | null = null;
 
   // ── Outputs ─────────────────────────────────────────
   @Output() draftChange = new EventEmitter<string>();
