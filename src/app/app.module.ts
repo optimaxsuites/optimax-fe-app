@@ -384,8 +384,8 @@ import { BrowserModule } from '@angular/platform-browser';
   ],
   imports: [
     AppHrRoutingModule,
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

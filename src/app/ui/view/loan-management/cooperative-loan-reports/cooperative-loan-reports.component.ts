@@ -1,5 +1,5 @@
 import { CommonModule, formatDate } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, forkJoin } from 'rxjs';
@@ -12,6 +12,8 @@ import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.uti
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
+import { CooperativeLoanPurposeService } from '../../../service/loan/cooperative-loan/cooperative-loan-purpose.service';
+import { LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 
 type LoanReportSummary = {
   totalLoans: number;
@@ -27,11 +29,14 @@ interface CooperativeLoanReportRow {
   memberId: string; // formatted
   membershipId: string; // formatted
   groupName: string;
+  purposeCode: string;
   purpose: string;
+  lateFeePolicy: string;
   amount: number;
   groupInterest: number;
   interestAmount: number;
   repayableAmount: number;
+  lateFeeAmount: number;
   paid: number;
   balance: number;
   status: string;
@@ -42,11 +47,12 @@ interface CooperativeLoanReportRow {
 @Component({
   selector: 'app-cooperative-loan-reports',
   templateUrl: './cooperative-loan-reports.component.html',
-  styleUrls: ['./cooperative-loan-reports.component.scss']
+  styleUrls: ['./cooperative-loan-reports.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
     memberships: CooperativeGroupMembership[] = [];
-  readonly pageSize = 20;
+  readonly pageSize = 10;
   currentUuid = '';
   currentPage = 1;
   isLoading = true;
@@ -85,6 +91,7 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
 
   members: CooperativeMember[] = [];
   groups: CooperativeLoanGroup[] = [];
+  cooperativePurposes: LoanPurposeData[] = [];
   alerts: string[] = [];
 
   filters = {
@@ -139,7 +146,8 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private cooperativeService: CooperativeService
+    private cooperativeService: CooperativeService,
+    private cooperativeLoanPurposeService: CooperativeLoanPurposeService
   ) {}
 
   ngOnInit(): void {
@@ -174,13 +182,15 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
       loans: this.cooperativeService.getLoans(),
       members: this.cooperativeService.getMembers(),
       groups: this.cooperativeService.loadGroups(),
-      memberships: this.cooperativeService.loadGroupMemberships() // Batch fetch all memberships
+      memberships: this.cooperativeService.loadGroupMemberships(), // Batch fetch all memberships
+      purposes: this.cooperativeLoanPurposeService.getAllPurposes(false)
     }).subscribe({
-      next: ({ loans, members, groups, memberships }) => {
+      next: ({ loans, members, groups, memberships, purposes }) => {
         this.loans = loans;
         this.members = members;
         this.groups = groups;
         this.memberships = memberships;
+        this.cooperativePurposes = Array.isArray(purposes) ? purposes : [];
         this.rebuildLookups();
         this.applyFilters();
         this.alerts = this.buildAlerts(loans);
@@ -261,6 +271,10 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
     const amount = Number(loan.amount || 0);
     const repayableAmount = Number(loan.totalRepayment || 0);
     const interestAmount = Math.max(repayableAmount - amount, 0);
+    const lateFeePercentage = this.resolveLateFeePercentage(loan, group);
+    const lateFeeGraceDays = this.resolveLateFeeGraceDays(loan, group);
+    const lateFeeAmount = this.calculateTotalLateFees(loan, lateFeePercentage);
+
     return {
       loan,
       loanId: String(loan.loanCode || loan.loanId || loan.id),
@@ -268,11 +282,14 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
       memberId: this.formatMemberId(memberIdNum),
       membershipId: this.formatMembershipId(String(membershipIdRaw), group?.code, memberIdNum),
       groupName: this.getGroupName(loan),
+      purposeCode: this.getPurposeCodeDisplay(loan),
       purpose: this.formatPurposeDisplay(loan.purpose),
+      lateFeePolicy: this.getLateFeePolicyDisplay(lateFeePercentage, lateFeeGraceDays),
       amount,
       groupInterest: group ? Number(group.interestRate || 0) : 0,
       interestAmount,
       repayableAmount,
+      lateFeeAmount,
       paid: Number(loan.totalPaid || 0),
       balance: this.getCurrentBalance(loan),
       status: this.formatStatusDisplay(loan.status),
@@ -297,6 +314,70 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
     return `${alphaPart}-${memberId}-${membershipId}`;
   }
 
+  private getPurposeCodeDisplay(loan: CooperativeLoan): string {
+    const persistedCode = String((loan as any).purposeCode || (loan as any).loanPurposeCode || '').trim();
+    if (persistedCode) {
+      return persistedCode;
+    }
+
+    const purposeName = String(loan.purpose || '').trim().toLowerCase();
+    if (purposeName) {
+      const matchedPurpose = this.cooperativePurposes.find((purpose) =>
+        String(purpose.name || '').trim().toLowerCase() === purposeName
+      );
+      const matchedCode = String(matchedPurpose?.code || '').trim();
+      if (matchedCode) {
+        return matchedCode;
+      }
+    }
+
+    return 'N/A';
+  }
+
+  private resolveLateFeePercentage(loan: CooperativeLoan, group?: CooperativeLoanGroup): number {
+    const value = Number((loan as any).lateFeePercentage ?? group?.lateFeePercentage ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  private resolveLateFeeGraceDays(loan: CooperativeLoan, group?: CooperativeLoanGroup): number {
+    const value = Number((loan as any).lateFeeGraceDays ?? group?.lateFeeGraceDays ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  private getLateFeePolicyDisplay(lateFeePercentage: number, lateFeeGraceDays: number): string {
+    if (!lateFeePercentage && !lateFeeGraceDays) {
+      return 'No late fee policy';
+    }
+
+    return `${lateFeePercentage}% after ${lateFeeGraceDays} day(s)`;
+  }
+
+  private calculateTotalLateFees(loan: CooperativeLoan, lateFeePercentage: number): number {
+    if (!lateFeePercentage || lateFeePercentage <= 0) {
+      return 0;
+    }
+
+    const schedule = Array.isArray((loan as any).repaymentSchedule) ? (loan as any).repaymentSchedule : [];
+    const overdueInstallments = schedule.filter((item: any) => String(item?.status || '').toUpperCase() === 'OVERDUE');
+
+    if (!overdueInstallments.length) {
+      return 0;
+    }
+
+    let totalLateFees = 0;
+    for (const installment of overdueInstallments) {
+      const principalAmount = Number(
+        installment?.principalAmount ?? installment?.principal ?? installment?.amount ?? installment?.totalAmount ?? 0
+      );
+      if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
+        continue;
+      }
+      totalLateFees += principalAmount * (lateFeePercentage / 100);
+    }
+
+    return Number(totalLateFees.toFixed(2));
+  }
+
 
   resetFilters(): void {
     this.filters = {
@@ -309,16 +390,46 @@ export class CooperativeLoanReportsComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
-  setSort(field: 'requestDate' | 'amount' | 'status' | 'member' | 'group'): void {
-    if (this.sortField === field) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sortField = field;
-      this.sortDirection = field === 'requestDate' ? 'desc' : 'asc';
-    }
+  get paginationStart(): number {
+  return this.filteredLoanRows.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+}
 
-    this.applyFilters();
+  get paginationEnd(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredLoanRows.length);
   }
+
+  get filteredTotalAmount(): number {
+    return this.filteredLoanRows.reduce((sum, row) => sum + row.amount, 0);
+  }
+
+  // Add this method for sort icons
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) return 'fa-sort';
+    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+
+  setSort(field: string): void {
+  // Map UI field names to internal sort fields
+  const fieldMap: { [key: string]: string } = {
+    'loanId': 'loanId',
+    'member': 'member', 
+    'group': 'group',
+    'amount': 'amount',
+    'status': 'status',
+    'date': 'requestDate'
+  };
+  
+  const internalField = fieldMap[field] || field;
+  
+  if (this.sortField === internalField) {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.sortField = internalField as any;
+    this.sortDirection = 'desc';
+  }
+  this.applyFilters();
+}
 
   get paginatedLoans(): CooperativeLoanReportRow[] {
     const start = (this.currentPage - 1) * this.pageSize;
@@ -417,10 +528,13 @@ getStatusClass(status: string | undefined): string {
         <td>${row.memberName}</td>
         <td>${row.membershipId || 'N/A'}</td>
         <td>${row.groupName}</td>
+        <td>${row.purposeCode}</td>
         <td>${row.purpose}</td>
+        <td>${row.lateFeePolicy}</td>
         <td>${this.formatCurrency(row.amount)}</td>
         <td>${this.formatCurrency(row.repayableAmount)}</td>
         <td>${row.groupInterest}%</td>
+        <td>${this.formatCurrency(row.lateFeeAmount)}</td>
         <td>${this.formatCurrency(row.paid)}</td>
         <td>${this.formatCurrency(row.balance)}</td>
         <td>${row.status}</td>
@@ -458,10 +572,13 @@ getStatusClass(status: string | undefined): string {
                 <th>Member</th>
                 <th>Membership ID</th>
                 <th>Group Name</th>
+                <th>Purpose Code</th>
                 <th>Purpose</th>
+                <th>Late Fee / Grace Days</th>
                 <th>Amount</th>
                 <th>Repayable Amount</th>
                 <th>Group Interest</th>
+                <th>Late Fee Amount</th>
                 <th>Paid</th>
                 <th>Balance</th>
                 <th>Status</th>
@@ -567,10 +684,13 @@ getStatusClass(status: string | undefined): string {
       'Member Name': row.memberName,
       'Membership ID': row.membershipId || 'N/A',
       'Group Name': row.groupName,
+      'Purpose Code': row.purposeCode,
       'Purpose': row.purpose,
+      'Late Fee / Grace Days': row.lateFeePolicy,
       'Loan Amount': row.amount,
       'Repayable Amount': row.repayableAmount,
       'Group Interest Rate (%)': row.groupInterest,
+      'Late Fee Amount': row.lateFeeAmount,
       'Total Paid': row.paid,
       'Outstanding Balance': row.balance,
       'Status': row.status,

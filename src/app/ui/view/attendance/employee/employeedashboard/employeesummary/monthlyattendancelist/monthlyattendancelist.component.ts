@@ -49,7 +49,7 @@ export class MonthlyattendancelistComponent implements OnInit {
       console.log('All records in subject:', data.map(r => ({ id: r.id, employee: r.employee })));
       console.log('Filtering for userId:', userId);
 
-      this.attendanceData = data.filter(r => r.id === userId);
+      this.attendanceData = data.filter(r => String(r.id) === String(userId));
 
       // TEMP: diagnostic log
       console.log('After filter:', this.attendanceData);

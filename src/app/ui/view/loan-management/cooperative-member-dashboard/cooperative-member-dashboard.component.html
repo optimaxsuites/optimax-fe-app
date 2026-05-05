@@ -422,7 +422,7 @@
     </div>
   </app-side-modal>
 
-  <app-modal *ngIf="showApplicationModal" [header]="'New Cooperative Loan Application'" (close)="closeApplicationModal()">
+  <app-modal *ngIf="showApplicationModal && canApplyForLoan" [header]="'New Cooperative Loan Application'" (close)="closeApplicationModal()">
     <app-cooperative-loan-application
       [isModal]="true"
       [isSelfService]="true"
@@ -637,11 +637,11 @@
                 <h2>Command Center</h2>
               </div>
 
-              <button class="command-btn new-loan" (click)="applyForLoan()">
+              <button class="command-btn new-loan" [class.disabled]="!canApplyForLoan" [disabled]="!canApplyForLoan" (click)="applyForLoan()">
                 <i class="fas fa-plus-circle"></i>
                 <div class="btn-text">
                   <strong>Apply for New Loan</strong>
-                  <span>Start a fresh cooperative application</span>
+                  <span>{{ canApplyForLoan ? 'Start a fresh cooperative application' : 'Join an active group to apply' }}</span>
                 </div>
                 <i class="fas fa-chevron-right"></i>
               </button>

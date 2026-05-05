@@ -31,6 +31,12 @@ export interface CooperativeLoanGuarantorEntry {
   note?: string;
 }
 
+export interface CooperativeLoanRepaymentScheduleItem {
+  installmentNo: number;
+  dueDate: string;
+  totalAmount: number;
+}
+
 export interface CooperativeLoan {
   id: number;
   loanCode: string;
@@ -90,6 +96,7 @@ export interface CooperativeLoan {
   lateFeeCollectionAccount?: string;
   accountingEmail?: string;
   accountingWebhookUrl?: string;
+  repaymentSchedule?: CooperativeLoanRepaymentScheduleItem[];
   gracePeriodRequests?: CooperativeLoanGracePeriodRequest[];
   paymentHistory: PaymentHistory[];
   statusHistory: StatusHistory[];

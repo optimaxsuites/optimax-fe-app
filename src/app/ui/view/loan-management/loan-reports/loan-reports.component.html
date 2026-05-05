@@ -126,24 +126,24 @@
   <table class="reports-table" *ngIf="paginatedLoans.length > 0">
     <thead>
       <tr>
-        <th>S/N</th>
-        <th class="sortable" (click)="setSort('loanId')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i></th>
-        <th class="sortable" (click)="setSort('employeeName')">Employee <i class="fas" [ngClass]="getSortIcon('employeeName')"></i></th>
-        <th class="sortable" (click)="setSort('employeeId')">Employee ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i></th>
-        <th class="sortable" (click)="setSort('department')">Department <i class="fas" [ngClass]="getSortIcon('department')"></i></th>
-        <th>Purpose Code</th>
-        <th>Purpose</th>
-        <th>Late Fee / Grace Days</th>
-        <th class="sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
-        <th class="sortable" (click)="setSort('interestRate')">Interest <i class="fas" [ngClass]="getSortIcon('interestRate')"></i></th>
-        <th>Interest Amount</th>
-        <th class="sortable" (click)="setSort('totalRepayable')">Repayable Amount <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i></th>
-        <th>Late Fee Amount</th>
-        <th>Paid</th>
-        <th>Balance</th>
-        <th class="sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
-        <th class="sortable" (click)="setSort('requestDate')">Date <i class="fas" [ngClass]="getSortIcon('requestDate')"></i></th>
-        <th>Actions</th>
+        <th class="sn-col">S/N</th>
+        <th class="loan-id-col sortable" (click)="setSort('loanId')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i></th>
+        <th class="employee-name-col sortable" (click)="setSort('employeeName')">Employee <i class="fas" [ngClass]="getSortIcon('employeeName')"></i></th>
+        <th class="employee-id-col sortable" (click)="setSort('employeeId')">Employee ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i></th>
+        <th class="department-col sortable" (click)="setSort('department')">Department <i class="fas" [ngClass]="getSortIcon('department')"></i></th>
+        <th class="purpose-code-col">Purpose Code</th>
+        <th class="purpose-col">Purpose</th>
+        <th class="latefee-policy-col">Late Fee / Grace Days</th>
+        <th class="amount-col sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
+        <th class="interest-col sortable" (click)="setSort('interestRate')">Interest <i class="fas" [ngClass]="getSortIcon('interestRate')"></i></th>
+        <th class="interest-amount-col">Interest Amount</th>
+        <th class="repayable-col sortable" (click)="setSort('totalRepayable')">Repayable Amount <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i></th>
+        <th class="latefee-amount-col">Late Fee Amount</th>
+        <th class="paid-col">Paid</th>
+        <th class="balance-col">Balance</th>
+        <th class="status-col sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+        <th class="date-col sortable" (click)="setSort('requestDate')">Date <i class="fas" [ngClass]="getSortIcon('requestDate')"></i></th>
+        <th class="actions-col">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -151,24 +151,24 @@
         <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
         <td class="loan-id-cell">{{ getFormattedLoanId(row.loan) }}</td>
         <td class="employee-name-cell">{{ row.loan.fullName }}</td>
-        <td>{{ row.loan.employeeId }}</td>
-        <td>{{ row.departmentDisplay }}</td>
+        <td class="employee-id-cell">{{ row.loan.employeeId }}</td>
+        <td class="department-cell">{{ row.departmentDisplay }}</td>
         <td class="purpose-code-cell">{{ row.purposeCode }}</td>
         <td class="purpose-cell" [title]="row.displayPurpose">{{ row.displayPurposeShort }}</td>
         <td class="latefee-policy-cell">{{ getLateFeePolicyDisplay(row.loan) }}</td>
         <td class="amount-cell">{{ formatCurrency(row.loan.amount) }}</td>
-        <td>{{ row.loan.interestRate || 0 }}%</td>
-        <td class="amount-cell">{{ formatCurrency(row.interestAmount) }}</td>
-        <td class="amount-cell">{{ formatCurrency(row.totalRepayable) }}</td>
+        <td class="interest-cell">{{ row.loan.interestRate || 0 }}%</td>
+        <td class="interest-amount-cell">{{ formatCurrency(row.interestAmount) }}</td>
+        <td class="repayable-cell">{{ formatCurrency(row.totalRepayable) }}</td>
         <td class="latefee-amount-cell">{{ formatLateFeeAmount(row.totalLateFees) }}</td>
         <td class="paid-cell">{{ formatCurrency(row.loan.totalPaid || 0) }}</td>
         <td class="balance-cell">{{ formatCurrency(row.balanceWithLateFees) }}</td>
-        <td>
+        <td class="status-cell">
           <span class="status-badge" [ngClass]="row.statusClass">
             {{ row.statusLabel }}
           </span>
         </td>
-        <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
+        <td class="date-cell">{{ row.loan.requestDate | date:'mediumDate' }}</td>
         <td class="actions-col">
           <button class="action-btn view-btn" (click)="viewLoanDetails(row.loan.id)" title="View Details">
             <i class="fas fa-eye"></i>

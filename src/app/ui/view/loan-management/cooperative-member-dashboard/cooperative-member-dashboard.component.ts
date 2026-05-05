@@ -505,7 +505,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   get canApplyForLoan(): boolean {
-    return true;
+    return this.hasMembership && this.memberGroups.length > 0;
   }
 
   submitMembershipApplication(): void {
@@ -843,6 +843,16 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   applyForLoan(): void {
+    if (!this.canApplyForLoan) {
+      this.showApplicationModal = false;
+      this.actionMessage = this.hasMembership
+        ? 'You must belong to at least one active cooperative group before applying for a loan.'
+        : 'Activate your cooperative membership profile before applying for a loan.';
+      this.actionMessageTone = 'error';
+      return;
+    }
+
+    this.actionMessage = '';
     this.showApplicationModal = true;
   }
 
