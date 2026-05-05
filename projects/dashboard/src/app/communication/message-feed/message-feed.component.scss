@@ -34,8 +34,244 @@
   }
 }
 
+.message-output-shell {
+  width: 100%;
+  margin-top: 0.35rem;
+  border: 1px solid rgba(71, 85, 105, 0.24);
+  border-radius: 1rem;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+}
+
+.message-output-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.66);
+}
+
+.message-output-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.12);
+  color: #99f6e4;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.message-output-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.message-output-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.62rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+  }
+}
+
+.message-output-body {
+  display: block;
+  margin: 0;
+  padding: 0.4rem 0 0.55rem;
+  color: #e2e8f0;
+  font-size: 0.96rem;
+  line-height: 1.72;
+  font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
+  white-space: normal;
+  overflow-wrap: normal;
+  background: transparent;
+  tab-size: 4;
+  font-variant-ligatures: none;
+  overflow-x: auto;
+
+  &.html-output {
+    color: #dbeafe;
+  }
+}
+
+:host ::ng-deep .message-output-body .message-output-line {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.24rem 1rem;
+  min-height: 1.75rem;
+}
+
+:host ::ng-deep .message-output-body .message-output-line:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+:host ::ng-deep .message-output-body .message-output-line-number {
+  color: #64748b;
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: right;
+  user-select: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  padding-right: 0.7rem;
+}
+
+:host ::ng-deep .message-output-body .message-output-line-value {
+  min-width: 0;
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  padding-left: 0.05rem;
+}
+
+:host ::ng-deep .token {
+  font-weight: 500;
+}
+
+:host ::ng-deep .token-key,
+:host ::ng-deep .token-attr-name {
+  color: #93c5fd;
+}
+
+:host ::ng-deep .token-string {
+  color: #86efac;
+}
+
+:host ::ng-deep .token-number {
+  color: #fca5a5;
+}
+
+:host ::ng-deep .token-boolean,
+:host ::ng-deep .token-keyword {
+  color: #c4b5fd;
+}
+
+:host ::ng-deep .token-punctuation {
+  color: #fcd34d;
+}
+
+:host ::ng-deep .token-tag {
+  color: #f9a8d4;
+}
+
+:host ::ng-deep .token-comment {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.structured-output-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(2, 6, 23, 0.84);
+}
+
+.structured-output-viewer-shell {
+  width: min(96vw, 78rem);
+  max-height: 90vh;
+  border-radius: 1.2rem;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.45);
+}
+
+.structured-output-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  color: #f8fafc;
+}
+
+.structured-output-viewer-close {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.structured-output-viewer-body {
+  max-height: calc(90vh - 4.5rem);
+  overflow: auto;
+  padding: 0.35rem 0 0.7rem;
+  color: #e2e8f0;
+  font-size: 1.02rem;
+  line-height: 1.72;
+  font-family: 'SFMono-Regular', 'Consolas', 'Menlo', monospace;
+  tab-size: 4;
+  font-variant-ligatures: none;
+}
+
+:host ::ng-deep .structured-output-viewer-body .message-output-line {
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  padding: 0.32rem 1.1rem;
+}
+
+:host ::ng-deep .structured-output-viewer-body .message-output-line:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:host ::ng-deep .structured-output-viewer-body .message-output-line-number {
+  color: #94a3b8;
+  font-style: normal;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+  user-select: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.24);
+  padding-right: 0.8rem;
+}
+
+:host ::ng-deep .structured-output-viewer-body .message-output-line-value {
+  min-width: 0;
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .chat-image-card {
-  width: min(100%, 42rem);
+  width: 100%;
   overflow: hidden;
   border: 1px solid #e5e7eb;
   border-radius: 1.1rem;
@@ -43,7 +279,7 @@
 }
 
 .chat-image-collage {
-  width: min(100%, 42rem);
+  width: 100%;
   display: grid;
   gap: 0.35rem;
 
@@ -65,6 +301,7 @@
   display: block;
   width: 100%;
   min-width: 0;
+  min-height: 14rem;
   padding: 0;
   border: 0;
   border-radius: 1rem;
@@ -85,8 +322,33 @@
 .chat-image-preview {
   display: block;
   width: 100%;
-  max-height: 28rem;
+  height: 100%;
+  min-height: 100%;
+  max-height: 34rem;
   object-fit: cover;
+}
+
+.chat-image-collage.single .chat-image-collage-item {
+  background: #e2e8f0;
+  min-height: 22rem;
+}
+
+.chat-image-collage.single .chat-image-preview {
+  max-height: 40rem;
+  object-fit: cover;
+}
+
+.chat-image-collage.duo .chat-image-collage-item,
+.chat-image-collage.trio .chat-image-collage-item,
+.chat-image-collage.quad .chat-image-collage-item {
+  aspect-ratio: 1 / 1;
+}
+
+.chat-image-collage.duo .chat-image-preview,
+.chat-image-collage.trio .chat-image-preview,
+.chat-image-collage.quad .chat-image-preview {
+  height: 100%;
+  min-height: 100%;
 }
 
 .chat-image-viewer {
