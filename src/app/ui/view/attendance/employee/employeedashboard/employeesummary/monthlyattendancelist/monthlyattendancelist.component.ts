@@ -45,11 +45,22 @@ export class MonthlyattendancelistComponent implements OnInit {
       //filter to only this employee's records since Behaviour Subject is shared
       const userId = user?.id ?? '';
 
+      data.forEach(r => {
+        console.log({
+          recordId: r.id,
+          recordIdType: typeof r.id,
+          userId: userId,
+          userIdType: typeof userId,
+          strictEqual: r.id === userId,
+          stringEqual: String(r.id) === String(userId)
+        });
+      });
+
       // TEMP: diagnostic log
       console.log('All records in subject:', data.map(r => ({ id: r.id, employee: r.employee })));
       console.log('Filtering for userId:', userId);
 
-      this.attendanceData = data.filter(r => String(r.id) === String(userId));
+      this.attendanceData = data.filter(r => String(r.id).trim() === String(userId).trim());
 
       // TEMP: diagnostic log
       console.log('After filter:', this.attendanceData);
