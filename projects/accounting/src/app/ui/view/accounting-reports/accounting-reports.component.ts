@@ -13,14 +13,8 @@ import {
   IncomeStatementReportDTO,
   ReportContextDTO,
   ReportPeriodType,
+  SavedReportSnapshotDTO,
 } from '../reports/report.dto';
-
-interface SavedBalanceSheetSnapshotDTO {
-  id: string;
-  periodLabel: string;
-  report: BalanceSheetReportDTO;
-  savedAt: string;
-}
 
 interface AnnualTaxRow {
   monthLabel: string;
@@ -35,7 +29,8 @@ type FocusedReport = 'financial-statement' | 'balance-sheet' | 'annual-tax';
   styleUrls: ['./accounting-reports.component.scss'],
 })
 export class AccountingReportsComponent implements OnInit, OnDestroy {
-  readonly years = [2025, 2026];
+  readonly currentYear = new Date().getFullYear();
+  readonly years = [this.currentYear - 1, this.currentYear, this.currentYear + 1];
   readonly quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
   readonly months = Array.from({ length: 12 }, (_, month) => ({
     value: month,
@@ -43,9 +38,9 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }));
 
   selectedPeriodType: ReportPeriodType = 'quarterly';
-  selectedYear = 2025;
-  selectedQuarter = 'Q2';
-  selectedMonth = 5;
+  selectedYear = this.currentYear;
+  selectedQuarter = this.quarters[Math.floor(new Date().getMonth() / 3)];
+  selectedMonth = new Date().getMonth();
   focusedReport: FocusedReport = 'financial-statement';
 
   loading = true;
@@ -57,10 +52,10 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   annualTaxRows: AnnualTaxRow[] = [];
   annualTaxTotal = 0;
   transactions: AccountingTransactionDTO[] = [];
-  savedBalanceSheetReports: SavedBalanceSheetSnapshotDTO[] = [];
+  savedBalanceSheetReports: SavedReportSnapshotDTO[] = [];
+  fallbackNotices: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
-  private readonly storageKey = 'reports.balance-sheet.snapshots';
 
   constructor(
     private readonly accountingService: AccountingService,
@@ -95,7 +90,7 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }
 
   get hasFinancialStatementData(): boolean {
-    return !!this.incomeStatementReport && !!this.cashFlowReport;
+    return !!this.incomeStatementReport || !!this.cashFlowReport;
   }
 
   get totalIncomeAmount(): number {
@@ -155,16 +150,14 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }
 
   get metadataSourceModulesLabel(): string {
-    return this.currentMetadata?.sourceModules.join(', ') ?? '';
+    return this.currentMetadata?.sourceModules?.join(', ') ?? '';
   }
 
-  get filteredMonthlyBalanceSheets(): SavedBalanceSheetSnapshotDTO[] {
-    const selectedMonthLabel = this.months[this.selectedMonth].label;
+  get filteredMonthlyBalanceSheets(): SavedReportSnapshotDTO[] {
     return this.savedBalanceSheetReports.filter((snapshot) => {
-      const reportDate = new Date(snapshot.report.reportDate);
+      const reportDate = new Date(snapshot.periodEnd);
       return reportDate.getFullYear() === this.selectedYear &&
-        reportDate.getMonth() === this.selectedMonth &&
-        snapshot.periodLabel.includes(selectedMonthLabel);
+        reportDate.getMonth() === this.selectedMonth;
     });
   }
 
@@ -173,7 +166,7 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return this.incomeStatementReport?.reportContext ?? null;
+    return this.incomeStatementReport?.reportContext ?? this.cashFlowReport?.reportContext ?? null;
   }
 
   get metadataTransactions(): AccountingTransactionDTO[] {
@@ -182,8 +175,8 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    const includedIds = new Set(metadata.includedTransactionIds);
-    return this.transactions.filter((transaction) => includedIds.has(transaction.id));
+    const includedIds = new Set(metadata.includedTransactionIds.map((id) => String(id)));
+    return this.transactions.filter((transaction) => includedIds.has(String(transaction.id)));
   }
 
   get reportCards(): Array<{
@@ -192,6 +185,7 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     subtitle: string;
     primaryValue: string;
     state: 'ready' | 'empty';
+    isFallback?: boolean;
   }> {
     return [
       {
@@ -234,13 +228,19 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.errorMessage = '';
 
-    const { start } = this.getSelectedPeriodRange();
+    const { start, end } = this.getSelectedPeriodRange();
     this.accountingService.setPeriod(start);
 
+    const request = {
+      periodStart: start.toISOString(),
+      periodEnd: end.toISOString(),
+      reportPeriodType: this.selectedPeriodType,
+    };
+
     combineLatest([
-      this.accountingService.getIncomeStatementReport(),
-      this.accountingService.getCashFlowReport(),
-      this.accountingService.getBalanceSheetReport(),
+      this.accountingService.getIncomeStatementReport(request),
+      this.accountingService.getCashFlowReport(request),
+      this.accountingService.getBalanceSheetReport(request),
       this.accountingService.getYearlyTaxSummary(this.selectedYear),
     ])
       .pipe(takeUntil(this.destroy$))
@@ -249,11 +249,11 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
           this.incomeStatementReport = incomeStatementReport;
           this.cashFlowReport = cashFlowReport;
           this.balanceSheetReport = balanceSheetReport;
-          this.annualTaxRows = yearlyTax.byMonth.map((entry: { month: number; amount: number }) => ({
+          this.annualTaxRows = (yearlyTax.byMonth ?? []).map((entry: { month: number; amount: number }) => ({
             monthLabel: new Date(this.selectedYear, entry.month, 1).toLocaleString('en-US', { month: 'short' }),
             amount: entry.amount,
           }));
-          this.annualTaxTotal = yearlyTax.total;
+          this.annualTaxTotal = yearlyTax.total ?? 0;
           this.loading = false;
         },
         error: () => {
@@ -264,12 +264,12 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }
 
   private loadSavedBalanceSheetReports(): void {
-    try {
-      const stored = sessionStorage.getItem(this.storageKey);
-      this.savedBalanceSheetReports = stored ? JSON.parse(stored) : [];
-    } catch {
-      this.savedBalanceSheetReports = [];
-    }
+    this.accountingService.getSavedReportSnapshots(1, 50)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result) => {
+        this.savedBalanceSheetReports = result.content
+          .filter((snapshot) => snapshot.reportType === 'balance-sheet');
+      });
   }
 
   private sumActualAmounts(items: FinancialLineItemDTO[] | null | undefined): number {
@@ -277,7 +277,7 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }
 
   private toStatementRows(items: FinancialLineItemDTO[], section: string): Array<{ label: string; amount: number }> {
-    return items.map((item) => ({
+    return (items ?? []).map((item) => ({
       label: `${section} · ${item.name}`,
       amount: item.actualAmount,
     }));

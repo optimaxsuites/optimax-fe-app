@@ -1,28 +1,55 @@
 import { formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation} from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { of } from 'rxjs';
 import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
-import { LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
+import { LoanApplication, LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
 import { normalizeLoanRepaymentStartDate } from '../../../service/loan/loan-display.util';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { EmployeeService } from '../../../service/employee.service';
 
+interface SalaryAllowanceItem {
+  amount?: number;
+}
+
+interface SalaryDeductionItem {
+  amount?: number;
+}
+
+interface EmployeeSalaryResponse {
+  id?: number;
+  baseSalary?: number;
+  
+  allowance?: SalaryAllowanceItem[];
+  deductions?: SalaryDeductionItem[];
+}
+
+interface EmployeeIdentityResponse {
+  id?: number;
+  employeeId?: number | string;
+  levelId?: number;
+  firstName?: string;
+  lastName?: string;
+}
+
 @Component({
   selector: 'app-loan-request-form',
   templateUrl: './loan-request-form.component.html',
-  styleUrls: ['./loan-request-form.component.scss']
+  styleUrls: ['./loan-request-form.component.scss'],
+  encapsulation: ViewEncapsulation.None 
 })
 export class LoanRequestFormComponent implements OnInit {
+  private static readonly FALLBACK_MONTHLY_SALARY = 20000000;
+
   @Input() isModal = false;
   @Input() employeeId = '';
   @Input() employeeName = '';
   @Input() department = '';
-  @Output() loanSubmitted = new EventEmitter<void>();
+  @Output() loanSubmitted = new EventEmitter<LoanApplication>();
   @Output() formCancelled = new EventEmitter<void>();
 
   loanRequestForm!: FormGroup;
@@ -50,39 +77,75 @@ export class LoanRequestFormComponent implements OnInit {
     private employeeService: EmployeeService
   ) {}
 
-  private extractSalaryAmount(payload: any): number {
-    if (Array.isArray(payload)) {
-      return payload.reduce((highest, item) => Math.max(highest, this.extractSalaryAmount(item)), 0);
-    }
-
+  private unwrapSalaryPayload(payload: unknown): EmployeeSalaryResponse {
     if (!payload || typeof payload !== 'object') {
-      return Number(payload || 0);
+      return {};
     }
 
-    const directAmount = Number(
-      payload?.baseSalary
-      || payload?.monthlySalary
-      || payload?.salary
-      || payload?.grossSalary
-      || payload?.netSalary
-      || 0
-    );
-
-    if (directAmount > 0) {
-      return directAmount;
-    }
-
-    const nestedKeys = ['data', 'content', 'result', 'salaryDetails', 'salaryData', 'payload'];
+    const candidate = payload as Record<string, unknown>;
+    const nestedKeys = ['data', 'content', 'result', 'payload'];
     for (const key of nestedKeys) {
-      if (payload[key] !== undefined) {
-        const nestedAmount = this.extractSalaryAmount(payload[key]);
-        if (nestedAmount > 0) {
-          return nestedAmount;
-        }
+      const nested = candidate[key];
+      if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+        return nested as EmployeeSalaryResponse;
       }
     }
 
-    return 0;
+    return candidate as EmployeeSalaryResponse;
+  }
+
+  private toNumber(value: unknown): number {
+    const normalized = Number(value ?? 0);
+    return Number.isFinite(normalized) ? normalized : 0;
+  }
+
+  private toPositiveNumber(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return value;
+    }
+
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+      return 0;
+    }
+
+    if (/^\d+$/.test(raw)) {
+      return Number(raw);
+    }
+
+    const numericPart = raw.match(/\d+/g)?.join('') || '';
+    return numericPart ? Number(numericPart) : 0;
+  }
+
+  private unwrapEmployeePayload(payload: unknown): EmployeeIdentityResponse {
+    if (!payload || typeof payload !== 'object') {
+      return {};
+    }
+
+    const candidate = payload as Record<string, unknown>;
+    const nestedKeys = ['data', 'content', 'result', 'payload', 'employee'];
+    for (const key of nestedKeys) {
+      const nested = candidate[key];
+      if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+        return nested as EmployeeIdentityResponse;
+      }
+    }
+
+    return candidate as EmployeeIdentityResponse;
+  }
+
+  private sumAmounts(items: Array<{ amount?: number }> | undefined): number {
+    return (items || []).reduce((total, item) => total + this.toNumber(item?.amount), 0);
+  }
+
+  private extractSalaryAmount(payload: unknown): number {
+    const salary = this.unwrapSalaryPayload(payload);
+    const baseSalary = this.toNumber(salary.baseSalary);
+    const totalAllowances = this.sumAmounts(salary.allowance);
+    const totalDeductions = this.sumAmounts(salary.deductions);
+
+    const computedMonthlySalary = baseSalary + totalAllowances - totalDeductions;
+    return computedMonthlySalary > 0 ? computedMonthlySalary : baseSalary;
   }
 
   private resolveEmployeeIdCandidate(): number {
@@ -93,8 +156,8 @@ export class LoanRequestFormComponent implements OnInit {
     ];
 
     for (const candidate of candidates) {
-      const value = Number(candidate || 0);
-      if (Number.isFinite(value) && value > 0) {
+      const value = this.toPositiveNumber(candidate || 0);
+      if (value > 0) {
         return value;
       }
     }
@@ -154,7 +217,7 @@ export class LoanRequestFormComponent implements OnInit {
       this.updateAmountValidator();
 
       const selectedPurpose = this.loanPurposes.find(p => p.code === value);
-      if (selectedPurpose) {
+      if (selectedPurpose && selectedPurpose.defaultInterestRate !== null && selectedPurpose.defaultInterestRate !== undefined) {
         this.pendingPurposeCode = value;
         this.showInterestModal = true;
         this.defaultInterestRate = selectedPurpose.defaultInterestRate;
@@ -164,6 +227,7 @@ export class LoanRequestFormComponent implements OnInit {
         this.showInterestModal = false;
         this.defaultInterestRate = null;
         this.defaultInterestAcknowledged = false;
+        this.pendingPurposeCode = null;
       }
     });
   }
@@ -211,10 +275,11 @@ export class LoanRequestFormComponent implements OnInit {
 
   updateAmountValidator(): void {
     const selectedCode = this.loanRequestForm.get('purpose')?.value;
+    const amountControl = this.loanRequestForm.get('amount');
+
     if (selectedCode && selectedCode !== 'other') {
       const selectedPurpose = this.loanPurposes.find(p => p.code === selectedCode);
       if (selectedPurpose) {
-        const amountControl = this.loanRequestForm.get('amount');
         const validators = [Validators.required];
         
         if (selectedPurpose.minLoanAmount && selectedPurpose.minLoanAmount > 0) {
@@ -231,8 +296,12 @@ export class LoanRequestFormComponent implements OnInit {
         
         amountControl?.setValidators(validators);
         amountControl?.updateValueAndValidity();
+        return;
       }
     }
+
+    amountControl?.setValidators([Validators.required, Validators.min(10000), Validators.max(50000000)]);
+    amountControl?.updateValueAndValidity();
   }
 
   loadLoanPurposes(): void {
@@ -250,24 +319,29 @@ export class LoanRequestFormComponent implements OnInit {
   }
 
   loadEmployeeSalary(): void {
-    const fallbackEmployeeId = this.resolveEmployeeIdCandidate();
-    if (!fallbackEmployeeId) return;
+    const candidateEmployeeId = this.resolveEmployeeIdCandidate();
 
     this.isLoadingSalary = true;
 
     this.employeeService.getCurrentEmployee().pipe(
       map((employee: any) => {
-        const resolvedEmployeeId = Number(employee?.id || employee?.employeeId || fallbackEmployeeId || 0);
+        const normalizedEmployee = this.unwrapEmployeePayload(employee);
+        const resolvedEmployeeId = this.toPositiveNumber(
+          normalizedEmployee?.id || normalizedEmployee?.employeeId || candidateEmployeeId || 0
+        );
+        const resolvedLevelId = this.toPositiveNumber(normalizedEmployee?.levelId || 0);
         return {
           resolvedEmployeeId,
-          employee
+          resolvedLevelId,
+          employee: normalizedEmployee
         };
       }),
       catchError(() => of({
-        resolvedEmployeeId: fallbackEmployeeId,
+        resolvedEmployeeId: candidateEmployeeId,
+        resolvedLevelId: 0,
         employee: null
       })),
-      switchMap(({ resolvedEmployeeId, employee }) => {
+      switchMap(({ resolvedEmployeeId, resolvedLevelId, employee }) => {
         if (!resolvedEmployeeId) {
           return of({ salary: 0, employee });
         }
@@ -275,25 +349,38 @@ export class LoanRequestFormComponent implements OnInit {
         this.employeeId = String(resolvedEmployeeId);
 
         return this.employeeLoanService.getSalaryByEmployeeId(resolvedEmployeeId).pipe(
-          map((salaryData: any) => ({
-            salary: this.extractSalaryAmount(salaryData),
-            employee
-          })),
+          switchMap((salaryData: any) => {
+            const salaryAmount = this.extractSalaryAmount(salaryData);
+            if (salaryAmount > 0) {
+              return of({ salary: salaryAmount, employee });
+            }
+
+            if (resolvedLevelId > 0) {
+              return this.employeeService.getSalaryById(resolvedLevelId).pipe(
+                map((levelSalaryData: any) => ({
+                  salary: this.extractSalaryAmount(levelSalaryData),
+                  employee
+                })),
+                catchError(() => of({ salary: 0, employee }))
+              );
+            }
+
+            return of({ salary: 0, employee });
+          }),
           catchError((salaryError: any) => {
             console.error('Error loading salary:', salaryError);
-            return this.employeeLoanService.getEmployeeById(resolvedEmployeeId).pipe(
-              map((employeeFallback: any) => ({
-                salary: this.extractSalaryAmount(employeeFallback) || this.extractSalaryAmount(employee),
-                employee: employeeFallback || employee
-              })),
-              catchError((fallbackErr: any) => {
-                console.error('Fallback also failed:', fallbackErr);
-                return of({
-                  salary: this.extractSalaryAmount(employee),
+
+            if (resolvedLevelId > 0) {
+              return this.employeeService.getSalaryById(resolvedLevelId).pipe(
+                map((levelSalaryData: any) => ({
+                  salary: this.extractSalaryAmount(levelSalaryData),
                   employee
-                });
-              })
-            );
+                })),
+                catchError(() => of({ salary: 0, employee }))
+              );
+            }
+
+            return of({ salary: 0, employee });
           })
         );
       }),
@@ -302,11 +389,18 @@ export class LoanRequestFormComponent implements OnInit {
       })
     ).subscribe({
       next: ({ salary, employee }) => {
-        this.monthlySalary = salary && salary > 0 ? salary : 20000000;
+        const resolvedSalary = salary && salary > 0
+          ? salary
+          : LoanRequestFormComponent.FALLBACK_MONTHLY_SALARY;
+        this.monthlySalary = resolvedSalary;
         if (employee) {
           this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
         }
         this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
+
+        if (!(salary && salary > 0)) {
+          this.showMessage('info', 'Salary Fallback Applied', 'Salary was not available from HR records. A temporary fallback of NGN 20,000,000 has been applied.');
+        }
       }
     });
   }
@@ -333,11 +427,59 @@ export class LoanRequestFormComponent implements OnInit {
     return selected?.description || '';
   }
 
-  get maxLoanAmount(): number {
+  get selectedPurposeDefinition(): LoanPurposeData | undefined {
     const selectedCode = this.loanRequestForm.get('purpose')?.value;
-    if (!selectedCode || selectedCode === 'other') return 50000000;
-    const selected = this.loanPurposes.find(p => p.code === selectedCode);
-    return selected?.maxLoanAmount || 50000000;
+    if (!selectedCode || selectedCode === 'other') {
+      return undefined;
+    }
+
+    return this.loanPurposes.find((purpose) => purpose.code === selectedCode);
+  }
+
+  get minLoanAmount(): number {
+    const minAmount = Number(this.selectedPurposeDefinition?.minLoanAmount || 0);
+    return minAmount > 0 ? minAmount : 10000;
+  }
+
+  get maxLoanAmount(): number {
+    const maxAmount = Number(this.selectedPurposeDefinition?.maxLoanAmount || 0);
+    return maxAmount > 0 ? maxAmount : 50000000;
+  }
+
+  get hasPurposeAmountConstraints(): boolean {
+    return !!((this.selectedPurposeDefinition?.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0)
+      || (this.selectedPurposeDefinition?.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0));
+  }
+
+  get selectedPurposeAmountRangeMessage(): string {
+    if (!this.selectedPurposeDefinition) {
+      return '';
+    }
+
+    const hasMin = !!(this.selectedPurposeDefinition.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0);
+    const hasMax = !!(this.selectedPurposeDefinition.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0);
+
+    if (hasMin && hasMax) {
+      return `Allowed range: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)} to ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    if (hasMin) {
+      return `Minimum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)}.`;
+    }
+
+    if (hasMax) {
+      return `Maximum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    return '';
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0
+    }).format(amount);
   }
 
   get purpose(): AbstractControl | null { return this.loanRequestForm.get('purpose'); }
@@ -526,7 +668,7 @@ export class LoanRequestFormComponent implements OnInit {
           this.defaultInterestAcknowledged = false;
           this.pendingPurposeCode = null;
           this.supportingDocuments = [];
-          this.loanSubmitted.emit();
+          this.loanSubmitted.emit(response as LoanApplication);
         },
         error: (err: Error) => {
           console.error('Error submitting loan application:', err);

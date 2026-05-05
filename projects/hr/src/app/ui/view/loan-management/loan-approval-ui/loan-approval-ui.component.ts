@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
@@ -20,6 +20,7 @@ import {
 } from '../../../service/loan/loan-display.util';
 
 interface LoanApprovalRow {
+  id: number; 
   loan: LoanApplication;
   loanCode: string | number;
   fullName: string;
@@ -36,12 +37,13 @@ interface LoanApprovalRow {
 @Component({
   selector: 'app-loan-approval-ui',
   templateUrl: './loan-approval-ui.component.html',
-  styleUrls: ['./loan-approval-ui.component.scss']
+  styleUrls: ['./loan-approval-ui.component.scss'],
+   encapsulation: ViewEncapsulation.None
 })
 export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     loanPurposes: LoanPurposeData[] = [];
     purposeCodeToName: { [code: string]: string } = {};
-  readonly pageSize = 20;
+  readonly pageSize = 10;
   currentPage = 1;
   searchTerm: string = '';
   sortField: string = 'requestDate';
@@ -219,10 +221,11 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     let results = [...this.loanApplications];
 
     if (this.filters.employeeId) {
-      const term = this.filters.employeeId.toLowerCase();
-      results = results.filter(loan =>
-        String(loan.employeeId).toLowerCase().includes(term)
-      );
+      const term = String(this.filters.employeeId).trim().toLowerCase();
+      results = results.filter(loan => {
+        const empId = loan.employeeId !== undefined && loan.employeeId !== null ? String(loan.employeeId).trim().toLowerCase() : '';
+        return empId.includes(term);
+      });
     }
 
     if (this.filters.department) {
@@ -272,37 +275,37 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   private buildLoanApprovalRow(loan: LoanApplication): LoanApprovalRow {
-    // Try to resolve both code and name, even if only one is present
-    let code = loan.purposeCode || '';
-    let name = loan.purpose || '';
-    // If only name is present, find code
-    if (!code && name && this.loanPurposes.length) {
-      const found = this.loanPurposes.find(p => p.name.toLowerCase() === name.toLowerCase());
-      if (found) code = found.code;
-    }
-    // If only code is present, find name
-    if (!name && code && this.loanPurposes.length) {
-      const found = this.loanPurposes.find(p => p.code === code);
-      if (found) name = found.name;
-    }
-    // Fallbacks
-    if (!code) code = 'N/A';
-    if (!name) name = 'N/A';
-    return {
-      loan,
-      loanCode: formatAdvancedLoanCode(loan.loanCode || loan.id),
-      fullName: loan.fullName || 'N/A',
-      employeeId: loan.employeeId || 'N/A',
-      departmentDisplay: this.formatDepartmentDisplay(loan.department),
-      purposeDisplay: name,
-      purposeCode: code,
-      overduePolicySummary: this.getOverduePolicySummary(loan),
-      totalRepayable: this.getLoanTotalRepayable(loan),
-      statusClass: this.getStatusClass(loan.status),
-      statusLabel: this.getStatusLabel(loan.status)
-    };
+  // Try to resolve both code and name, even if only one is present
+  let code = loan.purposeCode || '';
+  let name = loan.purpose || '';
+  // If only name is present, find code
+  if (!code && name && this.loanPurposes.length) {
+    const found = this.loanPurposes.find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (found) code = found.code;
   }
-
+  // If only code is present, find name
+  if (!name && code && this.loanPurposes.length) {
+    const found = this.loanPurposes.find(p => p.code === code);
+    if (found) name = found.name;
+  }
+  // Fallbacks
+  if (!code) code = 'N/A';
+  if (!name) name = 'N/A';
+  return {
+    loan,
+    id: loan.id,  // Add this line
+    loanCode: formatAdvancedLoanCode(loan.loanCode || loan.id),
+    fullName: loan.fullName || 'N/A',
+    employeeId: loan.employeeId || 'N/A',
+    departmentDisplay: this.formatDepartmentDisplay(loan.department),
+    purposeDisplay: name,
+    purposeCode: code,
+    overduePolicySummary: this.getOverduePolicySummary(loan),
+    totalRepayable: this.getLoanTotalRepayable(loan),
+    statusClass: this.getStatusClass(loan.status),
+    statusLabel: this.getStatusLabel(loan.status)
+  };
+}
   onSearchTermChange(value: string) {
     this.searchTerm = value;
     this.searchTermChanges.next(value);
@@ -746,6 +749,12 @@ export class LoanApprovalUiComponent implements OnInit, OnDestroy {
     const today = new Date();
     today.setMonth(today.getMonth() + 1);
     return today.toISOString().split('T')[0];
+  }
+
+  get totalActiveLoanBalance(): number {
+  return this.loanApplications
+    .filter(loan => loan.status === 'ACTIVE')
+    .reduce((sum, loan) => sum + (loan.amount || 0), 0);
   }
 
   goBack(): void {

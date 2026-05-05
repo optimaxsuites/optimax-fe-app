@@ -47,7 +47,7 @@ export class DisbursementService {
       params = params.set('sourceModule', sourceModule);
     }
     return this.http.get<PagedResponse<AccountingTransactionDTO>>(
-      `${this.baseUrl}/transactions`,
+      `${this.baseUrl}/transactions/tray`,
       { headers: this.getHeaders(), params }
     );
   }
@@ -71,7 +71,7 @@ export class DisbursementService {
   getDisbursements(): Observable<PagedResponse<DisbursementDTO>> {
     const params = new HttpParams().set('size', '200');
     return this.http.get<PagedResponse<DisbursementDTO>>(
-      `${this.baseUrl}/disbursements`,
+      `${this.baseUrl}/disbursements/tray`,
       { headers: this.getHeaders(), params }
     );
   }
@@ -115,6 +115,15 @@ export class DisbursementService {
   deleteBankConnection(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/bank-connections/${id}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ── HR Integration ──────────────────────────────────────
+  
+  getEmployeeById(id: number): Observable<any> {
+    return this.http.get<any>(
+      `${environment.apiBaseUrl}/x/api/v2/hr/employees/${id}`,
       { headers: this.getHeaders() }
     );
   }

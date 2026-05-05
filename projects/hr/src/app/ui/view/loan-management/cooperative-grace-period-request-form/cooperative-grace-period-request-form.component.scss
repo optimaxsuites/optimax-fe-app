@@ -1,184 +1,592 @@
-.grace-period-container {
-  background: white;
-  border-radius: 20px;
-  width: 500px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow-y: auto;
+// ============================================
+// COOPERATIVE GRACE PERIOD REQUEST - COMPLETE STYLES
+// ============================================
+
+app-cooperative-grace-period-request-form {
+  display: block;
+
+  .grace-period-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    border-radius: 32px;
+
+    &.modal-mode {
+      padding: 24px;
+      background: #f8fafc;
+      max-width: none;
+    }
+  }
+
+  // Force modal to be wider when component is inside dialog
+  :host-context(.p-dialog) {
+    .grace-period-container {
+      max-width: none;
+      width: 100%;
+      padding: 24px;
+    }
+  }
+
+  // Modal Header
   .modal-header {
+    background: white;
+    border-radius: 24px;
+    padding: 20px 28px;
+    margin-bottom: 28px;
+    border: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid #eef3f6;
-    h2 {
-      margin: 0;
-      color: #1a4b5c;
-      font-size: 1.3rem;
-      i {
-        color: #eb9b3f;
-        margin-right: 8px;
-      }
-    }
-    .close-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: #f0f7fa;
-      cursor: pointer;
-    }
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
-  .modal-body {
-    padding: 24px;
+
+  .modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
   }
-  .installment-info {
-    background: #f8fcfd;
+
+  .modal-header-left i {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .modal-header-left h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .modal-header-left p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .close-btn {
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 20px;
-    border: 1px solid #eef3f6;
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      span {
-        color: #8aadba;
-      }
-      strong {
-        color: #1a4b5c;
-        &.amount {
-          color: #2EB270;
-          font-size: 1.1rem;
-        }
-      }
-    }
+    border: none;
+    background: #f1f5f9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
   }
+
+  .close-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  // Warning Banner
+  .warning-banner {
+    background: #fefce8;
+    border-left: 4px solid #eab308;
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .warning-icon {
+    color: #eab308;
+    font-size: 1.2rem;
+    padding-top: 2px;
+  }
+
+  .warning-content strong {
+    display: block;
+    color: #854d0e;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .warning-content p {
+    margin: 0;
+    color: #a16207;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  // Form Grid Layout
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  .form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  // Form Cards
+  .form-card {
+    background: white;
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+  }
+
+  .form-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+  }
+
+  .card-header-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #dbeafe 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-header-icon i {
+    font-size: 1.2rem;
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  // Highlight card
+  .highlight-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    border-left: 3px solid #22c55e;
+  }
+
+  .highlight-card .card-header-icon {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  }
+
+  .highlight-card .card-header-icon i {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  // Installment Details
+  .installment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+  }
+
+  .detail-icon {
+    width: 48px;
+    height: 48px;
+    background: #f8fafc;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b82f6;
+    font-size: 1.2rem;
+  }
+
+  .detail-info {
+    flex: 1;
+  }
+
+  .detail-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .detail-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .detail-value.amount {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 1.4rem;
+  }
+
+  // Form Controls
   .form-group {
-    margin-bottom: 20px;
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #1a4b5c;
-      margin-bottom: 8px;
-      .required {
-        color: #dc3545;
-        margin-left: 4px;
-      }
-    }
-    .form-select, .form-textarea {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #e3eef0;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-family: inherit;
-    }
-    .form-textarea {
-      resize: vertical;
-    }
-    .days-selector {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      .days-slider {
-        flex: 1;
-        height: 4px;
-        -webkit-appearance: none;
-        background: #e3eef0;
-        border-radius: 2px;
-        outline: none;
-        &::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: #2E6276;
-          cursor: pointer;
-        }
-      }
-      .days-value {
-        background: #2E6276;
-        color: white;
-        padding: 6px 14px;
-        border-radius: 30px;
-        text-align: center;
-        min-width: 80px;
-        .days-number {
-          font-size: 1.2rem;
-          font-weight: 700;
-        }
-        .days-label {
-          font-size: 0.7rem;
-          margin-left: 4px;
-        }
-      }
-    }
-    .field-hint {
-      display: block;
-      margin-top: 6px;
-      font-size: 0.7rem;
-      color: #8aadba;
-    }
-    .error {
-      color: #dc3545;
-      font-size: 0.75rem;
-      margin-top: 6px;
-    }
+    margin-bottom: 0;
   }
-  .info-box {
+
+  .form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+
+  .required {
+    color: #ef4444;
+    margin-left: 4px;
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 120px;
+    transition: all 0.2s ease;
+  }
+
+  .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .char-counter {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: right;
+    margin-top: 6px;
+  }
+
+  .error {
+    font-size: 0.75rem;
+    color: #ef4444;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  // Payment Type Toggle
+  .payment-type-toggle {
     display: flex;
     gap: 12px;
-    padding: 14px;
-    background: #fef8e7;
-    border-radius: 12px;
-    margin: 20px 0;
-    border-left: 4px solid #eb9b3f;
-    i {
-      color: #eb9b3f;
-      font-size: 1.2rem;
-    }
-    .info-text {
-      strong {
-        display: block;
-        color: #1a4b5c;
-        font-size: 0.85rem;
-        margin-bottom: 4px;
-      }
-      p {
-        margin: 0;
-        color: #6b8a97;
-        font-size: 0.8rem;
-        line-height: 1.5;
-      }
-    }
+    margin-top: 4px;
+    flex-wrap: wrap;
   }
+
+  .payment-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .payment-option.active {
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+    border-color: transparent;
+    color: white;
+  }
+
+  .payment-option.active i {
+    color: white;
+  }
+
+  // Days Selector
+  .days-selector {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 16px 0 8px;
+  }
+
+  .days-value-display {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 8px 20px;
+    border-radius: 100px;
+    text-align: center;
+    min-width: 100px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .days-value-display .days-number {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #3b82f6;
+  }
+
+  .days-value-display .days-label {
+    font-size: 0.75rem;
+    margin-left: 4px;
+    color: #64748b;
+  }
+
+  .days-slider {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #e2e8f0;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .days-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .days-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  // Info Card
+  .info-card {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border-radius: 20px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 16px;
+    border: 1px solid #e9d5ff;
+  }
+
+  .info-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b5cf6;
+    font-size: 1.2rem;
+  }
+
+  .info-content strong {
+    display: block;
+    color: #5b21b6;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .info-content p {
+    margin: 0;
+    color: #6b21a5;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  // Form Actions
   .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    margin-top: 20px;
-    .cancel-btn {
-      padding: 10px 20px;
-      border-radius: 40px;
-      border: 1px solid #e3eef0;
-      background: white;
-      color: #8aadba;
-      cursor: pointer;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 28px;
+    background: white;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+    border: none;
+    border-radius: 100px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .loading-spinner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  // Responsive Styles
+  @media (max-width: 900px) {
+    .grace-period-container {
+      padding: 20px;
     }
-    .submit-btn {
-      padding: 10px 24px;
-      border-radius: 40px;
-      border: none;
-      background: linear-gradient(135deg, #2E6276, #4291b1);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
     }
+    
+    .form-actions {
+      justify-content: stretch;
+    }
+    
+    .btn-secondary, .btn-primary {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .grace-period-container {
+      padding: 16px;
+    }
+    
+    .form-card {
+      padding: 20px;
+    }
+    
+    .payment-type-toggle {
+      flex-direction: column;
+    }
+    
+    .days-selector {
+      flex-direction: column;
+    }
+    
+    .days-value-display {
+      width: 100%;
+    }
+    
+    .detail-item {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .detail-icon {
+      margin: 0 auto;
+    }
+    
+    .modal-header {
+      flex-direction: column;
+      text-align: center;
+      gap: 16px;
+    }
+    
+    .modal-header-left {
+      flex-direction: column;
+    }
+  }
+}
+
+// Global modal override to ensure proper width
+.p-dialog.grace-period-dialog,
+.p-dialog:has(app-cooperative-grace-period-request-form) {
+  width: 90vw !important;
+  max-width: 1200px !important;
+  
+  .p-dialog-content {
+    padding: 0 !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
   }
 }

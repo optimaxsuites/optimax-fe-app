@@ -6,6 +6,7 @@ import {
   AccountingTransactionDTO, 
   AccountMappingDTO,
   TransactionReviewStatus,
+  MappingStatus,
   SourceModule,
   AccountDTO,
   PaginationResult,
@@ -23,6 +24,9 @@ export class TransactionsComponent implements OnInit {
   // Tabs
   activeTab: 'events' | 'transactions' | 'mappings' = 'events';
 
+  // Enum exposure for template
+  MappingStatus = MappingStatus;
+
   // Data
   events: AccountingEventDTO[] = [];
   transactions: AccountingTransactionDTO[] = [];
@@ -34,6 +38,10 @@ export class TransactionsComponent implements OnInit {
   totalRecords = 0;
   first = 0;
   rows = 10;
+
+  // Transaction detail panel
+  selectedTxDetail: AccountingTransactionDTO | null = null;
+  isTxDetailOpen = false;
 
   // Modals
   isMappingModalOpen = false;
@@ -140,13 +148,16 @@ export class TransactionsComponent implements OnInit {
   loadTransactions() {
     this.accountingService.getTransactions(this.first / this.rows, this.rows).subscribe({
       next: (data: PaginationResult<AccountingTransactionDTO>) => {
-        this.transactions = (data.content || []).map(tx => ({
-          ...tx,
-          date: tx.transactionDate as string | Date, // cast: transactionDate may be number[] from API
-          reviewStatus: tx.status ?? TransactionReviewStatus.UNREVIEWED,
-          debitAmount: tx.amount, // UI helper
-          creditAmount: 0 // UI helper
-        }));
+        this.transactions = (data.content || []).map(tx => {
+          const rawStatus = tx.status || tx.Status || (tx as any).reviewStatus;
+          return {
+            ...tx,
+            date: tx.transactionDate as string | Date,
+            reviewStatus: rawStatus || TransactionReviewStatus.UNREVIEWED,
+            debitAmount: tx.amount,
+            creditAmount: 0
+          };
+        });
         this.totalRecords = data.totalSize || 0;
         this.loading = false;
       },
@@ -159,7 +170,7 @@ export class TransactionsComponent implements OnInit {
 
   approveTransaction(tx: AccountingTransactionDTO) {
     this.loading = true;
-    this.accountingService.approveTransaction(tx.id).subscribe({
+    this.accountingService.approveTransaction(tx).subscribe({
       next: () => {
         this.toastService.success('Transaction approved and posted');
         this.loadTransactions();
@@ -169,6 +180,40 @@ export class TransactionsComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // ── Transaction Detail Panel ─────────────────────────
+  openTxDetail(tx: AccountingTransactionDTO): void {
+    this.selectedTxDetail = tx;
+    this.isTxDetailOpen = true;
+  }
+
+  closeTxDetail(): void {
+    this.isTxDetailOpen = false;
+    this.selectedTxDetail = null;
+  }
+
+  getTxMappedBy(tx: AccountingTransactionDTO): string {
+    const mb = tx.mappedBy;
+    if (mb && typeof mb === 'object') return mb.fullname || mb.username || '—';
+    return tx.metadata?.mappedBy || '—';
+  }
+
+  getTxApprovedBy(tx: AccountingTransactionDTO): string {
+    const ab = tx.approvedBy;
+    if (ab && typeof ab === 'object') return ab.fullname || ab.username || '—';
+    if (typeof ab === 'string') return ab as string;
+    return tx.metadata?.approvedBy || '—';
+  }
+
+  getTxApprovalDate(tx: AccountingTransactionDTO): string {
+    const d = tx.approvalDate || tx.metadata?.approvalDate || tx.metadata?.approvedAt;
+    if (!d) return '—';
+    return new Date(d as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  getTxMappingId(tx: AccountingTransactionDTO): number | null {
+    return tx.mapping?.id ?? tx.mappingMetadata?.id ?? tx.metadata?.mappingId ?? null;
   }
 
   // ── Mappings ────────────────────────────────────────
@@ -237,6 +282,35 @@ export class TransactionsComponent implements OnInit {
             this.loading = false;
           }
         });
+      }
+    });
+  }
+
+  approveMapping(mappingId: number): void {
+    this.loading = true;
+    this.accountingService.approveMapping(mappingId).subscribe({
+      next: () => {
+        this.toastService.success('Mapping approved. Transaction created and ready for disbursement.');
+        this.loadMappings();
+        this.loadTransactions();
+      },
+      error: () => {
+        this.toastService.error('Failed to approve mapping');
+        this.loading = false;
+      }
+    });
+  }
+
+  rejectMapping(mappingId: number): void {
+    this.loading = true;
+    this.accountingService.rejectMapping(mappingId).subscribe({
+      next: () => {
+        this.toastService.success('Mapping rejected.');
+        this.loadMappings();
+      },
+      error: () => {
+        this.toastService.error('Failed to reject mapping');
+        this.loading = false;
       }
     });
   }

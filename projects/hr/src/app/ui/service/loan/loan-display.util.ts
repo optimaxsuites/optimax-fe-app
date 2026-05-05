@@ -8,7 +8,7 @@ export function formatCooperativeLoanCode(raw: string | number | undefined | nul
 export function formatAdvancedLoanCode(raw: string | number | undefined | null): string {
   const code = String(raw || '').trim();
   if (!code) return '';
-  return code.startsWith('ADVLO-') ? code : `ADVLO-${code}`;
+  return code.startsWith('ADV-') ? code : `ADV-${code}`;
 }
 import { LoanApplication, LoanAuditUser, PaymentRecord } from './loan.types';
 
@@ -635,6 +635,26 @@ export function resolveLoanInterestAmount(
   const totalRepayable = resolveLoanTotalRepayableAmount(loan);
   const principalAmount = Number(loan.amount || 0);
   return Number(Math.max(totalRepayable - principalAmount, 0).toFixed(2));
+}
+
+export function resolveLoanLateFeePercentage(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'> & Partial<Pick<LoanApplication, 'lateFeePercentage'>>
+): number | null {
+  const persistedLateFeePercentage = readPersistedLoanLateFeePercentage(loan);
+  const resolvedLateFeePercentage = Number((loan.lateFeePercentage as number | undefined) || persistedLateFeePercentage || 2);
+  return Number.isFinite(resolvedLateFeePercentage) && resolvedLateFeePercentage >= 0
+    ? Number(resolvedLateFeePercentage.toFixed(2))
+    : null;
+}
+
+export function resolveLoanLateFeeGracePeriodDays(
+  loan: Pick<LoanApplication, 'id' | 'loanCode'> & Partial<Pick<LoanApplication, 'lateFeeGracePeriodDays'>>
+): number | null {
+  const persistedGracePeriodDays = readPersistedLoanLateFeeGracePeriodDays(loan);
+  const resolvedGracePeriodDays = Number((loan.lateFeeGracePeriodDays as number | undefined) || persistedGracePeriodDays || 15);
+  return Number.isFinite(resolvedGracePeriodDays) && resolvedGracePeriodDays >= 0
+    ? Math.round(resolvedGracePeriodDays)
+    : null;
 }
 
 export function resolveLoanOutstandingBalance(

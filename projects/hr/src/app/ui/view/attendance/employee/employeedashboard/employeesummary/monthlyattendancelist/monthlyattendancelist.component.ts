@@ -32,6 +32,10 @@ export class MonthlyattendancelistComponent implements OnInit {
 
   loadAttendance() {
     const user = this.userSession.getCurrentUser();
+      // TEMP: diagnostic log
+      console.log('=== MONTHLY LIST ===');
+      console.log('Current user:', user);
+
     if(user?.id) {
       //use employee endpoint
       this.attendanceService.fetchByEmployee(parseInt(user.id));
@@ -40,7 +44,26 @@ export class MonthlyattendancelistComponent implements OnInit {
     this.attendanceService.attendance$.subscribe(data => {
       //filter to only this employee's records since Behaviour Subject is shared
       const userId = user?.id ?? '';
-      this.attendanceData = data.filter(r => r.id === userId);
+
+      data.forEach(r => {
+        console.log({
+          recordId: r.id,
+          recordIdType: typeof r.id,
+          userId: userId,
+          userIdType: typeof userId,
+          strictEqual: r.id === userId,
+          stringEqual: String(r.id) === String(userId)
+        });
+      });
+
+      // TEMP: diagnostic log
+      console.log('All records in subject:', data.map(r => ({ id: r.id, employee: r.employee })));
+      console.log('Filtering for userId:', userId);
+
+      this.attendanceData = data.filter(r => String(r.id).trim() === String(userId).trim());
+
+      // TEMP: diagnostic log
+      console.log('After filter:', this.attendanceData);
       
       this.applyMonthFilter();
     });

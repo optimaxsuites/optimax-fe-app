@@ -1,6 +1,6 @@
 // ...existing code...
 // ...existing code...
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
@@ -43,18 +43,34 @@ interface CooperativeMemberLoanRow {
 @Component({
   selector: 'app-cooperative-member-dashboard',
   templateUrl: './cooperative-member-dashboard.component.html',
-  styleUrls: ['./cooperative-member-dashboard.component.scss']
+  styleUrls: ['./cooperative-member-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 
 export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   showGracePeriodModal = false;
+  gracePeriodLoan: CooperativeLoan | null = null;
+  gracePeriodInstallment: CooperativeRepayment | null = null;
 
   openGracePeriodRequest(): void {
+    const loan = this.primaryActiveLoan;
+    if (!loan) {
+      this.actionMessage = 'No active loan available to request an extension on.';
+      this.actionMessageTone = 'error';
+      return;
+    }
+    const nextInstallment = this.getOpenRepayments(loan.id)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] || null;
+    this.gracePeriodLoan = loan;
+    this.gracePeriodInstallment = nextInstallment;
     this.showGracePeriodModal = true;
+    this.actionMessage = '';
   }
 
   closeGracePeriodModal(): void {
     this.showGracePeriodModal = false;
+    this.gracePeriodLoan = null;
+    this.gracePeriodInstallment = null;
   }
 
       selectedExtensionLoanId: number | null = null;
@@ -166,7 +182,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    private cooperativeService: CooperativeService,
+    public cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
     private employeeLoanService: EmployeeLoanService,
     private backNavigationService: BackNavigationService,
@@ -354,13 +370,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
         this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : null;
         this.refreshDisplayedLoanRows();
         this.loadRepayments();
-        // Always show repayment schedule for ACTIVE loans
-        if (activeLoans.length > 0) {
-          // Always select the first ACTIVE loan for repayment schedule if none is selected
-          if (!this.selectedRepaymentHistoryLoanId || !activeLoans.some(l => l.id === this.selectedRepaymentHistoryLoanId)) {
-            this.selectedRepaymentHistoryLoanId = activeLoans[0].id;
-          }
-        } else {
+        if (activeLoans.length === 0) {
           this.selectedRepaymentHistoryLoanId = null;
         }
         this.actionMessage = this.usingRealData ? '' : this.actionMessage;
@@ -495,7 +505,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   get canApplyForLoan(): boolean {
-    return true;
+    return this.hasMembership && this.memberGroups.length > 0;
   }
 
   submitMembershipApplication(): void {
@@ -524,10 +534,21 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
       source: 'SELF' as CooperativeMembershipRequestSource
     };
     this.cooperativeService.applyForMembership(application).then(result => {
-      if (result.success) {
+      if (result.success || result.status === 'ALREADY_MEMBER') {
         this.actionMessage = '';
         this.actionMessageTone = 'success';
-        this.showMembershipConfirmationModal = true;
+        // Seed currentMemberId only when the returned member matches the current user's profile.
+        if (result.member && this.memberMatchesCurrentProfile(result.member)) {
+          const resolvedId = Number(result.member.id || result.member.memberId || 0);
+          if (resolvedId > 0) {
+            this.currentMemberId = resolvedId;
+          }
+        }
+        this.cooperativeService.invalidateMembersCache();
+        if (result.success) {
+          this.showMembershipConfirmationModal = true;
+        }
+        this.loadMemberData();
       } else {
         this.actionMessage = result.message;
         this.actionMessageTone = 'error';
@@ -575,16 +596,42 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
     return Number(this.currentEmployeeProfile.employeeId || 0);
   }
 
+  private memberMatchesCurrentProfile(member: CooperativeMember | undefined): boolean {
+    if (!member) {
+      return false;
+    }
+
+    const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
+    const memberEmployeeId = Number(member.employeeId || 0);
+    if (currentEmployeeId > 0 && memberEmployeeId > 0 && memberEmployeeId === currentEmployeeId) {
+      return true;
+    }
+
+    const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
+    const memberEmail = String(member.email || '').trim().toLowerCase();
+    if (normalizedEmail && memberEmail && memberEmail !== 'string' && memberEmail === normalizedEmail) {
+      return true;
+    }
+
+    const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
+    const memberFullName = String(member.fullName || '').trim().toLowerCase();
+    return Boolean(normalizedFullName && memberFullName && memberFullName === normalizedFullName);
+  }
+
   private resolveDashboardMember(members: CooperativeMember[]): CooperativeMember | undefined {
     const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
     const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
     const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
 
-    return this.cooperativeService.resolveCurrentSessionMember(members)
-      || members.find((member) => Number(member.employeeId || 0) === currentEmployeeId)
+    const seededMember = this.currentMemberId > 0
+      ? this.cooperativeService.getMemberById(Number(this.currentMemberId))
+      : undefined;
+
+    return members.find((member) => Number(member.employeeId || 0) === currentEmployeeId)
       || members.find((member) => String(member.email || '').trim().toLowerCase() === normalizedEmail)
       || members.find((member) => String(member.fullName || '').trim().toLowerCase() === normalizedFullName)
-      || (this.currentMemberId > 0 ? this.cooperativeService.getMemberById(Number(this.currentMemberId)) : undefined);
+      || (this.memberMatchesCurrentProfile(seededMember) ? seededMember : undefined)
+      || this.cooperativeService.resolveCurrentSessionMember(members);
   }
 
   private isResolvedMemberActive(member: CooperativeMember | undefined): boolean {
@@ -796,6 +843,16 @@ public toTitleCase(value: string | undefined | null): string {
   }
 
   applyForLoan(): void {
+    if (!this.canApplyForLoan) {
+      this.showApplicationModal = false;
+      this.actionMessage = this.hasMembership
+        ? 'You must belong to at least one active cooperative group before applying for a loan.'
+        : 'Activate your cooperative membership profile before applying for a loan.';
+      this.actionMessageTone = 'error';
+      return;
+    }
+
+    this.actionMessage = '';
     this.showApplicationModal = true;
   }
 

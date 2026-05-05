@@ -1,8 +1,7 @@
 // ...existing code...
 import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
@@ -20,147 +19,20 @@ type QueueMessage = {
 @Component({
   selector: 'app-cooperative-loan-disbursement-ui',
   templateUrl: './cooperative-loan-disbursement-ui.component.html',
-  styleUrls: ['./cooperative-loan-disbursement-ui.component.scss']
+  styleUrls: ['./cooperative-loan-disbursement-ui.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanDisbursementUiComponent implements OnInit {
-  // Multi-select state for batch actions
-  selectedApprovedLoanIdsMap: { [id: string]: boolean } = {};
-    getSelectedApprovedLoanIds(): number[] {
-      return Object.entries(this.selectedApprovedLoanIdsMap)
-        .filter(([_, checked]) => checked)
-        .map(([id, _]) => Number(id));
-    }
-
- sendSelectedToAccounting(): void {
-  const selectedIds = this.getSelectedApprovedLoanIds();
-  if (!selectedIds.length || this.isSubmitting) return;
-  
-  this.isSubmitting = true;
-  const selectedLoans = this.approvedLoans.filter(loan => selectedIds.includes(loan.id));
-  let processed = 0;
-  let errors: string[] = [];
-  let successCount = 0;
-  
-  const processNext = () => {
-    if (processed >= selectedLoans.length) {
-      this.isSubmitting = false;
-      if (errors.length) {
-        this.showMessage('error', 'Batch Partially Failed', 
-          `${successCount} succeeded, ${errors.length} failed: ${errors.join('; ')}`);
-      } else {
-        this.showMessage('success', 'Batch Sent Successfully', 
-          `All ${successCount} loans sent to accounting.`);
-      }
-      // Clear selections and refresh
-      this.selectedApprovedLoanIdsMap = {};
-      this.loadAllData();
-      return;
-    }
-    
-    const loan = selectedLoans[processed];
-    const member = this.getMemberForLoan(loan);
-    const employeeId = Number(member?.employeeId || 0);
-    
-    if (!employeeId) {
-      errors.push(`Loan ${loan.id}: missing employee details`);
-      processed++;
-      processNext();
-      return;
-    }
-    
-    this.employeeService.getEmployeeById(employeeId).subscribe({
-      next: (employee) => {
-        const group = this.getGroupForLoan(loan);
-        const instructionReference = this.generateBatchDisbursementReference(loan);
-        const adminComment = this.emailNotes?.trim() || undefined;
-        const transactionDate = new Date().toISOString();
-        const memberName = this.getMemberName(loan);
-        const totalRepayable = Number(loan.amount || 0) * (1 + (Number(group?.interestRate || 0) / 100));
-        const baseUrl = 'https://be.optimaxsuites.com';
-        const apiUrl = `${baseUrl}/x/api/v2/accounting/events`;
-        
-        const accountingEventPayload = {
-          id: 0,
-          sourceModule: "HR",
-          eventType: "LOAN_DISBURSEMENT",
-          amount: Number(loan.approvedAmount || loan.amount || 0),
-          currency: "NGN",
-          reference: instructionReference,
-          description: adminComment || `Loan disbursement for ${memberName}`,
-          transactionDate: transactionDate,
-          metadata: {
-            loanId: loan.id,
-            loanCode: loan.loanCode || loan.loanId,
-            member: memberName,
-            memberId: loan.memberId || loan.cooperativeMemberId,
-            membershipId: loan.membershipId,
-            groupMembershipId: this.getFormattedMembershipId(loan),
-            groupName: group?.name,
-            groupCode: group?.code,
-            groupInterestRate: group?.interestRate,
-            repaymentPeriod: loan.duration || loan.repaymentTime,
-            approvedAmount: Number(loan.approvedAmount || loan.amount || 0),
-            totalRepayable: totalRepayable,
-            modeOfPayment: loan.modeOfPayment || 'MONTHLY',
-            paymentMethod: this.paymentMethod,
-            purpose: loan.purpose,
-            approvedDate: loan.approvedDate,
-            approvedBy: loan.approvedBy,
-            bankName: employee?.bankName || loan.memberBankName || 'N/A',
-            accountNumber: employee?.accountNumber || loan.memberAccountNumber || 'N/A',
-            accountName: memberName,
-            initiatedBy: sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin',
-            initiatedAt: transactionDate,
-            instructionReference: instructionReference
-          }
-        };
-        
-        this.http.post(apiUrl, accountingEventPayload).subscribe({
-          next: () => {
-            this.cooperativeService.sendLoanToAccountingForDisbursement(loan.id, {
-              accountingEmail: this.accountingEmail,
-              disbursementInstructionReference: instructionReference,
-              paymentMethod: this.paymentMethod,
-              notes: adminComment
-            }).subscribe({
-              next: () => { 
-                successCount++;
-                processed++; 
-                processNext(); 
-              },
-              error: (err) => { 
-                errors.push(`Loan ${loan.id}: status update failed`); 
-                processed++; 
-                processNext(); 
-              }
-            });
-          },
-          error: (err) => { 
-            errors.push(`Loan ${loan.id}: accounting event failed - ${err.message || 'Unknown error'}`); 
-            processed++; 
-            processNext(); 
-          }
-        });
-      },
-      error: () => { 
-        errors.push(`Loan ${loan.id}: failed to load employee details`); 
-        processed++; 
-        processNext(); 
-      }
-    });
-  };
-  
-  processNext();
-}
-
-generateBatchDisbursementReference(loan: CooperativeLoan): string {
-  return `COOP-BATCH-${loan.id}-${Date.now()}`;
-}
   readonly queuePageSize = 6;
   // Loading states for partial UI rendering
   isLoansLoading = true;
   isMembersLoading = true;
   isGroupsLoading = true;
+
+  batchSelectedLoanIds: Set<number> = new Set();
+  batchViewIndex: number = 0;
+  batchEmployeeDetailsMap: Map<number, any> = new Map();
+  isSendToAccountingModalVisible = false;
 
   // Helper to format membership ID (matches dashboard logic)
   // Helper to format membership ID as [group code letters]-[member id]-[membership id]
@@ -231,15 +103,12 @@ generateBatchDisbursementReference(loan: CooperativeLoan): string {
   lateFeeGraceDays: number | undefined;
   accountingWebhookUrl = '';
   emailNotes = '';
+  emailNotesError = false;
   disbursementInstructionReference = '';
   disbursementInitiatedAt = '';
   disbursementInitiatedBy = '';
   disbursementAmount = 0;
   paymentMethod: 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'PAYROLL_DEDUCTION' = 'BANK_TRANSFER';
-  checklistIdentityVerified = false;
-  checklistAccountVerified = false;
-  checklistComplianceCleared = false;
-  checklistFundsReserved = false;
 
   constructor(
     private location: Location,
@@ -451,16 +320,6 @@ generateBatchDisbursementReference(loan: CooperativeLoan): string {
     return !!this.selectedLoan && this.selectedLoan.status === 'APPROVED' && !this.isSubmitting;
   }
 
-  get canMarkAsDisbursed(): boolean {
-    return !!this.selectedLoan
-      && this.selectedLoan.status === 'READY_FOR_DISBURSEMENT'
-      && !this.isSubmitting
-      && this.checklistIdentityVerified
-      && this.checklistAccountVerified
-      && this.checklistComplianceCleared
-      && this.checklistFundsReserved;
-  }
-
   selectLoan(loan: CooperativeLoan): void {
   this.selectedLoanId = String(loan.id);
   this.selectedDisbursementLoan = loan;
@@ -502,12 +361,29 @@ generateBatchDisbursementReference(loan: CooperativeLoan): string {
   this.disbursementInstructionReference = loan.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
   this.disbursementInitiatedAt = loan.disbursementInitiatedAt || '';
   this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
-  this.checklistIdentityVerified = false;
-  this.checklistAccountVerified = false;
-  this.checklistComplianceCleared = false;
-  this.checklistFundsReserved = false;
   this.loadEmployeeDetails(loan);
 }
+
+  toggleLoanSelection(loan: CooperativeLoan): void {
+    if (this.selectedDisbursementLoan?.id === loan.id) {
+      this.clearSelectedLoan();
+      return;
+    }
+    this.selectLoan(loan);
+  }
+
+  private clearSelectedLoan(): void {
+    this.selectedLoanId = '';
+    this.selectedDisbursementLoan = null;
+    this.selectedEmployeeDetails = null;
+    this.disbursementInstructionReference = '';
+    this.disbursementInitiatedAt = '';
+    this.disbursementInitiatedBy = '';
+    this.disbursementAmount = 0;
+    this.emailNotes = '';
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = false;
+  }
 
   loadEmployeeDetails(loan: CooperativeLoan): void {
     const member = this.getMemberForLoan(loan);
@@ -533,6 +409,14 @@ sendToAccounting(): void {
   if (!loan || !group || !this.canSendToAccounting) {
     return;
   }
+
+  if (!this.emailNotes.trim()) {
+    this.emailNotesError = true;
+    this.showMessage('warn', 'Missing Notes', 'Additional notes are required before sending to accounting.');
+    return;
+  }
+
+  this.emailNotesError = false;
 
   const instructionReference = this.disbursementInstructionReference || this.generateDisbursementReference(loan);
   const adminComment = this.emailNotes.trim() || undefined;
@@ -654,39 +538,17 @@ sendToAccounting(): void {
     }
   });
 }
-  markAsDisbursed(): void {
-    const loan = this.selectedLoan;
-    if (!loan || !this.canMarkAsDisbursed) {
-      return;
-    }
 
-    this.isSubmitting = true;
-    this.cooperativeService.disburseLoan(loan.id, {
-      disbursedAmount: this.disbursementAmount,
-      paymentMethod: this.paymentMethod,
-      notes: this.emailNotes.trim() || 'Loan disbursement confirmed from cooperative queue.'
-    }).subscribe({
-      next: (updatedLoan) => {
-        if (!updatedLoan) {
-          this.refreshSelectedLoanState(loan.id, {
-            matchedStatus: 'ACTIVE',
-            successSummary: 'Already Disbursed',
-            successDetail: (freshLoan) => `Loan ${freshLoan.loanCode || freshLoan.id} is already ACTIVE. The queue has been refreshed.`,
-            fallbackSummary: 'Disbursement Failed',
-            fallbackDetail: 'Only READY_FOR_DISBURSEMENT loans can be marked as disbursed.'
-          });
-          return;
-        }
-        this.isSubmitting = false;
-        this.upsertLoan(updatedLoan);
-        this.selectLoan(updatedLoan);
-        this.showMessage('success', 'Loan Disbursed', `Loan ${updatedLoan.loanCode || updatedLoan.id} has been moved to ACTIVE.`);
-      },
-      error: () => {
-        this.isSubmitting = false;
-        this.showMessage('error', 'Disbursement Failed', 'The cooperative loan could not be marked as disbursed.');
-      }
-    });
+  getApprovedByName(loan: CooperativeLoan): string {
+    const value = loan.approvedBy as unknown;
+    if (!value) {
+      return 'N/A';
+    }
+    if (typeof value === 'object') {
+      const user = value as { fullname?: string; username?: string; id?: number };
+      return String(user.fullname || user.username || user.id || 'N/A');
+    }
+    return String(value);
   }
 
   viewLoanDetails(): void {
@@ -875,33 +737,10 @@ sendToAccounting(): void {
       next: (updated: CooperativeLoan | undefined) => {
         this.isSubmitting = false;
         if (updated) {
-          loan.status = 'ACTIVE';
-          // Ensure disbursedDate is set
-          if (!loan.disbursedDate) {
-            loan.disbursedDate = new Date().toISOString();
-          }
-          // Force repayment schedule generation (remove any old repayments for this loan)
-          if (this.cooperativeService['cooperativeRepaymentService'] && typeof this.cooperativeService['cooperativeRepaymentService'].generateRepaymentSchedule === 'function') {
-            const context = {
-              loans: this.cooperativeService['loans'],
-              repayments: this.cooperativeService['repayments'],
-              notifications: this.cooperativeService['notifications'],
-              repaymentDueDay: this.cooperativeService['repaymentDueDay'],
-              repaymentGraceDays: this.cooperativeService['repaymentGraceDays'],
-              repaymentOverdueDays: this.cooperativeService['repaymentOverdueDays'],
-              lateFeeRate: this.cooperativeService['lateFeeRate'],
-              creditReportDays: this.cooperativeService['creditReportDays'],
-              saveToStorage: () => {},
-              formatCurrency: (a: number) => a.toLocaleString(),
-              createMemberStatusNotification: () => {},
-              createRepaymentReminderNotification: () => {},
-              createCreditReportNotification: () => {}
-            };
-            // Remove any existing repayments for this loan
-            context.repayments = context.repayments.filter(r => String(r.loanId) !== String(loan.id));
-            this.cooperativeService['cooperativeRepaymentService'].generateRepaymentSchedule(context, loan);
-          }
-          this.showMessage('success', 'Loan Activated', 'Loan status set to ACTIVE. Repayment schedule is now available.');
+          // Remove the activated loan from the queue immediately
+          this.loans = this.loans.filter(l => l.id !== loan.id);
+          this.selectedLoanId = '';
+          this.showMessage('success', 'Loan Activated', `Loan has been set to ACTIVE.`);
           this.loadAllData();
         } else {
           this.showMessage('warn', 'Activation Failed', 'Loan could not be set to ACTIVE.');
@@ -913,4 +752,65 @@ sendToAccounting(): void {
       }
     });
   }
+
+  get batchSelectedLoans(): CooperativeLoan[] {
+  return this.approvedLoans.filter(loan => this.batchSelectedLoanIds.has(loan.id));
+}
+
+get isBatchMode(): boolean {
+  return this.batchSelectedLoanIds.size >= 2;
+}
+
+getBatchTotalAmount(): number {
+  return this.batchSelectedLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
+}
+
+isBatchSelected(loan: CooperativeLoan): boolean {
+  return this.batchSelectedLoanIds.has(loan.id);
+}
+
+toggleBatchSelect(loan: CooperativeLoan): void {
+  if (this.batchSelectedLoanIds.has(loan.id)) {
+    this.batchSelectedLoanIds.delete(loan.id);
+  } else {
+    this.batchSelectedLoanIds.add(loan.id);
+  }
+}
+
+selectAllApprovedLoans(): void {
+  this.getFilteredApprovedLoans().forEach(loan => {
+    this.batchSelectedLoanIds.add(loan.id);
+  });
+}
+
+clearBatchSelection(): void {
+  this.batchSelectedLoanIds.clear();
+  this.batchViewIndex = 0;
+}
+
+navigateBatch(direction: 1 | -1): void {
+  const total = this.batchSelectedLoans.length;
+  if (total < 2) return;
+  this.batchViewIndex = (this.batchViewIndex + direction + total) % total;
+  const loan = this.batchSelectedLoans[this.batchViewIndex];
+  if (loan) {
+    this.selectLoan(loan);
+  }
+}
+
+openSendToAccountingModal(): void {
+  if (this.isBatchMode) {
+    const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
+    if (!allApproved) return;
+  }
+  if (!this.selectedDisbursementLoan) return;
+  
+  if (!this.disbursementInstructionReference) {
+    this.disbursementInstructionReference = this.generateDisbursementReference(this.selectedDisbursementLoan);
+  }
+  
+  this.emailNotesError = false;
+  this.isSendToAccountingModalVisible = true;
+}
+
 }

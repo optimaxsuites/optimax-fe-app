@@ -1,5 +1,7 @@
 @use '../loan-status-badges' as loanStatus;
 
+
+app-cooperative-loan-approval-ui {
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -14,9 +16,13 @@
 }
 
 .coop-approval-container {
-  padding: 24px;
-  min-height: 100vh;
   background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
+  padding: 20px;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 
   .inline-messages {
     display: grid;
@@ -64,220 +70,184 @@
     }
   }
 
-  // Header
-  .approval-header {
+  .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    padding: 20px 28px;
+    gap: 20px;
+    padding: 16px 24px;
+    margin-bottom: 20px;
     background: white;
-    border-radius: 20px;
     border: 1px solid rgba(46, 98, 118, 0.12);
+    border-radius: 16px;
     box-shadow: 0 8px 20px rgba(46, 98, 118, 0.08);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-left: none !important;
+    border-radius: 16px !important;
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
-    h1 {
-      margin: 0;
-      color: #1a4b5c;
-      font-size: 1.6rem;
-      font-weight: 700;
+    .header-title {
+      h1 {
+        margin: 0;
+        color: #1a4b5c;
+        font-size: 1.6rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
 
-      .title-icon {
-        color: #2EB270;
-        margin-right: 10px;
-        font-size: 1.7rem;
+        .title-icon {
+          color: #2EB270;
+          font-size: 1.7rem;
+        }
+      }
+
+      p {
+        margin: 4px 0 0;
+        color: #6b8a97;
+        font-size: 0.85rem;
       }
     }
 
-    .search-box input {
-      padding: 10px 16px;
-      border: 1px solid #e3eef0;
+    .refresh-btn {
+      background: white;
+      border: 1px solid #d7e7ec;
+      padding: 8px 20px;
       border-radius: 40px;
-      width: 280px;
-      font-size: 0.9rem;
-      outline: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      color: #2E6276;
 
-      &:focus { border-color: #2E6276; }
+      i {
+        font-size: 0.85rem;
+      }
+
+      &:hover {
+        background: #edf6f8;
+        border-color: #2E6276;
+        transform: translateY(-1px);
+      }
     }
   }
 
-  // Stats Cards
-  .stats-overview { 
-    margin-bottom: 24px;
-  }
-
-  // Grid system for stats cards
   .stats-grid {
     display: grid;
-    gap: 16px;
-    
-    &.primary-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      margin-bottom: 24px;
-    }
-    
-    &.secondary-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-    }
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
-  // Big cards (Pending, Approved, Active, Rejected, Completed)
   .stat-card {
     background: white;
     border-radius: 16px;
-    padding: 16px 20px;
+    padding: 20px;
     display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    cursor: pointer;
+    align-items: center;
+    gap: 16px;
     border: 1px solid #e3eef0;
     transition: all 0.2s ease;
     box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+    background: white !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    border: 1px solid #e3eef0 !important;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05) !important;
 
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
     }
 
-    &.active-filter {
-      border: 2px solid #2E6276;
-      background: #f8feff;
-    }
-
     .stat-icon {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #7bb3c4, #5a9bb0);
-      box-shadow: 0 4px 10px rgba(46, 98, 118, 0.2);
+      flex-shrink: 0;
+      width: 52px !important;
+      height: 52px !important;
+      border-radius: 14px !important;
 
       i {
+        font-size: 1.4rem;
         color: white;
-        font-size: 1.3rem;
+      }
+
+      &.pending-icon {
+        background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+      }
+
+      &.approved-icon {
+        background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+      }
+
+      &.active-icon {
+        background: linear-gradient(135deg, #2EB270, #47e797) !important;
+        box-shadow: 0 4px 10px rgba(46, 178, 112, 0.2);
+      }
+
+      &.balance-icon {
+        background: linear-gradient(135deg, #e68a2e, #f0a04b) !important;
+        box-shadow: 0 4px 10px rgba(230, 138, 46, 0.2);
       }
     }
 
     .stat-content {
       flex: 1;
 
-      .stat-label {
-        display: block;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        color: #8aadba;
-        letter-spacing: 0.08em;
-        font-weight: 700;
-        margin-bottom: 4px;
-      }
-
       .stat-value {
         display: block;
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-weight: 700;
         color: #1a4b5c;
         line-height: 1.2;
         margin-bottom: 4px;
+        font-size: 1.6rem !important;
+        font-weight: 700 !important;
+        color: #1a4b5c !important;
       }
-
-      .stat-note {
-        display: block;
-        font-size: 0.7rem;
-        color: #8aadba;
-      }
-    }
-
-    // Icon colors for big cards
-    &.tone-pending .stat-icon { background: linear-gradient(135deg, #b87c00, #eb9b3f); }
-    &.tone-approved .stat-icon { background: linear-gradient(135deg, #2563eb, #60a5fa); }
-    &.tone-active .stat-icon { background: linear-gradient(135deg, #167b56, #2eb270); }
-    &.tone-rejected .stat-icon { background: linear-gradient(135deg, #b91c1c, #f87171); }
-    &.tone-total .stat-icon { background: linear-gradient(135deg, #2E6276, #4291b1); }
-  }
-
-  // Small cards (Skipped, Overdue, Paused, Defaulted) - Stretched version
-  .stat-card.small {
-    background: white;
-    border-radius: 40px;
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    cursor: pointer;
-    border: 1px solid #e3eef0;
-    transition: all 0.2s ease;
-    width: 100%;
-    min-width: 0; // Prevents overflow
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(46, 98, 118, 0.08);
-    }
-
-    &.active-filter {
-      border: 2px solid #2E6276;
-      background: #f8feff;
-    }
-
-    .stat-content {
-      flex: 1;
-      text-align: left;
 
       .stat-label {
         display: block;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
         color: #8aadba;
         letter-spacing: 0.08em;
         font-weight: 700;
-        margin-bottom: 4px;
+        font-size: 0.75rem !important;
+        text-transform: uppercase !important;
+        color: #8aadba !important;
       }
-
-      .stat-note {
-        display: block;
-        font-size: 0.7rem;
-        color: #8aadba;
-        margin-top: 2px;
-      }
-    }
-
-    // The circle with the number on the right
-    .stat-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(46, 178, 112, 0.12);
-      color: #1e7e4a;
-      font-weight: 700;
-      font-size: 1.3rem;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
-    }
-    
-    &:hover .stat-circle {
-      background: rgba(46, 178, 112, 0.2);
-      transform: scale(1.05);
     }
   }
 
-  // Filters
-  .loan-filters {
+  .filters-wrapper {
     display: flex;
-    gap: 16px;
     flex-wrap: wrap;
+    gap: 16px;
     background: white;
     padding: 20px;
     border-radius: 16px;
@@ -285,25 +255,64 @@
     border: 1px solid #e3eef0;
     box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
+    .search-section {
+      flex: 2;
+      min-width: 220px;
+
+      .search-wrapper {
+        position: relative;
+
+        i {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #8aadba;
+          font-size: 0.9rem;
+        }
+
+        input {
+          width: 100%;
+          padding: 10px 12px 10px 40px;
+          border: 1px solid #d7e7ec;
+          border-radius: 12px;
+          font-size: 0.85rem;
+          background: white;
+          transition: all 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #2E6276;
+            box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+          }
+
+          &::placeholder {
+            color: #b6d0da;
+          }
+        }
+      }
+    }
+
     .filter-group {
       flex: 1;
-      min-width: 150px;
+      min-width: 120px;
 
       label {
         display: block;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        color: #8aadba;
         margin-bottom: 6px;
         font-weight: 700;
+        color: #1a4b5c;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       input, select {
         width: 100%;
         padding: 10px 12px;
-        border: 1px solid #e3eef0;
+        border: 1px solid #d7e7ec;
         border-radius: 10px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         background: white;
         transition: all 0.2s;
 
@@ -313,101 +322,117 @@
           box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
         }
       }
-    }
 
-    .refresh-btn, .reset-btn {
-      padding: 0 24px;
-      border-radius: 40px;
-      font-weight: 600;
-      cursor: pointer;
-      align-self: flex-end;
-      height: 42px;
-    }
-
-    .refresh-btn {
-      background: linear-gradient(135deg, #2E6276, #4291b1);
-      color: white;
-      border: none;
-      transition: all 0.2s;
-
-      &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+      &.date-group {
+        min-width: 120px;
       }
     }
 
     .reset-btn {
+      padding: 10px 20px;
+      border-radius: 40px;
+      border: 1px solid #d7e7ec;
       background: white;
-      border: 1px solid #e3eef0;
       color: #2E6276;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       transition: all 0.2s;
+      height: 42px;
 
       &:hover {
         background: #edf6f8;
         border-color: #2E6276;
+        transform: translateY(-1px);
       }
     }
   }
 
-  .results-count {
+  .results-info {
     margin-bottom: 16px;
     color: #8aadba;
     font-size: 0.85rem;
     font-weight: 500;
+    padding: 0 4px;
   }
 
-  // Table
-  .approval-table-container {
+  .table-wrapper {
     background: white;
     border-radius: 20px;
     border: 1px solid #e3eef0;
-    overflow: hidden;
+    overflow-x: auto;
     box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
-    .coop-approval-table {
+    .advance-loans-table {
       width: 100%;
       border-collapse: collapse;
+      min-width: 1200px;
 
       th, td {
-        padding: 14px 16px;
+        padding: 14px 20px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
-        font-size: 0.9rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        white-space: nowrap;
 
-        .sort-btn {
-          border: none;
-          background: transparent;
-          color: inherit;
-          font: inherit;
-          text-transform: inherit;
+        &.sortable {
           cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 0;
+          position: relative;
+          padding-right: 32px;
+          transition: background 0.2s;
+
+          &:hover {
+            background: rgba(46, 98, 118, 0.05);
+          }
+
+          i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8aadba;
+            font-size: 0.75rem;
+          }
         }
       }
 
+      td {
+        vertical-align: middle;
+        color: #2c5a6a;
+        font-size: 0.85rem;
+      }
+
       tbody tr {
-        transition: background 0.2s;
+        transition: background 0.15s ease;
+
         &:hover {
           background: #f8fcfd;
         }
+      }
+
+      .sn-cell {
+        font-weight: 600;
+        color: #8aadba;
+        width: 50px;
+        text-align: center;
       }
 
       .loan-id-cell {
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
+        font-size: 0.85rem;
       }
 
       .member-name-cell {
@@ -415,35 +440,30 @@
         color: #1a4b5c;
       }
 
-      .group-cell {
-        font-weight: 600;
-        color: #2E6276;
-      }
-
       .amount-cell {
         font-weight: 600;
-        color: #2EB270;
+        color: #1a4b5c;
       }
 
       .purpose-cell {
-        max-width: 200px;
+        max-width: 160px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        color: #6b8a97;
       }
 
-      // Action Icons - NO BORDERS, just icons
       .actions-col {
+        white-space: nowrap;
         display: flex;
-        gap: 12px;
-        align-items: center;
+        gap: 8px;
 
-        .action-icon {
+        .action-btn {
           width: 34px;
           height: 34px;
           border-radius: 8px;
           border: none;
-          background: transparent !important;
+          background: transparent;
           cursor: pointer;
           transition: all 0.2s ease;
           display: inline-flex;
@@ -454,73 +474,70 @@
             font-size: 1rem;
           }
 
-          &.view-icon {
+          &.view-btn {
             color: #2E6276;
-            background: transparent !important;
+            background: rgba(46, 98, 118, 0.08);
             
             &:hover {
-              color: #1a4b5c;
-              transform: scale(1.1);
-              background: transparent !important;
+              background: rgba(46, 98, 118, 0.16);
+              transform: translateY(-2px);
             }
           }
 
-          &.approve-icon {
-            color: #2EB270;
-            background: transparent !important;
+          &.history-btn {
+            color: #6b8a97;
+            background: rgba(107, 114, 128, 0.08);
             
             &:hover {
-              color: #1e7e4a;
-              transform: scale(1.1);
-              background: transparent !important;
+              background: rgba(107, 114, 128, 0.16);
+              transform: translateY(-2px);
             }
-          }
-
-          &.reject-icon {
-            color: #dc2626;
-            background: transparent !important;
-            
-            &:hover {
-              color: #b91c1c;
-              transform: scale(1.1);
-              background: transparent !important;
-            }
-          }
-
-          &:hover {
-            transform: scale(1.1);
-            background: transparent !important;
-            box-shadow: none !important;
           }
         }
       }
     }
 
     .empty-state {
-      padding: 48px 20px;
       text-align: center;
-      color: #8aadba;
+      padding: 60px;
+
+      i {
+        font-size: 3rem;
+        color: #b6d0da;
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      p {
+        color: #8aadba;
+        margin: 0;
+        font-size: 0.9rem;
+      }
     }
 
     .pagination-bar {
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 12px;
+      gap: 16px;
       padding: 16px 20px;
       border-top: 1px solid #eef3f6;
       background: #fbfdfe;
+      flex-wrap: wrap;
 
       .pagination-btn {
-        padding: 8px 18px;
-        border: none;
-        border-radius: 40px;
+        padding: 6px 16px;
+        font-size: 0.85rem;
         font-weight: 600;
-        cursor: pointer;
-        background: white;
         border: 1px solid #d7e7ec;
-        color: #2E6276;
+        background: white;
+        color: #2e6276;
+        border-radius: 40px;
+        cursor: pointer;
         transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
 
         &:hover:not(:disabled) {
           background: #edf6f8;
@@ -538,7 +555,6 @@
         font-size: 0.9rem;
         color: #6f8792;
         font-weight: 500;
-        margin: 0 8px;
       }
     }
   }
@@ -548,13 +564,7 @@
 @media (max-width: 1200px) {
   .coop-approval-container {
     .stats-grid {
-      &.primary-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-      }
-      
-      &.secondary-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 }
@@ -562,23 +572,7 @@
 @media (max-width: 900px) {
   .coop-approval-container {
     .stats-grid {
-      &.primary-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      
-      &.secondary-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    
-    .stat-card.small {
-      padding: 10px 18px;
-      
-      .stat-circle {
-        width: 42px;
-        height: 42px;
-        font-size: 1.1rem;
-      }
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 }
@@ -586,23 +580,16 @@
 @media (max-width: 600px) {
   .coop-approval-container {
     .stats-grid {
-      &.primary-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      &.secondary-grid {
-        grid-template-columns: 1fr;
-      }
+      grid-template-columns: 1fr;
     }
-    
-    .stat-card.small {
-      padding: 10px 16px;
-      
-      .stat-circle {
-        width: 38px;
-        height: 38px;
-        font-size: 1rem;
-      }
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .table-wrapper .advance-loans-table {
+      min-width: 1000px;
     }
   }
   
@@ -875,4 +862,5 @@
   to {
     transform: rotate(360deg);
   }
+}
 }

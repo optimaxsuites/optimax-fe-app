@@ -24,7 +24,7 @@ interface CooperativeApprovalRow {
 }
 
 import { CommonModule, Location } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, forkJoin } from 'rxjs';
@@ -42,7 +42,9 @@ import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.
   standalone: true,
   imports: [CommonModule, FormsModule, BackButtonModule],
   templateUrl: './cooperative-loan-approval-ui.component.html',
-  styleUrls: ['./cooperative-loan-approval-ui.component.scss']
+  styleUrls: ['./cooperative-loan-approval-ui.component.scss'],
+  encapsulation: ViewEncapsulation.None
+
 })
 export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   // ==================== TABLE CONFIGURATION ====================
@@ -88,7 +90,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   ];
 
   // ==================== PROPERTIES ====================
-  readonly pageSize = 20;
+  readonly pageSize = 10;
   currentUuid = '';
   currentPage = 1;
   searchTerm = '';
@@ -399,6 +401,16 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     return this.loans.filter(l => l.status === 'ACTIVE').length;
   }
 
+  get totalActiveLoanBalance(): number {
+    return this.loans
+      .filter((loan) => loan.status === 'ACTIVE')
+      .reduce((sum, loan) => sum + Number(
+        loan.outstandingBalance ||
+        loan.outstandingPrincipal ||
+        Math.max(Number(loan.totalRepayment || loan.totalRepayable || 0) - Number(loan.totalPaid || 0), 0)
+      ), 0);
+  }
+
   get rejectedCount(): number {
     return this.loans.filter(l => l.status === 'REJECTED').length;
   }
@@ -609,14 +621,16 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   get paginatedLoans(): CooperativeApprovalRow[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLoanRows.slice(start, start + this.pageSize);
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredLoanRows.slice(startIndex, startIndex + this.pageSize);
   }
 
   changePage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
     }
+
+    this.currentPage = page;
   }
 
   private resetPagination(): void {

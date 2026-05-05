@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, FormControl, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,11 +10,13 @@ import { v4 as uuidV4 } from 'uuid';
 @Component({
   selector: 'app-loan-purpose-management',
   templateUrl: './loan-purpose-management.component.html',
-  styleUrls: ['./loan-purpose-management.component.scss']
+  styleUrls: ['./loan-purpose-management.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
   purposes: LoanPurposeData[] = [];
   filteredPurposes: LoanPurposeData[] = [];
+  paginatedPurposes: LoanPurposeData[] = [];
   isLoading = false;
   showPurposeModal = false;
   isEditing = false;
@@ -22,6 +24,11 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
   purposeForm: FormGroup;
   messages: Message[] = [];
   searchTerm = '';
+  
+  // Pagination properties
+  currentPage: number = 1;
+  pageSize: number = 10;
+  totalPages: number = 1;
   
   // Delete modal properties
   showDeleteModal = false;
@@ -129,41 +136,62 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
   }
 
   loadPurposes(): void {
-    this.isLoading = true;
-    this.subscriptions.add(
-      this.loanPurposeService.getAllPurposes(false).subscribe({
-        next: (purposes: LoanPurposeData[]) => {
-          console.log('Purposes loaded successfully:', purposes);
-          this.purposes = purposes;
-          this.applyFilter();
-          this.isLoading = false;
-          
-          if (purposes.length === 0) {
-            this.showMessage('info', 'No Data', 'No loan purposes found. Click "New Purpose" to create one.');
-          }
-        },
-        error: (err: Error) => {
-          console.error('Error loading purposes:', err);
-          this.showMessage('error', 'Error', err.message || 'Failed to load loan purposes');
-          this.purposes = [];
-          this.filteredPurposes = [];
-          this.isLoading = false;
-        }
-      })
+  this.isLoading = true;
+  this.subscriptions.add(
+    this.loanPurposeService.getAllPurposes(false).subscribe({
+      next: (purposes: LoanPurposeData[]) => {
+        this.purposes = purposes;
+        this.applyFilter(); // This calls applyFilter which calls updatePagination
+        this.isLoading = false;
+      },
+      error: (err: Error) => {
+        console.error('Error loading purposes:', err);
+        this.showMessage('error', 'Error', err.message || 'Failed to load loan purposes');
+        this.purposes = [];
+        this.filteredPurposes = [];
+        this.updatePagination(); // Call here too
+        this.isLoading = false;
+      }
+    })
+  );
+}
+
+ applyFilter(): void {
+  if (!this.searchTerm) {
+    this.filteredPurposes = [...this.purposes];
+  } else {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredPurposes = this.purposes.filter(p => 
+      p.name.toLowerCase().includes(term) || 
+      p.code.toLowerCase().includes(term) ||
+      (p.description && p.description.toLowerCase().includes(term))
     );
   }
+  this.currentPage = 1;  
+  this.updatePagination();  
+}
 
-  applyFilter(): void {
-    if (!this.searchTerm) {
-      this.filteredPurposes = [...this.purposes];
-    } else {
-      const term = this.searchTerm.toLowerCase();
-      this.filteredPurposes = this.purposes.filter(p => 
-        p.name.toLowerCase().includes(term) || 
-        p.code.toLowerCase().includes(term) ||
-        (p.description && p.description.toLowerCase().includes(term))
-      );
+
+  // Pagination methods
+updatePagination(): void {
+  this.totalPages = Math.max(1, Math.ceil(this.filteredPurposes.length / this.pageSize));
+  const startIndex = (this.currentPage - 1) * this.pageSize;
+  const endIndex = startIndex + this.pageSize;
+  this.paginatedPurposes = this.filteredPurposes.slice(startIndex, endIndex);
+  
+  // Ensure currentPage is within valid range
+  if (this.currentPage > this.totalPages) {
+    this.currentPage = this.totalPages;
+  }
+}
+
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
     }
+    this.currentPage = page;
+    this.updatePagination();
   }
 
   openCreateModal(): void {
@@ -193,16 +221,11 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
       maxLoanAmount: purpose.maxLoanAmount || null,
       minLoanAmount: purpose.minLoanAmount || null,
       defaultInterestRate: purpose.defaultInterestRate || null,
-      requiresDocumentation: purpose.requiresDocumentation
+      requiresDocumentation: false
     });
     
     while (this.documentationTypes.length) {
       this.documentationTypes.removeAt(0);
-    }
-    if (purpose.documentationTypes && purpose.documentationTypes.length > 0) {
-      purpose.documentationTypes.forEach((docType: string) => {
-        this.documentationTypes.push(this.fb.control(docType, Validators.required));
-      });
     }
     
     this.showPurposeModal = true;
@@ -238,8 +261,8 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
       code: formattedCode,
       description: formValue.description || '',
       isActive: formValue.isActive,
-      requiresDocumentation: formValue.requiresDocumentation,
-      documentationTypes: formValue.documentationTypes.filter((dt: string) => dt && dt.trim()),
+      requiresDocumentation: false,
+      documentationTypes: [],
       minLoanAmount: formValue.minLoanAmount || null,
       maxLoanAmount: formValue.maxLoanAmount || null,
       defaultInterestRate: formValue.defaultInterestRate || null
@@ -343,7 +366,7 @@ export class LoanPurposeManagementComponent implements OnInit, OnDestroy {
       next: () => {
         this.showMessage('success', 'Success', `Purpose "${this.purposeToDelete?.name}" deleted successfully`);
         this.closeDeleteModal();
-        this.loadPurposes(); // Reload the list
+        this.loadPurposes();
       },
       error: (err: Error) => {
         console.error('Error deleting purpose:', err);

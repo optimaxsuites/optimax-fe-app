@@ -35,12 +35,8 @@ export class LoanApplicationService {
 }
 
   getAllApplications(): Observable<LoanApplication[]> {
-    const cachedApplications = this.getCachedApplications();
-    if (cachedApplications) {
-      return of(cachedApplications);
-    }
-
-    return this.refreshApplications();
+    // Always return the same observable as getApplicationsObservable for UI consistency
+    return this.getApplicationsObservable();
   }
 
   getApplicationById(id: string): Observable<LoanApplication | undefined> {
@@ -58,7 +54,13 @@ export class LoanApplicationService {
         return this.mergeLoanApplications(this.applicationsSubject.value[existingIndex], application);
       }),
       tap((application) => {
-        if (application) {
+        const existingIndex = application
+          ? this.findMatchingApplicationIndex(this.applicationsSubject.value, application)
+          : -1;
+
+        // A by-id read should refresh an existing cached row, not replace the shared list
+        // with a singleton snapshot when the cache doesn't already contain that loan.
+        if (application && existingIndex >= 0) {
           this.upsertApplication(application, true);
         }
       })
@@ -93,6 +95,7 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     const previousStatus = previousStatusOverride ?? previousApplication?.status;
 
     return this.loanService.saveLoanApplication(application).pipe(
+      map((savedApplication) => this.resolveSavedApplication(application, savedApplication)),
       tap((savedApplication) => this.upsertApplication(savedApplication, true)),
       switchMap((savedApplication) => {
         if (!this.shouldNotifyStatusChange(previousStatus, savedApplication.status)) {
@@ -267,6 +270,10 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
   }
 
   private upsertApplication(application: LoanApplication, persistLocally = false): void {
+    if (!application.localOnly && !this.looksLikeCacheableApplication(application)) {
+      return;
+    }
+
     const currentApplications = [...this.applicationsSubject.value];
     const existingIndex = this.findMatchingApplicationIndex(currentApplications, application);
 
@@ -332,16 +339,20 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
     currentApplications: LoanApplication[],
     fetchedApplications: LoanApplication[]
   ): LoanApplication[] {
-    const mergedApplications = [...currentApplications];
+    const mergedApplications = fetchedApplications
+      .filter((application) => this.looksLikeCacheableApplication(application))
+      .map((application) => ({ ...application }));
 
-    fetchedApplications.forEach((application) => {
-      const existingIndex = this.findMatchingApplicationIndex(mergedApplications, application);
-      if (existingIndex >= 0) {
-        mergedApplications[existingIndex] = this.mergeLoanApplications(mergedApplications[existingIndex], application);
-      } else {
-        mergedApplications.push(application);
-      }
-    });
+    currentApplications
+      .filter((application) => application.localOnly)
+      .forEach((application) => {
+        const existingIndex = this.findMatchingApplicationIndex(mergedApplications, application);
+        if (existingIndex >= 0) {
+          mergedApplications[existingIndex] = this.mergeLoanApplications(mergedApplications[existingIndex], application);
+        } else {
+          mergedApplications.push(application);
+        }
+      });
 
     return mergedApplications.sort((first, second) => 
       new Date(second.requestDate || 0).getTime() - new Date(first.requestDate || 0).getTime()
@@ -413,6 +424,42 @@ getApplicationsObservable(): Observable<LoanApplication[]> {
       statusHistory: incoming.statusHistory?.length ? incoming.statusHistory : existing.statusHistory,
       supportingDocuments: incoming.supportingDocuments?.length ? incoming.supportingDocuments : existing.supportingDocuments
     };
+  }
+
+  private resolveSavedApplication(existingApplication: LoanApplication, savedApplication: LoanApplication | null | undefined): LoanApplication {
+    if (!savedApplication) {
+      return existingApplication;
+    }
+
+    if (!this.looksLikeCacheableApplication(savedApplication)) {
+      return this.mergeLoanApplications(existingApplication, {
+        ...savedApplication,
+        id: existingApplication.id,
+        loanCode: existingApplication.loanCode,
+        employeeId: existingApplication.employeeId,
+        fullName: existingApplication.fullName,
+        amount: existingApplication.amount,
+        requestDate: existingApplication.requestDate,
+        purpose: existingApplication.purpose,
+        purposeCode: existingApplication.purposeCode
+      });
+    }
+
+    return this.mergeLoanApplications(existingApplication, savedApplication);
+  }
+
+  private looksLikeCacheableApplication(application: LoanApplication | null | undefined): boolean {
+    if (!application) {
+      return false;
+    }
+
+    const hasIdentifier = Number(application.id || 0) > 0 || !!String(application.loanCode || '').trim();
+    const hasEmployee = Number(application.employeeId || 0) > 0;
+    const hasAmount = Number(application.amount || 0) > 0;
+    const hasPurpose = !!String(application.purpose || '').trim();
+    const hasRequestDate = !!String(application.requestDate || '').trim();
+
+    return hasIdentifier && hasEmployee && hasAmount && hasPurpose && hasRequestDate;
   }
 
   private buildOptimisticSubmittedApplication(

@@ -1,106 +1,156 @@
-<div class="members-container">
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading members...</p>
-  </div>
+<div class="coop-members-container">
+  <p-messages [(value)]="messages" [enableService]="false"></p-messages>
 
-  <div *ngIf="!isLoading" class="members-content">
-    <!-- Header -->
-    <div class="members-header lm-header-card">
+  <div *ngIf="!isLoading">
+    <header class="page-header">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-hand-holding-dollar"></i> Active Cooperative Members</h1>
+        <div class="header-title">
+          <h1><i class="fas fa-hand-holding-usd title-icon"></i> Cooperative Members</h1>
+          <p>View and manage active cooperative members and their status</p>
+        </div>
+      </div>
+      <button class="refresh-btn" type="button" (click)="loadMembers()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </header>
+
+    <!-- Stats Chips (like Loan Purpose Management) -->
+    <div class="stats-row">
+      <div class="stat-chip">
+        <i class="fas fa-users"></i>
+        <span>Total Members:</span>
+        <strong>{{ members.length }}</strong>
+      </div>
+      <div class="stat-chip">
+        <i class="fas fa-check-circle"></i>
+        <span>Active:</span>
+        <strong>{{ activeMembersCount }}</strong>
+      </div>
+      <div class="stat-chip">
+        <i class="fas fa-user-minus"></i>
+        <span>Inactive:</span>
+        <strong>{{ inactiveMembersCount }}</strong>
+      </div>
+      <div class="stat-chip">
+        <i class="fas fa-ban"></i>
+        <span>Suspended:</span>
+        <strong>{{ suspendedMembersCount }}</strong>
       </div>
     </div>
 
-    <!-- Dashboard Stat Cards (moved below header) -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon members-icon">
-          <i class="pi pi-users"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ members.length }}</div>
-          <div class="stat-label">Total Members</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon loans-icon">
-          <i class="pi pi-check-circle"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ activeMembersCount }}</div>
-          <div class="stat-label">Active Members</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon portfolio-icon">
-          <i class="pi pi-user-minus"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ inactiveMembersCount }}</div>
-          <div class="stat-label">Inactive Members</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters-card">
-      <div class="search-box">
+    <!-- Search Section (like Loan Purpose Management) -->
+    <div class="search-section">
+      <div class="search-wrapper">
         <i class="fas fa-search"></i>
-        <input 
-          type="text" 
-          [(ngModel)]="searchTerm" 
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
           (ngModelChange)="applyFilters()"
-          placeholder="Search by name or member ID..."
-        >
+          placeholder="Search by name, member ID, or email...">
       </div>
     </div>
 
-    <!-- Results count -->
+    <!-- Filters Row -->
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Status</label>
+        <select [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+          <option value="SUSPENDED">Suspended</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Joined From</label>
+        <input type="date" [(ngModel)]="filters.joinDateFrom" (ngModelChange)="applyFilters()">
+      </div>
+
+      <div class="filter-group">
+        <label>Joined To</label>
+        <input type="date" [(ngModel)]="filters.joinDateTo" (ngModelChange)="applyFilters()">
+      </div>
+
+      <button class="reset-btn" type="button" (click)="resetFilters()">
+        <i class="fas fa-undo-alt"></i> Reset
+      </button>
+    </div>
+
     <div class="results-info">
-      Showing {{ filteredMembers.length }} of {{ activeMembersCount }} active members
+      <span>Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredMembers.length }} members</span>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Loading cooperative members...</p>
     </div>
 
     <!-- Table -->
-    <div class="table-card">
-      <app-table
-        [columns]="[
-          { header: 'Member ID', field: 'memberId', sortable: true },
-          { header: 'Name', field: 'fullName', sortable: true },
-          { header: 'Email' },
-          { header: 'Phone' },
-          { header: 'Status', field: 'status', sortable: true },
-          { header: 'Actions' }
-        ]"
-        [rows]="paginatedMembers"
-        [emptyMessage]="'No members found'"
-        [rowClickable]="true"
-        (rowClick)="viewMember($event.id)"
-        tableClass="members-table">
-        <ng-template appTableBody let-member>
-          <td class="member-id">{{ formatMemberId(member.memberId) }}</td>
-          <td class="member-name">{{ member.fullName }}</td>
-          <td>{{ member.email }}</td>
-          <td>{{ member.phone }}</td>
-          <td>
-            <span class="status-pill" [ngClass]="getStatusClass(member.status)">{{ formatStatus(member.status) }}</span>
-          </td>
-          <td class="actions-col">
-            <div class="row-actions" (click)="$event.stopPropagation()">
-              <button class="action-icon view-icon" (click)="viewMember(member.id)" title="View member profile" aria-label="View member profile">
+    <div class="table-container" *ngIf="!isLoading && paginatedMembers.length > 0">
+      <table class="members-table">
+        <thead>
+          <tr>
+            <th class="sortable" (click)="setSort('sn')">S/N <i class="fas" [ngClass]="getSortIcon('sn')"></i></th>
+            <th class="sortable" (click)="setSort('memberId')">Member ID <i class="fas" [ngClass]="getSortIcon('memberId')"></i></th>
+            <th class="sortable" (click)="setSort('fullName')">Name <i class="fas" [ngClass]="getSortIcon('fullName')"></i></th>
+            <th class="sortable" (click)="setSort('email')">Email <i class="fas" [ngClass]="getSortIcon('email')"></i></th>
+            <th>Phone</th>
+            <th class="sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let member of paginatedMembers; let i = index">
+            <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+            <td class="code-cell">{{ formatMemberId(member.memberId) }}</td>
+            <td class="name-cell">{{ member.fullName }}</td>
+            <td class="email-cell">{{ member.email }}</td>
+            <td class="phone-cell">{{ member.phone || '—' }}</td>
+            <td class="status-cell">
+              <span class="status-badge" [ngClass]="getStatusClass(member.status)">
+                {{ formatStatus(member.status) }}
+              </span>
+            </td>
+            <td class="actions-cell">
+              <button class="action-btn view-btn" type="button" (click)="viewMember(member.id)" title="View Member Details">
                 <i class="fas fa-eye"></i>
               </button>
-            </div>
-          </td>
-        </ng-template>
-      </app-table>
-      <div class="pagination-bar pagination-bar-right">
-        <button class="pagination-btn small" (click)="changePage(currentPage - 1)" [disabled]="totalPages <= 1 || currentPage === 1">Previous</button>
+              <button *ngIf="member.status === 'SUSPENDED'" class="action-btn reactivate-btn" type="button" (click)="reactivateMember(member, $event)" title="Reactivate Member">
+                <i class="fas fa-undo-alt"></i>
+              </button>
+              <button *ngIf="member.status === 'INACTIVE'" class="action-btn activate-btn" type="button" (click)="activateInactiveMember(member, $event)" title="Activate Member">
+                <i class="fas fa-check-circle"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+       </table>
+
+      <!-- Pagination (like Loan Purpose Management) -->
+      <div class="pagination-bar">
+        <button class="pagination-btn" type="button" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
         <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button class="pagination-btn small" (click)="changePage(currentPage + 1)" [disabled]="totalPages <= 1 || currentPage === totalPages">Next</button>
+        <button class="pagination-btn" type="button" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </div>
+
+    <!-- No Data State (like Loan Purpose Management) -->
+    <div class="no-data" *ngIf="!isLoading && paginatedMembers.length === 0">
+      <i class="fas fa-inbox"></i>
+      <p>No cooperative members found</p>
+      <button type="button" class="btn-refresh-small" (click)="loadMembers()">Refresh Members</button>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading && members.length === 0">
+    <div class="spinner"></div>
+    <p>Loading cooperative members...</p>
   </div>
 </div>

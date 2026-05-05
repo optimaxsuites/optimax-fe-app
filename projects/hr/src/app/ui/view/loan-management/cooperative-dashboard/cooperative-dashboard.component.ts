@@ -1,5 +1,5 @@
 // ...imports remain unchanged...
-import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
@@ -20,6 +20,7 @@ import {
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
+import { getSessionUserDisplayName } from '../../../shared-component/service/session-user-display.util';
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
@@ -82,7 +83,8 @@ interface GroupJoinApplicationRow {
 @Component({
   selector: 'app-cooperative-dashboard',
   templateUrl: './cooperative-dashboard.component.html',
-  styleUrls: ['./cooperative-dashboard.component.scss']
+  styleUrls: ['./cooperative-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None  // Add this line
 })
 export class CooperativeDashboardComponent implements OnInit, OnDestroy {
         // Helper to format membership ID (matches dashboard logic)
@@ -323,11 +325,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   };
 
   get adminDisplayName(): string {
-    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
-    const username = String(sessionStorage.getItem('username') || '').trim();
-    const fallbackName = fullName || username || 'Admin';
-
-    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    return getSessionUserDisplayName('Admin');
   }
 
   constructor(
@@ -427,6 +425,49 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   get defaultedLoansCount(): number {
     return this.allLoans.filter(loan => loan.status === 'DEFAULTED').length;
+  }
+
+  get pendingLoansCount(): number {
+    return this.allLoans.filter(loan => loan.status === 'PENDING').length;
+  }
+
+  get approvedLoansCount(): number {
+    return this.allLoans.filter(loan => loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT').length;
+  }
+
+  get activeLoansCount(): number {
+    return this.allLoans.filter(loan => loan.status === 'ACTIVE').length;
+  }
+
+  get activeMembersCount(): number {
+    return this.allMembers.filter(member => member.status === 'ACTIVE').length;
+  }
+
+  get groupsCount(): number {
+    return this.cooperativeGroupContext.groups.length;
+  }
+
+  get availableFundBalance(): number {
+    return Math.max((this.stats?.totalFund || 0) - (this.stats?.loanPortfolio || 0), 0);
+  }
+
+  get totalBalance(): number {
+    return this.allLoans
+      .filter((loan) => loan.status === 'ACTIVE')
+      .reduce((sum, loan) => sum + Number(
+        loan.outstandingBalance ||
+        loan.outstandingPrincipal ||
+        Math.max(Number(loan.totalRepayment || loan.totalRepayable || 0) - Number(loan.totalPaid || 0), 0)
+      ), 0);
+  }
+
+  getAdminInitials(name: string): string {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
   }
 
   loadDashboard(): void {
@@ -1049,13 +1090,23 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   openPurposeManagement(): void {
-    this.router.navigate(['/admin/hr/cooperative/loan-purposes', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/loan-purposes`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
   openGracePeriodRequests(): void {
-    this.router.navigate(['/admin/hr/cooperative/grace-period-requests', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/grace-period-requests`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

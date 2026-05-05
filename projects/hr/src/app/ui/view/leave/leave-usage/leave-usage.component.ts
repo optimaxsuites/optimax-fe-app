@@ -58,7 +58,7 @@ export class LeaveUsageComponent implements OnInit {
   toDate: any;
   today!: string;
   comment: any;
-  attachment: any;
+ attachment: File | null = null;
   docUploadStatus: string = 'Upload file';
   selectedLeaveTypeObj: any = null;
   openApplyLeave = false;
@@ -492,36 +492,54 @@ export class LeaveUsageComponent implements OnInit {
     this.openApplyLeave = true;
   }
 
-  assignLeave() {
-    if (!this.fromDate || !this.toDate || !this.selectedLeaveTypeObj) {
+  async assignLeave() {
+     if (!this.fromDate || !this.toDate || !this.selectedLeaveTypeObj) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please fill all required fields',
+      key: 'tl',
+      life: 3000,
+    });
+    return;
+  }
+
+  if (!this.validateDateRange()) return;
+
+  this.isSubmitting = true;
+
+  // Convert file to base64 if one was selected
+  let attachmentBase64 = '';
+  if (this.attachment) {
+    try {
+      attachmentBase64 = await this.apiService.fileToBase64(this.attachment);
+    } catch (err) {
+      console.error('Failed to read attachment:', err);
       this.messageService.add({
         severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please fill all required fields',
+        summary: 'File Error',
+        detail: 'Failed to read attachment file',
         key: 'tl',
         life: 3000,
       });
+      this.isSubmitting = false;
       return;
     }
+  }
 
-    if (!this.validateDateRange()) {
-      return;
-    }
-    this.isSubmitting = true;
-    const from = new Date(this.fromDate);
-    const to = new Date(this.toDate);
-    const timeDiff = to.getTime() - from.getTime();
-    const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+  const from = new Date(this.fromDate);
+  const to = new Date(this.toDate);
+  const dayDiff = Math.ceil((to.getTime() - from.getTime()) / (1000 * 3600 * 24)) + 1;
 
-    const payload = {
-      createdBy: this.currentUserId,
-      leaveTypeId: this.selectedLeaveTypeObj.id,
-      startDate: this.fromDate + 'T12:00:00',
-      endDate: this.toDate + 'T12:00:00',
-      totalDays: dayDiff,
-      leaveReason: this.comment || '',
-      attachment: '',
-    };
+  const payload = {
+    createdBy: this.currentUserId,
+    leaveTypeId: this.selectedLeaveTypeObj.id,
+    startDate: this.fromDate + 'T12:00:00',
+    endDate: this.toDate + 'T12:00:00',
+    totalDays: dayDiff,
+    leaveReason: this.comment || '',
+    attachment: attachmentBase64,   // ✅ real base64 now
+  };
 
     console.log('📤 Submitting Leave Request:', payload);
 
@@ -600,14 +618,14 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   resetForm() {
-    this.isSubmitting = false;
-    this.comment = '';
-    this.fromDate = '';
-    this.toDate = '';
-    this.selectedLeaveTypeObj = null;
-    this.attachment = null;
-    this.docUploadStatus = 'Upload file';
-  }
+  this.isSubmitting = false;
+  this.comment = '';
+  this.fromDate = '';
+  this.toDate = '';
+  this.selectedLeaveTypeObj = null;
+  this.attachment = null;           // ✅ null not ''
+  this.docUploadStatus = 'Upload file';
+}
 
   // ==================== TABLE ACTIONS ====================
 
@@ -746,12 +764,12 @@ export class LeaveUsageComponent implements OnInit {
   }
 
   onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.attachment = file;
-      this.docUploadStatus = 'File attached';
-    }
+  const file = event.target.files[0];
+  if (file) {
+    this.attachment = file;
+    this.docUploadStatus = file.name;  // show the actual filename
   }
+}
 
   preventTyping(event: KeyboardEvent) {
     event.preventDefault();

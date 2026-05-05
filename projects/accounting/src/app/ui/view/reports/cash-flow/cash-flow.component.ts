@@ -80,19 +80,19 @@ export class CashFlowComponent implements OnInit, OnDestroy {
 
   // ── Period navigation ─────────────────────────────────────────────────────
   previousMonth(): void {
-    const p = this.report?.reportPeriod ?? new Date();
+    const p = this.report ? new Date(this.report.reportPeriod) : new Date();
     this.accountingService.setPeriod(new Date(p.getFullYear(), p.getMonth() - 1, 1));
   }
 
   nextMonth(): void {
-    const p = this.report?.reportPeriod ?? new Date();
+    const p = this.report ? new Date(this.report.reportPeriod) : new Date();
     this.accountingService.setPeriod(new Date(p.getFullYear(), p.getMonth() + 1, 1));
   }
 
   // ── Derived view values (all from DTO) ───────────────────────────────────
   get periodLabel(): string {
     if (!this.report) return 'Period Not Set';
-    return this.report.reportPeriod.toLocaleDateString('en-NG', {
+    return new Date(this.report.reportPeriod).toLocaleDateString('en-NG', {
       month: 'long',
       year: 'numeric',
     });
