@@ -4243,13 +4243,10 @@ export class CommunicationComponent
       this.reactingIds.delete(msg.id);
       const ch = this.activeChannel;
       if (ch?.backendId)
-        this.collabService
-          .getChannelSnapshot(ch.backendId)
-          .subscribe({
-            next: (snap) =>
-              this.refreshReactionCounts(ch, snap.reactions || []),
-            error: () => {},
-          });
+        this.collabService.getChannelSnapshot(ch.backendId).subscribe({
+          next: (snap) => this.refreshReactionCounts(ch, snap.reactions || []),
+          error: () => {},
+        });
     };
     const rollback = () => {
       msg.liked = wasLiked;
