@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GuarantorDto, GuarantorService } from '../../../service/loan/guarantor.service';
@@ -18,7 +18,8 @@ import { LoanSupportingDocument, RepaymentScheduleItem } from '../../../service/
 @Component({
   selector: 'app-cooperative-loan-application',
   templateUrl: './cooperative-loan-application.component.html',
-  styleUrls: ['./cooperative-loan-application.component.scss']
+  styleUrls: ['./cooperative-loan-application.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeLoanApplicationComponent implements OnInit {
     @Input() isModal = false;
@@ -30,6 +31,9 @@ export class CooperativeLoanApplicationComponent implements OnInit {
   isLoadingGroupDetails = false;
   messages: Message[] = [];
   supportingDocuments: LoanSupportingDocument[] = [];
+  showPurposeDisclaimerModal = false;
+  selectedPurposeAcknowledged = false;
+  pendingPurposeValue: string | null = null;
 
   // Form properties
   applicationForm!: FormGroup;
@@ -215,6 +219,19 @@ export class CooperativeLoanApplicationComponent implements OnInit {
         delete errors['purposeRequired'];
         purposeControl.setErrors(Object.keys(errors).length ? errors : null);
       }
+      this.updateAmountValidator();
+
+      const selectedPurpose = this.selectedPurposeDefinition;
+      if (selectedPurpose && this.requiresPurposeDisclosure) {
+        this.pendingPurposeValue = String(purposeControl?.value || '');
+        this.selectedPurposeAcknowledged = false;
+        this.showPurposeDisclaimerModal = true;
+      } else {
+        this.showPurposeDisclaimerModal = false;
+        this.selectedPurposeAcknowledged = false;
+        this.pendingPurposeValue = null;
+      }
+
       this.applicationForm.updateValueAndValidity();
     });
   }
@@ -289,6 +306,63 @@ initForm(): void {
       const purposeId = String(purpose.id || '');
       return purposeName === currentPurpose || purposeId === currentPurpose;
     });
+  }
+
+  get minLoanAmount(): number {
+    const minAmount = Number(this.selectedPurposeDefinition?.minLoanAmount || 0);
+    return minAmount > 0 ? minAmount : 1000;
+  }
+
+  get maxPurposeLoanAmount(): number | null {
+    const maxAmount = Number(this.selectedPurposeDefinition?.maxLoanAmount || 0);
+    return maxAmount > 0 ? maxAmount : null;
+  }
+
+  get effectiveMaxLoanAmount(): number {
+    const maxBorrowable = Number(this.maxBorrowableAmount || 0);
+    const purposeMax = this.maxPurposeLoanAmount;
+
+    if (purposeMax && maxBorrowable > 0) {
+      return Math.min(purposeMax, maxBorrowable);
+    }
+
+    if (purposeMax) {
+      return purposeMax;
+    }
+
+    return maxBorrowable > 0 ? maxBorrowable : Number.MAX_SAFE_INTEGER;
+  }
+
+  get hasPurposeAmountConstraints(): boolean {
+    return !!((this.selectedPurposeDefinition?.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0)
+      || (this.selectedPurposeDefinition?.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0));
+  }
+
+  get requiresPurposeDisclosure(): boolean {
+    return this.hasPurposeAmountConstraints || !!(this.selectedPurposeDefinition?.defaultInterestRate && this.selectedPurposeDefinition.defaultInterestRate > 0);
+  }
+
+  get selectedPurposeAmountRangeMessage(): string {
+    if (!this.selectedPurposeDefinition) {
+      return '';
+    }
+
+    const hasMin = !!(this.selectedPurposeDefinition.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0);
+    const hasMax = !!(this.selectedPurposeDefinition.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0);
+
+    if (hasMin && hasMax) {
+      return `Allowed range: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)} to ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    if (hasMin) {
+      return `Minimum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)}.`;
+    }
+
+    if (hasMax) {
+      return `Maximum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    return '';
   }
 
   get hasAvailablePurposes(): boolean {
@@ -1139,6 +1213,27 @@ private validateGuarantors(): void {
     this.applicationForm.updateValueAndValidity();
   }
 
+  onPurposeAcknowledgedChange(): void {
+    // ngModel keeps the acknowledgment state in sync.
+  }
+
+  acceptPurposeAndContinue(): void {
+    if (!this.selectedPurposeAcknowledged) {
+      return;
+    }
+
+    this.showPurposeDisclaimerModal = false;
+    this.pendingPurposeValue = null;
+  }
+
+  rejectPurposeAndReset(): void {
+    this.showPurposeDisclaimerModal = false;
+    this.selectedPurposeAcknowledged = false;
+    this.pendingPurposeValue = null;
+    this.applicationForm.get('purpose')?.setValue('');
+    this.updateAmountValidator();
+  }
+
   onDocumentsSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = input.files;
@@ -1216,6 +1311,11 @@ private validateGuarantors(): void {
   private validateBeforeSubmit(): boolean {
     this.submitError = '';
 
+    if (this.showPurposeDisclaimerModal) {
+      this.submitError = 'Please review and acknowledge the purpose disclaimer before submitting.';
+      return false;
+    }
+
     if (!this.selectedGroup || !this.selectedMember) {
       this.submitError = 'Please select member and group.';
       return false;
@@ -1239,6 +1339,16 @@ private validateGuarantors(): void {
     const amount = Number(this.applicationForm.get('amount')?.value || 0);
     const repaymentTime = Number(this.applicationForm.get('repaymentTime')?.value || 0);
     this.validateGuarantors();
+
+    if (amount < this.minLoanAmount) {
+      this.submitError = `Requested amount cannot be lower than ${this.formatCurrency(this.minLoanAmount)} for this purpose.`;
+      return false;
+    }
+
+    if (this.maxPurposeLoanAmount && amount > this.maxPurposeLoanAmount) {
+      this.submitError = `Requested amount cannot be higher than ${this.formatCurrency(this.maxPurposeLoanAmount)} for this purpose.`;
+      return false;
+    }
 
     if (repaymentTime < this.selectedGroup.minDuration || repaymentTime > this.selectedGroup.maxDuration) {
       this.submitError = `Duration must be between ${this.selectedGroup.minDuration} and ${this.selectedGroup.maxDuration} months.`;
@@ -1266,6 +1376,21 @@ private validateGuarantors(): void {
     }
 
     return true;
+  }
+
+  private updateAmountValidator(): void {
+    const amountControl = this.applicationForm.get('amount');
+    if (!amountControl) {
+      return;
+    }
+
+    const validators = [Validators.required, Validators.min(this.minLoanAmount)];
+    if (Number.isFinite(this.effectiveMaxLoanAmount) && this.effectiveMaxLoanAmount !== Number.MAX_SAFE_INTEGER) {
+      validators.push(Validators.max(this.effectiveMaxLoanAmount));
+    }
+
+    amountControl.setValidators(validators);
+    amountControl.updateValueAndValidity();
   }
 
   onSubmit(): void {

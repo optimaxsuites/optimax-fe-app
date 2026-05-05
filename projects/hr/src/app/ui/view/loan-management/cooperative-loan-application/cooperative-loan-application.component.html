@@ -131,22 +131,27 @@
               <label>Loan Amount <span class="required">*</span></label>
               <div class="input-with-symbol">
                 <span class="input-symbol">₦</span>
-                <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" min="1000">
+                <input type="number" formControlName="amount" class="form-control with-symbol" placeholder="0.00" [min]="minLoanAmount" [max]="effectiveMaxLoanAmount">
               </div>
               <div class="field-hint" *ngIf="selectedGroup">
                 Max borrowable: {{ formatCurrency(maxBorrowableAmount) }}
               </div>
+              <div class="field-hint" *ngIf="hasPurposeAmountConstraints">
+                <i class="fas fa-scale-balanced"></i> {{ selectedPurposeAmountRangeMessage }}
+              </div>
               <div class="error" *ngIf="applicationForm.get('amount')?.invalid && applicationForm.get('amount')?.touched">
                 <span *ngIf="applicationForm.get('amount')?.errors?.['required']"><i class="fas fa-exclamation-circle"></i> Loan amount is required</span>
-                <span *ngIf="applicationForm.get('amount')?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum amount is {{ formatCurrency(1000) }}</span>
+                <span *ngIf="applicationForm.get('amount')?.errors?.['min']"><i class="fas fa-exclamation-circle"></i> Minimum amount is {{ formatCurrency(minLoanAmount) }}</span>
+                <span *ngIf="applicationForm.get('amount')?.errors?.['max']"><i class="fas fa-exclamation-circle"></i> Maximum amount is {{ formatCurrency(effectiveMaxLoanAmount) }}</span>
               </div>
             </div>
 
-            <div class="form-group">
+            <!-- FIXED: Repayment Period field - properly spaced with visible number spinners -->
+            <div class="form-group repayment-period-group">
               <label>Repayment Period <span class="required">*</span></label>
               <div class="input-with-suffix">
                 <input type="number" formControlName="repaymentTime" class="form-control" placeholder="1-12" min="1" max="12" step="1">
-                <span class="input-suffix">months</span>
+                <!-- <span class="input-suffix">months</span> -->
               </div>
               <div class="field-hint">
                 Range: 1 - 12 months
@@ -197,6 +202,9 @@
             </div>
             <div class="field-hint" *ngIf="selectedPurposeDefinition">
               <i class="fas fa-info-circle"></i> {{ selectedPurposeDefinition.description || selectedPurposeDefinition.code }}
+            </div>
+            <div class="field-hint" *ngIf="hasPurposeAmountConstraints">
+              <i class="fas fa-circle-info"></i> {{ selectedPurposeAmountRangeMessage }}
             </div>
             <div class="error" *ngIf="applicationForm.get('purpose')?.invalid && applicationForm.get('purpose')?.touched">
               <i class="fas fa-exclamation-circle"></i> Loan purpose is required
@@ -421,7 +429,7 @@
 
     <!-- Confirmation Dialog -->
     <div class="confirmation-overlay" *ngIf="showConfirmation" (click)="showConfirmation = false">
-      <div class="confirmation-dialog" (click="$event.stopPropagation())">
+      <div class="confirmation-dialog" (click)="$event.stopPropagation()">
         <div class="confirmation-header">
           <div class="confirmation-header-left">
             <i class="fas fa-clipboard-list"></i>
@@ -487,4 +495,42 @@
       </div>
     </div>
   </form>
+</div>
+
+<!-- Purpose Disclaimer Modal -->
+<div class="interest-modal-overlay" *ngIf="showPurposeDisclaimerModal">
+  <div class="interest-modal-content">
+    <div class="interest-modal-header">
+      <h3>Purpose Disclaimer</h3>
+    </div>
+    <div class="interest-modal-body">
+      <div class="interest-modal-icon warning">
+        <i class="fas fa-file-signature"></i>
+      </div>
+      <div class="interest-modal-message">
+        <p><strong>{{ selectedPurposeDefinition?.name }}</strong> has borrowing rules that apply to this request.</p>
+        <p *ngIf="hasPurposeAmountConstraints"><strong>{{ selectedPurposeAmountRangeMessage }}</strong></p>
+        <p *ngIf="selectedPurposeDefinition?.defaultInterestRate !== null && selectedPurposeDefinition?.defaultInterestRate !== undefined">
+          Fixed interest rate: <strong>{{ selectedPurposeDefinition?.defaultInterestRate }}%</strong>.
+        </p>
+        <p>You must acknowledge this disclaimer before you can proceed with the application.</p>
+      </div>
+      <div class="interest-acknowledgment-row">
+        <input
+          type="checkbox"
+          id="purposeAcknowledgment"
+          [(ngModel)]="selectedPurposeAcknowledged"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onPurposeAcknowledgedChange()"
+        />
+        <label for="purposeAcknowledgment">
+          I understand and accept the purpose-specific amount limits and pricing terms.
+        </label>
+      </div>
+    </div>
+    <div class="interest-modal-actions">
+      <button type="button" class="interest-reject-btn" (click)="rejectPurposeAndReset()">Choose Another Purpose</button>
+      <button type="button" class="interest-accept-btn" [disabled]="!selectedPurposeAcknowledged" (click)="acceptPurposeAndContinue()">Proceed</button>
+    </div>
+  </div>
 </div>

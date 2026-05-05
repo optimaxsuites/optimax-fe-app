@@ -1,6 +1,6 @@
 // ...existing code...
 // ...existing code...
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
@@ -43,18 +43,34 @@ interface CooperativeMemberLoanRow {
 @Component({
   selector: 'app-cooperative-member-dashboard',
   templateUrl: './cooperative-member-dashboard.component.html',
-  styleUrls: ['./cooperative-member-dashboard.component.scss']
+  styleUrls: ['./cooperative-member-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 
 export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   showGracePeriodModal = false;
+  gracePeriodLoan: CooperativeLoan | null = null;
+  gracePeriodInstallment: CooperativeRepayment | null = null;
 
   openGracePeriodRequest(): void {
+    const loan = this.primaryActiveLoan;
+    if (!loan) {
+      this.actionMessage = 'No active loan available to request an extension on.';
+      this.actionMessageTone = 'error';
+      return;
+    }
+    const nextInstallment = this.getOpenRepayments(loan.id)
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] || null;
+    this.gracePeriodLoan = loan;
+    this.gracePeriodInstallment = nextInstallment;
     this.showGracePeriodModal = true;
+    this.actionMessage = '';
   }
 
   closeGracePeriodModal(): void {
     this.showGracePeriodModal = false;
+    this.gracePeriodLoan = null;
+    this.gracePeriodInstallment = null;
   }
 
       selectedExtensionLoanId: number | null = null;
@@ -166,7 +182,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    private cooperativeService: CooperativeService,
+    public cooperativeService: CooperativeService,
     private employeeService: EmployeeService,
     private employeeLoanService: EmployeeLoanService,
     private backNavigationService: BackNavigationService,
@@ -354,13 +370,7 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
         this.selectedGroupId = hasSelectedGroup ? this.selectedGroupId : null;
         this.refreshDisplayedLoanRows();
         this.loadRepayments();
-        // Always show repayment schedule for ACTIVE loans
-        if (activeLoans.length > 0) {
-          // Always select the first ACTIVE loan for repayment schedule if none is selected
-          if (!this.selectedRepaymentHistoryLoanId || !activeLoans.some(l => l.id === this.selectedRepaymentHistoryLoanId)) {
-            this.selectedRepaymentHistoryLoanId = activeLoans[0].id;
-          }
-        } else {
+        if (activeLoans.length === 0) {
           this.selectedRepaymentHistoryLoanId = null;
         }
         this.actionMessage = this.usingRealData ? '' : this.actionMessage;

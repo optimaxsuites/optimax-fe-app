@@ -69,22 +69,24 @@ export class AccountingQueueComponent implements OnInit {
   loadEvents(): void {
     this.loading = true;
     const page = Math.floor(this.first / this.rows);
-    this.accountingService.getEvents(page, this.rows).subscribe({
-      next: (res: PaginationResult<AccountingEventDTO>) => {
-        console.log('[Optimax Accounting] Events fetched successfully:', res);
-        this.events = (res.content || []).map(ev => ({
-          ...ev,
-          status: 'UNPROCESSED',
-          suggestedDebit: '',
-          suggestedCredit: ''
-        }));
+    this.accountingService.getTransactions(page, this.rows).subscribe({
+      next: (res: PaginationResult<any>) => {
+        this.events = (res.content || []).map(tx => {
+          const rawStatus = tx.status || tx.Status || tx.reviewStatus;
+          return {
+            ...tx,
+            reference: tx.transactionReference,
+            status: rawStatus || 'UNREVIEWED',
+            suggestedDebit: tx.account?.accountName || '—',
+            suggestedCredit: '—' // In this view, we show the primary account
+          };
+        });
         this.totalRecords = res.totalSize || 0;
         this.loading = false;
-        this.applySuggestions();
       },
       error: (err) => {
-        console.error('[Optimax Accounting] Failed to load accounting queue:', err);
-        this.toastService.error('Failed to load accounting queue');
+        console.error('Failed to load transactions:', err);
+        this.toastService.error('Failed to load transactions');
         this.loading = false;
       }
     });
@@ -94,7 +96,6 @@ export class AccountingQueueComponent implements OnInit {
     this.accountingService.getAccountMappings(0, 100).subscribe({
       next: (res) => {
         this.mappings = res.content || [];
-        this.applySuggestions();
       },
       error: () => console.error('Failed to load account mappings')
     });
@@ -104,43 +105,13 @@ export class AccountingQueueComponent implements OnInit {
     this.accountingService.getAccounts(0, 100).subscribe({
       next: (res) => {
         this.accounts = res.content || [];
-        this.applySuggestions();
       },
       error: () => console.error('Failed to load accounts')
     });
   }
 
   private applySuggestions(): void {
-    if (!this.events.length) return;
-
-    this.events.forEach(event => {
-      // 1. Basic Mapping Match (Source Module + Event Type)
-      const match = this.mappings.find(m => 
-        m.sourceModule === event.sourceModule && 
-        m.eventType === event.eventType
-      );
-
-      if (match) {
-        event.matchedMapping = match;
-        if (match.debitAccount) {
-          event.suggestedDebit = `${match.debitAccount.accountCode} - ${match.debitAccount.accountName}`;
-        }
-        if (match.creditAccount) {
-          event.suggestedCredit = `${match.creditAccount.accountCode} - ${match.creditAccount.accountName}`;
-        }
-      }
-
-      // 2. Metadata Override for Credit Account
-      // User requirement: If event.metadata.sourceAccountId exists, override suggestedCredit
-      const sourceAccountId = event.metadata?.sourceAccountId;
-      if (sourceAccountId) {
-        const accountOverride = this.accounts.find(a => a.id == sourceAccountId);
-        if (accountOverride) {
-          event.suggestedCredit = `${accountOverride.accountCode} - ${accountOverride.accountName}`;
-          console.log(`[Optimax Accounting] Override applied for event ${event.reference}: Credit Account -> ${event.suggestedCredit}`);
-        }
-      }
-    });
+    // Overridden by loadTransactions mapping for now
   }
 
   get filteredEvents(): QueueEvent[] {
@@ -149,11 +120,10 @@ export class AccountingQueueComponent implements OnInit {
         (event.reference?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
         (event.description?.toLowerCase().includes(this.searchTerm.toLowerCase()));
       
-      const matchesType = !this.selectedType || event.eventType === this.selectedType;
       const matchesModule = !this.selectedModule || event.sourceModule === this.selectedModule;
       const matchesStatus = !this.selectedStatus || event.status === this.selectedStatus;
       
-      return matchesSearch && matchesType && matchesModule && matchesStatus;
+      return matchesSearch && matchesModule && matchesStatus;
     });
   }
 
@@ -168,46 +138,23 @@ export class AccountingQueueComponent implements OnInit {
     this.loadEvents();
   }
 
-  approveEvent(event: QueueEvent): void {
-    // ── Irreversible Processing Check ──
-    if (event.status === 'PROCESSING' || event.status === 'APPROVED') {
-      this.toastService.warn('This event is already processed or being processed.');
+  approveEvent(event: any): void {
+    if (event.status === 'APPROVED' || event.status === 'POSTED') {
+      this.toastService.warn('This transaction is already approved.');
       return;
     }
 
-    // Build mapping from current account suggestions on the event, if they exist
-    const debitAcc = this.resolveAccountByName(event.suggestedDebit);
-    const creditAcc = this.resolveAccountByName(event.suggestedCredit);
-
-    if (!debitAcc || !creditAcc) {
-      this.toastService.error('Cannot approve: Please assign both Debit and Credit accounts first.');
-      return;
-    }
-
-    // Build or use existing mapping
-    const mapping: AccountMappingDTO = event.matchedMapping || {
-      id: 0,
-      sourceModule: event.sourceModule,
-      eventType: event.eventType,
-      debitAccount: debitAcc,
-      creditAccount: creditAcc,
-      debitAccountId: debitAcc.id,
-      creditAccountId: creditAcc.id,
-      createdAt: new Date().toISOString()
-    };
-
-    const userDataStr = sessionStorage.getItem('userPrimaryInfoRegData');
-    if (!userDataStr) {
-      this.toastService.error('Session error: User profile not found. Please log in again.');
-      return;
-    }
-
-    const createdBy = JSON.parse(userDataStr);
-
-    // ── Open Custom Confirmation Modal ──
-    this.pendingActionData = { event, mapping, createdBy };
-    this.isProcessingPost = false; // Reset for new action
-    this.isConfirmOpen = true;
+    this.loading = true;
+    this.accountingService.approveTransaction(event).subscribe({
+      next: () => {
+        this.toastService.success(`Transaction ${event.reference} approved and persisted.`);
+        this.loadEvents();
+      },
+      error: (err) => {
+        this.toastService.error('Failed to approve transaction');
+        this.loading = false;
+      }
+    });
   }
 
   viewEvent(event: QueueEvent): void {

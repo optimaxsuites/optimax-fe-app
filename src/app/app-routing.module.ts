@@ -38,6 +38,8 @@ import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
+
+// dami just modified this to keep login-first routing and full app navigation working with the dashboard changes.
 import { VendorProfileFormComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
 import { VendorRegistrationComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-registration/vendor-registration.component';
 import { InterviewResponseComponent } from 'projects/hr/src/app/ui/view/recruitment/candidate/interview-response.component';

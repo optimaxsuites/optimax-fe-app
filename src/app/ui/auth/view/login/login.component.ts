@@ -21,6 +21,7 @@ import { MetadataService } from 'projects/POS/src/app/ui/service/metadata.servic
 import { TenantService } from 'src/app/ui/tenants/service/tenant.service';
 
 
+// dami just modified this to fix login handoff and route users cleanly into the app shell.
 /** Error when invalid control is dirty, touched, or submitted. */
 export class MyErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
@@ -348,6 +349,7 @@ async posLoginAction(): Promise<void> {
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;
     const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
     sessionStorage.setItem("Token", token);
+    sessionStorage.setItem("token", token);
     localStorage.setItem("Token2", token);
     sessionStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
@@ -426,6 +428,16 @@ async posLoginAction(): Promise<void> {
           }
           if (consumeRedirect()) {
             return;
+          }
+          if (hasOnlyCheckoutPermission()) {
+            const checkoutLink = this.navigationLink.getLink('checkoutLink');
+            this.router.navigate([checkoutLink]);
+          } else if (hasOnlyKitchenPermissions()) {
+            const kitchenLink = this.navigationLink.getLink('kitchenLink');
+            this.router.navigate([kitchenLink]);
+          } else {
+            const dashboardLink = this.navigationLink.getLink('dashboardLink');
+            this.router.navigate([dashboardLink]);
           }
       }
     })

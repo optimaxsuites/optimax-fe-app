@@ -1,11 +1,11 @@
 import { formatDate } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation} from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { Message } from 'primeng/api';
 import { of } from 'rxjs';
 import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
-import { LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
+import { LoanApplication, LoanApplicationFormData, LoanSupportingDocument } from '../../../service/loan/loan.types';
 import { normalizeLoanRepaymentStartDate } from '../../../service/loan/loan-display.util';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { LoanPurposeService, LoanPurposeData } from '../../../service/loan/loan-purpose.service';
@@ -15,14 +15,15 @@ import { EmployeeService } from '../../../service/employee.service';
 @Component({
   selector: 'app-loan-request-form',
   templateUrl: './loan-request-form.component.html',
-  styleUrls: ['./loan-request-form.component.scss']
+  styleUrls: ['./loan-request-form.component.scss'],
+  encapsulation: ViewEncapsulation.None 
 })
 export class LoanRequestFormComponent implements OnInit {
   @Input() isModal = false;
   @Input() employeeId = '';
   @Input() employeeName = '';
   @Input() department = '';
-  @Output() loanSubmitted = new EventEmitter<void>();
+  @Output() loanSubmitted = new EventEmitter<LoanApplication>();
   @Output() formCancelled = new EventEmitter<void>();
 
   loanRequestForm!: FormGroup;
@@ -154,7 +155,7 @@ export class LoanRequestFormComponent implements OnInit {
       this.updateAmountValidator();
 
       const selectedPurpose = this.loanPurposes.find(p => p.code === value);
-      if (selectedPurpose) {
+      if (selectedPurpose && selectedPurpose.defaultInterestRate !== null && selectedPurpose.defaultInterestRate !== undefined) {
         this.pendingPurposeCode = value;
         this.showInterestModal = true;
         this.defaultInterestRate = selectedPurpose.defaultInterestRate;
@@ -164,6 +165,7 @@ export class LoanRequestFormComponent implements OnInit {
         this.showInterestModal = false;
         this.defaultInterestRate = null;
         this.defaultInterestAcknowledged = false;
+        this.pendingPurposeCode = null;
       }
     });
   }
@@ -211,10 +213,11 @@ export class LoanRequestFormComponent implements OnInit {
 
   updateAmountValidator(): void {
     const selectedCode = this.loanRequestForm.get('purpose')?.value;
+    const amountControl = this.loanRequestForm.get('amount');
+
     if (selectedCode && selectedCode !== 'other') {
       const selectedPurpose = this.loanPurposes.find(p => p.code === selectedCode);
       if (selectedPurpose) {
-        const amountControl = this.loanRequestForm.get('amount');
         const validators = [Validators.required];
         
         if (selectedPurpose.minLoanAmount && selectedPurpose.minLoanAmount > 0) {
@@ -231,8 +234,12 @@ export class LoanRequestFormComponent implements OnInit {
         
         amountControl?.setValidators(validators);
         amountControl?.updateValueAndValidity();
+        return;
       }
     }
+
+    amountControl?.setValidators([Validators.required, Validators.min(10000), Validators.max(50000000)]);
+    amountControl?.updateValueAndValidity();
   }
 
   loadLoanPurposes(): void {
@@ -333,11 +340,59 @@ export class LoanRequestFormComponent implements OnInit {
     return selected?.description || '';
   }
 
-  get maxLoanAmount(): number {
+  get selectedPurposeDefinition(): LoanPurposeData | undefined {
     const selectedCode = this.loanRequestForm.get('purpose')?.value;
-    if (!selectedCode || selectedCode === 'other') return 50000000;
-    const selected = this.loanPurposes.find(p => p.code === selectedCode);
-    return selected?.maxLoanAmount || 50000000;
+    if (!selectedCode || selectedCode === 'other') {
+      return undefined;
+    }
+
+    return this.loanPurposes.find((purpose) => purpose.code === selectedCode);
+  }
+
+  get minLoanAmount(): number {
+    const minAmount = Number(this.selectedPurposeDefinition?.minLoanAmount || 0);
+    return minAmount > 0 ? minAmount : 10000;
+  }
+
+  get maxLoanAmount(): number {
+    const maxAmount = Number(this.selectedPurposeDefinition?.maxLoanAmount || 0);
+    return maxAmount > 0 ? maxAmount : 50000000;
+  }
+
+  get hasPurposeAmountConstraints(): boolean {
+    return !!((this.selectedPurposeDefinition?.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0)
+      || (this.selectedPurposeDefinition?.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0));
+  }
+
+  get selectedPurposeAmountRangeMessage(): string {
+    if (!this.selectedPurposeDefinition) {
+      return '';
+    }
+
+    const hasMin = !!(this.selectedPurposeDefinition.minLoanAmount && this.selectedPurposeDefinition.minLoanAmount > 0);
+    const hasMax = !!(this.selectedPurposeDefinition.maxLoanAmount && this.selectedPurposeDefinition.maxLoanAmount > 0);
+
+    if (hasMin && hasMax) {
+      return `Allowed range: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)} to ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    if (hasMin) {
+      return `Minimum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.minLoanAmount || 0)}.`;
+    }
+
+    if (hasMax) {
+      return `Maximum allowed amount: ${this.formatCurrency(this.selectedPurposeDefinition.maxLoanAmount || 0)}.`;
+    }
+
+    return '';
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0
+    }).format(amount);
   }
 
   get purpose(): AbstractControl | null { return this.loanRequestForm.get('purpose'); }
@@ -526,7 +581,7 @@ export class LoanRequestFormComponent implements OnInit {
           this.defaultInterestAcknowledged = false;
           this.pendingPurposeCode = null;
           this.supportingDocuments = [];
-          this.loanSubmitted.emit();
+          this.loanSubmitted.emit(response as LoanApplication);
         },
         error: (err: Error) => {
           console.error('Error submitting loan application:', err);

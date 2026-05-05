@@ -1,3 +1,4 @@
+<!-- dami just modified this to improve thread navigation and make direct messages feel more human. -->
 <aside
   class="flex flex-col bg-transparent border-r border-gray-200 overflow-hidden flex-shrink-0 relative"
   style="width: 100%; height: 100%"
@@ -116,7 +117,7 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            d="M7 8h10M7 12h7M7 16h10M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2h-4l-3 3-3-3H5a2 2 0 01-2-2V7a2 2 0 012-2z"
           />
         </svg>
         <span class="text-[14px]">Threads</span>
@@ -132,6 +133,7 @@
           >Channels</span
         >
         <button
+          *ngIf="canCreateChannels"
           (click)="createChannel.emit()"
           class="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-[#2e6276] hover:bg-gray-100 transition-colors"
           title="New channel"
@@ -239,7 +241,7 @@
       <button
         *ngFor="let dm of dmContacts"
         (click)="dmSelected.emit(dm.id)"
-        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left"
+        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
         [ngClass]="{
           active: activeDmId === dm.id && activeView === 'dm',
           unread:
@@ -269,9 +271,17 @@
           ></span>
         </div>
         <div class="flex-1 min-w-0">
-          <span class="truncate text-[14px] block leading-tight">{{
-            dm.shortName
-          }}</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">{{
+              dm.shortName
+            }}</span>
+            <span class="text-[11px] text-gray-400 whitespace-nowrap" *ngIf="dm.lastMessageTime">{{
+              dm.lastMessageTime
+            }}</span>
+          </div>
+          <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
+            {{ dm.lastMessagePreview || dm.jobTitle || dm.department || 'Start a direct conversation' }}
+          </span>
         </div>
         <span
           *ngIf="
@@ -375,6 +385,14 @@
         />
       </svg>
     </button>
+    <select
+      class="min-w-[128px] text-[12px] border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white"
+      [ngModel]="selectedRingtone"
+      (ngModelChange)="ringtoneChanged.emit($event)"
+      title="Message tone"
+    >
+      <option *ngFor="let tone of ringtoneOptions" [value]="tone.value">{{ tone.label }}</option>
+    </select>
   </div>
 </aside>
 

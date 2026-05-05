@@ -137,7 +137,8 @@ export class TaxSummaryComponent implements OnInit, OnDestroy {
   }
 
   get totalGrossSalary(): number {
-    return this.payeEmployees.reduce((sum, employee) => sum + employee.grossSalary, 0);
+    return this.report?.paye.totalGrossSalary
+      ?? this.payeEmployees.reduce((sum, employee) => sum + employee.grossSalary, 0);
   }
 
   get totalPensionDeduction(): number {
@@ -149,7 +150,8 @@ export class TaxSummaryComponent implements OnInit, OnDestroy {
   }
 
   get totalTaxableIncome(): number {
-    return this.payeEmployees.reduce((sum, employee) => sum + employee.taxableIncome, 0);
+    return this.report?.paye.totalTaxableIncome
+      ?? this.payeEmployees.reduce((sum, employee) => sum + employee.taxableIncome, 0);
   }
 
   get totalNetSalary(): number {
@@ -234,20 +236,37 @@ export class TaxSummaryComponent implements OnInit, OnDestroy {
     if (!this.report)
       return { totalWithheld: '—', breakdownByRate: [], isValid: false };
     const { wht } = this.report;
-    const breakdownSum = wht.rateBreakdown.reduce((s, r) => s + r.totalAmount, 0);
+    const breakdownRows = this.whtBreakdownRows;
+    const breakdownSum = breakdownRows.reduce((sum, row) => sum + row.amount, 0);
     return {
       totalWithheld: this.fmt.formatCurrency(wht.totalWithheld),
-      breakdownByRate: wht.rateBreakdown.map((r) => ({
-        rate: r.rate,
-        description: r.description,
-        count: r.transactionCount,
-        amount: this.fmt.formatCurrency(r.totalAmount),
+      breakdownByRate: breakdownRows.map((row) => ({
+        rate: row.rate,
+        description: row.description,
+        count: row.transactionCount,
+        amount: this.fmt.formatCurrency(row.amount),
       })),
       isValid: Math.abs(breakdownSum - wht.totalWithheld) < 1,
     };
   }
 
   // ── GL account label helper ───────────────────────────────────────────────
+  get whtBreakdownRows(): Array<{
+    rate: string;
+    category: string;
+    description: string;
+    transactionCount: number;
+    amount: number;
+  }> {
+    return (this.report?.wht.rateBreakdown ?? []).map((row) => ({
+      rate: row.rate ?? row.rateLabel,
+      category: row.description ?? row.rateLabel,
+      description: row.description ?? row.rateLabel,
+      transactionCount: row.transactionCount ?? 0,
+      amount: row.totalAmount ?? row.amount,
+    }));
+  }
+
   getGLAccountLabel(code: string): string {
     const map: Record<string, string> = {
       '1050': 'VAT Recoverable (Asset)',

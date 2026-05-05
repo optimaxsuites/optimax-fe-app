@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { Message } from '../communication.component';
 
+// damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
   templateUrl: './message-feed.component.html',
@@ -30,6 +31,7 @@ export class MessageFeedComponent {
   @Input() deletingIds = new Set<string>();
   @Input() myUserId = 0;
   @Input() flashId: string | null = null;
+  @Input() readCountForMessage: (msg: Message) => number = () => 0;
 
   // ── Outputs ─────────────────────────────────────────
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
@@ -90,16 +92,10 @@ export class MessageFeedComponent {
     return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
-  /**
-   * FIX #2 (Timezone): Parse server dates as UTC so they display in the
-   * browser's local timezone. Java LocalDateTime arrays from the backend
-   * represent UTC values — using Date.UTC() triggers correct local conversion.
-   */
   parseServerDate(raw: string | number[] | undefined): Date | null {
     if (!raw) return null;
     let d: Date;
     if (Array.isArray(raw)) {
-      // Backend array values are UTC — convert via Date.UTC for local display
       d = new Date(Date.UTC(
         raw[0] as number,
         ((raw[1] as number) || 1) - 1,
@@ -107,12 +103,10 @@ export class MessageFeedComponent {
         (raw[3] as number) || 0,
         (raw[4] as number) || 0,
         (raw[5] as number) || 0,
-        // index 6 is nanoseconds — convert to milliseconds
         Math.floor(((raw[6] as number) || 0) / 1_000_000),
       ));
     } else {
       let s = String(raw).trim().replace(' ', 'T');
-      // If no timezone info present, treat as UTC (backend sends UTC)
       if (!/[zZ]|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
       d = new Date(s);
       if (isNaN(d.getTime())) d = new Date(raw as string);
@@ -132,7 +126,41 @@ export class MessageFeedComponent {
     if (e.key === 'Escape') this.editCancelled.emit();
   }
 
-  getReadCount(_msg: Message): number {
-    return 0;
+  getReadCount(msg: Message): number {
+    return this.readCountForMessage(msg);
+  }
+
+  readReceiptLabel(msg: Message): string {
+    const count = this.getReadCount(msg);
+    if (count <= 0) {
+      if (msg.deliveryState === 'SENDING') {
+        return 'Sending...';
+      }
+      if (msg.deliveryState === 'DELIVERED') {
+        return 'Delivered';
+      }
+      return 'Sent';
+    }
+    if (this.activeView === 'dm') {
+      return 'Seen';
+    }
+    return count === 1 ? 'Seen by 1' : `Seen by ${count}`;
+  }
+
+  isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
+    return Boolean(attachment?.type?.toLowerCase().startsWith('image/'));
+  }
+
+  threadSourceLabel(msg: Message): string {
+    return msg.sourceType === 'dm' ? 'Direct message' : 'Channel thread';
+  }
+
+  threadReplyCountLabel(msg: Message): string {
+    const count = Number(msg.threadReplyCount || msg.replies.length || 0);
+    return count === 1 ? '1 reply' : `${count} replies`;
+  }
+
+  threadPreviewReplies(msg: Message): Message[] {
+    return (msg.replies || []).slice(0, 2);
   }
 }

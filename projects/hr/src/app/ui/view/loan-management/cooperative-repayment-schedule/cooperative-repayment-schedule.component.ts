@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -6,7 +6,8 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 @Component({
   selector: 'app-cooperative-repayment-schedule',
   templateUrl: './cooperative-repayment-schedule.component.html',
-  styleUrls: ['./cooperative-repayment-schedule.component.scss']
+  styleUrls: ['./cooperative-repayment-schedule.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges {
   @Input() loan!: CooperativeLoan;
@@ -136,7 +137,34 @@ export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges 
   }
 
   getStatusDisplay(status: string): string {
-    return (status || '').replace(/_/g, ' ');
+    return (status || '')
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  getFormattedLoanCode(): string {
+    const rawCode = String(this.loan?.loanCode || this.loan?.loanId || this.loan?.id || '').trim();
+    return rawCode || 'COOP-LOAN';
+  }
+
+  getRepaymentStatusTitle(): string {
+    if (this.loan?.status === 'COMPLETED') {
+      return 'Repaid in Full';
+    }
+    if (this.loan?.status === 'DEFAULTED') {
+      return 'Defaulted';
+    }
+    if (this.loan?.status === 'PAUSED') {
+      return 'Paused by Admin';
+    }
+    if (this.loan?.status === 'OVERDUE') {
+      return 'Overdue';
+    }
+    if (this.loan?.status === 'SKIPPED') {
+      return 'Skipped Installment';
+    }
+    return 'In Repayment';
   }
 
   openPaymentModal(installment: CooperativeRepayment | null = null): void {
@@ -173,6 +201,8 @@ export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges 
 
   onGracePeriodSubmitted(): void {
     this.closeGracePeriodModal();
+    this.calculateStats();
+    this.repaymentUpdated.emit();
   }
 
   getStatusIcon(status: string): string {

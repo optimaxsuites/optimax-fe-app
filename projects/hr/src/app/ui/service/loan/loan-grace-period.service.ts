@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment';
 
 export interface GracePeriodRequest {
@@ -18,7 +18,7 @@ export interface GracePeriodRequest {
   reason: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   reviewedAt?: string;
-  reviewedBy?: number | { id: number; fullname: string; };
+  reviewedBy?: number | { id: number; fullname: string; userId?: number; email?: string; username?: string; };
   reviewNote?: string;
   rejectionReason?: string;
   approvedGraceDays?: number;
@@ -95,24 +95,79 @@ export class AdvanceGracePeriodService {
   }
 
   approveRequest(id: number, approvedGraceDays: number, newDueDate: string, reviewNote?: string): Observable<GracePeriodRequest> {
-    return this.updateRequest(id, {
-      status: 'APPROVED',
-      approvedGraceDays,
-      newDueDate,
-      reviewNote: reviewNote || `Grace period of ${approvedGraceDays} days approved. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
-      reviewedAt: new Date().toISOString(),
-      reviewedBy: this.getCurrentUserId()
-    });
+    // First get the complete request data to preserve all fields
+    return this.getRequestById(id).pipe(
+      switchMap(fullRequest => {
+        // Only send the fields that need to be updated
+        const updatePayload = {
+          status: 'APPROVED' as const,
+          approvedGraceDays,
+          newDueDate,
+          reviewNote: reviewNote || `Grace period of ${approvedGraceDays} days approved. New due date: ${new Date(newDueDate).toLocaleDateString()}`,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: this.getCurrentUserId()
+        };
+        
+        return this.updateRequest(id, updatePayload).pipe(
+          map(response => {
+            // Merge fullRequest (complete data) + response (backend updates) + updatePayload (our updates)
+            // This ensures no data is lost when backend returns partial response
+            return {
+              ...fullRequest,
+              ...response,
+              ...updatePayload,
+              // Explicitly preserve critical fields that might be null in backend response
+              loanId: fullRequest.loanId,
+              employeeId: fullRequest.employeeId,
+              installmentNumber: fullRequest.installmentNumber,
+              paymentSubtype: fullRequest.paymentSubtype,
+              amountPaid: fullRequest.amountPaid,
+              remainingBalance: fullRequest.remainingBalance,
+              reason: fullRequest.reason,
+              requestedDays: fullRequest.requestedDays,
+              requestedAt: fullRequest.requestedAt
+            } as GracePeriodRequest;
+          })
+        );
+      })
+    );
   }
 
   rejectRequest(id: number, rejectionReason: string, reviewNote?: string): Observable<GracePeriodRequest> {
-    return this.updateRequest(id, {
-      status: 'REJECTED',
-      rejectionReason,
-      reviewNote: reviewNote || rejectionReason,
-      reviewedAt: new Date().toISOString(),
-      reviewedBy: this.getCurrentUserId()
-    });
+    // First get the complete request data to preserve all fields
+    return this.getRequestById(id).pipe(
+      switchMap(fullRequest => {
+        const updatePayload = {
+          status: 'REJECTED' as const,
+          rejectionReason,
+          reviewNote: reviewNote || rejectionReason,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: this.getCurrentUserId()
+        };
+        
+        return this.updateRequest(id, updatePayload).pipe(
+          map(response => {
+            // Merge fullRequest (complete data) + response (backend updates) + updatePayload (our updates)
+            // This ensures no data is lost when backend returns partial response
+            return {
+              ...fullRequest,
+              ...response,
+              ...updatePayload,
+              // Explicitly preserve critical fields that might be null in backend response
+              loanId: fullRequest.loanId,
+              employeeId: fullRequest.employeeId,
+              installmentNumber: fullRequest.installmentNumber,
+              paymentSubtype: fullRequest.paymentSubtype,
+              amountPaid: fullRequest.amountPaid,
+              remainingBalance: fullRequest.remainingBalance,
+              reason: fullRequest.reason,
+              requestedDays: fullRequest.requestedDays,
+              requestedAt: fullRequest.requestedAt
+            } as GracePeriodRequest;
+          })
+        );
+      })
+    );
   }
 
   private getCurrentUserId(): number {

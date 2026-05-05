@@ -36,6 +36,9 @@ export class ChannelSidebarComponent {
   @Input() employeesLoading = false;
   @Input() employeesError: string | null = null;
   @Input() soundEnabled = true;
+  @Input() selectedRingtone = 'classic';
+  @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
+  @Input() canCreateChannels = false;
   @Input() searchQuery = '';
   @Input() showSearch = false;
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];
@@ -46,6 +49,7 @@ export class ChannelSidebarComponent {
   @Output() viewSet = new EventEmitter<'threads'>();
   @Output() createChannel = new EventEmitter<void>();
   @Output() soundToggled = new EventEmitter<void>();
+  @Output() ringtoneChanged = new EventEmitter<string>();
   @Output() emailCompose = new EventEmitter<void>();
   @Output() searchQueryChange = new EventEmitter<string>();
   @Output() searchExecuted = new EventEmitter<void>();

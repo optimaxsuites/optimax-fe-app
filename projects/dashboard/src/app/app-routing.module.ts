@@ -9,10 +9,12 @@ import { OptimaxaiComponent } from './optimax-ai/optimax-ai.component';
 import { CommunicationComponent } from './communication/communication.component';
 import { FeedComponent } from './feed/feed.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
+
+// damilola worked on this: communications and tasks now have separate dashboard routes.
 const routes: Routes = [
   {
     path:'',
-    redirectTo: '/uu',
+    redirectTo: 'communications/uu',
     pathMatch: 'full'
   },
   {
@@ -31,25 +33,25 @@ const routes: Routes = [
       component: EmployeePayslipsListComponent,
   },
   {
-    path: ':uuid',
-    component: GeneraldashboardComponent,
+    path: 'optimaxai/:uuid',
+    component: OptimaxaiComponent
   },
-//   {
-//   path: 'dashboard/communication/:uuid',
-//   component: CommunicationComponent
-// },
-{
-  path: 'optimaxai/:uuid',
-  component: OptimaxaiComponent
-},
-{
-  path: 'analytics/:uuid',
-  component: AnalyticsComponent
-},
-{
-  path: 'feed/:uuid',
-  component: FeedComponent
-}
+  {
+    path: 'analytics/:uuid',
+    component: AnalyticsComponent
+  },
+  {
+    path: 'communications/:uuid',
+    component: CommunicationComponent
+  },
+  {
+    path: 'tasks-routines/:uuid',
+    component: FeedComponent
+  },
+  {
+    path: ':uuid',
+    redirectTo: 'communications/:uuid',
+  },
 ];
 
 @NgModule({

@@ -54,13 +54,13 @@
 
     <!-- Grace Period Modal -->
     <app-modal *ngIf="showGracePeriodModal && selectedLoan" [header]="'Request Grace Period'" (close)="closeGracePeriodModal()">
-      <app-grace-period-requests
+      <app-cooperative-grace-period-request-form
         [cooperativeLoan]="selectedLoan"
         [cooperativeInstallment]="null"
         [member]="currentMember"
         (close)="closeGracePeriodModal()"
         (requestSubmitted)="closeGracePeriodModal()">
-      </app-grace-period-requests>
+      </app-cooperative-grace-period-request-form>
     </app-modal>
 
     <!-- Action Message -->

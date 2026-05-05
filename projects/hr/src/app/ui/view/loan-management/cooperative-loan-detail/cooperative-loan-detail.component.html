@@ -642,12 +642,12 @@
     </app-modal>
 
     <app-modal *ngIf="showGracePeriodModal" [header]="'Request Grace Period'" (close)="closeGracePeriodModal()">
-      <app-grace-period-requests
+      <app-cooperative-grace-period-request-form
         [cooperativeLoan]="loan"
         [cooperativeInstallment]="nextGracePeriodInstallment || null"
         (close)="closeGracePeriodModal()"
         (requestSubmitted)="handleGracePeriodSubmitted()">
-      </app-grace-period-requests>
+      </app-cooperative-grace-period-request-form>
     </app-modal>
   </div>
 </div>

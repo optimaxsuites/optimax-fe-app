@@ -9,6 +9,7 @@ import {
   SimpleChanges
 } from '@angular/core';
 
+// dami just modified this to improve attachments, rich composer flow, and messaging actions.
 export interface AiOutput {
   visible: boolean;
   loading: boolean;
@@ -20,6 +21,7 @@ export interface PendingAttachment {
   name: string;
   size: string;
   type: string;
+  previewUrl?: string;
 }
 
 @Component({

@@ -14,6 +14,7 @@
     color: #b45309 !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // AWAITING_INTEREST_ACCEPTANCE - Light orange
@@ -27,6 +28,7 @@
     color: #9a3412 !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // APPROVED - Blue
@@ -40,6 +42,7 @@
     color: #1e40af !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // READY_FOR_DISBURSEMENT - Cyan
@@ -53,6 +56,7 @@
     color: #0891b2 !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // ACTIVE - Green (matching your invite-status)
@@ -66,6 +70,7 @@
     color: #1e7e4a !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // REJECTED - Red
@@ -79,6 +84,7 @@
     color: #991b1b !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // COMPLETED - Green (same as active)
@@ -92,6 +98,7 @@
     color: #1e7e4a !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // SKIPPED - Gray
@@ -105,6 +112,7 @@
     color: #374151 !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // OVERDUE - Orange
@@ -118,6 +126,7 @@
     color: #c2410c !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // DEFAULTED - Dark Red
@@ -131,6 +140,7 @@
     color: #7f1d1d !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // PAUSED - Slate
@@ -144,6 +154,7 @@
     color: #334155 !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
+    text-transform: none !important;
   }
 
   // PAID - Green (same as active)
@@ -157,6 +168,7 @@
     color: #1e7e4a;
     font-size: 0.78rem;
     font-weight: 700;
+    text-transform: none;
   }
 
   // ONGOING - Blue (same as approved)
@@ -170,6 +182,7 @@
     color: #1e40af;
     font-size: 0.78rem;
     font-weight: 700;
+    text-transform: none;
   }
 
   // INACTIVE - Gray
@@ -183,6 +196,7 @@
     color: #374151;
     font-size: 0.78rem;
     font-weight: 700;
+    text-transform: none;
   }
 
   // SUSPENDED - Red (same as rejected)
@@ -196,6 +210,21 @@
     color: #991b1b;
     font-size: 0.78rem;
     font-weight: 700;
+    text-transform: none;
+  }
+
+  // EXPIRED - Purple/Gray (new)
+  &.status-expired {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.12);
+    color: #6d28d9;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
   }
 
   // Disabled state

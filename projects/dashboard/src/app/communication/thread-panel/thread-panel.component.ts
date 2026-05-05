@@ -36,7 +36,9 @@ export class ThreadPanelComponent {
   @Input() pinnedMessages: Message[] = [];
   @Input() activeChannel: ChannelDetailsInput | null = null;
   @Input() channelMembers: CollabMember[] = [];
+  @Input() bannedChannelMembers: CollabMember[] = [];
   @Input() channelMembersLoading = false;
+  @Input() canManageChannels = false;
   @Input() nonMembers: EmployeeProfile[] = [];
   @Input() myUserId = 0;
   @Input() memberMenuOpen = false;
@@ -92,6 +94,8 @@ export class ThreadPanelComponent {
   @Output() memberMenuClosed = new EventEmitter<void>();
   @Output() makeOwner = new EventEmitter<number>();
   @Output() removeMember = new EventEmitter<CollabMember>();
+  @Output() banMember = new EventEmitter<CollabMember>();
+  @Output() unbanMember = new EventEmitter<CollabMember>();
   @Output() addMember = new EventEmitter<number>();
   @Output() leaveChannel = new EventEmitter<void>();
   @Output() deleteChannel = new EventEmitter<void>();
@@ -100,6 +104,10 @@ export class ThreadPanelComponent {
 
   isChannelOwner(): boolean {
     return this.activeChannel?.createdBy === this.myUserId;
+  }
+
+  canAdministerChannel(): boolean {
+    return this.canManageChannels || this.isChannelOwner();
   }
 
   isOwnReply(reply: Message): boolean {

@@ -94,6 +94,13 @@ export class AuthenticationService {
             if (response.ecode && response.ecode !== 'null') {
               localStorage.setItem('tenantId', response.ecode);
             }
+
+            const entityId = this.extractEntityId(response);
+            if (entityId) {
+              sessionStorage.setItem('entityId', entityId);
+              localStorage.setItem('entityId', entityId);
+              console.log('[Optimax Accounting] Login entityId stored:', entityId);
+            }
             
             sessionStorage.setItem('userRegData', JSON.stringify(response));
           }),
@@ -152,6 +159,31 @@ export class AuthenticationService {
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+  }
+
+  private extractEntityId(data: any): string | null {
+    if (!data) {
+      return null;
+    }
+
+    const keys = [
+      'entityId', 'EntityId', 'entityID', 'entity_id',
+      'entity', 'clientId', 'clientID', 'client_id', 'clientid',
+      'companyId', 'companyID', 'company_id', 'companyid'
+    ];
+
+    for (const key of keys) {
+      const value = data[key];
+      if (value !== undefined && value !== null && String(value).trim()) {
+        return String(value).trim();
+      }
+    }
+
+    if (typeof data === 'object') {
+      return this.extractEntityId(data.data) || this.extractEntityId(data.user) || this.extractEntityId(data.response) || null;
+    }
+
+    return null;
   }
   
   private handleError(error: HttpErrorResponse) {

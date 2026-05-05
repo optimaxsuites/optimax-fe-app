@@ -1,4 +1,4 @@
-<div class="coop-approval-container">
+<div class="coop-approval-container" data-component="coop-approval">
   <div class="inline-messages" *ngIf="messages.length > 0">
     <div class="inline-message" *ngFor="let message of messages" [class.error]="message.severity === 'error'" [class.success]="message.severity === 'success'">
       <strong>{{ message.summary }}</strong>
@@ -12,111 +12,67 @@
   </div>
 
   <div *ngIf="!isLoading">
-    <!-- Header -->
-    <header class="approval-header lm-header-card">
+    <header class="page-header">
       <div class="header-left">
         <app-back-button (click)="goBack()"></app-back-button>
-        <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Cooperative Loan Applications</h1>
+        <div class="header-title">
+          <h1><i class="fas fa-hand-holding-dollar title-icon"></i> Cooperative Loan Applications</h1>
+          <p>Review and manage cooperative loan applications</p>
+        </div>
       </div>
-      <div class="search-box">
-        <input type="text"
-               placeholder="Search by member, group, or loan ID…"
-               [(ngModel)]="searchTerm"
-               (ngModelChange)="onSearchTermChange($event)">
-      </div>
+      <button class="refresh-btn" type="button" (click)="loadData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
     </header>
 
-    <!-- Stats cards -->
-    <div class="stats-overview">
-      <!-- Top row - Big cards -->
-      <div class="stats-grid primary-grid">
-        <div class="stat-card" [class.active-filter]="filters.status === 'PENDING'" (click)="applyStatusFromCard('PENDING')">
-          <div class="stat-icon"><i class="fas fa-clock"></i></div>
+    <div class="stats-grid">
+      <div class="stat-card">
+          <div class="stat-icon pending-icon"><i class="fas fa-hourglass-half"></i></div>
           <div class="stat-content">
-            <span class="stat-label">Pending Review</span>
-            <span class="stat-value">{{ pendingCount }}</span>
-            <span class="stat-note">Awaiting admin decision</span>
+            <div class="stat-value">{{ pendingCount }}</div>
+            <div class="stat-label">Pending</div>
           </div>
         </div>
-        <div class="stat-card" [class.active-filter]="filters.status === 'APPROVED'" (click)="applyStatusFromCard('APPROVED')">
-          <div class="stat-icon"><i class="fas fa-check-double"></i></div>
-          <div class="stat-content">
-            <span class="stat-label">Approved</span>
-            <span class="stat-value">{{ approvedCount }}</span>
-            <span class="stat-note">Awaiting disbursement</span>
-          </div>
-        </div>
-        <div class="stat-card" [class.active-filter]="filters.status === 'ACTIVE'" (click)="applyStatusFromCard('ACTIVE')">
-          <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
-          <div class="stat-content">
-            <span class="stat-label">Active Loans</span>
-            <span class="stat-value">{{ activeCount }}</span>
-            <span class="stat-note">In repayment</span>
-          </div>
-        </div>
-        <div class="stat-card" [class.active-filter]="filters.status === 'REJECTED'" (click)="applyStatusFromCard('REJECTED')">
-          <div class="stat-icon"><i class="fas fa-ban"></i></div>
-          <div class="stat-content">
-            <span class="stat-label">Rejected</span>
-            <span class="stat-value">{{ rejectedCount }}</span>
-            <span class="stat-note">Application declined</span>
-          </div>
-        </div>
-        <div class="stat-card" [class.active-filter]="filters.status === 'COMPLETED'" (click)="applyStatusFromCard('COMPLETED')">
-          <div class="stat-icon"><i class="fas fa-flag-checkered"></i></div>
-          <div class="stat-content">
-            <span class="stat-label">Completed</span>
-            <span class="stat-value">{{ completedCount }}</span>
-            <span class="stat-note">Fully repaid</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Bottom row - Small cards (stretched to fill space) -->
-      <div class="stats-grid secondary-grid">
-        <div class="stat-card small" [class.active-filter]="filters.status === 'SKIPPED'" (click)="applyStatusFromCard('SKIPPED')">
+        <div class="stat-card">
+          <div class="stat-icon approved-icon"><i class="fas fa-check-circle"></i></div>
           <div class="stat-content">
-            <span class="stat-label">Skipped</span>
-            <span class="stat-note">Skipped by admin</span>
+            <div class="stat-value">{{ approvedCount }}</div>
+            <div class="stat-label">Approved</div>
           </div>
-          <div class="stat-circle">{{ skippedCount }}</div>
         </div>
-        <div class="stat-card small" [class.active-filter]="filters.status === 'OVERDUE'" (click)="applyStatusFromCard('OVERDUE')">
+
+        <div class="stat-card">
+          <div class="stat-icon active-icon"><i class="fas fa-exchange-alt"></i></div>
           <div class="stat-content">
-            <span class="stat-label">Overdue</span>
-            <span class="stat-note">Past due date</span>
+            <div class="stat-value">{{ activeCount }}</div>
+            <div class="stat-label">Active</div>
           </div>
-          <div class="stat-circle">{{ overdueCount }}</div>
         </div>
-        <div class="stat-card small" [class.active-filter]="filters.status === 'PAUSED'" (click)="applyStatusFromCard('PAUSED')">
+
+        <div class="stat-card total-balance-card">
+          <div class="stat-icon balance-icon"><i class="fas fa-scale-balanced"></i></div>
           <div class="stat-content">
-            <span class="stat-label">Paused</span>
-            <span class="stat-note">Temporarily paused</span>
+            <div class="stat-value">{{ formatCurrency(totalActiveLoanBalance) }}</div>
+            <div class="stat-label">Total Balance of Active Loans</div>
           </div>
-          <div class="stat-circle">{{ pausedCount }}</div>
         </div>
-        <div class="stat-card small" [class.active-filter]="filters.status === 'DEFAULTED'" (click)="applyStatusFromCard('DEFAULTED')">
-          <div class="stat-content">
-            <span class="stat-label">Defaulted</span>
-            <span class="stat-note">Marked as defaulted</span>
-          </div>
-          <div class="stat-circle">{{ defaultedCount }}</div>
-        </div>
-      </div>
     </div>
 
-    <!-- Filters -->
-    <div class="loan-filters">
-          <div class="filter-group">
-            <label for="stageFilter">Approval Stage:</label>
-            <select id="stageFilter" [(ngModel)]="filters.stage" (ngModelChange)="applyFilters()">
-              <option value="">All Stages</option>
-              <option value="PENDING_GUARANTOR_APPROVAL">Awaiting Guarantors</option>
-              <option value="READY_FOR_ADMIN_REVIEW">Ready for Review</option>
-            </select>
-          </div>
+    <div class="filters-wrapper">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchTermChange($event)"
+            placeholder="Search by member, group, or loan ID...">
+        </div>
+      </div>
+
       <div class="filter-group">
-        <label for="groupFilter">Group:</label>
+        <label for="groupFilter">Group</label>
         <select id="groupFilter" [(ngModel)]="filters.groupId" (ngModelChange)="applyFilters()">
           <option value="">All Groups</option>
           <option *ngFor="let g of groups" [value]="g.id">{{ g.name }}</option>
@@ -124,7 +80,7 @@
       </div>
 
       <div class="filter-group">
-        <label for="statusFilter">Status:</label>
+        <label for="statusFilter">Status</label>
         <select id="statusFilter" [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
@@ -140,57 +96,66 @@
       </div>
 
       <div class="filter-group">
-        <label for="dateFromFilter">Date From:</label>
+        <label for="stageFilter">Approval Stage</label>
+        <select id="stageFilter" [(ngModel)]="filters.stage" (ngModelChange)="applyFilters()">
+          <option value="">All Stages</option>
+          <option value="PENDING_GUARANTOR_APPROVAL">Awaiting Guarantors</option>
+          <option value="READY_FOR_ADMIN_REVIEW">Ready for Review</option>
+        </select>
+      </div>
+
+      <div class="filter-group date-group">
+        <label for="dateFromFilter">Date From</label>
         <input type="date" id="dateFromFilter" [(ngModel)]="filters.dateFrom" (ngModelChange)="applyFilters()">
       </div>
 
-      <div class="filter-group">
-        <label for="dateToFilter">Date To:</label>
+      <div class="filter-group date-group">
+        <label for="dateToFilter">Date To</label>
         <input type="date" id="dateToFilter" [(ngModel)]="filters.dateTo" (ngModelChange)="applyFilters()">
       </div>
 
-      <button class="refresh-btn" type="button" (click)="loadData()">Refresh</button>
-      <button class="reset-btn" type="button" (click)="resetFilters()">Reset</button>
+      <button class="reset-btn" type="button" (click)="resetFilters()">
+        <i class="fas fa-undo-alt"></i> Reset
+      </button>
     </div>
 
-    <div class="results-count">
-      Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredLoans.length }} applications
+    <div class="results-info">
+      <span>Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredLoans.length }} applications</span>
     </div>
 
-    <!-- Table -->
-    <div class="approval-table-container">
-      <table class="coop-approval-table" *ngIf="paginatedLoans.length > 0; else emptyApprovalState">
+    <div class="table-wrapper">
+      <table class="advance-loans-table" *ngIf="paginatedLoans.length > 0">
         <thead>
           <tr>
-            <th><button type="button" class="sort-btn" (click)="setSort('loanCode')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanCode')"></i></button></th>
-            <th><button type="button" class="sort-btn" (click)="setSort('memberName')">Member <i class="fas" [ngClass]="getSortIcon('memberName')"></i></button></th>
+            <th class="sortable" (click)="setSort('sn')">S/N <i class="fas" [ngClass]="getSortIcon('sn')"></i></th>
+            <th class="sortable" (click)="setSort('loanCode')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanCode')"></i></th>
+            <th class="sortable" (click)="setSort('memberName')">Member <i class="fas" [ngClass]="getSortIcon('memberName')"></i></th>
             <th>Member ID</th>
             <th>Membership ID</th>
-            <th><button type="button" class="sort-btn" (click)="setSort('groupName')">Group <i class="fas" [ngClass]="getSortIcon('groupName')"></i></button></th>
-            <th><button type="button" class="sort-btn" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></button></th>
+            <th class="sortable" (click)="setSort('groupName')">Group <i class="fas" [ngClass]="getSortIcon('groupName')"></i></th>
+            <th class="sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
             <th>Duration</th>
             <th>Purpose</th>
-            <th>Interest Rate</th>
+            <th>Interest</th>
             <th>Total Repayable</th>
-            <th>Approval Stage</th>
-            <th><button type="button" class="sort-btn" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></button></th>
-            <th><button type="button" class="sort-btn" (click)="setSort('applicationDate')">Applied On <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i></button></th>
+            <th class="sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+            <th class="sortable" (click)="setSort('applicationDate')">Date Submitted <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i></th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of paginatedLoans">
+          <tr *ngFor="let row of paginatedLoans; let i = index">
+            <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
             <td class="loan-id-cell">{{ row.loanCode }}</td>
-            <td class="member-name-cell">{{ row.memberName }}</td>
+            <td class="employee-name-cell">{{ row.memberName }}</td>
             <td>{{ getMemberIdentifier(row.loan) }}</td>
             <td>{{ getMembershipId(row.loan) }}</td>
-            <td class="group-cell">{{ row.groupName }}</td>
-            <td class="amount-cell">{{ formatCurrency(row.amount) }}</td>
+            <td>{{ row.groupName }}</td>
+            <td>{{ formatCurrency(row.amount) }}</td>
             <td>{{ row.loan.repaymentTime || row.loan.duration || '—' }} mo.</td>
             <td class="purpose-cell">{{ row.purposeDisplay }}</td>
             <td>{{ row.groupInterestRate }}</td>
-            <td class="amount-cell">{{ formatCurrency(row.totalRepayable) }}</td>
-            <td>{{ row.stageLabel }}</td>
+            <td>{{ formatCurrency(row.totalRepayable) }}</td>
             <td>
               <span class="status-badge" [ngClass]="row.statusClass">
                 {{ row.statusLabel }}
@@ -198,43 +163,30 @@
             </td>
             <td>{{ row.appliedOn | date:'mediumDate' }}</td>
             <td class="actions-col">
-              <button class="action-icon view-icon" type="button" (click)="viewLoanDetail(row.loan)" title="View Details">
+              <button class="action-btn view-btn" type="button" (click)="viewLoanDetail(row.loan)" title="View Details">
                 <i class="fas fa-eye"></i>
               </button>
-              <button class="action-icon history-icon" type="button" (click)="openCooperativeLoanHistory(row.loan)" title="View Member Loan History">
-                <i class="pi pi-history"></i>
-              </button>
-              <button
-                *ngIf="row.loan.status === 'PENDING' && row.loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'"
-                class="action-icon approve-icon"
-                type="button"
-                (click)="openApprovalModal(row.loan)"
-                title="Approve">
-                <i class="fas fa-check"></i>
-              </button>
-              <button
-                *ngIf="(row.loan.status === 'PENDING' || row.loan.status === 'APPROVED') && row.loan.applicationStage === 'READY_FOR_ADMIN_REVIEW'"
-                class="action-icon reject-icon"
-                type="button"
-                (click)="openRejectModal(row.loan)"
-                title="Reject">
-                <i class="fas fa-times"></i>
+              <button class="action-btn history-btn" type="button" (click)="openCooperativeLoanHistory(row.loan)" title="View Member Loan History">
+                <i class="fas fa-history"></i>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <ng-template #emptyApprovalState>
-        <div class="empty-state">
-          <p>No cooperative loan applications found matching your filters.</p>
-        </div>
-      </ng-template>
+      <div class="empty-state" *ngIf="paginatedLoans.length === 0">
+        <i class="fas fa-inbox"></i>
+        <p>No cooperative loan applications found matching your filters.</p>
+      </div>
 
-      <div class="pagination-bar pagination-bar-right">
-        <button class="pagination-btn small" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+      <div class="pagination-bar">
+        <button class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
         <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button class="pagination-btn small" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+        <button class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </div>
   </div>
