@@ -152,7 +152,12 @@ export class MessageFeedComponent {
   }
 
   isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
-    return Boolean(attachment?.type?.toLowerCase().startsWith('image/'));
+    const type = (attachment?.type || '').toLowerCase();
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`;
+    return Boolean(
+      type.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(fileRef),
+    );
   }
 
   attachmentImageSrc(attachment: Message['attachment'] | undefined): string {
