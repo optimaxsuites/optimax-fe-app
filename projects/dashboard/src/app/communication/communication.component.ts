@@ -3576,7 +3576,10 @@ export class CommunicationComponent
         const mappedAttachments = attList.map((att) => ({
           name: att.fileName,
           size: att.fileSize ? formatFileSize(att.fileSize) : '',
-          type: this.normalizeAttachmentType(att.contentType, att.fileName),
+          type: this.normalizeAttachmentType(
+            att.contentType,
+            att.fileName || att.downloadUrl,
+          ),
           downloadUrl: att.downloadUrl,
           previewUrl: this.resolveAttachmentPreviewUrl(att),
         }));
