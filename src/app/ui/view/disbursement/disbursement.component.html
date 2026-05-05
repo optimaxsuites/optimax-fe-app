@@ -122,13 +122,13 @@
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 border-b border-gray-200">
-            <th class="px-8 py-6 text-left text-sm font-black text-gray-400 uppercase tracking-widest">Reference</th>
-            <th class="px-8 py-6 text-left text-sm font-black text-gray-400 uppercase tracking-widest">Source</th>
-            <th class="px-8 py-6 text-left text-sm font-black text-gray-400 uppercase tracking-widest">Description</th>
-            <th class="px-8 py-6 text-right text-sm font-black text-gray-400 uppercase tracking-widest">Amount</th>
-            <th class="px-8 py-6 text-center text-sm font-black text-gray-400 uppercase tracking-widest">Recipients</th>
-            <th class="px-8 py-6 text-left text-sm font-black text-gray-400 uppercase tracking-widest">Date</th>
-            <th class="px-8 py-6 text-center text-sm font-black text-gray-400 uppercase tracking-widest">Actions</th>
+            <th class="px-8 py-6 text-left text-sm font-black  text-white uppercase tracking-widest">Reference</th>
+            <th class="px-8 py-6 text-left text-sm font-black  text-white uppercase tracking-widest">Source</th>
+            <th class="px-8 py-6 text-left text-sm font-black  text-white uppercase tracking-widest">Description</th>
+            <th class="px-8 py-6 text-right text-sm font-black text-white  uppercase tracking-widest">Amount</th>
+            <th class="px-8 py-6 text-center text-sm font-black text-white  uppercase tracking-widest">Recipients</th>
+            <th class="px-8 py-6 text-left text-sm font-black text-white uppercase tracking-widest">Date</th>
+            <th class="px-8 py-6 text-center text-sm font-black text-white  uppercase tracking-widest">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -208,10 +208,10 @@
     <div class="flex-1 overflow-y-auto p-8 space-y-8">
       
       <!-- Amount Hero -->
-      <div class="rounded-3xl p-10 text-white relative overflow-hidden" [style.backgroundColor]="customBlue">
+      <div class="rounded-3xl p-10 text-white relative overflow-hidden" [style.backgroundColor]="customGreen">
         <div class="relative z-10">
           <p class="text-xs font-black uppercase tracking-wider opacity-60 mb-2">Total Amount</p>
-          <h3 class="text-6xl font-black tracking-tighter leading-none mb-6">₦{{ selectedTransaction.amount | number }}</h3>
+          <h3 class="text-6xl font-black tracking-tighter leading-none mb-6 text-white">₦{{ selectedTransaction.amount | number }}</h3>
           <div class="flex items-center gap-4 flex-wrap">
             <span class="px-4 py-1.5 rounded-xl bg-white/10 text-xs font-black uppercase tracking-wider">
               {{ getRecipientCount(selectedTransaction) }} Recipients
