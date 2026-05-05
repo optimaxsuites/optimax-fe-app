@@ -71,15 +71,29 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openNotification(item: HeaderNotificationItem): void {
     this.headerStateService.markNotificationRead(item.id);
+    const route =
+      item.route || `/admin/dashboard/communications/${this.currentUserId}`;
+    if (item.workspaceMode === 'chat') {
+      sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    }
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
       window.dispatchEvent(
         new CustomEvent('optimax-open-collab-target', { detail: item }),
       );
     }
-    if (item.route) {
-      this.router.navigateByUrl(item.route).catch(() => {});
-    }
+    this.router.navigateByUrl(route).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('optimax-open-collab-target', { detail: item }),
+        );
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 220);
+      }
+    }).catch(() => {});
   }
 
   get latestNotifications(): HeaderNotificationItem[] {
@@ -133,5 +147,42 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       this.headerStateService.setProfile(this.headerProfile);
     } catch (_) {}
+    if (!this.currentUserId) {
+      this.currentUserId = String(
+        sessionStorage.getItem('userid') ||
+          sessionStorage.getItem('userId') ||
+          '',
+      );
+    }
+  }
+
+  displayNotificationText(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value.trim() || fallback;
+    }
+    if (value == null) {
+      return fallback;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((entry) => this.displayNotificationText(entry, ''))
+        .filter(Boolean);
+      return parts.length ? parts.join(', ') : fallback;
+    }
+    if (typeof value === 'object') {
+      const candidate =
+        (value as any).title ||
+        (value as any).name ||
+        (value as any).label ||
+        (value as any).message ||
+        (value as any).content;
+      if (candidate != null) {
+        return this.displayNotificationText(candidate, fallback);
+      }
+    }
+    return fallback;
   }
 }

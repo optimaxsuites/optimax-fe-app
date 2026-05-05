@@ -452,13 +452,47 @@ export class CollaborationService {
     return 0;
   }
 
+  private normalizedToken(): string {
+    const candidates = [
+      sessionStorage.getItem('Token'),
+      sessionStorage.getItem('token'),
+      sessionStorage.getItem('accessToken'),
+      localStorage.getItem('Token2'),
+      localStorage.getItem('token'),
+    ];
+    for (const raw of candidates) {
+      const normalized = this.normalizeToken(raw);
+      if (normalized) {
+        return normalized;
+      }
+    }
+    return '';
+  }
+
+  private normalizeToken(raw: string | null): string {
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (trimmed.includes('=') && trimmed.includes(';')) {
+      const tokenStartIndex = trimmed.indexOf('=') + 1;
+      const tokenEndIndex = trimmed.indexOf(';', tokenStartIndex);
+      return trimmed
+        .substring(
+          tokenStartIndex,
+          tokenEndIndex > -1 ? tokenEndIndex : undefined,
+        )
+        .trim();
+    }
+    if (trimmed.toLowerCase().startsWith('bearer ')) {
+      return trimmed.slice(7).trim();
+    }
+    return trimmed;
+  }
+
   private get headers(): HttpHeaders {
-    const token = sessionStorage.getItem('token') || '';
+    const token = this.normalizedToken();
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const userId =
-      sessionStorage.getItem('userid') ||
-      sessionStorage.getItem('userId') ||
-      '';
+    const userId = String(this.currentUserId() || '');
     return new HttpHeaders({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -468,12 +502,9 @@ export class CollaborationService {
   }
 
   private get multipartHeaders(): HttpHeaders {
-    const token = sessionStorage.getItem('token') || '';
+    const token = this.normalizedToken();
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const userId =
-      sessionStorage.getItem('userid') ||
-      sessionStorage.getItem('userId') ||
-      '';
+    const userId = String(this.currentUserId() || '');
     return new HttpHeaders({
       Authorization: `Bearer ${token}`,
       'X-Tenant-ID': tenantId,
@@ -732,6 +763,16 @@ export class CollaborationService {
       `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/${attachmentId}`,
       { headers: this.headers },
     );
+  }
+
+  fetchChatAttachmentBlob(downloadUrl: string): Observable<Blob> {
+    const url = downloadUrl.startsWith('http')
+      ? downloadUrl
+      : `${this.baseUrl}${downloadUrl}`;
+    return this.http.get(url, {
+      headers: this.multipartHeaders,
+      responseType: 'blob',
+    });
   }
 
   // ── Reactions ─────────────────────────────────────────

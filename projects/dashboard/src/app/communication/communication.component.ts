@@ -748,7 +748,7 @@ export class CommunicationComponent
   }
 
   private handleNotificationTarget = (event: CustomEvent): void => {
-    this.openNotificationTarget(event.detail);
+    setTimeout(() => this.openNotificationTarget(event.detail), 80);
   };
 
   private openNotificationTarget(target: any): void {
@@ -1475,10 +1475,13 @@ export class CommunicationComponent
       const senderUserId = Number(payload.senderUserId ?? payload.userId ?? 0);
       const senderName =
         this.userDirectory[senderUserId] ||
-        payload.senderName ||
-        payload.authorName ||
+        this.notificationFieldText(payload.senderName, '') ||
+        this.notificationFieldText(payload.authorName, '') ||
         'New message';
-      const content = String(payload.content || payload.message || '')
+      const content = this.notificationFieldText(
+        payload.content ?? payload.message,
+        '',
+      )
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 120);
@@ -1487,13 +1490,47 @@ export class CommunicationComponent
         content,
         senderUserId,
         avatarUrl: this.userAvatarCache[senderUserId],
-        contextLabel: payload.channelName || payload.channelCode || payload.channelType || 'New message',
+        contextLabel:
+          this.notificationFieldText(
+            payload.channelName ?? payload.channelCode ?? payload.channelType,
+            '',
+          ) || 'New message',
         messageBackendId: Number(payload.id ?? payload.messageId ?? 0) || undefined,
         threadRootMessageBackendId: Number(payload.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
       return { senderName: 'New message', content: '', contextLabel: 'New message' };
     }
+  }
+
+  private notificationFieldText(value: unknown, fallback: string): string {
+    if (typeof value === 'string') {
+      return value.trim() || fallback;
+    }
+    if (value == null) {
+      return fallback;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((entry) => this.notificationFieldText(entry, ''))
+        .filter(Boolean);
+      return parts.length ? parts.join(', ') : fallback;
+    }
+    if (typeof value === 'object') {
+      const candidate =
+        (value as any).title ||
+        (value as any).name ||
+        (value as any).label ||
+        (value as any).message ||
+        (value as any).content;
+      if (candidate != null) {
+        return this.notificationFieldText(candidate, fallback);
+      }
+    }
+    return fallback;
   }
 
   private buildTrendingTags(posts: CollabFeedPost[]): string[] {
@@ -2144,19 +2181,6 @@ export class CommunicationComponent
             ch.unreadCount = (ch.unreadCount || 0) + 1;
             ch.hasUnread = true;
             this.playNotificationSound();
-            const payload = this.parseIncomingNotification(frame.body);
-            this.pushWorkspaceNotification({
-              title: payload.senderName || `#${ch.name}`,
-              body: payload.content || `New message in #${ch.name}`,
-              category: 'chat',
-              route: `/admin/dashboard/communications/${this.me.userId}`,
-              avatarUrl: payload.avatarUrl,
-              contextLabel: ch.name,
-              workspaceMode: 'chat',
-              channelBackendId: ch.backendId,
-              messageBackendId: payload.messageBackendId,
-              threadRootMessageBackendId: payload.threadRootMessageBackendId,
-            });
           }
           this.syncHeaderState();
           this.cdr.detectChanges();
@@ -2203,19 +2227,6 @@ export class CommunicationComponent
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
               this.playNotificationSound();
-              const payload = this.parseIncomingNotification(frame.body);
-              this.pushWorkspaceNotification({
-                title: payload.senderName || contact.fullName,
-                body: payload.content || 'Sent you a direct message.',
-                category: 'chat',
-                route: `/admin/dashboard/communications/${this.me.userId}`,
-                avatarUrl: payload.avatarUrl || contact.avatarUrl,
-                contextLabel: 'Direct message',
-                workspaceMode: 'chat',
-                dmUserId: contact.userId,
-                messageBackendId: payload.messageBackendId,
-                threadRootMessageBackendId: payload.threadRootMessageBackendId,
-              });
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -2816,7 +2827,10 @@ export class CommunicationComponent
       })
       .map((c) => {
         const backendId = Number(c.channelId ?? c.id);
-        const unreadCount = c.unreadCount ?? 0;
+        const isActiveChannel =
+          this.activeView === 'channel' &&
+          String(backendId) === String(this.activeChannelId);
+        const unreadCount = isActiveChannel ? 0 : Number(c.unreadCount ?? 0);
         return {
           id: String(backendId),
           backendId,
@@ -2824,7 +2838,7 @@ export class CommunicationComponent
           description: c.description,
           channelType: c.channelType,
           createdBy: c.createdBy,
-          hasUnread: unreadCount > 0,
+          hasUnread: !isActiveChannel && unreadCount > 0,
           unreadCount: unreadCount > 0 ? unreadCount : undefined,
         };
       });
@@ -3265,6 +3279,7 @@ export class CommunicationComponent
       this.presenceChannelId = ch.backendId;
       if (this.channelMessages[id] !== undefined) {
         this.scrollFeed = true;
+        this.scrollToLatestMessageSoon();
         this.subscribeToChannel(ch.backendId);
         this.collabService
           .setPresenceOnline(ch.backendId)
@@ -3294,6 +3309,7 @@ export class CommunicationComponent
     contact.unreadCount = undefined;
     this.syncHeaderState();
     this.messagesLoading = true;
+    this.scrollToLatestMessageSoon();
     this.cdr.detectChanges();
     this.getOrCreateDmChannel(contact);
   }
@@ -3651,7 +3667,7 @@ export class CommunicationComponent
     this.flashTimer = setTimeout(() => {
       this.flashId = null;
       this.cdr.detectChanges();
-    }, 5000);
+    }, 2000);
   }
 
   private findMsgByBackendId(messages: Message[], backendId: number): Message | null {
@@ -5209,6 +5225,14 @@ export class CommunicationComponent
     )[0];
   }
 
+  private scrollToLatestMessageSoon(): void {
+    this.scrollFeed = true;
+    setTimeout(() => {
+      this.scrollFeed = true;
+      this.cdr.detectChanges();
+    }, 120);
+  }
+
   get allThreaded(): { msg: Message; channelName: string }[] {
     const out: { msg: Message; channelName: string }[] = [];
     for (const ch of this.channels)
@@ -5621,26 +5645,9 @@ export class CommunicationComponent
   }
 
   private async fetchAttachmentBlobUrl(downloadUrl: string): Promise<string> {
-    const token = sessionStorage.getItem('token') || '';
-    const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const userId =
-      sessionStorage.getItem('userid') ||
-      sessionStorage.getItem('userId') ||
-      String(this.me.userId || '');
-    const url = downloadUrl.startsWith('http')
-      ? downloadUrl
-      : `${this.collabService.apiBaseUrl}${downloadUrl}`;
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': tenantId,
-        'X-User-ID': userId,
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`${response.status}`);
-    }
-    const blob = await response.blob();
+    const blob = await firstValueFrom(
+      this.collabService.fetchChatAttachmentBlob(downloadUrl),
+    );
     return URL.createObjectURL(blob);
   }
 

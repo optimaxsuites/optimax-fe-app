@@ -161,7 +161,9 @@ export class HeaderStateService {
         unreadMessages: Number(parsed?.unreadMessages || 0),
         unreadNotifications: Number(parsed?.unreadNotifications || 0),
         notifications: Array.isArray(parsed?.notifications)
-          ? parsed.notifications
+          ? parsed.notifications.map((entry: any) =>
+              this.sanitizeStoredNotification(entry),
+            )
           : [],
         profile: parsed?.profile || null,
       };
@@ -245,5 +247,36 @@ export class HeaderStateService {
       }
     }
     return fallback;
+  }
+
+  private sanitizeStoredNotification(
+    entry: Partial<HeaderNotificationItem> | null | undefined,
+  ): HeaderNotificationItem {
+    return {
+      id:
+        this.stringifyNotificationField(entry?.id, '').trim() ||
+        `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: this.stringifyNotificationField(entry?.title, 'New update'),
+      body: this.stringifyNotificationField(
+        entry?.body,
+        'A new module event is available.',
+      ),
+      category: (entry?.category as any) || 'module',
+      createdAt: Number(entry?.createdAt || Date.now()),
+      read: Boolean(entry?.read),
+      route: entry?.route,
+      avatarUrl: entry?.avatarUrl,
+      contextLabel: entry?.contextLabel
+        ? this.stringifyNotificationField(entry.contextLabel, '')
+        : entry?.contextLabel,
+      workspaceMode: entry?.workspaceMode,
+      channelBackendId: entry?.channelBackendId,
+      dmUserId: entry?.dmUserId,
+      messageBackendId: entry?.messageBackendId,
+      threadRootMessageBackendId: entry?.threadRootMessageBackendId,
+      taskRoutineId: entry?.taskRoutineId,
+      taskUpdateId: entry?.taskUpdateId,
+      taskReviewId: entry?.taskReviewId,
+    };
   }
 }
