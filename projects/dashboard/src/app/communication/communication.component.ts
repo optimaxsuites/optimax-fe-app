@@ -5625,6 +5625,16 @@ export class CommunicationComponent
   private syncAttachmentPreviewUrls(key: string, previewUrl: string): void {
     const sync = (messages: Message[]) => {
       for (const message of messages) {
+        if (message.attachments?.length) {
+          for (const attachment of message.attachments) {
+            const attachmentKey =
+              attachment.downloadUrl ||
+              `${message.backendId || message.id}-${attachment.name}`;
+            if (attachmentKey === key) {
+              attachment.previewUrl = previewUrl;
+            }
+          }
+        }
         if (message.attachment) {
           const attachmentKey =
             message.attachment.downloadUrl ||
