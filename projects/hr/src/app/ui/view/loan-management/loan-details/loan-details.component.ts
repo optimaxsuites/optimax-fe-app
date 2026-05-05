@@ -1,5 +1,5 @@
 // loan-details.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
@@ -49,7 +49,8 @@ const LOAN_LIFECYCLE_STAGES: LoanLifecycleStage[] = [
 @Component({
   selector: 'app-loan-details',
   templateUrl: './loan-details.component.html',
-  styleUrls: ['./loan-details.component.scss']
+  styleUrls: ['./loan-details.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class LoanDetailsComponent implements OnInit {
   loanId: string = '';
@@ -229,6 +230,7 @@ export class LoanDetailsComponent implements OnInit {
     return resolveLoanActorName(actor);
   }
 
+
   getStatusColor(status: string): string {
     const statusOption = this.statusOptions.find(option => option.value === status);
     return statusOption ? statusOption.color : '#6c757d';
@@ -244,6 +246,11 @@ export class LoanDetailsComponent implements OnInit {
       .replace(/-/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, c => c.toUpperCase()) || 'Unknown';
+  }
+
+  getStatusClass(status: string | undefined | null): string {
+    const normalized = String(status || '').trim().toLowerCase().replace(/-/g, '_');
+    return normalized ? `status-${normalized}` : 'status-pending';
   }
 
   formatDate(date: string): string {
@@ -283,6 +290,19 @@ export class LoanDetailsComponent implements OnInit {
       day: 'numeric'
     });
   }
+
+  formatAdvanceLoanDisplayId(loan: LoanApplication | null): string {
+  if (!loan) return '';
+  const rawCode = String(loan.loanCode || loan.id || '').trim();
+  if (!rawCode) return '';
+  return /^ADV-/i.test(rawCode) ? rawCode : `ADV-${rawCode}`;
+}
+
+formatDepartmentDisplay(department?: unknown): string {
+  if (!department) return 'N/A';
+  const deptStr = String(department);
+  return deptStr.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
   // Get displayed repayment start date from loan
   getDisplayedRepaymentStartDate(loan: LoanApplication | null): string {

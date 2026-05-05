@@ -119,23 +119,26 @@ export class CooperativeMembershipService {
         .map((value) => String(value))
     );
 
-    const recordIds = [record.id, record.memberId, record.employeeId]
-      .map((value) => String(value ?? '').trim())
-      .filter(Boolean);
-
-    if (recordIds.some((value) => candidateIds.has(value))) {
+    const recordEmployeeId = String(record.employeeId ?? '').trim();
+    if (recordEmployeeId && candidateIds.has(recordEmployeeId)) {
       return true;
     }
 
     const recordEmail = this.normalizeLookupValue(record.email);
     const profileEmail = this.normalizeLookupValue(profile.email);
-    if (recordEmail && profileEmail && recordEmail === profileEmail) {
+    if (
+      recordEmail
+      && profileEmail
+      && recordEmail !== 'string'
+      && profileEmail !== 'string'
+      && recordEmail === profileEmail
+    ) {
       return true;
     }
 
     const recordName = this.normalizeLookupValue(record.fullName);
     const profileName = this.normalizeLookupValue(profile.fullName);
-    return Boolean(recordName && profileName && recordName === profileName && candidateIds.size > 0);
+    return Boolean(recordName && profileName && recordName === profileName && candidateIds.size > 0 && !profileEmail);
   }
 
   private buildExistingMemberSnapshot(rawMember: any, resolvedEmployeeId: number, fallbackProfile: Pick<CooperativeEmployeeProfile, 'fullName' | 'email'>): CooperativeMember {

@@ -282,7 +282,7 @@ export class LoanReportsComponent implements OnInit {
 }
 
   formatLateFeeAmount(amount: number): string {
-    if (!amount || amount === 0) return '—';
+    if (!amount || amount === 0) return this.formatCurrency(0);
     return this.formatCurrency(amount);
   }
 

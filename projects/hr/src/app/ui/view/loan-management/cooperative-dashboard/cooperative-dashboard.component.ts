@@ -20,6 +20,7 @@ import {
 import { EmployeeService } from '../../../service/employee.service';
 import { EmployeeLoanService } from '../../../service/loan/emoloyee-loan.service';
 import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
+import { getSessionUserDisplayName } from '../../../shared-component/service/session-user-display.util';
 import { formatLoanPurposeDisplay, formatCooperativeLoanCode as _formatCooperativeLoanCode } from '../../../service/loan/loan-display.util';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
 import { PaymentHistory, StatusHistory } from '../../../domain/loan/cooperative-loan.dto';
@@ -324,11 +325,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   };
 
   get adminDisplayName(): string {
-    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
-    const username = String(sessionStorage.getItem('username') || '').trim();
-    const fallbackName = fullName || username || 'Admin';
-
-    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    return getSessionUserDisplayName('Admin');
   }
 
   constructor(
@@ -1093,13 +1090,23 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   openPurposeManagement(): void {
-    this.router.navigate(['/admin/hr/cooperative/loan-purposes', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/loan-purposes`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }
 
   openGracePeriodRequests(): void {
-    this.router.navigate(['/admin/hr/cooperative/grace-period-requests', this.currentUuid], {
+    const routeBase = this.router.url.includes('/admin/hr/')
+      ? '/admin/hr/cooperative'
+      : '/cooperative';
+    const targetUuid = this.currentUuid || uuidV4();
+
+    this.router.navigate([`${routeBase}/grace-period-requests`, targetUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
   }

@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
@@ -68,6 +69,14 @@ export class LoanDisbursementUiComponent implements OnInit {
   // Loading states
   isLoadingEmployeeDetails = false;
   isSubmittingDisbursement = false;
+  isSendToAccountingModalVisible = false;
+  private loanDetailsCache: Map<number, LoanApplication> = new Map();
+  private employeeDetailsCache: Map<number, any> = new Map();
+
+  // Batch selection state
+  batchSelectedLoanIds: Set<number> = new Set();
+  batchViewIndex: number = 0;
+  batchEmployeeDetailsMap: Map<number, any> = new Map();
 
   constructor(
     private route: ActivatedRoute,
@@ -105,6 +114,10 @@ export class LoanDisbursementUiComponent implements OnInit {
           .filter(loan => loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT')
           .sort((a, b) => new Date(b.approvedDate || b.requestDate).getTime() - new Date(a.approvedDate || a.requestDate).getTime());
 
+        queuedLoans.forEach((loan) => {
+          this.loanDetailsCache.set(loan.id, loan);
+        });
+
         this.approvedLoans = queuedLoans.filter(loan => loan.status === 'APPROVED');
         this.readyForDisbursementLoans = queuedLoans.filter(loan => loan.status === 'READY_FOR_DISBURSEMENT');
         this.approvedPage = this.clampPage(this.approvedPage, this.getApprovedTotalPages());
@@ -119,37 +132,163 @@ export class LoanDisbursementUiComponent implements OnInit {
     });
   }
 
-  selectLoan(loan: LoanApplication): void {
-    // Always fetch the latest loan data by id from backend
+  selectLoan(loan: LoanApplication, skipServerRefresh = false): void {
+    const localLoan = this.loanDetailsCache.get(loan.id) || loan;
+
+    // Render immediately from local/cache for responsive UI.
+    this.applySelectedLoan(localLoan);
+    this.loadEmployeeDetails(localLoan.employeeId);
+
+    if (skipServerRefresh) {
+      return;
+    }
+
+    // Refresh latest details in the background.
     this.loanApplicationService.getApplicationById(String(loan.id)).subscribe({
       next: (freshLoan) => {
-        if (freshLoan) {
-          this.selectedDisbursementLoan = freshLoan;
-          this.selectedEmployeeDetails = null;
-          this.populateDisbursementTrackingFromLoan(freshLoan);
-          // Reset disbursement form
-          this.disbursementAmount = freshLoan.amount;
-          this.paymentMethod = 'BANK_TRANSFER';
-          this.disbursementReference = '';
-          this.emailNotes = '';
-          this.emailNotesError = false;
-          // Load employee details including bank info
-          this.loadEmployeeDetails(freshLoan.employeeId);
+        if (!freshLoan) {
+          return;
         }
+
+        this.loanDetailsCache.set(freshLoan.id, freshLoan);
+
+        // Only update panel if the same loan is still selected.
+        if (this.selectedDisbursementLoan?.id !== loan.id) {
+          return;
+        }
+
+        this.applySelectedLoan(freshLoan);
+        this.loadEmployeeDetails(freshLoan.employeeId);
       },
       error: () => {
-        // fallback to local loan if backend fails
-        this.selectedDisbursementLoan = loan;
-        this.selectedEmployeeDetails = null;
-        this.populateDisbursementTrackingFromLoan(loan);
-        this.disbursementAmount = loan.amount;
-        this.paymentMethod = 'BANK_TRANSFER';
-        this.disbursementReference = '';
-        this.emailNotes = '';
-        this.emailNotesError = false;
-        this.loadEmployeeDetails(loan.employeeId);
+        // Keep already-rendered local details on error.
       }
     });
+  }
+
+  toggleLoanSelection(loan: LoanApplication): void {
+    if (this.selectedDisbursementLoan?.id === loan.id) {
+      this.clearSelectedLoan();
+      return;
+    }
+    this.selectLoan(loan);
+  }
+
+  private applySelectedLoan(loan: LoanApplication): void {
+    this.selectedDisbursementLoan = loan;
+    this.selectedEmployeeDetails = null;
+    this.populateDisbursementTrackingFromLoan(loan);
+
+    // Reset disbursement form when active loan changes.
+    this.disbursementAmount = loan.amount;
+    this.paymentMethod = 'BANK_TRANSFER';
+    this.disbursementReference = '';
+    this.emailNotes = '';
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = false;
+  }
+
+  private clearSelectedLoan(): void {
+    this.selectedDisbursementLoan = null;
+    this.selectedEmployeeDetails = null;
+    this.disbursementInstructionReference = '';
+    this.disbursementInitiatedAt = '';
+    this.disbursementInitiatedBy = '';
+    this.disbursementAmount = 0;
+    this.disbursementReference = '';
+    this.emailNotes = '';
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = false;
+  }
+
+  // Batch selection getters
+  get batchSelectedLoans(): LoanApplication[] {
+    return this.approvedLoans.filter(loan => this.batchSelectedLoanIds.has(loan.id));
+  }
+
+  get isBatchMode(): boolean {
+    return this.batchSelectedLoanIds.size >= 2;
+  }
+
+  getBatchTotalAmount(): number {
+    return this.batchSelectedLoans.reduce((sum, loan) => sum + this.getApprovedAmount(loan), 0);
+  }
+
+  isBatchSelected(loan: LoanApplication): boolean {
+    return this.batchSelectedLoanIds.has(loan.id);
+  }
+
+  toggleBatchSelect(loan: LoanApplication): void {
+    if (this.batchSelectedLoanIds.has(loan.id)) {
+      this.batchSelectedLoanIds.delete(loan.id);
+      this.batchEmployeeDetailsMap.delete(loan.id);
+    } else {
+      this.batchSelectedLoanIds.add(loan.id);
+      if (!this.batchEmployeeDetailsMap.has(loan.id)) {
+        this.employeeLoanService.getEmployeeById(loan.employeeId).subscribe({
+          next: (emp) => this.batchEmployeeDetailsMap.set(loan.id, emp),
+          error: () => this.batchEmployeeDetailsMap.set(loan.id, null)
+        });
+      }
+    }
+    const newSize = this.batchSelectedLoanIds.size;
+    this.batchViewIndex = newSize > 0 ? Math.min(this.batchViewIndex, newSize - 1) : 0;
+
+    // Keep details panel in sync with whichever loan checkbox was interacted with.
+    this.selectLoan(loan, true);
+  }
+
+  selectAllApprovedLoans(): void {
+    this.getFilteredApprovedLoans().forEach(loan => {
+      if (!this.batchSelectedLoanIds.has(loan.id)) {
+        this.batchSelectedLoanIds.add(loan.id);
+        if (!this.batchEmployeeDetailsMap.has(loan.id)) {
+          this.employeeLoanService.getEmployeeById(loan.employeeId).subscribe({
+            next: (emp) => this.batchEmployeeDetailsMap.set(loan.id, emp),
+            error: () => this.batchEmployeeDetailsMap.set(loan.id, null)
+          });
+        }
+      }
+    });
+  }
+
+  clearBatchSelection(): void {
+    this.batchSelectedLoanIds.clear();
+    this.batchEmployeeDetailsMap.clear();
+    this.batchViewIndex = 0;
+  }
+
+  navigateBatch(direction: 1 | -1): void {
+    const total = this.batchSelectedLoans.length;
+    if (total < 2) return;
+    this.batchViewIndex = (this.batchViewIndex + direction + total) % total;
+    const loan = this.batchSelectedLoans[this.batchViewIndex];
+    if (loan) {
+      this.selectedDisbursementLoan = loan;
+      this.selectedEmployeeDetails = this.batchEmployeeDetailsMap.get(loan.id) ?? null;
+      this.populateDisbursementTrackingFromLoan(loan);
+    }
+  }
+
+  openSendToAccountingModal(): void {
+    if (this.isBatchMode) {
+      const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
+      if (!allApproved) return;
+      this.emailNotesError = false;
+      this.isSendToAccountingModalVisible = true;
+      return;
+    }
+
+    if (!this.selectedDisbursementLoan || this.selectedDisbursementLoan.status !== 'APPROVED') {
+      return;
+    }
+
+    if (!this.disbursementInstructionReference) {
+      this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
+    }
+
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = true;
   }
   
   generateDisbursementReference(): void {
@@ -159,9 +298,16 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
   
   loadEmployeeDetails(employeeId: number): void {
+    if (this.employeeDetailsCache.has(employeeId)) {
+      this.selectedEmployeeDetails = this.employeeDetailsCache.get(employeeId);
+      this.isLoadingEmployeeDetails = false;
+      return;
+    }
+
     this.isLoadingEmployeeDetails = true;
     this.employeeLoanService.getEmployeeById(employeeId).subscribe({
       next: (employee) => {
+        this.employeeDetailsCache.set(employeeId, employee);
         this.selectedEmployeeDetails = employee;
         console.log('Employee details:', employee);
         this.isLoadingEmployeeDetails = false;
@@ -174,8 +320,17 @@ export class LoanDisbursementUiComponent implements OnInit {
   }
 
   sendToAccounting(): void {
-    if (!this.selectedDisbursementLoan || !this.emailNotes?.trim() || this.isSubmittingDisbursement) {
+    if (!this.emailNotes?.trim() || this.isSubmittingDisbursement) {
       this.emailNotesError = !this.emailNotes?.trim();
+      return;
+    }
+
+    if (this.isBatchMode) {
+      this.sendBatchToAccounting();
+      return;
+    }
+
+    if (!this.selectedDisbursementLoan) {
       return;
     }
 
@@ -227,6 +382,7 @@ export class LoanDisbursementUiComponent implements OnInit {
             approvedDate: this.selectedDisbursementLoan!.approvedDate,
             approvedBy: this.getApprovedByName(),
             bankName: this.selectedEmployeeDetails?.bankName,
+            accountNumber: this.selectedEmployeeDetails?.accountNumber || '',
             accountName: `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || this.selectedDisbursementLoan!.fullName,
             paymentMethod: this.paymentMethod,
             initiatedBy: this.disbursementInitiatedBy,
@@ -263,6 +419,141 @@ export class LoanDisbursementUiComponent implements OnInit {
           detail: 'Failed to record disbursement in the system.'
         }];
         this.isSubmittingDisbursement = false;
+      }
+    });
+  }
+
+  private sendBatchToAccounting(): void {
+    const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
+    if (!loans.length) return;
+
+    const initiatedAt = new Date().toISOString();
+    const initiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+    this.emailNotesError = false;
+    this.isSubmittingDisbursement = true;
+
+    const loanRefs = loans.map(loan => ({
+      loan,
+      reference: this.generateUniqueDisbursementReference(loan),
+      employeeDetails: this.batchEmployeeDetailsMap.get(loan.id) || null
+    }));
+
+    // Step 1: Create disbursement confirmation records concurrently
+    const confirmationRequests = loanRefs.map(({ loan, reference }) =>
+      this.disbursementConfirmationService.createConfirmation({
+        loanId: loan.id,
+        disbursedAmount: this.getApprovedAmount(loan),
+        disbursementInstructionReference: reference,
+        disbursementReference: `PENDING-${reference}`,
+        paymentMethod: this.paymentMethod,
+        notes: this.emailNotes
+      })
+    );
+
+    forkJoin(confirmationRequests).subscribe({
+      next: () => {
+        // Step 2: Build array payload and POST to accounting
+        const batchPayload = loanRefs.map(({ loan, reference, employeeDetails }) => {
+          const approvedAmount = this.getApprovedAmount(loan);
+          const totalRepayable = resolveLoanTotalRepayableAmount(loan);
+          const approvedByRaw = loan.approvedBy as any;
+          const approvedByName = approvedByRaw && typeof approvedByRaw === 'object'
+            ? String(approvedByRaw.fullname || approvedByRaw.username || 'Unknown')
+            : String(approvedByRaw || 'Unknown');
+          return {
+            id: 0,
+            sourceModule: 'HR',
+            eventType: 'LOAN_DISBURSEMENT',
+            amount: totalRepayable,
+            currency: 'NGN',
+            reference,
+            description: this.emailNotes,
+            transactionDate: initiatedAt,
+            metadata: {
+              loanId: loan.id,
+              loanCode: this.getFormattedLoanCode(loan),
+              employeeName: loan.fullName,
+              employeeId: loan.employeeId,
+              employeeEmail: employeeDetails?.email || employeeDetails?.workEmail || '',
+              department: loan.department,
+              approvedAmount,
+              interest: loan.interestRate,
+              repaymentPeriod: loan.repaymentTime,
+              modeOfPayment: loan.modeOfPayment,
+              purpose: loan.purpose,
+              approvedDate: loan.approvedDate,
+              approvedBy: approvedByName,
+              bankName: employeeDetails?.bankName,
+              accountNumber: employeeDetails?.accountNumber || '',
+              accountName: `${employeeDetails?.firstName || ''} ${employeeDetails?.lastName || ''}`.trim() || loan.fullName,
+              paymentMethod: this.paymentMethod,
+              initiatedBy,
+              initiatedAt,
+              notes: this.emailNotes
+            }
+          };
+        });
+
+        const apiBaseUrl = environment.apiBaseUrl || '';
+        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+        this.http.post(url, batchPayload, { headers }).subscribe({
+          next: () => {
+            // Step 3: Update each loan status individually
+            const statusUpdates = loanRefs.map(({ loan, reference }) => {
+              const notes = this.emailNotes?.trim()
+                ? `Sent to accounting for disbursement. Reference: ${reference}. Notes: ${this.emailNotes.trim()}`
+                : `Sent to accounting for disbursement. Reference: ${reference}.`;
+              return this.loanApprovalService.updateApplicationStatus(loan.id, {
+                status: 'READY_FOR_DISBURSEMENT',
+                changedAt: initiatedAt,
+                disbursementInitiatedAt: initiatedAt,
+                disbursementInitiatedBy: this.getCurrentUserId(),
+                disbursementInstructionReference: reference,
+                notes
+              });
+            });
+
+            forkJoin(statusUpdates).subscribe({
+              next: (updatedLoans) => {
+                updatedLoans.forEach(updated => this.replaceQueueLoan(updated));
+                this.isSendToAccountingModalVisible = false;
+                this.clearBatchSelection();
+                this.isSubmittingDisbursement = false;
+                this.messages = [{
+                  severity: 'success',
+                  summary: 'Batch Sent',
+                  detail: `${loans.length} disbursement request(s) sent to accounting successfully.`
+                }];
+              },
+              error: () => {
+                this.isSubmittingDisbursement = false;
+                this.messages = [{
+                  severity: 'error',
+                  summary: 'Status Update Failed',
+                  detail: 'Accounting events were posted, but some loan statuses could not be updated.'
+                }];
+              }
+            });
+          },
+          error: (error: any) => {
+            this.isSubmittingDisbursement = false;
+            this.messages = [{
+              severity: 'error',
+              summary: 'Batch Post Failed',
+              detail: `Failed to send batch to accounting: ${error.message || 'Unknown error'}`
+            }];
+          }
+        });
+      },
+      error: () => {
+        this.isSubmittingDisbursement = false;
+        this.messages = [{
+          severity: 'error',
+          summary: 'Confirmation Failed',
+          detail: 'Failed to create disbursement confirmation records for one or more loans.'
+        }];
       }
     });
   }
@@ -325,6 +616,7 @@ export class LoanDisbursementUiComponent implements OnInit {
         });
 
         this.replaceQueueLoan(updatedLoan);
+        this.isSendToAccountingModalVisible = false;
         this.messages = [{
           severity: 'success',
           summary: 'Request Sent',
@@ -382,10 +674,11 @@ export class LoanDisbursementUiComponent implements OnInit {
             (this.selectedDisbursementLoan as any).disbursementInstructionReference = this.disbursementInstructionReference;
             
             this.replaceQueueLoan(updatedLoan);
+            this.selectedDisbursementLoan = null;
             this.messages = [{
               severity: 'success',
               summary: 'Loan Activated',
-              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been set to ACTIVE. Repayment schedule is now available.`
+              detail: `Loan ${this.getFormattedLoanCode(updatedLoan)} has been set to ACTIVE.`
             }];
             this.isSubmittingDisbursement = false;
             this.loadApprovedLoans();
@@ -411,8 +704,8 @@ export class LoanDisbursementUiComponent implements OnInit {
           repaymentDay: this.selectedDisbursementLoan?.repaymentDay
         } as any).subscribe({
           next: (updatedLoan) => {
-            this.selectedDisbursementLoan = updatedLoan;
             this.replaceQueueLoan(updatedLoan);
+            this.selectedDisbursementLoan = null;
             this.messages = [{
               severity: 'success',
               summary: 'Loan Disbursed',
@@ -625,6 +918,15 @@ export class LoanDisbursementUiComponent implements OnInit {
     return loan.status === 'READY_FOR_DISBURSEMENT' ? 'status-ready_for_disbursement' : 'status-approved';
   }
 
+  getRepaymentScheduleLength(loan: LoanApplication | null): number {
+    if (!loan) {
+      return 0;
+    }
+
+    const schedule = (loan as any).repaymentSchedule;
+    return Array.isArray(schedule) ? schedule.length : 0;
+  }
+
   getReadyForDisbursementDate(loan: LoanApplication): string | null {
     const readyEntries = (loan.statusHistory || [])
       .filter((entry) => entry.status === 'READY_FOR_DISBURSEMENT' && !!entry.changedAt);
@@ -645,7 +947,16 @@ export class LoanDisbursementUiComponent implements OnInit {
       }
     }
 
-    return changedAt || loan.approvedDate || loan.requestDate || null;
+    if (changedAt) {
+      return changedAt;
+    }
+
+    // Only return a fallback date when the loan is actually in READY_FOR_DISBURSEMENT.
+    if (loan.status === 'READY_FOR_DISBURSEMENT') {
+      return loan.approvedDate || loan.requestDate || null;
+    }
+
+    return null;
   }
 
   private getCurrentUserId(): number {

@@ -377,7 +377,7 @@ app-loan-reports {
       min-width: 1100px;
 
       th, td {
-        padding: 12px 8px;
+        padding: 8px 6px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
         vertical-align: middle;
@@ -435,14 +435,14 @@ app-loan-reports {
 
       // Column styles
       .sn-cell {
-        width: 45px;
+        width: 36px;
         text-align: center;
         font-weight: 600;
         color: #8aadba;
       }
 
       .loan-id-cell {
-        min-width: 85px;
+        width: 76px;
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
@@ -451,19 +451,18 @@ app-loan-reports {
       }
 
       .employee-name-cell {
-        min-width: 100px;
+        width: 88px;
+        max-width: 88px;
         font-weight: 600;
         color: #1a4b5c;
         text-align: left;
-        line-height: 1.4;
-        // This allows the name to wrap - "Eseose" on one line, "Odion" on the next
-        white-space: normal;
-        word-break: break-word;
-        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .employee-id-cell {
-        min-width: 75px;
+        width: 65px;
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
@@ -472,26 +471,26 @@ app-loan-reports {
       }
 
       .department-cell {
-        min-width: 90px;
+        width: 78px;
+        max-width: 78px;
         text-align: left;
-        white-space: normal;
-        word-break: break-word;
-        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .purpose-code-cell {
-        min-width: 65px;
+        width: 55px;
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
         font-size: 0.7rem;
         text-align: center;
-        // REMOVED styling - no background, no border-radius, no padding
       }
 
       .purpose-cell {
-        min-width: 100px;
-        max-width: 130px;
+        width: 82px;
+        max-width: 82px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -499,7 +498,7 @@ app-loan-reports {
       }
 
       .latefee-policy-cell {
-        min-width: 80px;
+        width: 75px;
         font-size: 0.7rem;
         color: #64748b;
         white-space: nowrap;
@@ -507,7 +506,7 @@ app-loan-reports {
       }
 
       .amount-cell {
-        min-width: 75px;
+        width: 72px;
         font-weight: 600;
         color: #2EB270;
         font-size: 0.75rem;
@@ -515,23 +514,23 @@ app-loan-reports {
       }
 
       .interest-cell {
-        min-width: 50px;
+        width: 42px;
         font-weight: 600;
         text-align: right;
       }
 
       .interest-amount-cell {
-        min-width: 75px;
+        width: 70px;
         text-align: right;
       }
 
       .repayable-cell {
-        min-width: 80px;
+        width: 72px;
         text-align: right;
       }
 
       .latefee-amount-cell {
-        min-width: 75px;
+        width: 70px;
         font-weight: 600;
         color: #ef4444;
         text-align: right;
@@ -539,7 +538,7 @@ app-loan-reports {
       }
 
       .paid-cell {
-        min-width: 75px;
+        width: 70px;
         font-weight: 600;
         color: #f59e0b;
         text-align: right;
@@ -547,7 +546,7 @@ app-loan-reports {
       }
 
       .balance-cell {
-        min-width: 75px;
+        width: 70px;
         font-weight: 600;
         color: #8b5cf6;
         text-align: right;
@@ -555,19 +554,19 @@ app-loan-reports {
       }
 
       .status-cell {
-        min-width: 85px;
+        width: 80px;
         text-align: center;
       }
 
       .date-cell {
-        min-width: 80px;
+        width: 72px;
         font-size: 0.7rem;
         white-space: nowrap;
         text-align: left;
       }
 
       .actions-col {
-        width: 40px;
+        width: 36px;
         text-align: center;
         white-space: nowrap;
 
@@ -597,6 +596,33 @@ app-loan-reports {
             }
           }
         }
+      }
+
+      .sn-col, .sn-cell,
+      .purpose-code-col, .purpose-code-cell,
+      .status-col, .status-cell,
+      .actions-col {
+        text-align: center;
+      }
+
+      .loan-id-col, .loan-id-cell,
+      .employee-name-col, .employee-name-cell,
+      .employee-id-col, .employee-id-cell,
+      .department-col, .department-cell,
+      .purpose-col, .purpose-cell,
+      .latefee-policy-col, .latefee-policy-cell,
+      .date-col, .date-cell {
+        text-align: left;
+      }
+
+      .amount-col, .amount-cell,
+      .interest-col, .interest-cell,
+      .interest-amount-col, .interest-amount-cell,
+      .repayable-col, .repayable-cell,
+      .latefee-amount-col, .latefee-amount-cell,
+      .paid-col, .paid-cell,
+      .balance-col, .balance-cell {
+        text-align: right;
       }
 
       .status-badge {

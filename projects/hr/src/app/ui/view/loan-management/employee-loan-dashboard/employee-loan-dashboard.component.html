@@ -34,7 +34,7 @@
       [employeeId]="employeeId"
       [employeeName]="employeeName"
       [department]="employeeDepartment"
-      (loanSubmitted)="onLoanSubmitted()"
+      (loanSubmitted)="onLoanSubmitted($event)"
       (formCancelled)="closeLoanFormModal()">
     </app-loan-request-form>
   </app-modal>
@@ -65,15 +65,15 @@
     <div class="hero-section">
       <div class="hero-content">
         <div class="hero-text">
-          <h1>Welcome back, <span class="employee-name">{{ employeeName }}</span>!</h1>
+          <h1>Welcome back, <span class="employee-name">{{ displayEmployeeName }}</span>!</h1>
           <p class="hero-subtitle">Your financial journey at a glance. Track loans, make payments, and stay on top of your finances.</p>
           <div class="employee-chip">
             <i class="fas fa-id-card"></i>
-            <span>Employee ID: {{ employeeId }}</span>
+            <span>Employee ID: {{ displayEmployeeId }}</span>
           </div>
         </div>
         <div class="hero-avatar">
-          {{ getInitials(employeeName) }}
+          {{ getInitials(displayEmployeeName) }}
         </div>
       </div>
     </div>

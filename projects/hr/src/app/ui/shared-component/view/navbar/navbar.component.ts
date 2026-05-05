@@ -33,7 +33,8 @@ export class NavbarComponent implements OnDestroy {
             "Session Expired.",
             "Your current session has expired. Re-login."
         );
-        this.router.navigate([""]);
+        // Navigation removed: app uses async auto-login, session may not be
+        // populated yet when navbar renders — navigating here causes a redirect loop.
       return;
     }
 

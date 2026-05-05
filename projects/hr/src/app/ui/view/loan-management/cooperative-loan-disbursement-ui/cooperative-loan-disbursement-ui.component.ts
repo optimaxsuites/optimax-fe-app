@@ -29,6 +29,11 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   isMembersLoading = true;
   isGroupsLoading = true;
 
+  batchSelectedLoanIds: Set<number> = new Set();
+  batchViewIndex: number = 0;
+  batchEmployeeDetailsMap: Map<number, any> = new Map();
+  isSendToAccountingModalVisible = false;
+
   // Helper to format membership ID (matches dashboard logic)
   // Helper to format membership ID as [group code letters]-[member id]-[membership id]
   public getFormattedMembershipId(loan: CooperativeLoan): string {
@@ -358,6 +363,27 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
   this.loadEmployeeDetails(loan);
 }
+
+  toggleLoanSelection(loan: CooperativeLoan): void {
+    if (this.selectedDisbursementLoan?.id === loan.id) {
+      this.clearSelectedLoan();
+      return;
+    }
+    this.selectLoan(loan);
+  }
+
+  private clearSelectedLoan(): void {
+    this.selectedLoanId = '';
+    this.selectedDisbursementLoan = null;
+    this.selectedEmployeeDetails = null;
+    this.disbursementInstructionReference = '';
+    this.disbursementInitiatedAt = '';
+    this.disbursementInitiatedBy = '';
+    this.disbursementAmount = 0;
+    this.emailNotes = '';
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = false;
+  }
 
   loadEmployeeDetails(loan: CooperativeLoan): void {
     const member = this.getMemberForLoan(loan);
@@ -711,33 +737,10 @@ sendToAccounting(): void {
       next: (updated: CooperativeLoan | undefined) => {
         this.isSubmitting = false;
         if (updated) {
-          loan.status = 'ACTIVE';
-          // Ensure disbursedDate is set
-          if (!loan.disbursedDate) {
-            loan.disbursedDate = new Date().toISOString();
-          }
-          // Force repayment schedule generation (remove any old repayments for this loan)
-          if (this.cooperativeService['cooperativeRepaymentService'] && typeof this.cooperativeService['cooperativeRepaymentService'].generateRepaymentSchedule === 'function') {
-            const context = {
-              loans: this.cooperativeService['loans'],
-              repayments: this.cooperativeService['repayments'],
-              notifications: this.cooperativeService['notifications'],
-              repaymentDueDay: this.cooperativeService['repaymentDueDay'],
-              repaymentGraceDays: this.cooperativeService['repaymentGraceDays'],
-              repaymentOverdueDays: this.cooperativeService['repaymentOverdueDays'],
-              lateFeeRate: this.cooperativeService['lateFeeRate'],
-              creditReportDays: this.cooperativeService['creditReportDays'],
-              saveToStorage: () => {},
-              formatCurrency: (a: number) => a.toLocaleString(),
-              createMemberStatusNotification: () => {},
-              createRepaymentReminderNotification: () => {},
-              createCreditReportNotification: () => {}
-            };
-            // Remove any existing repayments for this loan
-            context.repayments = context.repayments.filter(r => String(r.loanId) !== String(loan.id));
-            this.cooperativeService['cooperativeRepaymentService'].generateRepaymentSchedule(context, loan);
-          }
-          this.showMessage('success', 'Loan Activated', 'Loan status set to ACTIVE. Repayment schedule is now available.');
+          // Remove the activated loan from the queue immediately
+          this.loans = this.loans.filter(l => l.id !== loan.id);
+          this.selectedLoanId = '';
+          this.showMessage('success', 'Loan Activated', `Loan has been set to ACTIVE.`);
           this.loadAllData();
         } else {
           this.showMessage('warn', 'Activation Failed', 'Loan could not be set to ACTIVE.');
@@ -749,4 +752,65 @@ sendToAccounting(): void {
       }
     });
   }
+
+  get batchSelectedLoans(): CooperativeLoan[] {
+  return this.approvedLoans.filter(loan => this.batchSelectedLoanIds.has(loan.id));
+}
+
+get isBatchMode(): boolean {
+  return this.batchSelectedLoanIds.size >= 2;
+}
+
+getBatchTotalAmount(): number {
+  return this.batchSelectedLoans.reduce((sum, loan) => sum + Number(loan.amount || 0), 0);
+}
+
+isBatchSelected(loan: CooperativeLoan): boolean {
+  return this.batchSelectedLoanIds.has(loan.id);
+}
+
+toggleBatchSelect(loan: CooperativeLoan): void {
+  if (this.batchSelectedLoanIds.has(loan.id)) {
+    this.batchSelectedLoanIds.delete(loan.id);
+  } else {
+    this.batchSelectedLoanIds.add(loan.id);
+  }
+}
+
+selectAllApprovedLoans(): void {
+  this.getFilteredApprovedLoans().forEach(loan => {
+    this.batchSelectedLoanIds.add(loan.id);
+  });
+}
+
+clearBatchSelection(): void {
+  this.batchSelectedLoanIds.clear();
+  this.batchViewIndex = 0;
+}
+
+navigateBatch(direction: 1 | -1): void {
+  const total = this.batchSelectedLoans.length;
+  if (total < 2) return;
+  this.batchViewIndex = (this.batchViewIndex + direction + total) % total;
+  const loan = this.batchSelectedLoans[this.batchViewIndex];
+  if (loan) {
+    this.selectLoan(loan);
+  }
+}
+
+openSendToAccountingModal(): void {
+  if (this.isBatchMode) {
+    const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
+    if (!allApproved) return;
+  }
+  if (!this.selectedDisbursementLoan) return;
+  
+  if (!this.disbursementInstructionReference) {
+    this.disbursementInstructionReference = this.generateDisbursementReference(this.selectedDisbursementLoan);
+  }
+  
+  this.emailNotesError = false;
+  this.isSendToAccountingModalVisible = true;
+}
+
 }

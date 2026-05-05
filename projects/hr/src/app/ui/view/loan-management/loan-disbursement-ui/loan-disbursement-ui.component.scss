@@ -105,7 +105,7 @@ app-loan-disbursement-ui {
       }
 
       .summary-right {
-        width: 420px;
+        width: 620px;
         flex-shrink: 0;
       }
 
@@ -219,8 +219,9 @@ app-loan-disbursement-ui {
 
     .layout {
       display: grid;
-      grid-template-columns: 1fr 420px;
+      grid-template-columns: minmax(0, 0.9fr) minmax(620px, 1.1fr);
       gap: 24px;
+      align-items: stretch;
     }
 
     .queue-column {
@@ -236,6 +237,89 @@ app-loan-disbursement-ui {
       border: 1px solid #e3eef0;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+
+      // Match Loan Purpose Management table design for left queue tables.
+      .approved-loans-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        .p-datatable-thead > tr > th {
+          padding: 16px 18px !important;
+          text-align: left;
+          border-bottom: 1px solid #eef3f6 !important;
+          background: #f8fcfd !important;
+          color: #1a4b5c !important;
+          font-weight: 700;
+          font-size: 0.85rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .p-datatable-tbody > tr > td {
+          padding: 16px 18px !important;
+          text-align: left;
+          border-bottom: 1px solid #eef3f6 !important;
+          font-size: 0.92rem;
+          color: #1a4b5c;
+          background: white;
+        }
+
+        .p-datatable-tbody > tr:hover > td {
+          background: #fafdfe !important;
+        }
+
+        td.loan-id {
+          font-family: monospace;
+          font-weight: 700;
+          color: #2E6276;
+          background: #f0f7fa;
+          border-radius: 8px;
+          display: inline-block;
+          padding: 4px 12px;
+          font-size: 0.85rem;
+          margin: 8px 0;
+        }
+
+        td.amount {
+          font-weight: 600;
+          color: #1a4b5c;
+        }
+
+        .status-badge {
+          padding: 5px 14px;
+          border-radius: 40px;
+          font-size: 0.75rem;
+          font-weight: 700;
+        }
+
+        .select-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 12px;
+          min-width: 74px;
+          background: rgba(46, 98, 118, 0.08);
+          color: #2E6276;
+          font-size: 0.82rem;
+          font-weight: 600;
+
+          &:hover {
+            background: rgba(46, 98, 118, 0.16);
+            transform: translateY(-2px);
+          }
+
+          &.active {
+            background: #2E6276;
+            color: white;
+          }
+        }
+      }
 
       .section-head {
         padding: 20px 24px;
@@ -264,7 +348,7 @@ app-loan-disbursement-ui {
 
         .section-copy {
           .eyebrow {
-            font-size: 0.7rem;
+            font-size: 0.82rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
@@ -273,7 +357,7 @@ app-loan-disbursement-ui {
 
           h2 {
             margin: 4px 0 8px;
-            font-size: 1.1rem;
+            font-size: 1.24rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -282,7 +366,7 @@ app-loan-disbursement-ui {
         p {
           margin: 0;
           color: #6b8a97;
-          font-size: 0.8rem;
+          font-size: 0.92rem;
         }
       }
 
@@ -306,7 +390,7 @@ app-loan-disbursement-ui {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.75rem;
+            font-size: 0.86rem;
 
             .metric-label {
               color: #8aadba;
@@ -344,7 +428,7 @@ app-loan-disbursement-ui {
             padding: 8px 12px 8px 34px;
             border: 1px solid #d7e7ec;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             background: white;
 
             &:focus {
@@ -360,6 +444,73 @@ app-loan-disbursement-ui {
         overflow-x: auto;
       }
 
+      .batch-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 20px;
+        background: #eef7ff;
+        border-top: 1px solid #bfdbfe;
+        border-bottom: 1px solid #bfdbfe;
+        flex-wrap: wrap;
+
+        .batch-count {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #1d4ed8;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .batch-total {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #1a4b5c;
+          background: #dbeafe;
+          padding: 2px 8px;
+          border-radius: 999px;
+        }
+
+        .batch-select-all-btn,
+        .batch-clear-btn {
+          padding: 3px 10px;
+          font-size: 0.72rem;
+          font-weight: 600;
+          border-radius: 999px;
+          cursor: pointer;
+          transition: all 0.15s;
+          border: 1px solid;
+        }
+
+        .batch-select-all-btn {
+          background: white;
+          border-color: #3b82f6;
+          color: #1d4ed8;
+          &:hover { background: #eff6ff; }
+        }
+
+        .batch-clear-btn {
+          background: white;
+          border-color: #f87171;
+          color: #dc2626;
+          &:hover { background: #fef2f2; }
+        }
+      }
+
+      .batch-checkbox-cell {
+        width: 36px;
+        text-align: center;
+        padding: 8px 6px !important;
+
+        .batch-checkbox {
+          width: 15px;
+          height: 15px;
+          cursor: pointer;
+          accent-color: #2563eb;
+        }
+      }
+
       .queue-footer {
         display: flex;
         justify-content: space-between;
@@ -371,7 +522,7 @@ app-loan-disbursement-ui {
         gap: 12px;
 
         .results-label {
-          font-size: 0.75rem;
+          font-size: 0.86rem;
           color: #8aadba;
         }
 
@@ -382,7 +533,7 @@ app-loan-disbursement-ui {
 
           .pager-btn {
             padding: 4px 12px;
-            font-size: 0.7rem;
+            font-size: 0.82rem;
             font-weight: 600;
             border: 1px solid #d7e7ec;
             background: white;
@@ -402,7 +553,7 @@ app-loan-disbursement-ui {
           }
 
           .pager-chip {
-            font-size: 0.75rem;
+            font-size: 0.84rem;
             color: #6f8792;
           }
         }
@@ -414,6 +565,8 @@ app-loan-disbursement-ui {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      min-height: 100%;
+      height: 100%;
     }
 
     .surface-card {
@@ -428,7 +581,33 @@ app-loan-disbursement-ui {
         display: flex;
         align-items: center;
         gap: 12px;
-        
+
+        &.batch-nav-head {
+          padding: 12px 14px;
+          gap: 8px;
+        }
+
+        .batch-nav-arrow {
+          flex-shrink: 0;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 1px solid #d7e7ec;
+          background: #f4f9fb;
+          color: #2e6276;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.7rem;
+          transition: all 0.15s;
+
+          &:hover {
+            background: #e0f0f5;
+            border-color: #2e6276;
+          }
+        }
+
         .heading-icon {
           width: 36px;
           height: 36px;
@@ -447,7 +626,7 @@ app-loan-disbursement-ui {
           flex: 1;
           
           .eyebrow {
-            font-size: 0.65rem;
+            font-size: 0.76rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
@@ -456,7 +635,7 @@ app-loan-disbursement-ui {
           
           h2 {
             margin: 0;
-            font-size: 0.95rem;
+            font-size: 1.12rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -470,6 +649,22 @@ app-loan-disbursement-ui {
 
     // Loan Details Card
     .loan-details-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+
+      .batch-position-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 20px;
+        background: #eef7ff;
+        border-bottom: 1px solid #bfdbfe;
+        font-size: 0.73rem;
+        font-weight: 600;
+        color: #1d4ed8;
+      }
+
       .loan-info-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -483,7 +678,7 @@ app-loan-disbursement-ui {
           gap: 4px;
 
           label {
-            font-size: 0.65rem;
+            font-size: 0.78rem;
             text-transform: uppercase;
             color: #8aadba;
             font-weight: 600;
@@ -491,7 +686,7 @@ app-loan-disbursement-ui {
           }
 
           .value {
-            font-size: 0.8rem;
+            font-size: 0.96rem;
             font-weight: 500;
             color: #1a4b5c;
             word-break: break-word;
@@ -519,7 +714,7 @@ app-loan-disbursement-ui {
 
         h4 {
           margin: 0 0 12px 0;
-          font-size: 0.85rem;
+          font-size: 1rem;
           font-weight: 700;
           color: #1a4b5c;
           display: flex;
@@ -538,7 +733,7 @@ app-loan-disbursement-ui {
             gap: 4px;
 
             label {
-              font-size: 0.65rem;
+              font-size: 0.76rem;
               text-transform: uppercase;
               color: #8aadba;
               font-weight: 600;
@@ -546,7 +741,7 @@ app-loan-disbursement-ui {
             }
 
             .value {
-              font-size: 0.8rem;
+              font-size: 0.94rem;
               font-weight: 500;
               color: #1a4b5c;
               word-break: break-word;
@@ -566,13 +761,14 @@ app-loan-disbursement-ui {
 
       .repayment-preview {
         padding: 16px 20px;
+        margin-top: auto;
 
         .preview-head {
           display: flex;
           align-items: center;
           gap: 8px;
           margin-bottom: 12px;
-          font-size: 0.8rem;
+          font-size: 0.95rem;
           font-weight: 600;
           color: #1a4b5c;
         }
@@ -581,7 +777,7 @@ app-loan-disbursement-ui {
           .schedule-item {
             display: flex;
             justify-content: space-between;
-            font-size: 0.7rem;
+            font-size: 0.88rem;
             padding: 6px 0;
             border-bottom: 1px solid #eef3f6;
 
@@ -591,10 +787,53 @@ app-loan-disbursement-ui {
           }
 
           .schedule-more {
-            font-size: 0.7rem;
+            font-size: 0.82rem;
             color: #8aadba;
             padding-top: 8px;
             text-align: center;
+          }
+        }
+
+        .schedule-empty {
+          font-size: 0.88rem;
+          color: #6b8a97;
+          background: #f8fcfd;
+          border: 1px dashed #cbdde4;
+          border-radius: 10px;
+          padding: 12px;
+          line-height: 1.5;
+        }
+      }
+
+      .details-actions {
+        padding: 16px 20px;
+        border-top: 1px solid #eef3f6;
+        background: #fafdfe;
+
+        .send-btn {
+          width: 100%;
+          padding: 10px 20px;
+          border-radius: 40px;
+          font-weight: 600;
+          font-size: 0.92rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          border: none;
+          color: white;
+
+          &:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
           }
         }
       }
@@ -887,6 +1126,277 @@ app-loan-disbursement-ui {
         border-color: #2E6276;
       }
     }
+
+  }
+}
+
+// PrimeNG dialog is rendered outside the component container, so modal styles must be global.
+.send-to-accounting-modal {
+  border-radius: 18px !important;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(15, 44, 56, 0.28) !important;
+  animation: sendToAccountingModalIn 0.24s ease-out;
+
+  .p-dialog-header {
+    background: linear-gradient(135deg, #f8fcfd, #ffffff) !important;
+    border-bottom: 1px solid #e6edf2 !important;
+    padding: 16px 20px !important;
+    color: #1a4b5c !important;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .p-dialog-header .p-dialog-title {
+    color: #1a4b5c;
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+
+  .p-dialog-header .p-dialog-header-icon {
+    color: #6b8a97;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+
+    &:hover {
+      background: #eef3f6;
+      color: #2e6276;
+    }
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
+    background: #ffffff;
+  }
+
+  .email-form {
+    padding: 20px;
+
+    .form-group {
+      margin-bottom: 18px;
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #1a4b5c;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        .required-star {
+          color: #dc2626;
+          margin-left: 4px;
+        }
+      }
+
+      .form-textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d7e7ec;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-family: inherit;
+        resize: vertical;
+        background: #fff;
+
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+          box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+        }
+      }
+
+      .error-message {
+        margin-top: 6px;
+        font-size: 0.8rem;
+        color: #dc2626;
+      }
+
+      .field-hint {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: #8aadba;
+      }
+    }
+
+    .disbursement-reference {
+      margin-bottom: 18px;
+      padding: 12px;
+      background: #f8fcfd;
+      border-radius: 12px;
+      border: 1px solid #e7f0f3;
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: #8aadba;
+      }
+
+      .reference-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #2E6276;
+        word-break: break-word;
+      }
+    }
+
+    .email-preview {
+      margin-top: 12px;
+      border: 1px solid #e3eef0;
+      border-radius: 12px;
+      overflow: hidden;
+
+      .preview-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #f8fcfd;
+        border-bottom: 1px solid #eef3f6;
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #1a4b5c;
+      }
+
+      .preview-body {
+        padding: 12px;
+        font-size: 0.86rem;
+        color: #4a6270;
+        line-height: 1.5;
+
+        p {
+          margin: 0 0 6px;
+
+          strong {
+            color: #1a4b5c;
+          }
+        }
+
+        .batch-preview-list {
+          margin: 8px 0;
+          border: 1px solid #e3eef0;
+          border-radius: 10px;
+          overflow: hidden;
+
+          .batch-preview-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 10px;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #eef3f6;
+
+            &:last-child { border-bottom: none; }
+            &:nth-child(even) { background: #f8fcfd; }
+
+            .batch-preview-index {
+              width: 18px;
+              height: 18px;
+              border-radius: 50%;
+              background: #dbeafe;
+              color: #1d4ed8;
+              font-size: 0.68rem;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+            }
+
+            .batch-preview-code {
+              font-family: monospace;
+              font-size: 0.75rem;
+              color: #2e6276;
+              font-weight: 700;
+              min-width: 90px;
+            }
+
+            .batch-preview-name {
+              flex: 1;
+              color: #1a4b5c;
+            }
+
+            .batch-preview-amount {
+              font-weight: 700;
+              color: #1a4b5c;
+              text-align: right;
+            }
+          }
+        }
+      }
+    }
+
+    .modal-actions {
+      padding: 16px 0 0;
+      border-top: 1px solid #eef3f6;
+      margin-top: 16px;
+      background: transparent;
+
+      .send-btn {
+        width: 100%;
+        padding: 10px 20px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border: none;
+        color: white;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        &.activate-btn {
+          background: linear-gradient(135deg, #2EB270, #239d60);
+        }
+      }
+    }
+  }
+}
+
+.send-to-accounting-mask {
+  background: rgba(12, 34, 44, 0.52) !important;
+  backdrop-filter: blur(4px);
+  animation: sendToAccountingMaskIn 0.2s ease-out;
+}
+
+@keyframes sendToAccountingMaskIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sendToAccountingModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

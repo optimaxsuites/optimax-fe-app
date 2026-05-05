@@ -133,6 +133,11 @@ export class CooperativeService {
     this.membersLoadedAt = Date.now();
   }
 
+  public invalidateMembersCache(): void {
+    this.membersLoadedAt = 0;
+    this.membersRequest$ = undefined;
+  }
+
   private markGroupsCacheFresh(): void {
     this.groupsLoadedAt = Date.now();
   }
@@ -425,130 +430,51 @@ export class CooperativeService {
   }
 
   public resolveCurrentSessionMember(members: CooperativeMember[] = this.members): CooperativeMember | undefined {
-  // Get session data
-  const sessionUserId = Number(
-    sessionStorage.getItem('userid') || 
-    localStorage.getItem('userid') || 
-    sessionStorage.getItem('userId') || 
-    localStorage.getItem('userId') || 
-    0
-  );
-  
-  const sessionUsername = sessionStorage.getItem('username') || localStorage.getItem('username') || '';
-  const sessionEmail = sessionStorage.getItem('email') || localStorage.getItem('email') || '';
-  const sessionFullName = sessionStorage.getItem('fullname') || sessionStorage.getItem('name') || '';
-  
-  // Get user registration data
-  let userRegEmail = '';
-  let userRegName = '';
-  try {
-    const userRegDataRaw = sessionStorage.getItem('userRegData');
-    if (userRegDataRaw) {
-      const userRegData = JSON.parse(userRegDataRaw);
-      userRegEmail = userRegData?.email || '';
-      userRegName = userRegData?.fullName || userRegData?.name || '';
+    const sessionUserId = String(
+      sessionStorage.getItem('userid')
+      || localStorage.getItem('userid')
+      || sessionStorage.getItem('userId')
+      || localStorage.getItem('userId')
+      || ''
+    ).trim();
+    const sessionEmployeeId = String(sessionStorage.getItem('employeeId') || '').trim();
+    const sessionEmployeeUserId = String(sessionStorage.getItem('employeeUserId') || '').trim();
+    const trustedEmployeeId = sessionEmployeeId && sessionUserId && sessionEmployeeUserId === sessionUserId
+      ? sessionEmployeeId
+      : '';
+
+    const rawSessionEmail = String(sessionStorage.getItem('email') || localStorage.getItem('email') || '').trim().toLowerCase();
+    const sessionEmail = rawSessionEmail && rawSessionEmail !== 'string' ? rawSessionEmail : '';
+
+    const rawSessionFullName = String(sessionStorage.getItem('fullname') || sessionStorage.getItem('name') || '').trim().toLowerCase();
+    const sessionFullName = rawSessionFullName && rawSessionFullName !== 'unknown' ? rawSessionFullName : '';
+
+    if (trustedEmployeeId) {
+      const byEmployeeId = members.find((member) => String(member.employeeId || '').trim() === trustedEmployeeId);
+      if (byEmployeeId) {
+        return byEmployeeId;
+      }
     }
-  } catch (e) {
-    // Ignore parse errors
-  }
 
-  console.log('[CoopLoanApp] Resolving member with session data:', {
-    sessionUserId,
-    sessionUsername,
-    sessionEmail,
-    sessionFullName,
-    userRegEmail,
-    userRegName,
-    availableMembersCount: members.length
-  });
-
-  // Log all members for debugging
-  members.forEach(member => {
-    console.log(`[CoopLoanApp] Member: id=${member.id}, employeeId=${member.employeeId}, memberId=${member.memberId}, fullName=${member.fullName}, email=${member.email}`);
-  });
-
-  // Try to find by ID first
-  let matchedMember = members.find(member => {
-    const possibleIds = [
-      String(member.id || ''),
-      String(member.memberId || ''),
-      String(member.employeeId || '')
-    ];
-    return sessionUserId && possibleIds.includes(String(sessionUserId));
-  });
-
-  // If not found by ID, try by name (this is what the dashboard uses successfully)
-  if (!matchedMember && sessionFullName) {
-    matchedMember = members.find(member => {
-      const memberName = String(member.fullName || '').toLowerCase();
-      const sessionName = sessionFullName.toLowerCase();
-      return memberName.includes(sessionName) || sessionName.includes(memberName);
-    });
-    if (matchedMember) {
-      console.log(`[CoopLoanApp] Matched by name: "${sessionFullName}" in "${matchedMember.fullName}"`);
+    if (sessionEmail) {
+      const byEmail = members.find((member) => {
+        const memberEmail = String(member.email || '').trim().toLowerCase();
+        return !!memberEmail && memberEmail !== 'string' && memberEmail === sessionEmail;
+      });
+      if (byEmail) {
+        return byEmail;
+      }
     }
-  }
 
-  // If still not found, try by username
-  if (!matchedMember && sessionUsername) {
-    matchedMember = members.find(member => {
-      const memberName = String(member.fullName || '').toLowerCase();
-      const userName = sessionUsername.toLowerCase();
-      return memberName.includes(userName) || userName.includes(memberName);
-    });
-    if (matchedMember) {
-      console.log(`[CoopLoanApp] Matched by username: "${sessionUsername}" in "${matchedMember.fullName}"`);
+    if (sessionFullName) {
+      const byFullName = members.find((member) => String(member.fullName || '').trim().toLowerCase() === sessionFullName);
+      if (byFullName) {
+        return byFullName;
+      }
     }
-  }
 
-  // Try by email
-  if (!matchedMember && sessionEmail) {
-    matchedMember = members.find(member => {
-      const memberEmail = String(member.email || '').toLowerCase();
-      return memberEmail === sessionEmail.toLowerCase() && memberEmail !== 'string';
-    });
-    if (matchedMember) {
-      console.log(`[CoopLoanApp] Matched by email: ${sessionEmail}`);
-    }
+    return undefined;
   }
-
-  // Try by registration email
-  if (!matchedMember && userRegEmail) {
-    matchedMember = members.find(member => {
-      const memberEmail = String(member.email || '').toLowerCase();
-      return memberEmail === userRegEmail.toLowerCase() && memberEmail !== 'string';
-    });
-    if (matchedMember) {
-      console.log(`[CoopLoanApp] Matched by registration email: ${userRegEmail}`);
-    }
-  }
-
-  // Try by registration name
-  if (!matchedMember && userRegName) {
-    matchedMember = members.find(member => {
-      const memberName = String(member.fullName || '').toLowerCase();
-      const regName = userRegName.toLowerCase();
-      return memberName.includes(regName) || regName.includes(memberName);
-    });
-    if (matchedMember) {
-      console.log(`[CoopLoanApp] Matched by registration name: "${userRegName}" in "${matchedMember.fullName}"`);
-    }
-  }
-
-  if (matchedMember) {
-    console.log('[CoopLoanApp] Successfully matched member:', {
-      id: matchedMember.id,
-      memberId: matchedMember.memberId,
-      employeeId: matchedMember.employeeId,
-      fullName: matchedMember.fullName,
-      email: matchedMember.email
-    });
-  } else {
-    console.warn('[CoopLoanApp] No member match found for session data');
-  }
-
-  return matchedMember;
-}
   public getMemberDisplayName(id: number | string | undefined): string {
     const normalizedId = Number(id || 0);
     if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
