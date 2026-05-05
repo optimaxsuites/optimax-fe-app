@@ -178,7 +178,29 @@
 
         <!-- Normal content -->
         <ng-template #normalContent>
-          <p class="text-[15px] text-gray-700 leading-relaxed break-words">{{ msg.content }}</p>
+          <div
+            class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
+            [innerHTML]="messageHtml(msg.content)"
+          ></div>
+
+          <a
+            *ngIf="messageLinkPreview(msg) as preview"
+            [href]="preview.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-3 flex items-center gap-3 max-w-xl rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:border-[#2e6276]/30 transition-colors"
+          >
+            <img
+              [src]="preview.thumbnailUrl"
+              [alt]="preview.title"
+              class="w-16 h-16 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+            />
+            <span class="min-w-0 flex-1">
+              <strong class="block text-[13px] text-gray-700 truncate">{{ preview.title }}</strong>
+              <small class="block text-[12px] text-gray-500 truncate">{{ preview.subtitle }}</small>
+              <em class="block text-[11px] text-[#2e6276] truncate not-italic">{{ preview.displayUrl }}</em>
+            </span>
+          </a>
 
           <!-- Attachment -->
           <div

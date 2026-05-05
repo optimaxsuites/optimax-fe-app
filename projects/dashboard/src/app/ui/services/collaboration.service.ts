@@ -145,6 +145,9 @@ export interface CollabFeedMediaItem {
   url?: string;
   thumbnailUrl?: string;
   caption?: string;
+  fileName?: string;
+  contentType?: string;
+  fileSize?: number;
 }
 
 export interface CollabFeedMediaUpload {

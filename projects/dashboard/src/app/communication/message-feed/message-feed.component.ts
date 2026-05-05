@@ -15,6 +15,7 @@ import { Message } from '../communication.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageFeedComponent {
+  private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   // ── Inputs ──────────────────────────────────────────
   @Input() messages: Message[] = [];
   @Input() loading = false;
@@ -162,5 +163,92 @@ export class MessageFeedComponent {
 
   threadPreviewReplies(msg: Message): Message[] {
     return (msg.replies || []).slice(0, 2);
+  }
+
+  messageHtml(content: string): string {
+    const escaped = this.escapeHtml(content || '');
+    return escaped
+      .replace(this.urlRegex, (rawUrl) => {
+        const normalized = this.normalizePreviewUrl(rawUrl);
+        const safeLabel = this.escapeHtml(rawUrl);
+        return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="chat-link">${safeLabel}</a>`;
+      })
+      .replace(/\n/g, '<br>');
+  }
+
+  messageLinkPreview(msg: Message): {
+    url: string;
+    displayUrl: string;
+    title: string;
+    subtitle: string;
+    thumbnailUrl: string;
+  } | null {
+    const match = (msg.content || '').match(this.urlRegex);
+    const rawUrl = match?.[0]?.trim();
+    if (!rawUrl) return null;
+    try {
+      const normalized = this.normalizePreviewUrl(rawUrl);
+      const parsed = new URL(normalized);
+      const hostname = parsed.hostname.replace(/^www\./i, '');
+      const path = `${parsed.pathname || ''}${parsed.search || ''}` || '/';
+      const displayUrl = `${hostname}${path === '/' ? '' : path}`;
+      const imageMatch = parsed.pathname.match(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i);
+      if (imageMatch) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: this.previewFileName(parsed.pathname) || hostname,
+          subtitle: 'Direct image link',
+          thumbnailUrl: normalized,
+        };
+      }
+      const youtubeId = this.extractYoutubeId(parsed);
+      if (youtubeId) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: 'YouTube video',
+          subtitle: hostname,
+          thumbnailUrl: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
+        };
+      }
+      return {
+        url: normalized,
+        displayUrl,
+        title: hostname,
+        subtitle: path === '/' ? 'Website link' : path,
+        thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizePreviewUrl(rawUrl: string): string {
+    const value = (rawUrl || '').trim();
+    return /^https?:\/\//i.test(value) ? value : `https://${value.replace(/^\/+/, '')}`;
+  }
+
+  private previewFileName(pathname: string): string {
+    return pathname.split('/').pop() || '';
+  }
+
+  private extractYoutubeId(parsed: URL): string | null {
+    if (/youtube\.com$/i.test(parsed.hostname) || /youtu\.be$/i.test(parsed.hostname)) {
+      if (/youtu\.be$/i.test(parsed.hostname)) {
+        return parsed.pathname.replace(/\//g, '') || null;
+      }
+      return parsed.searchParams.get('v');
+    }
+    return null;
+  }
+
+  private escapeHtml(value: string): string {
+    return (value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }
