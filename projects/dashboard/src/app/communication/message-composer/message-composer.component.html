@@ -41,6 +41,26 @@
   </div>
 </div>
 
+<div *ngIf="linkPreview" class="px-5 pt-2 bg-white">
+  <a
+    [href]="linkPreview.url"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="flex items-center gap-3 px-4 py-3 bg-[#f8fbfd] border border-[#2e6276]/12 rounded-2xl"
+  >
+    <img
+      [src]="linkPreview.thumbnailUrl"
+      [alt]="linkPreview.title"
+      class="w-16 h-16 rounded-xl object-cover border border-[#2e6276]/10 flex-shrink-0"
+    />
+    <span class="min-w-0 flex-1">
+      <strong class="block text-[13px] text-gray-700 truncate">{{ linkPreview.title }}</strong>
+      <small class="block text-[12px] text-gray-500 truncate">{{ linkPreview.subtitle }}</small>
+      <em class="block text-[11px] text-[#2e6276] truncate not-italic">{{ linkPreview.displayUrl }}</em>
+    </span>
+  </a>
+</div>
+
 <!-- AI Output panel -->
 <!-- <div *ngIf="aiOutput.visible" class="mx-5 mb-3">
   <div class="bg-white border border-[#2e6276]/20 rounded-2xl shadow-sm overflow-hidden">

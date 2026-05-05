@@ -1095,6 +1095,7 @@
           [voiceListening]="voiceListening"
           [voiceSupported]="voiceSupported"
           [typingUsersLabel]="typingUsersLabel"
+          [linkPreview]="chatDraftLinkPreview()"
           (draftChange)="draft = $event"
           (messageSent)="sendMessage()"
           (fileSelected)="onFileSelected($event)"
