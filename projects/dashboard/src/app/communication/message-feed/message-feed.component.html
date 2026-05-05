@@ -178,10 +178,54 @@
 
         <!-- Normal content -->
         <ng-template #normalContent>
-          <div
-            class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
-            [innerHTML]="messageHtml(msg.content)"
-          ></div>
+          <ng-container *ngIf="isStructuredMessage(msg); else plainMessageContent">
+            <div class="message-output-shell mt-1">
+              <div class="message-output-toolbar">
+                <span class="message-output-badge">{{ structuredMessageLabel(msg) }}</span>
+                <div class="message-output-actions">
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="copyMessageContent(msg, $event)"
+                    title="Copy"
+                  >
+                    <i class="pi pi-copy"></i>
+                    <span>Copy</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="downloadMessageContent(msg, $event)"
+                    title="Download"
+                  >
+                    <i class="pi pi-download"></i>
+                    <span>Download</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="openStructuredViewer(msg, $event)"
+                    title="Zoom"
+                  >
+                    <i class="pi pi-window-maximize"></i>
+                    <span>Zoom</span>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="message-output-body"
+                [class.html-output]="structuredMessageKind(msg) === 'html'"
+                [innerHTML]="structuredMessageHtml(msg)"
+              ></div>
+            </div>
+          </ng-container>
+
+          <ng-template #plainMessageContent>
+            <div
+              class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
+              [innerHTML]="messageHtml(msg.content)"
+            ></div>
+          </ng-template>
 
           <a
             *ngIf="messageLinkPreview(msg) as preview"
@@ -287,6 +331,22 @@
             >
               <i class="pi pi-angle-right"></i>
             </button>
+          </div>
+
+          <div
+            *ngIf="structuredViewerOpen"
+            class="structured-output-viewer"
+            (click)="closeStructuredViewer()"
+          >
+            <div class="structured-output-viewer-shell" (click)="$event.stopPropagation()">
+              <div class="structured-output-viewer-toolbar">
+                <strong>{{ structuredViewerTitle }}</strong>
+                <button type="button" class="structured-output-viewer-close" (click)="closeStructuredViewer()">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="structured-output-viewer-body" [innerHTML]="structuredViewerHtml"></div>
+            </div>
           </div>
 
           <!-- Action buttons -->
