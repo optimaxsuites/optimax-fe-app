@@ -138,7 +138,7 @@ private mapApiRecord(api: any): AttendanceTableRecord {
   };
 
   return {
-    id: emp?.id?.toString() ?? api.id?.toString(),
+    id: emp?.id?.toString() ?? api.id?.toString() ?? '',
     apiRecordId: api.id,
     employee: fullName,
     department,

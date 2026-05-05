@@ -34,7 +34,7 @@
       [employeeId]="employeeId"
       [employeeName]="employeeName"
       [department]="employeeDepartment"
-      (loanSubmitted)="onLoanSubmitted()"
+      (loanSubmitted)="onLoanSubmitted($event)"
       (formCancelled)="closeLoanFormModal()">
     </app-loan-request-form>
   </app-modal>

@@ -1,223 +1,195 @@
-.table-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 120px;
-  gap: 10px;
-  color: #888;
-  font-size: 1.1rem;
-}
+// ==========================================
+// GROUP JOIN HISTORY - EXACT MATCH TO LOAN PURPOSE MANAGEMENT
+// ==========================================
+@use '../_loan-status-badges' as loanBadges;
 
-.simple-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid #d1d5db;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 .group-join-history-container {
   padding: 24px;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
 
+  // Page Header
   .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding: 20px 28px;
     background: white;
-    border: 1px solid rgba(46, 98, 118, 0.12);
     border-radius: 20px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
+    border: 1px solid rgba(46, 98, 118, 0.12);
     box-shadow: 0 8px 20px rgba(46, 98, 118, 0.08);
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 12px;
+      gap: 20px;
     }
 
-    .join-requests-header {
+    .header-title {
+      h1 {
+        margin: 0 0 6px;
+        color: #1a4b5c;
+        font-size: 1.8rem;
+        font-weight: 700;
+
+        i {
+          color: #2EB270;
+          margin-right: 12px;
+        }
+      }
+
+      p {
+        margin: 0;
+        color: #6b8a97;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  // Stats Row - EXACT match to Loan Purpose Management
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    .stat-chip {
+      background: white;
+      border-radius: 40px;
+      padding: 10px 20px;
       display: flex;
       align-items: center;
       gap: 12px;
-
-      .title-icon {
+      border: 1px solid #e2edf2;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      i {
         color: #2EB270;
-        font-size: 1.7rem;
+        font-size: 1rem;
       }
 
-      h1 {
-        margin: 0;
+      span {
+        color: #2E6276;
+        font-weight: 500;
+        font-size: 0.85rem;
+      }
+
+      strong {
         color: #1a4b5c;
-        font-size: 1.6rem;
-        font-weight: 700;
+        font-size: 1.1rem;
+        margin-left: 4px;
       }
     }
-
-    p {
-      margin: 0;
-      color: #6f8792;
-      font-size: 0.9rem;
-    }
   }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
+  // Search Section
+  .search-section {
+    margin-bottom: 20px;
 
-  .stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 16px 20px;
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    cursor: pointer;
-    border: 1px solid #e3eef0;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
-    }
-
-    &.active-filter {
-      border: 2px solid #2E6276;
-      background: #f8feff;
-    }
-
-    .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #2E6276, #4291b1);
-      box-shadow: 0 4px 10px rgba(46, 98, 118, 0.2);
+    .search-wrapper {
+      position: relative;
+      max-width: 380px;
 
       i {
-        color: white;
-        font-size: 1.3rem;
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8aadba;
+        font-size: 1rem;
+        pointer-events: none;
+      }
+
+      input {
+        width: 100%;
+        padding: 14px 16px 14px 44px;
+        border: 2px solid #e2edf2;
+        border-radius: 48px;
+        font-size: 0.9rem;
+        background: white;
+        transition: all 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+          box-shadow: 0 0 0 4px rgba(46, 98, 118, 0.1);
+        }
+
+        &::placeholder {
+          color: #b0c4ce;
+        }
       }
     }
+  }
 
-    .stat-content {
+  // Filters Row
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #e3eef0;
+    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+    align-items: flex-end;
+
+    .filter-group {
       flex: 1;
+      min-width: 180px;
 
-      .stat-label {
+      label {
         display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #1a4b5c;
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: #8aadba;
-        letter-spacing: 0.08em;
-        font-weight: 700;
-        margin-bottom: 4px;
+        letter-spacing: 0.5px;
       }
 
-      .stat-value {
-        display: block;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1a4b5c;
-        line-height: 1.2;
-        margin-bottom: 4px;
-      }
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d7e7ec;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        background: white;
+        transition: all 0.2s;
 
-      .stat-note {
-        display: block;
-        font-size: 0.7rem;
-        color: #8aadba;
+        &:focus {
+          outline: none;
+          border-color: #2E6276;
+          box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+        }
       }
     }
 
-    &.tone-total .stat-value { color: #2E6276; }
-    &.tone-pending .stat-value { color: #b87c00; }
-    &.tone-active .stat-value { color: #167b56; }
-    &.tone-rejected .stat-value { color: #dc2626; }
-  }
-
-  .controls-card {
-    background: white;
-    border: 1px solid #e3eef0;
-    border-radius: 16px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 16px;
-    flex-wrap: wrap;
-    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
-  }
-
-  .filter-strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .filter-btn {
-    border: none;
-    border-radius: 40px;
-    padding: 8px 18px;
-    font-weight: 600;
-    cursor: pointer;
-    background: #edf6f8;
-    color: #2e6276;
-    transition: all 0.2s;
-
-    &:hover {
-      background: #dcecf0;
-    }
-
-    &.active {
-      background: linear-gradient(135deg, #2E6276, #4291b1);
-      color: #fff;
-    }
-  }
-
-  .search-field {
-    display: grid;
-    gap: 6px;
-    min-width: min(280px, 100%);
-    color: #2e6276;
-    font-weight: 600;
-    font-size: 0.8rem;
-
-    span {
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #8aadba;
-    }
-
-    input {
+    .reset-btn {
+      padding: 10px 24px;
+      border-radius: 40px;
       border: 1px solid #d7e7ec;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font: inherit;
-      font-size: 0.9rem;
+      background: white;
+      color: #2E6276;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       transition: all 0.2s;
+      height: 42px;
 
-      &:focus {
-        outline: none;
+      &:hover {
+        background: #edf6f8;
         border-color: #2E6276;
-        box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+        transform: translateY(-1px);
       }
     }
   }
 
+  // Action Message
   .action-message {
     background: linear-gradient(135deg, #e8f8f0, #daf4e8);
     border-left: 4px solid #2eb270;
@@ -232,28 +204,209 @@
     animation: slideIn 0.3s ease;
   }
 
-  .table-card {
-    background: white;
-    border-radius: 20px;
-    border: 1px solid #e3eef0;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+  // Results Info
+  .results-info {
+    margin-bottom: 16px;
+    color: #8aadba;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0 4px;
   }
 
+  // Loading State
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2edf2;
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e3eef0;
+      border-top: 4px solid #2E6276;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    p {
+      color: #2E6276;
+      font-size: 0.9rem;
+    }
+  }
+
+  // Table Container
+  .table-container {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2edf2;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(46, 98, 118, 0.06);
+  }
+
+  // Join Requests Table - EXACT match to Loan Purpose Management table
+  .join-requests-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 16px 18px !important;
+      text-align: left;
+      border-bottom: 1px solid #eef3f6 !important;
+    }
+
+    th {
+      background: #f8fcfd;
+      color: #1a4b5c;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.sortable {
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(46, 98, 118, 0.05);
+        }
+
+        i {
+          margin-left: 8px;
+          color: #8aadba;
+          font-size: 0.75rem;
+        }
+      }
+    }
+
+    tr {
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #fafdfe;
+      }
+    }
+
+    .sn-cell {
+      font-weight: 600;
+      color: #8aadba;
+      width: 52px;
+    }
+
+    .member-name-cell {
+      font-weight: 600;
+      color: #1a4b5c;
+    }
+
+    .code-cell {
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      font-weight: 700;
+      color: #2E6276;
+      background: #f0f7fa;
+      border-radius: 8px;
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+    }
+
+    .date-cell {
+      color: #6b8a97;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .notes-cell {
+      color: #6b8a97;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    // Status Badges — uses mixin so global .status-badge overrides don't apply
+    .gjh-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      padding: 5px 14px !important;
+      border-radius: 40px !important;
+      font-size: 0.75rem !important;
+      font-weight: 700 !important;
+
+      @include loanBadges.advance-loan-status-badges();
+    }
+
+    // Action Buttons - EXACT match to Loan Purpose Management
+    .actions-cell {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .action-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+          font-size: 0.9rem;
+        }
+
+        &.edit-btn {
+          color: #2E6276;
+          background: rgba(46, 98, 118, 0.08);
+
+          &:hover {
+            background: rgba(46, 98, 118, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+
+        &.approve-btn {
+          color: #2eb270;
+          background: rgba(46, 178, 112, 0.08);
+
+          &:hover {
+            background: rgba(46, 178, 112, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+
+        &.reject-btn {
+          color: #dc2626;
+          background: rgba(220, 38, 38, 0.08);
+
+          &:hover {
+            background: rgba(220, 38, 38, 0.16);
+            transform: translateY(-2px);
+          }
+        }
+      }
+    }
+  }
+
+  // Pagination Bar - EXACT match to Loan Purpose Management
   .pagination-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 16px 20px;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 16px 24px;
     border-top: 1px solid #eef3f6;
     background: #fbfdfe;
 
-    &.pagination-bar-right {
-      justify-content: flex-end;
-    }
-
-    .pagination-btn.small {
-      padding: 6px 16px;
+    .pagination-btn {
+      padding: 8px 20px;
       font-size: 0.85rem;
       font-weight: 600;
       border: 1px solid #d7e7ec;
@@ -262,10 +415,14 @@
       border-radius: 40px;
       cursor: pointer;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
 
       &:hover:not(:disabled) {
         background: #edf6f8;
         border-color: #2E6276;
+        transform: translateY(-1px);
       }
 
       &:disabled {
@@ -273,12 +430,54 @@
         cursor: not-allowed;
         opacity: 0.5;
       }
+
+      i {
+        font-size: 0.75rem;
+      }
     }
 
     .pagination-info {
       font-size: 0.9rem;
       color: #6f8792;
       font-weight: 500;
+    }
+  }
+
+  // No Data State - EXACT match to Loan Purpose Management
+  .no-data {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2edf2;
+
+    i {
+      font-size: 3.5rem;
+      color: #cde3ea;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    p {
+      color: #8aadba;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+
+    .reset-btn-small {
+      background: linear-gradient(135deg, #2E6276, #4291b1);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.2);
+      }
     }
   }
 
@@ -483,165 +682,70 @@
       background: #e4f0f5;
     }
   }
-}
 
-// Table Action Button Styles - Using ::ng-deep to penetrate the table component
-::ng-deep {
-  .group-join-history-container {
-    // Status badges in the table - Green for Active, Amber for Pending, Red for Rejected
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-
-      &.status-pending {
-        background: rgba(245, 158, 11, 0.12) !important;
-        color: #b45309 !important;
-        border: none !important;
-      }
-
-      &.status-active {
-        background: rgba(46, 178, 112, 0.12) !important;
-        color: #1e7e4a !important;
-        border: none !important;
-      }
-
-      &.status-rejected {
-        background: rgba(220, 38, 38, 0.1) !important;
-        color: #dc2626 !important;
-        border: none !important;
-      }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
+  }
 
-    // View button - NO BORDER, just eye icon
-    .app-table-action.view-btn {
-      width: 34px;
-      height: 34px;
-      padding: 0;
-      border-radius: 10px;
-      background: transparent !important;
-      color: #2e6276;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none !important;
-      box-shadow: none !important;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-right: 8px;
-
-      i {
-        font-size: 1rem;
-      }
-
-      &:hover {
-        background: #f0f7fa !important;
-        transform: scale(1.05);
-      }
-
-      &:focus {
-        outline: none;
-        box-shadow: none;
-      }
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
     }
-
-    // Approve button - Just icon, no border, green color
-    .app-table-action.approve-btn {
-      width: 34px;
-      height: 34px;
-      padding: 0;
-      background: transparent !important;
-      color: #2eb270 !important;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none !important;
-      box-shadow: none !important;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-right: 8px;
-
-      i {
-        font-size: 1rem;
-        color: #2eb270 !important;
-      }
-
-      &:hover {
-        transform: scale(1.15);
-        color: #24995e !important;
-        
-        i {
-          color: #24995e !important;
-        }
-      }
-    }
-
-    // Reject button - Just icon, no border, red color
-    .app-table-action.reject-btn {
-      width: 34px;
-      height: 34px;
-      padding: 0;
-      background: transparent !important;
-      color: #dc2626 !important;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: none !important;
-      box-shadow: none !important;
-      cursor: pointer;
-      transition: all 0.2s;
-
-      i {
-        font-size: 1rem;
-        color: #dc2626 !important;
-      }
-
-      &:hover {
-        transform: scale(1.15);
-        color: #b91c1c !important;
-        
-        i {
-          color: #b91c1c !important;
-        }
-      }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// Responsive Styles
-@media (max-width: 1024px) {
-  .group-join-history-container {
-    .stats-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-}
-
+// Responsive
 @media (max-width: 768px) {
   .group-join-history-container {
     padding: 16px;
 
     .page-header {
-      padding: 16px;
+      flex-direction: column;
+      text-align: center;
 
       .header-left {
-        flex-wrap: wrap;
+        flex-direction: column;
       }
+    }
+
+    .stats-row {
+      .stat-chip {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
+    .filters-row {
+      flex-direction: column;
+
+      .filter-group, .reset-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .search-section .search-wrapper {
+      max-width: 100%;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .join-requests-table {
+      min-width: 800px;
+    }
+
+    .pagination-bar {
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .review-hero {
@@ -651,59 +755,6 @@
 
     .review-snapshot-grid {
       grid-template-columns: 1fr;
-    }
-
-    .stats-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .controls-card {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .filter-strip {
-      justify-content: center;
-    }
-
-    .search-field {
-      min-width: 100%;
-    }
-
-    .pagination-bar {
-      flex-direction: column;
-      justify-content: center;
-    }
-  }
-}
-
-// Extra Small Devices
-@media (max-width: 480px) {
-  .group-join-history-container {
-    padding: 12px;
-
-    .stat-card {
-      padding: 12px;
-      
-      .stat-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        
-        i {
-          font-size: 1rem;
-        }
-      }
-      
-      .stat-content .stat-value {
-        font-size: 1.2rem;
-      }
-    }
-    
-    .filter-btn {
-      padding: 6px 12px;
-      font-size: 0.8rem;
     }
   }
 }

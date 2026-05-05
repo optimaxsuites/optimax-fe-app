@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
@@ -6,9 +6,7 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import {
   CooperativeLoanGroup
 } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { BackNavigationService } from '../../../shared-component/service/navigation/back-navigation.service';
 import { CooperativeGroupMembership, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
-import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 
 type GroupJoinStatusFilter = 'ALL' | CooperativeGroupMembership['status'];
 
@@ -16,7 +14,7 @@ interface GroupJoinHistoryRow {
   id: string;
   memberId: string;
   memberName: string;
-  memberCode: string; // will be formatted as COP-XXX
+  memberCode: string;
   groupName: string;
   status: CooperativeGroupMembership['status'];
   requestedAt: string;
@@ -28,23 +26,16 @@ interface GroupJoinHistoryRow {
 @Component({
   selector: 'app-cooperative-group-join-history',
   templateUrl: './cooperative-group-join-history.component.html',
-  styleUrls: ['./cooperative-group-join-history.component.scss']
+  styleUrls: ['./cooperative-group-join-history.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeGroupJoinHistoryComponent implements OnInit {
-  // Pagination
-  pageSize = 20;
+  pageSize = 10;
   currentPage = 1;
-
+  sortField: string = 'requestedAt';
+  sortDirection: 'asc' | 'desc' = 'desc';
   isLoading = true;
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredApplications.length / this.pageSize));
-  }
-
-  get pagedApplications(): GroupJoinHistoryRow[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredApplications.slice(start, start + this.pageSize);
-  }
+  Math = Math;
 
   currentUuid = uuidV4();
   applications: GroupJoinHistoryRow[] = [];
@@ -57,90 +48,19 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   reviewError = '';
   selectedApplication?: GroupJoinHistoryRow;
 
-  readonly applicationColumns: TableColumn<GroupJoinHistoryRow>[] = [
-    { header: 'Member', field: 'memberName', sortable: true },
-    { header: 'Member ID', field: 'memberCode', sortable: true, formatter: (row) => this.formatMemberId(row.memberCode) },
-    { header: 'Group', field: 'groupName', sortable: true },
-    { 
-      header: 'Status', 
-      field: 'status', 
-      sortable: true,
-      formatter: (row) => {
-        if (row.status === 'ACTIVE') return 'Active';
-        if (row.status === 'PENDING') return 'Pending';
-        if (row.status === 'REJECTED') return 'Rejected';
-        return row.status;
-      },
-      badgeClass: (row) => {
-        if (row.status === 'ACTIVE') return 'status-badge status-active';
-        if (row.status === 'PENDING') return 'status-badge status-pending';
-        if (row.status === 'REJECTED') return 'status-badge status-rejected';
-        return 'status-badge';
-      }
-    },
-    { header: 'Requested', sortField: 'requestedAt', sortable: true, formatter: (row) => new Date(row.requestedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) },
-    {
-      header: 'Reviewed',
-      sortField: 'reviewedAt',
-      sortable: true,
-      formatter: (row) => row.reviewedAt ? new Date(row.reviewedAt).toLocaleString() : 'Awaiting review'
-    },
-    {
-      header: 'Notes',
-      formatter: (row) => row.reviewNote || row.rejectionReason || 'No note'
-    }
-  ];
-
-  private formatMemberId(memberCode: string): string {
-    // If already formatted, return as is
-    if (memberCode && memberCode.startsWith('COP-')) return memberCode;
-    // Try to extract numeric part
-    const num = Number(memberCode);
-    if (!isNaN(num)) {
-      return `COP-${num.toString().padStart(3, '0')}`;
-    }
-    return memberCode || '';
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredApplications.length / this.pageSize));
   }
 
-  readonly applicationActions: TableAction<GroupJoinHistoryRow>[] = [
-    { id: 'view', label: '', ariaLabel: 'View group join request', className: 'view-btn', icon: 'pi pi-eye' },
-    { id: 'approve', label: '', ariaLabel: 'Approve group join request', className: 'approve-btn', icon: 'pi pi-check', visible: (row) => row.status === 'PENDING' },
-    { id: 'reject', label: '', ariaLabel: 'Reject group join request', className: 'reject-btn', icon: 'pi pi-times', visible: (row) => row.status === 'PENDING' }
-  ];
-
-  constructor(
-    private readonly cooperativeService: CooperativeService,
-    private readonly backNavigationService: BackNavigationService,
-    private readonly route: ActivatedRoute,
-    private readonly router: Router
-  ) {}
-
-  ngOnInit(): void {
-    const routeUuid = this.route.snapshot.paramMap.get('uuid');
-    if (routeUuid) {
-      this.currentUuid = routeUuid;
-    }
-
-      this.isLoading = true;
-      forkJoin({
-        groups: this.cooperativeService.loadGroups(),
-        members: this.cooperativeService.getMembers(),
-        memberships: this.cooperativeService.loadGroupMemberships()
-      }).subscribe({
-        next: () => {
-          this.loadApplications();
-          this.isLoading = false;
-        },
-        error: () => {
-          this.isLoading = false;
-        }
-      });
+  get pagedApplications(): GroupJoinHistoryRow[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredApplications.slice(start, start + this.pageSize);
   }
 
   get filteredApplications(): GroupJoinHistoryRow[] {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
 
-    return this.applications.filter(application => {
+    let filtered = this.applications.filter(application => {
       const matchesStatus = this.statusFilter === 'ALL' || application.status === this.statusFilter;
       const matchesSearch = !normalizedSearch || [
         application.memberName,
@@ -151,6 +71,49 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
       ].some(value => value.toLowerCase().includes(normalizedSearch));
 
       return matchesStatus && matchesSearch;
+    });
+    
+    filtered = this.sortApplications(filtered);
+    return filtered;
+  }
+
+  get pendingCount(): number {
+    return this.applications.filter(application => application.status === 'PENDING').length;
+  }
+
+  get approvedCount(): number {
+    return this.applications.filter(application => application.status === 'ACTIVE').length;
+  }
+
+  get rejectedCount(): number {
+    return this.applications.filter(application => application.status === 'REJECTED').length;
+  }
+
+  constructor(
+    private readonly cooperativeService: CooperativeService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
+  ) {}
+
+  ngOnInit(): void {
+    const routeUuid = this.route.snapshot.paramMap.get('uuid');
+    if (routeUuid) {
+      this.currentUuid = routeUuid;
+    }
+
+    this.isLoading = true;
+    forkJoin({
+      groups: this.cooperativeService.loadGroups(),
+      members: this.cooperativeService.getMembers(),
+      memberships: this.cooperativeService.loadGroupMemberships()
+    }).subscribe({
+      next: () => {
+        this.loadApplications();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+      }
     });
   }
 
@@ -166,27 +129,9 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     }
   }
 
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
-  }
-
-  get pendingCount(): number {
-    return this.applications.filter(application => application.status === 'PENDING').length;
-  }
-
-  get approvedCount(): number {
-    return this.applications.filter(application => application.status === 'ACTIVE').length;
-  }
-
-  get rejectedCount(): number {
-    return this.applications.filter(application => application.status === 'REJECTED').length;
-  }
-
   setStatusFilter(filter: GroupJoinStatusFilter): void {
     this.statusFilter = filter;
-    this.currentPage = 1; // Reset to first page when filter changes
+    this.currentPage = 1;
   }
 
   approveApplication(id: string, note = ''): void {
@@ -196,7 +141,6 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           this.actionMessage = 'Unable to approve the selected join request.';
           return;
         }
-        // Force reload all relevant data from backend before updating applications
         this.isLoading = true;
         forkJoin({
           groups: this.cooperativeService.refreshGroups(),
@@ -209,24 +153,18 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
             const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
             const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
             this.actionMessage = `${memberName} has been approved to join ${groupName}.`;
-            setTimeout(() => {
-              this.actionMessage = '';
-            }, 5000);
+            setTimeout(() => { this.actionMessage = ''; }, 5000);
           },
           error: () => {
             this.isLoading = false;
             this.actionMessage = 'Unable to refresh data after approval.';
-            setTimeout(() => {
-              this.actionMessage = '';
-            }, 5000);
+            setTimeout(() => { this.actionMessage = ''; }, 5000);
           }
         });
       },
       error: () => {
         this.actionMessage = 'Unable to approve the selected join request.';
-        setTimeout(() => {
-          this.actionMessage = '';
-        }, 5000);
+        setTimeout(() => { this.actionMessage = ''; }, 5000);
       }
     });
   }
@@ -235,9 +173,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     const trimmedReason = reason.trim();
     if (!trimmedReason) {
       this.actionMessage = 'A rejection reason is required.';
-      setTimeout(() => {
-        this.actionMessage = '';
-      }, 5000);
+      setTimeout(() => { this.actionMessage = ''; }, 5000);
       return;
     }
 
@@ -247,7 +183,6 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           this.actionMessage = 'Unable to reject the selected join request.';
           return;
         }
-        // Force reload all relevant data from backend before updating applications
         this.isLoading = true;
         forkJoin({
           groups: this.cooperativeService.refreshGroups(),
@@ -260,24 +195,18 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
             const memberName = this.resolveMember(String(updatedMembership.memberId))?.fullName || 'Member';
             const groupName = this.cooperativeService.getGroupById(updatedMembership.groupId)?.name || 'the selected group';
             this.actionMessage = `${memberName}'s request to join ${groupName} was rejected.`;
-            setTimeout(() => {
-              this.actionMessage = '';
-            }, 5000);
+            setTimeout(() => { this.actionMessage = ''; }, 5000);
           },
           error: () => {
             this.isLoading = false;
             this.actionMessage = 'Unable to refresh data after rejection.';
-            setTimeout(() => {
-              this.actionMessage = '';
-            }, 5000);
+            setTimeout(() => { this.actionMessage = ''; }, 5000);
           }
         });
       },
       error: () => {
         this.actionMessage = 'Unable to reject the selected join request.';
-        setTimeout(() => {
-          this.actionMessage = '';
-        }, 5000);
+        setTimeout(() => { this.actionMessage = ''; }, 5000);
       }
     });
   }
@@ -292,22 +221,6 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     this.router.navigate(['/admin/hr/loan', this.currentUuid], {
       queryParams: { dashboard: 'cooperative' }
     });
-  }
-
-  handleApplicationAction(event: { actionId: string; row: GroupJoinHistoryRow }): void {
-    if (event.actionId === 'view') {
-      this.viewMember(event.row.memberId);
-      return;
-    }
-
-    if (event.actionId === 'approve') {
-      this.openReviewModal('approve', event.row);
-      return;
-    }
-
-    if (event.actionId === 'reject') {
-      this.openReviewModal('reject', event.row);
-    }
   }
 
   openReviewModal(action: 'approve' | 'reject', application: GroupJoinHistoryRow): void {
@@ -326,9 +239,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
   }
 
   submitReview(): void {
-    if (!this.selectedApplication) {
-      return;
-    }
+    if (!this.selectedApplication) return;
 
     if (this.reviewAction === 'reject' && !this.reviewNote.trim()) {
       this.reviewError = 'A rejection reason is required.';
@@ -342,10 +253,6 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     }
 
     this.closeReviewModal();
-  }
-
-  formatCurrency(amount: number): string {
-    return this.cooperativeService.formatCurrency(amount);
   }
 
   private loadApplications(): void {
@@ -370,10 +277,98 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
           rejectionReason: membership.rejectionReason
         };
       })
-      .sort((a: GroupJoinHistoryRow, b: GroupJoinHistoryRow) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+      .sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
   }
 
   private resolveMember(memberId: string): CooperativeMember | undefined {
-    return this.cooperativeService.getMembersSnapshot().find((member: CooperativeMember) => String(member.id) === memberId || String(member.memberId) === memberId);
+    return this.cooperativeService.getMembersSnapshot().find(
+      (member: CooperativeMember) => String(member.id) === memberId || String(member.memberId) === memberId
+    );
+  }
+
+  getSortIcon(field: string): string {
+    if (this.sortField !== field) return 'fa-sort';
+    return this.sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  setSort(field: string): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    this.currentPage = 1;
+  }
+
+  private sortApplications(applications: GroupJoinHistoryRow[]): GroupJoinHistoryRow[] {
+    const sorted = [...applications];
+    return sorted.sort((a, b) => {
+      let valA: any, valB: any;
+      
+      switch (this.sortField) {
+        case 'memberName':
+          valA = a.memberName.toLowerCase();
+          valB = b.memberName.toLowerCase();
+          break;
+        case 'memberCode':
+          valA = this.formatMemberId(a.memberCode);
+          valB = this.formatMemberId(b.memberCode);
+          break;
+        case 'groupName':
+          valA = a.groupName.toLowerCase();
+          valB = b.groupName.toLowerCase();
+          break;
+        case 'status':
+          valA = a.status;
+          valB = b.status;
+          break;
+        case 'requestedAt':
+          valA = new Date(a.requestedAt).getTime();
+          valB = new Date(b.requestedAt).getTime();
+          break;
+        case 'reviewedAt':
+          valA = a.reviewedAt ? new Date(a.reviewedAt).getTime() : 0;
+          valB = b.reviewedAt ? new Date(b.reviewedAt).getTime() : 0;
+          break;
+        default:
+          valA = a.memberName.toLowerCase();
+          valB = b.memberName.toLowerCase();
+      }
+      
+      if (valA < valB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.statusFilter = 'ALL';
+    this.sortField = 'requestedAt';
+    this.sortDirection = 'desc';
+    this.currentPage = 1;
+  }
+
+  getStatusClass(status: string): string {
+    return `status-${status.toLowerCase()}`;
+  }
+
+  formatMemberId(memberCode: string): string {
+    if (!memberCode) return '—';
+    if (memberCode.startsWith('COP-')) return memberCode;
+    const num = Number(memberCode);
+    if (!isNaN(num)) {
+      return `COP-${num.toString().padStart(3, '0')}`;
+    }
+    return memberCode;
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
   }
 }

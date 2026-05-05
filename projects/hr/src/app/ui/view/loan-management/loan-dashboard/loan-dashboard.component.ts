@@ -8,6 +8,7 @@ import { LoanApplication, PaymentRecord, RepaymentScheduleItem, StatusChange } f
 import { LoanApplicationService } from '../../../service/loan/loan-application.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { startLoanLoadProfiler } from '../../../service/loan/loan-load-profiler.util';
+import { getSessionUserDisplayName } from '../../../shared-component/service/session-user-display.util';
 import {
   compareLoanSortValues,
   formatLoanDepartmentDisplay,
@@ -162,11 +163,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
   }
 
   get adminDisplayName(): string {
-    const fullName = String(sessionStorage.getItem('fullname') || '').trim();
-    const username = String(sessionStorage.getItem('username') || '').trim();
-    const fallbackName = fullName || username || 'Admin';
-
-    return fallbackName.replace(/\w\S*/g, (part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase());
+    return getSessionUserDisplayName('Admin');
   }
 
   formatAdvanceLoanDisplayId(loan: LoanApplication | undefined | null): string {

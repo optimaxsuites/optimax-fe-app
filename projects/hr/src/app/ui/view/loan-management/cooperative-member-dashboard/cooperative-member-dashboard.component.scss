@@ -1248,22 +1248,46 @@ app-table .icon-btn {
       text-align: center;
       padding: 48px 24px;
 
-      i {
+      > i {
         font-size: 3rem;
         color: #b6d0da;
       }
 
       .empty-cta {
-        padding: 10px 24px;
+        padding: 8px 14px;
         background: linear-gradient(135deg, #f59e0b, #fbbf24);
         color: white;
-        border: none;
-        border-radius: 40px;
-        font-weight: 600;
+        border: 1px solid #e3a008;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        line-height: 1.2;
+        white-space: nowrap;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+
+        i {
+          font-size: 0.78rem;
+          width: 0.9rem;
+          height: 0.9rem;
+          line-height: 1;
+          margin: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
       }
     }
 
@@ -1275,7 +1299,7 @@ app-table .icon-btn {
       align-items: center;
       justify-content: center;
 
-      i {
+      > i {
         font-size: 3rem;
         color: #b6d0da;
         margin-bottom: 16px;
@@ -1291,16 +1315,40 @@ app-table .icon-btn {
       }
 
       .empty-cta {
-        padding: 10px 24px;
+        padding: 8px 14px;
         background: linear-gradient(135deg, #f59e0b, #fbbf24);
         color: white;
-        border: none;
-        border-radius: 40px;
-        font-weight: 600;
+        border: 1px solid #e3a008;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        line-height: 1.2;
+        white-space: nowrap;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+
+        i {
+          font-size: 0.78rem;
+          width: 0.9rem;
+          height: 0.9rem;
+          line-height: 1;
+          margin: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
       }
     }
   }
@@ -2701,16 +2749,40 @@ app-table .icon-btn {
         }
         p { margin-bottom: 20px; }
         .apply-btn {
-          background: #2EB270;
+          padding: 8px 14px;
           color: white;
           border: none;
-          padding: 10px 20px;
-          border-radius: 6px;
-          cursor: pointer;
+          border: 1px solid #e3a008;
+          border-radius: 8px;
+          font-size: 0.78rem;
+          font-weight: 700;
 
           &:disabled {
             opacity: 0.6;
-            cursor: not-allowed;
+          gap: 6px;
+          line-height: 1.2;
+          white-space: nowrap;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+
+          i {
+            font-size: 0.78rem;
+            width: 0.9rem;
+            height: 0.9rem;
+            line-height: 1;
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
           }
         }
       }

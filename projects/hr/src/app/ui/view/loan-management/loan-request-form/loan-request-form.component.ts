@@ -23,6 +23,7 @@ interface SalaryDeductionItem {
 interface EmployeeSalaryResponse {
   id?: number;
   baseSalary?: number;
+  
   allowance?: SalaryAllowanceItem[];
   deductions?: SalaryDeductionItem[];
 }
@@ -42,6 +43,8 @@ interface EmployeeIdentityResponse {
   encapsulation: ViewEncapsulation.None 
 })
 export class LoanRequestFormComponent implements OnInit {
+  private static readonly FALLBACK_MONTHLY_SALARY = 20000000;
+
   @Input() isModal = false;
   @Input() employeeId = '';
   @Input() employeeName = '';
@@ -386,14 +389,17 @@ export class LoanRequestFormComponent implements OnInit {
       })
     ).subscribe({
       next: ({ salary, employee }) => {
-        this.monthlySalary = salary && salary > 0 ? salary : 0;
+        const resolvedSalary = salary && salary > 0
+          ? salary
+          : LoanRequestFormComponent.FALLBACK_MONTHLY_SALARY;
+        this.monthlySalary = resolvedSalary;
         if (employee) {
           this.employeeName = this.employeeName || `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim();
         }
         this.loanRequestForm.get('monthlySalary')?.setValue(this.monthlySalary);
 
-        if (!this.monthlySalary) {
-          this.showMessage('warn', 'Salary Not Available', 'Unable to retrieve your salary from HR records. Please contact HR to update your salary setup.');
+        if (!(salary && salary > 0)) {
+          this.showMessage('info', 'Salary Fallback Applied', 'Salary was not available from HR records. A temporary fallback of NGN 20,000,000 has been applied.');
         }
       }
     });

@@ -332,7 +332,7 @@
       
       <div class="interest-modal-checkbox">
         <label class="checkbox-interest">
-          <input type="checkbox" [(ngModel)]="defaultInterestAcknowledged" (change)="onInterestAcknowledgedChange()">
+          <input type="checkbox" [(ngModel)]="defaultInterestAcknowledged" [ngModelOptions]="{ standalone: true }" (change)="onInterestAcknowledgedChange()">
           <span>I acknowledge and accept the {{ defaultInterestRate }}% fixed interest rate for this loan purpose</span>
         </label>
       </div>
