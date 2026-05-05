@@ -11,7 +11,7 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 @Injectable({
   providedIn: 'root'
 })
-export class AuthenticationService {
+export class AuthenticationService { 
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
   constructor(
