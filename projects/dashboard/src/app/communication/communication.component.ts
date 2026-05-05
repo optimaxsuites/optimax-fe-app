@@ -58,6 +58,13 @@ export interface Message {
     downloadUrl?: string;
     previewUrl?: string;
   };
+  attachments?: Array<{
+    name: string;
+    size: string;
+    type?: string;
+    downloadUrl?: string;
+    previewUrl?: string;
+  }>;
   isSystem?: boolean;
   senderUserId?: number;
   replyToMessageId?: number;
@@ -339,13 +346,13 @@ export class CommunicationComponent
 
   draft = '';
   threadReplyDraft = '';
-  pendingFile: File | null = null;
-  pendingAttachment: {
+  pendingFiles: File[] = [];
+  pendingAttachments: Array<{
     name: string;
     size: string;
     type: string;
     previewUrl?: string;
-  } | null = null;
+  }> = [];
   sendingMessage = false;
   sendingReply = false;
   uploadingAttachment = false;
@@ -468,6 +475,7 @@ export class CommunicationComponent
   private flashId: string | null = null;
   private flashTimer: any;
   private pendingNotificationMessageBackendId: number | null = null;
+  private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
   private chatResourcesLoaded = false;
@@ -538,7 +546,7 @@ export class CommunicationComponent
       URL.revokeObjectURL(url),
     );
     this.clearFeedMediaSelection();
-    this.clearPendingAttachment(false);
+    this.clearPendingAttachments(false);
     if (typeof window !== 'undefined') {
       window.removeEventListener(
         'optimax-open-collab-target',
@@ -1582,15 +1590,27 @@ export class CommunicationComponent
     );
   }
 
-  clearPendingAttachment(refresh = true): void {
-    if (this.pendingAttachment?.previewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(this.pendingAttachment.previewUrl);
+  clearPendingAttachments(refresh = true): void {
+    for (const attachment of this.pendingAttachments) {
+      if (attachment.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
     }
-    this.pendingFile = null;
-    this.pendingAttachment = null;
+    this.pendingFiles = [];
+    this.pendingAttachments = [];
     if (refresh) {
       this.cdr.detectChanges();
     }
+  }
+
+  removePendingAttachment(index: number): void {
+    const attachment = this.pendingAttachments[index];
+    if (attachment?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+    this.pendingAttachments.splice(index, 1);
+    this.pendingFiles.splice(index, 1);
+    this.cdr.detectChanges();
   }
 
   feedAuthorName(user?: any): string {
@@ -3499,8 +3519,13 @@ export class CommunicationComponent
       }
     }
 
-    const attMap = new Map<number, any>();
-    for (const a of attachments) if (a.messageId) attMap.set(a.messageId, a);
+    const attMap = new Map<number, any[]>();
+    for (const a of attachments) {
+      if (!a.messageId) continue;
+      const bucket = attMap.get(a.messageId) ?? [];
+      bucket.push(a);
+      attMap.set(a.messageId, bucket);
+    }
 
     const msgMap = new Map(messages.map((m) => [m.id, m]));
     const roots: CollabMessage[] = [];
@@ -3522,7 +3547,7 @@ export class CommunicationComponent
       );
       const author =
         this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
-      const att = attMap.get(m.id);
+      const attList = attMap.get(m.id) || [];
       const msg: Message = {
         id: `backend-${m.id}`,
         backendId: m.id,
@@ -3547,14 +3572,17 @@ export class CommunicationComponent
             ? 'DELIVERED'
             : undefined,
       };
-      if (att)
-        msg.attachment = {
+      if (attList.length) {
+        const mappedAttachments = attList.map((att) => ({
           name: att.fileName,
           size: att.fileSize ? formatFileSize(att.fileSize) : '',
           type: this.normalizeAttachmentType(att.contentType, att.fileName),
           downloadUrl: att.downloadUrl,
           previewUrl: this.resolveAttachmentPreviewUrl(att),
-        };
+        }));
+        msg.attachments = mappedAttachments;
+        msg.attachment = mappedAttachments[0];
+      }
       return msg;
     };
 
@@ -3745,15 +3773,29 @@ export class CommunicationComponent
   }
 
   onComposerTyping(): void {
+    if (this.typingEndpointBlocked) return;
     const chId =
       this.activeView === 'channel'
         ? this.activeChannel?.backendId
         : this.activeDmContact?.dmChannelId;
     if (!chId) return;
     clearTimeout(this.typingTimer);
-    this.collabService.setTyping(chId, true).subscribe({ error: () => {} });
+    this.collabService.setTyping(chId, true).subscribe({
+      error: (err) => {
+        if (err?.status === 0) {
+          this.typingEndpointBlocked = true;
+        }
+      },
+    });
     this.typingTimer = setTimeout(() => {
-      this.collabService.setTyping(chId, false).subscribe({ error: () => {} });
+      if (this.typingEndpointBlocked) return;
+      this.collabService.setTyping(chId, false).subscribe({
+        error: (err) => {
+          if (err?.status === 0) {
+            this.typingEndpointBlocked = true;
+          }
+        },
+      });
     }, 2000);
   }
 
@@ -3818,27 +3860,28 @@ export class CommunicationComponent
       return;
     }
     const text = this.draft.trim();
-    if ((!text && !this.pendingAttachment) || this.sendingMessage) return;
+    if ((!text && !this.pendingAttachments.length) || this.sendingMessage) return;
     const channel = this.activeChannel;
     if (!channel) return;
+    const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
     this.sendingMessage = true;
     const optimistic = this.makeLocalMsg(
-      text || '(file)',
-      this.pendingAttachment ?? undefined,
+      outboundContent,
+      this.pendingAttachments,
     );
     (this.channelMessages[channel.id] ??= []).push(optimistic);
-    const capturedFile = this.pendingFile,
-      capturedAtt = this.pendingAttachment;
+    const capturedFiles = [...this.pendingFiles];
+    const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
     this.draft = '';
-    this.pendingFile = null;
-    this.pendingAttachment = null;
+    this.pendingFiles = [];
+    this.pendingAttachments = [];
     this.scrollFeed = true;
     this.cdr.detectChanges();
     this.collabService
       .sendMessage({
         channelId: channel.backendId,
         senderUserId: this.me.userId,
-        content: text,
+        content: outboundContent,
         messageType: 'TEXT',
       })
       .subscribe({
@@ -3848,14 +3891,15 @@ export class CommunicationComponent
           optimistic.deliveryState = 'DELIVERED';
           this.sendingMessage = false;
           this.playNotificationSound();
-          if (capturedFile && capturedAtt)
-            this.uploadAttachmentForMessage(
+          if (capturedFiles.length && capturedAttachments.length) {
+            this.uploadAttachmentsForMessage(
               channel,
               saved.id,
-              capturedFile,
-              capturedAtt,
+              capturedFiles,
+              capturedAttachments,
               optimistic,
             );
+          }
           else this.cdr.detectChanges();
         },
         error: () => {
@@ -3872,7 +3916,7 @@ export class CommunicationComponent
   sendDmMessage(): void {
     const text = this.draft.trim(),
       contact = this.activeDmContact;
-    if (!contact || (!text && !this.pendingAttachment) || this.sendingMessage)
+    if (!contact || (!text && !this.pendingAttachments.length) || this.sendingMessage)
       return;
     const chId = contact.dmChannelId;
     if (!chId) {
@@ -3883,24 +3927,25 @@ export class CommunicationComponent
       });
       return;
     }
+    const outboundContent = text || this.attachmentsPlaceholderText(this.pendingAttachments);
     this.sendingMessage = true;
     const optimistic = this.makeLocalMsg(
-      text || '(file)',
-      this.pendingAttachment ?? undefined,
+      outboundContent,
+      this.pendingAttachments,
     );
     (this.dmMessages[contact.id] ??= []).push(optimistic);
-    const capturedFile = this.pendingFile,
-      capturedAtt = this.pendingAttachment;
+    const capturedFiles = [...this.pendingFiles];
+    const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
     this.draft = '';
-    this.pendingFile = null;
-    this.pendingAttachment = null;
+    this.pendingFiles = [];
+    this.pendingAttachments = [];
     this.scrollFeed = true;
     this.cdr.detectChanges();
     this.collabService
       .sendMessage({
         channelId: chId,
         senderUserId: this.me.userId,
-        content: text,
+        content: outboundContent,
         messageType: 'TEXT',
       })
       .subscribe({
@@ -3910,17 +3955,17 @@ export class CommunicationComponent
           optimistic.deliveryState = 'DELIVERED';
           this.sendingMessage = false;
           this.playNotificationSound();
-          if (capturedFile && capturedAtt) {
+          if (capturedFiles.length && capturedAttachments.length) {
             const fakeCh: Channel = {
               id: `dm-${chId}`,
               backendId: chId,
               name: '',
             };
-            this.uploadAttachmentForMessage(
+            this.uploadAttachmentsForMessage(
               fakeCh,
               saved.id,
-              capturedFile,
-              capturedAtt,
+              capturedFiles,
+              capturedAttachments,
               optimistic,
             );
           } else this.cdr.detectChanges();
@@ -3934,48 +3979,58 @@ export class CommunicationComponent
       });
   }
 
-  private uploadAttachmentForMessage(
+  private uploadAttachmentsForMessage(
     channel: Channel,
     messageId: number,
-    file: File,
-    meta: { name: string; size: string; type: string; previewUrl?: string },
+    files: File[],
+    metadata: Array<{ name: string; size: string; type: string; previewUrl?: string }>,
     optimistic: Message,
   ): void {
     this.uploadingAttachment = true;
-    this.collabService
-      .uploadAttachment(channel.backendId, this.me.userId, file, messageId)
-      .subscribe({
-        next: (att) => {
-          optimistic.attachment = {
-            name: att.fileName || meta.name,
-            size: att.fileSize ? formatFileSize(att.fileSize) : meta.size,
-            type: att.contentType || meta.type,
-            downloadUrl: att.downloadUrl,
-            previewUrl:
-              optimistic.attachment?.previewUrl ||
-              this.resolveAttachmentPreviewUrl(att),
-          };
-          this.uploadingAttachment = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.uploadingAttachment = false;
-          this.cdr.detectChanges();
-        },
+    const uploads = files.map((file, index) =>
+      firstValueFrom(
+        this.collabService.uploadAttachment(
+          channel.backendId,
+          this.me.userId,
+          file,
+          messageId,
+        ),
+      ).then((att) => {
+        const meta = metadata[index];
+        return {
+          name: att.fileName || meta?.name || file.name,
+          size: att.fileSize ? formatFileSize(att.fileSize) : meta?.size || formatFileSize(file.size),
+          type: att.contentType || meta?.type || file.type,
+          downloadUrl: att.downloadUrl,
+          previewUrl: meta?.previewUrl || this.resolveAttachmentPreviewUrl(att),
+        };
+      }),
+    );
+    Promise.all(uploads)
+      .then((attachments) => {
+        optimistic.attachments = attachments;
+        optimistic.attachment = attachments[0];
+        this.uploadingAttachment = false;
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.uploadingAttachment = false;
+        this.cdr.detectChanges();
       });
   }
 
-  onFileSelected(file: File): void {
-    this.clearPendingAttachment();
-    this.pendingFile = file;
-    this.pendingAttachment = {
-      name: file.name,
-      size: formatFileSize(file.size),
-      type: this.normalizeAttachmentType(file.type, file.name),
-      previewUrl: this.isImageType(file.type)
-        ? URL.createObjectURL(file)
-        : undefined,
-    };
+  onFilesSelected(files: File[]): void {
+    for (const file of files) {
+      this.pendingFiles.push(file);
+      this.pendingAttachments.push({
+        name: file.name,
+        size: formatFileSize(file.size),
+        type: this.normalizeAttachmentType(file.type, file.name),
+        previewUrl: this.isImageType(file.type)
+          ? URL.createObjectURL(file)
+          : undefined,
+      });
+    }
     this.cdr.detectChanges();
   }
 
@@ -5476,6 +5531,29 @@ export class CommunicationComponent
     return 'application/octet-stream';
   }
 
+  private attachmentsPlaceholderText(
+    attachments: Array<{ name: string; type?: string }> | null | undefined,
+  ): string {
+    if (!attachments?.length) return '(attachment)';
+    if (attachments.length === 1) {
+      const attachment = attachments[0];
+      if (this.isImageType(attachment.type)) {
+        return `Image: ${attachment.name}`;
+      }
+      if ((attachment.type || '').startsWith('video/')) {
+        return `Video: ${attachment.name}`;
+      }
+      return `Attachment: ${attachment.name}`;
+    }
+    const imageCount = attachments.filter((attachment) =>
+      this.isImageType(attachment.type),
+    ).length;
+    if (imageCount === attachments.length) {
+      return `${attachments.length} images`;
+    }
+    return `${attachments.length} attachments`;
+  }
+
   private isImageType(type?: string): boolean {
     return (type || '').toLowerCase().startsWith('image/');
   }
@@ -5646,12 +5724,12 @@ export class CommunicationComponent
 
   private makeLocalMsg(
     content: string,
-    attachment?: {
+    attachments?: Array<{
       name: string;
       size: string;
       type: string;
       previewUrl?: string;
-    },
+    }>,
   ): Message {
     const msg: Message = {
       id: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2),
@@ -5673,7 +5751,10 @@ export class CommunicationComponent
       senderUserId: this.me.userId,
       deliveryState: 'SENDING',
     };
-    if (attachment) msg.attachment = attachment;
+    if (attachments?.length) {
+      msg.attachments = attachments.map((attachment) => ({ ...attachment }));
+      msg.attachment = msg.attachments[0];
+    }
     return msg;
   }
 

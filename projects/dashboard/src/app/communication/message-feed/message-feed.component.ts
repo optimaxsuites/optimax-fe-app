@@ -16,6 +16,9 @@ import { Message } from '../communication.component';
 })
 export class MessageFeedComponent {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+  imageViewerOpen = false;
+  imageViewerItems: Array<{ url: string; label: string }> = [];
+  imageViewerIndex = 0;
   // ── Inputs ──────────────────────────────────────────
   @Input() messages: Message[] = [];
   @Input() loading = false;
@@ -150,6 +153,77 @@ export class MessageFeedComponent {
 
   isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
     return Boolean(attachment?.type?.toLowerCase().startsWith('image/'));
+  }
+
+  attachmentImageSrc(attachment: Message['attachment'] | undefined): string {
+    return attachment?.previewUrl || attachment?.downloadUrl || '';
+  }
+
+  messageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    if (msg.attachments?.length) {
+      return msg.attachments;
+    }
+    return msg.attachment ? [msg.attachment] : [];
+  }
+
+  imageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter((attachment) =>
+      this.isImageAttachment(attachment),
+    );
+  }
+
+  nonImageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter(
+      (attachment) => !this.isImageAttachment(attachment),
+    );
+  }
+
+  chatMediaGridClass(imageCount: number): string {
+    if (imageCount <= 1) return 'single';
+    if (imageCount === 2) return 'duo';
+    if (imageCount === 3) return 'trio';
+    return 'quad';
+  }
+
+  openImageViewer(msg: Message, event?: Event): void {
+    event?.stopPropagation();
+    const items = this.messageImageItems(msg);
+    if (!items.length) return;
+    this.imageViewerItems = items;
+    this.imageViewerIndex = 0;
+    this.imageViewerOpen = true;
+  }
+
+  closeImageViewer(): void {
+    this.imageViewerOpen = false;
+    this.imageViewerItems = [];
+    this.imageViewerIndex = 0;
+  }
+
+  previousImage(): void {
+    if (!this.imageViewerItems.length) return;
+    this.imageViewerIndex =
+      (this.imageViewerIndex - 1 + this.imageViewerItems.length) %
+      this.imageViewerItems.length;
+  }
+
+  nextImage(): void {
+    if (!this.imageViewerItems.length) return;
+    this.imageViewerIndex =
+      (this.imageViewerIndex + 1) % this.imageViewerItems.length;
+  }
+
+  currentViewerImage(): { url: string; label: string } | null {
+    return this.imageViewerItems[this.imageViewerIndex] || null;
+  }
+
+  messageImageItems(msg: Message): Array<{ url: string; label: string }> {
+    return this.imageAttachments(msg)
+      .map((attachment) => ({
+        url: this.attachmentImageSrc(attachment),
+        label: attachment.name || 'Image attachment',
+      }))
+      .filter((item) => !!item.url);
   }
 
   threadSourceLabel(msg: Message): string {

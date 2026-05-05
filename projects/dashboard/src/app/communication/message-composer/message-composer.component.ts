@@ -48,7 +48,7 @@ export class MessageComposerComponent {
   @Input() placeholder = 'Message…';
   @Input() sendingMessage = false;
   @Input() uploadingAttachment = false;
-  @Input() pendingAttachment: PendingAttachment | null = null;
+  @Input() pendingAttachments: PendingAttachment[] = [];
   @Input() showAiToolbar = false;
   @Input() aiOutput: AiOutput = {
     visible: false,
@@ -64,8 +64,8 @@ export class MessageComposerComponent {
   // ── Outputs ─────────────────────────────────────────
   @Output() draftChange = new EventEmitter<string>();
   @Output() messageSent = new EventEmitter<void>();
-  @Output() fileSelected = new EventEmitter<File>();
-  @Output() attachmentRemoved = new EventEmitter<void>();
+  @Output() filesSelected = new EventEmitter<File[]>();
+  @Output() attachmentRemoved = new EventEmitter<number>();
   @Output() aiToolbarToggled = new EventEmitter<void>();
   @Output() aiOutputClosed = new EventEmitter<void>();
   @Output() aiRewrite = new EventEmitter<void>();
@@ -84,9 +84,9 @@ export class MessageComposerComponent {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.fileSelected.emit(file);
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    this.filesSelected.emit(files);
     input.value = '';
   }
 
