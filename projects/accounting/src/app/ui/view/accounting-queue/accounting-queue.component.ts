@@ -69,24 +69,29 @@ export class AccountingQueueComponent implements OnInit {
   loadEvents(): void {
     this.loading = true;
     const page = Math.floor(this.first / this.rows);
-    this.accountingService.getTransactions(page, this.rows).subscribe({
-      next: (res: PaginationResult<any>) => {
-        this.events = (res.content || []).map(tx => {
-          const rawStatus = tx.status || tx.Status || tx.reviewStatus;
+    this.accountingService.getEvents(page, this.rows).subscribe({
+      next: (res: PaginationResult<AccountingEventDTO>) => {
+        this.events = (res.content || []).map(event => {
+          // Find matching mapping for suggestions
+          const mapping = this.mappings.find(m => 
+            m.eventType === event.eventType && m.sourceModule === event.sourceModule
+          );
+
           return {
-            ...tx,
-            reference: tx.transactionReference,
-            status: rawStatus || 'UNREVIEWED',
-            suggestedDebit: tx.account?.accountName || '—',
-            suggestedCredit: '—' // In this view, we show the primary account
-          };
+            ...event,
+            reference: event.reference || (event as any).instructionReference || `#EV-${event.id}`,
+            status: (event as any).status || 'UNPROCESSED',
+            matchedMapping: mapping,
+            suggestedDebit: mapping?.debitAccount?.accountName || mapping?.debitAccountId?.toString() || '—',
+            suggestedCredit: mapping?.creditAccount?.accountName || mapping?.creditAccountId?.toString() || '—'
+          } as QueueEvent;
         });
         this.totalRecords = res.totalSize || 0;
         this.loading = false;
       },
       error: (err) => {
-        console.error('Failed to load transactions:', err);
-        this.toastService.error('Failed to load transactions');
+        console.error('Failed to load accounting events:', err);
+        this.toastService.error('Failed to load unprocessed events');
         this.loading = false;
       }
     });
