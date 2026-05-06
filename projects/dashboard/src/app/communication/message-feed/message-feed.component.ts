@@ -16,6 +16,14 @@ import { Message } from '../communication.component';
 })
 export class MessageFeedComponent {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
+  private readonly codeKeywordRegex =
+    /\b(const|let|var|function|class|interface|type|return|import|export|public|private|protected|if|else|for|while|switch|case|try|catch)\b/;
+  imageViewerOpen = false;
+  imageViewerItems: Array<{ url: string; label: string }> = [];
+  imageViewerIndex = 0;
+  structuredViewerOpen = false;
+  structuredViewerTitle = '';
+  structuredViewerHtml = '';
   // ── Inputs ──────────────────────────────────────────
   @Input() messages: Message[] = [];
   @Input() loading = false;
@@ -149,7 +157,96 @@ export class MessageFeedComponent {
   }
 
   isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
-    return Boolean(attachment?.type?.toLowerCase().startsWith('image/'));
+    const type = (attachment?.type || '').toLowerCase();
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`;
+    return Boolean(
+      type.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(fileRef),
+    );
+  }
+
+  attachmentImageSrc(attachment: Message['attachment'] | undefined): string {
+    return attachment?.previewUrl || attachment?.downloadUrl || '';
+  }
+
+  messageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    if (msg.attachments?.length) {
+      return msg.attachments;
+    }
+    return msg.attachment ? [msg.attachment] : [];
+  }
+
+  imageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter((attachment) =>
+      this.isImageAttachment(attachment),
+    );
+  }
+
+  nonImageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter(
+      (attachment) => !this.isImageAttachment(attachment),
+    );
+  }
+
+  chatMediaGridClass(imageCount: number): string {
+    if (imageCount <= 1) return 'single';
+    if (imageCount === 2) return 'duo';
+    if (imageCount === 3) return 'trio';
+    return 'quad';
+  }
+
+  openImageViewer(msg: Message, event?: Event): void {
+    event?.stopPropagation();
+    const items = this.messageImageItems(msg);
+    if (!items.length) return;
+    this.imageViewerItems = items;
+    this.imageViewerIndex = 0;
+    this.imageViewerOpen = true;
+  }
+
+  closeImageViewer(): void {
+    this.imageViewerOpen = false;
+    this.imageViewerItems = [];
+    this.imageViewerIndex = 0;
+  }
+
+  openStructuredViewer(msg: Message, event?: Event): void {
+    event?.stopPropagation();
+    this.structuredViewerTitle = this.structuredMessageLabel(msg);
+    this.structuredViewerHtml = this.structuredMessageHtml(msg);
+    this.structuredViewerOpen = true;
+  }
+
+  closeStructuredViewer(): void {
+    this.structuredViewerOpen = false;
+    this.structuredViewerTitle = '';
+    this.structuredViewerHtml = '';
+  }
+
+  previousImage(): void {
+    if (!this.imageViewerItems.length) return;
+    this.imageViewerIndex =
+      (this.imageViewerIndex - 1 + this.imageViewerItems.length) %
+      this.imageViewerItems.length;
+  }
+
+  nextImage(): void {
+    if (!this.imageViewerItems.length) return;
+    this.imageViewerIndex =
+      (this.imageViewerIndex + 1) % this.imageViewerItems.length;
+  }
+
+  currentViewerImage(): { url: string; label: string } | null {
+    return this.imageViewerItems[this.imageViewerIndex] || null;
+  }
+
+  messageImageItems(msg: Message): Array<{ url: string; label: string }> {
+    return this.imageAttachments(msg)
+      .map((attachment) => ({
+        url: this.attachmentImageSrc(attachment),
+        label: attachment.name || 'Image attachment',
+      }))
+      .filter((item) => !!item.url);
   }
 
   threadSourceLabel(msg: Message): string {
@@ -165,8 +262,90 @@ export class MessageFeedComponent {
     return (msg.replies || []).slice(0, 2);
   }
 
+  isStructuredMessage(msg: Message): boolean {
+    return this.structuredMessageKind(msg) !== 'plain';
+  }
+
+  structuredMessageKind(msg: Message): 'plain' | 'json' | 'html' | 'code' {
+    const content = this.normalizedMessageContent(msg);
+    if (!content) return 'plain';
+    if (this.codeFenceMatch(content)) return 'code';
+    if (this.looksLikeJson(content)) return 'json';
+    if (this.looksLikeHtml(content)) return 'html';
+    if (this.looksLikeCode(content)) return 'code';
+    return 'plain';
+  }
+
+  structuredMessageLabel(msg: Message): string {
+    const kind = this.structuredMessageKind(msg);
+    if (kind === 'json') return 'JSON';
+    if (kind === 'html') return 'HTML';
+    if (kind === 'code') return this.codeFenceLanguage(this.normalizedMessageContent(msg)) || 'CODE';
+    return 'TEXT';
+  }
+
+  structuredMessageDisplay(msg: Message): string {
+    const content = this.normalizedMessageContent(msg);
+    const kind = this.structuredMessageKind(msg);
+    if (kind === 'json') {
+      try {
+        return JSON.stringify(JSON.parse(content), null, 2);
+      } catch {
+        return content;
+      }
+    }
+    if (kind === 'code') {
+      const fence = this.codeFenceMatch(content);
+      return (fence?.[2] || content).trim();
+    }
+    return content;
+  }
+
+  structuredMessageHtml(msg: Message): string {
+    const kind = this.structuredMessageKind(msg);
+    return this.structuredMessageDisplay(msg)
+      .split('\n')
+      .map((line, index) => {
+        const safeLine = this.highlightStructuredLine(line || ' ', kind);
+        return `<span class="message-output-line"><em class="message-output-line-number">${index + 1}</em><span class="message-output-line-value">${safeLine}</span></span>`;
+      })
+      .join('');
+  }
+
+  copyMessageContent(msg: Message, event?: Event): void {
+    event?.stopPropagation();
+    const value = this.structuredMessageDisplay(msg) || msg.content || '';
+    if (!value) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(value);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+  }
+
+  downloadMessageContent(msg: Message, event?: Event): void {
+    event?.stopPropagation();
+    const value = this.structuredMessageDisplay(msg) || msg.content || '';
+    if (!value) return;
+    const extension = this.structuredMessageExtension(msg);
+    const blob = new Blob([value], { type: this.structuredMessageMime(msg) });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `message-${msg.id}.${extension}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   messageHtml(content: string): string {
-    const escaped = this.escapeHtml(content || '');
+    const escaped = this.escapeHtml(this.decodeHtmlEntities(content || ''));
     return escaped
       .replace(this.urlRegex, (rawUrl) => {
         const normalized = this.normalizePreviewUrl(rawUrl);
@@ -250,5 +429,130 @@ export class MessageFeedComponent {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  private normalizedMessageContent(msg: Message): string {
+    return this.decodeHtmlEntities(msg.content || '').trim();
+  }
+
+  private decodeHtmlEntities(value: string): string {
+    if (!value || typeof document === 'undefined') return value || '';
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = value;
+    return textarea.value;
+  }
+
+  private highlightStructuredLine(
+    line: string,
+    kind: 'plain' | 'json' | 'html' | 'code',
+  ): string {
+    if (kind === 'json') return this.highlightJsonLine(line);
+    if (kind === 'html') return this.highlightHtmlLine(line);
+    if (kind === 'code') return this.highlightCodeLine(line);
+    return this.escapeHtml(line);
+  }
+
+  private highlightJsonLine(line: string): string {
+    let html = this.escapeHtml(line);
+    html = html.replace(
+      /(&quot;[^&]*?&quot;)(\s*:)/g,
+      '<span class="token token-key">$1</span><span class="token token-punctuation">$2</span>',
+    );
+    html = html.replace(
+      /(:\s*)(&quot;[^&]*?&quot;)/g,
+      '$1<span class="token token-string">$2</span>',
+    );
+    html = html.replace(
+      /\b(true|false|null)\b/g,
+      '<span class="token token-boolean">$1</span>',
+    );
+    html = html.replace(
+      /(^|[\s:[,])(-?\d+(?:\.\d+)?)(?=[\s,\]}]|$)/g,
+      '$1<span class="token token-number">$2</span>',
+    );
+    html = html.replace(/([{}\[\],])/g, '<span class="token token-punctuation">$1</span>');
+    return html;
+  }
+
+  private highlightHtmlLine(line: string): string {
+    let html = this.escapeHtml(line);
+    html = html.replace(
+      /(&lt;\/?)([a-zA-Z0-9-:]+)/g,
+      '$1<span class="token token-tag">$2</span>',
+    );
+    html = html.replace(
+      /([a-zA-Z-:]+)=(&quot;.*?&quot;)/g,
+      '<span class="token token-attr-name">$1</span>=<span class="token token-string">$2</span>',
+    );
+    html = html.replace(/(&lt;|&gt;|\/&gt;)/g, '<span class="token token-punctuation">$1</span>');
+    return html;
+  }
+
+  private highlightCodeLine(line: string): string {
+    let html = this.escapeHtml(line);
+    html = html.replace(
+      /(\/\/.*$)/g,
+      '<span class="token token-comment">$1</span>',
+    );
+    html = html.replace(
+      /(&quot;.*?&quot;|&#39;.*?&#39;|`.*?`)/g,
+      '<span class="token token-string">$1</span>',
+    );
+    html = html.replace(
+      /\b(const|let|var|function|class|interface|type|return|import|export|public|private|protected|if|else|for|while|switch|case|try|catch|async|await|new)\b/g,
+      '<span class="token token-keyword">$1</span>',
+    );
+    html = html.replace(
+      /\b(\d+(?:\.\d+)?)\b/g,
+      '<span class="token token-number">$1</span>',
+    );
+    return html;
+  }
+
+  private codeFenceMatch(content: string): RegExpMatchArray | null {
+    return content.match(/^```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```$/);
+  }
+
+  private codeFenceLanguage(content: string): string | null {
+    const language = this.codeFenceMatch(content)?.[1]?.trim();
+    return language ? language.toUpperCase() : null;
+  }
+
+  private looksLikeJson(content: string): boolean {
+    if (!/^[\[{]/.test(content)) return false;
+    try {
+      JSON.parse(content);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private looksLikeHtml(content: string): boolean {
+    return /<\/?[a-z][\s\S]*>/i.test(content);
+  }
+
+  private looksLikeCode(content: string): boolean {
+    const lines = content.split('\n');
+    return (
+      lines.length > 1 &&
+      (this.codeKeywordRegex.test(content) ||
+        /[{}();=<>\[\]]/.test(content))
+    );
+  }
+
+  private structuredMessageExtension(msg: Message): string {
+    const kind = this.structuredMessageKind(msg);
+    if (kind === 'json') return 'json';
+    if (kind === 'html') return 'html';
+    if (kind === 'code') return 'txt';
+    return 'txt';
+  }
+
+  private structuredMessageMime(msg: Message): string {
+    const kind = this.structuredMessageKind(msg);
+    if (kind === 'json') return 'application/json';
+    if (kind === 'html') return 'text/html';
+    return 'text/plain;charset=utf-8';
   }
 }

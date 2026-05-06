@@ -10,8 +10,12 @@
 </div>
 
 <!-- Pending attachment pill -->
-<div *ngIf="pendingAttachment" class="px-5 pt-2 bg-white">
-  <div class="flex items-center gap-3 px-4 py-3 bg-[#f0f7ff] border border-[#2e6276]/20 rounded-xl w-fit max-w-full">
+<div *ngIf="pendingAttachments.length" class="px-5 pt-2 bg-white">
+  <div class="flex flex-wrap gap-3">
+    <div
+      *ngFor="let pendingAttachment of pendingAttachments; let attachmentIndex = index"
+      class="flex items-center gap-3 px-4 py-3 bg-[#f0f7ff] border border-[#2e6276]/20 rounded-xl w-fit max-w-full"
+    >
     <img
       *ngIf="pendingAttachment.previewUrl"
       [src]="pendingAttachment.previewUrl"
@@ -33,12 +37,13 @@
       <span class="block text-[12px] text-gray-400">{{ pendingAttachment.size }}</span>
       <span *ngIf="uploadingAttachment" class="block text-[11px] text-[#2e6276] font-medium animate-pulse">Uploading…</span>
     </div>
-    <button (click)="attachmentRemoved.emit()" class="ml-1 text-gray-400 hover:text-gray-600">
+    <button (click)="attachmentRemoved.emit(attachmentIndex)" class="ml-1 text-gray-400 hover:text-gray-600">
       <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
   </div>
+</div>
 </div>
 
 <div *ngIf="linkPreview" class="px-5 pt-2 bg-white">
@@ -243,7 +248,7 @@
         rows="1"
         class="flex-1  resize-none bg-transparent border-0 outline-none text-[15px] text-gray-800 placeholder-gray-400 py-0.5 leading-relaxed min-h-[26px] max-h-40"
       ></textarea>
-      <input #fileInput type="file" class="hidden" (change)="onFileSelected($event)" />
+      <input #fileInput type="file" class="hidden" multiple (change)="onFileSelected($event)" />
       <!-- AI toggle -->
       <button
         (click)="aiToolbarToggled.emit(); $event.stopPropagation()"
@@ -271,7 +276,7 @@
       <button
         (click)="messageSent.emit()"
         class="send-btn flex-shrink-0 mb-0.5 w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-        [ngClass]="{ ready: draft.trim() || pendingAttachment }"
+        [ngClass]="{ ready: draft.trim() || pendingAttachments.length }"
         [disabled]="sendingMessage"
       >
         <svg *ngIf="!sendingMessage" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">

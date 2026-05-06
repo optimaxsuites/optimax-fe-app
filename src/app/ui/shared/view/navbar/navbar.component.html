@@ -60,11 +60,11 @@
             </div>
             <div class="notification-item__body">
               <div class="notification-item__meta">
-                <strong>{{ item.title }}</strong>
+                <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
                 <span>{{ item.createdAt | date: 'shortTime' }}</span>
               </div>
-              <p>{{ item.body }}</p>
-              <time *ngIf="item.contextLabel">{{ item.contextLabel }}</time>
+              <p>{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
+              <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
             </div>
           </button>
 
