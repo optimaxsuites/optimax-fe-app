@@ -51,11 +51,11 @@ export class CheckinCheckoutComponent implements OnInit {
   this.checkOfficeHours();
   this.officeHoursService.officeHours$.subscribe(() => this.checkOfficeHours());
 
-  // Load today's record for this employee on init
-  const user = this.currentUser;
+  // Load today's record for this employee on init//MonthlyattendancelistComponent already handles fetching
+  /*const user = this.currentUser;
   if (user?.id) {
     this.attendanceService.fetchByEmployee(parseInt(user.id));
-  }
+  }*/
 }
 
 private restoreClockStatus(): void {
