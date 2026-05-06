@@ -97,14 +97,16 @@ export interface AccountingTransactionDTO {
   id: string | number;
   reference?: string;
   transactionReference?: string;
+  eventType?: string;
   sourceModule: SourceModule;
-  transactionDate: string;
+  transactionDate: string | number[];
   description: string;
   amount: number;
   reviewStatus?: TransactionReviewStatus;
   status?: TransactionReviewStatus;
   journalEntryId?: string | number;
   currency?: string;
+  metadata?: Record<string, unknown> | null;
   externalReference?: string;
   accountId?: AccountDTO | string | number;
   createdBy?: UserDTO | number | null;
@@ -114,7 +116,7 @@ export interface AccountingTransactionDTO {
 export interface JournalEntryDTO {
   id: string | number;
   transactionId: string | number | AccountingTransactionDTO;
-  entryDate: string;
+  entryDate: string | number[];
   description: string;
   status: JournalEntryStatus;
   entryNumber?: number;
@@ -174,10 +176,10 @@ export interface ReportRequestDTO {
 }
 
 export interface ReportContextDTO {
-  generatedAt: string;
+  generatedAt: string | number[];
   generatedBy: UserDTO | string | number;
-  periodStart: string;
-  periodEnd: string;
+  periodStart: string | number[];
+  periodEnd: string | number[];
   reportPeriodType: ReportPeriodType;
   sourceModules: SourceModule[];
   includedTransactionIds: Array<string | number>;
@@ -197,7 +199,7 @@ export interface AccountBalanceDTO {
 }
 
 export interface BalanceSheetReportDTO {
-  reportDate: string;
+  reportDate: string | number[];
   assets: AccountBalanceDTO[];
   liabilities: AccountBalanceDTO[];
   equity: AccountBalanceDTO[];
@@ -268,7 +270,7 @@ export interface ExpenseDistributionDTO {
 }
 
 export interface IncomeStatementReportDTO {
-  reportPeriod: string;
+  reportPeriod: string | number[];
   revenue: FinancialLineItemDTO[];
   cogs: FinancialLineItemDTO[];
   administrativeExpenses: FinancialLineItemDTO[];
@@ -345,7 +347,7 @@ export interface CashFlowPeriodComparisonsDTO {
 }
 
 export interface CashFlowReportDTO {
-  reportPeriod: string;
+  reportPeriod: string | number[];
   operatingActivities: CashFlowLineItemDTO[];
   investingActivities: CashFlowLineItemDTO[];
   financingActivities: CashFlowLineItemDTO[];
