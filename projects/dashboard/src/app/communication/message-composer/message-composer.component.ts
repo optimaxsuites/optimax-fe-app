@@ -32,6 +32,19 @@ export interface ComposerLinkPreview {
   thumbnailUrl: string;
 }
 
+export interface ComposerMentionOption {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  user?: {
+    id?: number;
+    fullname?: string;
+    userId?: number;
+    username?: string;
+    email?: string;
+  };
+}
+
 @Component({
   selector: 'app-message-composer',
   templateUrl: './message-composer.component.html',
@@ -60,6 +73,9 @@ export class MessageComposerComponent {
   @Input() voiceSupported = false;
   @Input() typingUsersLabel = '';
   @Input() linkPreview: ComposerLinkPreview | null = null;
+  @Input() mentionResults: ComposerMentionOption[] = [];
+  @Input() showMentionMenu = false;
+  @Input() mentionLabel: (employee: ComposerMentionOption) => string = () => '';
 
   // ── Outputs ─────────────────────────────────────────
   @Output() draftChange = new EventEmitter<string>();
@@ -75,6 +91,7 @@ export class MessageComposerComponent {
   @Output() emailCompose = new EventEmitter<void>();
   @Output() composerTyping = new EventEmitter<void>();
   @Output() aiOutputUsed = new EventEmitter<string>();
+  @Output() mentionSelected = new EventEmitter<ComposerMentionOption>();
 
   // ── Actions ─────────────────────────────────────────
 
