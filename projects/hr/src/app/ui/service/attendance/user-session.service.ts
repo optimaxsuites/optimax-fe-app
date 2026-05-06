@@ -14,28 +14,29 @@ export class UserSessionService {
     const userId = sessionStorage.getItem('userid');
     if (!userId) return null;
 
-    const raw = sessionStorage.getItem('userRegData')
+    /*const raw = sessionStorage.getItem('userRegData')
              ?? sessionStorage.getItem('userInfoRegData')
-             ?? sessionStorage.getItem('userPrimaryInfoRegData');
+             ?? sessionStorage.getItem('userPrimaryInfoRegData');*/
+
+    const primaryRaw = sessionStorage.getItem('userPrimaryInfoRegData');
 
     let employeeId = userId; // fallback — replace once you confirm the key
     let name = '';
     let department = '';
 
-    if (raw) {
+    if (primaryRaw) {
       try {
-        const data = JSON.parse(raw);
+        const data = JSON.parse(primaryRaw);
 
-        // ⚠️ Check DevTools — the employee record ID may be stored as:
+        // Check DevTools — the employee record ID may be stored as:
         // data.employeeId, data.empId, data.id, data.employeeRecordId etc.
-        employeeId = data.employeeId?.toString()
-                  ?? data.empId?.toString()
-                  ?? data.id?.toString()
+        employeeId = data.id?.toString() //hopefully 43 is here
+                  ?? data.employeeId?.toString()
                   ?? userId;
 
-        name = data.fullName
-            ?? data.fullname
-            ?? data.username //from sessionstorage
+        name = data.fullname  //from userPrimaryInfoRegData
+            ?? data.fullName
+            ?? data.username //from userRegData
             ?? data.name
             ?? `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim()
             ?? '';
@@ -45,7 +46,7 @@ export class UserSessionService {
                   ?? data.departmentName
                   ?? '';
       } catch {
-        console.warn('Failed to parse user session data');
+        console.warn('Failed to parse userfrom userPrimaryInfoRegData');
       }
     }
 
