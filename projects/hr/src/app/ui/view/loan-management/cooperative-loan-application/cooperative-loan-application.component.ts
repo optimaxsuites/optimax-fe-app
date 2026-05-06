@@ -256,20 +256,18 @@ initForm(): void {
   });
 
   this.applicationForm.get('memberId')?.valueChanges.subscribe(memberId => {
-    this.selectedMember = this.eligibleMembers.find(member => member.id === memberId);
-    if (this.selectedMember) {
-      this.selectedMember = {
-        ...this.selectedMember,
-        email: this.resolveMemberEmail(this.selectedMember)
-      };
-      if (this.selectedMember.employeeId) {
-        this.guarantorService.getGuarantorByEmployeeId(String(this.selectedMember.employeeId)).subscribe((guarantors: GuarantorDto[]) => {
-          this.guarantorCandidates = guarantors;
-        });
-      } else {
-        this.guarantorCandidates = [];
-      }
-    } else {
+    // Look up in eligibleMembers first; fall back to full members list so guarantors are
+    // not wiped out when eligibleMembers hasn't been populated yet (e.g. auto-resolve path).
+    const found =
+      this.eligibleMembers.find(m => String(m.id) === String(memberId) || String(m.memberId) === String(memberId)) ||
+      this.members.find(m => String(m.id) === String(memberId) || String(m.memberId) === String(memberId));
+
+    if (found) {
+      this.selectedMember = { ...found, email: this.resolveMemberEmail(found) };
+      this.loadGuarantorCandidates(this.selectedMember);
+    } else if (!this.selectedMember || (String(this.selectedMember.id) !== String(memberId) && String(this.selectedMember.memberId) !== String(memberId))) {
+      // Only clear when the value genuinely changed to an unknown member
+      this.selectedMember = undefined;
       this.guarantorCandidates = [];
     }
     this.resolveSelectedMemberEligibility();
@@ -529,9 +527,21 @@ initForm(): void {
           email: m.email
         })));
         
-        const sessionUserId = Number(sessionStorage.getItem('userid') || localStorage.getItem('userid') || 0);
-        
-        let foundMember: CooperativeMember | undefined = this.members.find(m => m.employeeId === sessionUserId || m.id === sessionUserId);
+        const sessionUserId = Number(
+          sessionStorage.getItem('userid')
+          || localStorage.getItem('userid')
+          || sessionStorage.getItem('userId')
+          || localStorage.getItem('userId')
+          || 0
+        );
+
+        let foundMember: CooperativeMember | undefined = this.cooperativeService.resolveCurrentSessionMember(this.members);
+
+        if (!foundMember && sessionUserId) {
+          foundMember = this.members.find((member) =>
+            member.employeeId === sessionUserId || member.id === sessionUserId || member.memberId === sessionUserId
+          );
+        }
         
         if (!foundMember && sessionUserId) {
           console.log('[CoopLoanApp] Looking up employee by userId:', sessionUserId);
@@ -546,6 +556,10 @@ initForm(): void {
                 m.id === employeeId ||
                 m.memberId === employeeId
               );
+
+              if (!foundMember) {
+                foundMember = this.cooperativeService.resolveCurrentSessionMember(this.members);
+              }
               
               if (foundMember) {
                 console.log('[CoopLoanApp] Found member by employee lookup:', foundMember);
@@ -602,11 +616,19 @@ initForm(): void {
   
   // Set the member
   this.selectedMember = member;
-  
+
   // Store the ID for verification
   const selectedMemberId = this.selectedMember.id;
   console.log('[CoopLoanApp] Selected member set with ID:', selectedMemberId);
-  
+
+  // Populate eligibleMembers BEFORE patching the form so the memberId.valueChanges
+  // subscriber can find this member immediately and not zero out guarantorCandidates.
+  this.refreshEligibleMembers();
+
+  // Kick off guarantor fetch — eligible members is now ready so the reactive subscriber
+  // will also fetch correctly when patchValue fires below.
+  this.loadGuarantorCandidates(this.selectedMember);
+
   // Update the form if it exists
   if (this.applicationForm) {
     this.applicationForm.patchValue({ memberId: selectedMemberId });
@@ -620,9 +642,8 @@ initForm(): void {
     }, 100);
     return;
   }
-  
-  // Refresh eligibility and salary
-  this.refreshEligibleMembers();
+
+  // Eligibility and salary (eligibleMembers already refreshed above)
   this.resolveSelectedMemberEligibility();
   this.resolveSelectedMemberSalary();
   
@@ -729,6 +750,24 @@ initForm(): void {
     }
   });
 }
+
+  private loadGuarantorCandidates(member?: CooperativeMember): void {
+    const employeeId = Number(member?.employeeId || 0);
+    if (employeeId <= 0) {
+      this.guarantorCandidates = [];
+      return;
+    }
+
+    this.guarantorService.getGuarantorByEmployeeId(employeeId).subscribe({
+      next: (guarantors: GuarantorDto[]) => {
+        this.guarantorCandidates = Array.isArray(guarantors) ? guarantors : [];
+      },
+      error: (err) => {
+        console.error('[CoopLoanApp] Error loading guarantors:', err);
+        this.guarantorCandidates = [];
+      }
+    });
+  }
 
   // Debug method
   debugFormValidity(): void {
@@ -1488,6 +1527,7 @@ private validateGuarantors(): void {
     const newLoan = {
       cooperativeMemberId: Number(formValue.memberId),
       cooperativeGroupId: Number(formValue.groupId),
+      membershipId: Number(this.selectedGroupMembership?.membershipId || this.selectedGroupMembership?.id || 0) || undefined,
       memberId: formValue.memberId,
       groupId: formValue.groupId,
       amount: Number(formValue.amount),

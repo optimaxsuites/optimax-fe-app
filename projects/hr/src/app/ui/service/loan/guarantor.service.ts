@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../shared-component/environments/environment';
 
 export interface GuarantorMedia {
   id: number;
@@ -29,11 +30,25 @@ export interface GuarantorDto {
 
 @Injectable({ providedIn: 'root' })
 export class GuarantorService {
-  private apiUrl = 'https://be.optimaxsuites.com/x/api/v2/hr/guarantors/getGuarantorByEmployeeId';
+  private baseUrl = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) {}
 
-  getGuarantorByEmployeeId(id: string): Observable<GuarantorDto[]> {
-    return this.http.get<GuarantorDto[]>(`${this.apiUrl}/${id}`);
+  private getHeaders(): HttpHeaders {
+    const token = sessionStorage.getItem('token');
+    const tenantId = 'optimax';
+
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-ID': tenantId,
+      Accept: 'application/json'
+    });
+  }
+
+  getGuarantorByEmployeeId(id: number | string): Observable<GuarantorDto[]> {
+    return this.http.get<GuarantorDto[]>(
+      `${this.baseUrl}/x/api/v2/hr/guarantors/getGuarantorByEmployeeId/${id}`,
+      { headers: this.getHeaders() }
+    );
   }
 }

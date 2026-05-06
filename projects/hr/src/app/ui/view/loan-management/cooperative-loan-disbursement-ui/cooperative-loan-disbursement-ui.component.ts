@@ -34,22 +34,14 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   batchEmployeeDetailsMap: Map<number, any> = new Map();
   isSendToAccountingModalVisible = false;
 
-  // Helper to format membership ID (matches dashboard logic)
   // Helper to format membership ID as [group code letters]-[member id]-[membership id]
   public getFormattedMembershipId(loan: CooperativeLoan): string {
     const group = this.getGroupForLoan(loan);
-    let groupCode = group?.code || '';
-    // Only use the leading alphabetical part of the group code
-    groupCode = (groupCode.match(/^[A-Za-z]+/) || [''])[0];
+    let groupCode = (group?.code || '').match(/^[A-Za-z]+/)?.[0] || '';
     const member = this.getMemberForLoan(loan);
-    // Use raw memberId (not padded)
-    const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
-    const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
-    const membership = this.cooperativeService.getGroupMembership(
-      Number(memberIdNum),
-      Number(groupIdNum)
-    );
-    const membershipIdRaw = membership?.membershipId || loan.membershipId || '';
+    const memberIdNum = loan.cooperativeMemberId || loan.memberId || member?.id || member?.memberId;
+    const membership = this.cooperativeService.resolveGroupMembershipForLoan(loan, member);
+    const membershipIdRaw = membership?.membershipId || '';
     if (membershipIdRaw && groupCode && memberIdNum) {
       return `${groupCode}-${memberIdNum}-${membershipIdRaw}`;
     }
@@ -597,14 +589,9 @@ sendToAccounting(): void {
   }
 
   getMembershipId(loan: CooperativeLoan): number | string {
-    if (loan.membershipId) {
-      return loan.membershipId;
-    }
-    const membership = this.cooperativeService.getGroupMembership(
-      loan.cooperativeMemberId,
-      loan.cooperativeGroupId
-    );
-    return membership?.id || '—';
+    const member = this.getMemberForLoan(loan);
+    const membership = this.cooperativeService.resolveGroupMembershipForLoan(loan, member);
+    return membership?.id || loan.membershipId || '—';
   }
 
   formatCurrency(amount: number): string {

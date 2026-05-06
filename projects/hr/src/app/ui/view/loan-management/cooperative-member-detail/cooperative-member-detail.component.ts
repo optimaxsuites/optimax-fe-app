@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
@@ -17,7 +17,8 @@ interface RepaymentHistoryItem {
 @Component({
   selector: 'app-cooperative-member-detail',
   templateUrl: './cooperative-member-detail.component.html',
-  styleUrls: ['./cooperative-member-detail.component.scss']
+  styleUrls: ['./cooperative-member-detail.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CooperativeMemberDetailComponent implements OnInit {
   currentUuid = uuidV4();
@@ -30,6 +31,9 @@ export class CooperativeMemberDetailComponent implements OnInit {
     totalContribution: number;
     joinedAt: string;
   }> = [];
+
+  pageSize = 5;
+  currentPage = 1;
   isLoading = true;
   private returnSource = '';
   private returnGroupId?: number;
@@ -97,7 +101,7 @@ export class CooperativeMemberDetailComponent implements OnInit {
   }
 
   // Helper method to get group name by ID
-  public getGroupName(groupId: number): string {
+  public getGroupName(groupId: number | undefined): string {
     if (!groupId) return '—';
     const group = this.cooperativeService.getGroupById(groupId);
     return group?.name || '—';
@@ -189,4 +193,34 @@ export class CooperativeMemberDetailComponent implements OnInit {
     // Dummy implementation, replace with real logic if needed
     return [];
   }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.memberLoans.length / this.pageSize));
+  }
+
+  get paginatedLoans(): CooperativeLoan[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.memberLoans.slice(start, start + this.pageSize);
+  }
+
+
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  // Add scroll methods
+  scrollToGroups(): void {
+    const element = document.getElementById('groups-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+ scrollToLoans(): void {
+  const element = document.getElementById('loans-section');
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 }

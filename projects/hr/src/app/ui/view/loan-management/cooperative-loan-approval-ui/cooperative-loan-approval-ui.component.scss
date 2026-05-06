@@ -104,9 +104,14 @@ app-cooperative-loan-approval-ui {
         align-items: center;
         gap: 12px;
 
-        .title-icon {
+        // .title-icon {
+        //   color: #2EB270;
+        //   font-size: 1.7rem;
+        // }
+
+        i {
           color: #2EB270;
-          font-size: 1.7rem;
+          margin-right: 12px;
         }
       }
 

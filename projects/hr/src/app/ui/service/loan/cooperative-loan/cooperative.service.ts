@@ -950,6 +950,39 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
     return this.groupMemberships.find(item => item.memberId === memberId && item.groupId === groupId);
   }
 
+  /**
+   * Resolves the group membership for a loan using a multi-candidate strategy:
+   * 1. loan.membershipId (direct id match)
+   * 2. loan.cooperativeMemberId + loan.cooperativeGroupId candidates
+   * 3. All alias IDs from the resolved CooperativeMember
+   */
+  public resolveGroupMembershipForLoan(loan: CooperativeLoan, member?: { id?: number; memberId?: number }): CooperativeGroupMembership | undefined {
+    const directMembershipId = Number(loan.membershipId || 0);
+    if (directMembershipId > 0) {
+      const byId = this.groupMemberships.find((item) => Number(item.id) === directMembershipId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    const groupId = Number(loan.cooperativeGroupId || loan.groupId || 0);
+    if (!groupId) {
+      return undefined;
+    }
+
+    const candidateMemberIds = [
+      Number(loan.cooperativeMemberId || 0),
+      Number(loan.memberId || 0),
+      Number(member?.id || 0),
+      Number(member?.memberId || 0)
+    ].filter((value) => value > 0);
+
+    return this.groupMemberships.find((item) =>
+      Number(item.groupId) === groupId &&
+      candidateMemberIds.includes(Number(item.memberId))
+    );
+  }
+
   public applyForGroupMembership(memberId: number, groupId: number): Observable<CooperativeGroupMembership> {
     const existing = this.getGroupMembership(memberId, groupId);
     const now = new Date().toISOString();
@@ -1037,7 +1070,20 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
 
     return this.cooperativeLoanApiService.updateGroupMembership(id, this.buildGroupMembershipUpdatePayload(updatedMembership)).pipe(
       map((rawMembership) => {
-        const approvedMembership = this.mapApiGroupMembershipToMembership(rawMembership);
+        const mappedMembership = this.mapApiGroupMembershipToMembership(rawMembership);
+        const approvedMembership: CooperativeGroupMembership = {
+          ...updatedMembership,
+          ...mappedMembership,
+          id: Number(mappedMembership.id || updatedMembership.id || id),
+          memberId: Number(mappedMembership.memberId || updatedMembership.memberId),
+          groupId: Number(mappedMembership.groupId || updatedMembership.groupId),
+          membershipId: Number(mappedMembership.membershipId || updatedMembership.membershipId || updatedMembership.id || id) || undefined,
+          status: rawMembership?.status ? mappedMembership.status : updatedMembership.status,
+          requestedAt: mappedMembership.requestedAt || updatedMembership.requestedAt,
+          approvedAt: mappedMembership.approvedAt || updatedMembership.approvedAt,
+          activatedAt: mappedMembership.activatedAt || updatedMembership.activatedAt,
+          reviewedAt: mappedMembership.reviewedAt || updatedMembership.reviewedAt
+        };
         this.upsertGroupMembershipInCache(approvedMembership, true, rawMembership);
         this.groupMembershipChangedSubject.next();
         return approvedMembership;
@@ -1075,7 +1121,19 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
 
     return this.cooperativeLoanApiService.updateGroupMembership(id, this.buildGroupMembershipUpdatePayload(updatedMembership)).pipe(
       map((rawMembership) => {
-        const rejectedMembership = this.mapApiGroupMembershipToMembership(rawMembership);
+        const mappedMembership = this.mapApiGroupMembershipToMembership(rawMembership);
+        const rejectedMembership: CooperativeGroupMembership = {
+          ...updatedMembership,
+          ...mappedMembership,
+          id: Number(mappedMembership.id || updatedMembership.id || id),
+          memberId: Number(mappedMembership.memberId || updatedMembership.memberId),
+          groupId: Number(mappedMembership.groupId || updatedMembership.groupId),
+          membershipId: Number(mappedMembership.membershipId || updatedMembership.membershipId || updatedMembership.id || id) || undefined,
+          status: rawMembership?.status ? mappedMembership.status : updatedMembership.status,
+          requestedAt: mappedMembership.requestedAt || updatedMembership.requestedAt,
+          rejectedAt: mappedMembership.rejectedAt || updatedMembership.rejectedAt,
+          reviewedAt: mappedMembership.reviewedAt || updatedMembership.reviewedAt
+        };
         this.upsertGroupMembershipInCache(rejectedMembership, true, rawMembership);
         this.groupMembershipChangedSubject.next();
         return rejectedMembership;

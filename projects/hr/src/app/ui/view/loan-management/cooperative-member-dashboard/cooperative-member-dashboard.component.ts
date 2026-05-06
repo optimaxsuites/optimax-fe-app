@@ -619,19 +619,50 @@ export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
   }
 
   private resolveDashboardMember(members: CooperativeMember[]): CooperativeMember | undefined {
-    const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
-    const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
-    const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
+    // Primary: Use the service's comprehensive resolver which validates session storage against employeeId
+    let foundMember = this.cooperativeService.resolveCurrentSessionMember(members);
+    
+    if (foundMember) {
+      return foundMember;
+    }
 
+    // Secondary: If seeded member ID exists and matches current profile, use it
     const seededMember = this.currentMemberId > 0
       ? this.cooperativeService.getMemberById(Number(this.currentMemberId))
       : undefined;
+    
+    if (this.memberMatchesCurrentProfile(seededMember)) {
+      return seededMember;
+    }
 
-    return members.find((member) => Number(member.employeeId || 0) === currentEmployeeId)
-      || members.find((member) => String(member.email || '').trim().toLowerCase() === normalizedEmail)
-      || members.find((member) => String(member.fullName || '').trim().toLowerCase() === normalizedFullName)
-      || (this.memberMatchesCurrentProfile(seededMember) ? seededMember : undefined)
-      || this.cooperativeService.resolveCurrentSessionMember(members);
+    // Tertiary: Fall back to employee-based lookup
+    const currentEmployeeId = Number(this.currentCurrentEmployeeId() || 0);
+    if (currentEmployeeId > 0) {
+      const byEmployeeId = members.find((member) => Number(member.employeeId || 0) === currentEmployeeId);
+      if (byEmployeeId) {
+        return byEmployeeId;
+      }
+    }
+
+    // Quaternary: Fall back to email/fullName lookup from current profile
+    const normalizedEmail = String(this.currentEmployeeProfile.email || '').trim().toLowerCase();
+    const normalizedFullName = String(this.currentEmployeeProfile.fullName || '').trim().toLowerCase();
+    
+    if (normalizedEmail) {
+      const byEmail = members.find((member) => String(member.email || '').trim().toLowerCase() === normalizedEmail);
+      if (byEmail) {
+        return byEmail;
+      }
+    }
+    
+    if (normalizedFullName) {
+      const byFullName = members.find((member) => String(member.fullName || '').trim().toLowerCase() === normalizedFullName);
+      if (byFullName) {
+        return byFullName;
+      }
+    }
+
+    return undefined;
   }
 
   private isResolvedMemberActive(member: CooperativeMember | undefined): boolean {
