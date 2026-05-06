@@ -7,12 +7,13 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { forkJoin, Subject } from 'rxjs';
+import { take, takeUntil } from 'rxjs/operators';
 
 import { AccountingFormatService } from '../../../../core/services/accounting-format.service';
 import { AccountingService } from '../../../../core/services/accounting.service';
 import {
+  AccountingTransactionDTO,
   ExpenseDistributionDTO,
   FinancialLineItemDTO,
   IncomeStatementReportDTO,
@@ -125,6 +126,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   };
 
   data: IncomeStatementData | null = null;
+  loading = true;
+  errorMessage = '';
 
   comments: Comment[] = [];
 
@@ -137,12 +140,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.accountingService.getIncomeStatementReport()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((report: IncomeStatementReportDTO) => {
-        this.data = this.toIncomeStatementData(report);
-        this.cdr.markForCheck();
-      });
+    this.loadReport();
   }
 
   ngOnDestroy(): void {
@@ -152,16 +150,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   previousMonth(): void {
     const current = this.data?.period ?? new Date();
-    this.accountingService.setPeriod(
-      new Date(current.getFullYear(), current.getMonth() - 1, 1)
-    );
+    this.requestPeriod(new Date(current.getFullYear(), current.getMonth() - 1, 1));
   }
 
   nextMonth(): void {
     const current = this.data?.period ?? new Date();
-    this.accountingService.setPeriod(
-      new Date(current.getFullYear(), current.getMonth() + 1, 1)
-    );
+    this.requestPeriod(new Date(current.getFullYear(), current.getMonth() + 1, 1));
   }
 
   onFiltersApplied(filters: FilterOptions): void {
@@ -711,36 +705,83 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     return `${month}_${period.getFullYear()}`;
   }
 
-  private toIncomeStatementData(report: IncomeStatementReportDTO): IncomeStatementData {
+  private requestPeriod(period: Date): void {
+    this.accountingService.setPeriod(period);
+    this.loadReport();
+  }
+
+  private loadReport(): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.cdr.markForCheck();
+
+    forkJoin([
+      this.accountingService.getIncomeStatementReport().pipe(take(1)),
+      this.accountingService.getAccountingTransactions().pipe(take(1)),
+    ])
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: ([report, transactions]) => {
+          this.data = this.toIncomeStatementData(report, transactions);
+          this.loading = false;
+          this.errorMessage = '';
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.data = null;
+          this.loading = false;
+          this.errorMessage = 'Unable to load the income statement for the selected period.';
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private toIncomeStatementData(report: IncomeStatementReportDTO, transactions: AccountingTransactionDTO[] = []): IncomeStatementData {
+    const hasBackendLines = [
+      report.revenue,
+      report.cogs,
+      report.administrativeExpenses,
+      report.salariesAndWages,
+      report.maintenance,
+      report.logisticsAndDistribution,
+      report.otherOperatingExpenses,
+      report.otherItems,
+    ].some((items) => items.length > 0);
+
+    const derived = hasBackendLines
+      ? null
+      : this.deriveFromIncludedTransactions(report, transactions);
+    const totals = derived?.totals ?? report.totals;
+
     return {
-      period: new Date(report.reportPeriod),
-      revenue: this.mapLineItems(report.revenue),
-      cogs: this.mapLineItems(report.cogs),
+      period: this.toDateValue(report.reportPeriod),
+      revenue: derived?.revenue ?? this.mapLineItems(report.revenue),
+      cogs: derived?.cogs ?? this.mapLineItems(report.cogs),
       administrativeExpenses: this.mapLineItems(report.administrativeExpenses),
       salariesWages: this.mapLineItems(report.salariesAndWages),
       maintenance: this.mapLineItems(report.maintenance),
       logisticsDistribution: this.mapLineItems(report.logisticsAndDistribution),
       otherOperatingExpenses: this.mapLineItems(report.otherOperatingExpenses),
-      otherItems: this.mapLineItems(report.otherItems),
+      otherItems: derived?.otherItems ?? this.mapLineItems(report.otherItems),
       totals: {
-        revenue: this.mapComparison(report.totals.revenue),
-        cogs: this.mapComparison(report.totals.cogs),
-        grossProfit: this.mapComparison(report.totals.grossProfit),
-        adminExpenses: this.mapComparison(report.totals.adminExpenses),
-        salariesWages: this.mapComparison(report.totals.salariesWages),
-        maintenance: this.mapComparison(report.totals.maintenance),
-        logistics: this.mapComparison(report.totals.logistics),
-        otherOpEx: this.mapComparison(report.totals.otherOpEx),
-        totalOpEx: this.mapComparison(report.totals.totalOpEx),
-        ebit: this.mapComparison(report.totals.ebit),
-        ebitda: this.mapComparison(report.totals.ebitda),
-        otherItems: this.mapComparison(report.totals.otherItems),
-        nibt: this.mapComparison(report.totals.nibt),
-        cit: this.mapComparison(report.totals.cit),
-        educationTax: this.mapComparison(report.totals.educationTaxLevy),
-        naseniLevy: this.mapComparison(report.totals.naseniLevy),
-        totalTax: this.mapComparison(report.totals.totalTax),
-        netIncome: this.mapComparison(report.totals.netIncome),
+        revenue: this.mapComparison(totals.revenue),
+        cogs: this.mapComparison(totals.cogs),
+        grossProfit: this.mapComparison(totals.grossProfit),
+        adminExpenses: this.mapComparison(totals.adminExpenses),
+        salariesWages: this.mapComparison(totals.salariesWages),
+        maintenance: this.mapComparison(totals.maintenance),
+        logistics: this.mapComparison(totals.logistics),
+        otherOpEx: this.mapComparison(totals.otherOpEx),
+        totalOpEx: this.mapComparison(totals.totalOpEx),
+        ebit: this.mapComparison(totals.ebit),
+        ebitda: this.mapComparison(totals.ebitda),
+        otherItems: this.mapComparison(totals.otherItems),
+        nibt: this.mapComparison(totals.nibt),
+        cit: this.mapComparison(totals.cit),
+        educationTax: this.mapComparison(totals.educationTaxLevy),
+        naseniLevy: this.mapComparison(totals.naseniLevy),
+        totalTax: this.mapComparison(totals.totalTax),
+        netIncome: this.mapComparison(totals.netIncome),
       },
       ratios: {
         revenueGrowthMoM: report.ratios.revenueGrowthMoMPct,
@@ -749,9 +790,100 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         ebitdaMargin: report.ratios.ebitdaMarginPct,
         netProfitMargin: report.ratios.netProfitMarginPct,
       },
-      monthlyTrend: this.mapMonthlyTrend(report.monthlyTrend),
+      monthlyTrend: derived?.monthlyTrend ?? this.mapMonthlyTrend(report.monthlyTrend),
       expenseDistribution: this.mapExpenseDistribution(report.expenseDistribution),
     };
+  }
+
+  private deriveFromIncludedTransactions(
+    report: IncomeStatementReportDTO,
+    transactions: AccountingTransactionDTO[],
+  ): {
+    revenue: FinancialLineItem[];
+    cogs: FinancialLineItem[];
+    otherItems: FinancialLineItem[];
+    totals: IncomeStatementReportDTO['totals'];
+    monthlyTrend: MonthlyFinancialData;
+  } | null {
+    const includedIds = new Set(report.reportContext.includedTransactionIds.map((id) => String(id)));
+    const includedTransactions = transactions.filter((transaction) => includedIds.has(String(transaction.id)));
+
+    if (!includedTransactions.length) {
+      return null;
+    }
+
+    const revenueRows: FinancialLineItem[] = [];
+    const cogsRows: FinancialLineItem[] = [];
+    const otherRows: FinancialLineItem[] = [];
+
+    includedTransactions.forEach((transaction) => {
+      const amount = Number(transaction.amount) || 0;
+      const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
+      const interestAmount = approvedAmount !== null ? Math.max(amount - approvedAmount, 0) : 0;
+      const principalAmount = approvedAmount !== null ? approvedAmount : amount;
+      const label = transaction.description || transaction.transactionReference || transaction.reference || `Transaction ${transaction.id}`;
+
+      if (interestAmount > 0) {
+        revenueRows.push(this.toFinancialLineItem(`Interest income - ${label}`, interestAmount));
+      }
+
+      if (principalAmount > 0) {
+        otherRows.push(this.toFinancialLineItem(`Loan principal activity - ${label}`, -principalAmount));
+      }
+    });
+
+    const revenueTotal = revenueRows.reduce((sum, item) => sum + item.amount, 0);
+    const cogsTotal = cogsRows.reduce((sum, item) => sum + item.amount, 0);
+    const otherTotal = otherRows.reduce((sum, item) => sum + item.amount, 0);
+    const grossProfit = revenueTotal - Math.abs(cogsTotal);
+    const ebit = grossProfit + otherTotal;
+    const netIncome = ebit;
+    const totals = this.cloneTotals(report.totals);
+
+    totals.revenue.actualAmount = revenueTotal;
+    totals.cogs.actualAmount = cogsTotal;
+    totals.grossProfit.actualAmount = grossProfit;
+    totals.otherItems.actualAmount = otherTotal;
+    totals.ebit.actualAmount = ebit;
+    totals.ebitda.actualAmount = ebit;
+    totals.nibt.actualAmount = netIncome;
+    totals.netIncome.actualAmount = netIncome;
+
+    return {
+      revenue: revenueRows,
+      cogs: cogsRows,
+      otherItems: otherRows,
+      totals,
+      monthlyTrend: {
+        labels: report.monthlyTrend.periodLabels,
+        revenue: [revenueTotal],
+        expenses: [Math.abs(cogsTotal + otherTotal)],
+        profit: [netIncome],
+      },
+    };
+  }
+
+  private toFinancialLineItem(name: string, amount: number): FinancialLineItem {
+    return { name, amount, prevAmount: 0, budget: 0, prevYearAmount: 0 };
+  }
+
+  private numberFromMetadata(transaction: AccountingTransactionDTO, key: string): number | null {
+    const value = transaction.metadata?.[key];
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private cloneTotals(totals: IncomeStatementReportDTO['totals']): IncomeStatementReportDTO['totals'] {
+    return JSON.parse(JSON.stringify(totals));
+  }
+
+  private toDateValue(value: string | number[]): Date {
+    if (Array.isArray(value)) {
+      const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nanos = 0] = value;
+      return new Date(year, month - 1, day, hour, minute, second, Math.floor(nanos / 1_000_000));
+    }
+
+    return new Date(value);
   }
 
   private mapLineItems(items: FinancialLineItemDTO[]): FinancialLineItem[] {
