@@ -11,6 +11,7 @@ app-cooperative-dashboard {
   
   .loan-dashboard-container {
     min-height: 100vh;
+    font-size: 1.5rem;
     background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
     width: 100%;
     max-width: 100%;
@@ -88,7 +89,7 @@ app-cooperative-dashboard {
 
         .hero-left {
           .hero-badge {
-            font-size: 0.7rem;
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: rgba(255, 255, 255, 0.7);
@@ -104,7 +105,7 @@ app-cooperative-dashboard {
 
           .hero-meta {
             margin: 0;
-            font-size: 0.85rem;
+            font-size: 1rem;
             color: rgba(255, 255, 255, 0.75);
           }
         }
@@ -122,7 +123,7 @@ app-cooperative-dashboard {
 
             span {
               display: block;
-              font-size: 0.65rem;
+              font-size: 1.06rem;
               text-transform: uppercase;
               color: rgba(255, 255, 255, 0.6);
               margin-bottom: 4px;
@@ -130,7 +131,7 @@ app-cooperative-dashboard {
             }
 
             strong {
-              font-size: 0.95rem;
+              font-size: 1.08rem;
               font-weight: 700;
               color: white;
             }
@@ -139,7 +140,7 @@ app-cooperative-dashboard {
               display: inline-block;
               padding: 0;
               background: transparent;
-              font-size: 0.95rem;
+              font-size: 1.08rem;
             }
           }
         }
@@ -205,7 +206,7 @@ app-cooperative-dashboard {
 
           .card-eyebrow {
             display: block;
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: #8aadba;
@@ -214,7 +215,7 @@ app-cooperative-dashboard {
 
           h4 {
             margin: 2px 0 0;
-            font-size: 0.95rem;
+            font-size: 1.08rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -232,13 +233,13 @@ app-cooperative-dashboard {
           align-items: center;
 
           .row-label {
-            font-size: 0.75rem;
+            font-size: 1.02rem;
             color: #8aadba;
             font-weight: 500;
           }
 
           .row-value {
-            font-size: 0.85rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #1a4b5c;
 
@@ -256,7 +257,7 @@ app-cooperative-dashboard {
             }
 
             &.strong {
-              font-size: 0.9rem;
+              font-size: 1.02rem;
               font-weight: 700;
             }
           }
@@ -265,7 +266,7 @@ app-cooperative-dashboard {
         .purpose-text,
         .note-text {
           margin: 0;
-          font-size: 0.85rem;
+          font-size: 1rem;
           color: #4a6270;
           line-height: 1.5;
         }
@@ -286,7 +287,7 @@ app-cooperative-dashboard {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
 
           .timeline-label {
             color: #8aadba;
@@ -322,14 +323,14 @@ app-cooperative-dashboard {
 
             span {
               display: block;
-              font-size: 0.65rem;
+              font-size: 1.06rem;
               text-transform: uppercase;
               color: #8aadba;
               margin-bottom: 4px;
             }
 
             strong {
-              font-size: 0.85rem;
+              font-size: 1rem;
               color: #1a4b5c;
             }
           }
@@ -340,7 +341,7 @@ app-cooperative-dashboard {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            font-size: 0.75rem;
+            font-size: 1.02rem;
             font-weight: 600;
             color: #1a4b5c;
           }
@@ -362,7 +363,7 @@ app-cooperative-dashboard {
                 position: absolute;
                 right: 8px;
                 top: -18px;
-                font-size: 0.65rem;
+                font-size: 1.06rem;
                 color: white;
                 white-space: nowrap;
               }
@@ -396,7 +397,7 @@ app-cooperative-dashboard {
 
           .card-eyebrow {
             display: block;
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: #8aadba;
@@ -405,7 +406,7 @@ app-cooperative-dashboard {
 
           h4 {
             margin: 2px 0 0;
-            font-size: 0.95rem;
+            font-size: 1.08rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -426,7 +427,7 @@ app-cooperative-dashboard {
           }
 
           th {
-            font-size: 0.75rem;
+            font-size: 1.02rem;
             font-weight: 700;
             color: #8aadba;
             text-transform: uppercase;
@@ -434,7 +435,7 @@ app-cooperative-dashboard {
           }
 
           td {
-            font-size: 0.85rem;
+            font-size: 1rem;
             color: #1a4b5c;
 
             &.installment-no {
@@ -452,7 +453,7 @@ app-cooperative-dashboard {
             display: inline-block;
             padding: 3px 10px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 1rem;
             font-weight: 600;
 
             &.paid {
@@ -502,7 +503,7 @@ app-cooperative-dashboard {
 
           .card-eyebrow {
             display: block;
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: #8aadba;
@@ -511,7 +512,7 @@ app-cooperative-dashboard {
 
           h4 {
             margin: 2px 0 0;
-            font-size: 0.95rem;
+            font-size: 1.08rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -535,7 +536,7 @@ app-cooperative-dashboard {
               display: flex;
               align-items: center;
               gap: 8px;
-              font-size: 0.8rem;
+              font-size: 1.06rem;
               color: #8aadba;
 
               i {
@@ -549,7 +550,7 @@ app-cooperative-dashboard {
               align-items: center;
 
               .payment-method {
-                font-size: 0.75rem;
+                font-size: 1.02rem;
                 color: #8aadba;
                 padding: 3px 8px;
                 background: white;
@@ -557,7 +558,7 @@ app-cooperative-dashboard {
               }
 
               .payment-amount {
-                font-size: 0.9rem;
+                font-size: 1.02rem;
                 font-weight: 700;
                 color: #2eb270;
               }
@@ -577,7 +578,7 @@ app-cooperative-dashboard {
           margin-bottom: 16px;
 
           .label {
-            font-size: 0.85rem;
+            font-size: 1rem;
             font-weight: 600;
             color: #1a4b5c;
           }
@@ -600,7 +601,7 @@ app-cooperative-dashboard {
 
         .review-error {
           color: #dc2626;
-          font-size: 0.85rem;
+          font-size: 1rem;
           margin: 0 0 16px;
           padding: 10px;
           background: #fef2f2;
@@ -623,7 +624,7 @@ app-cooperative-dashboard {
           border: 1px solid #e3eef0;
           background: white;
           border-radius: 10px;
-          font-size: 0.85rem;
+          font-size: 1rem;
           font-weight: 600;
           color: #8aadba;
           cursor: pointer;
@@ -640,7 +641,7 @@ app-cooperative-dashboard {
           border: none;
           background: #eef3f6;
           border-radius: 10px;
-          font-size: 0.85rem;
+          font-size: 1rem;
           font-weight: 600;
           color: #2e6276;
           cursor: pointer;
@@ -659,7 +660,7 @@ app-cooperative-dashboard {
           border: none;
           background: linear-gradient(135deg, #2eb270, #239d60);
           border-radius: 10px;
-          font-size: 0.85rem;
+          font-size: 1rem;
           font-weight: 600;
           color: white;
           cursor: pointer;
@@ -688,7 +689,7 @@ app-cooperative-dashboard {
         justify-content: center !important;
         padding: 4px 12px !important;
         border-radius: 999px !important;
-        font-size: 0.75rem !important;
+        font-size: 1.02rem !important;
         font-weight: 700 !important;
         white-space: nowrap !important;
 
@@ -805,7 +806,7 @@ app-cooperative-dashboard {
         
         .hero-subtitle {
           margin: 0 0 16px 0;
-          font-size: 0.95rem;
+          font-size: 1.08rem;
           color: rgba(255,255,255,0.85);
           max-width: 600px;
         }
@@ -818,10 +819,10 @@ app-cooperative-dashboard {
           backdrop-filter: blur(10px);
           padding: 8px 16px;
           border-radius: 40px;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
           color: white;
           
-          i { font-size: 0.8rem; }
+          i { font-size: 1.06rem; }
         }
       }
       
@@ -860,7 +861,7 @@ app-cooperative-dashboard {
           background: transparent;
           color: rgba(255,255,255,0.7);
           font-weight: 600;
-          font-size: 0.85rem;
+          font-size: 1rem;
           border-radius: 40px;
           cursor: pointer;
           transition: all 0.2s ease;
@@ -868,7 +869,7 @@ app-cooperative-dashboard {
           align-items: center;
           gap: 8px;
           
-          i { font-size: 0.9rem; }
+          i { font-size: 1.02rem; }
           
           &:hover {
             color: white;
@@ -942,7 +943,7 @@ app-cooperative-dashboard {
           
           .stat-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 1rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -951,7 +952,7 @@ app-cooperative-dashboard {
           
           .stat-note {
             display: block;
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             color: #8aadba;
           }
         }
@@ -1077,7 +1078,7 @@ app-cooperative-dashboard {
             border: none;
             background: transparent;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 1.06rem;
             font-weight: 600;
             cursor: pointer;
             color: #8aadba;
@@ -1108,7 +1109,7 @@ app-cooperative-dashboard {
 
       .inline-message {
         margin: 16px 24px 0;
-        font-size: 0.85rem;
+        font-size: 1rem;
         color: #2e6276;
       }
 
@@ -1132,7 +1133,7 @@ app-cooperative-dashboard {
     background: #f8fcfd;
     color: #1a4b5c;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     white-space: nowrap;
@@ -1141,7 +1142,7 @@ app-cooperative-dashboard {
   td {
     vertical-align: middle;
     color: #2c5a6a;
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
 
   tr:hover {
@@ -1171,7 +1172,7 @@ app-cooperative-dashboard {
     flex-direction: column;
     gap: 4px;
     strong { color: #1a4b5c; }
-    .mono-sm { font-family: monospace; font-size: 0.7rem; color: #8aadba; }
+    .mono-sm { font-family: monospace; font-size: 1rem; color: #8aadba; }
   }
 
   // Status Badge Styles - Explicitly defined
@@ -1181,7 +1182,7 @@ app-cooperative-dashboard {
     justify-content: center !important;
     padding: 4px 12px !important;
     border-radius: 999px !important;
-    font-size: 0.75rem !important;
+    font-size: 1.02rem !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
 
@@ -1260,7 +1261,7 @@ app-cooperative-dashboard {
       margin: 0 2px;
       
       i {
-        font-size: 0.9rem;
+        font-size: 1.02rem;
       }
       
       &.view, &.history {
@@ -1361,20 +1362,20 @@ app-cooperative-dashboard {
           strong {
             display: block;
             color: #1a4b5c;
-            font-size: 0.9rem;
+            font-size: 1.02rem;
             font-weight: 700;
           }
 
           span {
             display: block;
             color: #8aadba;
-            font-size: 0.7rem;
+            font-size: 1rem;
           }
         }
 
         i:last-child {
           color: #8aadba;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
           transition: transform 0.2s;
         }
 
@@ -1391,7 +1392,7 @@ app-cooperative-dashboard {
           border-radius: 999px;
           background: #f59e0b;
           color: white;
-          font-size: 0.7rem;
+          font-size: 1rem;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1437,7 +1438,7 @@ app-cooperative-dashboard {
           color: #2E6276;
           padding: 2px 10px;
           border-radius: 20px;
-          font-size: 0.7rem;
+          font-size: 1rem;
           font-weight: 600;
         }
       }
@@ -1475,7 +1476,7 @@ app-cooperative-dashboard {
           background: rgba(46,98,118,0.12);
           color: #2e6276;
           
-          i { font-size: 0.9rem; }
+          i { font-size: 1.02rem; }
         }
 
         .activity-content {
@@ -1483,7 +1484,7 @@ app-cooperative-dashboard {
 
           .activity-message {
             margin: 0 0 6px;
-            font-size: 0.8rem;
+            font-size: 1.06rem;
             color: #4a6270;
             line-height: 1.4;
           }
@@ -1492,7 +1493,7 @@ app-cooperative-dashboard {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.7rem;
+            font-size: 1rem;
             color: #8aadba;
           }
         }
@@ -1503,7 +1504,7 @@ app-cooperative-dashboard {
         padding: 40px 20px;
         
         i { font-size: 2rem; color: #b6d0da; margin-bottom: 12px; display: block; }
-        p { color: #8aadba; font-size: 0.85rem; margin: 0; }
+        p { color: #8aadba; font-size: 1rem; margin: 0; }
       }
     }
 
@@ -1534,7 +1535,7 @@ app-cooperative-dashboard {
         }
         p {
           margin: 0;
-          font-size: 0.85rem;
+          font-size: 1rem;
           color: #6b8792;
         }
       }

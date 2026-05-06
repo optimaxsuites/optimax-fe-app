@@ -42,12 +42,12 @@ export class LoanComponent implements OnInit {
       {
         name: 'My Loans',
         component: EmployeeDashboardComponent,
-        icon: isFemale ? 'fas fa-user-hair-long' : 'fas fa-user'
+        icon: 'fas fa-wallet'
       },
       {
         name: 'My Membership',
         component: CooperativeMemberDashboardComponent,
-        icon: isFemale ? 'fas fa-user-tie-hair-long' : 'fas fa-user-tie'
+        icon: 'fas fa-id-card'
       }
     ];
   }
