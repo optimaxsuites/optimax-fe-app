@@ -5,6 +5,27 @@
   (click)="closeSearch(); dismissDelete()"
   [ngClass]="{ resizing: isResizingSidebar || isResizingThread }"
 >
+  <div class="chat-arrival-stack" *ngIf="chatArrivalToasts.length">
+    <button
+      type="button"
+      *ngFor="let toast of chatArrivalToasts"
+      class="chat-arrival-toast"
+      [class.dm]="toast.tone === 'dm'"
+      [class.channel]="toast.tone === 'channel'"
+      (click)="openChatArrivalToast(toast)"
+    >
+      <img *ngIf="toast.avatarUrl" [src]="toast.avatarUrl" alt="" class="chat-arrival-avatar" />
+      <span *ngIf="!toast.avatarUrl" class="chat-arrival-avatar chat-arrival-avatar-fallback">
+        {{ toast.initials }}
+      </span>
+      <span class="chat-arrival-copy">
+        <strong>{{ toast.title }}</strong>
+        <small>{{ toast.body }}</small>
+      </span>
+      <span class="chat-arrival-close" (click)="dismissChatArrivalToast(toast.id); $event.stopPropagation()">×</span>
+    </button>
+  </div>
+
   <div
     class="workspace-sidebar-shell flex-shrink-0 relative overflow-hidden"
     [style.width.px]="sidebarWidth"
@@ -476,22 +497,21 @@
                       </span>
                       <i class="pi pi-eye"></i>
                     </button>
-                    <a
+                    <button
                       *ngIf="isFeedOfficeItem(media) && feedMediaUrl(media) as officeUrl"
-                      class="feed-file-card"
-                      [href]="officeUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      type="button"
+                      class="feed-file-card feed-file-button"
+                      (click)="openFeedMediaCarousel([media], 0)"
                     >
                       <span class="feed-file-icon office-doc">
                         <i class="pi pi-file"></i>
                       </span>
                       <span class="feed-file-copy">
                         <strong>{{ feedMediaLabel(media, mediaIndex) }}</strong>
-                        <small>{{ officeFileBadge(feedMediaLabel(media, mediaIndex)) }} DOWNLOAD</small>
+                        <small>{{ officeFileBadge(feedMediaLabel(media, mediaIndex)) }} PREVIEW</small>
                       </span>
-                      <i class="pi pi-arrow-up-right"></i>
-                    </a>
+                      <i class="pi pi-eye"></i>
+                    </button>
                   </article>
                 </div>
                 <ng-template #feedCoverOnly>
@@ -604,7 +624,7 @@
                         <strong>{{ feedAuthorName(comment.author) }}</strong>
                         <span>{{ feedPublishedLabel(comment.createdAt) }}</span>
                       </div>
-                      <p>{{ comment.content }}</p>
+                      <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(comment.content)"></div>
                       <a
                         *ngIf="feedCommentLinkPreview(comment) as preview"
                         class="feed-link-preview compact"
@@ -718,7 +738,7 @@
                               <strong>{{ feedAuthorName(reply.author) }}</strong>
                               <span>{{ feedPublishedLabel(reply.createdAt) }}</span>
                             </div>
-                            <p>{{ reply.content }}</p>
+                            <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(reply.content)"></div>
                             <a
                               *ngIf="feedCommentLinkPreview(reply) as preview"
                               class="feed-link-preview compact"
@@ -826,7 +846,7 @@
                                     <strong>{{ feedAuthorName(replyLevel3.author) }}</strong>
                                     <span>{{ feedPublishedLabel(replyLevel3.createdAt) }}</span>
                                   </div>
-                                  <p>{{ replyLevel3.content }}</p>
+                                  <div class="feed-comment-text" [innerHTML]="feedDisplayCommentContent(replyLevel3.content)"></div>
                                   <a
                                     *ngIf="feedCommentLinkPreview(replyLevel3) as preview"
                                     class="feed-link-preview compact"
@@ -1096,7 +1116,10 @@
           [voiceSupported]="voiceSupported"
           [typingUsersLabel]="typingUsersLabel"
           [linkPreview]="chatDraftLinkPreview()"
-          (draftChange)="draft = $event"
+          [mentionResults]="chatMentionResults"
+          [showMentionMenu]="chatShowMentionMenu"
+          [mentionLabel]="chatMentionLabel.bind(this)"
+          (draftChange)="onChatDraftChanged($event)"
           (messageSent)="sendMessage()"
           (filesSelected)="onFilesSelected($event)"
           (attachmentRemoved)="removePendingAttachment($event)"
@@ -1109,6 +1132,7 @@
           (emailCompose)="openEmailModal()"
           (composerTyping)="onComposerTyping()"
           (aiOutputUsed)="onAiOutputUsed($event)"
+          (mentionSelected)="applyChatMention($event)"
         ></app-message-composer>
         <div *ngIf="activeView === 'threads'" class="threads-inline-note">
           Pick any thread card to open the full conversation and reply from the thread panel.
@@ -1126,6 +1150,7 @@
           [activeThreadReplyToId]="activeThreadReplyToId"
           [activeThreadReplyTarget]="activeThreadReplyTarget"
           [threadReplyDraft]="threadReplyDraft"
+          [threadPendingAttachments]="threadPendingAttachments"
           [sendingReply]="sendingReply"
           [pinnedMessages]="pinnedMessages"
           [activeChannel]="activeChannel || null"
@@ -1150,6 +1175,8 @@
           [getEmpImageUrl]="getEmpImageUrl"
           (threadClosed)="closeThread()"
           (threadReplyDraftChange)="threadReplyDraft = $event"
+          (threadFilesSelected)="onThreadFilesSelected($event)"
+          (threadAttachmentRemoved)="removeThreadPendingAttachment($event)"
           (replyTargetSet)="setThreadReplyTarget($event)"
           (replyTargetCleared)="clearThreadReplyTarget()"
           (replySent)="sendReply()"
@@ -1308,6 +1335,17 @@
       class="feed-media-dialog-doc"
       title="Document preview"
     ></iframe>
+    <div
+      *ngIf="expandedFeedMediaUrl && (currentExpandedFeedMediaType() === 'DOCX' || currentExpandedFeedMediaType() === 'PPTX' || currentExpandedFeedMediaType() === 'FILE')"
+      class="feed-media-dialog-office"
+    >
+      <span class="feed-file-icon office-doc">
+        <i class="pi pi-file"></i>
+      </span>
+      <strong>{{ expandedFeedMediaLabel }}</strong>
+      <small>{{ currentExpandedFeedMediaType() }} PREVIEW</small>
+      <a [href]="expandedFeedMediaUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
+    </div>
     <button
       *ngIf="expandedFeedMediaItems.length > 1"
       type="button"
