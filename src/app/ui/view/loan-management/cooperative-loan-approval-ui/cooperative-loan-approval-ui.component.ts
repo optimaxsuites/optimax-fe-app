@@ -203,11 +203,11 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     this.groupLookup.clear();
     this.membershipLookup.clear();
 
-    // Build member lookup ONLY by member.id
+    // Build member lookup by both internal id and cooperative memberId.
     this.members.forEach((member) => {
-      if (typeof member.id === 'number' && !isNaN(member.id) && member.id > 0) {
-        this.memberLookup.set(member.id, member);
-      }
+      [member.id, member.memberId]
+        .filter((value): value is number => typeof value === 'number' && !isNaN(value) && value > 0)
+        .forEach((value) => this.memberLookup.set(value, member));
     });
 
     // Build group lookup
@@ -240,8 +240,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getMemberIdForLoan(loan: CooperativeLoan): number | undefined {
-    // Only use cooperativeMemberId for member ID
-    return loan.cooperativeMemberId;
+    return Number(loan.cooperativeMemberId || loan.memberId || 0) || undefined;
   }
 
   getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
@@ -251,11 +250,31 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getMembershipForLoan(loan: CooperativeLoan): CooperativeGroupMembership | undefined {
-    const memberId = this.getMemberIdForLoan(loan);
-    const groupId = loan.cooperativeGroupId || loan.groupId;
-    if (!memberId || !groupId) return undefined;
-    const key = `${memberId}|${groupId}`;
-    return this.membershipLookup.get(key);
+    const directMembershipId = Number(loan.membershipId || 0);
+    if (directMembershipId > 0) {
+      const byId = this.memberships.find((membership) => Number(membership.id) === directMembershipId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    const member = this.getMemberForLoan(loan);
+    const groupId = Number(loan.cooperativeGroupId || loan.groupId || 0);
+    const candidateMemberIds = [
+      Number(loan.cooperativeMemberId || 0),
+      Number(loan.memberId || 0),
+      Number(member?.id || 0),
+      Number(member?.memberId || 0)
+    ].filter((value) => value > 0);
+
+    if (!groupId || candidateMemberIds.length === 0) {
+      return undefined;
+    }
+
+    return this.memberships.find((membership) =>
+      Number(membership.groupId) === groupId
+      && candidateMemberIds.includes(Number(membership.memberId))
+    );
   }
 
   getMemberName(loan: CooperativeLoan): string {

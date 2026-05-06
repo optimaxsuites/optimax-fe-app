@@ -100,9 +100,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
           const group = this.getGroupForLoan(loan);
           const groupCode = group?.code || '';
           const member = this.getMemberForLoan(loan);
-          const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
-          const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
-          const membership = this.memberships.find((m: CooperativeGroupMembership) => String(m.memberId) === String(memberIdNum) && String(m.groupId) === String(groupIdNum));
+          const memberIdNum = loan.cooperativeMemberId || loan.memberId || member?.id || member?.memberId;
+          const membership = this.resolveMembershipForLoan(loan, member);
           const membershipIdRaw = membership?.membershipId || '';
           // Format Member ID as COP-XXX (zero-padded)
           const formattedCooperativeMemberId = memberIdNum ? `COP-${String(memberIdNum).padStart(3, '0')}` : '';
@@ -172,12 +171,35 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
         return this.groupLookup.get(gid);
       }
 
+      private resolveMembershipForLoan(loan: CooperativeLoan, member?: CooperativeMember): CooperativeGroupMembership | undefined {
+        const directMembershipId = Number(loan.membershipId || 0);
+        if (directMembershipId > 0) {
+          const byId = this.memberships.find((item: CooperativeGroupMembership) => Number(item.id) === directMembershipId);
+          if (byId) {
+            return byId;
+          }
+        }
+
+        const groupIdNum = Number(loan.cooperativeGroupId || loan.groupId || 0);
+        const candidateMemberIds = [
+          Number(loan.cooperativeMemberId || 0),
+          Number(loan.memberId || 0),
+          Number(member?.id || 0),
+          Number(member?.memberId || 0)
+        ].filter((value) => value > 0);
+
+        return this.memberships.find((item: CooperativeGroupMembership) =>
+          groupIdNum > 0
+          && Number(item.groupId) === groupIdNum
+          && candidateMemberIds.includes(Number(item.memberId))
+        );
+      }
+
       public getFormattedMembershipId(loan: CooperativeLoan): string {
 	const member = this.getMemberForLoan(loan);
 	const group = this.getGroupForLoan(loan);
-	const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
-	const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
-	const membership = this.memberships.find((m: CooperativeGroupMembership) => String(m.memberId) === String(memberIdNum) && String(m.groupId) === String(groupIdNum));
+	const memberIdNum = loan.cooperativeMemberId || loan.memberId || member?.id || member?.memberId;
+	const membership = this.resolveMembershipForLoan(loan, member);
 	const membershipIdRaw = membership?.membershipId || '';
 	const groupCode = group?.code;
   return membershipIdRaw && groupCode && memberIdNum ? this.formatMembershipId(String(membershipIdRaw), groupCode, String(memberIdNum)) : '';
@@ -443,6 +465,35 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     return this.allMembers.filter(member => member.status === 'ACTIVE').length;
   }
 
+  private readonly VIEWED_MEMBERS_KEY = 'cooperative-viewed-member-ids';
+
+  private getViewedMemberIds(): Set<number> {
+    try {
+      const stored = localStorage.getItem(this.VIEWED_MEMBERS_KEY);
+      if (stored) {
+        return new Set<number>(JSON.parse(stored));
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return new Set<number>();
+  }
+
+  private markMemberAsViewed(id: number): void {
+    const viewed = this.getViewedMemberIds();
+    viewed.add(id);
+    try {
+      localStorage.setItem(this.VIEWED_MEMBERS_KEY, JSON.stringify(Array.from(viewed)));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  get newMembersCount(): number {
+    const viewed = this.getViewedMemberIds();
+    return this.allMembers.filter(member => member.status === 'ACTIVE' && !viewed.has(member.id)).length;
+  }
+
   get groupsCount(): number {
     return this.cooperativeGroupContext.groups.length;
   }
@@ -595,6 +646,21 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
   get pendingGroupJoinCount(): number {
     return this.cooperativeService.getGroupMemberships().filter((item: CooperativeGroupMembership) => item.status === 'PENDING').length;
+  }
+
+  get pendingExtensionRequestsCount(): number {
+    return this.allLoans.reduce((count, loan) => {
+      const requests = (loan as any)?.gracePeriodRequests;
+      if (!Array.isArray(requests)) {
+        return count;
+      }
+      return count + requests.filter((request: any) => String(request?.status || '').toUpperCase() === 'PENDING').length;
+    }, 0);
+  }
+
+  get disbursementQueueCount(): number {
+    // Show only loans that still need the APPROVED -> READY_FOR_DISBURSEMENT transition.
+    return this.allLoans.filter((loan) => loan.status === 'APPROVED').length;
   }
 
   get activeGroupsCount(): number {
@@ -754,7 +820,14 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
     this.navigateTo('members');
   }
 
+  openPatronageDistribution(): void {
+    this.router.navigate([`/admin/hr/cooperative/patronage-distribution/${this.currentUuid}`], {
+      queryParams: { dashboard: 'cooperative' }
+    });
+  }
+
   viewMember(id: number): void {
+    this.markMemberAsViewed(id);
     this.router.navigate([`/admin/hr/cooperative/members/${id}/${this.currentUuid}`], {
       queryParams: { dashboard: 'cooperative' }
     });

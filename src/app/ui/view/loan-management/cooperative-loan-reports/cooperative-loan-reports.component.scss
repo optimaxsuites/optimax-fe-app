@@ -72,10 +72,15 @@ app-cooperative-loan-reports {
         align-items: center;
         gap: 12px;
 
-        .title-icon {
-          color: #2EB270;
-          font-size: 1.7rem;
-        }
+        // .title-icon {
+        //   color: #2EB270;
+        //   font-size: 1.7rem;
+        // }
+
+        i {
+            color: #2EB270;
+            margin-right: 12px;
+          }
       }
 
       p {

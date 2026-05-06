@@ -483,6 +483,7 @@
               <span>Review and approve applications</span>
             </div>
             <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="dashboardStats.pendingApplications > 0">{{ dashboardStats.pendingApplications }}</span>
           </button>
 
           <button class="command-btn" (click)="openPurposeManagement()">
@@ -501,6 +502,7 @@
               <span>Review extension requests</span>
             </div>
             <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="pendingExtensionRequestsCount > 0">{{ pendingExtensionRequestsCount }}</span>
           </button>
 
           <button class="command-btn" (click)="openDisbursementCenter()">
@@ -510,10 +512,11 @@
               <span>Release approved funds</span>
             </div>
             <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="approvedLoansCount > 0">{{ approvedLoansCount }}</span>
           </button>
 
           <button class="command-btn" (click)="generateReports()">
-            <i class="fas fa-chart-line"></i>
+            <i class="fas fa-chart-area"></i>
             <div class="btn-text">
               <strong>Generate Reports</strong>
               <span>Export loan data</span>
