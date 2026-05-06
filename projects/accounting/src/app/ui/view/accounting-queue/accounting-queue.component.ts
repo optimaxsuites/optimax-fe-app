@@ -1,13 +1,24 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { ToastService } from '../../../services/toast.service';
-import { AccountDTO, AccountMappingDTO, AccountingEventDTO, PaginationResult } from '../../domain/accounting.dto';
+import { AccountDTO, AccountMappingDTO, AccountingEventDTO, PaginationResult, SourceModule } from '../../domain/accounting.dto';
 
-interface QueueEvent extends AccountingEventDTO {
+interface QueueEvent extends Partial<AccountingEventDTO> {
+  id?: number;
   status: string;
+  reference: string;
+  sourceModule: SourceModule;
+  eventType: string;
+  amount: number;
+  currency: string;
+  description: string;
+  transactionDate?: any;
+  createdAt?: any;
   suggestedDebit?: string;
   suggestedCredit?: string;
   matchedMapping?: AccountMappingDTO;
+  isTransaction?: boolean;
 }
 
 @Component({
@@ -69,29 +80,65 @@ export class AccountingQueueComponent implements OnInit {
   loadEvents(): void {
     this.loading = true;
     const page = Math.floor(this.first / this.rows);
-    this.accountingService.getEvents(page, this.rows).subscribe({
-      next: (res: PaginationResult<AccountingEventDTO>) => {
-        this.events = (res.content || []).map(event => {
-          // Find matching mapping for suggestions
-          const mapping = this.mappings.find(m => 
-            m.eventType === event.eventType && m.sourceModule === event.sourceModule
-          );
+    
+    // Fetch both raw events and processed transactions to provide a unified view
+    forkJoin({
+      events: this.accountingService.getEvents(page, this.rows),
+      transactions: this.accountingService.getTransactions(page, this.rows)
+    }).subscribe({
+      next: (res) => {
+        const rawEvents = res.events.content || [];
+        const processedTransactions = res.transactions.content || [];
 
-          return {
-            ...event,
-            reference: event.reference || (event as any).instructionReference || `#EV-${event.id}`,
-            status: (event as any).status || 'UNPROCESSED',
-            matchedMapping: mapping,
-            suggestedDebit: mapping?.debitAccount?.accountName || mapping?.debitAccountId?.toString() || '—',
-            suggestedCredit: mapping?.creditAccount?.accountName || mapping?.creditAccountId?.toString() || '—'
-          } as QueueEvent;
+        // 1. Map Transactions (These are already processed/approved)
+        const txList = processedTransactions.map(tx => ({
+          ...tx,
+          id: tx.id,
+          reference: tx.transactionReference,
+          sourceModule: tx.sourceModule,
+          eventType: tx.accountingEvent?.eventType || 'MANUAL_ENTRY',
+          amount: tx.amount,
+          currency: tx.currency,
+          description: tx.description || 'Transaction Entry',
+          status: tx.status || 'APPROVED',
+          suggestedDebit: tx.account?.accountName || '—',
+          suggestedCredit: '—',
+          isTransaction: true,
+          transactionDate: tx.transactionDate,
+          createdAt: tx.createdAt
+        } as QueueEvent));
+
+        // 2. Map Events (These are raw inputs)
+        const eventList = rawEvents
+          .filter(ev => !txList.some(tx => tx.reference === ev.reference)) // Hide events already in transactions
+          .map(event => {
+            const mapping = this.mappings.find(m => 
+              m.eventType === event.eventType && m.sourceModule === event.sourceModule
+            );
+            return {
+              ...event,
+              reference: event.reference || (event as any).instructionReference || `#EV-${event.id}`,
+              status: (event as any).status || 'UNPROCESSED',
+              matchedMapping: mapping,
+              suggestedDebit: mapping?.debitAccount?.accountName || mapping?.debitAccountId?.toString() || '—',
+              suggestedCredit: mapping?.creditAccount?.accountName || mapping?.creditAccountId?.toString() || '—',
+              isTransaction: false
+            } as QueueEvent;
+          });
+
+        // 3. Combine and sort (Newest first)
+        this.events = [...txList, ...eventList].sort((a, b) => {
+          const dateA = new Date(a['createdAt'] || a['transactionDate'] || 0).getTime();
+          const dateB = new Date(b['createdAt'] || b['transactionDate'] || 0).getTime();
+          return dateB - dateA;
         });
-        this.totalRecords = res.totalSize || 0;
+
+        this.totalRecords = res.events.totalSize + res.transactions.totalSize;
         this.loading = false;
       },
       error: (err) => {
-        console.error('Failed to load accounting events:', err);
-        this.toastService.error('Failed to load unprocessed events');
+        console.error('Sync failed:', err);
+        this.toastService.error('Failed to sync accounting data');
         this.loading = false;
       }
     });
@@ -143,23 +190,34 @@ export class AccountingQueueComponent implements OnInit {
     this.loadEvents();
   }
 
-  approveEvent(event: any): void {
+  approveEvent(event: QueueEvent): void {
     if (event.status === 'APPROVED' || event.status === 'POSTED') {
-      this.toastService.warn('This transaction is already approved.');
+      this.toastService.warn('This transaction is already approved and locked.');
       return;
     }
 
-    this.loading = true;
-    this.accountingService.approveTransaction(event).subscribe({
-      next: () => {
-        this.toastService.success(`Transaction ${event.reference} approved and persisted.`);
-        this.loadEvents();
-      },
-      error: (err) => {
-        this.toastService.error('Failed to approve transaction');
-        this.loading = false;
-      }
-    });
+    if (!event.matchedMapping) {
+      this.toastService.warn('Please complete the account mapping before approval.');
+      return;
+    }
+
+    // Prepare data for the confirmation modal
+    this.pendingActionData = {
+      event: event,
+      mapping: event.matchedMapping,
+      createdBy: this.getCurrentUser()
+    };
+    
+    this.isConfirmOpen = true;
+  }
+
+  getCurrentUser(): any {
+    try {
+      const userData = sessionStorage.getItem('userPrimaryInfoRegData');
+      return userData ? JSON.parse(userData) : { id: 1, username: 'system' };
+    } catch (e) {
+      return { id: 1, username: 'system' };
+    }
   }
 
   viewEvent(event: QueueEvent): void {
@@ -175,20 +233,27 @@ export class AccountingQueueComponent implements OnInit {
     
     this.isProcessingPost = true; // Show loader
 
-    this.accountingService.orchestrateEventExecution(event, mapping, createdBy).subscribe({
+    // Reverting to Orchestration: This converts the raw Event into a full Ledger Transaction
+    // The previous PUT failed with NotFoundException because the Transaction didn't exist yet.
+    this.accountingService.orchestrateEventExecution(event as any, mapping, createdBy).subscribe({
       next: (res) => {
+        // Mark as approved locally to trigger locking
         event.status = 'APPROVED';
-        this.toastService.success(`Event ${event.reference} successfully posted to the General Ledger`);
+        this.toastService.success(`Event ${event.reference} successfully orchestrated and posted to the General Ledger.`);
+        
+        const idx = this.events.findIndex(e => e.reference === event.reference);
+        if (idx !== -1) {
+          this.events[idx] = { ...event, status: 'APPROVED' };
+        }
+
         this.pendingActionData = null;
         this.isProcessingPost = false;
-        this.isConfirmOpen = false; // Only close on success
+        this.isConfirmOpen = false;
       },
       error: (err) => {
-        event.status = 'UNPROCESSED';
-        this.toastService.error(`Failed to process event ${event.reference}: ${err.message || 'Server error'}`);
+        const errorMsg = err?.error?.message || err?.message || 'Server error';
+        this.toastService.error(`Orchestration failed for ${event.reference}: ${errorMsg}`);
         this.isProcessingPost = false;
-        // Keep modal open so user can see it failed or retry? 
-        // Actually it's better to keep it open or close and reset.
         this.isConfirmOpen = false;
         this.pendingActionData = null;
       }
@@ -206,6 +271,10 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   openEdit(event: QueueEvent): void {
+    if (event.status === 'APPROVED' || event.status === 'POSTED') {
+      this.toastService.warn('Approved transactions cannot be edited.');
+      return;
+    }
     this.editingEvent = { ...event };
     this.isViewOnly = false;
     this.isEditOpen = true;
@@ -234,11 +303,10 @@ export class AccountingQueueComponent implements OnInit {
         this.accountingService.updateAccountMapping(existingMapping.id, mappingPayload).subscribe({
           next: (updated) => {
             this.toastService.success('Account mapping rule updated successfully');
-            this.editingEvent!.matchedMapping = updated;
-            console.log('[Optimax Queue] Mapping updated:', updated);
+            this.updateLocalEventMapping(updated);
           },
           error: (err) => {
-            this.toastService.error('Failed to update mapping rule. Changes saved locally only.');
+            this.toastService.error('Failed to update mapping rule.');
             console.error('[Optimax Queue] Mapping update error:', err);
           }
         });
@@ -247,23 +315,39 @@ export class AccountingQueueComponent implements OnInit {
         this.accountingService.createAccountMapping(mappingPayload).subscribe({
           next: (created) => {
             this.toastService.success('New account mapping rule saved successfully');
-            this.editingEvent!.matchedMapping = created;
-            console.log('[Optimax Queue] Mapping created:', created);
+            this.updateLocalEventMapping(created);
           },
           error: (err) => {
-            this.toastService.error('Failed to save mapping rule. Changes saved locally only.');
+            this.toastService.error('Failed to save mapping rule.');
             console.error('[Optimax Queue] Mapping create error:', err);
           }
         });
       }
     } else {
       this.toastService.warn('Account mapping not saved — please select valid Debit and Credit accounts.');
+      // Still update local state for the current session if requested, 
+      // but usually we want to wait for backend success for mappings.
+      this.syncLocalState();
     }
+  }
 
-    // Always update local state
-    const idx = this.events.findIndex(e => e.reference === this.editingEvent!.reference);
-    if (idx !== -1) this.events[idx] = { ...this.editingEvent };
+  private updateLocalEventMapping(mapping: AccountMappingDTO): void {
+    if (!this.editingEvent) return;
+    
+    this.editingEvent.matchedMapping = mapping;
+    this.editingEvent.suggestedDebit = mapping.debitAccount?.accountName || mapping.debitAccountId?.toString();
+    this.editingEvent.suggestedCredit = mapping.creditAccount?.accountName || mapping.creditAccountId?.toString();
+    
+    this.syncLocalState();
     this.isEditOpen = false;
+  }
+
+  private syncLocalState(): void {
+    if (!this.editingEvent) return;
+    const idx = this.events.findIndex(e => e.reference === this.editingEvent!.reference);
+    if (idx !== -1) {
+      this.events[idx] = { ...this.editingEvent };
+    }
   }
 
   /** Resolve an AccountDTO from the display string "Code - Name" or just a plain name */

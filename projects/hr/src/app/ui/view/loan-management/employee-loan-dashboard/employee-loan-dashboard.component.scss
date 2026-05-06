@@ -9,6 +9,7 @@ app-employee-dashboard {
   
   .employee-dashboard {
     min-height: 100vh;
+    font-size: 1.5rem;
     background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
     width: 100%;
     max-width: 100%;
@@ -183,7 +184,7 @@ app-employee-dashboard {
         
         .hero-subtitle {
           margin: 0 0 16px 0;
-          font-size: 0.95rem;
+          font-size: 1.08rem;
           color: #4a6270;
           max-width: 600px;
         }
@@ -196,11 +197,11 @@ app-employee-dashboard {
           backdrop-filter: blur(10px);
           padding: 6px 14px;
           border-radius: 40px;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
           color: #2E6276;
           
           i {
-            font-size: 0.8rem;
+            font-size: 1.06rem;
           }
         }
       }
@@ -313,7 +314,7 @@ app-employee-dashboard {
           
           .stat-label {
             display: block;
-            font-size: 0.7rem;
+            font-size: 1rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -322,7 +323,7 @@ app-employee-dashboard {
           
           .stat-note {
             display: block;
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             color: #8aadba;
           }
         }
@@ -408,20 +409,20 @@ app-employee-dashboard {
           strong {
             display: block;
             color: #1a4b5c;
-            font-size: 0.9rem;
+            font-size: 1.02rem;
             font-weight: 700;
           }
 
           span {
             display: block;
             color: #8aadba;
-            font-size: 0.7rem;
+            font-size: 1rem;
           }
         }
 
         i:last-child {
           color: #8aadba;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
           transition: transform 0.2s;
         }
 
@@ -437,7 +438,7 @@ app-employee-dashboard {
           color: white;
           border-radius: 40px !important;
           padding: 4px 10px;
-          font-size: 0.7rem;
+          font-size: 1rem;
           font-weight: 700;
           min-width: 26px;
           text-align: center;
@@ -491,14 +492,14 @@ app-employee-dashboard {
           h3 {
             margin: 0;
             color: #1a4b5c;
-            font-size: 0.9rem;
+            font-size: 1.02rem;
             font-weight: 700;
           }
         }
         
         > i {
           color: #8aadba;
-          font-size: 0.8rem;
+          font-size: 1.06rem;
           transition: transform 0.2s;
         }
       }
@@ -535,7 +536,7 @@ app-employee-dashboard {
           flex-shrink: 0;
 
           i {
-            font-size: 0.9rem;
+            font-size: 1.02rem;
             color: white;
           }
 
@@ -565,7 +566,7 @@ app-employee-dashboard {
 
             .loan-code {
               font-family: monospace;
-              font-size: 0.7rem;
+              font-size: 1rem;
               font-weight: 600;
               color: #2E6276;
             }
@@ -576,7 +577,7 @@ app-employee-dashboard {
               justify-content: center !important;
               padding: 2px 8px !important;
               border-radius: 999px !important;
-              font-size: 0.65rem !important;
+              font-size: 1.06rem !important;
               font-weight: 600 !important;
               white-space: nowrap !important;
 
@@ -635,13 +636,13 @@ app-employee-dashboard {
 
           .update-message {
             margin: 0 0 6px;
-            font-size: 0.75rem;
+            font-size: 1.02rem;
             color: #4a6270;
             line-height: 1.4;
           }
 
           .update-time {
-            font-size: 0.65rem;
+            font-size: 1.06rem;
             color: #8aadba;
           }
         }
@@ -708,7 +709,7 @@ app-employee-dashboard {
 
         p {
           color: #2E6276;
-          font-size: 0.9rem;
+          font-size: 1.02rem;
           margin: 0;
         }
       }
@@ -733,7 +734,7 @@ app-employee-dashboard {
           background: #f8fcfd;
           color: #1a4b5c;
           font-weight: 700;
-          font-size: 0.85rem;
+          font-size: 1rem;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           white-space: nowrap;
@@ -754,7 +755,7 @@ app-employee-dashboard {
               top: 50%;
               transform: translateY(-50%);
               color: #8aadba;
-              font-size: 0.75rem;
+              font-size: 1.02rem;
             }
           }
           
@@ -766,7 +767,7 @@ app-employee-dashboard {
         td {
           vertical-align: middle;
           color: #2c5a6a;
-          font-size: 0.85rem;
+          font-size: 1rem;
         }
 
         tr {
@@ -788,7 +789,7 @@ app-employee-dashboard {
           font-family: monospace;
           font-weight: 600;
           color: #2E6276;
-          font-size: 0.85rem;
+          font-size: 1rem;
         }
 
         .purpose {
@@ -810,7 +811,7 @@ app-employee-dashboard {
           justify-content: center !important;
           padding: 4px 12px !important;
           border-radius: 999px !important;
-          font-size: 0.75rem !important;
+          font-size: 1.02rem !important;
           font-weight: 700 !important;
           white-space: nowrap !important;
 
@@ -884,7 +885,7 @@ app-employee-dashboard {
             justify-content: center;
             
             i {
-              font-size: 0.9rem;
+              font-size: 1.02rem;
               margin: 0;
             }
             
@@ -938,7 +939,7 @@ app-employee-dashboard {
           color: white;
           border: 1px solid #e3a008;
           border-radius: 8px;
-          font-size: 0.78rem;
+          font-size: 1.04rem;
           font-weight: 700;
           cursor: pointer;
           display: inline-flex;
@@ -958,7 +959,7 @@ app-employee-dashboard {
           }
 
           i {
-            font-size: 0.78rem;
+            font-size: 1.04rem;
             width: 0.9rem;
             height: 0.9rem;
             line-height: 1;
@@ -1031,7 +1032,7 @@ app-employee-dashboard {
       }
       
       .hero-subtitle {
-        font-size: 0.85rem;
+        font-size: 1rem;
       }
     }
     

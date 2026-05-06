@@ -261,6 +261,7 @@ export class CooperativeGroupJoinHistoryComponent implements OnInit {
     const groupMap = new Map<number, CooperativeLoanGroup>(this.cooperativeService.getGroups().map((group: CooperativeLoanGroup) => [group.id, group]));
 
     this.applications = this.cooperativeService.getGroupMemberships()
+      .filter((membership: CooperativeGroupMembership) => Number(membership.memberId) > 0 && Number(membership.groupId) > 0)
       .map((membership: CooperativeGroupMembership) => {
         const member = memberMap.get(membership.memberId) || {} as CooperativeMember;
         const group = groupMap.get(membership.groupId) || {} as CooperativeLoanGroup;

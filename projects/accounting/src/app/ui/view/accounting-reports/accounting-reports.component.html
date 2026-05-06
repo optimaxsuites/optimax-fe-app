@@ -39,11 +39,6 @@
     </div>
   </section>
 
-  <!-- Fallback notices — shown when report engine errored but ledger fallback succeeded -->
-  <section class="status-panel warning" *ngIf="fallbackNotices.length && !loading">
-    <p *ngFor="let notice of fallbackNotices">⚠ {{ notice }}</p>
-  </section>
-
   <section class="status-panel error" *ngIf="errorMessage">
     {{ errorMessage }}
   </section>
@@ -61,17 +56,14 @@
         *ngFor="let card of reportCards"
         [class.active]="focusedReport === card.key"
         [class.empty]="card.state === 'empty'"
-        [class.fallback]="card.isFallback"
         (click)="changeFocusedReport(card.key)"
       >
         <span class="report-card__title">{{ card.title }}</span>
         <strong class="report-card__value">{{ card.primaryValue }}</strong>
         <span class="report-card__subtitle">{{ card.subtitle }}</span>
-        <span class="report-card__badge" *ngIf="card.isFallback">Derived</span>
       </button>
     </section>
 
-    <!-- ── Financial Statement ──────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'financial-statement'">
       <div class="panel-header">
         <div>
@@ -106,7 +98,6 @@
         </div>
 
         <div class="table-grid">
-          <!-- Income Statement -->
           <article class="table-card" *ngIf="incomeStatementReport">
             <header>
               <h3>Income Statement</h3>
@@ -136,7 +127,6 @@
             </table>
           </article>
 
-          <!-- Cash Flow -->
           <article class="table-card" *ngIf="cashFlowReport">
             <header>
               <h3>Cash Flow Summary</h3>
@@ -169,7 +159,6 @@
       </ng-container>
     </section>
 
-    <!-- ── Balance Sheet ────────────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'balance-sheet'">
       <div class="panel-header">
         <div>
@@ -209,7 +198,6 @@
       </div>
     </section>
 
-    <!-- ── Annual Tax ───────────────────────────────────────────────────── -->
     <section class="content-panel" *ngIf="focusedReport === 'annual-tax'">
       <div class="panel-header">
         <div>
@@ -259,7 +247,6 @@
       </ng-container>
     </section>
 
-    <!-- ── Report Context / Audit Trail ────────────────────────────────── -->
     <section class="content-panel" *ngIf="currentMetadata">
       <app-report-context [context]="currentMetadata"></app-report-context>
 
@@ -282,7 +269,7 @@
               <td>{{ transaction.reference ?? transaction.transactionReference ?? transaction.id }}</td>
               <td>{{ transaction.sourceModule }}</td>
               <td>{{ transaction.reviewStatus ?? transaction.status ?? '—' }}</td>
-              <td>{{ transaction.transactionDate | date:'mediumDate' }}</td>
+              <td>{{ toDatePipeValue(transaction.transactionDate) | date:'mediumDate' }}</td>
               <td>{{ transaction.description }}</td>
             </tr>
           </tbody>

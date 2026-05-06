@@ -203,11 +203,11 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     this.groupLookup.clear();
     this.membershipLookup.clear();
 
-    // Build member lookup ONLY by member.id
+    // Build member lookup by both internal id and cooperative memberId.
     this.members.forEach((member) => {
-      if (typeof member.id === 'number' && !isNaN(member.id) && member.id > 0) {
-        this.memberLookup.set(member.id, member);
-      }
+      [member.id, member.memberId]
+        .filter((value): value is number => typeof value === 'number' && !isNaN(value) && value > 0)
+        .forEach((value) => this.memberLookup.set(value, member));
     });
 
     // Build group lookup
@@ -231,17 +231,51 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
-    // Use cooperativeMemberId to lookup member by member.id
-    const id = loan.cooperativeMemberId;
-    if (id !== null && id !== undefined && Number(id) > 0) {
-      return this.memberLookup.get(Number(id));
+    const directMembershipId = Number(loan.membershipId || 0);
+    if (directMembershipId > 0) {
+      const membership = this.memberships.find((item) => Number(item.id) === directMembershipId);
+      const byMembership = this.members.find((member) => Number(member.id) === Number(membership?.memberId || 0));
+      if (byMembership) {
+        return byMembership;
+      }
     }
+
+    const cooperativeMemberId = Number(loan.cooperativeMemberId || 0);
+    if (cooperativeMemberId > 0) {
+      const byId = this.members.find((member) => Number(member.id) === cooperativeMemberId);
+      if (byId) {
+        return byId;
+      }
+
+      const byMemberId = this.members.find((member) => Number(member.memberId || 0) === cooperativeMemberId);
+      if (byMemberId) {
+        return byMemberId;
+      }
+    }
+
+    const memberId = Number(loan.memberId || 0);
+    if (memberId > 0) {
+      const byMemberId = this.members.find((member) => Number(member.memberId || 0) === memberId);
+      if (byMemberId) {
+        return byMemberId;
+      }
+
+      const byId = this.members.find((member) => Number(member.id) === memberId);
+      if (byId) {
+        return byId;
+      }
+
+      const byEmployeeId = this.members.find((member) => Number(member.employeeId || 0) === memberId);
+      if (byEmployeeId) {
+        return byEmployeeId;
+      }
+    }
+
     return undefined;
   }
 
   getMemberIdForLoan(loan: CooperativeLoan): number | undefined {
-    // Only use cooperativeMemberId for member ID
-    return loan.cooperativeMemberId;
+    return Number(loan.cooperativeMemberId || loan.memberId || 0) || undefined;
   }
 
   getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
@@ -251,11 +285,31 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getMembershipForLoan(loan: CooperativeLoan): CooperativeGroupMembership | undefined {
-    const memberId = this.getMemberIdForLoan(loan);
-    const groupId = loan.cooperativeGroupId || loan.groupId;
-    if (!memberId || !groupId) return undefined;
-    const key = `${memberId}|${groupId}`;
-    return this.membershipLookup.get(key);
+    const directMembershipId = Number(loan.membershipId || 0);
+    if (directMembershipId > 0) {
+      const byId = this.memberships.find((membership) => Number(membership.id) === directMembershipId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    const member = this.getMemberForLoan(loan);
+    const groupId = Number(loan.cooperativeGroupId || loan.groupId || 0);
+    const candidateMemberIds = [
+      Number(loan.cooperativeMemberId || 0),
+      Number(loan.memberId || 0),
+      Number(member?.id || 0),
+      Number(member?.memberId || 0)
+    ].filter((value) => value > 0);
+
+    if (!groupId || candidateMemberIds.length === 0) {
+      return undefined;
+    }
+
+    return this.memberships.find((membership) =>
+      Number(membership.groupId) === groupId
+      && candidateMemberIds.includes(Number(membership.memberId))
+    );
   }
 
   getMemberName(loan: CooperativeLoan): string {
@@ -726,7 +780,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
         if (updated) {
           this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
-          if (idx !== -1) this.loans[idx] = updated;
+          if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], updated);
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} approved successfully.`);
           this.closeApprovalModal();
@@ -738,7 +792,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
             this.isSubmitting = false;
             if (freshLoan) {
               const idx = this.loans.findIndex(l => l.id === loanId);
-              if (idx !== -1) this.loans[idx] = freshLoan;
+              if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], freshLoan);
               this.applyFilters();
 
               if (freshLoan.status === 'APPROVED') {
@@ -795,7 +849,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
         if (updated) {
           this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
-          if (idx !== -1) this.loans[idx] = updated;
+          if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], updated);
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} rejected.`);
           this.closeRejectModal();
@@ -807,7 +861,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
             this.isSubmitting = false;
             if (freshLoan) {
               const idx = this.loans.findIndex(l => l.id === loanId);
-              if (idx !== -1) this.loans[idx] = freshLoan;
+              if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], freshLoan);
               this.applyFilters();
 
               if (freshLoan.status === 'REJECTED') {
@@ -888,6 +942,27 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
       case 3: return 'rd';
       default: return 'th';
     }
+  }
+
+  private mergeLoanUpdate(existing: CooperativeLoan, incoming: CooperativeLoan): CooperativeLoan {
+    return {
+      ...existing,
+      ...incoming,
+      cooperativeMemberId: Number(incoming.cooperativeMemberId || incoming.memberId || existing.cooperativeMemberId || existing.memberId || 0),
+      cooperativeGroupId: Number(incoming.cooperativeGroupId || incoming.groupId || existing.cooperativeGroupId || existing.groupId || 0),
+      membershipId: Number(incoming.membershipId || existing.membershipId || 0) || undefined,
+      amount: Number(incoming.amount || existing.amount || 0),
+      repaymentAmount: Number(incoming.repaymentAmount || existing.repaymentAmount || 0),
+      repaymentTime: Number(incoming.repaymentTime || existing.repaymentTime || existing.duration || 0),
+      applicationDate: incoming.applicationDate || existing.applicationDate,
+      requestDate: incoming.requestDate || existing.requestDate,
+      paymentHistory: Array.isArray(incoming.paymentHistory) && incoming.paymentHistory.length > 0
+        ? incoming.paymentHistory
+        : existing.paymentHistory,
+      statusHistory: Array.isArray(incoming.statusHistory) && incoming.statusHistory.length > 0
+        ? incoming.statusHistory
+        : existing.statusHistory
+    };
   }
 
   // ==================== MESSAGE HANDLERS ====================

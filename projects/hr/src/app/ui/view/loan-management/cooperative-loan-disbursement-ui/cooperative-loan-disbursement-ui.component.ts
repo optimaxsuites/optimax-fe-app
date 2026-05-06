@@ -8,7 +8,9 @@ import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/c
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { getTokenFromStorage } from '../../../service/loan/cooperative-loan/token-util';
+import { environment } from '../../../shared-component/environments/environment';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -34,22 +36,14 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   batchEmployeeDetailsMap: Map<number, any> = new Map();
   isSendToAccountingModalVisible = false;
 
-  // Helper to format membership ID (matches dashboard logic)
   // Helper to format membership ID as [group code letters]-[member id]-[membership id]
   public getFormattedMembershipId(loan: CooperativeLoan): string {
     const group = this.getGroupForLoan(loan);
-    let groupCode = group?.code || '';
-    // Only use the leading alphabetical part of the group code
-    groupCode = (groupCode.match(/^[A-Za-z]+/) || [''])[0];
+    let groupCode = (group?.code || '').match(/^[A-Za-z]+/)?.[0] || '';
     const member = this.getMemberForLoan(loan);
-    // Use raw memberId (not padded)
-    const memberIdNum = member?.memberId || loan.cooperativeMemberId || loan.memberId;
-    const groupIdNum = group?.id || loan.cooperativeGroupId || loan.groupId;
-    const membership = this.cooperativeService.getGroupMembership(
-      Number(memberIdNum),
-      Number(groupIdNum)
-    );
-    const membershipIdRaw = membership?.membershipId || loan.membershipId || '';
+    const memberIdNum = loan.cooperativeMemberId || loan.memberId || member?.id || member?.memberId;
+    const membership = this.cooperativeService.resolveGroupMembershipForLoan(loan, member);
+    const membershipIdRaw = membership?.membershipId || '';
     if (membershipIdRaw && groupCode && memberIdNum) {
       return `${groupCode}-${memberIdNum}-${membershipIdRaw}`;
     }
@@ -430,42 +424,48 @@ sendToAccounting(): void {
   const totalRepayable = Number(loan.amount || 0) * (1 + (Number(group.interestRate || 0) / 100));
 
   this.isSubmitting = true;
-  
-  // Use the correct base URL
-  const baseUrl = 'https://be.optimaxsuites.com';
-  const apiUrl = `${baseUrl}/x/api/v2/accounting/events`;
-  
+
+  const apiUrl = `${environment.apiBaseUrl}/x/api/v2/accounting/events`;
+
+  const token = getTokenFromStorage();
+  const tenantId = sessionStorage.getItem('tenantId') || sessionStorage.getItem('tenant')
+    || localStorage.getItem('tenantId') || localStorage.getItem('tenant') || 'optimax';
+  const authHeaders = new HttpHeaders({
+    'Authorization': token ? `Bearer ${token}` : '',
+    'X-Tenant-ID': tenantId && tenantId !== 'undefined' && tenantId !== 'null' ? tenantId : 'optimax',
+    'Content-Type': 'application/json'
+  });
+
   const accountingEventPayload = {
-    id: 0,
-    sourceModule: "HR",
-    eventType: "LOAN_DISBURSEMENT",
+    sourceModule: 'HR',
+    eventType: 'LOAN_DISBURSEMENT',
     amount: Number(loan.approvedAmount || loan.amount || 0),
-    currency: "NGN",
+    currency: 'NGN',
     reference: instructionReference,
     description: adminComment || `Loan disbursement for ${memberName}`,
     transactionDate: transactionDate,
     metadata: {
-      loanId: loan.id,
-      loanCode: loan.loanCode || loan.loanId,
+      loanId: String(loan.id ?? ''),
+      loanCode: String(loan.loanCode || loan.loanId || loan.id || ''),
       member: memberName,
-      memberId: loan.memberId || loan.cooperativeMemberId,
-      membershipId: loan.membershipId,
+      memberId: String(loan.memberId || loan.cooperativeMemberId || ''),
+      membershipId: String(loan.membershipId ?? ''),
       groupMembershipId: this.getFormattedMembershipId(loan),
-      groupName: group.name,
-      groupCode: group.code,
-      groupInterestRate: group.interestRate,
-      repaymentPeriod: loan.duration || loan.repaymentTime,
-      approvedAmount: Number(loan.approvedAmount || loan.amount || 0),
-      totalRepayable: totalRepayable,
-      modeOfPayment: loan.modeOfPayment || 'MONTHLY',
-      paymentMethod: this.paymentMethod,
-      purpose: loan.purpose,
-      approvedDate: loan.approvedDate,
-      approvedBy: loan.approvedBy,
-      bankName: this.selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A',
-      accountNumber: this.selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A',
+      groupName: String(group.name || ''),
+      groupCode: String(group.code || ''),
+      groupInterestRate: String(group.interestRate ?? ''),
+      repaymentPeriod: String(loan.duration || loan.repaymentTime || ''),
+      approvedAmount: String(Number(loan.approvedAmount || loan.amount || 0)),
+      totalRepayable: String(totalRepayable),
+      modeOfPayment: String(loan.modeOfPayment || 'MONTHLY'),
+      paymentMethod: String(this.paymentMethod),
+      purpose: String(loan.purpose || ''),
+      approvedDate: String(loan.approvedDate || ''),
+      approvedBy: this.getApprovedByName(loan),
+      bankName: String(this.selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A'),
+      accountNumber: String(this.selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A'),
       accountName: memberName,
-      initiatedBy: this.disbursementInitiatedBy || sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin',
+      initiatedBy: String(this.disbursementInitiatedBy || sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin'),
       initiatedAt: transactionDate,
       instructionReference: instructionReference
     }
@@ -476,7 +476,7 @@ sendToAccounting(): void {
   console.log('Payload:', JSON.stringify(accountingEventPayload, null, 2));
   console.log('===================================');
   
-  this.http.post(apiUrl, accountingEventPayload).subscribe({
+  this.http.post(apiUrl, accountingEventPayload, { headers: authHeaders }).subscribe({
     next: (response) => {
       console.log('=== POST SUCCESS RESPONSE ===');
       console.log('Response:', response);
@@ -597,14 +597,9 @@ sendToAccounting(): void {
   }
 
   getMembershipId(loan: CooperativeLoan): number | string {
-    if (loan.membershipId) {
-      return loan.membershipId;
-    }
-    const membership = this.cooperativeService.getGroupMembership(
-      loan.cooperativeMemberId,
-      loan.cooperativeGroupId
-    );
-    return membership?.id || '—';
+    const member = this.getMemberForLoan(loan);
+    const membership = this.cooperativeService.resolveGroupMembershipForLoan(loan, member);
+    return membership?.id || loan.membershipId || '—';
   }
 
   formatCurrency(amount: number): string {

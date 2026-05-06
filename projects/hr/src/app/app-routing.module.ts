@@ -287,7 +287,11 @@ const routes: Routes = [
     path: 'cooperative/groups/:uuid',
     component: CooperativeLoanGroupsComponent,
   },
-    {
+  {
+    path: 'cooperative/patronage-distribution/:uuid',
+    component: CooperativePatronageDistributionComponent,
+  },
+  {
     path: 'admin/hr/cooperative/patronage-distribution/:uuid',
     component: CooperativePatronageDistributionComponent,
   },

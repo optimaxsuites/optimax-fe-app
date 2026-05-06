@@ -3,7 +3,7 @@ import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AccountingFormatService } from '../../../core/services/accounting-format.service';
-import { AccountingService } from '../../../core/services/accounting.service';
+import { AccountingService, LedgerEntryRaw } from '../../../core/services/accounting.service';
 import {
   AccountingTransactionDTO,
   BalanceSheetReportDTO,
@@ -53,7 +53,6 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   annualTaxTotal = 0;
   transactions: AccountingTransactionDTO[] = [];
   savedBalanceSheetReports: SavedReportSnapshotDTO[] = [];
-  fallbackNotices: string[] = [];
 
   private readonly destroy$ = new Subject<void>();
 
@@ -90,7 +89,7 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   }
 
   get hasFinancialStatementData(): boolean {
-    return !!this.incomeStatementReport || !!this.cashFlowReport;
+    return this.incomeStatementRows.length > 0 || this.cashFlowRows.length > 0;
   }
 
   get totalIncomeAmount(): number {
@@ -185,7 +184,6 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     subtitle: string;
     primaryValue: string;
     state: 'ready' | 'empty';
-    isFallback?: boolean;
   }> {
     return [
       {
@@ -200,11 +198,11 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       {
         key: 'balance-sheet',
         title: 'Monthly Balance Sheet',
-        subtitle: 'Saved monthly snapshots from the Balance Sheet module only',
-        primaryValue: this.filteredMonthlyBalanceSheets.length
-          ? `${this.filteredMonthlyBalanceSheets.length} snapshot${this.filteredMonthlyBalanceSheets.length > 1 ? 's' : ''}`
-          : 'No snapshot',
-        state: this.filteredMonthlyBalanceSheets.length ? 'ready' : 'empty',
+        subtitle: `Statement of financial position for ${this.periodLabel}`,
+        primaryValue: this.balanceSheetReport && this.hasBalanceSheetData(this.balanceSheetReport)
+          ? this.fmt.formatCurrency(this.sumBalances(this.balanceSheetReport.assets))
+          : 'No data',
+        state: this.balanceSheetReport && this.hasBalanceSheetData(this.balanceSheetReport) ? 'ready' : 'empty',
       },
       {
         key: 'annual-tax',
@@ -220,6 +218,15 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     this.focusedReport = key;
   }
 
+  toDatePipeValue(value: string | number[]): string | Date {
+    if (Array.isArray(value)) {
+      const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nanos = 0] = value;
+      return new Date(year, month - 1, day, hour, minute, second, Math.floor(nanos / 1_000_000));
+    }
+
+    return value;
+  }
+
   onFilterChange(): void {
     this.loadReports();
   }
@@ -232,8 +239,8 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     this.accountingService.setPeriod(start);
 
     const request = {
-      periodStart: start.toISOString(),
-      periodEnd: end.toISOString(),
+      periodStart: this.toBackendLocalDateTime(start),
+      periodEnd: this.toBackendLocalDateTime(end),
       reportPeriodType: this.selectedPeriodType,
     };
 
@@ -241,13 +248,16 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       this.accountingService.getIncomeStatementReport(request),
       this.accountingService.getCashFlowReport(request),
       this.accountingService.getBalanceSheetReport(request),
+      this.accountingService.getAccountingTransactions(),
+      this.accountingService.getLedgerEntries(),
       this.accountingService.getYearlyTaxSummary(this.selectedYear),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ([incomeStatementReport, cashFlowReport, balanceSheetReport, yearlyTax]) => {
-          this.incomeStatementReport = incomeStatementReport;
-          this.cashFlowReport = cashFlowReport;
+        next: ([incomeStatementReport, cashFlowReport, balanceSheetReport, transactions, ledgerEntries, yearlyTax]) => {
+          this.transactions = transactions;
+          this.incomeStatementReport = this.withDerivedIncomeStatement(incomeStatementReport, transactions);
+          this.cashFlowReport = this.withDerivedCashFlow(cashFlowReport, ledgerEntries, request.periodStart, request.periodEnd);
           this.balanceSheetReport = balanceSheetReport;
           this.annualTaxRows = (yearlyTax.byMonth ?? []).map((entry: { month: number; amount: number }) => ({
             monthLabel: new Date(this.selectedYear, entry.month, 1).toLocaleString('en-US', { month: 'short' }),
@@ -276,6 +286,154 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
     return items?.reduce((sum, item) => sum + item.actualAmount, 0) ?? 0;
   }
 
+  private hasBalanceSheetData(report: BalanceSheetReportDTO): boolean {
+    return report.assets.length > 0 ||
+      report.liabilities.length > 0 ||
+      report.equity.length > 0 ||
+      report.reportContext.includedTransactionIds.length > 0;
+  }
+
+  private sumBalances(items: Array<{ balance: number }>): number {
+    return items.reduce((sum, item) => sum + item.balance, 0);
+  }
+
+  private withDerivedIncomeStatement(
+    report: IncomeStatementReportDTO,
+    transactions: AccountingTransactionDTO[],
+  ): IncomeStatementReportDTO {
+    const hasBackendLines = [
+      report.revenue,
+      report.cogs,
+      report.administrativeExpenses,
+      report.salariesAndWages,
+      report.maintenance,
+      report.logisticsAndDistribution,
+      report.otherOperatingExpenses,
+      report.otherItems,
+    ].some((items) => items.length > 0);
+
+    if (hasBackendLines) {
+      return report;
+    }
+
+    const includedIds = new Set(report.reportContext.includedTransactionIds.map((id) => String(id)));
+    const includedTransactions = transactions.filter((transaction) => includedIds.has(String(transaction.id)));
+
+    if (!includedTransactions.length) {
+      return report;
+    }
+
+    const revenue = includedTransactions
+      .map((transaction) => {
+        const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
+        const amount = Number(transaction.amount) || 0;
+        const interestAmount = approvedAmount !== null ? Math.max(amount - approvedAmount, 0) : 0;
+        return interestAmount > 0
+          ? this.toFinancialLineItem(`Interest income - ${transaction.description || transaction.transactionReference || transaction.id}`, interestAmount)
+          : null;
+      })
+      .filter((item): item is FinancialLineItemDTO => !!item);
+
+    const otherItems = includedTransactions
+      .map((transaction) => {
+        const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
+        const amount = Number(transaction.amount) || 0;
+        const principalAmount = approvedAmount !== null ? approvedAmount : amount;
+        return principalAmount > 0
+          ? this.toFinancialLineItem(`Loan principal activity - ${transaction.description || transaction.transactionReference || transaction.id}`, -principalAmount)
+          : null;
+      })
+      .filter((item): item is FinancialLineItemDTO => !!item);
+
+    const revenueTotal = this.sumActualAmounts(revenue);
+    const otherTotal = this.sumActualAmounts(otherItems);
+    const totals = JSON.parse(JSON.stringify(report.totals)) as IncomeStatementReportDTO['totals'];
+    totals.revenue.actualAmount = revenueTotal;
+    totals.grossProfit.actualAmount = revenueTotal;
+    totals.otherItems.actualAmount = otherTotal;
+    totals.ebit.actualAmount = revenueTotal + otherTotal;
+    totals.ebitda.actualAmount = revenueTotal + otherTotal;
+    totals.nibt.actualAmount = revenueTotal + otherTotal;
+    totals.netIncome.actualAmount = revenueTotal + otherTotal;
+
+    return {
+      ...report,
+      revenue,
+      otherItems,
+      totals,
+      monthlyTrend: {
+        ...report.monthlyTrend,
+        revenueAmounts: [revenueTotal],
+        expenseAmounts: [Math.abs(otherTotal)],
+        profitAmounts: [revenueTotal + otherTotal],
+      },
+    };
+  }
+
+  private withDerivedCashFlow(
+    report: CashFlowReportDTO,
+    ledgerEntries: LedgerEntryRaw[],
+    periodStart: string,
+    periodEnd: string,
+  ): CashFlowReportDTO {
+    if (report.operatingActivities.length || report.investingActivities.length || report.financingActivities.length) {
+      return report;
+    }
+
+    const start = new Date(periodStart);
+    const end = new Date(periodEnd);
+    const operatingActivities = ledgerEntries
+      .filter((entry) => this.isCashAccount(entry))
+      .filter((entry) => {
+        const entryDate = this.toDatePipeValue(entry.entryDate) as Date;
+        return entryDate >= start && entryDate <= end;
+      })
+      .map((entry) => {
+        const amount = Number(entry.debit || 0) - Number(entry.credit || 0);
+        const line = entry.journalEntryLine as { description?: string } | null;
+        return {
+          description: line?.description || `${entry.account.accountName} ledger movement`,
+          amount,
+          category: 'operating' as CashFlowLineItemDTO['category'],
+          flowDirection: amount >= 0 ? 'inflow' : 'outflow',
+          indentLevel: 1,
+          isSubtotal: false,
+        };
+      });
+
+    if (!operatingActivities.length) {
+      return report;
+    }
+
+    const operatingCashFlow = operatingActivities.reduce((sum, item) => sum + item.amount, 0);
+    return {
+      ...report,
+      operatingActivities,
+      summary: {
+        ...report.summary,
+        operatingCashFlow,
+        netCashFlow: operatingCashFlow,
+        freeCashFlow: operatingCashFlow,
+        closingBalance: (report.summary.openingBalance ?? 0) + operatingCashFlow,
+      },
+    };
+  }
+
+  private toFinancialLineItem(name: string, actualAmount: number): FinancialLineItemDTO {
+    return { name, actualAmount, previousAmount: 0, budgetAmount: 0, priorYearAmount: 0 };
+  }
+
+  private numberFromMetadata(transaction: AccountingTransactionDTO, key: string): number | null {
+    const parsed = Number(transaction.metadata?.[key]);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private isCashAccount(entry: LedgerEntryRaw): boolean {
+    const accountName = entry.account?.accountName?.toLowerCase() ?? '';
+    const accountCode = String(entry.account?.accountCode ?? '');
+    return accountName.includes('cash') || accountName.includes('bank') || accountCode.startsWith('10');
+  }
+
   private toStatementRows(items: FinancialLineItemDTO[], section: string): Array<{ label: string; amount: number }> {
     return (items ?? []).map((item) => ({
       label: `${section} · ${item.name}`,
@@ -286,8 +444,8 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
   private getSelectedPeriodRange(): { start: Date; end: Date } {
     if (this.selectedPeriodType === 'monthly') {
       return {
-        start: new Date(this.selectedYear, this.selectedMonth, 1),
-        end: new Date(this.selectedYear, this.selectedMonth + 1, 0),
+        start: new Date(this.selectedYear, this.selectedMonth, 1, 0, 0, 0, 0),
+        end: new Date(this.selectedYear, this.selectedMonth + 1, 0, 23, 59, 59, 999),
       };
     }
 
@@ -295,14 +453,26 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       const quarterIndex = this.quarters.indexOf(this.selectedQuarter);
       const startMonth = quarterIndex * 3;
       return {
-        start: new Date(this.selectedYear, startMonth, 1),
-        end: new Date(this.selectedYear, startMonth + 3, 0),
+        start: new Date(this.selectedYear, startMonth, 1, 0, 0, 0, 0),
+        end: new Date(this.selectedYear, startMonth + 3, 0, 23, 59, 59, 999),
       };
     }
 
     return {
-      start: new Date(this.selectedYear, 0, 1),
-      end: new Date(this.selectedYear, 11, 31),
+      start: new Date(this.selectedYear, 0, 1, 0, 0, 0, 0),
+      end: new Date(this.selectedYear, 11, 31, 23, 59, 59, 999),
     };
+  }
+
+  private toBackendLocalDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 }
