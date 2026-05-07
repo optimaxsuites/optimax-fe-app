@@ -112,6 +112,24 @@ private getAuthHeaders(): HttpHeaders {
   });
 }
 
+//nna to get the right employee id nnaaaaa
+resolveHrEmployeeId(username: string): Observable<{ id: string; department: string } | null> {
+  return this.http.get<any>(
+    `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`,
+    { headers: this.getAuthHeaders() }
+  ).pipe(
+    map(res => {
+      const employees = res.content ?? res;
+      const match = employees.find((e: any) => e.user?.username === username);
+      if (!match) return null;
+      return {
+        id: match?.id?.toString(),
+        department: match.department?.name ?? ''
+      }; 
+    })
+  );
+}
+
 private mapApiRecord(api: any): AttendanceTableRecord {
   const emp = api.employeeId; // nested employee object
 
