@@ -18,38 +18,49 @@ export class UserSessionService {
              ?? sessionStorage.getItem('userInfoRegData')
              ?? sessionStorage.getItem('userPrimaryInfoRegData');*/
 
+    //let employeeId = userId; // fallback — replace once you confirm the key
+    //let name = '';
+    //let department = '';
     const primaryRaw = sessionStorage.getItem('userPrimaryInfoRegData');
-
-    let employeeId = userId; // fallback — replace once you confirm the key
-    let name = '';
-    let department = '';
-
-    if (primaryRaw) {
+    if (!primaryRaw) {
+    console.warn('userPrimaryInfoRegData not found — cannot resolve employee ID');
+    return null;
+  }
       try {
-        const data = JSON.parse(primaryRaw);
+        const data = JSON.parse(primaryRaw!);
 
         // Check DevTools — the employee record ID may be stored as:
         // data.employeeId, data.empId, data.id, data.employeeRecordId etc.
-        employeeId = data.id?.toString() //hopefully 43 is here
-                  ?? data.employeeId?.toString()
-                  ?? userId;
+        const employeeId = data.id?.toString() //hopefully 43 is here
+                  ?? data.employeeId?.toString();
+                  //?? userId;
 
-        name = data.fullname  //from userPrimaryInfoRegData
+        if (!employeeId) {
+          console.warn('No employee ID found in userPrimaryInfoRegData');
+          return null;
+        }
+
+        const name = data.fullname  //from userPrimaryInfoRegData
             ?? data.fullName
-            ?? data.username //from userRegData
+            //?? data.username //from userRegData
             ?? data.name
             ?? `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim()
             ?? '';
 
-        department = data.department?.name
+        const department = data.department?.name
                   ?? data.department
                   ?? data.departmentName
                   ?? '';
+
+         console.log('getCurrentUser resolved:', { id: employeeId, userId, name });
+        return { id: employeeId, userId, name, department };
+
       } catch {
-        console.warn('Failed to parse userfrom userPrimaryInfoRegData');
+        console.warn('Failed to parse user from userPrimaryInfoRegData');
+        return null
       }
     }
 
-    return { id: employeeId, userId, name, department };
+    
+    
   }
-}
