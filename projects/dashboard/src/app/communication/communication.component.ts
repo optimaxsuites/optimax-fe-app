@@ -510,6 +510,7 @@ export class CommunicationComponent
   private wsConnected = false;
   private channelSub: any = null;
   private channelPresenceSub: any = null;
+  private channelMessageSubs = new Map<number, any>();
   private dmChannelSubs = new Map<number, any>();
   private dmPresenceSubs = new Map<number, any>();
 
@@ -1522,6 +1523,12 @@ export class CommunicationComponent
     this.cdr.detectChanges();
   }
 
+  onThreadReplyDraftChanged(value: string): void {
+    this.threadReplyDraft = value;
+    this.onComposerTyping();
+    this.cdr.detectChanges();
+  }
+
   applyChatMention(employee: ComposerMentionOption): void {
     this.draft = this.replaceMentionToken(this.draft, employee as EmployeeProfile);
     this.chatMentionResults = [];
@@ -2366,9 +2373,8 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
-      if (this.workspaceMode === 'chat' && this.activeChannelId) {
-        const ch = this.activeChannel;
-        if (ch) this.subscribeToChannel(ch.backendId);
+      for (const ch of this.channels) {
+        this.subscribeToChannel(ch.backendId);
       }
       for (const dm of this.dmContacts) {
         if (dm.dmChannelId) this.subscribeToDmChannel(dm);
@@ -2404,6 +2410,12 @@ export class CommunicationComponent
       } catch (_) {}
       this.channelPresenceSub = null;
     }
+    this.channelMessageSubs.forEach((s) => {
+      try {
+        s.unsubscribe();
+      } catch (_) {}
+    });
+    this.channelMessageSubs.clear();
     this.dmChannelSubs.forEach((s) => {
       try {
         s.unsubscribe();
@@ -2420,58 +2432,52 @@ export class CommunicationComponent
 
   private subscribeToChannel(channelId: number): void {
     if (!this.stompClient || !this.wsConnected) return;
-    if (this.channelSub) {
-      try {
-        this.channelSub.unsubscribe();
-      } catch (_) {}
+    if (!this.channelMessageSubs.has(channelId)) {
+      const sub = this.stompClient.subscribe(
+        `/topic/collab/chat/channel/${channelId}`,
+        (frame: any) => {
+          const ch = this.channels.find((c) => c.backendId === channelId);
+          if (!ch) return;
+          let senderUserId: number | null = null;
+          try {
+            const body = JSON.parse(frame.body || '{}');
+            senderUserId = Number(body.senderUserId ?? body.userId ?? null);
+          } catch (_) {}
+          const isOwnMessage =
+            senderUserId !== null && senderUserId === this.me.userId;
+
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || ch.name,
+              body: incoming.content || `New message in ${ch.name}`,
+              avatarUrl: incoming.avatarUrl,
+              tone: 'channel',
+              channelId: ch.id,
+            });
+          }
+
+          if (ch.id !== this.activeChannelId) {
+            if (!isOwnMessage) {
+              ch.unreadCount = (ch.unreadCount || 0) + 1;
+              ch.hasUnread = true;
+              this.playNotificationSound();
+            }
+            this.syncHeaderState();
+            this.cdr.detectChanges();
+          } else {
+            this.reconcileChannelMessages(ch, frame.body);
+          }
+        },
+      );
+      this.channelMessageSubs.set(channelId, sub);
     }
+
     if (this.channelPresenceSub) {
       try {
         this.channelPresenceSub.unsubscribe();
       } catch (_) {}
     }
-
-    this.channelSub = this.stompClient.subscribe(
-      `/topic/collab/chat/channel/${channelId}`,
-      (frame: any) => {
-        const ch = this.channels.find((c) => c.backendId === channelId);
-        if (!ch) return;
-        let senderUserId: number | null = null;
-        try {
-          const body = JSON.parse(frame.body || '{}');
-          senderUserId = Number(body.senderUserId ?? body.userId ?? null);
-        } catch (_) {}
-        const isOwnMessage =
-          senderUserId !== null && senderUserId === this.me.userId;
-
-        if (ch.id !== this.activeChannelId) {
-          if (!isOwnMessage) {
-            ch.unreadCount = (ch.unreadCount || 0) + 1;
-            ch.hasUnread = true;
-            this.playNotificationSound();
-            const incoming = this.parseIncomingNotification(frame.body);
-            if (
-              this.workspaceMode !== 'chat' ||
-              this.activeView !== 'channel' ||
-              this.activeChannelId !== ch.id ||
-              (typeof document !== 'undefined' && document.visibilityState === 'hidden')
-            ) {
-              this.pushChatArrivalToast({
-                title: incoming.senderName || ch.name,
-                body: incoming.content || `New message in ${ch.name}`,
-                avatarUrl: incoming.avatarUrl,
-                tone: 'channel',
-                channelId: ch.id,
-              });
-            }
-          }
-          this.syncHeaderState();
-          this.cdr.detectChanges();
-        } else {
-          this.reconcileChannelMessages(ch, frame.body);
-        }
-      },
-    );
 
     this.channelPresenceSub = this.stompClient.subscribe(
       `/topic/collab/chat/presence/channel/${channelId}`,
@@ -2505,26 +2511,21 @@ export class CommunicationComponent
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || contact.fullName,
+              body: incoming.content || `New direct message from ${contact.fullName}`,
+              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+              tone: 'dm',
+              dmId: contact.id,
+            });
+          }
           if (contact.id !== this.activeDmId) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
               this.playNotificationSound();
-              const incoming = this.parseIncomingNotification(frame.body);
-              if (
-                this.workspaceMode !== 'chat' ||
-                this.activeView !== 'dm' ||
-                this.activeDmId !== contact.id ||
-                (typeof document !== 'undefined' && document.visibilityState === 'hidden')
-              ) {
-                this.pushChatArrivalToast({
-                  title: incoming.senderName || contact.fullName,
-                  body: incoming.content || `New direct message from ${contact.fullName}`,
-                  avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-                  tone: 'dm',
-                  dmId: contact.id,
-                });
-              }
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -3112,6 +3113,27 @@ export class CommunicationComponent
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.mapDirectMessageChannels(list);
+    const allowedIds = new Set(
+      list
+        .filter((c) => {
+          if (c.channelType !== 'PRIVATE') return true;
+          const desc = (c.description || '').toLowerCase();
+          const name = (c.name || '').toLowerCase();
+          return !(
+            desc.startsWith('dm between') ||
+            desc.startsWith('direct chat') ||
+            name.match(/^dm-\d+-\d+$/) !== null
+          );
+        })
+        .map((c) => Number(c.channelId ?? c.id)),
+    );
+    this.channelMessageSubs.forEach((sub, channelId) => {
+      if (allowedIds.has(channelId)) return;
+      try {
+        sub.unsubscribe();
+      } catch (_) {}
+      this.channelMessageSubs.delete(channelId);
+    });
     this.channels = list
       .filter((c) => {
         if (c.channelType !== 'PRIVATE') return true;
@@ -3140,6 +3162,9 @@ export class CommunicationComponent
           unreadCount: unreadCount > 0 ? unreadCount : undefined,
         };
       });
+    if (this.wsConnected) {
+      this.channels.forEach((channel) => this.subscribeToChannel(channel.backendId));
+    }
     this.channelsLoading = false;
     if (
       this.channels.length > 0 &&
