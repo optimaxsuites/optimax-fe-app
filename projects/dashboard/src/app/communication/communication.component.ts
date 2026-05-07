@@ -148,6 +148,12 @@ interface ChatArrivalToast {
   dmId?: string;
 }
 
+interface HoverPerson {
+  name: string;
+  avatarUrl?: string;
+  initials: string;
+}
+
 interface FeedThreadState {
   expanded: boolean;
   loading: boolean;
@@ -322,6 +328,7 @@ export class CommunicationComponent
   expandedFeedMediaItems: Array<{ url: string; label: string; mediaType: string }> = [];
   expandedFeedMediaIndex = 0;
   private feedReactionHoverCache: Record<string, string> = {};
+  private feedReactionUsersCache: Record<string, HoverPerson[]> = {};
   private seenFeedNotificationIds = new Set<number>();
   private protectedMediaUrlCache: Record<string, string> = {};
   private protectedMediaLoading = new Set<string>();
@@ -2118,6 +2125,10 @@ export class CommunicationComponent
     return this.feedReactionHoverCache[`${scope}:${id}:${reactionCode}`] || '';
   }
 
+  feedReactionHoverUsers(scope: 'post' | 'comment', id: number, reactionCode: string): HoverPerson[] {
+    return this.feedReactionUsersCache[`${scope}:${id}:${reactionCode}`] || [];
+  }
+
   loadFeedReactionUsers(
     scope: 'post' | 'comment',
     id: number,
@@ -2131,16 +2142,30 @@ export class CommunicationComponent
         : this.collabService.getFeedCommentReactions(id);
     request.subscribe({
       next: (rows) => {
-        const names = (rows || [])
+        const people = (rows || [])
           .filter((row: CollabFeedReactionUser) => (row.reactionCode || '').toUpperCase() === reactionCode)
-          .map((row: CollabFeedReactionUser) => this.feedAuthorName(row.user))
-          .filter(Boolean);
-        this.feedReactionHoverCache[key] = names.length
-          ? names.slice(0, 8).join(', ')
+          .map((row: CollabFeedReactionUser) => {
+            const name = this.feedAuthorName(row.user);
+            const userId = Number(
+              row.user?.userId ||
+              row.user?.id ||
+              0,
+            );
+            return {
+              name,
+              avatarUrl: userId ? this.userAvatarCache[userId] : undefined,
+              initials: initialsFrom(name),
+            } as HoverPerson;
+          })
+          .filter((row: HoverPerson) => Boolean(row.name));
+        this.feedReactionUsersCache[key] = people.slice(0, 8);
+        this.feedReactionHoverCache[key] = people.length
+          ? people.slice(0, 8).map((row) => row.name).join(', ')
           : 'No reactions yet';
         this.cdr.detectChanges();
       },
       error: () => {
+        this.feedReactionUsersCache[key] = [];
         this.feedReactionHoverCache[key] = 'Reaction details unavailable';
       },
     });
@@ -5604,6 +5629,27 @@ export class CommunicationComponent
     return (this.readStateMap[msg.backendId] || []).filter(
       (uid) => uid !== this.me.userId,
     ).length;
+  }
+
+  getReadUsers(msg: Message): string[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => this.userDirectory[uid] || `User ${uid}`);
+  }
+
+  getReadUserCards(msg: Message): HoverPerson[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => {
+        const name = this.userDirectory[uid] || `User ${uid}`;
+        return {
+          name,
+          avatarUrl: this.userAvatarCache[uid],
+          initials: initialsFrom(name),
+        } as HoverPerson;
+      });
   }
 
   findMsgInTree(messages: Message[], id: string): Message | null {
