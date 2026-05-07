@@ -33,6 +33,7 @@ export class ThreadPanelComponent {
   @Input() activeThreadReplyToId: string | null = null;
   @Input() activeThreadReplyTarget: Message | null = null;
   @Input() threadReplyDraft = '';
+  @Input() typingUsersLabel = '';
   @Input() threadPendingAttachments: Array<{
     name: string;
     size: string;
