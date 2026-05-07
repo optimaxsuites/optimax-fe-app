@@ -39,8 +39,23 @@
 
 .thread-message-copy {
   margin: 0;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+:host ::ng-deep .thread-message-copy a.thread-link {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  cursor: pointer;
+  color: #2e6276;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
 }
 
 .thread-nested-list {

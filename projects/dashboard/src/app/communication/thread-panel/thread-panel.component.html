@@ -248,7 +248,7 @@
         <span class="text-[14px] font-medium text-gray-800 flex-1 min-w-0 truncate">{{ msg.author }}</span>
         <span class="text-[12px] text-gray-400 flex-shrink-0">{{ msg.time }}</span>
       </div>
-      <p class="text-[14px] text-gray-700 leading-relaxed break-words">{{ msg.content }}</p>
+      <div class="text-[14px] text-gray-700 leading-relaxed break-words thread-message-copy" [innerHTML]="messageHtml(msg.content)"></div>
       <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
         <button
           (click)="pinnedUnpin.emit({ msg, event: $event })"
@@ -290,7 +290,7 @@
     </div>
 
     <!-- Scrollable messages -->
-    <div class="thread-scroll flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin">
+    <div class="thread-scroll flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin" (click)="onRenderedContentClick($event)">
 
       <!-- Root message -->
       <div class="thread-root-card flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">
@@ -305,7 +305,32 @@
             <span class="text-[15px] font-medium text-gray-800">{{ activeThread.author }}</span>
             <span class="text-[12px] text-gray-400">{{ activeThread.time }}</span>
           </div>
-          <p class="thread-message-copy text-[14px] text-gray-700 leading-relaxed">{{ activeThread.content }}</p>
+          <div class="thread-message-copy text-[14px] text-gray-700 leading-relaxed" [innerHTML]="messageHtml(activeThread.content)"></div>
+          <div *ngIf="messageAttachments(activeThread).length" class="mt-3 grid gap-3">
+            <div *ngIf="imageAttachments(activeThread).length" class="grid grid-cols-2 gap-3">
+              <a
+                *ngFor="let attachment of imageAttachments(activeThread)"
+                [href]="attachment.previewUrl || attachment.downloadUrl || '#'"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fbfd]"
+              >
+                <img [src]="attachment.previewUrl || attachment.downloadUrl" [alt]="attachment.name" class="w-full h-40 object-cover" />
+              </a>
+            </div>
+            <div *ngIf="documentAttachments(activeThread).length" class="grid gap-2">
+              <a
+                *ngFor="let attachment of documentAttachments(activeThread)"
+                [href]="attachment.downloadUrl || '#'"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5"
+              >
+                <i class="pi pi-file text-[#2e6276]"></i>
+                <span class="min-w-0 flex-1 truncate text-[13px] text-gray-700">{{ attachment.name }}</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -368,7 +393,32 @@
             </ng-container>
 
             <ng-template #replyNormal>
-              <p class="thread-message-copy text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }">{{ r.content }}</p>
+              <div class="thread-message-copy text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }" [innerHTML]="messageHtml(r.content)"></div>
+              <div *ngIf="messageAttachments(r).length" class="mt-3 grid gap-3">
+                <div *ngIf="imageAttachments(r).length" class="grid grid-cols-2 gap-3">
+                  <a
+                    *ngFor="let attachment of imageAttachments(r)"
+                    [href]="attachment.previewUrl || attachment.downloadUrl || '#'"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="block overflow-hidden rounded-2xl border border-gray-200 bg-[#f8fbfd]"
+                  >
+                    <img [src]="attachment.previewUrl || attachment.downloadUrl" [alt]="attachment.name" class="w-full h-36 object-cover" />
+                  </a>
+                </div>
+                <div *ngIf="documentAttachments(r).length" class="grid gap-2">
+                  <a
+                    *ngFor="let attachment of documentAttachments(r)"
+                    [href]="attachment.downloadUrl || '#'"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5"
+                  >
+                    <i class="pi pi-file text-[#2e6276]"></i>
+                    <span class="min-w-0 flex-1 truncate text-[13px] text-gray-700">{{ attachment.name }}</span>
+                  </a>
+                </div>
+              </div>
 
               <!-- Reply action row -->
               <div class="flex items-center gap-0 mt-1 flex-wrap">
@@ -468,7 +518,32 @@
                     <span class="text-[13px] font-bold text-gray-800">{{ r2.author }}</span>
                     <span class="text-[11px] text-gray-400">{{ r2.time }}</span>
                   </div>
-                  <p class="thread-message-copy text-[13px] text-gray-600 leading-relaxed">{{ r2.content }}</p>
+                  <div class="thread-message-copy text-[13px] text-gray-600 leading-relaxed" [innerHTML]="messageHtml(r2.content)"></div>
+                  <div *ngIf="messageAttachments(r2).length" class="mt-2 grid gap-2">
+                    <div *ngIf="imageAttachments(r2).length" class="grid grid-cols-2 gap-2">
+                      <a
+                        *ngFor="let attachment of imageAttachments(r2)"
+                        [href]="attachment.previewUrl || attachment.downloadUrl || '#'"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="block overflow-hidden rounded-xl border border-gray-200 bg-[#f8fbfd]"
+                      >
+                        <img [src]="attachment.previewUrl || attachment.downloadUrl" [alt]="attachment.name" class="w-full h-28 object-cover" />
+                      </a>
+                    </div>
+                    <div *ngIf="documentAttachments(r2).length" class="grid gap-2">
+                      <a
+                        *ngFor="let attachment of documentAttachments(r2)"
+                        [href]="attachment.downloadUrl || '#'"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2"
+                      >
+                        <i class="pi pi-file text-[#2e6276]"></i>
+                        <span class="min-w-0 flex-1 truncate text-[12px] text-gray-700">{{ attachment.name }}</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -503,10 +578,23 @@
           rows="1"
           class="thread-compose-input flex-1 bg-transparent border-0 outline-none text-[14px] text-gray-800 placeholder-gray-400 min-w-0"
         ></textarea>
+        <input #threadFileInput type="file" class="hidden" multiple (change)="onThreadFileSelected($event)" />
+        <button
+          type="button"
+          class="w-10 h-10 rounded-xl border border-gray-200 text-gray-500 hover:text-[#2e6276] hover:border-[#2e6276]/30 flex items-center justify-center flex-shrink-0"
+          (click)="threadFileInput.click()"
+          title="Attach file"
+        >
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+            />
+          </svg>
+        </button>
         <button
           (click)="replySent.emit()"
           class="send-btn thread-compose-send w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          [ngClass]="{ ready: threadReplyDraft.trim() }"
+          [ngClass]="{ ready: threadReplyDraft.trim() || threadPendingAttachments.length }"
           [disabled]="sendingReply"
         >
           <svg *ngIf="!sendingReply" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,6 +605,36 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
         </button>
+      </div>
+      <div *ngIf="threadPendingAttachments.length" class="mt-3 grid gap-2">
+        <div
+          *ngFor="let attachment of threadPendingAttachments; let attachmentIndex = index"
+          class="flex items-center gap-3 px-3 py-2.5 bg-[#f8fbfd] border border-[#2e6276]/10 rounded-xl"
+        >
+          <img
+            *ngIf="attachment.previewUrl"
+            [src]="attachment.previewUrl"
+            [alt]="attachment.name"
+            class="w-12 h-12 rounded-xl object-cover border border-[#2e6276]/10 flex-shrink-0"
+          />
+          <span
+            *ngIf="!attachment.previewUrl"
+            class="w-12 h-12 rounded-xl bg-white border border-[#2e6276]/10 text-[#2e6276] flex items-center justify-center flex-shrink-0"
+          >
+            <i class="pi" [ngClass]="attachment.type === 'application/pdf' ? 'pi-file-pdf' : 'pi-file'"></i>
+          </span>
+          <span class="min-w-0 flex-1">
+            <strong class="block text-[13px] text-gray-700 truncate">{{ attachment.name }}</strong>
+            <small class="block text-[12px] text-gray-400">{{ attachment.size }}</small>
+          </span>
+          <button
+            type="button"
+            class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white flex items-center justify-center"
+            (click)="threadAttachmentRemoved.emit(attachmentIndex)"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
       </div>
     </div>
 
