@@ -7,6 +7,12 @@ import {
 } from '@angular/core';
 import { Message } from '../communication.component';
 
+interface HoverPersonCard {
+  name: string;
+  avatarUrl?: string;
+  initials: string;
+}
+
 // damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
@@ -45,6 +51,8 @@ export class MessageFeedComponent {
   @Input() myUserId = 0;
   @Input() flashId: string | null = null;
   @Input() readCountForMessage: (msg: Message) => number = () => 0;
+  @Input() readUsersForMessage: (msg: Message) => string[] = () => [];
+  @Input() readUserCardsForMessage: (msg: Message) => HoverPersonCard[] = () => [];
 
   // ── Outputs ─────────────────────────────────────────
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
@@ -141,6 +149,15 @@ export class MessageFeedComponent {
 
   getReadCount(msg: Message): number {
     return this.readCountForMessage(msg);
+  }
+
+  readUsersLabel(msg: Message): string {
+    const users = this.readUsersForMessage(msg);
+    return users.join(', ');
+  }
+
+  readUserCards(msg: Message): HoverPersonCard[] {
+    return this.readUserCardsForMessage(msg);
   }
 
   readReceiptLabel(msg: Message): string {

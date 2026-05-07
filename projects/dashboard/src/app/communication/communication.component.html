@@ -557,6 +557,14 @@
                   >
                     <i [class]="reaction.icon"></i>
                     <strong *ngIf="feedReactionValue(post, reaction.code)">{{ feedReactionValue(post, reaction.code) }}</strong>
+                    <span class="hover-people-card" *ngIf="feedReactionHoverUsers('post', post.id, reaction.code).length">
+                      <span class="hover-people-title">{{ reaction.label }}</span>
+                      <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('post', post.id, reaction.code)">
+                        <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                        <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                        <span>{{ person.name }}</span>
+                      </span>
+                    </span>
                   </button>
                   <button type="button" class="toolbar-action" (click)="toggleFeedThread(post)">
                     {{ feedThreads[post.id] && feedThreads[post.id].expanded ? 'Hide replies' : 'Reply' }}
@@ -662,6 +670,14 @@
                         >
                           <i [class]="reaction.icon"></i>
                           <strong *ngIf="feedCommentReactionValue(comment, reaction.code)">{{ feedCommentReactionValue(comment, reaction.code) }}</strong>
+                          <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', comment.id, reaction.code).length">
+                            <span class="hover-people-title">{{ reaction.label }}</span>
+                            <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', comment.id, reaction.code)">
+                              <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                              <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                              <span>{{ person.name }}</span>
+                            </span>
+                          </span>
                         </button>
                         <button type="button" class="toolbar-action subtle" (click)="toggleFeedCommentReply(comment)">
                           {{ comment.replyOpen ? 'Cancel' : 'Reply' }}
@@ -772,6 +788,14 @@
                               >
                                 <i [class]="reaction.icon"></i>
                                 <strong *ngIf="feedCommentReactionValue(reply, reaction.code)">{{ feedCommentReactionValue(reply, reaction.code) }}</strong>
+                                <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', reply.id, reaction.code).length">
+                                  <span class="hover-people-title">{{ reaction.label }}</span>
+                                  <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', reply.id, reaction.code)">
+                                    <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                                    <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                                    <span>{{ person.name }}</span>
+                                  </span>
+                                </span>
                               </button>
                               <button type="button" class="toolbar-action subtle" (click)="toggleFeedCommentReply(reply)">
                                 {{ reply.replyOpen ? 'Cancel' : 'Reply' }}
@@ -880,6 +904,14 @@
                                     >
                                       <i [class]="reaction.icon"></i>
                                       <strong *ngIf="feedCommentReactionValue(replyLevel3, reaction.code)">{{ feedCommentReactionValue(replyLevel3, reaction.code) }}</strong>
+                                      <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', replyLevel3.id, reaction.code).length">
+                                        <span class="hover-people-title">{{ reaction.label }}</span>
+                                        <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', replyLevel3.id, reaction.code)">
+                                          <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                                          <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                                          <span>{{ person.name }}</span>
+                                        </span>
+                                      </span>
                                     </button>
                                   </div>
                                 </div>
@@ -1089,6 +1121,8 @@
             [myUserId]="me.userId"
             [flashId]="getFlashId()"
             [readCountForMessage]="getReadCount.bind(this)"
+            [readUsersForMessage]="getReadUsers.bind(this)"
+            [readUserCardsForMessage]="getReadUserCards.bind(this)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
             (pinToggled)="togglePin($event)"
