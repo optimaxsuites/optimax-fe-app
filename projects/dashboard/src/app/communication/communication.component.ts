@@ -520,6 +520,7 @@ export class CommunicationComponent
   private channelMessageSubs = new Map<number, any>();
   private dmChannelSubs = new Map<number, any>();
   private dmPresenceSubs = new Map<number, any>();
+  private conversationSyncTimer: any = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -553,6 +554,7 @@ export class CommunicationComponent
     this.connectWebSocket();
     if (this.workspaceMode === 'chat') {
       this.startPresencePoll();
+      this.startConversationSync();
     }
   }
 
@@ -560,6 +562,7 @@ export class CommunicationComponent
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
     if (this.presencePollTimer) clearInterval(this.presencePollTimer);
+    if (this.conversationSyncTimer) clearInterval(this.conversationSyncTimer);
     if (this.callDurationTimer) clearInterval(this.callDurationTimer);
     if (this.recognition) {
       try {
@@ -759,9 +762,11 @@ export class CommunicationComponent
     this.workspaceMode = mode;
     if (mode === 'chat') {
       this.ensureChatBootstrap();
+      this.startConversationSync();
       return;
     }
     this.stopPresencePolling();
+    this.stopConversationSync();
     this.unsubscribeChatStreams();
   }
 
@@ -3632,6 +3637,7 @@ export class CommunicationComponent
         this.collabService
           .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
+        this.startConversationSync();
         this.cdr.detectChanges();
       } else {
         this.loadChannelMessages(ch);
@@ -3658,6 +3664,7 @@ export class CommunicationComponent
     this.syncHeaderState();
     this.messagesLoading = true;
     this.scrollToLatestMessageSoon();
+    this.startConversationSync();
     this.cdr.detectChanges();
     this.getOrCreateDmChannel(contact);
   }
@@ -3665,6 +3672,7 @@ export class CommunicationComponent
   setView(v: 'threads'): void {
     this.workspaceMode = 'chat';
     this.activeView = v;
+    this.stopConversationSync();
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
     this.selectedThreadMsg = null;
@@ -4094,6 +4102,38 @@ export class CommunicationComponent
     if (this.presencePollTimer) {
       clearInterval(this.presencePollTimer);
       this.presencePollTimer = null;
+    }
+  }
+
+  private startConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      return;
+    }
+    this.conversationSyncTimer = setInterval(() => {
+      this.syncActiveConversationState();
+    }, 5000);
+  }
+
+  private stopConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      clearInterval(this.conversationSyncTimer);
+      this.conversationSyncTimer = null;
+    }
+  }
+
+  private syncActiveConversationState(): void {
+    if (this.workspaceMode !== 'chat') {
+      return;
+    }
+    if (this.activeView === 'channel' && this.activeChannel) {
+      this.fetchAndReconcileChannel(this.activeChannel);
+      return;
+    }
+    if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      this.fetchAndReconcileDm(
+        this.activeDmContact,
+        this.activeDmContact.dmChannelId,
+      );
     }
   }
 
