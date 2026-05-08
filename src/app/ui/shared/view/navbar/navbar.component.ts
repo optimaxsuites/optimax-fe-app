@@ -51,7 +51,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
       this.messagePreviews = state.messagePreviews;
-      this.unreadMessages = state.unreadMessages;
+      this.unreadMessages = state.messagePreviews.filter((entry) => !entry.read).length;
       this.unreadNotifications = state.unreadNotifications;
       if (state.profile) {
         this.headerProfile = state.profile;
@@ -79,54 +79,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.headerStateService.markNotificationRead(item.id);
     const route =
       item.route || `/admin/dashboard/communications/${this.currentUserId}`;
-    if (item.workspaceMode === 'chat') {
-      sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    }
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
-      window.dispatchEvent(
-        new CustomEvent('optimax-open-collab-target', { detail: item }),
-      );
-    }
-    this.router.navigateByUrl(route).then(() => {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('optimax-open-collab-target', { detail: item }),
-        );
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent('optimax-open-collab-target', { detail: item }),
-          );
-        }, 220);
-      }
-    }).catch(() => {});
+    this.dispatchCollabTarget(item, route);
   }
 
   openMessagePreview(item: HeaderMessagePreviewItem): void {
     this.headerStateService.markMessagePreviewRead(item.id);
     const route =
       item.route || `/admin/dashboard/communications/${this.currentUserId}`;
-    if (item.workspaceMode === 'chat') {
-      sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    }
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
-      window.dispatchEvent(
-        new CustomEvent('optimax-open-collab-target', { detail: item }),
-      );
-    }
-    this.router.navigateByUrl(route).then(() => {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('optimax-open-collab-target', { detail: item }),
-        );
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent('optimax-open-collab-target', { detail: item }),
-          );
-        }, 220);
-      }
-    }).catch(() => {});
+    this.dispatchCollabTarget(item, route);
   }
 
   get latestNotifications(): HeaderNotificationItem[] {
@@ -226,5 +186,34 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
     }
     return fallback;
+  }
+
+  private dispatchCollabTarget(item: any, route: string): void {
+    if (item.workspaceMode === 'chat') {
+      sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
+      window.dispatchEvent(
+        new CustomEvent('optimax-open-collab-target', { detail: item }),
+      );
+    }
+    this.router.navigateByUrl(route).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('optimax-open-collab-target', { detail: item }),
+        );
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 220);
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 700);
+      }
+    }).catch(() => {});
   }
 }

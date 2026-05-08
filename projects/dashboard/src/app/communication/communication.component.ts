@@ -507,6 +507,7 @@ export class CommunicationComponent
   private flashId: string | null = null;
   private flashTimer: any;
   private pendingNotificationMessageBackendId: number | null = null;
+  private queuedNotificationTarget: any = null;
   private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
@@ -855,7 +856,6 @@ export class CommunicationComponent
       }
     }
     if (!target) return;
-    sessionStorage.removeItem('optimax_notification_target');
     this.pendingNotificationMessageBackendId =
       Number(target.messageBackendId || target.threadRootMessageBackendId || 0) || null;
     if (target.workspaceMode === 'chat') {
@@ -865,21 +865,42 @@ export class CommunicationComponent
           (item) => Number(item.userId) === Number(target.dmUserId),
         );
         if (contact) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectDm(contact.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
       if (target.channelBackendId) {
         const channel = this.channels.find(
           (item) => Number(item.backendId) === Number(target.channelBackendId),
         );
         if (channel) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectChannel(channel.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
     }
+    sessionStorage.removeItem('optimax_notification_target');
+    this.queuedNotificationTarget = null;
     this.workspaceMode = 'feed';
+  }
+
+  private replayQueuedNotificationTarget(): void {
+    if (!this.queuedNotificationTarget) {
+      return;
+    }
+    const target = this.queuedNotificationTarget;
+    this.queuedNotificationTarget = null;
+    this.openNotificationTarget(target);
   }
 
   onFeedMediaSelected(event: Event): void {
@@ -3067,6 +3088,7 @@ export class CommunicationComponent
             }
             this.syncHeaderState();
             this.employeesLoading = false;
+            this.replayQueuedNotificationTarget();
             this.cdr.detectChanges();
           },
           error: () => {
@@ -3084,11 +3106,13 @@ export class CommunicationComponent
                 }
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
               error: () => {
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
             });
@@ -3205,6 +3229,7 @@ export class CommunicationComponent
     )
       this.selectChannel(this.channels[0].id);
     this.syncHeaderState();
+    this.replayQueuedNotificationTarget();
     this.cdr.detectChanges();
   }
 

@@ -27,6 +27,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private currentRouteUserId = '';
   private channelTargets = new Map<number, GlobalChatChannelTarget>();
   private channelSubs = new Map<number, any>();
+  private userNameCache = new Map<number, string>();
 
   constructor(
     private readonly collabService: CollaborationService,
@@ -186,54 +187,50 @@ export class ChatRealtimeNotifierService implements OnDestroy {
 
         this.refreshChannels();
 
-        const title =
-          incoming.senderName ||
-          (target.type === 'dm' ? 'New direct message' : target.label);
-        const detail =
-          incoming.content ||
-          (target.type === 'dm'
-            ? 'You have a new direct message.'
-            : `New message in ${target.label}`);
-
         const routeUserId =
           this.currentRouteUserId || String(this.currentUserId);
-        const notificationTarget = {
+        const notificationTargetBase = {
           workspaceMode: 'chat' as const,
           route: `/admin/dashboard/communications/${routeUserId}`,
           channelBackendId:
             target.type === 'channel' ? target.backendId : undefined,
           dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
-          messageBackendId: incoming.messageBackendId,
-          threadRootMessageBackendId: incoming.threadRootMessageBackendId,
         };
-
-        this.ngZone.run(() => {
-          this.headerStateService.pushMessagePreview({
-            title,
-            body: detail,
-            route: notificationTarget.route,
-            avatarUrl: incoming.avatarUrl,
-            contextLabel: target.type === 'dm' ? 'Direct message' : target.label,
-            workspaceMode: 'chat',
-            channelBackendId: notificationTarget.channelBackendId,
-            dmUserId: notificationTarget.dmUserId,
-            messageBackendId: notificationTarget.messageBackendId,
-            threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
-          });
-          if (
-            typeof document !== 'undefined' &&
-            document.visibilityState === 'visible' &&
-            !this.router.url.includes('/admin/dashboard/communications/')
-          ) {
-            this.messageService.add({
-              key: 'tf',
-              severity: 'info',
-              summary: title,
-              detail,
-              life: 4000,
-            });
+        this.loadVerifiedIncomingMessage(target.backendId, incoming, 0, (latestMessage) => {
+          if (!latestMessage) {
+            return;
           }
-          this.showBrowserNotification(title, detail, incoming.avatarUrl, notificationTarget);
+          const latestSenderUserId = Number(
+            latestMessage?.senderUserId || incoming.senderUserId || 0,
+          );
+          if (
+            latestSenderUserId &&
+            latestSenderUserId === Number(this.currentUserId)
+          ) {
+            return;
+          }
+          const notificationTarget = {
+            ...notificationTargetBase,
+            messageBackendId:
+              Number(latestMessage?.id || incoming.messageBackendId || 0) || undefined,
+            threadRootMessageBackendId:
+              Number(
+                latestMessage?.threadRootMessageId ||
+                  incoming.threadRootMessageBackendId ||
+                  0,
+              ) || undefined,
+          };
+          this.resolveIncomingDisplay(
+            target,
+            incoming,
+            latestMessage,
+            (resolved) =>
+              this.publishIncomingNotification(
+                target,
+                resolved,
+                notificationTarget,
+              ),
+          );
         });
       },
     );
@@ -328,6 +325,230 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       notification.close();
     };
     setTimeout(() => notification.close(), 4500);
+  }
+
+  private publishIncomingNotification(
+    target: GlobalChatChannelTarget,
+    resolved: {
+      title: string;
+      detail: string;
+      createdAt: number;
+      avatarUrl?: string;
+    },
+    notificationTarget: {
+      workspaceMode: 'chat';
+      route: string;
+      channelBackendId?: number;
+      dmUserId?: number;
+      messageBackendId?: number;
+      threadRootMessageBackendId?: number;
+    },
+  ): void {
+    this.ngZone.run(() => {
+      this.headerStateService.pushMessagePreview({
+        title: resolved.title,
+        body: resolved.detail,
+        createdAt: resolved.createdAt,
+        route: notificationTarget.route,
+        avatarUrl: resolved.avatarUrl,
+        contextLabel: target.type === 'dm' ? 'Direct message' : target.label,
+        workspaceMode: 'chat',
+        channelBackendId: notificationTarget.channelBackendId,
+        dmUserId: notificationTarget.dmUserId,
+        messageBackendId: notificationTarget.messageBackendId,
+        threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
+      });
+      if (
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'visible' &&
+        !this.router.url.includes('/admin/dashboard/communications/')
+      ) {
+        this.messageService.add({
+          key: 'tf',
+          severity: 'info',
+          summary: resolved.title,
+          detail: resolved.detail,
+          life: 4000,
+        });
+      }
+      this.showBrowserNotification(
+        resolved.title,
+        resolved.detail,
+        resolved.avatarUrl,
+        notificationTarget,
+      );
+    });
+  }
+
+  private loadVerifiedIncomingMessage(
+    channelBackendId: number,
+    incoming: {
+      senderName: string;
+      content: string;
+      senderUserId?: number;
+      avatarUrl?: string;
+      messageBackendId?: number;
+      threadRootMessageBackendId?: number;
+    },
+    attempt: number,
+    done: (message: any | null) => void,
+  ): void {
+    this.collabService.getChannelSnapshot(channelBackendId).subscribe({
+      next: (snap) => {
+        const latestMessage = this.pickLatestIncomingMessage(
+          snap?.messages || [],
+          incoming.messageBackendId,
+        );
+        if (
+          !latestMessage &&
+          attempt < 2
+        ) {
+          setTimeout(
+            () =>
+              this.loadVerifiedIncomingMessage(
+                channelBackendId,
+                incoming,
+                attempt + 1,
+                done,
+              ),
+            attempt === 0 ? 220 : 500,
+          );
+          return;
+        }
+        done(latestMessage);
+      },
+      error: () => {
+        if (attempt < 2) {
+          setTimeout(
+            () =>
+              this.loadVerifiedIncomingMessage(
+                channelBackendId,
+                incoming,
+                attempt + 1,
+                done,
+              ),
+            attempt === 0 ? 220 : 500,
+          );
+          return;
+        }
+        done(null);
+      },
+    });
+  }
+
+  private resolveIncomingDisplay(
+    target: GlobalChatChannelTarget,
+    incoming: {
+      senderName: string;
+      content: string;
+      senderUserId?: number;
+      avatarUrl?: string;
+      messageBackendId?: number;
+      threadRootMessageBackendId?: number;
+    },
+    latestMessage: any | null,
+    done: (resolved: {
+      title: string;
+      detail: string;
+      createdAt: number;
+      avatarUrl?: string;
+    }) => void,
+  ): void {
+    const senderUserId = Number(
+      latestMessage?.senderUserId || incoming.senderUserId || 0,
+    );
+    const detail = this.notificationText(
+      latestMessage?.content ?? incoming.content,
+      target.type === 'dm'
+        ? 'New direct message'
+        : `New message in ${target.label}`,
+    )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 160);
+    const createdAt = this.toTimestamp(latestMessage?.sentAt) || Date.now();
+    this.resolveSenderName(senderUserId, incoming.senderName, (title) =>
+      done({
+        title: title || (target.type === 'dm' ? 'Direct message' : target.label),
+        detail,
+        createdAt,
+        avatarUrl: incoming.avatarUrl,
+      }),
+    );
+  }
+
+  private resolveSenderName(
+    senderUserId: number,
+    incomingSenderName: string,
+    done: (name: string) => void,
+  ): void {
+    if (incomingSenderName?.trim()) {
+      done(incomingSenderName.trim());
+      return;
+    }
+    if (senderUserId && this.userNameCache.has(senderUserId)) {
+      done(this.userNameCache.get(senderUserId) || 'New message');
+      return;
+    }
+    if (senderUserId) {
+      this.collabService.getUsersInfo([senderUserId]).subscribe({
+        next: (users) => {
+          const user = (users || [])[0];
+          const name =
+            (user?.fullname || user?.username || user?.email || '').trim();
+          if (name) {
+            this.userNameCache.set(senderUserId, name);
+          }
+          done(name || 'New message');
+        },
+        error: () => done('New message'),
+      });
+      return;
+    }
+    done('New message');
+  }
+
+  private pickLatestIncomingMessage(
+    messages: any[],
+    preferredMessageId?: number,
+  ): any | null {
+    if (!Array.isArray(messages) || !messages.length) {
+      return null;
+    }
+    if (preferredMessageId) {
+      const exact = messages.find(
+        (entry) => Number(entry?.id) === Number(preferredMessageId),
+      );
+      if (exact) {
+        return exact;
+      }
+    }
+    return [...messages]
+      .sort((left, right) => this.toTimestamp(right?.sentAt) - this.toTimestamp(left?.sentAt))[0];
+  }
+
+  private toTimestamp(value: unknown): number {
+    if (Array.isArray(value)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] =
+        value as number[];
+      if (!year || !month || !day) {
+        return 0;
+      }
+      return new Date(
+        year,
+        Number(month) - 1,
+        day,
+        hour,
+        minute,
+        second,
+        Math.floor(Number(nano || 0) / 1_000_000),
+      ).getTime();
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
   }
 
   private ensureNotificationPermission(): void {
