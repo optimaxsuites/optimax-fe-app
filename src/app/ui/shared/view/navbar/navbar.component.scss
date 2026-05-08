@@ -18,6 +18,11 @@
   gap: 0.9rem;
 }
 
+.header-messages-wrap,
+.header-bell-wrap {
+  position: relative;
+}
+
 .menu-toggle,
 .header-icon,
 .header-chip,
