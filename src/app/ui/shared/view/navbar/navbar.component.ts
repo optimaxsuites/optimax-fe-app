@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
+import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
   HeaderNotificationItem,
   HeaderProfileState,
@@ -34,6 +35,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private router: Router,
     private authenticationService: AuthenticationService,
     private headerStateService: HeaderStateService,
+    private chatRealtimeNotifierService: ChatRealtimeNotifierService,
   ) {}
 
   ngOnInit(): void {
@@ -43,6 +45,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.syncProfileFromSession();
+    this.chatRealtimeNotifierService.start(this.currentUserId);
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
       this.unreadMessages = state.unreadMessages;
@@ -55,6 +58,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.headerSub?.unsubscribe();
+    this.chatRealtimeNotifierService.stop();
   }
 
   onToggleSidebar(): void {

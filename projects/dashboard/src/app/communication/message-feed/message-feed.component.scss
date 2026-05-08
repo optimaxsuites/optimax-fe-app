@@ -716,7 +716,8 @@
   bottom: calc(100% + 0.55rem);
   display: none;
   min-width: 11rem;
-  max-width: 15rem;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
   padding: 0.7rem 0.8rem;
   border-radius: 0.9rem;
   border: 1px solid rgba(209, 219, 223, 0.95);
@@ -744,6 +745,7 @@
   color: #475569;
   font-size: 0.78rem;
   line-height: 1.42;
+  white-space: nowrap;
 }
 
 .hover-people-avatar {
