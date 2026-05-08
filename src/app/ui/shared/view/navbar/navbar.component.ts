@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
+  HeaderMessagePreviewItem,
   HeaderNotificationItem,
   HeaderProfileState,
   HeaderStateService,
@@ -26,6 +27,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     initials: 'OU',
   };
   notifications: HeaderNotificationItem[] = [];
+  messagePreviews: HeaderMessagePreviewItem[] = [];
   unreadMessages = 0;
   unreadNotifications = 0;
   currentUserId = '';
@@ -48,6 +50,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.chatRealtimeNotifierService.start(this.currentUserId);
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
+      this.messagePreviews = state.messagePreviews;
       this.unreadMessages = state.unreadMessages;
       this.unreadNotifications = state.unreadNotifications;
       if (state.profile) {
@@ -67,7 +70,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openMessages(): void {
     sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   openNotifications(): void {
@@ -100,8 +102,44 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }).catch(() => {});
   }
 
+  openMessagePreview(item: HeaderMessagePreviewItem): void {
+    this.headerStateService.markMessagePreviewRead(item.id);
+    const route =
+      item.route || `/admin/dashboard/communications/${this.currentUserId}`;
+    if (item.workspaceMode === 'chat') {
+      sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
+      window.dispatchEvent(
+        new CustomEvent('optimax-open-collab-target', { detail: item }),
+      );
+    }
+    this.router.navigateByUrl(route).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('optimax-open-collab-target', { detail: item }),
+        );
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 220);
+      }
+    }).catch(() => {});
+  }
+
   get latestNotifications(): HeaderNotificationItem[] {
     return this.notifications.slice(0, 5);
+  }
+
+  get latestMessagePreviews(): HeaderMessagePreviewItem[] {
+    return this.messagePreviews.slice(0, 5);
+  }
+
+  viewAllMessages(): void {
+    sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   viewAllNotifications(): void {

@@ -208,6 +208,18 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         };
 
         this.ngZone.run(() => {
+          this.headerStateService.pushMessagePreview({
+            title,
+            body: detail,
+            route: notificationTarget.route,
+            avatarUrl: incoming.avatarUrl,
+            contextLabel: target.type === 'dm' ? 'Direct message' : target.label,
+            workspaceMode: 'chat',
+            channelBackendId: notificationTarget.channelBackendId,
+            dmUserId: notificationTarget.dmUserId,
+            messageBackendId: notificationTarget.messageBackendId,
+            threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
+          });
           if (
             typeof document !== 'undefined' &&
             document.visibilityState === 'visible' &&

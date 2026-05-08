@@ -30,12 +30,29 @@ export interface HeaderProfileState {
   initials: string;
 }
 
+export interface HeaderMessagePreviewItem {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: number;
+  read: boolean;
+  route?: string;
+  avatarUrl?: string;
+  contextLabel?: string;
+  workspaceMode?: 'feed' | 'chat';
+  channelBackendId?: number;
+  dmUserId?: number;
+  messageBackendId?: number;
+  threadRootMessageBackendId?: number;
+}
+
 export interface HeaderState {
   unreadChannels: number;
   unreadDirectMessages: number;
   unreadMessages: number;
   unreadNotifications: number;
   notifications: HeaderNotificationItem[];
+  messagePreviews: HeaderMessagePreviewItem[];
   profile: HeaderProfileState | null;
 }
 
@@ -115,6 +132,53 @@ export class HeaderStateService {
     });
   }
 
+  pushMessagePreview(
+    item: Omit<HeaderMessagePreviewItem, 'id' | 'createdAt' | 'read'>,
+  ): void {
+    const nextItem: HeaderMessagePreviewItem = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: Date.now(),
+      read: false,
+      ...item,
+      title: this.stringifyNotificationField(item.title, 'New message'),
+      body: this.stringifyNotificationField(item.body, 'A new message arrived.'),
+      contextLabel: item.contextLabel
+        ? this.stringifyNotificationField(item.contextLabel, '')
+        : item.contextLabel,
+    };
+    const key = `${nextItem.channelBackendId || 'dm'}-${nextItem.dmUserId || 'user'}-${nextItem.messageBackendId || nextItem.id}`;
+    const existing = this.state$.value.messagePreviews || [];
+    const deduped = existing.filter((entry) => {
+      const entryKey = `${entry.channelBackendId || 'dm'}-${entry.dmUserId || 'user'}-${entry.messageBackendId || entry.id}`;
+      return entryKey !== key;
+    });
+    const messagePreviews = [nextItem, ...deduped].slice(0, 20);
+    this.commit({
+      ...this.state$.value,
+      messagePreviews,
+    });
+  }
+
+  markMessagePreviewRead(messagePreviewId: string): void {
+    const messagePreviews = this.state$.value.messagePreviews.map((entry) =>
+      entry.id === messagePreviewId ? { ...entry, read: true } : entry,
+    );
+    this.commit({
+      ...this.state$.value,
+      messagePreviews,
+    });
+  }
+
+  markAllMessagePreviewsRead(): void {
+    this.commit({
+      ...this.state$.value,
+      messagePreviews: this.state$.value.messagePreviews.map((entry) => ({
+        ...entry,
+        read: true,
+      })),
+    });
+  }
+
   markAllNotificationsRead(): void {
     this.commit({
       ...this.state$.value,
@@ -165,6 +229,11 @@ export class HeaderStateService {
               this.sanitizeStoredNotification(entry),
             )
           : [],
+        messagePreviews: Array.isArray(parsed?.messagePreviews)
+          ? parsed.messagePreviews.map((entry: any) =>
+              this.sanitizeStoredMessagePreview(entry),
+            )
+          : [],
         profile: parsed?.profile || null,
       };
     } catch (_) {
@@ -179,6 +248,7 @@ export class HeaderStateService {
       unreadMessages: 0,
       unreadNotifications: 0,
       notifications: [],
+      messagePreviews: [],
       profile: null,
     };
   }
@@ -277,6 +347,33 @@ export class HeaderStateService {
       taskRoutineId: entry?.taskRoutineId,
       taskUpdateId: entry?.taskUpdateId,
       taskReviewId: entry?.taskReviewId,
+    };
+  }
+
+  private sanitizeStoredMessagePreview(
+    entry: Partial<HeaderMessagePreviewItem> | null | undefined,
+  ): HeaderMessagePreviewItem {
+    return {
+      id:
+        this.stringifyNotificationField(entry?.id, '').trim() ||
+        `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: this.stringifyNotificationField(entry?.title, 'New message'),
+      body: this.stringifyNotificationField(
+        entry?.body,
+        'A new message arrived.',
+      ),
+      createdAt: Number(entry?.createdAt || Date.now()),
+      read: Boolean(entry?.read),
+      route: entry?.route,
+      avatarUrl: entry?.avatarUrl,
+      contextLabel: entry?.contextLabel
+        ? this.stringifyNotificationField(entry.contextLabel, '')
+        : entry?.contextLabel,
+      workspaceMode: entry?.workspaceMode,
+      channelBackendId: entry?.channelBackendId,
+      dmUserId: entry?.dmUserId,
+      messageBackendId: entry?.messageBackendId,
+      threadRootMessageBackendId: entry?.threadRootMessageBackendId,
     };
   }
 }
