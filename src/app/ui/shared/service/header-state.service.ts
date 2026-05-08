@@ -133,13 +133,13 @@ export class HeaderStateService {
   }
 
   pushMessagePreview(
-    item: Omit<HeaderMessagePreviewItem, 'id' | 'createdAt' | 'read'>,
+    item: Omit<HeaderMessagePreviewItem, 'id' | 'read'>,
   ): void {
     const nextItem: HeaderMessagePreviewItem = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: Date.now(),
-      read: false,
       ...item,
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: Number(item.createdAt || Date.now()),
+      read: false,
       title: this.stringifyNotificationField(item.title, 'New message'),
       body: this.stringifyNotificationField(item.body, 'A new message arrived.'),
       contextLabel: item.contextLabel
