@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, signal } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -19,6 +19,7 @@ import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions, isSuperUser } fro
 import { SubscriptionService } from 'src/app/ui/marketplace/service/subscription.service';
 import { MetadataService } from 'projects/POS/src/app/ui/service/metadata.service';
 import { TenantService } from 'src/app/ui/tenants/service/tenant.service';
+import { Subscription } from 'rxjs';
 
 
 // dami just modified this to fix login handoff and route users cleanly into the app shell.
@@ -63,6 +64,7 @@ export class LoginComponent implements OnInit {
   
   // New variable to store the POS code entered via numpad
   posCodeDisplay: string = '';
+  private redirectIntentSubscription?: Subscription;
 
   public token!: string;
   hide = signal(true);
@@ -96,6 +98,10 @@ export class LoginComponent implements OnInit {
     this.loadPendingRedirectIntent();
   }
 
+  ngOnDestroy(): void {
+    this.redirectIntentSubscription?.unsubscribe();
+  }
+
   private loadTenantIdentity(): void {
     const host = window.location.hostname || '';
     const firstLabel = host.split('.')[0] || 'optimax';
@@ -122,42 +128,81 @@ export class LoginComponent implements OnInit {
   }
 
   private loadPendingRedirectIntent(): void {
-    const redirectFromQuery = this.route.snapshot.queryParamMap.get('redirect') || '';
-    if (redirectFromQuery) {
-      sessionStorage.setItem('postLoginRedirect', redirectFromQuery);
-      localStorage.setItem('postLoginRedirect', redirectFromQuery);
-      if (redirectFromQuery.includes('/expensesApproval/')) {
-        sessionStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
-        localStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
+    const applyRedirectIntent = (redirectFromQuery: string) => {
+      if (redirectFromQuery) {
+        sessionStorage.setItem('postLoginRedirect', redirectFromQuery);
+        localStorage.setItem('postLoginRedirect', redirectFromQuery);
+        if (redirectFromQuery.includes('/expensesApproval/')) {
+          sessionStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
+          localStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
+        }
       }
+
+      const redirectUrl =
+        sessionStorage.getItem('pendingApprovalRedirect') ||
+        localStorage.getItem('pendingApprovalRedirect') ||
+        redirectFromQuery ||
+        sessionStorage.getItem('postLoginRedirect') ||
+        localStorage.getItem('postLoginRedirect') ||
+        '';
+
+      this.pendingRedirectUrl = redirectUrl;
+
+      if (!redirectUrl) {
+        this.pendingRedirectLabel = '';
+        this.cdr.markForCheck();
+        this.redirectAuthenticatedUserIfNeeded();
+        return;
+      }
+
+      if (redirectUrl.includes('/expensesApproval/')) {
+        this.pendingRedirectLabel = 'Expense Approval';
+        this.cdr.markForCheck();
+        this.redirectAuthenticatedUserIfNeeded();
+        return;
+      }
+
+      if (redirectUrl.includes('/admin/expenses/')) {
+        this.pendingRedirectLabel = 'Expenses';
+        this.cdr.markForCheck();
+        this.redirectAuthenticatedUserIfNeeded();
+        return;
+      }
+
+      this.pendingRedirectLabel = 'your requested page';
+      this.cdr.markForCheck();
+      this.redirectAuthenticatedUserIfNeeded();
+    };
+
+    const fallbackRedirect = (() => {
+      try {
+        const raw = new URL(window.location.href).searchParams.get('redirect') || '';
+        return raw ? decodeURIComponent(raw) : '';
+      } catch {
+        return '';
+      }
+    })();
+
+    this.redirectIntentSubscription = this.route.queryParamMap.subscribe((params) => {
+      applyRedirectIntent(params.get('redirect') || fallbackRedirect);
+    });
+  }
+
+  private redirectAuthenticatedUserIfNeeded(): void {
+    if (!this.authenticationService.isAuthenticated()) {
+      return;
     }
 
-    const redirectUrl =
+    const targetUrl =
       sessionStorage.getItem('pendingApprovalRedirect') ||
       localStorage.getItem('pendingApprovalRedirect') ||
-      redirectFromQuery ||
       sessionStorage.getItem('postLoginRedirect') ||
       localStorage.getItem('postLoginRedirect') ||
-      '';
+      this.pendingRedirectUrl;
 
-    this.pendingRedirectUrl = redirectUrl;
-
-    if (!redirectUrl) {
-      this.pendingRedirectLabel = '';
-      return;
+    if (targetUrl) {
+      window.location.assign(targetUrl);
     }
-
-    if (redirectUrl.includes('/expensesApproval/')) {
-      this.pendingRedirectLabel = 'Expense Approval';
-      return;
-    }
-
-    if (redirectUrl.includes('/admin/expenses/')) {
-      this.pendingRedirectLabel = 'Expenses';
-      return;
-    }
-
-    this.pendingRedirectLabel = 'your requested page';
   }
 
   // Method to toggle the login mode
@@ -380,6 +425,10 @@ async posLoginAction(): Promise<void> {
     sessionStorage.setItem("fullname", data.fullname);
     sessionStorage.setItem("email", data.email);
     sessionStorage.setItem("userid", data.id);
+    localStorage.setItem("username", data.username || '');
+    localStorage.setItem("fullname", data.fullname || '');
+    localStorage.setItem("email", data.email || '');
+    localStorage.setItem("userid", String(data.id || ''));
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;
     const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
     sessionStorage.setItem("Token", token);
@@ -393,6 +442,7 @@ async posLoginAction(): Promise<void> {
     sessionStorage.setItem("tenantId", tenantId);
     localStorage.setItem("tenantId", tenantId);
     sessionStorage["userRegData"] = JSON.stringify(data);
+    localStorage.setItem("userRegData", JSON.stringify(data));
 
     let redirectUrl: string | null =
       sessionStorage.getItem('pendingApprovalRedirect') ||

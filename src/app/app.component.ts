@@ -117,6 +117,11 @@ export class AppComponent implements OnInit {
       sessionStorage.getItem('accessToken') ||
       '';
     const tenantId = sessionStorage.getItem('tenantId') || '';
+    const userId = sessionStorage.getItem('userid') || '';
+    const username = sessionStorage.getItem('username') || '';
+    const fullname = sessionStorage.getItem('fullname') || '';
+    const email = sessionStorage.getItem('email') || '';
+    const userRegData = sessionStorage.getItem('userRegData') || '';
 
     if (token) {
       localStorage.setItem('Token', token);
@@ -126,6 +131,21 @@ export class AppComponent implements OnInit {
 
     if (tenantId) {
       localStorage.setItem('tenantId', tenantId);
+    }
+    if (userId) {
+      localStorage.setItem('userid', userId);
+    }
+    if (username) {
+      localStorage.setItem('username', username);
+    }
+    if (fullname) {
+      localStorage.setItem('fullname', fullname);
+    }
+    if (email) {
+      localStorage.setItem('email', email);
+    }
+    if (userRegData) {
+      localStorage.setItem('userRegData', userRegData);
     }
   }
 

@@ -35,7 +35,8 @@
            - When active the button uses teal/primary colours so it's clear
              which mode is currently selected.
     ───────────────────────────────────────────────────────────────────── -->
-    <button (click)="toggleViewAll()"
+    <button *ngIf="canViewAll"
+            (click)="toggleViewAll()"
             pTooltip="{{ viewAllUsers ? 'Switch to My Expenses' : 'Switch to All Employees' }}"
             tooltipPosition="bottom"
             class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-all duration-200 font-medium"

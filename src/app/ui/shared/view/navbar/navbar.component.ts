@@ -30,6 +30,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   messagePreviews: HeaderMessagePreviewItem[] = [];
   unreadMessages = 0;
   unreadNotifications = 0;
+  showUnreadNotificationsDialog = false;
   currentUserId = '';
   private headerSub?: Subscription;
 
@@ -75,6 +76,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
   openNotifications(): void {
   }
 
+  clearAllNotifications(): void {
+    this.headerStateService.clearAllNotifications();
+    this.showUnreadNotificationsDialog = false;
+  }
+
+  openUnreadNotificationsDialog(): void {
+    this.showUnreadNotificationsDialog = true;
+  }
+
+  closeUnreadNotificationsDialog(): void {
+    this.showUnreadNotificationsDialog = false;
+  }
+
   openNotification(item: HeaderNotificationItem): void {
     this.headerStateService.markNotificationRead(item.id);
     const route =
@@ -91,6 +105,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   get latestNotifications(): HeaderNotificationItem[] {
     return this.notifications.slice(0, 5);
+  }
+
+  get unreadNotificationItems(): HeaderNotificationItem[] {
+    return this.notifications.filter((entry) => !entry.read);
   }
 
   get latestMessagePreviews(): HeaderMessagePreviewItem[] {
