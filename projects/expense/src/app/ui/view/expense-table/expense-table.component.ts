@@ -339,6 +339,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private isOwnExpense(expense: Expense): boolean {
+    return !!this.currentUserId && this.resolveExpenseOwnerId(expense) === this.currentUserId;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // getExpenseCreatorName — resolves creator's name from expense object
   //
@@ -390,6 +394,18 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
     // Ultimate fallback
     return 'Unknown';
+  }
+
+  getApprovedByName(expense: Expense): string {
+    const approvedBy = (expense as any).approvedBy;
+    if (!approvedBy) return '—';
+    if (typeof approvedBy === 'object') {
+      return approvedBy.fullname || approvedBy.name || approvedBy.username || '—';
+    }
+    if (typeof approvedBy === 'number' && approvedBy > 0) {
+      return `User #${approvedBy}`;
+    }
+    return '—';
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -770,6 +786,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' }); return;
     }
+    if (this.isOwnExpense(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Approve', detail: 'You cannot approve your own expense.' }); return;
+    }
     const merchantId = request.merchantId || request.merchant?.id;
     const categoryId = request.categoryId || request.category?.id;
     if (!merchantId || !categoryId) {
@@ -826,6 +845,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   openRejectionDialog(request: Expense): void {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'Already approved or rejected.' }); return;
+    }
+    if (this.isOwnExpense(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Reject', detail: 'You cannot reject your own expense.' }); return;
     }
     this.pendingRejectRequest = request; this.rejectionReason = ''; this.showRejectionDialog = true;
   }

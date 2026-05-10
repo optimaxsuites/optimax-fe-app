@@ -29,6 +29,7 @@ export class ExpenseApprovalComponent implements OnInit {
   fileModalTitle = '';
   fileModalLoading = false;
   fileModalError = '';
+  currentUserId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -43,6 +44,7 @@ export class ExpenseApprovalComponent implements OnInit {
     localStorage.removeItem('pendingApprovalRedirect');
     sessionStorage.removeItem('postLoginRedirect');
     localStorage.removeItem('postLoginRedirect');
+    this.currentUserId = this.resolveCurrentUserId();
     const expenseId = this.route.snapshot.paramMap.get('id');
     console.log('Route param id:', expenseId);
     if (expenseId) {
@@ -74,6 +76,14 @@ export class ExpenseApprovalComponent implements OnInit {
 
   approveExpense(): void {
     if (!this.expense || this.isSubmitting) return;
+    if (this.isOwnExpense(this.expense)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Approve',
+        detail: 'You cannot approve your own expense.'
+      });
+      return;
+    }
     const merchantId = this.expense.merchantId || this.expense.merchant?.id;
     const categoryId = this.expense.categoryId || this.expense.category?.id;
     if (!merchantId || !categoryId) {
@@ -102,6 +112,14 @@ export class ExpenseApprovalComponent implements OnInit {
 
   rejectExpense(): void {
     if (!this.expense || this.isSubmitting) return;
+    if (this.isOwnExpense(this.expense)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Reject',
+        detail: 'You cannot reject your own expense.'
+      });
+      return;
+    }
     const reason = window.prompt('Enter rejection reason', this.expense.rejectionReason || '');
     if (reason === null) return;
 
@@ -337,5 +355,35 @@ export class ExpenseApprovalComponent implements OnInit {
         ? expense.expenseReceipts.map(normalizeMedia)
         : [],
     };
+  }
+
+  private resolveCurrentUserId(): number | null {
+    const raw =
+      sessionStorage.getItem('userid') ||
+      localStorage.getItem('userid');
+    const parsed = Number(raw);
+    return !isNaN(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private resolveExpenseOwnerId(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
+
+    const expenseBy = expense.expenseBy as any;
+    if (typeof expenseBy === 'number' && expenseBy > 0) return expenseBy;
+    if (typeof expenseBy === 'string') {
+      const parsed = Number(expenseBy);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (expenseBy && typeof expenseBy === 'object') {
+      const userId = Number(expenseBy.userId ?? expenseBy.id);
+      if (!isNaN(userId) && userId > 0) return userId;
+    }
+
+    return null;
+  }
+
+  private isOwnExpense(expense: Expense): boolean {
+    return !!this.currentUserId && this.resolveExpenseOwnerId(expense) === this.currentUserId;
   }
 }

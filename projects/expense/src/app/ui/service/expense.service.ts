@@ -122,6 +122,11 @@ export interface Expense {
   paidBy: PaidByBackend | PaidBy;
   receiptReference?: string;
   expenseById?: number;
+  approvedById?: number;
+  approvedAt?: string;
+  rejectedById?: number;
+  rejectedAt?: string;
+  rejectionReason?: string;
   merchantId?: number;
   categoryId?: number;
   taxId?: number;
@@ -145,11 +150,8 @@ export interface Expense {
   expenseReceipts?: ExpenseMedia[];
   expenseBy?: UserDTO | any;
   approvedBy?: UserDTO | any;
-  approvedAt?: string;
   accountingTransactionId?: number;
   rejectedBy?: UserDTO | any;
-  rejectedAt?: string;
-  rejectionReason?: string;
 }
 
 export interface ExpenseFilterDTO {
@@ -542,8 +544,17 @@ export class ExpenseService {
       switchMap((full: Expense) => {
         const originalSubmitterId =
           this.resolveExpenseById(full) ??
-          this.resolveExpenseById(expense) ??
-          currentUserId;
+          this.resolveExpenseById(expense);
+
+        if (!full.id) {
+          return throwError(() => new Error('Expense ID is missing. Approval cannot continue.'));
+        }
+        if (!currentUserId) {
+          return throwError(() => new Error('Current approver could not be resolved. Please sign in again.'));
+        }
+        if (!originalSubmitterId) {
+          return throwError(() => new Error('Original expense owner could not be resolved. Please refresh and try again.'));
+        }
   
         const payload: any = {
           id:                 full.id,
@@ -667,8 +678,17 @@ export class ExpenseService {
       switchMap((full: Expense) => {
         const originalSubmitterId =
           this.resolveExpenseById(full) ??
-          this.resolveExpenseById(expense) ??
-          currentUserId;
+          this.resolveExpenseById(expense);
+
+        if (!full.id) {
+          return throwError(() => new Error('Expense ID is missing. Rejection cannot continue.'));
+        }
+        if (!currentUserId) {
+          return throwError(() => new Error('Current approver could not be resolved. Please sign in again.'));
+        }
+        if (!originalSubmitterId) {
+          return throwError(() => new Error('Original expense owner could not be resolved. Please refresh and try again.'));
+        }
   
         const payload: any = {
           id:                 full.id,
