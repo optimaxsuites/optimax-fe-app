@@ -305,8 +305,11 @@ export class CommunicationComponent
   feedHome: CollabFeedHome | null = null;
   feedPosts: CollabFeedPost[] = [];
   featuredFeedPosts: CollabFeedPost[] = [];
+  renderedRecentFeedPosts: CollabFeedPost[] = [];
+  renderedFeaturedFeedPosts: CollabFeedPost[] = [];
   trendingTags: string[] = [];
   selectedFeedPostId: number | null = null;
+  showViewedFeedPosts = false;
   feedPage = 1;
   feedPageSize = 10;
   feedHasMore = false;
@@ -330,6 +333,7 @@ export class CommunicationComponent
   private feedReactionHoverCache: Record<string, string> = {};
   private feedReactionUsersCache: Record<string, HoverPerson[]> = {};
   private seenFeedNotificationIds = new Set<number>();
+  private viewedFeedPostIds = new Set<number>();
   private protectedMediaUrlCache: Record<string, string> = {};
   private protectedMediaLoading = new Set<string>();
   readonly feedReactionOptions = [
@@ -740,6 +744,18 @@ export class CommunicationComponent
     return this.feedPosts.find((post) => post.id === this.selectedFeedPostId);
   }
 
+  get recentFeedPosts(): CollabFeedPost[] {
+    return this.renderedRecentFeedPosts;
+  }
+
+  get oldFeedPosts(): CollabFeedPost[] {
+    return this.feedPosts.filter((post) => this.viewedFeedPostIds.has(Number(post.id)));
+  }
+
+  get visibleFeaturedFeedPosts(): CollabFeedPost[] {
+    return this.renderedFeaturedFeedPosts;
+  }
+
   get selectedFeedThreadState(): FeedThreadState | null {
     if (!this.selectedFeedPostId) return null;
     return this.feedThreads[this.selectedFeedPostId] || null;
@@ -960,14 +976,15 @@ export class CommunicationComponent
         this.featuredFeedPosts = home?.featuredPosts || [];
         this.feedPosts = mergedPosts;
         this.trendingTags = home?.trendingTags || [];
+        this.refreshVisibleFeedCollections(nextPosts, append);
         this.preloadFeedMediaUrls(this.feedPosts);
         this.preloadFeedMediaUrls(this.featuredFeedPosts);
         this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
         this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
         const total = Number(home?.feed?.totalSize || mergedPosts.length);
         this.feedHasMore = this.feedPosts.length < total;
-        if (!this.selectedFeedPostId && this.feedPosts.length) {
-          this.selectedFeedPostId = this.feedPosts[0].id;
+        if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+          this.selectedFeedPostId = this.recentFeedPosts[0].id;
         }
         this.loadTaskRoutineSummaries();
         this.loadFeedNotifications();
@@ -984,6 +1001,7 @@ export class CommunicationComponent
               ? [...this.feedPosts, ...nextPosts.filter((post) => !this.feedPosts.some((existing) => existing.id === post.id))]
               : nextPosts;
             this.featuredFeedPosts = this.feedPosts.filter((post) => post.featured).slice(0, 4);
+            this.refreshVisibleFeedCollections(nextPosts, append);
             this.preloadFeedMediaUrls(this.feedPosts);
             this.preloadFeedMediaUrls(this.featuredFeedPosts);
             this.trendingTags = this.buildTrendingTags(this.feedPosts);
@@ -1007,8 +1025,8 @@ export class CommunicationComponent
               activeChatCount: this.dmContacts.length,
             };
             this.feedHasMore = this.feedPosts.length < Number(result?.totalSize || this.feedPosts.length);
-            if (!this.selectedFeedPostId && this.feedPosts.length) {
-              this.selectedFeedPostId = this.feedPosts[0].id;
+            if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+              this.selectedFeedPostId = this.recentFeedPosts[0].id;
             }
             this.loadTaskRoutineSummaries();
             this.loadFeedNotifications();
@@ -1031,6 +1049,7 @@ export class CommunicationComponent
   refreshFeed(): void {
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -1039,6 +1058,7 @@ export class CommunicationComponent
     keyboardEvent.preventDefault();
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -1049,7 +1069,16 @@ export class CommunicationComponent
 
   selectFeedPost(post: CollabFeedPost): void {
     this.selectedFeedPostId = post.id;
+    this.markFeedPostViewed(post);
     this.ensureFeedThread(post.id);
+  }
+
+  showOldFeedPosts(): void {
+    this.showViewedFeedPosts = true;
+    this.refreshVisibleFeedCollections([], false, false);
+    if (!this.selectedFeedPost && this.oldFeedPosts.length) {
+      this.selectedFeedPostId = this.oldFeedPosts[0].id;
+    }
   }
 
   ensureFeedThread(postId: number): void {
@@ -1446,6 +1475,7 @@ export class CommunicationComponent
   }
 
   openFeedChannel(post: CollabFeedPost): void {
+    this.markFeedPostViewed(post);
     const channelId = Number(post.channel?.channelId ?? post.channel?.id ?? 0);
     const channel = this.channels.find((item) => item.backendId === channelId);
     this.workspaceMode = 'chat';
@@ -1835,6 +1865,102 @@ export class CommunicationComponent
       'optimax_seen_feed_notifications',
       JSON.stringify(Array.from(this.seenFeedNotificationIds).slice(-100)),
     );
+  }
+
+  private restoreViewedFeedPostIds(): void {
+    try {
+      const raw = localStorage.getItem(this.viewedFeedPostsStorageKey());
+      if (!raw) return;
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) {
+        this.viewedFeedPostIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
+      }
+    } catch (_) {}
+  }
+
+  private persistViewedFeedPostIds(): void {
+    localStorage.setItem(
+      this.viewedFeedPostsStorageKey(),
+      JSON.stringify(Array.from(this.viewedFeedPostIds).slice(-300)),
+    );
+  }
+
+  private viewedFeedPostsStorageKey(): string {
+    return `optimax_viewed_feed_posts_${Number(this.me.userId || 0) || 'guest'}`;
+  }
+
+  private refreshVisibleFeedCollections(
+    exposedPosts: CollabFeedPost[] = [],
+    append = false,
+    markAsViewed = true,
+  ): void {
+    if (this.showViewedFeedPosts) {
+      this.renderedRecentFeedPosts = [...this.feedPosts];
+      this.renderedFeaturedFeedPosts = [...this.featuredFeedPosts];
+      return;
+    }
+
+    const baselineViewed = new Set(this.viewedFeedPostIds);
+
+    if (append) {
+      const existingIds = new Set(this.renderedRecentFeedPosts.map((post) => Number(post.id)));
+      const nextVisible = (exposedPosts || []).filter(
+        (post) =>
+          !baselineViewed.has(Number(post.id)) &&
+          !existingIds.has(Number(post.id)),
+      );
+      this.renderedRecentFeedPosts = [...this.renderedRecentFeedPosts, ...nextVisible];
+      if (markAsViewed) {
+        this.markFeedPostsViewed(nextVisible);
+      }
+    } else {
+      this.renderedRecentFeedPosts = this.feedPosts.filter(
+        (post) => !baselineViewed.has(Number(post.id)),
+      );
+      if (markAsViewed) {
+        this.markFeedPostsViewed(this.renderedRecentFeedPosts);
+      }
+    }
+
+    this.renderedFeaturedFeedPosts = this.featuredFeedPosts.filter(
+      (post) => !baselineViewed.has(Number(post.id)),
+    );
+  }
+
+  private markFeedPostsViewed(posts: CollabFeedPost[]): void {
+    const newPostIds = (posts || [])
+      .map((post) => Number(post?.id || 0))
+      .filter((postId) => postId && !this.viewedFeedPostIds.has(postId));
+
+    if (!newPostIds.length) {
+      return;
+    }
+
+    newPostIds.forEach((postId) => this.viewedFeedPostIds.add(postId));
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount(newPostIds);
+  }
+
+  private markFeedPostViewed(post: CollabFeedPost): void {
+    const postId = Number(post?.id || 0);
+    if (!postId || this.viewedFeedPostIds.has(postId)) {
+      return;
+    }
+    this.viewedFeedPostIds.add(postId);
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount([postId]);
+  }
+
+  private bumpFeedViewCount(postIds: number[]): void {
+    const idSet = new Set(postIds.map((value) => Number(value)).filter(Boolean));
+    const incrementViewCount = (post: CollabFeedPost): CollabFeedPost =>
+      idSet.has(Number(post.id))
+        ? { ...post, viewCount: Number(post.viewCount || 0) + 1 }
+        : post;
+    this.feedPosts = this.feedPosts.map(incrementViewCount);
+    this.featuredFeedPosts = this.featuredFeedPosts.map(incrementViewCount);
+    this.renderedRecentFeedPosts = this.renderedRecentFeedPosts.map(incrementViewCount);
+    this.renderedFeaturedFeedPosts = this.renderedFeaturedFeedPosts.map(incrementViewCount);
   }
 
   clearPendingAttachments(refresh = true): void {
@@ -2952,6 +3078,7 @@ export class CommunicationComponent
     const userId = Number(sessionStorage.getItem('userid') || 0);
     if (!userId) return;
     this.me.userId = userId;
+    this.restoreViewedFeedPostIds();
     this.collabService.getEmployeeByUserId(userId).subscribe({
       next: (emp) => {
         const first = emp.firstName || '',

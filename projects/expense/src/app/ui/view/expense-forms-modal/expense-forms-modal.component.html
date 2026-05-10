@@ -116,6 +116,68 @@
     </div>
   </div>
 
+  <div *ngIf="scanState === 'idle' && appliedScanPreview"
+       class="bg-white border border-emerald-200 rounded-xl p-4 mb-8 shadow-sm">
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+          <i class="fa-solid fa-file-invoice text-emerald-700 text-sm"></i>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800 m-0">OCR Preview</p>
+          <p class="text-xs text-gray-500 m-0">Last applied receipt details</p>
+        </div>
+      </div>
+      <span class="text-[11px] px-2 py-1 rounded-full font-medium"
+            [ngClass]="{
+              'bg-green-100 text-green-700': appliedScanPreview.confidence === 'high',
+              'bg-amber-100 text-amber-700': appliedScanPreview.confidence === 'medium',
+              'bg-red-100 text-red-700': appliedScanPreview.confidence === 'low'
+            }">
+        {{ appliedScanPreview.confidence | titlecase }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+        <p class="text-[11px] uppercase tracking-wide text-gray-400 m-0 mb-1">Merchant</p>
+        <p class="text-sm font-medium text-gray-800 m-0 truncate">{{ appliedScanPreview.merchantName || '—' }}</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+        <p class="text-[11px] uppercase tracking-wide text-gray-400 m-0 mb-1">Date</p>
+        <p class="text-sm font-medium text-gray-800 m-0">{{ appliedScanPreview.date || '—' }}</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+        <p class="text-[11px] uppercase tracking-wide text-gray-400 m-0 mb-1">Subtotal</p>
+        <p class="text-sm font-medium text-gray-800 m-0">₦{{ (appliedScanPreview.subTotal ?? 0) | number:'1.2-2' }}</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+        <p class="text-[11px] uppercase tracking-wide text-gray-400 m-0 mb-1">Total</p>
+        <p class="text-sm font-semibold text-emerald-700 m-0">₦{{ (appliedScanPreview.amount ?? 0) | number:'1.2-2' }}</p>
+      </div>
+    </div>
+
+    <div *ngIf="appliedScanPreview.lineItems.length > 0" class="rounded-lg border border-gray-200 overflow-hidden">
+      <div class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+        <div class="col-span-6">Item</div>
+        <div class="col-span-2">Qty</div>
+        <div class="col-span-2">Unit</div>
+        <div class="col-span-2 text-right">Total</div>
+      </div>
+      <div *ngFor="let item of appliedScanPreview.lineItems | slice:0:4"
+           class="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-100 last:border-b-0 text-xs text-gray-700">
+        <div class="col-span-6 truncate">{{ item.name }}</div>
+        <div class="col-span-2">{{ item.qty }}</div>
+        <div class="col-span-2">₦{{ item.unitPrice | number:'1.0-2' }}</div>
+        <div class="col-span-2 text-right font-medium">₦{{ item.totalPrice | number:'1.0-2' }}</div>
+      </div>
+      <div *ngIf="appliedScanPreview.lineItems.length > 4"
+           class="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
+        +{{ appliedScanPreview.lineItems.length - 4 }} more item(s)
+      </div>
+    </div>
+  </div>
+
   <!-- ── SCANNING STATE: Processing spinner ──────────────────────────────── -->
   <div *ngIf="scanState === 'scanning'"
        class="bg-white border border-teal-200 rounded-xl p-6 mb-8">
@@ -230,7 +292,7 @@
             <span class="text-gray-700">
               <span class="font-medium text-gray-500 mr-1.5">{{ item.qty }}×</span>{{ item.name }}
             </span>
-            <span class="text-gray-800 font-medium">₦{{ item.price | number }}</span>
+            <span class="text-gray-800 font-medium">₦{{ item.totalPrice | number }}</span>
           </div>
         </div>
       </div>
@@ -358,24 +420,134 @@
               </p>
             </div>
 
-            <!-- Description -->
+            <!-- Line Items -->
             <div class="col-span-2">
-              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                Description <span class="text-red-500">*</span>
-              </label>
-              <textarea id="description" name="description" rows="4"
-                        [(ngModel)]="expenseSummary.description" required
-                        placeholder="Enter description"
-                        class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                        [class.border-amber-400]="isHighlighted('description')"
-                        [class.border-gray-300]="!isHighlighted('description')"></textarea>
-              <p *ngIf="isHighlighted('description')"
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Line Items <span class="text-red-500">*</span>
+                </label>
+                <button type="button"
+                        (click)="addLineItem()"
+                        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-customBlue text-white rounded-md hover:bg-customBlueHover transition-colors">
+                  <i class="fa-solid fa-plus"></i>
+                  Add Line Item
+                </button>
+              </div>
+              <div class="border border-gray-200 rounded-lg overflow-hidden"
+                   [class.border-amber-400]="isHighlighted('lineItems')">
+                <div class="hidden md:grid md:grid-cols-12 gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div class="md:col-span-5">Item</div>
+                  <div class="md:col-span-2">Qty</div>
+                  <div class="md:col-span-2">Unit Price</div>
+                  <div class="md:col-span-2">Total</div>
+                  <div class="md:col-span-1 text-right">Action</div>
+                </div>
+
+                <div *ngIf="expenseSummary.lineItems.length === 0" class="px-4 py-6 text-sm text-gray-500 text-center">
+                  No line items added yet. Add one manually or scan a receipt to populate them.
+                </div>
+
+                <div *ngFor="let item of expenseSummary.lineItems; let i = index; trackBy: lineItemTrackBy"
+                     class="grid grid-cols-1 md:grid-cols-12 gap-3 px-4 py-4 border-b border-gray-100 last:border-b-0">
+                  <div class="md:col-span-5">
+                    <label class="block text-xs font-medium text-gray-500 mb-1 md:hidden">Item</label>
+                    <input type="text"
+                           [(ngModel)]="item.name"
+                           [name]="'lineItemName' + i"
+                           placeholder="Item description"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-500 mb-1 md:hidden">Qty</label>
+                    <input type="number"
+                           [value]="item.quantity"
+                           (input)="updateLineItem(i, 'quantity', $any($event.target).value)"
+                           [name]="'lineItemQty' + i"
+                           min="1"
+                           step="1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-500 mb-1 md:hidden">Unit Price</label>
+                    <input type="number"
+                           [value]="item.unitPrice"
+                           (input)="updateLineItem(i, 'unitPrice', $any($event.target).value)"
+                           [name]="'lineItemUnitPrice' + i"
+                           min="0"
+                           step="0.01"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-500 mb-1 md:hidden">Total</label>
+                    <input type="number"
+                           [value]="item.totalPrice"
+                           (input)="updateLineItem(i, 'totalPrice', $any($event.target).value)"
+                           [name]="'lineItemTotalPrice' + i"
+                           min="0"
+                           step="0.01"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+                  </div>
+                  <div class="md:col-span-1 flex items-center md:justify-end">
+                    <button type="button"
+                            (click)="removeLineItem(i)"
+                            class="text-red-400 hover:text-red-600 transition-colors p-2"
+                            title="Remove line item">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <div *ngIf="expenseSummary.lineItems.length > 0"
+                     class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-sm">
+                    <div class="flex flex-wrap items-center gap-3">
+                      <span class="text-gray-500">Line Item Total</span>
+                      <span class="font-semibold text-gray-800">{{ selectedCurrency }} {{ formatAmount(computedTotal) }}</span>
+                      <ng-container *ngIf="receiptExpectedLineItemTotal !== null">
+                        <span class="text-gray-400">Receipt Total</span>
+                        <span [class.text-red-600]="hasReceiptLineItemMismatch"
+                              [class.text-emerald-700]="!hasReceiptLineItemMismatch"
+                              class="font-semibold">
+                          {{ selectedCurrency }} {{ formatAmount(receiptExpectedLineItemTotal) }}
+                        </span>
+                      </ng-container>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 text-xs">
+                      <span *ngIf="receiptGrandTotal !== null" class="text-gray-500">
+                        Grand Total on Receipt: <strong class="text-gray-700">{{ selectedCurrency }} {{ formatAmount(receiptGrandTotal) }}</strong>
+                      </span>
+                      <span *ngIf="receiptExpectedLineItemTotal !== null"
+                            [class.bg-red-50]="hasReceiptLineItemMismatch"
+                            [class.text-red-700]="hasReceiptLineItemMismatch"
+                            [class.border-red-200]="hasReceiptLineItemMismatch"
+                            [class.bg-emerald-50]="!hasReceiptLineItemMismatch"
+                            [class.text-emerald-700]="!hasReceiptLineItemMismatch"
+                            [class.border-emerald-200]="!hasReceiptLineItemMismatch"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-medium">
+                        <i class="fa-solid" [ngClass]="hasReceiptLineItemMismatch ? 'fa-triangle-exclamation' : 'fa-circle-check'"></i>
+                        {{ hasReceiptLineItemMismatch ? 'Line item total does not match receipt total' : 'Line item total matches receipt total' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p *ngIf="isHighlighted('lineItems')"
                  class="mt-1 text-xs text-amber-600 flex items-center gap-1">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-filled from receipt line items
               </p>
-              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.description">
-                Description is required.
+              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !hasValidLineItems()">
+                Add at least one valid line item before submitting.
               </p>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="col-span-2">
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                Additional Notes
+              </label>
+              <textarea id="description" name="description" rows="3"
+                        [(ngModel)]="expenseSummary.description"
+                        placeholder="Optional notes for approvers"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
             </div>
 
             <!-- Paid By -->
@@ -458,18 +630,13 @@
             <!-- Quantity -->
             <div>
               <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
-                Quantity <span class="text-red-500">*</span>
+                Total Quantity
               </label>
               <input type="number" id="quantity" name="quantity"
-                     [(ngModel)]="expenseSummary.quantity" required min="1" step="1"
-                     [class.border-red-400]="quantityField.invalid && quantityField.touched"
-                     #quantityField="ngModel"
-                     placeholder="Enter quantity (min. 1)"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
-                     (input)="expenseSummary.quantity = expenseSummary.quantity < 1 ? 1 : expenseSummary.quantity" />
-              <p class="mt-1 text-sm text-red-500" *ngIf="quantityField.invalid && quantityField.touched">
-                Quantity must be at least 1.
-              </p>
+                     [(ngModel)]="expenseSummary.quantity"
+                     readonly
+                     class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600" />
+              <p class="mt-1 text-xs text-gray-500">Calculated from the line item quantities.</p>
             </div>
 
             <!-- Currency -->
@@ -484,38 +651,19 @@
             <!-- Amount -->
             <div>
               <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
-                Amount <span class="text-red-500">*</span>
+                Subtotal <span class="text-red-500">*</span>
               </label>
-              <div class="flex gap-3 mb-2">
-                <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                  <input type="radio" [(ngModel)]="amountMode" name="amountMode" value="total" class="text-customBlue" />
-                  Total amount
-                </label>
-                <label class="inline-flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-                  <input type="radio" [(ngModel)]="amountMode" name="amountMode" value="per_item" class="text-customBlue" />
-                  Per item (× quantity)
-                </label>
-              </div>
               <input type="text" id="amount" name="amount"
-                     [value]="formatAmount(expenseSummary.amount)"
-                     (input)="updateAmount($event)" required
-                     [placeholder]="amountMode === 'per_item' ? 'Price per item' : 'Total amount'"
-                     class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+                     [value]="formatAmount(computedTotal)"
+                     readonly
+                     class="w-full px-4 py-2 border rounded-md bg-gray-50 text-gray-700"
                      [class.border-amber-400]="isHighlighted('amount')"
                      [class.border-gray-300]="!isHighlighted('amount')" />
               <p *ngIf="isHighlighted('amount')"
                  class="mt-1 text-xs text-amber-600 flex items-center gap-1">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-filled from receipt total
               </p>
-              <div *ngIf="amountMode === 'per_item' && expenseSummary.quantity > 1 && expenseSummary.amount"
-                   class="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
-                <i class="fa-solid fa-calculator text-gray-400"></i>
-                {{ expenseSummary.quantity }} × {{ formatAmount(expenseSummary.amount) }}
-                = <strong class="text-gray-700">{{ selectedCurrency }} {{ formatAmount(computedTotal) }}</strong>
-              </div>
-              <p class="mt-1 text-sm text-red-500" *ngIf="expenseForm.submitted && !expenseSummary.amount">
-                Amount is required.
-              </p>
+              <p class="mt-1 text-xs text-gray-500">Calculated from the line item totals.</p>
             </div>
 
             <!-- Tax -->
@@ -767,7 +915,9 @@
 
           <div class="flex flex-col items-center gap-4">
             <!-- Preview -->
-            <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
+            <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed"
+                 [class.border-amber-400]="isHighlighted('receipt')"
+                 [class.border-gray-300]="!isHighlighted('receipt')">
               <ng-container *ngIf="companyReceiptFiles.length > 0; else noFilePreview">
                 <img *ngIf="companyReceiptPreviews[0]" [src]="companyReceiptPreviews[0]" alt="Receipt preview"
                      class="w-full h-full object-contain" />
@@ -795,6 +945,10 @@
               <input type="file" #fileInput class="hidden" multiple
                      (change)="onFileSelect($event, 'receipt')" accept=".jpg,.jpeg,.png,.pdf" />
             </div>
+            <p *ngIf="isHighlighted('receipt')"
+               class="w-full text-xs text-amber-600 flex items-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Receipt auto-attached from scanned image
+            </p>
 
             <!-- File list -->
             <div *ngFor="let f of companyReceiptFiles; let i = index"

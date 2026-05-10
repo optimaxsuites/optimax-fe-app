@@ -26,11 +26,18 @@ export class AuthGuard implements CanActivate {
     if (this.authService.isAuthenticated()) {
       return true;
     } else {
-      if (state.url?.includes('onboarding=1')) {
+      if (state.url) {
         sessionStorage.setItem('postLoginRedirect', state.url);
+        localStorage.setItem('postLoginRedirect', state.url);
+        if (state.url.includes('/expensesApproval/')) {
+          sessionStorage.setItem('pendingApprovalRedirect', state.url);
+          localStorage.setItem('pendingApprovalRedirect', state.url);
+        }
       }
       const loginLink = this.navigationLink.getLink('signinLink');
-      return this.router.parseUrl(loginLink);
+      return this.router.createUrlTree([loginLink], {
+        queryParams: state.url ? { redirect: state.url } : undefined
+      });
       
     }
   }

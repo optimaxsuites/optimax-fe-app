@@ -91,6 +91,7 @@ export class AppComponent implements OnInit {
 
   // Angular lifecycle hook must be lowercase
   ngOnInit(): void {
+    this.syncSessionAuthToLocalStorage();
     this.checkEligibility();
     this.checkOnboardingStatus();
    const originalNavigate = this.router.navigate.bind(this.router);
@@ -107,6 +108,25 @@ export class AppComponent implements OnInit {
     };
     // this.tenantService.loadFullTenants(); 
 
+  }
+
+  private syncSessionAuthToLocalStorage(): void {
+    const token =
+      sessionStorage.getItem('Token') ||
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('accessToken') ||
+      '';
+    const tenantId = sessionStorage.getItem('tenantId') || '';
+
+    if (token) {
+      localStorage.setItem('Token', token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('accessToken', token);
+    }
+
+    if (tenantId) {
+      localStorage.setItem('tenantId', tenantId);
+    }
   }
 
   @HostListener('window:resize', ['$event'])

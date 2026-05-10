@@ -55,6 +55,8 @@ export class LoginComponent implements OnInit {
   tenantDomainLabel = '';
   environmentLabel = environment.env || 'production';
   supportEmail = 'support@optimaxsuites.com';
+  pendingRedirectUrl = '';
+  pendingRedirectLabel = '';
   
   // New state variable to toggle between login modes
   isCodeLogin: boolean = false;
@@ -91,14 +93,7 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTenantIdentity();
-    if (this.authenticationService.isLoggedIn()) {
-
-      this.authenticationService.logout();
-      this.loggedOutMessage1 = 'You have been logged out. Please log in again';
-      this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
-    }
-
-
+    this.loadPendingRedirectIntent();
   }
 
   private loadTenantIdentity(): void {
@@ -124,6 +119,45 @@ export class LoginComponent implements OnInit {
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  private loadPendingRedirectIntent(): void {
+    const redirectFromQuery = this.route.snapshot.queryParamMap.get('redirect') || '';
+    if (redirectFromQuery) {
+      sessionStorage.setItem('postLoginRedirect', redirectFromQuery);
+      localStorage.setItem('postLoginRedirect', redirectFromQuery);
+      if (redirectFromQuery.includes('/expensesApproval/')) {
+        sessionStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
+        localStorage.setItem('pendingApprovalRedirect', redirectFromQuery);
+      }
+    }
+
+    const redirectUrl =
+      sessionStorage.getItem('pendingApprovalRedirect') ||
+      localStorage.getItem('pendingApprovalRedirect') ||
+      redirectFromQuery ||
+      sessionStorage.getItem('postLoginRedirect') ||
+      localStorage.getItem('postLoginRedirect') ||
+      '';
+
+    this.pendingRedirectUrl = redirectUrl;
+
+    if (!redirectUrl) {
+      this.pendingRedirectLabel = '';
+      return;
+    }
+
+    if (redirectUrl.includes('/expensesApproval/')) {
+      this.pendingRedirectLabel = 'Expense Approval';
+      return;
+    }
+
+    if (redirectUrl.includes('/admin/expenses/')) {
+      this.pendingRedirectLabel = 'Expenses';
+      return;
+    }
+
+    this.pendingRedirectLabel = 'your requested page';
   }
 
   // Method to toggle the login mode
@@ -350,19 +384,37 @@ async posLoginAction(): Promise<void> {
     const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
     sessionStorage.setItem("Token", token);
     sessionStorage.setItem("token", token);
+    localStorage.setItem("Token", token);
     localStorage.setItem("Token2", token);
     sessionStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
+    const tenantId = data.tenantId || data.tenant || 'mod';
+    sessionStorage.setItem("tenantId", tenantId);
+    localStorage.setItem("tenantId", tenantId);
     sessionStorage["userRegData"] = JSON.stringify(data);
 
-    let redirectUrl: string | null = sessionStorage.getItem('postLoginRedirect');
-    const consumeRedirect = () => {
+    let redirectUrl: string | null =
+      sessionStorage.getItem('pendingApprovalRedirect') ||
+      localStorage.getItem('pendingApprovalRedirect') ||
+      sessionStorage.getItem('postLoginRedirect') ||
+      localStorage.getItem('postLoginRedirect');
+    const consumeRedirect = (): boolean => {
       if (!redirectUrl) return false;
-      sessionStorage.removeItem('postLoginRedirect');
-      this.router.navigateByUrl(redirectUrl);
+      const targetUrl = redirectUrl;
+      const isApprovalRedirect = targetUrl.includes('/expensesApproval/');
+      if (!isApprovalRedirect) {
+        sessionStorage.removeItem('postLoginRedirect');
+        localStorage.removeItem('postLoginRedirect');
+      }
       redirectUrl = null;
+      window.location.assign(targetUrl);
       return true;
     };
+
+    if (consumeRedirect()) {
+      return;
+    }
 
     this.checkUserReg();
     this.getUserBranchInfo();
@@ -374,9 +426,6 @@ async posLoginAction(): Promise<void> {
 
 
      if(isSuperUser()){
-        if (consumeRedirect()) {
-          return;
-        }
         const dashboardLink = this.navigationLink.getLink('dashboardLink');
         this.router.navigate([dashboardLink]);
         return;
@@ -402,10 +451,6 @@ async posLoginAction(): Promise<void> {
       // console.log(hasOnlyCheckoutPermission())
       // console.log((hasOnlyKitchenPermissions()))
 
-     
-      if (consumeRedirect()) {
-        return;
-      }
       if (hasOnlyCheckoutPermission()) {
         const checkoutLink = this.navigationLink.getLink('checkoutLink');
         this.router.navigate([checkoutLink]); 
@@ -425,9 +470,6 @@ async posLoginAction(): Promise<void> {
           if (storedRole) {
             console.log("Removing invalid userApplicationRole from sessionStorage");
             sessionStorage.removeItem("userApplicationRole");
-          }
-          if (consumeRedirect()) {
-            return;
           }
           if (hasOnlyCheckoutPermission()) {
             const checkoutLink = this.navigationLink.getLink('checkoutLink');

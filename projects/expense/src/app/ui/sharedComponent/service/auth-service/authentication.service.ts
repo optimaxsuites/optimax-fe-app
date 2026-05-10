@@ -22,7 +22,15 @@ export class AuthenticationService {
   ) {  }
 
   isAuthenticated(): boolean {
-    const token = sessionStorage.getItem('Token') || localStorage.getItem('token');
+    const token =
+      sessionStorage.getItem('Token') ||
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('accessToken') ||
+      localStorage.getItem('Token') ||
+      localStorage.getItem('Token2') ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('accessToken') ||
+      localStorage.getItem('accessToken2');
 
     if (!token || this.jwtHelper.isTokenExpired(token)) {
       return false;
@@ -42,6 +50,15 @@ export class AuthenticationService {
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
     sessionStorage.removeItem("userPrimaryInfoRegData");
+    sessionStorage.removeItem("tenantId");
+    sessionStorage.removeItem("postLoginRedirect");
+    localStorage.removeItem("Token");
+    localStorage.removeItem("Token2");
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("accessToken2");
+    localStorage.removeItem("tenantId");
+    localStorage.removeItem("postLoginRedirect");
 
 
     // this.router.navigate([''])

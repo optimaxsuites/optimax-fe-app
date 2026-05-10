@@ -136,6 +136,14 @@
           <span>{{ loggedOutMessage1 }}</span>
         </div>
 
+        <div class="redirect-banner" *ngIf="pendingRedirectUrl">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <div>
+            <strong>Sign in to continue to {{ pendingRedirectLabel }}</strong>
+            <span>{{ pendingRedirectUrl }}</span>
+          </div>
+        </div>
+
         <form class="login-form" (ngSubmit)="userLoginAction()">
           <ng-container *ngIf="!isCodeLogin">
             <div class="field-group">

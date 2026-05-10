@@ -366,9 +366,9 @@
           <div *ngIf="feedHomeLoading" class="workspace-empty">Loading enterprise feed…</div>
           <div *ngIf="!feedHomeLoading && feedHomeError" class="workspace-empty error">{{ feedHomeError }}</div>
 
-          <div class="feed-post-list" *ngIf="!feedHomeLoading && !feedHomeError">
+          <div class="feed-post-list" *ngIf="!feedHomeLoading && !feedHomeError && recentFeedPosts.length; else noRecentPosts">
             <article
-              *ngFor="let post of feedPosts"
+              *ngFor="let post of recentFeedPosts"
               [attr.id]="'post-' + post.id"
               class="feed-post-card"
               [class.selected]="selectedFeedPostId === post.id"
@@ -989,6 +989,19 @@
               </button>
             </div>
           </div>
+          <ng-template #noRecentPosts>
+            <div class="workspace-empty" *ngIf="!feedHomeLoading && !feedHomeError">
+              <div>No recent post to view</div>
+              <button
+                *ngIf="oldFeedPosts.length && !showViewedFeedPosts"
+                type="button"
+                class="toolbar-action primary"
+                (click)="showOldFeedPosts()"
+              >
+                Click here to see old post
+              </button>
+            </div>
+          </ng-template>
         </section>
       </div>
 
@@ -1012,9 +1025,9 @@
               <h3>Priority company stories</h3>
             </div>
           </div>
-          <div class="featured-feed-grid rail-featured-grid" *ngIf="featuredFeedPosts.length; else noFeaturedStories">
+          <div class="featured-feed-grid rail-featured-grid" *ngIf="visibleFeaturedFeedPosts.length; else noFeaturedStories">
             <article
-              *ngFor="let post of featuredFeedPosts"
+              *ngFor="let post of visibleFeaturedFeedPosts"
               class="featured-feed-item"
               (click)="selectFeedPost(post); toggleFeedThread(post)"
             >

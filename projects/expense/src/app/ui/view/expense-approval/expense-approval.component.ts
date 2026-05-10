@@ -15,9 +15,12 @@ import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
 })
 export class ExpenseApprovalComponent implements OnInit {
 
-  expense: any;
+  expense: Expense | null = null;
   expenses: Expense[] = [];
   expenseId: string | null = null;
+  isLoading = false;
+  isSubmitting = false;
+  loadError = '';
   dropdownOpen = false;
   showFileModal = false;
   fileModalUrl = '';
@@ -33,6 +36,10 @@ export class ExpenseApprovalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    sessionStorage.removeItem('pendingApprovalRedirect');
+    localStorage.removeItem('pendingApprovalRedirect');
+    sessionStorage.removeItem('postLoginRedirect');
+    localStorage.removeItem('postLoginRedirect');
     const expenseId = this.route.snapshot.paramMap.get('id');
     console.log('Route param id:', expenseId);
     if (expenseId) {
@@ -42,14 +49,20 @@ export class ExpenseApprovalComponent implements OnInit {
   }
 
   fetchExpenseById(id: string): void {
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    this.expense = expenses.find((exp: { id: string }) => exp.id === id);
-
-    if (this.expense) {
-      console.log('Fetched expense from local storage:', this.expense);
-    } else {
-      console.log('Expense not found in local storage');
-    }
+    this.isLoading = true;
+    this.loadError = '';
+    this.expenseService.getExpenseById(id).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.isLoading = false;
+        console.log('Fetched expense from API:', this.expense);
+      },
+      error: (error) => {
+        console.error('Expense not found from API:', error);
+        this.isLoading = false;
+        this.loadError = 'Expense could not be loaded.';
+      }
+    });
   }
 
   goBack(): void {
@@ -57,19 +70,34 @@ export class ExpenseApprovalComponent implements OnInit {
   }
 
   approveExpense(): void {
-    if (this.expense) {
-      this.expense.status = 'Approved';
-      this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/admin/expenses']);
-    }
+    if (!this.expense || this.isSubmitting) return;
+    this.isSubmitting = true;
+    this.expenseService.approveExpense(this.expense).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.isSubmitting = false;
+      }
+    });
   }
 
   rejectExpense(): void {
-    if (this.expense) {
-      this.expense.status = 'Rejected';
-      this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/admin/expenses']);
-    }
+    if (!this.expense || this.isSubmitting) return;
+    const reason = window.prompt('Enter rejection reason', this.expense.rejectionReason || '');
+    if (reason === null) return;
+
+    this.isSubmitting = true;
+    this.expenseService.rejectExpense(this.expense, reason).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.isSubmitting = false;
+      }
+    });
   }
 
   downloadExpense(): void {
@@ -166,5 +194,113 @@ export class ExpenseApprovalComponent implements OnInit {
    */
   sanitizeUrl(url: string): SafeResourceUrl {
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  get merchantName(): string {
+    return this.expense?.merchant?.name || '—';
+  }
+
+  get categoryName(): string {
+    return this.expense?.category?.name || '—';
+  }
+
+  get formattedEventDate(): string {
+    const value = this.expense?.eventDate;
+    if (!value) return '—';
+    if (Array.isArray(value) && value.length >= 3) {
+      return new Date(value[0], value[1] - 1, value[2]).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+    const parsed = new Date(value as string);
+    return isNaN(parsed.getTime())
+      ? String(value)
+      : parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  get expenseByName(): string {
+    return this.expense?.expenseBy?.fullname || this.expense?.expenseBy?.username || '—';
+  }
+
+  get expenseByEmail(): string {
+    return this.expense?.expenseBy?.email || '—';
+  }
+
+  get approvedByName(): string {
+    return this.expense?.approvedBy?.fullname || this.expense?.approvedBy?.username || '—';
+  }
+
+  get approvedByEmail(): string {
+    return this.expense?.approvedBy?.email || '—';
+  }
+
+  get rejectedByName(): string {
+    return this.expense?.rejectedBy?.fullname || this.expense?.rejectedBy?.username || '—';
+  }
+
+  get rejectedByEmail(): string {
+    return this.expense?.rejectedBy?.email || '—';
+  }
+
+  get statusClass(): string {
+    switch (this.expense?.status) {
+      case 'APPROVED': return 'status-approved';
+      case 'REJECTED': return 'status-rejected';
+      default: return 'status-pending';
+    }
+  }
+
+  get receiptAttachments(): Array<{ title: string; url: string }> {
+    if (!this.expense) return [];
+    const attachments: Array<{ title: string; url: string }> = [];
+
+    const pushMedia = (title: string, media?: any) => {
+      if (media?.url) attachments.push({ title, url: this.getReceiptWebUrl(media.url) });
+    };
+
+    pushMedia('Company Receipt', this.expense.companyReceipt);
+    pushMedia('Employee Receipt', this.expense.expenseReceipt);
+
+    (this.expense.companyReceipts || []).forEach((media, index) =>
+      pushMedia(`Company Receipt ${index + 1}`, media)
+    );
+    (this.expense.expenseReceipts || []).forEach((media, index) =>
+      pushMedia(`Employee Receipt ${index + 1}`, media)
+    );
+
+    const seen = new Set<string>();
+    return attachments.filter((attachment) => {
+      if (seen.has(attachment.url)) return false;
+      seen.add(attachment.url);
+      return true;
+    });
+  }
+
+  canApproveOrReject(): boolean {
+    return this.expense?.status === 'PENDING';
+  }
+
+  formatAmount(value: number | string | null | undefined): string {
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+  }
+
+  private normalizeExpenseMedia(expense: Expense): Expense {
+    const normalizeMedia = (media: any) =>
+      media ? { ...media, url: this.getReceiptWebUrl(media.url || media.name || media.mediaNo) } : media;
+
+    return {
+      ...expense,
+      companyReceipt: normalizeMedia(expense.companyReceipt),
+      expenseReceipt: normalizeMedia(expense.expenseReceipt),
+      companyReceipts: Array.isArray(expense.companyReceipts)
+        ? expense.companyReceipts.map(normalizeMedia)
+        : [],
+      expenseReceipts: Array.isArray(expense.expenseReceipts)
+        ? expense.expenseReceipts.map(normalizeMedia)
+        : [],
+    };
   }
 }
