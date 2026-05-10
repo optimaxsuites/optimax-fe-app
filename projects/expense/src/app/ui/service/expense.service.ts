@@ -94,6 +94,14 @@ export interface PersonShareDTO {
   shareAmount: number;
 }
 
+export interface ExpenseLineItemDTO {
+  id?: number;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface BillSplitDTO {
   id: number;
   splitMethod: SplitMethod;
@@ -123,6 +131,7 @@ export interface Expense {
   scheduledPayment?: ScheduledPaymentDTO;
   recurringPayment?: any;
   billSplit?: BillSplitDTO;
+  lineItems?: ExpenseLineItemDTO[];
   taxPercentage?: number;
   date?: string;
   signature?: string | null;

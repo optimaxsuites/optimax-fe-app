@@ -198,7 +198,16 @@ import { SafeUrlPipe } from './ui/sharedComponent/safe-url.pipe';
 export class AppModule {}
 
 export function tokenGetter() {
-  return sessionStorage.getItem('Token') || localStorage.getItem('token');
+  return (
+    sessionStorage.getItem('Token') ||
+    sessionStorage.getItem('token') ||
+    sessionStorage.getItem('accessToken') ||
+    localStorage.getItem('Token') ||
+    localStorage.getItem('Token2') ||
+    localStorage.getItem('token') ||
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('accessToken2')
+  );
 }
 
 export { AppModule as AppExpensesModule };

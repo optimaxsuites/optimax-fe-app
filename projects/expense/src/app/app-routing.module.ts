@@ -31,6 +31,7 @@ const routes: Routes = [
       { path: 'report/:uuid', component: ApprovalReportsComponent },
       { path: 'tax-report/:uuid', component: TaxReportComponent },
       { path: 'mobile/checkout/:uuid', component: MobileCheckoutComponent },
+      { path: ':uuid/expensesApproval/:id', component: ExpenseApprovalComponent },
       { path: 'expensesApproval/:id', component: ExpenseApprovalComponent },
       { path: 'uploadReciept', component: UploadRecieptComponent },
       { path: 'Addperdiem', component: AddPerDiemComponent },
