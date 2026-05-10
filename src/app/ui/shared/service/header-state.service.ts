@@ -190,6 +190,14 @@ export class HeaderStateService {
     });
   }
 
+  clearAllNotifications(): void {
+    this.commit({
+      ...this.state$.value,
+      unreadNotifications: 0,
+      notifications: [],
+    });
+  }
+
   markNotificationRead(notificationId: string): void {
     const notifications = this.state$.value.notifications.map((entry) =>
       entry.id === notificationId ? { ...entry, read: true } : entry,
