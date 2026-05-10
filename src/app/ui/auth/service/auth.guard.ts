@@ -35,9 +35,10 @@ export class AuthGuard implements CanActivate {
         }
       }
       const loginLink = this.navigationLink.getLink('signinLink');
-      return this.router.createUrlTree([loginLink], {
-        queryParams: state.url ? { redirect: state.url } : undefined
-      });
+      if (state.url) {
+        return this.router.parseUrl(`${loginLink}?redirect=${encodeURIComponent(state.url)}`);
+      }
+      return this.router.parseUrl(loginLink);
       
     }
   }

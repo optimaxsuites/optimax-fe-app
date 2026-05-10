@@ -230,6 +230,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   // This is now available to everyone (no role gating in the toggle behavior).
   // ─────────────────────────────────────────────────────────────────────────
   toggleViewAll(): void {
+    if (!this.canViewAll) {
+      this.viewAllUsers = false;
+      return;
+    }
     this.viewAllUsers = !this.viewAllUsers;
     this.loadExpenses();
   }
@@ -273,6 +277,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_HR', 'ROLE_FINANCE', 'ADMIN', 'MANAGER'
       ]);
       this.canViewAll = allRoles.some(r => adminRoleSet.has(r));
+      if (!this.canViewAll) {
+        this.viewAllUsers = false;
+      }
 
       console.log(`[resolveCanViewAll] userId=${this.currentUserId} canViewAll=${this.canViewAll} roles=`, allRoles);
     } catch (e) {
@@ -312,6 +319,24 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
       return false;
     }
     return false;
+  }
+
+  private resolveExpenseOwnerId(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
+
+    const expenseBy = expense.expenseBy as any;
+    if (typeof expenseBy === 'number' && expenseBy > 0) return expenseBy;
+    if (typeof expenseBy === 'string') {
+      const parsed = Number(expenseBy);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (expenseBy && typeof expenseBy === 'object') {
+      const userId = Number(expenseBy.userId ?? expenseBy.id);
+      if (!isNaN(userId) && userId > 0) return userId;
+    }
+
+    return null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -432,15 +457,18 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   private _applyOwnershipFilter(expenses: Expense[]): void {
     let filtered: Expense[];
 
-    if (this.viewAllUsers) {
+    if (this.viewAllUsers && this.canViewAll) {
       // All users mode: show everything from the requested endpoint
       filtered = expenses;
       console.log('[_applyOwnershipFilter] All Employees mode → showing all', filtered.length);
     } else {
-      // My Expenses — strip system entries only; keep everything else
-      filtered = expenses.filter(e => !this.isSystemEntry(e));
+      // My Expenses — show only rows submitted by the current user.
+      // If user context is missing, fall back to hiding system rows only.
+      filtered = this.currentUserId
+        ? expenses.filter(e => this.resolveExpenseOwnerId(e) === this.currentUserId)
+        : expenses.filter(e => !this.isSystemEntry(e));
       console.log('[_applyOwnershipFilter] My Expenses mode → showing', filtered.length,
-        '(excluded', expenses.length - filtered.length, 'system entries)');
+        '| currentUserId:', this.currentUserId);
     }
 
     // FIX: Enrich expenses with full user data if expenseBy is just an ID
@@ -455,8 +483,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   loadExpenses(): void {
     this.isLoading = true;
+    if (!this.canViewAll) {
+      this.viewAllUsers = false;
+    }
 
-    const expenseLoader = this.viewAllUsers
+    const expenseLoader = (this.viewAllUsers && this.canViewAll)
       ? this.expenseService.getAllExpenses()
       : this.expenseService.getExpenses();
 

@@ -121,6 +121,7 @@ export interface Expense {
   status: ExpenseStatus;
   paidBy: PaidByBackend | PaidBy;
   receiptReference?: string;
+  expenseById?: number;
   merchantId?: number;
   categoryId?: number;
   taxId?: number;
@@ -280,35 +281,44 @@ export class ExpenseService {
 
   private resolveCurrentUserId(): number | null {
     try {
+      const parseNumericId = (value: any): number | null => {
+        const n = Number(value);
+        return !isNaN(n) && n > 0 ? n : null;
+      };
+
       const storedId =
         sessionStorage.getItem('userid') ||
         localStorage.getItem('userid');
       if (storedId) {
-        const n = Number(storedId);
-        if (!isNaN(n) && n > 0) return n;
+        const parsed = parseNumericId(storedId);
+        if (parsed) return parsed;
       }
 
       const regRaw =
         sessionStorage.getItem('userRegData') ||
         localStorage.getItem('userRegData');
       const reg = regRaw ? JSON.parse(regRaw) : null;
-      if (reg?.id && typeof reg.id === 'number') return reg.id;
+      const regId = parseNumericId(reg?.id ?? reg?.userId);
+      if (regId) return regId;
 
       const primaryRaw =
         sessionStorage.getItem('userPrimaryInfoRegData') ||
         localStorage.getItem('userPrimaryInfoRegData');
       const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
-      if (primary?.user?.id && typeof primary.user.id === 'number') return primary.user.id;
+      const primaryId = parseNumericId(primary?.user?.id ?? primary?.id);
+      if (primaryId) return primaryId;
 
       return null;
     } catch { return null; }
   }
 
   private resolveExpenseById(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
     const eb = expense.expenseBy as any;
     if (!eb) return null;
     if (typeof eb === 'number') return eb;
-    if (typeof eb === 'object') return eb.id ?? eb.userId ?? null;
+    if (typeof eb === 'object') return eb.userId ?? eb.id ?? null;
     return null;
   }
 

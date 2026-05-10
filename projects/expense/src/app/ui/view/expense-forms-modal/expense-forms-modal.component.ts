@@ -729,6 +729,14 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
           detail:   'Your expense has been submitted and is pending review.'
         });
 
+        this.pushBellNotification({
+          title: 'Expense Submitted',
+          body: `${createdExpense?.name || this.expenseSummary.name || 'Expense'} is pending approval.`,
+          route: createdExpense?.id
+            ? `/admin/expenses/${this.generateExpenseRouteUuid()}/expensesApproval/${createdExpense.id}`
+            : '/admin/expenses',
+        });
+
         this.notifyAdmins(
           currentUser.fullname,
           createdExpense?.id ?? 'pending',
@@ -1121,6 +1129,22 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   private roundCurrency(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private pushBellNotification(detail: { title: string; body: string; route?: string }): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('optimax-notification', {
+      detail: {
+        ...detail,
+        category: 'module',
+      }
+    }));
+  }
+
+  private generateExpenseRouteUuid(): string {
+    return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (char) =>
+      (Number(char) ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> Number(char) / 4).toString(16)
+    );
   }
 
   private normalizeExpenseLineItem(item: Partial<ExpenseLineItemDTO>): ExpenseLineItemDTO {

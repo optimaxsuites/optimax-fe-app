@@ -5,13 +5,15 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-expense-approval',
   templateUrl: './expense-approval.component.html',
   styleUrls: ['./expense-approval.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, SafeUrlPipe]
+  imports: [CommonModule, MatIconModule, SafeUrlPipe],
+  providers: [MessageService]
 })
 export class ExpenseApprovalComponent implements OnInit {
 
@@ -32,7 +34,8 @@ export class ExpenseApprovalComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private expenseService: ExpenseService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -71,10 +74,24 @@ export class ExpenseApprovalComponent implements OnInit {
 
   approveExpense(): void {
     if (!this.expense || this.isSubmitting) return;
+    const merchantId = this.expense.merchantId || this.expense.merchant?.id;
+    const categoryId = this.expense.categoryId || this.expense.category?.id;
+    if (!merchantId || !categoryId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Approve',
+        detail: 'Missing Merchant or Category. Please edit the expense first.'
+      });
+      return;
+    }
     this.isSubmitting = true;
     this.expenseService.approveExpense(this.expense).subscribe({
       next: (expense) => {
         this.expense = this.normalizeExpenseMedia(expense);
+        this.pushBellNotification(
+          'Expense Approved',
+          `${expense?.name || 'Expense'} has been approved.`,
+        );
         this.isSubmitting = false;
       },
       error: () => {
@@ -92,6 +109,10 @@ export class ExpenseApprovalComponent implements OnInit {
     this.expenseService.rejectExpense(this.expense, reason).subscribe({
       next: (expense) => {
         this.expense = this.normalizeExpenseMedia(expense);
+        this.pushBellNotification(
+          'Expense Rejected',
+          `${expense?.name || 'Expense'} has been rejected.`,
+        );
         this.isSubmitting = false;
       },
       error: () => {
@@ -285,6 +306,20 @@ export class ExpenseApprovalComponent implements OnInit {
   formatAmount(value: number | string | null | undefined): string {
     const number = Number(value);
     return Number.isFinite(number) ? number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+  }
+
+  private pushBellNotification(title: string, body: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('optimax-notification', {
+      detail: {
+        title,
+        body,
+        category: 'module',
+        route: this.expense?.id
+          ? `/admin/expenses/${this.route.snapshot.paramMap.get('uuid') || '10000000-1000-4000-8000-100000000000'}/expensesApproval/${this.expense.id}`
+          : '/admin/expenses'
+      }
+    }));
   }
 
   private normalizeExpenseMedia(expense: Expense): Expense {

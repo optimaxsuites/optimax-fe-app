@@ -72,10 +72,9 @@ export class EmailService {
     amount:        number,
     currency:      string = 'NGN'
   ): Observable<EmailResponse> {
-    const appOrigin = typeof window !== 'undefined'
-      ? window.location.origin
-      : 'https://optimaxsuites.com';
-    const reviewUrl = `${appOrigin}/admin/expenses/${uuidV4()}/expensesApproval/${expenseId}`;
+    const appBaseUrl = (environment as any).appBaseUrl || 'https://optimaxsuites.com';
+    const approvalPath = `/admin/expenses/${uuidV4()}/expensesApproval/${expenseId}`;
+    const reviewUrl = `${appBaseUrl}/user/auth/${uuidV4()}?redirect=${encodeURIComponent(approvalPath)}`;
 
     return this.sendNotificationEmail({
       name:          'Admin',
