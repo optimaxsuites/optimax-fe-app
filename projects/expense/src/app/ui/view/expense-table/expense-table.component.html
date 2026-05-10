@@ -229,6 +229,7 @@
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Date</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Expense Name</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Created By</th>
+          <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Approved By</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Merchant</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-left">Category</th>
           <th class="py-5 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 text-right">Amount</th>
@@ -255,6 +256,10 @@
 
           <td class="py-4 px-4 text-sm text-gray-600">
             {{ getExpenseCreatorName(expense) }}
+          </td>
+
+          <td class="py-4 px-4 text-sm text-gray-600">
+            {{ getApprovedByName(expense) }}
           </td>
 
           <td class="py-4 px-4 text-sm text-gray-600">{{ expense.merchant?.name || '—' }}</td>
