@@ -72,7 +72,9 @@ export class EmailService {
     amount:        number,
     currency:      string = 'NGN'
   ): Observable<EmailResponse> {
-    const appBaseUrl = (environment as any).appBaseUrl || 'https://optimaxsuites.com';
+    const appBaseUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : '';
     const approvalPath = `/admin/expenses/${uuidV4()}/expensesApproval/${expenseId}`;
     const reviewUrl = `${appBaseUrl}/user/auth/${uuidV4()}?redirect=${encodeURIComponent(approvalPath)}`;
 
