@@ -729,14 +729,6 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
           detail:   'Your expense has been submitted and is pending review.'
         });
 
-        this.pushBellNotification({
-          title: 'Expense Submitted',
-          body: `${createdExpense?.name || this.expenseSummary.name || 'Expense'} is pending approval.`,
-          route: createdExpense?.id
-            ? `/admin/expenses/${this.generateExpenseRouteUuid()}/expensesApproval/${createdExpense.id}`
-            : '/admin/expenses',
-        });
-
         this.notifyAdmins(
           currentUser.fullname,
           createdExpense?.id ?? 'pending',
