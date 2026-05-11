@@ -7,13 +7,12 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { forkJoin, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
 
-import { AccountingService, LedgerEntryRaw } from '../../../../core/services/accounting.service';
+import { AccountingService } from '../../../../core/services/accounting.service';
 import { AccountingFormatService } from '../../../../core/services/accounting-format.service';
 import {
-  AccountingTransactionDTO,
   CashFlowLineItemDTO,
   CashFlowReportDTO,
   ReportPeriodType,
@@ -66,7 +65,7 @@ export class CashFlowComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ── Period navigation ─────────────────────────────────────────────────────
+  // ── Period navigation
   applyDateFilter(): void {
     if (!this.fromDate || !this.toDate) {
       this.errorMessage = 'Choose both a start date and an end date for the cash flow report.';
@@ -96,7 +95,7 @@ export class CashFlowComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Derived view values (all from DTO) ───────────────────────────────────
+  // ── Derived view values (all from DTO) 
   get periodLabel(): string {
     if (this.fromDate && this.toDate) {
       if (this.fromDate === this.toDate) {
@@ -250,11 +249,11 @@ export class CashFlowComponent implements OnInit, OnDestroy {
   }
 
   private initializeDateRange(): void {
-    this.accountingService.getAccountingTransactions()
+    this.accountingService.getLedgerEntries()
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe({
-        next: (transactions) => {
-          const range = this.resolveAllTimeRange(transactions);
+        next: (ledgerEntries) => {
+          const range = this.resolveAllTimeRange(ledgerEntries);
           this.fromDate = range.start;
           this.toDate = range.end;
           this.allTimeLabel = `${range.start} -> ${range.end}`;
@@ -281,18 +280,14 @@ export class CashFlowComponent implements OnInit, OnDestroy {
 
     const request = this.buildRequestOverrides();
 
-    forkJoin([
-      this.accountingService.getCashFlowReport(request).pipe(take(1)),
-      this.accountingService.getLedgerEntries().pipe(take(1)),
-    ])
+    this.accountingService.getCashFlowReport(request)
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe({
-        next: ([report, ledgerEntries]) => {
-          const hydratedReport = this.withDerivedCashFlow(report, ledgerEntries, request.periodStart, request.periodEnd);
-          this.report = hydratedReport;
-          this.operatingActivities = [...hydratedReport.operatingActivities];
-          this.investingActivities = [...hydratedReport.investingActivities];
-          this.financingActivities = [...hydratedReport.financingActivities];
+        next: (report) => {
+          this.report = report;
+          this.operatingActivities = [...report.operatingActivities];
+          this.investingActivities = [...report.investingActivities];
+          this.financingActivities = [...report.financingActivities];
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -325,9 +320,9 @@ export class CashFlowComponent implements OnInit, OnDestroy {
     };
   }
 
-  private resolveAllTimeRange(transactions: AccountingTransactionDTO[]): { start: string; end: string } {
-    const parsedDates = transactions
-      .map((transaction) => this.parseApiDate(transaction.transactionDate))
+  private resolveAllTimeRange(entries: Array<{ entryDate?: string | number[] }>): { start: string; end: string } {
+    const parsedDates = entries
+      .map((entry) => this.parseApiDate(entry.entryDate))
       .filter((date) => !Number.isNaN(date.getTime()))
       .sort((left, right) => left.getTime() - right.getTime());
 
@@ -357,87 +352,13 @@ export class CashFlowComponent implements OnInit, OnDestroy {
     });
   }
 
-  private parseApiDate(value: string | number[]): Date {
+  private parseApiDate(value: string | number[] | undefined): Date {
     if (Array.isArray(value)) {
       const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nanos = 0] = value;
       return new Date(year, month - 1, day, hour, minute, second, Math.floor(nanos / 1_000_000));
     }
 
-    return new Date(value);
-  }
-
-  private withDerivedCashFlow(
-    report: CashFlowReportDTO,
-    ledgerEntries: LedgerEntryRaw[],
-    periodStart: string,
-    periodEnd: string,
-  ): CashFlowReportDTO {
-    const hasBackendActivities = report.operatingActivities.length > 0 ||
-      report.investingActivities.length > 0 ||
-      report.financingActivities.length > 0;
-
-    if (hasBackendActivities) {
-      return report;
-    }
-
-    const start = new Date(periodStart);
-    const end = new Date(periodEnd);
-    const cashEntries = ledgerEntries
-      .filter((entry) => this.isCashAccount(entry))
-      .filter((entry) => {
-        const entryDate = this.parseApiDate(entry.entryDate);
-        return entryDate >= start && entryDate <= end;
-      });
-
-    if (!cashEntries.length) {
-      return report;
-    }
-
-    const operatingActivities = cashEntries.map((entry) => {
-      const amount = Number(entry.debit || 0) - Number(entry.credit || 0);
-      return {
-        description: this.describeLedgerEntry(entry),
-        amount,
-        category: 'operating' as CashFlowLineItemDTO['category'],
-        flowDirection: amount >= 0 ? 'inflow' : 'outflow',
-        indentLevel: 1,
-        isSubtotal: false,
-        sourceModule: undefined,
-      };
-    });
-
-    const operatingCashFlow = operatingActivities.reduce((sum, item) => sum + item.amount, 0);
-
-    return {
-      ...report,
-      operatingActivities,
-      investingActivities: [],
-      financingActivities: [],
-      summary: {
-        ...report.summary,
-        operatingCashFlow,
-        investingCashFlow: 0,
-        financingCashFlow: 0,
-        netCashFlow: operatingCashFlow,
-        freeCashFlow: operatingCashFlow,
-        closingBalance: (report.summary.openingBalance ?? 0) + operatingCashFlow,
-      },
-      indirectReconciliation: {
-        ...report.indirectReconciliation,
-        calculatedOperatingCash: operatingCashFlow,
-      },
-    };
-  }
-
-  private isCashAccount(entry: LedgerEntryRaw): boolean {
-    const accountName = entry.account?.accountName?.toLowerCase() ?? '';
-    const accountCode = String(entry.account?.accountCode ?? '');
-    return accountName.includes('cash') || accountName.includes('bank') || accountCode.startsWith('10');
-  }
-
-  private describeLedgerEntry(entry: LedgerEntryRaw): string {
-    const line = entry.journalEntryLine as { description?: string } | null;
-    return line?.description || `${entry.account.accountName} ledger movement`;
+    return value ? new Date(value) : new Date(Number.NaN);
   }
 
   private toBackendLocalDateTime(date: Date): string {
