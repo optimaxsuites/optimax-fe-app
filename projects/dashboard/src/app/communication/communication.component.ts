@@ -530,6 +530,7 @@ export class CommunicationComponent
   private scrollThread = false;
   private chatResourcesLoaded = false;
   private chatRealtimeStarted = false;
+  private pendingMentionConversationUserId: number | null = null;
 
   private stompClient: any = null;
   private wsConnected = false;
@@ -562,6 +563,7 @@ export class CommunicationComponent
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
       );
+      window.addEventListener('hashchange', this.handleMentionHashChange);
     }
     this.checkVoiceSupport();
     this.loadCurrentUser();
@@ -574,6 +576,7 @@ export class CommunicationComponent
       this.startPresencePoll();
       this.startConversationSync();
     }
+    this.processMentionHashNavigation();
   }
 
   ngOnDestroy() {
@@ -608,6 +611,7 @@ export class CommunicationComponent
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
       );
+      window.removeEventListener('hashchange', this.handleMentionHashChange);
     }
   }
 
@@ -3219,6 +3223,7 @@ export class CommunicationComponent
             }
             this.syncHeaderState();
             this.employeesLoading = false;
+            this.applyPendingMentionConversation();
             this.replayQueuedNotificationTarget();
             this.cdr.detectChanges();
           },
@@ -3237,6 +3242,7 @@ export class CommunicationComponent
                 }
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.applyPendingMentionConversation();
                 this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
@@ -5092,10 +5098,16 @@ export class CommunicationComponent
     if (!userId || Number(userId) === Number(this.me.userId)) {
       return;
     }
-    let contact = this.dmContacts.find((dm) => Number(dm.userId) === Number(userId));
+    let contact = this.dmContacts.find(
+      (dm) =>
+        Number(dm.userId) === Number(userId) ||
+        Number(dm.employeeId || 0) === Number(userId),
+    );
     if (!contact) {
       const employee = this.allEmployees.find(
-        (entry) => Number(entry.user?.userId || entry.user?.id || 0) === Number(userId),
+        (entry) =>
+          Number(entry.user?.userId || entry.user?.id || entry.id || 0) === Number(userId) ||
+          Number(entry.id || 0) === Number(userId),
       );
       if (!employee) {
         return;
@@ -5126,6 +5138,41 @@ export class CommunicationComponent
       this.cdr.detectChanges();
     }
     this.selectDm(contact.id, true);
+    this.clearMentionHash();
+  }
+
+  private handleMentionHashChange = (): void => {
+    this.processMentionHashNavigation();
+  };
+
+  private processMentionHashNavigation(): void {
+    if (typeof window === 'undefined') return;
+    const match = window.location.hash.match(/^#dm-user-(\d+)$/i);
+    if (!match) return;
+    const userId = Number(match[1]);
+    if (!userId || Number(userId) === Number(this.me.userId)) {
+      this.clearMentionHash();
+      return;
+    }
+    if (!this.dmContacts.length && !this.allEmployees.length) {
+      this.pendingMentionConversationUserId = userId;
+      return;
+    }
+    this.pendingMentionConversationUserId = null;
+    this.openMentionConversation(userId);
+  }
+
+  private applyPendingMentionConversation(): void {
+    if (!this.pendingMentionConversationUserId) return;
+    const userId = this.pendingMentionConversationUserId;
+    this.pendingMentionConversationUserId = null;
+    this.openMentionConversation(userId);
+  }
+
+  private clearMentionHash(): void {
+    if (typeof window === 'undefined') return;
+    if (!window.location.hash.startsWith('#dm-user-')) return;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }
 
   // ── Email ─────────────────────────────────────────────
@@ -5921,7 +5968,11 @@ export class CommunicationComponent
     const normalizedHandle = (payload?.handle || '').replace(/^@/, '').trim().toLowerCase();
 
     const findEmployeeByUserId = (userId: number): EmployeeProfile | undefined =>
-      this.allEmployees.find((employee) => Number(employee.user?.userId || employee.user?.id || 0) === userId);
+      this.allEmployees.find(
+        (employee) =>
+          Number(employee.user?.userId || employee.user?.id || employee.id || 0) === userId ||
+          Number(employee.id || 0) === userId,
+      );
 
     let userId = explicitUserId;
     let employee = userId ? findEmployeeByUserId(userId) : undefined;
