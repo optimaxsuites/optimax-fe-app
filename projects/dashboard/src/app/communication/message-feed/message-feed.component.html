@@ -223,6 +223,9 @@
           <ng-template #plainMessageContent>
             <div
               class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
+              (click)="onRenderedContentClick($event)"
+              (mouseover)="onRenderedContentHover($event)"
+              (mouseout)="onRenderedContentLeave($event)"
               [innerHTML]="messageHtml(msg.content)"
             ></div>
           </ng-template>
@@ -560,6 +563,31 @@
     </div>
   </ng-container>
 </ng-container>
+
+<div
+  *ngIf="activeMentionProfile && mentionCardPosition"
+  class="mention-profile-card"
+  [style.top.px]="mentionCardPosition.top"
+  [style.left.px]="mentionCardPosition.left"
+  (mouseenter)="$event.stopPropagation()"
+  (mouseleave)="closeMentionCard()"
+>
+  <div class="mention-profile-card__avatar" [style.background]="activeMentionProfile.online ? '#0f766e' : '#334155'">
+    <img *ngIf="activeMentionProfile.avatarUrl" [src]="activeMentionProfile.avatarUrl" alt="" />
+    <span *ngIf="!activeMentionProfile.avatarUrl">{{ activeMentionProfile.initials }}</span>
+  </div>
+  <div class="mention-profile-card__copy">
+    <div class="mention-profile-card__topline">
+      <strong>{{ activeMentionProfile.name }}</strong>
+      <span [class.online]="activeMentionProfile.online">{{ activeMentionProfile.online ? 'Online' : 'Offline' }}</span>
+    </div>
+    <p *ngIf="activeMentionProfile.jobTitle || activeMentionProfile.department">
+      {{ activeMentionProfile.jobTitle || 'Team member' }}<span *ngIf="activeMentionProfile.department"> · {{ activeMentionProfile.department }}</span>
+    </p>
+    <p *ngIf="activeMentionProfile.email">{{ activeMentionProfile.email }}</p>
+    <small>{{ activeMentionProfile.lastSeenLabel }}</small>
+  </div>
+</div>
 
 <style>
   .msg-row:hover { background: #f9fafb; }

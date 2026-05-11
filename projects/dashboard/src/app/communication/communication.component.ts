@@ -154,6 +154,18 @@ interface HoverPerson {
   initials: string;
 }
 
+interface MentionProfileCard {
+  userId: number;
+  name: string;
+  email?: string;
+  jobTitle?: string;
+  department?: string;
+  avatarUrl?: string;
+  initials: string;
+  online: boolean;
+  lastSeenLabel: string;
+}
+
 interface FeedThreadState {
   expanded: boolean;
   loading: boolean;
@@ -495,6 +507,7 @@ export class CommunicationComponent
   ];
 
   presenceMap: Record<number, string> = {};
+  private presenceUpdatedAtMap: Record<number, string> = {};
   typingMap: Record<number, boolean> = {};
   private typingTimer: any = null;
   private presencePollTimer: any = null;
@@ -2661,11 +2674,7 @@ export class CommunicationComponent
       (frame: any) => {
         try {
           const list = JSON.parse(frame.body || '[]');
-          for (const p of Array.isArray(list) ? list : [list]) {
-            if (p.userId == null) continue;
-            this.presenceMap[Number(p.userId)] = p.presenceStatus || 'OFFLINE';
-            this.typingMap[Number(p.userId)] = Boolean(p.typing);
-          }
+          this.applyPresenceEntries(Array.isArray(list) ? list : [list]);
           this.syncDmOnlineStatus();
           this.cdr.detectChanges();
         } catch (_) {}
@@ -2718,17 +2727,12 @@ export class CommunicationComponent
       const psub = this.stompClient.subscribe(
         `/topic/collab/chat/presence/channel/${chId}`,
         (frame: any) => {
-          try {
-            const list = JSON.parse(frame.body || '[]');
-            for (const p of Array.isArray(list) ? list : [list]) {
-              if (p.userId == null) continue;
-              this.presenceMap[Number(p.userId)] =
-                p.presenceStatus || 'OFFLINE';
-              this.typingMap[Number(p.userId)] = Boolean(p.typing);
-            }
-            this.syncDmOnlineStatus();
-            this.cdr.detectChanges();
-          } catch (_) {}
+        try {
+          const list = JSON.parse(frame.body || '[]');
+          this.applyPresenceEntries(Array.isArray(list) ? list : [list]);
+          this.syncDmOnlineStatus();
+          this.cdr.detectChanges();
+        } catch (_) {}
         },
       );
       this.dmPresenceSubs.set(chId, psub);
@@ -4236,10 +4240,7 @@ export class CommunicationComponent
             if (!prev || (p.updatedAt || '') >= (prev.updatedAt || ''))
               byUser.set(Number(p.userId), p);
           }
-          byUser.forEach((p, uid) => {
-            this.presenceMap[uid] = p.presenceStatus || 'OFFLINE';
-            this.typingMap[uid] = Boolean(p.typing);
-          });
+          this.applyPresenceEntries(Array.from(byUser.values()));
           this.syncDmOnlineStatus();
           this.cdr.detectChanges();
         },
@@ -4298,11 +4299,7 @@ export class CommunicationComponent
   private pollChannelPresence(channelId: number): void {
     this.collabService.getChannelPresence(channelId).subscribe({
       next: (list: any[]) => {
-        for (const p of list || []) {
-          if (p.userId == null) continue;
-          this.presenceMap[Number(p.userId)] = p.presenceStatus || 'OFFLINE';
-          this.typingMap[Number(p.userId)] = Boolean(p.typing);
-        }
+        this.applyPresenceEntries(list || []);
         this.syncDmOnlineStatus();
         this.cdr.detectChanges();
       },
@@ -4315,6 +4312,18 @@ export class CommunicationComponent
       Boolean(this.typingMap[userId]) &&
       Number(userId) !== Number(this.me.userId)
     );
+  }
+
+  private applyPresenceEntries(entries: any[]): void {
+    for (const p of entries || []) {
+      if (p?.userId == null) continue;
+      const userId = Number(p.userId);
+      this.presenceMap[userId] = p.presenceStatus || 'OFFLINE';
+      this.typingMap[userId] = Boolean(p.typing);
+      if (p.updatedAt) {
+        this.presenceUpdatedAtMap[userId] = String(p.updatedAt);
+      }
+    }
   }
 
   get typingUsersLabel(): string {
@@ -5077,6 +5086,46 @@ export class CommunicationComponent
 
   getFlashId(): string | null {
     return this.flashId;
+  }
+
+  openMentionConversation(userId: number): void {
+    if (!userId || Number(userId) === Number(this.me.userId)) {
+      return;
+    }
+    let contact = this.dmContacts.find((dm) => Number(dm.userId) === Number(userId));
+    if (!contact) {
+      const employee = this.allEmployees.find(
+        (entry) => Number(entry.user?.userId || entry.user?.id || 0) === Number(userId),
+      );
+      if (!employee) {
+        return;
+      }
+      const fullName =
+        `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
+        employee.user?.fullname ||
+        `Employee ${employee.id}`;
+      contact = {
+        id: `emp-${employee.id}`,
+        employeeId: employee.id,
+        userId: Number(employee.user?.userId || employee.user?.id || userId),
+        shortName: employee.lastName
+          ? `${employee.firstName || fullName} ${employee.lastName[0]}.`
+          : employee.firstName || fullName,
+        fullName,
+        initials: initialsFrom(fullName),
+        avatarColor: _colorFor(employee.id),
+        avatarUrl: employee.employeeMedia?.mediaNo
+          ? this.imageCache[employee.employeeMedia.mediaNo] || this.userAvatarCache[userId]
+          : this.userAvatarCache[userId],
+        email: employee.user?.email || '',
+        jobTitle: employee.jobTitle,
+        department: employee.department?.name,
+        online: this.isUserOnline(userId),
+      };
+      this.dmContacts = [contact, ...this.dmContacts.filter((dm) => dm.id !== contact!.id)];
+      this.cdr.detectChanges();
+    }
+    this.selectDm(contact.id, true);
   }
 
   // ── Email ─────────────────────────────────────────────
@@ -5842,6 +5891,102 @@ export class CommunicationComponent
           initials: initialsFrom(name),
         } as HoverPerson;
       });
+  }
+
+  getMentionCandidates(): Array<{ userId: number; label: string }> {
+    const candidates = new Map<number, string>();
+    const add = (userId: number | null | undefined, label: string | null | undefined) => {
+      const normalizedId = Number(userId || 0);
+      const normalizedLabel = (label || '').trim();
+      if (!normalizedId || !normalizedLabel || candidates.has(normalizedId)) return;
+      candidates.set(normalizedId, normalizedLabel);
+    };
+
+    this.allEmployees.forEach((employee) => {
+      const userId = Number(employee.user?.userId || employee.user?.id || employee.id || 0);
+      add(userId, this.feedMentionLabel(employee));
+    });
+
+    this.dmContacts.forEach((contact) => add(contact.userId, contact.fullName));
+    this.channelMembers.forEach((member) => add(member.userId, this.getMemberName(member.userId)));
+    Object.entries(this.userDirectory).forEach(([userId, name]) => add(Number(userId), name));
+
+    return Array.from(candidates.entries())
+      .map(([userId, label]) => ({ userId, label }))
+      .sort((a, b) => b.label.length - a.label.length);
+  }
+
+  resolveMentionProfileCard = (payload: { userId?: number; handle?: string }): MentionProfileCard | null => {
+    const explicitUserId = Number(payload?.userId || 0);
+    const normalizedHandle = (payload?.handle || '').replace(/^@/, '').trim().toLowerCase();
+
+    const findEmployeeByUserId = (userId: number): EmployeeProfile | undefined =>
+      this.allEmployees.find((employee) => Number(employee.user?.userId || employee.user?.id || 0) === userId);
+
+    let userId = explicitUserId;
+    let employee = userId ? findEmployeeByUserId(userId) : undefined;
+
+    if (!employee && normalizedHandle) {
+      employee = this.allEmployees.find((candidate) =>
+        this.feedMentionLabel(candidate).trim().toLowerCase() === normalizedHandle ||
+        (candidate.user?.fullname || '').trim().toLowerCase() === normalizedHandle ||
+        (candidate.user?.username || '').trim().toLowerCase() === normalizedHandle
+      );
+      if (employee) {
+        userId = Number(employee.user?.userId || employee.user?.id || employee.id || 0);
+      }
+    }
+
+    if (!userId && normalizedHandle) {
+      const matchedEntry = Object.entries(this.userDirectory).find(
+        ([, name]) => (name || '').trim().toLowerCase() === normalizedHandle,
+      );
+      if (matchedEntry) {
+        userId = Number(matchedEntry[0]);
+      }
+    }
+
+    if (!userId) return null;
+
+    const name =
+      employee ? this.feedMentionLabel(employee) : this.userDirectory[userId] || payload.handle || `User ${userId}`;
+    const updatedAt = this.presenceUpdatedAtMap[userId];
+    const lastSeenLabel = this.buildLastSeenLabel(userId, updatedAt);
+
+    return {
+      userId,
+      name,
+      email: employee?.user?.email || this.userEmailCache[userId] || '',
+      jobTitle: employee?.jobTitle || '',
+      department: employee?.department?.name || '',
+      avatarUrl: employee?.employeeMedia?.mediaNo
+        ? this.imageCache[employee.employeeMedia.mediaNo] || this.userAvatarCache[userId]
+        : this.userAvatarCache[userId],
+      initials: initialsFrom(name),
+      online: this.isUserOnline(userId),
+      lastSeenLabel,
+    };
+  };
+
+  private buildLastSeenLabel(userId: number, rawUpdatedAt?: string): string {
+    if (this.isUserOnline(userId)) {
+      return 'Online now';
+    }
+    const parsed = parseServerDate(rawUpdatedAt);
+    if (!parsed) {
+      return 'Last online unavailable';
+    }
+    const datePart = parsed.toLocaleDateString([], {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    const timePart = parsed.toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `Last online ${datePart} at ${timePart}`;
   }
 
   findMsgInTree(messages: Message[], id: string): Message | null {
