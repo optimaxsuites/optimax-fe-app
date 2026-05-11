@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from './environments/environment';
+import { v4 as uuidV4 } from 'uuid';
 
 export interface EmailPayload {
   name: string;
@@ -67,10 +68,15 @@ export class EmailService {
     submitterName: string,
     adminEmail:    string,
     expenseName:   string,
+    expenseId:     number | string,
     amount:        number,
     currency:      string = 'NGN'
   ): Observable<EmailResponse> {
-    const reviewUrl = 'https://be.optimaxsuites.com/admin/expenses';
+    const appBaseUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : '';
+    const approvalPath = `/admin/expenses/${uuidV4()}/expensesApproval/${expenseId}`;
+    const reviewUrl = `${appBaseUrl}/user/auth/${uuidV4()}?redirect=${encodeURIComponent(approvalPath)}`;
 
     return this.sendNotificationEmail({
       name:          'Admin',

@@ -4,7 +4,7 @@ import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment.prod';
 import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 import { Router } from '@angular/router';
-import { JwtHelperService } from '@auth0/angular-jwt';
+import { JwtHelperService } from '@auth0/angular-jwt';   
 
 
 // damilola worked on this: normalized token handling to stabilize login and dashboard redirects.
@@ -46,8 +46,12 @@ export class AuthenticationService {
       this.normalizeToken(sessionStorage.getItem('Token')) ||
       this.normalizeToken(sessionStorage.getItem('token')) ||
       this.normalizeToken(sessionStorage.getItem('accessToken')) ||
+      this.normalizeToken(localStorage.getItem('Token')) ||
       this.normalizeToken(localStorage.getItem('Token2')) ||
-      this.normalizeToken(localStorage.getItem('token'))
+      this.normalizeToken(localStorage.getItem('token')) ||
+      this.normalizeToken(localStorage.getItem('authToken')) ||
+      this.normalizeToken(localStorage.getItem('accessToken')) ||
+      this.normalizeToken(localStorage.getItem('accessToken2'))
     );
   }
 
@@ -73,11 +77,21 @@ export class AuthenticationService {
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
     sessionStorage.removeItem("userPrimaryInfoRegData");
+    localStorage.removeItem("Token");
+    localStorage.removeItem("Token2");
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("accessToken2");
+    localStorage.removeItem("tenantId");
+    localStorage.removeItem("postLoginRedirect");
         const storedRole = sessionStorage.getItem("userApplicationRole");
           if (storedRole) {
             console.log("Removing invalid userApplicationRole from sessionStorage");
             sessionStorage.removeItem("userApplicationRole");
           } 
+    sessionStorage.removeItem("tenantId");
+    sessionStorage.removeItem("postLoginRedirect");
 
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')

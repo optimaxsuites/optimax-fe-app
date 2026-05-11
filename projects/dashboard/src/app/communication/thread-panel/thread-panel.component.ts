@@ -26,12 +26,20 @@ export interface ChannelDetailsInput {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ThreadPanelComponent {
+  private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   // ── Inputs ──────────────────────────────────────────
   @Input() mode: RightPanelMode = null;
   @Input() activeThread: Message | null = null;
   @Input() activeThreadReplyToId: string | null = null;
   @Input() activeThreadReplyTarget: Message | null = null;
   @Input() threadReplyDraft = '';
+  @Input() typingUsersLabel = '';
+  @Input() threadPendingAttachments: Array<{
+    name: string;
+    size: string;
+    type: string;
+    previewUrl?: string;
+  }> = [];
   @Input() sendingReply = false;
   @Input() pinnedMessages: Message[] = [];
   @Input() activeChannel: ChannelDetailsInput | null = null;
@@ -66,6 +74,8 @@ export class ThreadPanelComponent {
   @Output() replyTargetSet = new EventEmitter<{ reply: Message; event?: Event }>();
   @Output() replyTargetCleared = new EventEmitter<void>();
   @Output() replySent = new EventEmitter<void>();
+  @Output() threadFilesSelected = new EventEmitter<File[]>();
+  @Output() threadAttachmentRemoved = new EventEmitter<number>();
 
   // Reply edit
   @Output() replyEditStarted = new EventEmitter<{ reply: Message; event?: Event }>();
@@ -123,5 +133,113 @@ export class ThreadPanelComponent {
 
   trackById(_: number, m: { id: string }): string {
     return m.id;
+  }
+
+  messageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    if (msg.attachments?.length) return msg.attachments;
+    return msg.attachment ? [msg.attachment] : [];
+  }
+
+  imageAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter((attachment) => this.isImageAttachment(attachment));
+  }
+
+  documentAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.messageAttachments(msg).filter(
+      (attachment) => !this.isImageAttachment(attachment),
+    );
+  }
+
+  isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
+    const type = (attachment?.type || '').toLowerCase();
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`;
+    return Boolean(
+      type.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(fileRef),
+    );
+  }
+
+  onThreadFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    this.threadFilesSelected.emit(files);
+    input.value = '';
+  }
+
+  onRenderedContentClick(event: Event): void {
+    const rawTarget = event.target as Node | null;
+    const elementTarget =
+      rawTarget instanceof HTMLElement
+        ? rawTarget
+        : (rawTarget as any)?.parentElement || null;
+    const anchor = elementTarget?.closest?.('a.thread-link') as HTMLAnchorElement | null;
+    if (!anchor) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+    window.open(href, '_blank', 'noopener,noreferrer');
+  }
+
+  messageHtml(content: string): string {
+    const decoded = this.decodeHtmlEntities(content || '');
+    if (typeof document === 'undefined') {
+      return this.linkifyPlainText(decoded);
+    }
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = decoded;
+    const hasMarkup = wrapper.querySelector('*');
+    if (hasMarkup) {
+      wrapper.querySelectorAll('a').forEach((anchor) => {
+        anchor.classList.add('thread-link');
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+        const href = anchor.getAttribute('href') || anchor.textContent || '';
+        anchor.setAttribute('href', this.normalizePreviewUrl(href));
+      });
+      wrapper.querySelectorAll('*').forEach((node) => {
+        Array.from(node.childNodes)
+          .filter((child) => child.nodeType === Node.TEXT_NODE && child.textContent?.match(this.urlRegex))
+          .forEach((child) => {
+            const replacement = document.createElement('span');
+            replacement.innerHTML = this.linkifyPlainText(child.textContent || '');
+            child.parentNode?.replaceChild(replacement, child);
+          });
+      });
+      return wrapper.innerHTML;
+    }
+    return this.linkifyPlainText(decoded);
+  }
+
+  private linkifyPlainText(value: string): string {
+    return this.escapeHtml(value)
+      .replace(this.urlRegex, (rawUrl) => {
+        const normalized = this.normalizePreviewUrl(rawUrl);
+        const safeLabel = this.escapeHtml(rawUrl);
+        return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="thread-link">${safeLabel}</a>`;
+      })
+      .replace(/\n/g, '<br>');
+  }
+
+  private normalizePreviewUrl(rawUrl: string): string {
+    const value = (rawUrl || '').trim();
+    return /^https?:\/\//i.test(value) ? value : `https://${value.replace(/^\/+/, '')}`;
+  }
+
+  private escapeHtml(value: string): string {
+    return (value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private decodeHtmlEntities(value: string): string {
+    if (!value || typeof document === 'undefined') return value || '';
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = value;
+    return textarea.value;
   }
 }

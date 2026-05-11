@@ -20,6 +20,21 @@
     </div>
   </section>
 
+  <section class="search-card">
+    <div class="date-filter-row">
+      <label>
+        <span>From</span>
+        <input type="date" [(ngModel)]="fromDate" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [(ngModel)]="toDate" />
+      </label>
+      <button type="button" class="ghost-btn" (click)="applyDateFilter()">Apply Range</button>
+      <button type="button" class="ghost-btn" (click)="resetToAllTime()">All Time</button>
+    </div>
+  </section>
+
   <section class="error-banner" *ngIf="errorMessage">
     {{ errorMessage }}
   </section>

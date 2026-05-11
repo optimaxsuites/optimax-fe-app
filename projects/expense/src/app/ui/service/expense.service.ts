@@ -94,6 +94,14 @@ export interface PersonShareDTO {
   shareAmount: number;
 }
 
+export interface ExpenseLineItemDTO {
+  id?: number;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface BillSplitDTO {
   id: number;
   splitMethod: SplitMethod;
@@ -113,6 +121,12 @@ export interface Expense {
   status: ExpenseStatus;
   paidBy: PaidByBackend | PaidBy;
   receiptReference?: string;
+  expenseById?: number;
+  approvedById?: number;
+  approvedAt?: string;
+  rejectedById?: number;
+  rejectedAt?: string;
+  rejectionReason?: string;
   merchantId?: number;
   categoryId?: number;
   taxId?: number;
@@ -123,6 +137,7 @@ export interface Expense {
   scheduledPayment?: ScheduledPaymentDTO;
   recurringPayment?: any;
   billSplit?: BillSplitDTO;
+  lineItems?: ExpenseLineItemDTO[];
   taxPercentage?: number;
   date?: string;
   signature?: string | null;
@@ -135,11 +150,8 @@ export interface Expense {
   expenseReceipts?: ExpenseMedia[];
   expenseBy?: UserDTO | any;
   approvedBy?: UserDTO | any;
-  approvedAt?: string;
   accountingTransactionId?: number;
   rejectedBy?: UserDTO | any;
-  rejectedAt?: string;
-  rejectionReason?: string;
 }
 
 export interface ExpenseFilterDTO {
@@ -271,35 +283,44 @@ export class ExpenseService {
 
   private resolveCurrentUserId(): number | null {
     try {
+      const parseNumericId = (value: any): number | null => {
+        const n = Number(value);
+        return !isNaN(n) && n > 0 ? n : null;
+      };
+
       const storedId =
         sessionStorage.getItem('userid') ||
         localStorage.getItem('userid');
       if (storedId) {
-        const n = Number(storedId);
-        if (!isNaN(n) && n > 0) return n;
+        const parsed = parseNumericId(storedId);
+        if (parsed) return parsed;
       }
 
       const regRaw =
         sessionStorage.getItem('userRegData') ||
         localStorage.getItem('userRegData');
       const reg = regRaw ? JSON.parse(regRaw) : null;
-      if (reg?.id && typeof reg.id === 'number') return reg.id;
+      const regId = parseNumericId(reg?.id ?? reg?.userId);
+      if (regId) return regId;
 
       const primaryRaw =
         sessionStorage.getItem('userPrimaryInfoRegData') ||
         localStorage.getItem('userPrimaryInfoRegData');
       const primary = primaryRaw ? JSON.parse(primaryRaw) : null;
-      if (primary?.user?.id && typeof primary.user.id === 'number') return primary.user.id;
+      const primaryId = parseNumericId(primary?.user?.id ?? primary?.id);
+      if (primaryId) return primaryId;
 
       return null;
     } catch { return null; }
   }
 
   private resolveExpenseById(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
     const eb = expense.expenseBy as any;
     if (!eb) return null;
     if (typeof eb === 'number') return eb;
-    if (typeof eb === 'object') return eb.id ?? eb.userId ?? null;
+    if (typeof eb === 'object') return eb.userId ?? eb.id ?? null;
     return null;
   }
 
@@ -523,8 +544,17 @@ export class ExpenseService {
       switchMap((full: Expense) => {
         const originalSubmitterId =
           this.resolveExpenseById(full) ??
-          this.resolveExpenseById(expense) ??
-          currentUserId;
+          this.resolveExpenseById(expense);
+
+        if (!full.id) {
+          return throwError(() => new Error('Expense ID is missing. Approval cannot continue.'));
+        }
+        if (!currentUserId) {
+          return throwError(() => new Error('Current approver could not be resolved. Please sign in again.'));
+        }
+        if (!originalSubmitterId) {
+          return throwError(() => new Error('Original expense owner could not be resolved. Please refresh and try again.'));
+        }
   
         const payload: any = {
           id:                 full.id,
@@ -648,8 +678,17 @@ export class ExpenseService {
       switchMap((full: Expense) => {
         const originalSubmitterId =
           this.resolveExpenseById(full) ??
-          this.resolveExpenseById(expense) ??
-          currentUserId;
+          this.resolveExpenseById(expense);
+
+        if (!full.id) {
+          return throwError(() => new Error('Expense ID is missing. Rejection cannot continue.'));
+        }
+        if (!currentUserId) {
+          return throwError(() => new Error('Current approver could not be resolved. Please sign in again.'));
+        }
+        if (!originalSubmitterId) {
+          return throwError(() => new Error('Original expense owner could not be resolved. Please refresh and try again.'));
+        }
   
         const payload: any = {
           id:                 full.id,

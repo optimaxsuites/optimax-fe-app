@@ -12,15 +12,62 @@
   </div>
 
   <div class="app-header__right">
-    <button
-      type="button"
-      class="header-chip"
-      (click)="openMessages()"
-    >
-      <i class="fas fa-message"></i>
-      <span>Messages</span>
-      <strong *ngIf="unreadMessages">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</strong>
-    </button>
+    <div class="header-messages-wrap">
+      <button
+        type="button"
+        class="header-chip"
+        (click)="openMessages(); messagesPanel.toggle($event)"
+      >
+        <i class="fas fa-message"></i>
+        <span>Messages</span>
+        <strong *ngIf="unreadMessages">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</strong>
+      </button>
+
+      <p-overlayPanel #messagesPanel styleClass="header-overlay-panel">
+        <div class="notification-panel">
+          <div class="notification-panel__header">
+            <div>
+              <p>Messages</p>
+              <span>Recent direct and channel conversations</span>
+            </div>
+          </div>
+
+          <div *ngIf="!messagePreviews.length" class="notification-empty">
+            No new messages yet.
+          </div>
+
+          <button
+            type="button"
+            *ngFor="let item of latestMessagePreviews"
+            class="notification-item"
+            [class.notification-item--unread]="!item.read"
+            (click)="openMessagePreview(item); messagesPanel.hide()"
+          >
+            <div class="notification-item__avatar">
+              <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+              <span *ngIf="!item.avatarUrl">{{ (item.title || 'M').charAt(0) }}</span>
+            </div>
+            <div class="notification-item__body">
+              <div class="notification-item__meta">
+                <strong>{{ displayNotificationText(item.title, 'New message') }}</strong>
+                <span>{{ item.createdAt | date: 'shortTime' }}</span>
+              </div>
+              <p>{{ displayNotificationText(item.body, 'A new message arrived.') }}</p>
+              <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
+            </div>
+          </button>
+
+          <button
+            *ngIf="messagePreviews.length > 5"
+            type="button"
+            class="notification-view-all"
+            (click)="viewAllMessages(); messagesPanel.hide()"
+          >
+            Open chat workspace
+          </button>
+        </div>
+      </p-overlayPanel>
+    </div>
 
     <div class="header-bell-wrap">
       <button
@@ -41,6 +88,16 @@
               <p>Notifications</p>
               <span>Live updates across collaboration and modules</span>
             </div>
+            <div class="notification-panel__actions" *ngIf="notifications.length">
+              <button type="button" class="notification-header-action" *ngIf="unreadNotificationItems.length"
+                (click)="openUnreadNotificationsDialog(); notificationsPanel.hide()">
+                Unread
+              </button>
+              <button type="button" class="notification-header-action notification-header-action--danger"
+                (click)="clearAllNotifications(); notificationsPanel.hide()">
+                Clear all
+              </button>
+            </div>
           </div>
 
           <div *ngIf="!notifications.length" class="notification-empty">
@@ -60,7 +117,10 @@
             </div>
             <div class="notification-item__body">
               <div class="notification-item__meta">
-                <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
+                <div class="notification-item__title">
+                  <span *ngIf="!item.read" class="notification-unread-dot"></span>
+                  <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
+                </div>
                 <span>{{ item.createdAt | date: 'shortTime' }}</span>
               </div>
               <p>{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
@@ -134,3 +194,49 @@
     </p-overlayPanel>
   </div>
 </header>
+
+<p-dialog
+  header="Unread Notifications"
+  [(visible)]="showUnreadNotificationsDialog"
+  [modal]="true"
+  [dismissableMask]="true"
+  [style]="{ width: 'min(42rem, 96vw)' }"
+  styleClass="unread-notifications-dialog"
+  (onHide)="closeUnreadNotificationsDialog()"
+>
+  <div class="unread-dialog-shell">
+    <div class="unread-dialog-actions" *ngIf="notifications.length">
+      <button type="button" class="notification-header-action notification-header-action--danger"
+        (click)="clearAllNotifications()">
+        Clear all
+      </button>
+    </div>
+
+    <div *ngIf="!unreadNotificationItems.length" class="notification-empty">
+      No unread notifications.
+    </div>
+
+    <button
+      type="button"
+      *ngFor="let item of unreadNotificationItems"
+      class="notification-item notification-item--unread notification-item--dialog"
+      (click)="openNotification(item); closeUnreadNotificationsDialog()"
+    >
+      <div class="notification-item__avatar">
+        <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+        <span *ngIf="!item.avatarUrl">{{ (item.title || 'U').charAt(0) }}</span>
+      </div>
+      <div class="notification-item__body">
+        <div class="notification-item__meta">
+          <div class="notification-item__title">
+            <span class="notification-unread-dot"></span>
+            <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
+          </div>
+          <span>{{ item.createdAt | date: 'short' }}</span>
+        </div>
+        <p>{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
+        <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
+      </div>
+    </button>
+  </div>
+</p-dialog>

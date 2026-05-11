@@ -178,13 +178,18 @@
                   </button>
 
                   <!-- Status-locked Modification Actions -->
-                  <ng-container *ngIf="ev.status === 'UNPROCESSED'">
+                  <ng-container *ngIf="ev.status === 'UNPROCESSED' || ev.status === 'UNREVIEWED'">
                     <!-- Approve -->
                     <button (click)="approveEvent(ev)"
-                      title="Post to Ledger"
+                      title="Approve & Finalize"
                       [disabled]="!ev.matchedMapping"
-                      class="p-2 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed">
-                      <i class="pi pi-check-circle"></i>
+                      class="p-2 rounded-xl transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed group/btn relative"
+                      [ngClass]="ev.matchedMapping ? 'text-emerald-600 bg-emerald-100 shadow-lg shadow-emerald-200/50 ring-2 ring-emerald-400 ring-offset-2 animate-pulse' : 'text-gray-400 bg-gray-50'">
+                      <i class="pi pi-check-circle text-xl"></i>
+                      <span *ngIf="ev.matchedMapping" class="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      </span>
                     </button>
                     <!-- Edit -->
                     <button (click)="openEdit(ev)"
@@ -201,7 +206,10 @@
                   </ng-container>
                   
                   <!-- Compact View Indicator for Processed -->
-                  <span *ngIf="ev.status !== 'UNPROCESSED'" class="text-[10px] font-black uppercase tracking-tighter text-gray-300 ml-2">Locked</span>
+                  <span *ngIf="ev.status === 'APPROVED' || ev.status === 'POSTED' || ev.status === 'DISBURSED'" 
+                        class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
+                    <i class="pi pi-lock"></i> Locked
+                  </span>
                 </div>
               </td>
             </tr>

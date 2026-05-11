@@ -42,28 +42,25 @@ export class MonthlyattendancelistComponent implements OnInit {
     }
     //suscribe to shared BehaviourSubject
     this.attendanceService.attendance$.subscribe(data => {
+      const callId = Math.random().toString(36).substr(2, 5); //unique tag per callback
+      console.log(`[${callId}] data length:`, data.length);
+
       //filter to only this employee's records since Behaviour Subject is shared
       const userId = user?.id ?? '';
 
       data.forEach(r => {
         console.log({
           recordId: r.id,
-          recordIdType: typeof r.id,
-          userId: userId,
-          userIdType: typeof userId,
+          //recordIdType: typeof r.id,
+          //userId: userId,
+          //userIdType: typeof userId,
           strictEqual: r.id === userId,
-          stringEqual: String(r.id) === String(userId)
+          //stringEqual: String(r.id) === String(userId)
         });
       });
 
-      // TEMP: diagnostic log
-      console.log('All records in subject:', data.map(r => ({ id: r.id, employee: r.employee })));
-      console.log('Filtering for userId:', userId);
-
       this.attendanceData = data.filter(r => String(r.id).trim() === String(userId).trim());
-
-      // TEMP: diagnostic log
-      console.log('After filter:', this.attendanceData);
+      console.log(`[${callId}] After filter:`, this.attendanceData);
       
       this.applyMonthFilter();
     });

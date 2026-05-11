@@ -2,7 +2,9 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
+import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
+  HeaderMessagePreviewItem,
   HeaderNotificationItem,
   HeaderProfileState,
   HeaderStateService,
@@ -25,8 +27,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     initials: 'OU',
   };
   notifications: HeaderNotificationItem[] = [];
+  messagePreviews: HeaderMessagePreviewItem[] = [];
   unreadMessages = 0;
   unreadNotifications = 0;
+  showUnreadNotificationsDialog = false;
   currentUserId = '';
   private headerSub?: Subscription;
 
@@ -34,6 +38,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private router: Router,
     private authenticationService: AuthenticationService,
     private headerStateService: HeaderStateService,
+    private chatRealtimeNotifierService: ChatRealtimeNotifierService,
   ) {}
 
   ngOnInit(): void {
@@ -43,9 +48,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.syncProfileFromSession();
+    this.chatRealtimeNotifierService.start(this.currentUserId);
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
-      this.unreadMessages = state.unreadMessages;
+      this.messagePreviews = state.messagePreviews;
+      this.unreadMessages = state.messagePreviews.filter((entry) => !entry.read).length;
       this.unreadNotifications = state.unreadNotifications;
       if (state.profile) {
         this.headerProfile = state.profile;
@@ -55,6 +62,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.headerSub?.unsubscribe();
+    this.chatRealtimeNotifierService.stop();
   }
 
   onToggleSidebar(): void {
@@ -63,41 +71,53 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openMessages(): void {
     sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   openNotifications(): void {
+  }
+
+  clearAllNotifications(): void {
+    this.headerStateService.clearAllNotifications();
+    this.showUnreadNotificationsDialog = false;
+  }
+
+  openUnreadNotificationsDialog(): void {
+    this.showUnreadNotificationsDialog = true;
+  }
+
+  closeUnreadNotificationsDialog(): void {
+    this.showUnreadNotificationsDialog = false;
   }
 
   openNotification(item: HeaderNotificationItem): void {
     this.headerStateService.markNotificationRead(item.id);
     const route =
       item.route || `/admin/dashboard/communications/${this.currentUserId}`;
-    if (item.workspaceMode === 'chat') {
-      sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    }
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
-      window.dispatchEvent(
-        new CustomEvent('optimax-open-collab-target', { detail: item }),
-      );
-    }
-    this.router.navigateByUrl(route).then(() => {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('optimax-open-collab-target', { detail: item }),
-        );
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent('optimax-open-collab-target', { detail: item }),
-          );
-        }, 220);
-      }
-    }).catch(() => {});
+    this.dispatchCollabTarget(item, route);
+  }
+
+  openMessagePreview(item: HeaderMessagePreviewItem): void {
+    this.headerStateService.markMessagePreviewRead(item.id);
+    const route =
+      item.route || `/admin/dashboard/communications/${this.currentUserId}`;
+    this.dispatchCollabTarget(item, route);
   }
 
   get latestNotifications(): HeaderNotificationItem[] {
     return this.notifications.slice(0, 5);
+  }
+
+  get unreadNotificationItems(): HeaderNotificationItem[] {
+    return this.notifications.filter((entry) => !entry.read);
+  }
+
+  get latestMessagePreviews(): HeaderMessagePreviewItem[] {
+    return this.messagePreviews.slice(0, 5);
+  }
+
+  viewAllMessages(): void {
+    sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
   }
 
   viewAllNotifications(): void {
@@ -184,5 +204,34 @@ export class NavbarComponent implements OnInit, OnDestroy {
       }
     }
     return fallback;
+  }
+
+  private dispatchCollabTarget(item: any, route: string): void {
+    if (item.workspaceMode === 'chat') {
+      sessionStorage.setItem('optimax_workspace_mode', 'chat');
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('optimax_notification_target', JSON.stringify(item));
+      window.dispatchEvent(
+        new CustomEvent('optimax-open-collab-target', { detail: item }),
+      );
+    }
+    this.router.navigateByUrl(route).then(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('optimax-open-collab-target', { detail: item }),
+        );
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 220);
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', { detail: item }),
+          );
+        }, 700);
+      }
+    }).catch(() => {});
   }
 }

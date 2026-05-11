@@ -25,6 +25,7 @@ import { debounceTime, Subject, takeUntil } from 'rxjs';
 import {
   ExpenseService,
   Expense,
+  ExpenseLineItemDTO,
   ExpenseMedia,
   ExpenseStatus,
   MerchantDTO,
@@ -229,6 +230,10 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   // This is now available to everyone (no role gating in the toggle behavior).
   // ─────────────────────────────────────────────────────────────────────────
   toggleViewAll(): void {
+    if (!this.canViewAll) {
+      this.viewAllUsers = false;
+      return;
+    }
     this.viewAllUsers = !this.viewAllUsers;
     this.loadExpenses();
   }
@@ -272,6 +277,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_HR', 'ROLE_FINANCE', 'ADMIN', 'MANAGER'
       ]);
       this.canViewAll = allRoles.some(r => adminRoleSet.has(r));
+      if (!this.canViewAll) {
+        this.viewAllUsers = false;
+      }
 
       console.log(`[resolveCanViewAll] userId=${this.currentUserId} canViewAll=${this.canViewAll} roles=`, allRoles);
     } catch (e) {
@@ -300,16 +308,39 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   // isSystemEntry — true when expenseBy is null/empty (system-created entries)
   // ─────────────────────────────────────────────────────────────────────────
   private isSystemEntry(e: Expense): boolean {
+    // Engr Damilola worked on this: do not hide legacy expense rows just because expenseBy is partially populated.
     const eb = e.expenseBy;
-    if (eb === null || eb === undefined) return true;
+    if (eb === null || eb === undefined) return false;
     if (typeof eb === 'number') return eb <= 0;
-    if (typeof eb === 'string') return !eb.trim() || Number(eb) <= 0;
+    if (typeof eb === 'string') return !!eb.trim() && Number(eb) <= 0;
     if (typeof eb === 'object') {
       const hasId     = typeof (eb as any).id     === 'number' && (eb as any).id     > 0;
       const hasUserId = typeof (eb as any).userId === 'number' && (eb as any).userId > 0;
-      return !hasId && !hasUserId;
+      return false;
     }
-    return true;
+    return false;
+  }
+
+  private resolveExpenseOwnerId(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
+
+    const expenseBy = expense.expenseBy as any;
+    if (typeof expenseBy === 'number' && expenseBy > 0) return expenseBy;
+    if (typeof expenseBy === 'string') {
+      const parsed = Number(expenseBy);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (expenseBy && typeof expenseBy === 'object') {
+      const userId = Number(expenseBy.userId ?? expenseBy.id);
+      if (!isNaN(userId) && userId > 0) return userId;
+    }
+
+    return null;
+  }
+
+  private isOwnExpense(expense: Expense): boolean {
+    return !!this.currentUserId && this.resolveExpenseOwnerId(expense) === this.currentUserId;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -363,6 +394,18 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
     // Ultimate fallback
     return 'Unknown';
+  }
+
+  getApprovedByName(expense: Expense): string {
+    const approvedBy = (expense as any).approvedBy;
+    if (!approvedBy) return '—';
+    if (typeof approvedBy === 'object') {
+      return approvedBy.fullname || approvedBy.name || approvedBy.username || '—';
+    }
+    if (typeof approvedBy === 'number' && approvedBy > 0) {
+      return `User #${approvedBy}`;
+    }
+    return '—';
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -430,15 +473,18 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   private _applyOwnershipFilter(expenses: Expense[]): void {
     let filtered: Expense[];
 
-    if (this.viewAllUsers) {
+    if (this.viewAllUsers && this.canViewAll) {
       // All users mode: show everything from the requested endpoint
       filtered = expenses;
       console.log('[_applyOwnershipFilter] All Employees mode → showing all', filtered.length);
     } else {
-      // My Expenses — strip system entries only; keep everything else
-      filtered = expenses.filter(e => !this.isSystemEntry(e));
+      // My Expenses — show only rows submitted by the current user.
+      // If user context is missing, fall back to hiding system rows only.
+      filtered = this.currentUserId
+        ? expenses.filter(e => this.resolveExpenseOwnerId(e) === this.currentUserId)
+        : expenses.filter(e => !this.isSystemEntry(e));
       console.log('[_applyOwnershipFilter] My Expenses mode → showing', filtered.length,
-        '(excluded', expenses.length - filtered.length, 'system entries)');
+        '| currentUserId:', this.currentUserId);
     }
 
     // FIX: Enrich expenses with full user data if expenseBy is just an ID
@@ -453,8 +499,11 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   loadExpenses(): void {
     this.isLoading = true;
+    if (!this.canViewAll) {
+      this.viewAllUsers = false;
+    }
 
-    const expenseLoader = this.viewAllUsers
+    const expenseLoader = (this.viewAllUsers && this.canViewAll)
       ? this.expenseService.getAllExpenses()
       : this.expenseService.getExpenses();
 
@@ -653,6 +702,7 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   private _loadReceiptThumbnails(expense: Expense, preserveExisting = false): void {
+    expense = this.normalizeExpenseMedia(expense);
     const oldCompanyUrls  = preserveExisting ? [...this.companyReceiptUrls]  : [];
     const oldEmployeeUrls = preserveExisting ? [...this.employeeReceiptUrls] : [];
 
@@ -736,6 +786,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'This expense has already been approved or rejected.' }); return;
     }
+    if (this.isOwnExpense(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Approve', detail: 'You cannot approve your own expense.' }); return;
+    }
     const merchantId = request.merchantId || request.merchant?.id;
     const categoryId = request.categoryId || request.category?.id;
     if (!merchantId || !categoryId) {
@@ -767,13 +820,14 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
             }
 
             if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-              const merged: Expense = {
+              const merged: Expense = this.normalizeExpenseMedia({
                 ...updated,
                 companyReceipt:  updated.companyReceipt  ?? this.selectedExpense!.companyReceipt,
                 expenseReceipt:  updated.expenseReceipt  ?? this.selectedExpense!.expenseReceipt,
+                lineItems:       updated.lineItems?.length ? updated.lineItems : this.selectedExpense!.lineItems,
                 ...(((updated as any).companyReceipts  ?? (this.selectedExpense as any)?.companyReceipts)  ? { companyReceipts:  (updated as any).companyReceipts  ?? (this.selectedExpense as any).companyReceipts  } : {}),
                 ...(((updated as any).expenseReceipts  ?? (this.selectedExpense as any)?.expenseReceipts)  ? { expenseReceipts:  (updated as any).expenseReceipts  ?? (this.selectedExpense as any).expenseReceipts  } : {}),
-              };
+              });
               this.selectedExpense = merged;
               this._loadReceiptThumbnails(merged, true);
               this.cdr.detectChanges();
@@ -791,6 +845,9 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   openRejectionDialog(request: Expense): void {
     if (!this.canApproveOrReject(request)) {
       this.messageService.add({ severity: 'warn', summary: 'Already Actioned', detail: 'Already approved or rejected.' }); return;
+    }
+    if (this.isOwnExpense(request)) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Reject', detail: 'You cannot reject your own expense.' }); return;
     }
     this.pendingRejectRequest = request; this.rejectionReason = ''; this.showRejectionDialog = true;
   }
@@ -819,13 +876,14 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         }
 
         if (this.isModalOpen2 && this.selectedExpense?.id === request.id) {
-          const merged: Expense = {
+          const merged: Expense = this.normalizeExpenseMedia({
             ...updated,
             companyReceipt: updated.companyReceipt ?? this.selectedExpense!.companyReceipt,
             expenseReceipt: updated.expenseReceipt ?? this.selectedExpense!.expenseReceipt,
+            lineItems:      updated.lineItems?.length ? updated.lineItems : this.selectedExpense!.lineItems,
             ...(((updated as any).companyReceipts ?? (this.selectedExpense as any)?.companyReceipts) ? { companyReceipts: (updated as any).companyReceipts ?? (this.selectedExpense as any).companyReceipts } : {}),
             ...(((updated as any).expenseReceipts ?? (this.selectedExpense as any)?.expenseReceipts) ? { expenseReceipts: (updated as any).expenseReceipts ?? (this.selectedExpense as any).expenseReceipts } : {}),
-          };
+          });
           this.selectedExpense = merged;
           this._loadReceiptThumbnails(merged, true);
           this.cdr.detectChanges();
@@ -843,20 +901,29 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
 
   openEditModal(expense: Expense): void {
     if (this.isApproved(expense)) { this.messageService.add({ severity: 'warn', summary: 'Locked', detail: 'Approved expenses cannot be edited.' }); return; }
-    this.isEditMode = true; this.selectedExpense = expense;
-    this.expenseForm.patchValue({
-      name: expense.name, description: expense.description,
-      eventDate: this.formatEventDateForInput(expense.eventDate),
-      quantity: expense.quantity, currency: expense.currency, amount: expense.amount,
-      paidBy: expense.paidBy, receiptReference: expense.receiptReference,
-      merchantId: expense.merchantId || expense.merchant?.id,
-      categoryId: expense.categoryId || expense.category?.id,
-      taxId: expense.taxId || expense.tax?.id || 1,
-      scheduledPaymentId: expense.scheduledPaymentId
+    // Engr Damilola worked on this: fetch the full expense before editing so line items appear in the popup.
+    this.isEditMode = true;
+    this.selectedExpense = { ...expense };
+    this.isModalOpen = true;
+
+    this.expenseService.getExpenseById(expense.id).subscribe({
+      next: (full) => {
+        this.selectedExpense = {
+          ...full,
+          lineItems: full.lineItems?.length ? full.lineItems : this.fallbackLineItems(full),
+        };
+        this.patchEditForm(this.selectedExpense);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        if (this.selectedExpense) {
+          this.selectedExpense.lineItems = this.selectedExpense.lineItems?.length
+            ? this.selectedExpense.lineItems
+            : this.fallbackLineItems(this.selectedExpense);
+          this.patchEditForm(this.selectedExpense);
+        }
+      }
     });
-    this.editMerchantId = expense.merchantId || expense.merchant?.id || null;
-    this.editCategoryId = expense.categoryId || expense.category?.id || null;
-    this.isModalOpen    = true;
   }
 
   closeModal(): void {
@@ -878,7 +945,8 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
         quantity: fv.quantity, currency: fv.currency, amount: Number(fv.amount) || 0,
         status: this.selectedExpense.status, paidBy: fv.paidBy, receiptReference: fv.receiptReference || '',
         merchantId: Number(fv.merchantId), categoryId: Number(fv.categoryId),
-        taxId: fv.taxId ?? null, scheduledPaymentId: fv.scheduledPaymentId || null
+        taxId: fv.taxId ?? null, scheduledPaymentId: fv.scheduledPaymentId || null,
+        lineItems: this.normalizedLineItems(this.selectedExpense)
       };
       this.expenseService.updateExpense(this.selectedExpense.id, payload).subscribe({
         next: () => { this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Expense updated.' }); this.closeModal(); },
@@ -1168,6 +1236,85 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
   }
 
   onDateInputChange(e: Event): void { if (this.selectedExpense) this.selectedExpense.eventDate = (e.target as HTMLInputElement).value; }
+  updateLineItem(index: number, field: 'quantity' | 'unitPrice' | 'totalPrice' | 'name', value: any): void {
+    if (!this.selectedExpense?.lineItems?.[index]) return;
+    const item = this.selectedExpense.lineItems[index];
+    if (field === 'name') {
+      item.name = String(value || '');
+      return;
+    }
+    const num = Number(value) || 0;
+    if (field === 'quantity') {
+      item.quantity = Math.max(1, Math.round(num || 1));
+      item.totalPrice = this.roundMoney(item.quantity * (Number(item.unitPrice) || 0));
+    } else if (field === 'unitPrice') {
+      item.unitPrice = this.roundMoney(num);
+      item.totalPrice = this.roundMoney((Number(item.quantity) || 1) * item.unitPrice);
+    } else {
+      item.totalPrice = this.roundMoney(num);
+      item.unitPrice = this.roundMoney(item.totalPrice / Math.max(Number(item.quantity) || 1, 1));
+    }
+    this.syncExpenseFromLineItems(this.selectedExpense);
+  }
+  addEditLineItem(): void {
+    if (!this.selectedExpense) return;
+    this.selectedExpense.lineItems = [...(this.selectedExpense.lineItems || []), { name: '', quantity: 1, unitPrice: 0, totalPrice: 0 }];
+  }
+  removeEditLineItem(index: number): void {
+    if (!this.selectedExpense?.lineItems) return;
+    this.selectedExpense.lineItems.splice(index, 1);
+    this.syncExpenseFromLineItems(this.selectedExpense);
+  }
+
+  private patchEditForm(expense: Expense): void {
+    // Engr Damilola worked on this: keep the edit form in sync with resolved IDs from the backend.
+    this.expenseForm.patchValue({
+      name: expense.name, description: expense.description,
+      eventDate: this.formatEventDateForInput(expense.eventDate),
+      quantity: expense.quantity, currency: expense.currency, amount: expense.amount,
+      paidBy: expense.paidBy, receiptReference: expense.receiptReference,
+      merchantId: expense.merchantId || expense.merchant?.id,
+      categoryId: expense.categoryId || expense.category?.id,
+      taxId: expense.taxId || expense.tax?.id || 1,
+      scheduledPaymentId: expense.scheduledPaymentId
+    });
+    this.editMerchantId = expense.merchantId || expense.merchant?.id || null;
+    this.editCategoryId = expense.categoryId || expense.category?.id || null;
+  }
+
+  private fallbackLineItems(expense: Expense): ExpenseLineItemDTO[] {
+    // Engr Damilola worked on this: synthesize a single line item for older expenses without stored line items.
+    return [{
+      name: expense.name || 'Expense item',
+      quantity: Number(expense.quantity) || 1,
+      unitPrice: this.roundMoney((Number(expense.amount) || 0) / Math.max(Number(expense.quantity) || 1, 1)),
+      totalPrice: this.roundMoney(Number(expense.amount) || 0)
+    }];
+  }
+
+  private normalizedLineItems(expense: Expense | null): ExpenseLineItemDTO[] {
+    return (expense?.lineItems || [])
+      .map(item => ({
+        id: item.id,
+        name: (item.name || '').trim(),
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        unitPrice: this.roundMoney(Number(item.unitPrice) || 0),
+        totalPrice: this.roundMoney(Number(item.totalPrice) || 0)
+      }))
+      .filter(item => item.name && item.totalPrice >= 0);
+  }
+
+  private syncExpenseFromLineItems(expense: Expense): void {
+    const items = this.normalizedLineItems(expense);
+    expense.lineItems = items;
+    expense.quantity = items.reduce((sum, item) => sum + item.quantity, 0) || 1;
+    expense.amount = this.roundMoney(items.reduce((sum, item) => sum + item.totalPrice, 0));
+    this.expenseForm.patchValue({ quantity: expense.quantity, amount: expense.amount }, { emitEvent: false });
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
   onReceiptImageLoad(): void  { this.receiptImageLoading = false; }
   onReceiptImageError(e: any): void { this.receiptImageLoading = false; this.receiptImageError = 'Preview unavailable. Use "Open in New Tab".'; }
   onReceiptThumbnailError(e: any, type: 'company' | 'employee'): void { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }
@@ -1176,6 +1323,23 @@ export class ExpenseTableComponent implements OnInit, OnDestroy {
     if (!path) return '';
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     return `https://be.optimaxsuites.com/x/api/v2/exp/expenses/images/${path.split('/').pop()}`;
+  }
+
+  private normalizeExpenseMedia(expense: Expense): Expense {
+    const normalizeOne = (receipt?: ExpenseMedia | null): ExpenseMedia | undefined => {
+      if (!receipt) return undefined;
+      return { ...receipt, url: this.convertToWebUrl(receipt.url || receipt.mediaNo || '') };
+    };
+    const normalizeMany = (receipts?: ExpenseMedia[]): ExpenseMedia[] | undefined =>
+      receipts?.map((receipt) => ({ ...receipt, url: this.convertToWebUrl(receipt.url || receipt.mediaNo || '') }));
+
+    return {
+      ...expense,
+      companyReceipt: normalizeOne(expense.companyReceipt),
+      expenseReceipt: normalizeOne(expense.expenseReceipt),
+      ...((expense as any).companyReceipts ? { companyReceipts: normalizeMany((expense as any).companyReceipts) } : {}),
+      ...((expense as any).expenseReceipts ? { expenseReceipts: normalizeMany((expense as any).expenseReceipts) } : {}),
+    };
   }
 
   getStatusBadgeClass(s: ExpenseStatus): string { return { [ExpenseStatus.PENDING]: 'badge-warning', [ExpenseStatus.APPROVED]: 'badge-success', [ExpenseStatus.REJECTED]: 'badge-danger' }[s] || 'badge-secondary'; }

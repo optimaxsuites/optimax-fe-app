@@ -401,6 +401,16 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       .reduce((total, loan) => total + resolveLoanOutstandingExposure(loan), 0);
   }
 
+  get pendingExtensionRequestsCount(): number {
+    return this.allLoans.reduce((count, loan) => {
+      const requests = (loan as any)?.gracePeriodRequests;
+      if (!Array.isArray(requests)) {
+        return count;
+      }
+      return count + requests.filter((request: any) => String(request?.status || '').toUpperCase() === 'PENDING').length;
+    }, 0);
+  }
+
   applyFilter(): void {
     let matchingLoans = [...this.allLoans];
     this.displayedLoanSubset = this.activeFilter;

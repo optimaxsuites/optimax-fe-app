@@ -45,11 +45,21 @@ app-cooperative-loan-disbursement-ui {
         align-items: center;
         gap: 12px;
 
-        .title-icon {
-          color: #2EB270;
-          font-size: 1.7rem;
+        // .title-icon {
+        //   color: #2EB270;
+        //   font-size: 1.7rem;
+        // }
+
+        i {
+            color: #2EB270;
+            margin-right: 12px;
         }
       }
+
+      // i {
+      //       color: #2EB270;
+      //       margin-right: 12px;
+      //   }
 
       p {
         margin: 4px 0 0;

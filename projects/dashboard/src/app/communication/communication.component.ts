@@ -29,7 +29,10 @@ import {
 } from '../ui/services/collaboration.service';
 import { firstValueFrom } from 'rxjs';
 import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
-import { ComposerLinkPreview } from './message-composer/message-composer.component';
+import {
+  ComposerLinkPreview,
+  ComposerMentionOption,
+} from './message-composer/message-composer.component';
 
 // damilola worked on this: feed-first collaboration, unread syncing, read receipts, and richer notifications.
 // ── Local interfaces ──────────────────────────────────────────────────────────
@@ -132,6 +135,23 @@ interface CollaborationMoment {
   title: string;
   time: string;
   type: 'Meeting' | 'Deadline' | 'Update';
+}
+
+interface ChatArrivalToast {
+  id: number;
+  title: string;
+  body: string;
+  avatarUrl?: string;
+  initials: string;
+  tone: 'dm' | 'channel';
+  channelId?: string;
+  dmId?: string;
+}
+
+interface HoverPerson {
+  name: string;
+  avatarUrl?: string;
+  initials: string;
 }
 
 interface FeedThreadState {
@@ -285,8 +305,11 @@ export class CommunicationComponent
   feedHome: CollabFeedHome | null = null;
   feedPosts: CollabFeedPost[] = [];
   featuredFeedPosts: CollabFeedPost[] = [];
+  renderedRecentFeedPosts: CollabFeedPost[] = [];
+  renderedFeaturedFeedPosts: CollabFeedPost[] = [];
   trendingTags: string[] = [];
   selectedFeedPostId: number | null = null;
+  showViewedFeedPosts = false;
   feedPage = 1;
   feedPageSize = 10;
   feedHasMore = false;
@@ -308,7 +331,9 @@ export class CommunicationComponent
   expandedFeedMediaItems: Array<{ url: string; label: string; mediaType: string }> = [];
   expandedFeedMediaIndex = 0;
   private feedReactionHoverCache: Record<string, string> = {};
+  private feedReactionUsersCache: Record<string, HoverPerson[]> = {};
   private seenFeedNotificationIds = new Set<number>();
+  private viewedFeedPostIds = new Set<number>();
   private protectedMediaUrlCache: Record<string, string> = {};
   private protectedMediaLoading = new Set<string>();
   readonly feedReactionOptions = [
@@ -345,7 +370,16 @@ export class CommunicationComponent
   selectedThreadMsg: Message | null = null;
 
   draft = '';
+  chatMentionResults: EmployeeProfile[] = [];
+  chatShowMentionMenu = false;
   threadReplyDraft = '';
+  threadPendingFiles: File[] = [];
+  threadPendingAttachments: Array<{
+    name: string;
+    size: string;
+    type: string;
+    previewUrl?: string;
+  }> = [];
   pendingFiles: File[] = [];
   pendingAttachments: Array<{
     name: string;
@@ -417,6 +451,8 @@ export class CommunicationComponent
   taskRoutineTodos: TaskRoutineSummary[] = [];
 
   workspaceFocusItems: CollaborationFocusItem[] = [];
+  chatArrivalToasts: ChatArrivalToast[] = [];
+  private chatArrivalToastTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   readonly workspaceMoments: CollaborationMoment[] = [
     { id: 1, title: 'Leadership stand-up', time: '9:30 AM', type: 'Meeting' },
@@ -475,6 +511,7 @@ export class CommunicationComponent
   private flashId: string | null = null;
   private flashTimer: any;
   private pendingNotificationMessageBackendId: number | null = null;
+  private queuedNotificationTarget: any = null;
   private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
@@ -485,8 +522,10 @@ export class CommunicationComponent
   private wsConnected = false;
   private channelSub: any = null;
   private channelPresenceSub: any = null;
+  private channelMessageSubs = new Map<number, any>();
   private dmChannelSubs = new Map<number, any>();
   private dmPresenceSubs = new Map<number, any>();
+  private conversationSyncTimer: any = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -520,6 +559,7 @@ export class CommunicationComponent
     this.connectWebSocket();
     if (this.workspaceMode === 'chat') {
       this.startPresencePoll();
+      this.startConversationSync();
     }
   }
 
@@ -527,6 +567,7 @@ export class CommunicationComponent
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
     if (this.presencePollTimer) clearInterval(this.presencePollTimer);
+    if (this.conversationSyncTimer) clearInterval(this.conversationSyncTimer);
     if (this.callDurationTimer) clearInterval(this.callDurationTimer);
     if (this.recognition) {
       try {
@@ -535,6 +576,8 @@ export class CommunicationComponent
       } catch (_) {}
     }
     this.disconnectWebSocket();
+    this.chatArrivalToastTimers.forEach((timer) => clearTimeout(timer));
+    this.chatArrivalToastTimers.clear();
     Object.values(this.imageCache).forEach((url) => URL.revokeObjectURL(url));
     Object.values(this.userAvatarCache).forEach((url) =>
       URL.revokeObjectURL(url),
@@ -611,6 +654,59 @@ export class CommunicationComponent
     this.headerStateService.pushNotification(payload);
   }
 
+  private pushChatArrivalToast(payload: {
+    title: string;
+    body: string;
+    avatarUrl?: string;
+    tone: 'dm' | 'channel';
+    channelId?: string;
+    dmId?: string;
+  }): void {
+    const toastId = Date.now() + Math.floor(Math.random() * 1000);
+    const initials = (payload.title || 'M')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || 'M';
+    const toast: ChatArrivalToast = {
+      id: toastId,
+      title: payload.title,
+      body: payload.body,
+      avatarUrl: payload.avatarUrl,
+      initials,
+      tone: payload.tone,
+      channelId: payload.channelId,
+      dmId: payload.dmId,
+    };
+    this.chatArrivalToasts = [toast, ...this.chatArrivalToasts].slice(0, 3);
+    const timer = setTimeout(() => this.dismissChatArrivalToast(toastId), 4000);
+    this.chatArrivalToastTimers.set(toastId, timer);
+    this.cdr.detectChanges();
+  }
+
+  dismissChatArrivalToast(id: number): void {
+    const timer = this.chatArrivalToastTimers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      this.chatArrivalToastTimers.delete(id);
+    }
+    this.chatArrivalToasts = this.chatArrivalToasts.filter((toast) => toast.id !== id);
+    this.cdr.detectChanges();
+  }
+
+  openChatArrivalToast(toast: ChatArrivalToast): void {
+    this.dismissChatArrivalToast(toast.id);
+    this.setWorkspaceMode('chat');
+    if (toast.dmId) {
+      this.selectDm(toast.dmId, true);
+      return;
+    }
+    if (toast.channelId) {
+      this.selectChannel(toast.channelId, true);
+    }
+  }
+
   get workspaceStatusLabel(): string {
     if (this.workspaceMode === 'feed') return 'Enterprise feed';
     if (this.activeView === 'threads') return 'Thread collaboration';
@@ -648,6 +744,18 @@ export class CommunicationComponent
     return this.feedPosts.find((post) => post.id === this.selectedFeedPostId);
   }
 
+  get recentFeedPosts(): CollabFeedPost[] {
+    return this.renderedRecentFeedPosts;
+  }
+
+  get oldFeedPosts(): CollabFeedPost[] {
+    return this.feedPosts.filter((post) => this.viewedFeedPostIds.has(Number(post.id)));
+  }
+
+  get visibleFeaturedFeedPosts(): CollabFeedPost[] {
+    return this.renderedFeaturedFeedPosts;
+  }
+
   get selectedFeedThreadState(): FeedThreadState | null {
     if (!this.selectedFeedPostId) return null;
     return this.feedThreads[this.selectedFeedPostId] || null;
@@ -671,9 +779,11 @@ export class CommunicationComponent
     this.workspaceMode = mode;
     if (mode === 'chat') {
       this.ensureChatBootstrap();
+      this.startConversationSync();
       return;
     }
     this.stopPresencePolling();
+    this.stopConversationSync();
     this.unsubscribeChatStreams();
   }
 
@@ -762,7 +872,6 @@ export class CommunicationComponent
       }
     }
     if (!target) return;
-    sessionStorage.removeItem('optimax_notification_target');
     this.pendingNotificationMessageBackendId =
       Number(target.messageBackendId || target.threadRootMessageBackendId || 0) || null;
     if (target.workspaceMode === 'chat') {
@@ -772,21 +881,42 @@ export class CommunicationComponent
           (item) => Number(item.userId) === Number(target.dmUserId),
         );
         if (contact) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectDm(contact.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
       if (target.channelBackendId) {
         const channel = this.channels.find(
           (item) => Number(item.backendId) === Number(target.channelBackendId),
         );
         if (channel) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectChannel(channel.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
     }
+    sessionStorage.removeItem('optimax_notification_target');
+    this.queuedNotificationTarget = null;
     this.workspaceMode = 'feed';
+  }
+
+  private replayQueuedNotificationTarget(): void {
+    if (!this.queuedNotificationTarget) {
+      return;
+    }
+    const target = this.queuedNotificationTarget;
+    this.queuedNotificationTarget = null;
+    this.openNotificationTarget(target);
   }
 
   onFeedMediaSelected(event: Event): void {
@@ -846,14 +976,15 @@ export class CommunicationComponent
         this.featuredFeedPosts = home?.featuredPosts || [];
         this.feedPosts = mergedPosts;
         this.trendingTags = home?.trendingTags || [];
+        this.refreshVisibleFeedCollections(nextPosts, append);
         this.preloadFeedMediaUrls(this.feedPosts);
         this.preloadFeedMediaUrls(this.featuredFeedPosts);
         this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
         this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
         const total = Number(home?.feed?.totalSize || mergedPosts.length);
         this.feedHasMore = this.feedPosts.length < total;
-        if (!this.selectedFeedPostId && this.feedPosts.length) {
-          this.selectedFeedPostId = this.feedPosts[0].id;
+        if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+          this.selectedFeedPostId = this.recentFeedPosts[0].id;
         }
         this.loadTaskRoutineSummaries();
         this.loadFeedNotifications();
@@ -870,6 +1001,7 @@ export class CommunicationComponent
               ? [...this.feedPosts, ...nextPosts.filter((post) => !this.feedPosts.some((existing) => existing.id === post.id))]
               : nextPosts;
             this.featuredFeedPosts = this.feedPosts.filter((post) => post.featured).slice(0, 4);
+            this.refreshVisibleFeedCollections(nextPosts, append);
             this.preloadFeedMediaUrls(this.feedPosts);
             this.preloadFeedMediaUrls(this.featuredFeedPosts);
             this.trendingTags = this.buildTrendingTags(this.feedPosts);
@@ -893,8 +1025,8 @@ export class CommunicationComponent
               activeChatCount: this.dmContacts.length,
             };
             this.feedHasMore = this.feedPosts.length < Number(result?.totalSize || this.feedPosts.length);
-            if (!this.selectedFeedPostId && this.feedPosts.length) {
-              this.selectedFeedPostId = this.feedPosts[0].id;
+            if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+              this.selectedFeedPostId = this.recentFeedPosts[0].id;
             }
             this.loadTaskRoutineSummaries();
             this.loadFeedNotifications();
@@ -917,6 +1049,7 @@ export class CommunicationComponent
   refreshFeed(): void {
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -925,6 +1058,7 @@ export class CommunicationComponent
     keyboardEvent.preventDefault();
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -935,7 +1069,16 @@ export class CommunicationComponent
 
   selectFeedPost(post: CollabFeedPost): void {
     this.selectedFeedPostId = post.id;
+    this.markFeedPostViewed(post);
     this.ensureFeedThread(post.id);
+  }
+
+  showOldFeedPosts(): void {
+    this.showViewedFeedPosts = true;
+    this.refreshVisibleFeedCollections([], false, false);
+    if (!this.selectedFeedPost && this.oldFeedPosts.length) {
+      this.selectedFeedPostId = this.oldFeedPosts[0].id;
+    }
   }
 
   ensureFeedThread(postId: number): void {
@@ -1332,6 +1475,7 @@ export class CommunicationComponent
   }
 
   openFeedChannel(post: CollabFeedPost): void {
+    this.markFeedPostViewed(post);
     const channelId = Number(post.channel?.channelId ?? post.channel?.id ?? 0);
     const channel = this.channels.find((item) => item.backendId === channelId);
     this.workspaceMode = 'chat';
@@ -1396,14 +1540,16 @@ export class CommunicationComponent
       return;
     }
     const query = (mentionMatch[1] || '').trim().toLowerCase();
-    target.mentionResults = this.allEmployees
+    const mentionPool = this.chatMentionPool();
+    const filtered = mentionPool
       .filter((employee) => {
         const fullName = this.feedMentionLabel(employee).toLowerCase();
         const username = (employee.user?.username || '').toLowerCase();
         const email = (employee.user?.email || '').toLowerCase();
         return !query || fullName.includes(query) || username.includes(query) || email.includes(query);
       })
-      .slice(0, 6);
+      .slice(0, 8);
+    target.mentionResults = filtered;
     if ('all'.startsWith(query)) {
       target.mentionResults = [
         {
@@ -1413,9 +1559,98 @@ export class CommunicationComponent
           user: { id: -1, fullname: 'all', userId: -1, username: 'all' },
         } as EmployeeProfile,
         ...target.mentionResults.filter((employee) => employee.id !== -1),
-      ].slice(0, 6);
+      ].slice(0, 8);
+    }
+    if (!target.mentionResults.length && !query) {
+      target.mentionResults = [
+        {
+          id: -1,
+          firstName: 'all',
+          lastName: '',
+          user: { id: -1, fullname: 'all', userId: -1, username: 'all' },
+        } as EmployeeProfile,
+      ];
     }
     target.showMentionMenu = target.mentionResults.length > 0;
+  }
+
+  onChatDraftChanged(value: string): void {
+    this.draft = value;
+    const target = {
+      mentionResults: [] as EmployeeProfile[],
+      showMentionMenu: false,
+    };
+    this.updateMentionResults(this.draft, target);
+    this.chatMentionResults = target.mentionResults;
+    this.chatShowMentionMenu = target.showMentionMenu;
+    this.cdr.detectChanges();
+  }
+
+  onThreadReplyDraftChanged(value: string): void {
+    this.threadReplyDraft = value;
+    this.onComposerTyping();
+    this.cdr.detectChanges();
+  }
+
+  applyChatMention(employee: ComposerMentionOption): void {
+    this.draft = this.replaceMentionToken(this.draft, employee as EmployeeProfile);
+    this.chatMentionResults = [];
+    this.chatShowMentionMenu = false;
+    this.cdr.detectChanges();
+  }
+
+  private chatMentionPool(): EmployeeProfile[] {
+    const merged = new Map<number, EmployeeProfile>();
+    const collect = (employee: EmployeeProfile | null | undefined) => {
+      if (!employee) return;
+      const key = Number(employee.user?.userId || employee.user?.id || employee.id || 0);
+      if (!key || merged.has(key)) return;
+      merged.set(key, employee);
+    };
+    this.allEmployees.forEach(collect);
+    this.dmContacts.forEach((contact) =>
+      collect({
+        id: Number(contact.employeeId || contact.userId || 0),
+        firstName: contact.fullName.split(' ')[0] || contact.fullName,
+        lastName: contact.fullName.split(' ').slice(1).join(' '),
+        user: {
+          id: Number(contact.userId || 0),
+          userId: Number(contact.userId || 0),
+          fullname: contact.fullName,
+          username: contact.email || contact.fullName,
+          email: contact.email || '',
+        },
+      } as EmployeeProfile),
+    );
+    this.channelMembers.forEach((member) =>
+      collect({
+        id: Number(member.userId || 0),
+        firstName: this.getMemberName(member.userId).split(' ')[0] || this.getMemberName(member.userId),
+        lastName: this.getMemberName(member.userId).split(' ').slice(1).join(' '),
+        user: {
+          id: Number(member.userId || 0),
+          userId: Number(member.userId || 0),
+          fullname: this.getMemberName(member.userId),
+          username: this.userEmailCache[member.userId] || this.getMemberName(member.userId),
+          email: this.userEmailCache[member.userId] || '',
+        },
+      } as EmployeeProfile),
+    );
+    Object.entries(this.userDirectory).forEach(([userId, fullName]) =>
+      collect({
+        id: Number(userId),
+        firstName: fullName.split(' ')[0] || fullName,
+        lastName: fullName.split(' ').slice(1).join(' '),
+        user: {
+          id: Number(userId),
+          userId: Number(userId),
+          fullname: fullName,
+          username: this.userEmailCache[Number(userId)] || fullName,
+          email: this.userEmailCache[Number(userId)] || '',
+        },
+      } as EmployeeProfile),
+    );
+    return Array.from(merged.values());
   }
 
   private replaceMentionToken(draft: string, employee: EmployeeProfile): string {
@@ -1429,6 +1664,11 @@ export class CommunicationComponent
   feedMentionLabel(employee: EmployeeProfile): string {
     const fullName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
     return fullName || employee.user?.fullname || employee.user?.username || `Employee ${employee.id}`;
+  }
+
+  chatMentionLabel(option: ComposerMentionOption): string {
+    const fullName = `${option.firstName || ''} ${option.lastName || ''}`.trim();
+    return fullName || option.user?.fullname || option.user?.username || `Employee ${option.id}`;
   }
 
   private buildFeedCommentTree(comments: CollabFeedComment[]): FeedCommentNode[] {
@@ -1625,6 +1865,102 @@ export class CommunicationComponent
       'optimax_seen_feed_notifications',
       JSON.stringify(Array.from(this.seenFeedNotificationIds).slice(-100)),
     );
+  }
+
+  private restoreViewedFeedPostIds(): void {
+    try {
+      const raw = localStorage.getItem(this.viewedFeedPostsStorageKey());
+      if (!raw) return;
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) {
+        this.viewedFeedPostIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
+      }
+    } catch (_) {}
+  }
+
+  private persistViewedFeedPostIds(): void {
+    localStorage.setItem(
+      this.viewedFeedPostsStorageKey(),
+      JSON.stringify(Array.from(this.viewedFeedPostIds).slice(-300)),
+    );
+  }
+
+  private viewedFeedPostsStorageKey(): string {
+    return `optimax_viewed_feed_posts_${Number(this.me.userId || 0) || 'guest'}`;
+  }
+
+  private refreshVisibleFeedCollections(
+    exposedPosts: CollabFeedPost[] = [],
+    append = false,
+    markAsViewed = true,
+  ): void {
+    if (this.showViewedFeedPosts) {
+      this.renderedRecentFeedPosts = [...this.feedPosts];
+      this.renderedFeaturedFeedPosts = [...this.featuredFeedPosts];
+      return;
+    }
+
+    const baselineViewed = new Set(this.viewedFeedPostIds);
+
+    if (append) {
+      const existingIds = new Set(this.renderedRecentFeedPosts.map((post) => Number(post.id)));
+      const nextVisible = (exposedPosts || []).filter(
+        (post) =>
+          !baselineViewed.has(Number(post.id)) &&
+          !existingIds.has(Number(post.id)),
+      );
+      this.renderedRecentFeedPosts = [...this.renderedRecentFeedPosts, ...nextVisible];
+      if (markAsViewed) {
+        this.markFeedPostsViewed(nextVisible);
+      }
+    } else {
+      this.renderedRecentFeedPosts = this.feedPosts.filter(
+        (post) => !baselineViewed.has(Number(post.id)),
+      );
+      if (markAsViewed) {
+        this.markFeedPostsViewed(this.renderedRecentFeedPosts);
+      }
+    }
+
+    this.renderedFeaturedFeedPosts = this.featuredFeedPosts.filter(
+      (post) => !baselineViewed.has(Number(post.id)),
+    );
+  }
+
+  private markFeedPostsViewed(posts: CollabFeedPost[]): void {
+    const newPostIds = (posts || [])
+      .map((post) => Number(post?.id || 0))
+      .filter((postId) => postId && !this.viewedFeedPostIds.has(postId));
+
+    if (!newPostIds.length) {
+      return;
+    }
+
+    newPostIds.forEach((postId) => this.viewedFeedPostIds.add(postId));
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount(newPostIds);
+  }
+
+  private markFeedPostViewed(post: CollabFeedPost): void {
+    const postId = Number(post?.id || 0);
+    if (!postId || this.viewedFeedPostIds.has(postId)) {
+      return;
+    }
+    this.viewedFeedPostIds.add(postId);
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount([postId]);
+  }
+
+  private bumpFeedViewCount(postIds: number[]): void {
+    const idSet = new Set(postIds.map((value) => Number(value)).filter(Boolean));
+    const incrementViewCount = (post: CollabFeedPost): CollabFeedPost =>
+      idSet.has(Number(post.id))
+        ? { ...post, viewCount: Number(post.viewCount || 0) + 1 }
+        : post;
+    this.feedPosts = this.feedPosts.map(incrementViewCount);
+    this.featuredFeedPosts = this.featuredFeedPosts.map(incrementViewCount);
+    this.renderedRecentFeedPosts = this.renderedRecentFeedPosts.map(incrementViewCount);
+    this.renderedFeaturedFeedPosts = this.renderedFeaturedFeedPosts.map(incrementViewCount);
   }
 
   clearPendingAttachments(refresh = true): void {
@@ -1914,7 +2250,19 @@ export class CommunicationComponent
       .replace(/\[(UPDATE|ANNOUNCEMENT|EVENT|CELEBRATION|KNOWLEDGE|ALERT)\]/gi, '')
       .replace(/(^|\s)@(pos|accounting|hr|expense|hospitality|sales|procurement|inventory|reporting)\b/gi, '$1')
       .trim();
-    return cleaned.includes('<') ? cleaned : cleaned.replace(/\n/g, '<br>');
+    if (cleaned.includes('<')) {
+      return this.linkifyHtmlText(cleaned, 'feed-linkified');
+    }
+    return this.linkifyPlainText(cleaned, 'feed-linkified');
+  }
+
+  feedDisplayCommentContent(content?: string): string {
+    const value = (content || '').trim();
+    if (!value) return '';
+    if (value.includes('<')) {
+      return this.linkifyHtmlText(value, 'feed-linkified');
+    }
+    return this.linkifyPlainText(value, 'feed-linkified');
   }
 
   feedReactionValue(post: CollabFeedPost, reactionCode: string): number {
@@ -1927,6 +2275,10 @@ export class CommunicationComponent
 
   feedReactionHoverText(scope: 'post' | 'comment', id: number, reactionCode: string): string {
     return this.feedReactionHoverCache[`${scope}:${id}:${reactionCode}`] || '';
+  }
+
+  feedReactionHoverUsers(scope: 'post' | 'comment', id: number, reactionCode: string): HoverPerson[] {
+    return this.feedReactionUsersCache[`${scope}:${id}:${reactionCode}`] || [];
   }
 
   loadFeedReactionUsers(
@@ -1942,16 +2294,30 @@ export class CommunicationComponent
         : this.collabService.getFeedCommentReactions(id);
     request.subscribe({
       next: (rows) => {
-        const names = (rows || [])
+        const people = (rows || [])
           .filter((row: CollabFeedReactionUser) => (row.reactionCode || '').toUpperCase() === reactionCode)
-          .map((row: CollabFeedReactionUser) => this.feedAuthorName(row.user))
-          .filter(Boolean);
-        this.feedReactionHoverCache[key] = names.length
-          ? names.slice(0, 8).join(', ')
+          .map((row: CollabFeedReactionUser) => {
+            const name = this.feedAuthorName(row.user);
+            const userId = Number(
+              row.user?.userId ||
+              row.user?.id ||
+              0,
+            );
+            return {
+              name,
+              avatarUrl: userId ? this.userAvatarCache[userId] : undefined,
+              initials: initialsFrom(name),
+            } as HoverPerson;
+          })
+          .filter((row: HoverPerson) => Boolean(row.name));
+        this.feedReactionUsersCache[key] = people.slice(0, 8);
+        this.feedReactionHoverCache[key] = people.length
+          ? people.slice(0, 8).map((row) => row.name).join(', ')
           : 'No reactions yet';
         this.cdr.detectChanges();
       },
       error: () => {
+        this.feedReactionUsersCache[key] = [];
         this.feedReactionHoverCache[key] = 'Reaction details unavailable';
       },
     });
@@ -1961,6 +2327,70 @@ export class CommunicationComponent
     const element = document.createElement('div');
     element.innerHTML = source || '';
     return (element.textContent || element.innerText || '').trim();
+  }
+
+  private linkifyPlainText(source: string, className: string): string {
+    const escaped = this.escapeHtml(source || '');
+    return escaped
+      .replace(FEED_URL_REGEX, (rawUrl) => {
+        const normalized = this.normalizePreviewUrl(rawUrl);
+        const safeLabel = this.escapeHtml(rawUrl);
+        return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="${className}">${safeLabel}</a>`;
+      })
+      .replace(/\n/g, '<br>');
+  }
+
+  private linkifyHtmlText(source: string, className: string): string {
+    if (!source || typeof document === 'undefined') {
+      return source || '';
+    }
+    const root = document.createElement('div');
+    root.innerHTML = source;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+      if (current.parentElement?.tagName !== 'A') {
+        nodes.push(current as Text);
+      }
+      current = walker.nextNode();
+    }
+    for (const node of nodes) {
+      const text = node.textContent || '';
+      if (!FEED_URL_REGEX.test(text)) continue;
+      FEED_URL_REGEX.lastIndex = 0;
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+      text.replace(FEED_URL_REGEX, (rawUrl, _a, _b, offset: number) => {
+        if (offset > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+        }
+        const anchor = document.createElement('a');
+        anchor.href = this.normalizePreviewUrl(rawUrl);
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.className = className;
+        anchor.textContent = rawUrl;
+        fragment.appendChild(anchor);
+        lastIndex = offset + rawUrl.length;
+        return rawUrl;
+      });
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      node.parentNode?.replaceChild(fragment, node);
+      FEED_URL_REGEX.lastIndex = 0;
+    }
+    return root.innerHTML;
+  }
+
+  private escapeHtml(value: string): string {
+    return (value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private linkPreviewFromText(source: string): FeedLinkPreview | null {
@@ -2009,6 +2439,28 @@ export class CommunicationComponent
           subtitle: 'Direct video link',
           thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
           kind: 'video',
+        };
+      }
+      const pdfMatch = parsed.pathname.match(/\.pdf$/i);
+      if (pdfMatch) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: this.previewFileName(parsed.pathname) || hostname,
+          subtitle: 'PDF document',
+          thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
+          kind: 'website',
+        };
+      }
+      const officeMatch = parsed.pathname.match(/\.(docx?|pptx?|xlsx?)$/i);
+      if (officeMatch) {
+        return {
+          url: normalized,
+          displayUrl,
+          title: this.previewFileName(parsed.pathname) || hostname,
+          subtitle: 'Office document',
+          thumbnailUrl: `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(parsed.origin)}`,
+          kind: 'website',
         };
       }
       return {
@@ -2098,9 +2550,8 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
-      if (this.workspaceMode === 'chat' && this.activeChannelId) {
-        const ch = this.activeChannel;
-        if (ch) this.subscribeToChannel(ch.backendId);
+      for (const ch of this.channels) {
+        this.subscribeToChannel(ch.backendId);
       }
       for (const dm of this.dmContacts) {
         if (dm.dmChannelId) this.subscribeToDmChannel(dm);
@@ -2136,6 +2587,12 @@ export class CommunicationComponent
       } catch (_) {}
       this.channelPresenceSub = null;
     }
+    this.channelMessageSubs.forEach((s) => {
+      try {
+        s.unsubscribe();
+      } catch (_) {}
+    });
+    this.channelMessageSubs.clear();
     this.dmChannelSubs.forEach((s) => {
       try {
         s.unsubscribe();
@@ -2152,43 +2609,52 @@ export class CommunicationComponent
 
   private subscribeToChannel(channelId: number): void {
     if (!this.stompClient || !this.wsConnected) return;
-    if (this.channelSub) {
-      try {
-        this.channelSub.unsubscribe();
-      } catch (_) {}
+    if (!this.channelMessageSubs.has(channelId)) {
+      const sub = this.stompClient.subscribe(
+        `/topic/collab/chat/channel/${channelId}`,
+        (frame: any) => {
+          const ch = this.channels.find((c) => c.backendId === channelId);
+          if (!ch) return;
+          let senderUserId: number | null = null;
+          try {
+            const body = JSON.parse(frame.body || '{}');
+            senderUserId = Number(body.senderUserId ?? body.userId ?? null);
+          } catch (_) {}
+          const isOwnMessage =
+            senderUserId !== null && senderUserId === this.me.userId;
+
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || ch.name,
+              body: incoming.content || `New message in ${ch.name}`,
+              avatarUrl: incoming.avatarUrl,
+              tone: 'channel',
+              channelId: ch.id,
+            });
+          }
+
+          if (ch.id !== this.activeChannelId) {
+            if (!isOwnMessage) {
+              ch.unreadCount = (ch.unreadCount || 0) + 1;
+              ch.hasUnread = true;
+              this.playNotificationSound();
+            }
+            this.syncHeaderState();
+            this.cdr.detectChanges();
+          } else {
+            this.reconcileChannelMessages(ch, frame.body);
+          }
+        },
+      );
+      this.channelMessageSubs.set(channelId, sub);
     }
+
     if (this.channelPresenceSub) {
       try {
         this.channelPresenceSub.unsubscribe();
       } catch (_) {}
     }
-
-    this.channelSub = this.stompClient.subscribe(
-      `/topic/collab/chat/channel/${channelId}`,
-      (frame: any) => {
-        const ch = this.channels.find((c) => c.backendId === channelId);
-        if (!ch) return;
-        let senderUserId: number | null = null;
-        try {
-          const body = JSON.parse(frame.body || '{}');
-          senderUserId = Number(body.senderUserId ?? body.userId ?? null);
-        } catch (_) {}
-        const isOwnMessage =
-          senderUserId !== null && senderUserId === this.me.userId;
-
-        if (ch.id !== this.activeChannelId) {
-          if (!isOwnMessage) {
-            ch.unreadCount = (ch.unreadCount || 0) + 1;
-            ch.hasUnread = true;
-            this.playNotificationSound();
-          }
-          this.syncHeaderState();
-          this.cdr.detectChanges();
-        } else {
-          this.reconcileChannelMessages(ch, frame.body);
-        }
-      },
-    );
 
     this.channelPresenceSub = this.stompClient.subscribe(
       `/topic/collab/chat/presence/channel/${channelId}`,
@@ -2222,6 +2688,16 @@ export class CommunicationComponent
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || contact.fullName,
+              body: incoming.content || `New direct message from ${contact.fullName}`,
+              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+              tone: 'dm',
+              dmId: contact.id,
+            });
+          }
           if (contact.id !== this.activeDmId) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
@@ -2602,6 +3078,7 @@ export class CommunicationComponent
     const userId = Number(sessionStorage.getItem('userid') || 0);
     if (!userId) return;
     this.me.userId = userId;
+    this.restoreViewedFeedPostIds();
     this.collabService.getEmployeeByUserId(userId).subscribe({
       next: (emp) => {
         const first = emp.firstName || '',
@@ -2738,6 +3215,7 @@ export class CommunicationComponent
             }
             this.syncHeaderState();
             this.employeesLoading = false;
+            this.replayQueuedNotificationTarget();
             this.cdr.detectChanges();
           },
           error: () => {
@@ -2755,11 +3233,13 @@ export class CommunicationComponent
                 }
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
               error: () => {
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
             });
@@ -2814,6 +3294,27 @@ export class CommunicationComponent
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.mapDirectMessageChannels(list);
+    const allowedIds = new Set(
+      list
+        .filter((c) => {
+          if (c.channelType !== 'PRIVATE') return true;
+          const desc = (c.description || '').toLowerCase();
+          const name = (c.name || '').toLowerCase();
+          return !(
+            desc.startsWith('dm between') ||
+            desc.startsWith('direct chat') ||
+            name.match(/^dm-\d+-\d+$/) !== null
+          );
+        })
+        .map((c) => Number(c.channelId ?? c.id)),
+    );
+    this.channelMessageSubs.forEach((sub, channelId) => {
+      if (allowedIds.has(channelId)) return;
+      try {
+        sub.unsubscribe();
+      } catch (_) {}
+      this.channelMessageSubs.delete(channelId);
+    });
     this.channels = list
       .filter((c) => {
         if (c.channelType !== 'PRIVATE') return true;
@@ -2842,6 +3343,9 @@ export class CommunicationComponent
           unreadCount: unreadCount > 0 ? unreadCount : undefined,
         };
       });
+    if (this.wsConnected) {
+      this.channels.forEach((channel) => this.subscribeToChannel(channel.backendId));
+    }
     this.channelsLoading = false;
     if (
       this.channels.length > 0 &&
@@ -2852,6 +3356,7 @@ export class CommunicationComponent
     )
       this.selectChannel(this.channels[0].id);
     this.syncHeaderState();
+    this.replayQueuedNotificationTarget();
     this.cdr.detectChanges();
   }
 
@@ -3284,6 +3789,7 @@ export class CommunicationComponent
         this.collabService
           .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
+        this.startConversationSync();
         this.cdr.detectChanges();
       } else {
         this.loadChannelMessages(ch);
@@ -3310,6 +3816,7 @@ export class CommunicationComponent
     this.syncHeaderState();
     this.messagesLoading = true;
     this.scrollToLatestMessageSoon();
+    this.startConversationSync();
     this.cdr.detectChanges();
     this.getOrCreateDmChannel(contact);
   }
@@ -3317,6 +3824,7 @@ export class CommunicationComponent
   setView(v: 'threads'): void {
     this.workspaceMode = 'chat';
     this.activeView = v;
+    this.stopConversationSync();
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
     this.selectedThreadMsg = null;
@@ -3590,11 +4098,11 @@ export class CommunicationComponent
       };
       if (attList.length) {
         const mappedAttachments = attList.map((att) => ({
-          name: att.fileName,
+          name: att.fileName || att.originalFileName || att.name || 'Attachment',
           size: att.fileSize ? formatFileSize(att.fileSize) : '',
           type: this.normalizeAttachmentType(
             att.contentType,
-            att.fileName || att.downloadUrl,
+            att.fileName || att.originalFileName || att.name || att.downloadUrl,
           ),
           downloadUrl: att.downloadUrl,
           previewUrl: this.resolveAttachmentPreviewUrl(att),
@@ -3749,6 +4257,38 @@ export class CommunicationComponent
     }
   }
 
+  private startConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      return;
+    }
+    this.conversationSyncTimer = setInterval(() => {
+      this.syncActiveConversationState();
+    }, 5000);
+  }
+
+  private stopConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      clearInterval(this.conversationSyncTimer);
+      this.conversationSyncTimer = null;
+    }
+  }
+
+  private syncActiveConversationState(): void {
+    if (this.workspaceMode !== 'chat') {
+      return;
+    }
+    if (this.activeView === 'channel' && this.activeChannel) {
+      this.fetchAndReconcileChannel(this.activeChannel);
+      return;
+    }
+    if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      this.fetchAndReconcileDm(
+        this.activeDmContact,
+        this.activeDmContact.dmChannelId,
+      );
+    }
+  }
+
   private ensureChatBootstrap(): void {
     this.chatResourcesLoaded = true;
     this.startPresencePoll();
@@ -3892,6 +4432,8 @@ export class CommunicationComponent
     const capturedFiles = [...this.pendingFiles];
     const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
     this.draft = '';
+    this.chatMentionResults = [];
+    this.chatShowMentionMenu = false;
     this.pendingFiles = [];
     this.pendingAttachments = [];
     this.scrollFeed = true;
@@ -3956,6 +4498,8 @@ export class CommunicationComponent
     const capturedFiles = [...this.pendingFiles];
     const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
     this.draft = '';
+    this.chatMentionResults = [];
+    this.chatShowMentionMenu = false;
     this.pendingFiles = [];
     this.pendingAttachments = [];
     this.scrollFeed = true;
@@ -4298,6 +4842,7 @@ export class CommunicationComponent
     this.activeThreadId = msg.id;
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
+    this.clearThreadPendingAttachments();
     this.scrollThread = true;
     this.cdr.detectChanges();
   }
@@ -4305,18 +4850,22 @@ export class CommunicationComponent
   closeThread(): void {
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
+    this.threadReplyDraft = '';
+    this.clearThreadPendingAttachments();
   }
 
   setThreadReplyTarget(payload: { reply: Message; event?: Event }): void {
     payload.event?.stopPropagation();
     this.activeThreadReplyToId = payload.reply.id;
     this.threadReplyDraft = '';
+    this.clearThreadPendingAttachments();
     this.cdr.detectChanges();
   }
 
   clearThreadReplyTarget(): void {
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
+    this.clearThreadPendingAttachments();
     this.cdr.detectChanges();
   }
 
@@ -5274,6 +5823,27 @@ export class CommunicationComponent
     ).length;
   }
 
+  getReadUsers(msg: Message): string[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => this.userDirectory[uid] || `User ${uid}`);
+  }
+
+  getReadUserCards(msg: Message): HoverPerson[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => {
+        const name = this.userDirectory[uid] || `User ${uid}`;
+        return {
+          name,
+          avatarUrl: this.userAvatarCache[uid],
+          initials: initialsFrom(name),
+        } as HoverPerson;
+      });
+  }
+
   findMsgInTree(messages: Message[], id: string): Message | null {
     for (const m of messages) {
       if (m.id === id) return m;
@@ -5347,6 +5917,8 @@ export class CommunicationComponent
 
   closeSelectedThread(): void {
     this.selectedThreadMsg = null;
+    this.threadReplyDraft = '';
+    this.clearThreadPendingAttachments();
     this.cdr.detectChanges();
   }
 
@@ -5361,7 +5933,7 @@ export class CommunicationComponent
   sendThreadReply(): void {
     const text = this.threadReplyDraft.trim(),
       rootMsg = this.selectedThreadMsg;
-    if (!text || !rootMsg || this.sendingReply) return;
+    if ((!text && !this.threadPendingAttachments.length) || !rootMsg || this.sendingReply) return;
 
     const channelId = this.getChannelIdForMsg(rootMsg);
     const ch = this.channels.find((c) => c.id === channelId);
@@ -5372,22 +5944,29 @@ export class CommunicationComponent
         )
       : null;
     const backendChId = ch?.backendId ?? dmContact?.dmChannelId;
+    const outboundContent =
+      text || this.attachmentsPlaceholderText(this.threadPendingAttachments);
 
     if (!backendChId || !rootMsg.backendId) {
-      rootMsg.replies.push(this.makeLocalMsg(text));
+      rootMsg.replies.push(this.makeLocalMsg(outboundContent, this.threadPendingAttachments));
       this.threadReplyDraft = '';
+      this.clearThreadPendingAttachments();
       this.selectedThreadMsg = { ...rootMsg };
       this.cdr.detectChanges();
       return;
     }
 
     this.sendingReply = true;
-    const optimistic = this.makeLocalMsg(text);
+    const optimistic = this.makeLocalMsg(outboundContent, this.threadPendingAttachments);
     optimistic.replyToMessageId = rootMsg.backendId;
     optimistic.threadRootMessageId = rootMsg.backendId;
     rootMsg.replies = [...rootMsg.replies, optimistic];
     this.selectedThreadMsg = { ...rootMsg, replies: rootMsg.replies };
+    const capturedFiles = [...this.threadPendingFiles];
+    const capturedAttachments = this.threadPendingAttachments.map((item) => ({ ...item }));
     this.threadReplyDraft = '';
+    this.threadPendingFiles = [];
+    this.threadPendingAttachments = [];
     this.scrollThread = true;
     this.cdr.detectChanges();
 
@@ -5395,7 +5974,7 @@ export class CommunicationComponent
       .sendMessage({
         channelId: backendChId,
         senderUserId: this.me.userId,
-        content: text,
+        content: outboundContent,
         messageType: 'TEXT',
         replyToMessageId: rootMsg.backendId,
         threadRootMessageId: rootMsg.backendId,
@@ -5405,6 +5984,20 @@ export class CommunicationComponent
           optimistic.backendId = saved.id;
           optimistic.id = `backend-${saved.id}`;
           this.sendingReply = false;
+          if (capturedFiles.length && capturedAttachments.length) {
+            const fakeCh: Channel = {
+              id: ch?.id || `thread-${backendChId}`,
+              backendId: backendChId,
+              name: ch?.name || dmContact?.fullName || '',
+            };
+            this.uploadAttachmentsForMessage(
+              fakeCh,
+              saved.id,
+              capturedFiles,
+              capturedAttachments,
+              optimistic,
+            );
+          }
           this.cdr.detectChanges();
         },
         error: () => {
@@ -5414,6 +6007,38 @@ export class CommunicationComponent
           this.cdr.detectChanges();
         },
       });
+  }
+
+  onThreadFilesSelected(files: File[]): void {
+    for (const file of files) {
+      this.threadPendingFiles.push(file);
+      this.threadPendingAttachments.push({
+        name: file.name,
+        size: formatFileSize(file.size),
+        type: this.normalizeAttachmentType(file.type, file.name),
+        previewUrl: this.isImageType(file.type) ? URL.createObjectURL(file) : undefined,
+      });
+    }
+    this.cdr.detectChanges();
+  }
+
+  removeThreadPendingAttachment(index: number): void {
+    const [removed] = this.threadPendingAttachments.splice(index, 1);
+    this.threadPendingFiles.splice(index, 1);
+    if (removed?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(removed.previewUrl);
+    }
+    this.cdr.detectChanges();
+  }
+
+  private clearThreadPendingAttachments(): void {
+    this.threadPendingAttachments.forEach((attachment) => {
+      if (attachment.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(attachment.previewUrl);
+      }
+    });
+    this.threadPendingFiles = [];
+    this.threadPendingAttachments = [];
   }
 
   getChannelIdForMsg(msg: Message): string {
@@ -5550,10 +6175,34 @@ export class CommunicationComponent
   }
 
   private normalizeAttachmentType(contentType?: string, fileName?: string): string {
-    if (contentType) return contentType;
+    if (contentType && contentType !== 'application/octet-stream') return contentType;
     const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
     if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
       return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    }
+    if (['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v'].includes(ext)) {
+      return `video/${ext === 'mov' ? 'quicktime' : ext}`;
+    }
+    if (ext === 'pdf') {
+      return 'application/pdf';
+    }
+    if (ext === 'doc') {
+      return 'application/msword';
+    }
+    if (ext === 'docx') {
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
+    if (ext === 'ppt') {
+      return 'application/vnd.ms-powerpoint';
+    }
+    if (ext === 'pptx') {
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    }
+    if (ext === 'xls') {
+      return 'application/vnd.ms-excel';
+    }
+    if (ext === 'xlsx') {
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
     return 'application/octet-stream';
   }

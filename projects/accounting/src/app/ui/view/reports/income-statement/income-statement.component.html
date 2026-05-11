@@ -28,6 +28,19 @@
     (filtersApplied)="onFiltersApplied($event)">
   </app-income-statement-filter>
 
+  <div class="status-banner error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    <p>Loading income statement for the selected period...</p>
+  </div>
+
+  <div class="empty-card" *ngIf="!loading && !errorMessage && !data">
+    <h3>No data</h3>
+    <p>No income statement data is available for this period.</p>
+  </div>
+
   <!-- Comments Modal -->
   <div class="modal-overlay" *ngIf="showCommentsModal">
     <div class="modal">

@@ -188,15 +188,15 @@ export class AccountingService {
   }
 
   getAccountingTransactions(): Observable<AccountingTransactionDTO[]> {
-    return this.getCollection<AccountingTransactionDTO>('/transactions');
+    return this.getCollection<AccountingTransactionDTO>('/transactions?page=1&size=1000');
   }
 
   getJournalEntries(): Observable<JournalEntryDTO[]> {
-    return this.getCollection<JournalEntryDTO>('/journal-entries');
+    return this.getCollection<JournalEntryDTO>('/journal-entries?page=1&size=1000');
   }
 
   getJournalEntryLines(): Observable<JournalEntryLineDTO[]> {
-    return this.getCollection<JournalEntryLineDTO>('/journal-entry-lines');
+    return this.getCollection<JournalEntryLineDTO>('/journal-entry-lines?page=1&size=1000');
   }
 
   getLedgerEntries(): Observable<LedgerEntryRaw[]> {
@@ -318,8 +318,8 @@ export class AccountingService {
       || '';
 
     return {
-      periodStart: overrides?.periodStart ?? start.toISOString(),
-      periodEnd: overrides?.periodEnd ?? end.toISOString(),
+      periodStart: this.normalizeBackendLocalDateTime(overrides?.periodStart, start),
+      periodEnd: this.normalizeBackendLocalDateTime(overrides?.periodEnd, end),
       reportPeriodType,
       entityId,
       sourceModules: overrides?.sourceModules ?? this.defaultSourceModules(),
@@ -347,6 +347,32 @@ export class AccountingService {
       start: new Date(period.getFullYear(), period.getMonth(), 1, 0, 0, 0, 0),
       end: new Date(period.getFullYear(), period.getMonth() + 1, 0, 23, 59, 59, 999),
     };
+  }
+
+  private normalizeBackendLocalDateTime(value: string | undefined, fallback: Date): string {
+    if (!value) {
+      return this.toBackendLocalDateTime(fallback);
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return `${value}T00:00:00.000`;
+    }
+
+    return value
+      .replace(/Z$/, '')
+      .replace(/([+-]\d{2}:\d{2})$/, '');
+  }
+
+  private toBackendLocalDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
   private traceOutgoing(method: string, path: string, payload?: unknown): void {

@@ -22,7 +22,13 @@ export class AuthInterceptor implements HttpInterceptor {
         //     return next.handle(request);
         // }
     intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        const accessToken = sessionStorage.getItem('Token');
+        const accessToken =
+            sessionStorage.getItem('Token') ||
+            sessionStorage.getItem('token') ||
+            localStorage.getItem('Token') ||
+            localStorage.getItem('Token2') ||
+            localStorage.getItem('token') ||
+            '';
 
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');

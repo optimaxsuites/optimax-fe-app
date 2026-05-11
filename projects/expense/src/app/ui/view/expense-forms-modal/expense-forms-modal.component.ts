@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ExpenseService } from '../../service/expense.service';
+import { ExpenseLineItemDTO, ExpenseService } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { NgForm } from '@angular/forms';
@@ -10,7 +10,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthenticationService } from '../../sharedComponent/service/auth-service/authentication.service';
 import { EmailService } from '../../sharedComponent/service/email.service';
 import { Subject, Observable, of } from 'rxjs';
-import { debounceTime, catchError, map } from 'rxjs/operators';
+import { debounceTime, catchError, map, switchMap } from 'rxjs/operators';
 import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment.model';
 import { RecurringPaymentModalComponent } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component';
 import { BillSplit, BillSplitParticipant } from '../../sharedComponent/view/bill-splitting-modal/bill-splitting.model';
@@ -47,7 +47,7 @@ const MONTHLY_EXPENSE_LIMIT = 20;
 export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   // ─── Form state───────────────────
-  expenseSummary: any = { amount: null, quantity: 1, paidBy: 'COMPANY' };
+  expenseSummary: any = { amount: null, quantity: 1, paidBy: 'COMPANY', lineItems: [] as ExpenseLineItemDTO[] };
   isDragging  = false;
   currentStage = 'to-submit';
   productData: any = {};
@@ -106,12 +106,14 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   scanState: 'idle' | 'scanning' | 'preview' | 'error' = 'idle';
   scannedData: ScannedReceiptData | null = null;
+  appliedScanPreview: ScannedReceiptData | null = null;
   scanError = '';
   barcodeMode: 'idle' | 'active' = 'idle';
   barcodeScanValue = '';
   highlightedFields: Set<string> = new Set();
   scanProgress = 0;
   private scanProgressInterval: any = null;
+  private scannedReceiptFile: File | null = null;
 
   @ViewChild('barcodeScannerInput') barcodeScannerInput?: ElementRef<HTMLInputElement>;
 
@@ -149,6 +151,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.revokeAllPreviews();
+    this.receiptScanner.terminateWorker().catch(() => {});
     if (this.scanProgressInterval) clearInterval(this.scanProgressInterval);
   }
 
@@ -316,6 +319,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.scanState    = 'scanning';
     this.scanError    = '';
     this.scannedData  = null;
+    this.scannedReceiptFile = file;
     this.scanProgress = 0;
 
     // Animate the progress bar while Tesseract works (it doesn't emit granular events)
@@ -336,8 +340,8 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.scannedData  = data;
-      this.scanState    = 'preview';
+    this.scannedData  = data;
+    this.scanState    = 'preview';
 
       // Show any partial-data warnings as toasts
       data.warnings.forEach(w =>
@@ -359,6 +363,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     if (!this.scannedData) return;
 
     const d = this.scannedData;
+    this.appliedScanPreview = d;
     this.highlightedFields.clear();
 
     // ── Expense name (= merchant name from receipt) ───────────────────────
@@ -367,11 +372,24 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.highlightedFields.add('name');
     }
 
-    // ── Description (all line items, one per line) ────────────────────────
-    if (d.description) {
-      this.expenseSummary.description = d.description;
-      this.highlightedFields.add('description');
-    }
+    const scannedLineItems = d.lineItems.length > 0
+      ? d.lineItems.map(item => this.normalizeExpenseLineItem({
+          name: item.name,
+          quantity: item.qty || 1,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+        }))
+      : [this.normalizeExpenseLineItem({
+          name: d.merchantName || d.expenseName || 'Receipt item',
+          quantity: d.quantity || 1,
+          unitPrice: this.roundCurrency((d.amount ?? d.subTotal ?? 0) / Math.max(d.quantity || 1, 1)),
+          totalPrice: d.amount ?? d.subTotal ?? 0,
+        })];
+
+    this.expenseSummary.lineItems = scannedLineItems;
+    this.syncLineItemSummary();
+    this.highlightedFields.add('lineItems');
+    this.highlightedFields.add('quantity');
 
     // ── Amount — use tax-inclusive TOTAL as the primary amount ────────────
     // If no total was found but subtotal was, use subtotal as fallback
@@ -380,14 +398,6 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.expenseSummary.amount = amountToFill;
       this.amountMode = 'total';
       this.highlightedFields.add('amount');
-    }
-
-    // ── Quantity = number of distinct items on the receipt ────────────────
-    // Maps to the "Quantity" input on the form.
-    // If only 1 item (or no items detected), leave as the existing value.
-    if (d.quantity !== null && d.quantity > 1) {
-      this.expenseSummary.quantity = d.quantity;
-      this.highlightedFields.add('quantity');
     }
 
     // ── Tax ───────────────────────────────────────────────────────────────
@@ -444,6 +454,11 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       this.highlightedFields.add('eventDate');
     }
 
+    if (this.scannedReceiptFile) {
+      this.replaceFiles('receipt', this.scannedReceiptFile);
+      this.highlightedFields.add('receipt');
+    }
+
     // ── Merchant — fuzzy-match against loaded merchants list ──────────────
     if (d.merchantName) {
       const matched = this._matchMerchant(d.merchantName);
@@ -467,6 +482,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     // ── Reset scanner state ─────────────────────────────────────────────────
     this.scanState   = 'idle';
     this.scannedData = null;
+    this.scannedReceiptFile = null;
 
     this.messageService.add({
       severity: 'success',
@@ -498,6 +514,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.scanState   = 'idle';
     this.scannedData = null;
     this.scanError   = '';
+    this.scannedReceiptFile = null;
     this.scanProgress = 0;
     if (this.scanProgressInterval) clearInterval(this.scanProgressInterval);
   }
@@ -528,6 +545,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   private notifyAdmins(
     submitterName: string,
+    expenseId:     number | string,
     expenseName:   string,
     amount:        number,
     currency:      string,
@@ -539,7 +557,7 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
         approvers.forEach(approver => {
           if (!approver.email || approver.email.toLowerCase() === submitterEmail.toLowerCase()) return;
           this.emailService
-            .sendExpenseSubmissionAlert(submitterName, approver.email, expenseName, amount, currency)
+            .sendExpenseSubmissionAlert(submitterName, approver.email, expenseName, expenseId, amount, currency)
             .pipe(catchError(err => { console.error(`[notifyAdmins] email failed for ${approver.email}:`, err); return of(null); }))
             .subscribe();
         });
@@ -600,6 +618,9 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
   // ─── Computed totals──────────────
   get computedTotal(): number {
+    if (this.hasLineItems()) {
+      return this.getLineItemsSubtotal();
+    }
     const amount = Number(this.expenseSummary.amount) || 0;
     const qty    = Number(this.expenseSummary.quantity) || 1;
     return this.amountMode === 'per_item' ? amount * qty : amount;
@@ -608,6 +629,24 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   get computedTotalWithTax(): number {
     const tax = Number(this.expenseSummary.taxPercentage) || 0;
     return this.computedTotal + (this.computedTotal * tax / 100);
+  }
+
+  get receiptExpectedLineItemTotal(): number | null {
+    if (!this.appliedScanPreview) return null;
+    if (this.appliedScanPreview.subTotal !== null) return this.roundCurrency(this.appliedScanPreview.subTotal);
+    if (this.appliedScanPreview.amount !== null) return this.roundCurrency(this.appliedScanPreview.amount);
+    return null;
+  }
+
+  get receiptGrandTotal(): number | null {
+    if (!this.appliedScanPreview || this.appliedScanPreview.amount === null) return null;
+    return this.roundCurrency(this.appliedScanPreview.amount);
+  }
+
+  get hasReceiptLineItemMismatch(): boolean {
+    const expected = this.receiptExpectedLineItemTotal;
+    if (expected === null) return false;
+    return Math.abs(this.computedTotal - expected) > 0.01;
   }
 
   // ─── SUBMIT───────────────────────
@@ -625,6 +664,9 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     if (!this.expenseSummary.quantity || Number(this.expenseSummary.quantity) < 1) {
       this.messageService.add({ severity: 'error', summary: 'Invalid Quantity', detail: 'Quantity must be at least 1.' }); return;
     }
+    if (!this.hasValidLineItems()) {
+      this.messageService.add({ severity: 'error', summary: 'Invalid Line Items', detail: 'Add at least one line item with quantity and prices greater than zero.' }); return;
+    }
     if (!this.expenseSummary.amount || Number(this.expenseSummary.amount) <= 0) {
       this.messageService.add({ severity: 'error', summary: 'Invalid Amount', detail: 'Amount must be greater than 0.' }); return;
     }
@@ -636,50 +678,51 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     }
 
     const selectedCategory = this.categories.find(c => c.name === this.expenseSummary.category);
-    const selectedMerchant = this.merchants.find(m => m.name === this.expenseSummary.merchant);
     const selectedTax      = this.taxRates.find(t => t.rate === this.expenseSummary.taxPercentage);
 
     if (!selectedCategory) {
       this.messageService.add({ severity: 'error', summary: 'Invalid Category', detail: `Category "${this.expenseSummary.category}" not found.` }); return;
     }
-    if (!selectedMerchant) {
-      this.messageService.add({ severity: 'error', summary: 'Invalid Merchant', detail: `Merchant "${this.expenseSummary.merchant}" not found. Please add it first.` }); return;
-    }
-
     const currentUser = this.resolveCurrentUser();
     const finalAmount = this.computedTotal;
-
-    const employeeData: any = {
-      name:               this.expenseSummary.name || '',
-      description:        this.expenseSummary.description || '',
-      eventDate:          this.expenseSummary.eventDate
-                            ? new Date(this.expenseSummary.eventDate).toISOString()
-                            : new Date().toISOString(),
-      quantity:           Number(this.expenseSummary.quantity) || 1,
-      currency:           this.selectedCurrency,
-      amount:             finalAmount,
-      status:             'PENDING',
-      paidBy:             (this.expenseSummary.paidBy || 'EMPLOYEE').toUpperCase(),
-      receiptReference:   this.expenseSummary.receiptReference || '',
-      merchantId:         selectedMerchant.id,
-      categoryId:         selectedCategory.id,
-      taxId:              selectedTax?.id ?? null,
-      scheduledPaymentId: null,
-      expenseBy:          currentUser.id,
-    };
-
-    if (this.advancedPaymentData) employeeData.recurringPayment = this.advancedPaymentData;
-    if (this.billSplitData)       employeeData.billSplit         = this.convertBillSplitToDTO(this.billSplitData);
+    const lineItems = this.normalizedLineItems();
 
     this.isSubmitting = true;
+    this.resolveMerchantForSubmission().pipe(
+      switchMap((selectedMerchant) => {
+        const employeeData: any = {
+          name:               this.expenseSummary.name || '',
+          description:        this.buildExpenseDescription(),
+          eventDate:          this.expenseSummary.eventDate
+                                ? new Date(this.expenseSummary.eventDate).toISOString()
+                                : new Date().toISOString(),
+          quantity:           this.getLineItemsQuantity(),
+          currency:           this.selectedCurrency,
+          amount:             finalAmount,
+          status:             'PENDING',
+          paidBy:             (this.expenseSummary.paidBy || 'EMPLOYEE').toUpperCase(),
+          receiptReference:   this.expenseSummary.receiptReference || '',
+          merchantId:         selectedMerchant.id,
+          categoryId:         selectedCategory.id,
+          taxId:              selectedTax?.id ?? null,
+          scheduledPaymentId: null,
+          expenseBy:          currentUser.id,
+          lineItems,
+        };
 
-    this.expenseService.addExpense(
-      employeeData,
-      this.companyReceiptFiles[0]  || undefined,
-      this.employeeReceiptFiles[0] || undefined
+        if (this.advancedPaymentData) employeeData.recurringPayment = this.advancedPaymentData;
+        if (this.billSplitData)       employeeData.billSplit         = this.convertBillSplitToDTO(this.billSplitData);
+
+        return this.expenseService.addExpense(
+          employeeData,
+          this.companyReceiptFiles[0]  || undefined,
+          this.employeeReceiptFiles[0] || undefined
+        );
+      })
     ).subscribe({
-      next: () => {
+      next: (createdExpense: any) => {
         this.isSubmitting = false;
+        this.expensesLastCreatedId = createdExpense?.id ?? null;
         this.messageService.add({
           severity: 'success',
           summary:  'Expense Submitted',
@@ -688,7 +731,8 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
 
         this.notifyAdmins(
           currentUser.fullname,
-          employeeData.name,
+          createdExpense?.id ?? 'pending',
+          createdExpense?.name || this.expenseSummary.name || '',
           finalAmount,
           this.selectedCurrency,
           currentUser.email
@@ -785,6 +829,19 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   isImageFile(f: File | null): boolean { return !!f && f.type.startsWith('image/'); }
   isPdfFile(f: File | null): boolean   { return !!f && f.type === 'application/pdf'; }
 
+  replaceFiles(type: 'receipt' | 'employeeReceipt', file: File): void {
+    if (type === 'receipt') {
+      this.companyReceiptPreviews.filter(Boolean).forEach(url => URL.revokeObjectURL(url));
+      this.companyReceiptFiles = [];
+      this.companyReceiptPreviews = [];
+    } else {
+      this.employeeReceiptPreviews.filter(Boolean).forEach(url => URL.revokeObjectURL(url));
+      this.employeeReceiptFiles = [];
+      this.employeeReceiptPreviews = [];
+    }
+    this.assignFile(file, type);
+  }
+
   private revokeAllPreviews(): void {
     [...this.companyReceiptPreviews, ...this.employeeReceiptPreviews]
       .filter(Boolean).forEach(url => URL.revokeObjectURL(url));
@@ -841,6 +898,39 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Could not save merchant.' })
     });
+  }
+
+  private expensesLastCreatedId: number | null = null;
+
+  private resolveMerchantForSubmission(): Observable<{ id: number; name: string }> {
+    const merchantName = (this.expenseSummary.merchant || '').trim();
+    const selectedMerchant = this.merchants.find(m => m.name === merchantName);
+    if (selectedMerchant) {
+      return of({ id: selectedMerchant.id, name: selectedMerchant.name });
+    }
+
+    if (!merchantName) {
+      return new Observable((subscriber) => {
+        subscriber.error(new Error('Merchant is required.'));
+      });
+    }
+
+    const payload = {
+      id: 0,
+      name: merchantName,
+      phoneNumber: this.newMerchantData.phoneNumber || '',
+      address: this.newMerchantData.address || '',
+      emailAddress: this.newMerchantData.emailAddress || '',
+      contactPersonName: this.newMerchantData.contactPersonName || '',
+    };
+
+    return this.expenseService.addMerchant(payload as any).pipe(
+      map((saved) => {
+        this.merchants = [...this.merchants, saved];
+        this.expenseSummary.merchant = saved.name;
+        return { id: saved.id, name: saved.name };
+      })
+    );
   }
 
   addNewTaxRate() {
@@ -922,8 +1012,43 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
   goBack()          { this.router.navigate(['/admin/expenses']); }
   generateId(): string { return Math.random().toString(36).substr(2, 9); }
 
+  addLineItem(): void {
+    this.expenseSummary.lineItems = [
+      ...(this.expenseSummary.lineItems || []),
+      this.normalizeExpenseLineItem({ name: '', quantity: 1, unitPrice: 0, totalPrice: 0 })
+    ];
+  }
+
+  removeLineItem(index: number): void {
+    this.expenseSummary.lineItems.splice(index, 1);
+    this.syncLineItemSummary();
+  }
+
+  updateLineItem(index: number, field: 'quantity' | 'unitPrice' | 'totalPrice', value: any): void {
+    const item = this.expenseSummary.lineItems[index];
+    if (!item) return;
+
+    const numericValue = Number(value) || 0;
+    if (field === 'quantity') {
+      item.quantity = Math.max(1, Math.round(numericValue || 1));
+    } else if (field === 'unitPrice') {
+      item.unitPrice = numericValue;
+    } else {
+      item.totalPrice = numericValue;
+      const quantity = Math.max(Number(item.quantity) || 1, 1);
+      item.unitPrice = quantity > 0 ? this.roundCurrency(numericValue / quantity) : this.roundCurrency(numericValue);
+    }
+
+    this.expenseSummary.lineItems[index] = this.normalizeExpenseLineItem(item);
+    this.syncLineItemSummary();
+  }
+
+  lineItemTrackBy(index: number): number {
+    return index;
+  }
+
   resetForm(): void {
-    this.expenseSummary = { name: '', description: '', amount: null, merchant: '', category: null, quantity: 1, taxPercentage: null, eventDate: '', paidBy: 'COMPANY' };
+    this.expenseSummary = { name: '', description: '', amount: null, merchant: '', category: null, quantity: 1, taxPercentage: null, eventDate: '', paidBy: 'COMPANY', lineItems: [] };
     this.companyReceiptFiles   = [];
     this.employeeReceiptFiles  = [];
     this.revokeAllPreviews();
@@ -932,6 +1057,8 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     this.highlightedFields.clear();
     this.scanState             = 'idle';
     this.scannedData           = null;
+    this.appliedScanPreview    = null;
+    this.scannedReceiptFile    = null;
     this.scanError             = '';
     this.scanProgress          = 0;
   }
@@ -952,5 +1079,85 @@ export class ExpenseFormsModalComponent implements OnInit, OnDestroy {
     const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
     expenses.push(expense);
     localStorage.setItem('expenses', JSON.stringify(expenses));
+  }
+
+  hasLineItems(): boolean {
+    return Array.isArray(this.expenseSummary.lineItems) && this.expenseSummary.lineItems.length > 0;
+  }
+
+  hasValidLineItems(): boolean {
+    return this.normalizedLineItems().length > 0;
+  }
+
+  getLineItemsQuantity(): number {
+    return this.normalizedLineItems()
+      .reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || 1;
+  }
+
+  getLineItemsSubtotal(): number {
+    return this.roundCurrency(
+      this.normalizedLineItems().reduce((sum, item) => sum + (Number(item.totalPrice) || 0), 0)
+    );
+  }
+
+  private normalizedLineItems(): ExpenseLineItemDTO[] {
+    return (this.expenseSummary.lineItems || [])
+      .map((item: ExpenseLineItemDTO) => this.normalizeExpenseLineItem(item))
+      .filter((item: ExpenseLineItemDTO) => item.name && item.quantity > 0 && item.unitPrice >= 0 && item.totalPrice > 0);
+  }
+
+  private syncLineItemSummary(): void {
+    this.expenseSummary.quantity = this.getLineItemsQuantity();
+    this.expenseSummary.amount = this.getLineItemsSubtotal();
+  }
+
+  private buildExpenseDescription(): string {
+    const lineSummary = this.normalizedLineItems()
+      .map(item => `${item.quantity} x ${item.name} @ ${item.unitPrice} = ${item.totalPrice}`)
+      .join('; ');
+    const notes = (this.expenseSummary.description || '').trim();
+    return [lineSummary, notes].filter(Boolean).join(' | ');
+  }
+
+  private roundCurrency(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private pushBellNotification(detail: { title: string; body: string; route?: string }): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('optimax-notification', {
+      detail: {
+        ...detail,
+        category: 'module',
+      }
+    }));
+  }
+
+  private generateExpenseRouteUuid(): string {
+    return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (char) =>
+      (Number(char) ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> Number(char) / 4).toString(16)
+    );
+  }
+
+  private normalizeExpenseLineItem(item: Partial<ExpenseLineItemDTO>): ExpenseLineItemDTO {
+    const name = (item?.name || '').trim();
+    const quantity = Math.max(1, Math.round(Number(item?.quantity) || 1));
+    const providedUnitPrice = Number(item?.unitPrice);
+    const providedTotalPrice = Number(item?.totalPrice);
+
+    const unitPrice = Number.isFinite(providedUnitPrice) && providedUnitPrice > 0
+      ? this.roundCurrency(providedUnitPrice)
+      : (Number.isFinite(providedTotalPrice) && providedTotalPrice > 0
+          ? this.roundCurrency(providedTotalPrice / quantity)
+          : 0);
+
+    const totalPrice = this.roundCurrency(quantity * unitPrice);
+
+    return {
+      name,
+      quantity,
+      unitPrice,
+      totalPrice,
+    };
   }
 }

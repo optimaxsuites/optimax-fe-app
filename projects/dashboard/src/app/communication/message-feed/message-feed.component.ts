@@ -7,6 +7,12 @@ import {
 } from '@angular/core';
 import { Message } from '../communication.component';
 
+interface HoverPersonCard {
+  name: string;
+  avatarUrl?: string;
+  initials: string;
+}
+
 // damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
@@ -21,6 +27,10 @@ export class MessageFeedComponent {
   imageViewerOpen = false;
   imageViewerItems: Array<{ url: string; label: string }> = [];
   imageViewerIndex = 0;
+  documentViewerOpen = false;
+  documentViewerTitle = '';
+  documentViewerUrl = '';
+  documentViewerType: 'pdf' | 'office' | 'file' = 'file';
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -41,6 +51,8 @@ export class MessageFeedComponent {
   @Input() myUserId = 0;
   @Input() flashId: string | null = null;
   @Input() readCountForMessage: (msg: Message) => number = () => 0;
+  @Input() readUsersForMessage: (msg: Message) => string[] = () => [];
+  @Input() readUserCardsForMessage: (msg: Message) => HoverPersonCard[] = () => [];
 
   // ── Outputs ─────────────────────────────────────────
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
@@ -139,6 +151,15 @@ export class MessageFeedComponent {
     return this.readCountForMessage(msg);
   }
 
+  readUsersLabel(msg: Message): string {
+    const users = this.readUsersForMessage(msg);
+    return users.join(', ');
+  }
+
+  readUserCards(msg: Message): HoverPersonCard[] {
+    return this.readUserCardsForMessage(msg);
+  }
+
   readReceiptLabel(msg: Message): string {
     const count = this.getReadCount(msg);
     if (count <= 0) {
@@ -169,6 +190,30 @@ export class MessageFeedComponent {
     return attachment?.previewUrl || attachment?.downloadUrl || '';
   }
 
+  isPdfAttachment(attachment: Message['attachment'] | undefined): boolean {
+    const type = (attachment?.type || '').toLowerCase();
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`;
+    return type === 'application/pdf' || /\.pdf(\?|$)/i.test(fileRef);
+  }
+
+  isOfficeAttachment(attachment: Message['attachment'] | undefined): boolean {
+    const fileRef = `${attachment?.name || ''} ${attachment?.downloadUrl || ''}`.toLowerCase();
+    return (
+      /\.docx?(\?|$)/i.test(fileRef) ||
+      /\.pptx?(\?|$)/i.test(fileRef) ||
+      /\.xlsx?(\?|$)/i.test(fileRef)
+    );
+  }
+
+  attachmentBadge(attachment: Message['attachment'] | undefined): string {
+    const fileRef = `${attachment?.name || ''}`.toLowerCase();
+    if (fileRef.endsWith('.doc') || fileRef.endsWith('.docx')) return 'DOCX';
+    if (fileRef.endsWith('.ppt') || fileRef.endsWith('.pptx')) return 'PPTX';
+    if (fileRef.endsWith('.xls') || fileRef.endsWith('.xlsx')) return 'XLSX';
+    if (fileRef.endsWith('.pdf')) return 'PDF';
+    return 'FILE';
+  }
+
   messageAttachments(msg: Message): NonNullable<Message['attachments']> {
     if (msg.attachments?.length) {
       return msg.attachments;
@@ -185,6 +230,18 @@ export class MessageFeedComponent {
   nonImageAttachments(msg: Message): NonNullable<Message['attachments']> {
     return this.messageAttachments(msg).filter(
       (attachment) => !this.isImageAttachment(attachment),
+    );
+  }
+
+  previewableDocumentAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.nonImageAttachments(msg).filter((attachment) =>
+      this.isPdfAttachment(attachment) || this.isOfficeAttachment(attachment),
+    );
+  }
+
+  genericAttachments(msg: Message): NonNullable<Message['attachments']> {
+    return this.nonImageAttachments(msg).filter(
+      (attachment) => !this.isPdfAttachment(attachment) && !this.isOfficeAttachment(attachment),
     );
   }
 
@@ -238,6 +295,26 @@ export class MessageFeedComponent {
 
   currentViewerImage(): { url: string; label: string } | null {
     return this.imageViewerItems[this.imageViewerIndex] || null;
+  }
+
+  openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): void {
+    event?.stopPropagation();
+    if (!attachment) return;
+    this.documentViewerTitle = attachment.name || 'Document preview';
+    this.documentViewerUrl = attachment.downloadUrl || '';
+    this.documentViewerType = this.isPdfAttachment(attachment)
+      ? 'pdf'
+      : this.isOfficeAttachment(attachment)
+        ? 'office'
+        : 'file';
+    this.documentViewerOpen = true;
+  }
+
+  closeDocumentViewer(): void {
+    this.documentViewerOpen = false;
+    this.documentViewerTitle = '';
+    this.documentViewerUrl = '';
+    this.documentViewerType = 'file';
   }
 
   messageImageItems(msg: Message): Array<{ url: string; label: string }> {
@@ -306,7 +383,10 @@ export class MessageFeedComponent {
     return this.structuredMessageDisplay(msg)
       .split('\n')
       .map((line, index) => {
-        const safeLine = this.highlightStructuredLine(line || ' ', kind);
+        const safeLine = this.linkifyHtmlText(
+          this.highlightStructuredLine(line || ' ', kind),
+          'chat-link',
+        );
         return `<span class="message-output-line"><em class="message-output-line-number">${index + 1}</em><span class="message-output-line-value">${safeLine}</span></span>`;
       })
       .join('');
@@ -507,6 +587,50 @@ export class MessageFeedComponent {
       '<span class="token token-number">$1</span>',
     );
     return html;
+  }
+
+  private linkifyHtmlText(html: string, className: string): string {
+    if (!html || typeof document === 'undefined') {
+      return html;
+    }
+    const root = document.createElement('div');
+    root.innerHTML = html;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let current = walker.nextNode();
+    while (current) {
+      if (current.parentElement?.tagName !== 'A') {
+        textNodes.push(current as Text);
+      }
+      current = walker.nextNode();
+    }
+    for (const node of textNodes) {
+      const text = node.textContent || '';
+      if (!this.urlRegex.test(text)) continue;
+      this.urlRegex.lastIndex = 0;
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+      text.replace(this.urlRegex, (rawUrl, _g1, _g2, offset: number) => {
+        if (offset > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+        }
+        const anchor = document.createElement('a');
+        anchor.href = this.normalizePreviewUrl(rawUrl);
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.className = className;
+        anchor.textContent = rawUrl;
+        fragment.appendChild(anchor);
+        lastIndex = offset + rawUrl.length;
+        return rawUrl;
+      });
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      node.parentNode?.replaceChild(fragment, node);
+      this.urlRegex.lastIndex = 0;
+    }
+    return root.innerHTML;
   }
 
   private codeFenceMatch(content: string): RegExpMatchArray | null {
