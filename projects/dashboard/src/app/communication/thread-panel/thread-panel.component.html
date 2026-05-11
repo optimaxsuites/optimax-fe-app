@@ -210,6 +210,31 @@
 </div>
 </ng-container>
 
+<div
+  *ngIf="activeMentionProfile && mentionCardPosition"
+  class="mention-profile-card"
+  [style.top.px]="mentionCardPosition.top"
+  [style.left.px]="mentionCardPosition.left"
+  (mouseenter)="$event.stopPropagation()"
+  (mouseleave)="closeMentionCard()"
+>
+  <div class="mention-profile-card__avatar" [style.background]="activeMentionProfile.online ? '#0f766e' : '#334155'">
+    <img *ngIf="activeMentionProfile.avatarUrl" [src]="activeMentionProfile.avatarUrl" alt="" />
+    <span *ngIf="!activeMentionProfile.avatarUrl">{{ activeMentionProfile.initials }}</span>
+  </div>
+  <div class="mention-profile-card__copy">
+    <div class="mention-profile-card__topline">
+      <strong>{{ activeMentionProfile.name }}</strong>
+      <span [class.online]="activeMentionProfile.online">{{ activeMentionProfile.online ? 'Online' : 'Offline' }}</span>
+    </div>
+    <p *ngIf="activeMentionProfile.jobTitle || activeMentionProfile.department">
+      {{ activeMentionProfile.jobTitle || 'Team member' }}<span *ngIf="activeMentionProfile.department"> · {{ activeMentionProfile.department }}</span>
+    </p>
+    <p *ngIf="activeMentionProfile.email">{{ activeMentionProfile.email }}</p>
+    <small>{{ activeMentionProfile.lastSeenLabel }}</small>
+  </div>
+</div>
+
 <!-- ══════════════  PINNED MESSAGES  ══════════════ -->
 <ng-container *ngIf="mode === 'pinned'">
   <div class="thread-panel-shell flex flex-col h-full overflow-hidden">
@@ -248,7 +273,7 @@
         <span class="text-[14px] font-medium text-gray-800 flex-1 min-w-0 truncate">{{ msg.author }}</span>
         <span class="text-[12px] text-gray-400 flex-shrink-0">{{ msg.time }}</span>
       </div>
-      <div class="text-[14px] text-gray-700 leading-relaxed break-words thread-message-copy" [innerHTML]="messageHtml(msg.content)"></div>
+      <div class="text-[14px] text-gray-700 leading-relaxed break-words thread-message-copy" (click)="onRenderedContentClick($event)" (mouseover)="onRenderedContentHover($event)" (mouseout)="onRenderedContentLeave($event)" [innerHTML]="messageHtml(msg.content)"></div>
       <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
         <button
           (click)="pinnedUnpin.emit({ msg, event: $event })"
@@ -305,7 +330,7 @@
             <span class="text-[15px] font-medium text-gray-800">{{ activeThread.author }}</span>
             <span class="text-[12px] text-gray-400">{{ activeThread.time }}</span>
           </div>
-          <div class="thread-message-copy text-[14px] text-gray-700 leading-relaxed" [innerHTML]="messageHtml(activeThread.content)"></div>
+          <div class="thread-message-copy text-[14px] text-gray-700 leading-relaxed" (click)="onRenderedContentClick($event)" (mouseover)="onRenderedContentHover($event)" (mouseout)="onRenderedContentLeave($event)" [innerHTML]="messageHtml(activeThread.content)"></div>
           <div *ngIf="messageAttachments(activeThread).length" class="mt-3 grid gap-3">
             <div *ngIf="imageAttachments(activeThread).length" class="grid grid-cols-2 gap-3">
               <a
@@ -393,7 +418,7 @@
             </ng-container>
 
             <ng-template #replyNormal>
-              <div class="thread-message-copy text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }" [innerHTML]="messageHtml(r.content)"></div>
+              <div class="thread-message-copy text-[14px] text-gray-600 leading-relaxed" [ngClass]="{ 'opacity-40': r.deleting }" (click)="onRenderedContentClick($event)" (mouseover)="onRenderedContentHover($event)" (mouseout)="onRenderedContentLeave($event)" [innerHTML]="messageHtml(r.content)"></div>
               <div *ngIf="messageAttachments(r).length" class="mt-3 grid gap-3">
                 <div *ngIf="imageAttachments(r).length" class="grid grid-cols-2 gap-3">
                   <a
@@ -518,7 +543,7 @@
                     <span class="text-[13px] font-bold text-gray-800">{{ r2.author }}</span>
                     <span class="text-[11px] text-gray-400">{{ r2.time }}</span>
                   </div>
-                  <div class="thread-message-copy text-[13px] text-gray-600 leading-relaxed" [innerHTML]="messageHtml(r2.content)"></div>
+                  <div class="thread-message-copy text-[13px] text-gray-600 leading-relaxed" (click)="onRenderedContentClick($event)" (mouseover)="onRenderedContentHover($event)" (mouseout)="onRenderedContentLeave($event)" [innerHTML]="messageHtml(r2.content)"></div>
                   <div *ngIf="messageAttachments(r2).length" class="mt-2 grid gap-2">
                     <div *ngIf="imageAttachments(r2).length" class="grid grid-cols-2 gap-2">
                       <a

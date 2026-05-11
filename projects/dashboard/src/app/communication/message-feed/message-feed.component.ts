@@ -13,6 +13,23 @@ interface HoverPersonCard {
   initials: string;
 }
 
+interface MentionCandidate {
+  userId: number;
+  label: string;
+}
+
+interface MentionProfileCard {
+  userId: number;
+  name: string;
+  email?: string;
+  jobTitle?: string;
+  department?: string;
+  avatarUrl?: string;
+  initials: string;
+  online: boolean;
+  lastSeenLabel: string;
+}
+
 // damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
@@ -24,6 +41,7 @@ export class MessageFeedComponent {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly codeKeywordRegex =
     /\b(const|let|var|function|class|interface|type|return|import|export|public|private|protected|if|else|for|while|switch|case|try|catch)\b/;
+  private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   imageViewerOpen = false;
   imageViewerItems: Array<{ url: string; label: string }> = [];
   imageViewerIndex = 0;
@@ -53,6 +71,8 @@ export class MessageFeedComponent {
   @Input() readCountForMessage: (msg: Message) => number = () => 0;
   @Input() readUsersForMessage: (msg: Message) => string[] = () => [];
   @Input() readUserCardsForMessage: (msg: Message) => HoverPersonCard[] = () => [];
+  @Input() mentionCandidates: MentionCandidate[] = [];
+  @Input() resolveMentionProfileCard: (payload: { userId?: number; handle?: string }) => MentionProfileCard | null = () => null;
 
   // ── Outputs ─────────────────────────────────────────
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
@@ -66,6 +86,10 @@ export class MessageFeedComponent {
   @Output() deleteConfirmed = new EventEmitter<{ msg: Message; event?: Event }>();
   @Output() deleteDismissed = new EventEmitter<void>();
   @Output() attachmentDownload = new EventEmitter<{ attachment: any; event: Event }>();
+  @Output() mentionActivated = new EventEmitter<number>();
+
+  activeMentionProfile: MentionProfileCard | null = null;
+  mentionCardPosition: { top: number; left: number } | null = null;
 
   // ── Template helpers ─────────────────────────────────
 
@@ -175,6 +199,44 @@ export class MessageFeedComponent {
       return 'Seen';
     }
     return count === 1 ? 'Seen by 1' : `Seen by ${count}`;
+  }
+
+  onRenderedContentClick(event: Event): void {
+    const mention = this.findClosestAnchor(event, 'chat-mention');
+    if (!mention) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const userId = Number(mention.dataset['userId'] || 0);
+    if (userId > 0) {
+      this.mentionActivated.emit(userId);
+    }
+  }
+
+  onRenderedContentHover(event: MouseEvent): void {
+    const mention = this.findClosestAnchor(event, 'chat-mention');
+    if (!mention) return;
+    const userId = Number(mention.dataset['userId'] || 0);
+    const handle = mention.dataset['mention'] || mention.textContent || '';
+    const profile = this.resolveMentionProfileCard({ userId, handle });
+    if (!profile) return;
+    const rect = mention.getBoundingClientRect();
+    this.activeMentionProfile = profile;
+    this.mentionCardPosition = {
+      top: rect.bottom + 12,
+      left: Math.min(rect.left, Math.max(16, window.innerWidth - 348)),
+    };
+  }
+
+  onRenderedContentLeave(event: MouseEvent): void {
+    const related = event.relatedTarget as HTMLElement | null;
+    if (related?.closest('.mention-profile-card')) return;
+    if (related?.closest('a.chat-mention')) return;
+    this.closeMentionCard();
+  }
+
+  closeMentionCard(): void {
+    this.activeMentionProfile = null;
+    this.mentionCardPosition = null;
   }
 
   isImageAttachment(attachment: Message['attachment'] | undefined): boolean {
@@ -426,13 +488,13 @@ export class MessageFeedComponent {
 
   messageHtml(content: string): string {
     const escaped = this.escapeHtml(this.decodeHtmlEntities(content || ''));
-    return escaped
+    return this.mentionifyHtml(escaped
       .replace(this.urlRegex, (rawUrl) => {
         const normalized = this.normalizePreviewUrl(rawUrl);
         const safeLabel = this.escapeHtml(rawUrl);
         return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="chat-link">${safeLabel}</a>`;
       })
-      .replace(/\n/g, '<br>');
+      .replace(/\n/g, '<br>'));
   }
 
   messageLinkPreview(msg: Message): {
@@ -509,6 +571,42 @@ export class MessageFeedComponent {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  private mentionifyHtml(value: string): string {
+    let result = value;
+    for (const candidate of this.mentionCandidates) {
+      const label = (candidate.label || '').trim();
+      if (!label) continue;
+      const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(^|[^\\w>])@${escapedLabel}${this.mentionBoundaryAfterRegex}`, 'gi');
+      result = result.replace(regex, (_full, prefix) => {
+        const mentionText = `@${label}`;
+        return `${prefix || ''}<a href="" class="chat-mention" data-user-id="${candidate.userId}" data-mention="${this.escapeHtml(mentionText)}">${this.escapeHtml(mentionText)}</a>`;
+      });
+    }
+    return result;
+  }
+
+  private findClosestAnchor(event: Event, className: string): HTMLAnchorElement | null {
+    const path = typeof (event as any).composedPath === 'function'
+      ? ((event as any).composedPath() as EventTarget[])
+      : [];
+    for (const entry of path) {
+      if (entry instanceof HTMLElement) {
+        const direct = entry.matches?.(`a.${className}`) ? entry : entry.closest?.(`a.${className}`);
+        if (direct instanceof HTMLAnchorElement) {
+          return direct;
+        }
+      }
+    }
+    const rawTarget = event.target as Node | null;
+    const elementTarget =
+      rawTarget instanceof HTMLElement
+        ? rawTarget
+        : (rawTarget as any)?.parentElement || null;
+    const fallback = elementTarget?.closest?.(`a.${className}`) as HTMLAnchorElement | null;
+    return fallback || null;
   }
 
   private normalizedMessageContent(msg: Message): string {
