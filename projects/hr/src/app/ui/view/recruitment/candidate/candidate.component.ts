@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import {
   ApplicantDTO,
@@ -10,6 +11,7 @@ import {
   InterviewScoreAssignmentDTO,
   InterviewStageSummaryDTO
 } from '../../../domain/applicant.dto';
+import { ScoreSheetDTO } from '../../../domain/questions.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { MenuItem } from 'primeng/api';
 import { MailNotificationService } from '../../../service/mailNotification.service';
@@ -142,6 +144,7 @@ throw new Error('Method not implemented.');
    tabs = [
     { key: 'form',      label: 'Form Response' },
     { key: 'documents', label: 'Documents'      },
+    { key: 'scoresheets', label: 'Interview Scores' },
     { key: 'ai',        label: 'AI Vetting'     },
     { key: 'decisionHistory', label: 'Decision History' },
   ];
@@ -154,6 +157,12 @@ throw new Error('Method not implemented.');
     showInviteModal: boolean = false;
     isStepTwo: boolean = false; // Step 1: Select Template, Step 2: Fill & Preview
     manualPlaceholderValues: Record<string, string> = {};
+    showDocumentPreview = false;
+    selectedDocument: CandidateDocument | null = null;
+    documentPreviewUrl: SafeResourceUrl | null = null;
+    documentPreviewUnsupported = false;
+    showScoreSheetPreview = false;
+    selectedScoreSheet: ScoreSheetDTO | null = null;
 
     regData: any = {};
 
@@ -166,7 +175,8 @@ throw new Error('Method not implemented.');
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private mailService: MailNotificationService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private sanitizer: DomSanitizer
   ) {}
 
    ngOnInit(): void {
@@ -601,13 +611,127 @@ throw new Error('Method not implemented.');
   }
  
   downloadDocument(doc: CandidateDocument): void {
-    // TODO: trigger download
-    console.log('Download', doc.url);
+    if (!doc?.url) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Download Failed',
+        detail: 'This document is missing a download link.'
+      });
+      return;
+    }
+
+    const downloadUrl = doc.url.startsWith('data:') ? this.generateBlobUrl(doc.url) : doc.url;
+    this.triggerDocumentDownload(downloadUrl, doc.name || 'document');
+  }
+
+  openDocumentPreview(doc: CandidateDocument): void {
+    if (!doc?.url) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Preview Failed',
+        detail: 'This document is missing a preview link.'
+      });
+      return;
+    }
+
+    this.selectedDocument = doc;
+    this.documentPreviewUnsupported = !this.isPreviewableDocument(doc);
+    this.documentPreviewUrl = this.documentPreviewUnsupported
+      ? null
+      : this.sanitizer.bypassSecurityTrustResourceUrl(doc.url);
+    this.showDocumentPreview = true;
+  }
+
+  closeDocumentPreview(): void {
+    this.showDocumentPreview = false;
+    this.selectedDocument = null;
+    this.documentPreviewUrl = null;
+    this.documentPreviewUnsupported = false;
+  }
+
+  openScoreSheetPreview(scoreSheet?: ScoreSheetDTO): void {
+    const scoreSheets = this.getSubmittedScoreSheets(this.selectedCandidate?.id);
+
+    if (!scoreSheets.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Score Sheet',
+        detail: 'No submitted score sheet was found for this candidate yet.'
+      });
+      return;
+    }
+
+    this.selectedScoreSheet = scoreSheet || scoreSheets[scoreSheets.length - 1];
+    this.showScoreSheetPreview = true;
+  }
+
+  closeScoreSheetPreview(): void {
+    this.showScoreSheetPreview = false;
+    this.selectedScoreSheet = null;
   }
  
   runAiVetting(candidate: Candidate): void {
     // TODO: call AI vetting service
     console.log('Run AI vetting for', candidate.id);
+  }
+
+  private generateBlobUrl(dataUrl: string): string {
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
+
+    const byteNumbers = new Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteNumbers[i] = byteString.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+
+  private triggerDocumentDownload(url: string, filename: string): void {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    if (url.startsWith('blob:')) {
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  }
+
+  getSubmittedScoreSheets(candidateId?: string): ScoreSheetDTO[] {
+    if (!candidateId) {
+      return [];
+    }
+
+    const storedData = localStorage.getItem('submittedCriteria');
+    if (!storedData) {
+      return [];
+    }
+
+    try {
+      const submittedCriteria = JSON.parse(storedData) || {};
+      const submissions = submittedCriteria[candidateId];
+      return Array.isArray(submissions) ? submissions : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private isPreviewableDocument(doc: CandidateDocument): boolean {
+    const type = String(doc?.type || '').toLowerCase();
+    const url = String(doc?.url || '').toLowerCase();
+
+    return type === 'pdf'
+      || type.startsWith('image/')
+      || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(type)
+      || url.startsWith('data:application/pdf')
+      || url.startsWith('data:image/');
   }
 
 

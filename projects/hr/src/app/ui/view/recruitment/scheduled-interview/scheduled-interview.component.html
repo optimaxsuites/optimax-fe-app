@@ -68,6 +68,7 @@
                           <li class="table-item-panel" *ngIf="canStartInterview(candidate)" (click)="startInterview(candidate)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
                           <li class="table-item-panel" *ngIf="canCreateScoreSheet(candidate)" (click)="openScoreSheet(candidate)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
                           <li class="table-item-panel" *ngIf="canEndInterview(candidate)" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                          <li class="table-item-panel" *ngIf="canViewScoreSheet(candidate)" (click)="openScoreSheetPreview(candidate)"> <i class="pi pi-file table-item me-2"></i>View Score Sheet</li>
                           <li class="table-item-panel" *ngIf="canMoveToNextStage(candidate)" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
                           <li class="table-item-panel" *ngIf="canSendOffer(candidate)" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
                           <li class="table-item-panel" *ngIf="canSendAppointmentLetter(candidate)" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
@@ -87,15 +88,16 @@
   [visible]="showInterviewInvite"
   [header]="'Interview Invitation for ' + activeItem?.fullName"
   [candidate]="activeItem"
+  [managePersistence]="false"
   [currentAction]="currentAction"
-  (close)="showInterviewInvite = false"
-  (inviteSent)="getCandidateData()">
+  (close)="close()"
+  (inviteConfigured)="sendInvite($event)">
 </app-invite-modal>
 
 
 
 <div *ngIf="showScoreSheet">
-  <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet()"></app-interview-score-sheet>
+  <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet($event)"></app-interview-score-sheet>
 </div>
 
 <div *ngIf="showOfferLetter">
@@ -289,9 +291,14 @@
                 <span class="document-name">{{ doc.name }}</span>
                 <span class="document-meta">{{ doc.size }} · Uploaded {{ doc.uploadedDate }}</span>
               </div>
-              <button class="doc-download-btn" (click)="downloadDocument(doc)">
-                <i class="fas fa-arrow-down"></i>
-              </button>
+              <div class="d-flex align-items-center gap-2">
+                <button class="doc-download-btn" (click)="openDocumentPreview(doc)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="doc-download-btn" (click)="downloadDocument(doc)">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+              </div>
             </div>
 
             <div *ngIf="!activeItem.documents || activeItem.documents.length === 0" class="list-empty">
@@ -445,6 +452,32 @@
           </div>
 
           <div class="section-block mt-4">
+            <div class="section-block__title">Submitted Score Sheets</div>
+            <div *ngIf="getSubmittedScoreSheets(activeItem.id).length; else noSubmittedScoreSheets">
+              <div class="assignment-row" *ngFor="let scoreSheet of getSubmittedScoreSheets(activeItem.id)">
+                <div>
+                  <div class="assignment-row__name">{{ scoreSheet.criteria?.title || 'Score Sheet' }}</div>
+                  <div class="assignment-row__role">
+                    Interview {{ scoreSheet.interviewStage || 1 }} · {{ scoreSheet.interviewerName || scoreSheet.interviewerEmail || 'Interviewer' }} · {{ scoreSheet.requestDate | date:'medium' }}
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="assignment-row__status assignment-row__status--submitted">{{ scoreSheet.totalScore || 0 | number:'1.1-1' }}</span>
+                  <button class="doc-download-btn" (click)="openScoreSheetPreview(activeItem, scoreSheet)">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="doc-download-btn" (click)="downloadSingleScoreSheet(activeItem.id, scoreSheet)">
+                    <i class="fas fa-arrow-down"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <ng-template #noSubmittedScoreSheets>
+              <div class="list-empty">No submitted score sheets yet.</div>
+            </ng-template>
+          </div>
+
+          <div class="section-block mt-4">
             <div class="section-block__title">Timeline</div>
             <div class="timeline" *ngIf="getInterviewHistory().length; else noInterviewHistory">
               <div class="timeline-item" *ngFor="let item of getInterviewHistory()">
@@ -474,6 +507,108 @@
 
       </div>
 
+    </div>
+  </div>
+</app-large-side-modal>
+
+<app-large-side-modal
+  *ngIf="showDocumentPreview"
+  [title]="'Close'"
+  (close)="closeDocumentPreview()">
+  <div class="candidate-detail" *ngIf="selectedDocument as doc">
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div>
+          <h2 class="detail-name">{{ doc.name }}</h2>
+          <p class="detail-meta">
+            <span>{{ doc.size }}</span>
+            <span class="meta-dot">·</span>
+            <span>Uploaded {{ doc.uploadedDate }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--shortlisted" (click)="downloadDocument(doc)">
+          <i class="fas fa-arrow-down"></i> Download
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="section-block" *ngIf="!documentPreviewUnsupported && documentPreviewUrl; else unsupportedDocumentPreview">
+        <iframe
+          [src]="documentPreviewUrl"
+          title="Document Preview"
+          style="width: 100%; min-height: 70vh; border: 0; border-radius: 12px;">
+        </iframe>
+      </div>
+      <ng-template #unsupportedDocumentPreview>
+        <div class="section-block">
+          <div class="section-block__title">Preview Unavailable</div>
+          <div class="list-empty">This file type cannot be previewed in-app yet. Download it to view the contents.</div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</app-large-side-modal>
+
+<app-large-side-modal
+  *ngIf="showScoreSheetPreview"
+  [title]="'Close'"
+  (close)="closeScoreSheetPreview()">
+  <div class="candidate-detail" *ngIf="selectedScoreSheet as scoreSheet">
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div>
+          <h2 class="detail-name">{{ selectedScoreSheetCandidateName }}</h2>
+          <p class="detail-meta">
+            <span>{{ scoreSheet.criteria?.title || 'Score Sheet' }}</span>
+            <span class="meta-dot">·</span>
+            <span>Interview {{ scoreSheet.interviewStage || 1 }}</span>
+            <span class="meta-dot">·</span>
+            <span>{{ scoreSheet.requestDate | date:'medium' }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--shortlisted" (click)="downloadSingleScoreSheet(activeItem?.id, scoreSheet)">
+          <i class="fas fa-arrow-down"></i> Download
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="section-block">
+        <div class="section-block__title">Submission Summary</div>
+        <div class="response-grid">
+          <div class="response-item">
+            <span class="response-label">Interviewer</span>
+            <span class="response-value">{{ scoreSheet.interviewerName || scoreSheet.interviewerEmail || 'Interviewer' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Role</span>
+            <span class="response-value">{{ scoreSheet.interviewerRole || 'Interviewer' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Total Score</span>
+            <span class="response-value">{{ scoreSheet.totalScore || 0 | number:'1.1-1' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Submitted</span>
+            <span class="response-value">{{ scoreSheet.requestDate | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block mt-4">
+        <div class="section-block__title">Question Breakdown</div>
+        <div class="response-grid">
+          <div class="response-item" *ngFor="let question of scoreSheet.criteria?.questions || []">
+            <span class="response-label">{{ question.text }}</span>
+            <span class="response-value">{{ question.score || 0 }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </app-large-side-modal>

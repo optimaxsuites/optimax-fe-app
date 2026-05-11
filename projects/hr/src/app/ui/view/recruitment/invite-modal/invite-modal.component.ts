@@ -21,10 +21,12 @@ export class InviteModalComponent implements OnInit {
   @Input() visible: boolean = false;
   @Input() header: string = '';
   @Input() currentAction: string = '';
+  @Input() managePersistence: boolean = true;
   @Input() candidate: any; // Passed to resolve specific candidate placeholders
   
   @Output() close = new EventEmitter<void>();
   @Output() inviteSent = new EventEmitter<void>();
+  @Output() inviteConfigured = new EventEmitter<any>();
 
   // Internal State
   isStepTwo: boolean = false;
@@ -208,21 +210,43 @@ export class InviteModalComponent implements OnInit {
 
   sendFinalMail() {
     this.sendLoading = true;
-    
-    // Logic follows the "upcomingInvite" structure used in the response component
+    const inviteDetails = this.buildInviteDetails();
+
+    if (!this.managePersistence) {
+      this.sendLoading = false;
+      this.inviteConfigured.emit(inviteDetails);
+      this.close.emit();
+      return;
+    }
+
+    const invites = JSON.parse(localStorage.getItem('upcomingInvite') || '[]');
+    const existingInviteIndex = invites.findIndex((invite: any) => invite.id === this.candidate?.id);
     const invitePayload = {
       ...this.candidate,
-      interviewPanel: this.interviewInviteSetup.panelMembers,
+      stage: 'Awaiting Response',
+      candidateResponse: undefined,
+      interviewStage: Number(this.candidate?.interviewStage || 1),
+      interviewSubject: inviteDetails.interviewSubject,
+      interviewInvite: inviteDetails.interviewInvite,
+      interviewType: inviteDetails.interviewType,
+      scheduledDate: inviteDetails.scheduledDate,
       meetingDetails: {
-        notes: this.interviewInviteSetup.notes,
-        ...this.manualPlaceholderValues
+        date: inviteDetails.scheduledDate,
+        time: inviteDetails.scheduledTime,
+        location: inviteDetails.location,
+        interviewType: inviteDetails.interviewType,
+        notes: inviteDetails.notes
       },
+      interviewPanel: inviteDetails.panelMembers,
       status: 'Interview Invited'
     };
 
-    // Update local storage tracking
-    const invites = JSON.parse(localStorage.getItem('upcomingInvite') || '[]');
-    invites.push(invitePayload);
+    if (existingInviteIndex === -1) {
+      invites.push(invitePayload);
+    } else {
+      invites[existingInviteIndex] = invitePayload;
+    }
+
     localStorage.setItem('upcomingInvite', JSON.stringify(invites));
 
     setTimeout(() => {
@@ -230,5 +254,31 @@ export class InviteModalComponent implements OnInit {
       this.inviteSent.emit();
       this.close.emit();
     }, 1000);
+  }
+
+  private buildInviteDetails(): any {
+    return {
+      interviewSubject: this.resolveFinalContent(this.selectedInviteTemplate?.subject || ''),
+      interviewInvite: this.resolveFinalContent(this.selectedInviteTemplate?.body || ''),
+      interviewType: this.getPlaceholderValue(['interviewType']),
+      scheduledDate: this.getPlaceholderValue(['scheduledDate', 'interviewDate', 'date']),
+      scheduledTime: this.getPlaceholderValue(['scheduledTime', 'interviewTime', 'time']),
+      location: this.getPlaceholderValue(['location', 'interviewLocation']),
+      notes: this.getPlaceholderValue(['notes', 'interviewNotes']) || this.interviewInviteSetup.notes || '',
+      panelMembers: this.interviewInviteSetup.panelMembers
+        .map((member: InterviewPanelMemberDTO) => this.mapPanelMember(member))
+        .filter((member: InterviewPanelMemberDTO) => Boolean(member.name || member.email || member.userId))
+    };
+  }
+
+  private getPlaceholderValue(keys: string[]): string {
+    for (const key of keys) {
+      const value = this.manualPlaceholderValues[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    return '';
   }
 }
