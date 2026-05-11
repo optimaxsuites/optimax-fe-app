@@ -113,7 +113,7 @@ private getAuthHeaders(): HttpHeaders {
 }
 
 //nna to get the right employee id nnaaaaa
-resolveHrEmployeeId(username: string): Observable<{ id: string; department: string } | null> {
+resolveHrEmployeeId(username: string): Observable<{ id: string; fullName: string; department: string } | null> {
   return this.http.get<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`,
     { headers: this.getAuthHeaders() }
@@ -124,7 +124,8 @@ resolveHrEmployeeId(username: string): Observable<{ id: string; department: stri
       if (!match) return null;
       return {
         id: match?.id?.toString(),
-        department: match.department?.name ?? ''
+        department: match.department?.name ?? '',
+        fullName: `${match.firstName ?? ''} ${match.lastName ?? ''}`.trim()
       }; 
     })
   );
@@ -156,7 +157,10 @@ private mapApiRecord(api: any): AttendanceTableRecord {
   };
 
   return {
-    id: emp?.id?.toString() ?? api.id?.toString() ?? '',
+    //id: emp?.id?.toString() ?? api.id?.toString() ?? '',
+    attendanceRecordId: api.id?.toString(),
+    employeeId: emp?.id?.toString(),
+    id: emp?.id?.toString() ?? '',
     apiRecordId: api.id,
     employee: fullName,
     department,

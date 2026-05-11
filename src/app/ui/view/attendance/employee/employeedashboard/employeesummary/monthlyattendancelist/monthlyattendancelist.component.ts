@@ -31,6 +31,38 @@ export class MonthlyattendancelistComponent implements OnInit {
   }
 
   loadAttendance() {
+
+    const username = sessionStorage.getItem('userid');
+
+    if (!username) return;
+
+    this.attendanceService
+      .resolveHrEmployeeId(username)
+      .subscribe(result => {
+
+        if (!result) {
+          console.error('HR employee not found');
+          return;
+        }
+
+        const hrEmployeeId = result.id;
+
+        this.attendanceService.fetchByEmployee(
+          parseInt(hrEmployeeId)
+        );
+
+        this.attendanceService.attendance$
+          .subscribe(data => {
+
+            this.attendanceData = data.filter(
+              r => String(r.id).trim() === String(hrEmployeeId).trim()
+            );
+
+            this.applyMonthFilter();
+          });
+      });
+  }
+  /*loadAttendance() {
     const user = this.userSession.getCurrentUser();
       // TEMP: diagnostic log
       console.log('=== MONTHLY LIST ===');
@@ -64,7 +96,7 @@ export class MonthlyattendancelistComponent implements OnInit {
       
       this.applyMonthFilter();
     });
-  }
+  }*/
 
   applyMonthFilter() {
     const [year, month] = this.selectedMonth.split('-').map(Number);
