@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import {
   ApplicantDTO,
@@ -12,7 +13,7 @@ import {
   InterviewScoreStatusDTO,
   InterviewStageSummaryDTO
 } from '../../../domain/applicant.dto';
-import { ScoreSheetDTO } from '../../../domain/questions.dto';
+import { QuestionItemDTO, ScoreSheetDTO } from '../../../domain/questions.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 import {jsPDF} from 'jspdf';
 import 'jspdf-autotable';
@@ -86,6 +87,9 @@ type InterviewRecord = Omit<ApplicantDTO, 'stage'> & {
 })
 export class ScheduledInterviewComponent {
   private readonly interviewStorageKey = 'upcomingInvite';
+  private currentUserId: string = '';
+  private currentUserEmail: string = '';
+  private currentUsername: string = '';
 
   onActionSelected(action: string) {
     switch (action) {
@@ -126,6 +130,13 @@ export class ScheduledInterviewComponent {
   selectedPositions: string[] = [];
   filteredCandidates: InterviewRecord[] = [];
   candidateData: any = {};
+  showScoreSheetPreview: boolean = false;
+  selectedScoreSheet: ScoreSheetDTO | null = null;
+  selectedScoreSheetCandidateName: string = '';
+  showDocumentPreview: boolean = false;
+  selectedDocument: CandidateDocument | null = null;
+  documentPreviewUrl: SafeResourceUrl | null = null;
+  documentPreviewUnsupported: boolean = false;
   interviewColumns: TableColumn[] = [
     { header: 'Name', field: 'fullName', sortable: true, className: 'table-item' },
     { header: 'Email', field: 'email', sortable: true, className: 'table-item' },
@@ -182,8 +193,10 @@ export class ScheduledInterviewComponent {
 
   constructor(
     private confirmationService: ConfirmationService,
-    private messageService: MessageService 
+    private messageService: MessageService,
+    private sanitizer: DomSanitizer
   ) {
+    this.loadCurrentUserContext();
     this.getCandidateScore()
   }
 
@@ -218,6 +231,7 @@ export class ScheduledInterviewComponent {
   }
 
   ngOnInit(): void {
+    this.loadCurrentUserContext();
     this.getCandidateData();
   }
 
@@ -305,11 +319,61 @@ export class ScheduledInterviewComponent {
   closeViewModal() {
     this.viewModal = false;
   }
+
+  openScoreSheetPreview(candidate: InterviewRecord, scoreSheet?: ScoreSheetDTO) {
+    this.activeItem = candidate;
+    const submissions = this.getSubmittedScoreSheets(candidate['id']);
+
+    if (!submissions.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Score Sheet',
+        detail: 'No submitted score sheet was found for this candidate yet.'
+      });
+      return;
+    }
+
+    this.selectedScoreSheet = scoreSheet || submissions[submissions.length - 1];
+    this.selectedScoreSheetCandidateName = this.getCandidateName(candidate) || 'Candidate';
+    this.showScoreSheetPreview = true;
+  }
+
+  openDocumentPreview(doc: CandidateDocument): void {
+    if (!doc?.url) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Preview Failed',
+        detail: 'This document is missing a preview link.'
+      });
+      return;
+    }
+
+    this.selectedDocument = doc;
+    this.documentPreviewUnsupported = !this.isPreviewableDocument(doc);
+    this.documentPreviewUrl = this.documentPreviewUnsupported
+      ? null
+      : this.sanitizer.bypassSecurityTrustResourceUrl(doc.url);
+    this.showDocumentPreview = true;
+  }
+
+  closeDocumentPreview(): void {
+    this.showDocumentPreview = false;
+    this.selectedDocument = null;
+    this.documentPreviewUrl = null;
+    this.documentPreviewUnsupported = false;
+  }
+
+  closeScoreSheetPreview() {
+    this.showScoreSheetPreview = false;
+    this.selectedScoreSheet = null;
+    this.selectedScoreSheetCandidateName = '';
+  }
 // ================================================================
 
 // ======================================================Interview Invite
   openInterviewInvite(interview: any){
     this.activeItem = interview
+    this.currentAction = 'Interview Invite';
     this.showInterviewList = false;
     this.showInterviewInvite = true;
     this.viewModal = false;
@@ -394,6 +458,11 @@ export class ScheduledInterviewComponent {
 
 // ==============================================================Score Sheet
   openScoreSheet(interview: any){
+    if (!this.canManageInterview(interview)) {
+      this.showPanelAccessDeniedMessage('open the score sheet');
+      return;
+    }
+
     this.activeItem = interview
     this.showInterviewList = false;
     this.showInterviewInvite = false;
@@ -501,6 +570,11 @@ export class ScheduledInterviewComponent {
 // ===========================================================Start/End Interview
   startInterview(interview: any){
     if (interview) {
+      if (!this.canManageInterview(interview)) {
+        this.showPanelAccessDeniedMessage('start this interview');
+        return;
+      }
+
       const stageNumber = Number(interview['interviewStage'] || 1);
       const sessionId = this.generateId(`session-${stageNumber}`);
       const panel = (interview.interviewPanel || []).length
@@ -540,6 +614,11 @@ export class ScheduledInterviewComponent {
   }
   endInterview(interview: any){
     if (interview) {
+      if (!this.canManageInterview(interview)) {
+        this.showPanelAccessDeniedMessage('end this interview');
+        return;
+      }
+
       const stageNumber = Number(interview['interviewStage'] || 1);
       const sessionId = interview.interviewCurrentSessionId || '';
       const assignments = interview.interviewScoreAssignments || [];
@@ -708,6 +787,27 @@ export class ScheduledInterviewComponent {
 
   // every score loop on a new page
   downloadScoresheet(candidateId: string) {
+    const scoreSheets = this.getSubmittedScoreSheets(candidateId);
+
+    if (!scoreSheets.length) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No Interview Found',
+        detail: `Candidate has not been interviewed yet`,
+      });
+      return;
+    }
+
+    const candidateName = this.getCandidateName(this.interviews.find(candidate => candidate['id'] === candidateId)) || 'Candidate';
+    this.downloadScoreSheetsAsPdf(scoreSheets, candidateName);
+  }
+
+  downloadSingleScoreSheet(candidateId: string, scoreSheet: ScoreSheetDTO) {
+    const candidateName = this.getCandidateName(this.interviews.find(candidate => candidate['id'] === candidateId)) || 'Candidate';
+    this.downloadScoreSheetsAsPdf([scoreSheet], candidateName, true);
+  }
+
+  private downloadScoreSheetsAsPdf(scoreSheets: ScoreSheetDTO[], candidateName: string, singleSheet: boolean = false) {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'px',
@@ -726,21 +826,13 @@ export class ScheduledInterviewComponent {
     pdf.text('Candidate Interview Scoresheet', pdfWidth / 2, currentY, { align: 'center' });
     currentY += 30;
   
-    const candidateData = this.candidateData[candidateId];
-    if (!candidateData) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'No Interview Found',
-        detail: `Candidate has not been interviewed yet`,
-      });
-      return;
-    }
-  
     pdf.setFont('times', 'normal');
     pdf.setFontSize(12);
   
-    candidateData.forEach((entry: { criteria: any; requestDate: any; totalScore: any; }, index: number) => {
+    scoreSheets.forEach((entry, index) => {
       const { criteria, requestDate, totalScore } = entry;
+      const criteriaTitle = criteria?.title || 'Untitled Criteria';
+      const questions = Array.isArray(criteria?.questions) ? criteria.questions : [];
   
       if (index > 0) {
         pdf.addPage(); // Start a new page for each subsequent iteration
@@ -749,18 +841,22 @@ export class ScheduledInterviewComponent {
   
       // Add Criteria Title
       pdf.setFont('times', 'bold');
-      pdf.text(`Criteria: ${criteria.title}`, currentX, currentY);
+      pdf.text(`Criteria: ${criteriaTitle}`, currentX, currentY);
       currentY += 20;
   
       // Add Submitted Date and Total Score
       pdf.setFont('times', 'normal');
       pdf.text(`Submitted At: ${requestDate}`, currentX, currentY);
       currentY += 15;
+      pdf.text(`Stage: Interview ${entry.interviewStage || 1}`, currentX, currentY);
+      currentY += 15;
+      pdf.text(`Interviewer: ${entry.interviewerName || entry.interviewerEmail || 'Interviewer'}`, currentX, currentY);
+      currentY += 15;
   
       // Add table if questions exist
-      if (Array.isArray(criteria.questions) && criteria.questions.length > 0) {
+      if (questions.length > 0) {
         const columns = ['Question', 'Score'];
-        const data = criteria.questions.map((q: { text: string; score: number }) => [q.text, q.score]);
+        const data = questions.map((q: QuestionItemDTO) => [q.text, q.score ?? 0]);
   
         (pdf as any).autoTable({
           startY: currentY,
@@ -788,14 +884,15 @@ export class ScheduledInterviewComponent {
       pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 50, pdfHeight - 10);
     }
   
-    const candidateName = this.getCandidateName(this.interviews.find(candidate => candidate['id'] === candidateId)) || 'Candidate';
-
-    pdf.save(`${candidateName} scoresheet.pdf`);
+    const filename = singleSheet && scoreSheets[0]
+      ? `${candidateName} interview-${scoreSheets[0].interviewStage || 1} scoresheet.pdf`
+      : `${candidateName} scoresheet.pdf`;
+    pdf.save(filename);
 
     this.messageService.add({
       severity: 'success',
       summary: 'Download Complete',
-      detail: `Scoresheet for ${candidateName} has been downloaded successfully.`,
+      detail: `${singleSheet ? 'Score sheet' : 'Scoresheet'} for ${candidateName} has been downloaded successfully.`,
     });
   }
 
@@ -820,15 +917,16 @@ export class ScheduledInterviewComponent {
   }
 
   canStartInterview(interview: InterviewRecord): boolean {
-    return ['Accepted', ApplicationStage.Scheduled].includes(this.getDisplayStage(interview));
+    return ['Accepted', ApplicationStage.Scheduled].includes(this.getDisplayStage(interview)) && this.canManageInterview(interview);
   }
 
   canCreateScoreSheet(interview: InterviewRecord): boolean {
-    return [ApplicationStage.InProgress, ApplicationStage.Completed].includes(this.getDisplayStage(interview) as ApplicationStage);
+    return [ApplicationStage.InProgress, ApplicationStage.Completed].includes(this.getDisplayStage(interview) as ApplicationStage)
+      && this.canManageInterview(interview);
   }
 
   canEndInterview(interview: InterviewRecord): boolean {
-    return this.getDisplayStage(interview) === ApplicationStage.InProgress;
+    return this.getDisplayStage(interview) === ApplicationStage.InProgress && this.canManageInterview(interview);
   }
 
   canMoveToNextStage(interview: InterviewRecord): boolean {
@@ -844,9 +942,11 @@ export class ScheduledInterviewComponent {
   }
 
   canDownloadScoreSheet(interview: InterviewRecord): boolean {
-    return [ApplicationStage.InProgress, ApplicationStage.Completed, ApplicationStage.OfferSent, ApplicationStage.AppointmentLetterSent].includes(
-      this.getDisplayStage(interview) as ApplicationStage
-    );
+    return this.hasSubmittedScoreSheets(interview['id']);
+  }
+
+  canViewScoreSheet(interview: InterviewRecord): boolean {
+    return this.hasSubmittedScoreSheets(interview['id']);
   }
 
   getInterviewHistory(): InterviewHistoryItemDTO[] {
@@ -1055,8 +1155,7 @@ export class ScheduledInterviewComponent {
   }
 
   private getScoreSubmissions(candidateId: string, stageNumber: number, sessionId: string): ScoreSheetDTO[] {
-    const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
-    const candidateSubmissions: ScoreSheetDTO[] = allSubmittedCriteria[candidateId] || [];
+    const candidateSubmissions = this.getSubmittedScoreSheets(candidateId);
     return candidateSubmissions.filter(submission =>
       submission.interviewStage === stageNumber && (!sessionId || submission.sessionId === sessionId)
     );
@@ -1222,6 +1321,17 @@ export class ScheduledInterviewComponent {
     return typeof value === 'string' && 
            (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
   }
+
+  private isPreviewableDocument(doc: CandidateDocument): boolean {
+    const type = String(doc?.type || '').toLowerCase();
+    const url = String(doc?.url || '').toLowerCase();
+
+    return type === 'pdf'
+      || type.startsWith('image/')
+      || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(type)
+      || url.startsWith('data:application/pdf')
+      || url.startsWith('data:image/');
+  }
   
   getDocumentUrl(key: string): string {
     return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
@@ -1230,12 +1340,7 @@ export class ScheduledInterviewComponent {
 
   getSubmittedCriteria() {
     const activeItemId = this.activeItem.id; // Get the active item's ID
-    
-    // Step 1: Retrieve all the submitted criteria data from localStorage
-    const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
-    
-    // Step 2: Retrieve the candidate's submissions for the activeItem.id
-    const candidateData = allSubmittedCriteria[activeItemId] || [];
+    const candidateData = this.getSubmittedScoreSheets(activeItemId);
   
     // Step 3: Check if there is any data for the candidate
     if (candidateData.length === 0) {
@@ -1258,15 +1363,121 @@ export class ScheduledInterviewComponent {
     // Step 2: Calculate and return the average score
     return totalSum / scores.length;
   }
+
+  getSubmittedScoreSheets(candidateId?: string): ScoreSheetDTO[] {
+    if (!candidateId) {
+      return [];
+    }
+
+    const storedData = localStorage.getItem('submittedCriteria');
+    if (!storedData) {
+      return [];
+    }
+
+    try {
+      const submittedCriteria = JSON.parse(storedData) || {};
+      const submissions = submittedCriteria[candidateId];
+      return Array.isArray(submissions) ? submissions : [];
+    } catch {
+      return [];
+    }
+  }
+
+  hasSubmittedScoreSheets(candidateId?: string): boolean {
+    return this.getSubmittedScoreSheets(candidateId).length > 0;
+  }
+
+  canManageInterview(interview?: InterviewRecord): boolean {
+    if (!interview) {
+      return false;
+    }
+
+    return this.isCurrentUserOnInterviewPanel(interview);
+  }
+
+  private loadCurrentUserContext(): void {
+    this.currentUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
+    this.currentUserEmail = String(sessionStorage.getItem('email') || localStorage.getItem('email') || '').trim().toLowerCase();
+    this.currentUsername = String(sessionStorage.getItem('username') || localStorage.getItem('username') || '').trim().toLowerCase();
+
+    const primaryInfoRaw =
+      sessionStorage.getItem('userPrimaryInfoRegData') ||
+      localStorage.getItem('userPrimaryInfoRegData');
+
+    if (!primaryInfoRaw) {
+      return;
+    }
+
+    try {
+      const primaryInfo = JSON.parse(primaryInfoRaw);
+      this.currentUserId = this.currentUserId || String(primaryInfo?.id || primaryInfo?.userId || '').trim();
+      this.currentUserEmail = this.currentUserEmail || String(primaryInfo?.email || '').trim().toLowerCase();
+      this.currentUsername = this.currentUsername || String(primaryInfo?.username || primaryInfo?.fullname || primaryInfo?.fullName || '').trim().toLowerCase();
+    } catch {
+      // Ignore malformed storage and rely on the directly stored session values.
+    }
+  }
+
+  private isCurrentUserOnInterviewPanel(interview: InterviewRecord): boolean {
+    const panelMembers = Array.isArray(interview?.interviewPanel) ? interview.interviewPanel : [];
+
+    if (!panelMembers.length) {
+      return false;
+    }
+
+    return panelMembers.some(member => {
+      const memberId = String(member?.userId || member?.id || '').trim();
+      const memberEmail = String(member?.email || '').trim().toLowerCase();
+      const memberUsername = String(member?.username || member?.name || '').trim().toLowerCase();
+
+      return Boolean(
+        (this.currentUserId && memberId && this.currentUserId === memberId) ||
+        (this.currentUserEmail && memberEmail && this.currentUserEmail === memberEmail) ||
+        (this.currentUsername && memberUsername && this.currentUsername === memberUsername)
+      );
+    });
+  }
+
+  private showPanelAccessDeniedMessage(action: string): void {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Panel Access Required',
+      detail: `Only interview panel members can ${action}.`
+    });
+  }
   
     downloadDocument(doc: CandidateDocument): void {
-      // TODO: trigger download
-      console.log('Download', doc.url);
+      if (!doc?.url) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Download Failed',
+          detail: 'This document is missing a download link.'
+        });
+        return;
+      }
+
+      const downloadUrl = doc.url.startsWith('data:') ? this.generateBlobUrl(doc.url) : doc.url;
+      this.triggerDocumentDownload(downloadUrl, doc.name || 'document');
     }
    
     runAiVetting(candidate: Candidate): void {
       // TODO: call AI vetting service
       console.log('Run AI vetting for', candidate.id);
+    }
+
+    private triggerDocumentDownload(url: string, filename: string): void {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (url.startsWith('blob:')) {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
     }
   
   

@@ -223,10 +223,14 @@
         <!-- Group Code -->
         <div class="form-group" [class.invalid]="hasControlError('code')">
           <label>Group Code <span class="required">*</span></label>
-          <input type="text" formControlName="code" placeholder="e.g., COOP-001" [readonly]="editingGroupId !== null">
+          <input type="text" formControlName="code" placeholder="e.g., COOP-001" [readonly]="isCodeReadonly">
           <div class="field-hint" *ngIf="editingGroupId === null">
             <i class="fas fa-info-circle"></i>
             Uppercase letters, numbers, and dashes only. Cannot be changed after creation.
+          </div>
+          <div class="field-hint" *ngIf="editingGroupId !== null && !isCodeReadonly">
+            <i class="fas fa-info-circle"></i>
+            This legacy group did not have a code, so a stable fallback code was added and can be updated before saving.
           </div>
           <div class="error-message" *ngIf="hasControlError('code')">
             <i class="fas fa-exclamation-circle"></i>

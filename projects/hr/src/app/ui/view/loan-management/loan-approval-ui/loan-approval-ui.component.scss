@@ -6,6 +6,7 @@
 app-loan-approval-ui {
   
   .advance-approval-container[data-component="advance-approval"] {
+    font-size: 2rem;
     
     .messages-container {
       margin-bottom: 16px;
@@ -32,7 +33,7 @@ app-loan-approval-ui {
 
       p {
         color: #2E6276;
-        font-size: 0.9rem;
+        font-size: 1.2rem;
       }
     }
 
@@ -82,7 +83,7 @@ app-loan-approval-ui {
         p {
           margin: 4px 0 0;
           color: #6b8a97;
-          font-size: 0.85rem;
+          font-size: 1.18rem;
         }
       }
 
@@ -248,7 +249,7 @@ app-loan-approval-ui {
             top: 50%;
             transform: translateY(-50%);
             color: #8aadba;
-            font-size: 0.9rem;
+            font-size: 1rem;
           }
 
           input {
@@ -256,7 +257,7 @@ app-loan-approval-ui {
             padding: 10px 12px 10px 40px;
             border: 1px solid #d7e7ec;
             border-radius: 12px;
-            font-size: 0.85rem;
+            font-size: 1.04rem;
             background: white;
             transition: all 0.2s;
 
@@ -282,7 +283,7 @@ app-loan-approval-ui {
           margin-bottom: 6px;
           font-weight: 600;
           color: #1a4b5c;
-          font-size: 0.7rem;
+          font-size: 0.84rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -292,7 +293,7 @@ app-loan-approval-ui {
           padding: 10px 12px;
           border: 1px solid #d7e7ec;
           border-radius: 10px;
-          font-size: 0.85rem;
+          font-size: 1.02rem;
           background: white;
           transition: all 0.2s;
 
@@ -315,7 +316,7 @@ app-loan-approval-ui {
         background: white;
         color: #2E6276;
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.96rem;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -371,13 +372,14 @@ app-loan-approval-ui {
         padding: 14px 20px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
+        font-size: 1.04rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         white-space: nowrap;
@@ -406,7 +408,7 @@ app-loan-approval-ui {
       td {
         vertical-align: middle;
         color: #2c5a6a;
-        font-size: 0.85rem;
+        font-size: 1.06rem;
       }
 
       tr {
@@ -428,7 +430,7 @@ app-loan-approval-ui {
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
-        font-size: 0.85rem;
+        font-size: 1rem;
       }
 
       .employee-name-cell {
@@ -451,9 +453,9 @@ app-loan-approval-ui {
         justify-content: center !important;
         padding: 4px 12px !important;
         border-radius: 999px !important;
-        font-size: 0.75rem !important;
+        font-size: 0.96rem !important;
         font-weight: 700 !important;
-        line-height: 1.2 !important;
+        line-height: 1.25 !important;
         white-space: nowrap !important;
 
         &.status-pending {
@@ -536,7 +538,7 @@ app-loan-approval-ui {
           justify-content: center;
 
           i {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
           }
 
           &.view-btn {

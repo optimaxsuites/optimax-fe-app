@@ -6,6 +6,8 @@ import { CooperativeService } from '../../../service/loan/cooperative-loan/coope
 import { CooperativeLoanGroup, CooperativeMember, CooperativeGroupMembership } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { Message } from 'primeng/api';
 import { v4 as uuidV4 } from 'uuid';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-cooperative-patronage-distribution',
@@ -13,6 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
   styleUrls: ['./cooperative-patronage-distribution.component.scss']
 })
 export class CooperativePatronageDistributionComponent implements OnInit {
+  allGroups: CooperativeLoanGroup[] = [];
   groups: CooperativeLoanGroup[] = [];
   members: CooperativeMember[] = [];
   groupMemberships: CooperativeGroupMembership[] = [];
@@ -49,6 +52,10 @@ export class CooperativePatronageDistributionComponent implements OnInit {
   checklistAmountCalculated = false;
   checklistAccountingNotified = false;
 
+  // Batch member actions
+  selectedMemberIds: Set<number> = new Set();
+  batchSending = false;
+
   constructor(
     private cooperativeService: CooperativeService,
     private location: Location,
@@ -65,18 +72,14 @@ export class CooperativePatronageDistributionComponent implements OnInit {
     this.error = null;
     this.cooperativeService.loadGroups().subscribe({
       next: (groups: CooperativeLoanGroup[]) => {
-        // Patch demo data: ensure patronageAmount is always nonzero
-        this.groups = (groups || []).map((g, i) => ({
-          ...g,
-          patronageAmount: g.patronageAmount && g.patronageAmount > 0 ? g.patronageAmount : 2000000 + (i * 500000)
-        }));
-        this.filteredGroups = [...this.groups];
+        this.allGroups = groups || [];
         this.cooperativeService.getMembers().subscribe({
           next: (members: CooperativeMember[]) => {
             this.members = members || [];
             this.cooperativeService.loadGroupMemberships().subscribe({
               next: (memberships: CooperativeGroupMembership[]) => {
                 this.groupMemberships = memberships || [];
+                this.refreshEligibleGroups();
                 this.loading = false;
               },
               error: (err: any) => {
@@ -107,6 +110,7 @@ export class CooperativePatronageDistributionComponent implements OnInit {
     this.memberSearchTerm = '';
     this.filteredMembers = this.getGroupMembers(group);
     this.membersPage = 1;
+    this.clearBatchSelection();
     // Reset checklist when selecting a new group
     this.resetChecklist();
   }
@@ -132,11 +136,12 @@ export class CooperativePatronageDistributionComponent implements OnInit {
   }
   
   filterGroups(): void {
+    const eligibleGroups = this.getEligibleGroups();
     if (!this.groupSearchTerm) {
-      this.filteredGroups = [...this.groups];
+      this.filteredGroups = [...eligibleGroups];
     } else {
       const term = this.groupSearchTerm.toLowerCase();
-      this.filteredGroups = this.groups.filter(group => 
+      this.filteredGroups = eligibleGroups.filter(group => 
         (group.name?.toLowerCase().includes(term) || false) || 
         (group.code?.toLowerCase().includes(term) || false)
       );
@@ -154,6 +159,11 @@ export class CooperativePatronageDistributionComponent implements OnInit {
         (member.fullName?.toLowerCase().includes(term) || false)
       );
     }
+    this.selectedMemberIds.forEach((memberId) => {
+      if (!this.filteredMembers.some((member) => member.id === memberId)) {
+        this.selectedMemberIds.delete(memberId);
+      }
+    });
     this.membersPage = 1;
   }
 
@@ -168,6 +178,32 @@ export class CooperativePatronageDistributionComponent implements OnInit {
     this.checklistAmountCalculated = false;
     this.checklistAccountingNotified = false;
     this.distributionNotes = '';
+  }
+
+  private refreshEligibleGroups(): void {
+    this.groups = this.getEligibleGroups();
+    this.filterGroups();
+
+    if (this.selectedGroup && !this.groups.some((group) => group.id === this.selectedGroup?.id)) {
+      this.selectedGroup = null;
+      this.selectedMember = null;
+      this.filteredMembers = [];
+      this.clearBatchSelection();
+    } else if (this.selectedGroup) {
+      this.filterMembers();
+    }
+  }
+
+  private getEligibleGroups(): CooperativeLoanGroup[] {
+    return this.allGroups.filter((group) => this.isGroupEligibleForPatronage(group));
+  }
+
+  private isGroupEligibleForPatronage(group: CooperativeLoanGroup): boolean {
+    return !!group
+      && group.status === 'ACTIVE'
+      && group.patronageEligible === true
+      && Number(group.patronageAmount || 0) > 0
+      && this.getGroupMembers(group).length > 0;
   }
 
   closeDistributionModal() {
@@ -245,59 +281,119 @@ export class CooperativePatronageDistributionComponent implements OnInit {
     return this.groups.reduce((sum, group) => sum + Number(group.patronageAmount || 0), 0);
   }
 
-  sendToAccounting(member: CooperativeMember | null) {
-  if (!member) return;
-  if (!this.checklistVerified || !this.checklistAmountCalculated) {
-    this.showMessage('warn', 'Checklist Incomplete', 'Please complete the distribution checklist before sending to accounting.');
-    return;
+  get batchSelectedMembers(): CooperativeMember[] {
+    return this.filteredMembers.filter((member) => this.selectedMemberIds.has(member.id));
   }
-  const group = this.selectedGroup;
-  // Use local demo calculation for refund amount
-  const refundAmount = this.getLocalMemberPatronageRefund(member, group);
-  const reference = 'REF-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-  const now = new Date();
-  
-  const payload = {
-    sourceModule: 'HR',
-    eventType: 'PATRONAGE',
-    amount: refundAmount,
-    currency: 'NGN',
-    reference: reference,
-    description: `Patronage refund for ${member.fullName} (${member.id})`,
-    transactionDate: now.toISOString(),
-    metadata: {
-      memberName: member.fullName,
-      accountNumber: '1234567890',
-      memberId: member.id,
-      bankName: 'Demo Bank',
-      groupName: group?.name || 'N/A',
-      groupCode: group?.code || 'N/A',
-      totalInterestPaid: this.getLocalMemberTotalInterestPaid(member, group)
+
+  get isBatchMode(): boolean {
+    return this.batchSelectedMembers.length >= 2;
+  }
+
+  getBatchResultsLabel(): string {
+    const count = this.batchSelectedMembers.length;
+    return `${count} member${count === 1 ? '' : 's'} selected`;
+  }
+
+  getBatchPatronageTotal(): number {
+    return this.batchSelectedMembers.reduce((sum, member) => sum + this.getMemberPatronageShare(member), 0);
+  }
+
+  isBatchSelected(member: CooperativeMember): boolean {
+    return this.selectedMemberIds.has(member.id);
+  }
+
+  toggleBatchSelect(member: CooperativeMember): void {
+    if (this.selectedMemberIds.has(member.id)) {
+      this.selectedMemberIds.delete(member.id);
+      return;
     }
-  };
-  
-  // FIX: Add the base URL - replace with your actual API base URL
-  const baseUrl = 'https://be.optimaxsuites.com'; // Your base URL from earlier
-  const apiUrl = `${baseUrl}/x/api/v2/accounting/events`;
-  
-  console.log('Sending to accounting:', apiUrl);
-  console.log('Payload:', payload);
-  
-  this.http.post(apiUrl, payload).subscribe({
-    next: () => {
-      this.showMessage('success', 'Success', `Patronage refund of ${this.formatCurrency(refundAmount)} for ${member.fullName} sent to accounting!`);
-    },
-    error: (err) => {
-      console.error('Accounting API error:', err);
-      this.showMessage('error', 'Error', 'Failed to send to accounting: ' + (err?.message || err?.statusText || 'Unknown error'));
+
+    this.selectedMemberIds.add(member.id);
+  }
+
+  selectAllMembers(): void {
+    this.filteredMembers.forEach((member) => this.selectedMemberIds.add(member.id));
+  }
+
+  clearBatchSelection(): void {
+    this.selectedMemberIds.clear();
+  }
+
+  sendToAccounting(member: CooperativeMember | null) {
+    if (!member) return;
+    if (!this.isChecklistReady()) {
+      this.showMessage('warn', 'Checklist Incomplete', 'Please complete the distribution checklist before sending to accounting.');
+      return;
     }
-  });
-}
+
+    const refundAmount = this.getLocalMemberPatronageRefund(member, this.selectedGroup);
+    this.batchSending = true;
+
+    this.postPatronageToAccounting(member).subscribe({
+      next: () => {
+        this.batchSending = false;
+        this.checklistAccountingNotified = true;
+        this.showMessage('success', 'Success', `Patronage refund of ${this.formatCurrency(refundAmount)} for ${member.fullName} sent to accounting!`);
+      },
+      error: (err) => {
+        this.batchSending = false;
+        console.error('Accounting API error:', err);
+        this.showMessage('error', 'Error', 'Failed to send to accounting: ' + (err?.message || err?.statusText || 'Unknown error'));
+      }
+    });
+  }
+
+  sendBatchToAccounting(): void {
+    if (!this.isBatchMode) {
+      return;
+    }
+
+    if (!this.isChecklistReady()) {
+      this.showMessage('warn', 'Checklist Incomplete', 'Please complete the distribution checklist before batch sending to accounting.');
+      return;
+    }
+
+    this.batchSending = true;
+    const requests = this.batchSelectedMembers.map((member) =>
+      this.postPatronageToAccounting(member).pipe(
+        map(() => ({ member, success: true })),
+        catchError((error) => of({ member, success: false, error }))
+      )
+    );
+
+    forkJoin(requests).subscribe({
+      next: (results) => {
+        this.batchSending = false;
+        this.checklistAccountingNotified = true;
+
+        const successes = results.filter((result) => result.success);
+        const failures = results.filter((result) => !result.success);
+
+        if (!failures.length) {
+          this.showMessage('success', 'Batch Sent', `${successes.length} patronage refund requests were sent to accounting.`);
+          return;
+        }
+
+        const failedNames = failures.map((result) => result.member.fullName).slice(0, 3).join(', ');
+        this.showMessage(
+          failures.length === results.length ? 'error' : 'warn',
+          failures.length === results.length ? 'Batch Failed' : 'Batch Partially Sent',
+          failures.length === results.length
+            ? `None of the selected patronage requests could be sent. Failed members: ${failedNames}.`
+            : `${successes.length} sent successfully, ${failures.length} failed. Failed members: ${failedNames}.`
+        );
+      },
+      error: () => {
+        this.batchSending = false;
+        this.showMessage('error', 'Batch Failed', 'The batch patronage requests could not be sent to accounting.');
+      }
+    });
+  }
 
   confirmMemberDistribution(member: CooperativeMember | null) {
     if (!member) return;
     
-    if (!this.checklistVerified || !this.checklistAmountCalculated) {
+    if (!this.isChecklistReady()) {
       this.showMessage('warn', 'Checklist Incomplete', 'Please complete the distribution checklist before distributing.');
       return;
     }
@@ -393,6 +489,8 @@ export class CooperativePatronageDistributionComponent implements OnInit {
         return 'status-active';
       case 'INACTIVE':
         return 'status-inactive';
+      case 'SUSPENDED':
+        return 'status-suspended';
       case 'PENDING':
         return 'status-pending';
       default:
@@ -433,6 +531,41 @@ export class CooperativePatronageDistributionComponent implements OnInit {
   private showMessage(severity: 'success' | 'error' | 'warn' | 'info', summary: string, detail: string): void {
     this.messages = [{ severity, summary, detail }];
     setTimeout(() => { this.messages = []; }, 5000);
+  }
+
+  private isChecklistReady(): boolean {
+    return this.checklistVerified && this.checklistAmountCalculated;
+  }
+
+  private postPatronageToAccounting(member: CooperativeMember) {
+    const group = this.selectedGroup;
+    const refundAmount = this.getLocalMemberPatronageRefund(member, group);
+    const reference = 'REF-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const now = new Date();
+    const apiUrl = 'https://be.optimaxsuites.com/x/api/v2/accounting/events';
+
+    const payload = {
+      sourceModule: 'HR',
+      eventType: 'PATRONAGE',
+      amount: refundAmount,
+      currency: 'NGN',
+      reference,
+      description: `Patronage refund for ${member.fullName} (${member.id})`,
+      transactionDate: now.toISOString(),
+      metadata: {
+        memberName: member.fullName,
+        accountNumber: member.memberAccountNumber || 'N/A',
+        memberId: member.id,
+        bankName: member.memberBankName || 'N/A',
+        groupName: group?.name || 'N/A',
+        groupCode: group?.code || 'N/A',
+        totalInterestPaid: this.getLocalMemberTotalInterestPaid(member, group),
+        groupMembershipId: this.getFormattedGroupMembershipId(member, group),
+        notes: this.distributionNotes || undefined
+      }
+    };
+
+    return this.http.post(apiUrl, payload);
   }
 
   goBack(): void {
