@@ -18,6 +18,7 @@ app-cooperative-member-detail {
 .coop-member-detail-container {
   padding: 24px;
   min-height: 100vh;
+  font-size: 2rem;
   background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
 
   // ==========================================
@@ -42,7 +43,7 @@ app-cooperative-member-detail {
 
     p {
       color: #2E6276;
-      font-size: 0.9rem;
+      font-size: 1.2rem;
     }
   }
 
@@ -82,7 +83,7 @@ app-cooperative-member-detail {
       p {
         margin: 0;
         color: #6b8a97;
-        font-size: 0.9rem;
+        font-size: 1.18rem;
       }
     }
 
@@ -567,13 +568,14 @@ app-cooperative-member-detail {
         padding: 16px 18px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
+        font-size: 1.04rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -600,7 +602,7 @@ app-cooperative-member-detail {
         border-radius: 8px;
         display: inline-block;
         padding: 4px 12px;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
       }
 
       .amount-cell {
@@ -622,7 +624,7 @@ app-cooperative-member-detail {
 
       .date-cell {
         color: #6b8a97;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
         white-space: nowrap;
       }
 
@@ -632,7 +634,7 @@ app-cooperative-member-detail {
         align-items: center;
         padding: 5px 14px;
         border-radius: 40px;
-        font-size: 0.75rem;
+        font-size: 0.96rem;
         font-weight: 700;
 
         &.status-pending {
@@ -694,7 +696,7 @@ app-cooperative-member-detail {
           justify-content: center;
 
           i {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
           }
 
           &.view-btn {
@@ -725,7 +727,7 @@ app-cooperative-member-detail {
 
     .pagination-btn {
       padding: 8px 20px;
-      font-size: 0.85rem;
+      font-size: 0.96rem;
       font-weight: 600;
       border: 1px solid #d7e7ec;
       background: white;
@@ -750,12 +752,12 @@ app-cooperative-member-detail {
       }
 
       i {
-        font-size: 0.75rem;
+        font-size: 0.9rem;
       }
     }
 
     .pagination-info {
-      font-size: 0.9rem;
+      font-size: 0.96rem;
       color: #6f8792;
       font-weight: 500;
     }
@@ -778,7 +780,7 @@ app-cooperative-member-detail {
 
     p {
       margin: 0;
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
   }
 

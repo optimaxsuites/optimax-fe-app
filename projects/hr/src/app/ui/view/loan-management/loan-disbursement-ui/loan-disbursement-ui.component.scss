@@ -7,6 +7,7 @@ app-loan-disbursement-ui {
   .loan-disbursement-container {
     padding: 24px;
     min-height: 100vh;
+    font-size: 2rem;
     background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
     width: 100%;
     max-width: 100%;
@@ -63,7 +64,7 @@ app-loan-disbursement-ui {
         p {
           margin: 4px 0 0;
           color: #6b8a97;
-          font-size: 0.9rem;
+          font-size: 1.18rem;
         }
       }
 
@@ -75,9 +76,9 @@ app-loan-disbursement-ui {
 
         .header-pill {
           background: #f0f7fa;
-          padding: 6px 14px;
+          padding: 8px 16px;
           border-radius: 40px;
-          font-size: 0.8rem;
+          font-size: 0.96rem;
           font-weight: 600;
           color: #2E6276;
           
@@ -117,10 +118,10 @@ app-loan-disbursement-ui {
       .summary-card {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         background: white;
         border-radius: 16px;
-        padding: 12px 14px;
+        padding: 18px 20px;
         border: 1px solid #e3eef0;
         transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
@@ -132,8 +133,8 @@ app-loan-disbursement-ui {
         }
 
         .card-icon {
-          width: 40px;
-          height: 40px;
+          width: 52px;
+          height: 52px;
           border-radius: 12px;
           display: flex;
           align-items: center;
@@ -141,7 +142,7 @@ app-loan-disbursement-ui {
           flex-shrink: 0;
 
           i {
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             color: white;
           }
 
@@ -165,17 +166,17 @@ app-loan-disbursement-ui {
 
           .summary-label {
             display: block;
-            font-size: 0.65rem;
+            font-size: 0.86rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
             font-weight: 700;
-            margin-bottom: 2px;
+            margin-bottom: 6px;
           }
 
           strong {
             display: block;
-            font-size: 1.2rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: #1a4b5c;
             line-height: 1.2;
@@ -186,9 +187,9 @@ app-loan-disbursement-ui {
 
           small {
             display: block;
-            font-size: 0.6rem;
+            font-size: 0.92rem;
             color: #8aadba;
-            margin-top: 2px;
+            margin-top: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -255,7 +256,7 @@ app-loan-disbursement-ui {
           background: #f8fcfd !important;
           color: #1a4b5c !important;
           font-weight: 700;
-          font-size: 0.85rem;
+          font-size: 0.98rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -264,7 +265,7 @@ app-loan-disbursement-ui {
           padding: 16px 18px !important;
           text-align: left;
           border-bottom: 1px solid #eef3f6 !important;
-          font-size: 0.92rem;
+          font-size: 1.06rem;
           color: #1a4b5c;
           background: white;
         }
@@ -281,7 +282,7 @@ app-loan-disbursement-ui {
           border-radius: 8px;
           display: inline-block;
           padding: 4px 12px;
-          font-size: 0.85rem;
+          font-size: 0.98rem;
           margin: 8px 0;
         }
 
@@ -293,7 +294,7 @@ app-loan-disbursement-ui {
         .status-badge {
           padding: 5px 14px;
           border-radius: 40px;
-          font-size: 0.75rem;
+          font-size: 0.96rem;
           font-weight: 700;
         }
 
@@ -311,7 +312,7 @@ app-loan-disbursement-ui {
           min-width: 74px;
           background: rgba(46, 98, 118, 0.08);
           color: #2E6276;
-          font-size: 0.82rem;
+          font-size: 0.98rem;
           font-weight: 600;
 
           &:hover {
@@ -353,7 +354,7 @@ app-loan-disbursement-ui {
 
         .section-copy {
           .eyebrow {
-            font-size: 0.82rem;
+            font-size: 0.88rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
@@ -362,7 +363,7 @@ app-loan-disbursement-ui {
 
           h2 {
             margin: 4px 0 8px;
-            font-size: 1.24rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -371,7 +372,7 @@ app-loan-disbursement-ui {
         p {
           margin: 0;
           color: #6b8a97;
-          font-size: 0.92rem;
+          font-size: 1rem;
         }
       }
 
@@ -395,7 +396,7 @@ app-loan-disbursement-ui {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.86rem;
+            font-size: 0.96rem;
 
             .metric-label {
               color: #8aadba;
@@ -425,7 +426,7 @@ app-loan-disbursement-ui {
             top: 50%;
             transform: translateY(-50%);
             color: #8aadba;
-            font-size: 0.8rem;
+            font-size: 0.95rem;
           }
 
           input {
@@ -433,7 +434,7 @@ app-loan-disbursement-ui {
             padding: 8px 12px 8px 34px;
             border: 1px solid #d7e7ec;
             border-radius: 30px;
-            font-size: 0.9rem;
+            font-size: 1.04rem;
             background: white;
 
             &:focus {
@@ -460,7 +461,7 @@ app-loan-disbursement-ui {
         flex-wrap: wrap;
 
         .batch-count {
-          font-size: 0.78rem;
+          font-size: 0.9rem;
           font-weight: 700;
           color: #1d4ed8;
           display: flex;
@@ -469,7 +470,7 @@ app-loan-disbursement-ui {
         }
 
         .batch-total {
-          font-size: 0.78rem;
+          font-size: 0.9rem;
           font-weight: 600;
           color: #1a4b5c;
           background: #dbeafe;
@@ -480,7 +481,7 @@ app-loan-disbursement-ui {
         .batch-select-all-btn,
         .batch-clear-btn {
           padding: 3px 10px;
-          font-size: 0.72rem;
+          font-size: 0.84rem;
           font-weight: 600;
           border-radius: 999px;
           cursor: pointer;
@@ -527,7 +528,7 @@ app-loan-disbursement-ui {
         gap: 12px;
 
         .results-label {
-          font-size: 0.86rem;
+          font-size: 0.94rem;
           color: #8aadba;
         }
 
@@ -538,7 +539,7 @@ app-loan-disbursement-ui {
 
           .pager-btn {
             padding: 4px 12px;
-            font-size: 0.82rem;
+            font-size: 0.92rem;
             font-weight: 600;
             border: 1px solid #d7e7ec;
             background: white;
@@ -558,7 +559,7 @@ app-loan-disbursement-ui {
           }
 
           .pager-chip {
-            font-size: 0.84rem;
+            font-size: 0.92rem;
             color: #6f8792;
           }
         }
@@ -582,20 +583,20 @@ app-loan-disbursement-ui {
       box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
       .section-head.compact {
-        padding: 16px 20px;
+        padding: 20px 24px;
         display: flex;
         align-items: center;
         gap: 12px;
 
         &.batch-nav-head {
-          padding: 12px 14px;
+          padding: 16px 18px;
           gap: 8px;
         }
 
         .batch-nav-arrow {
           flex-shrink: 0;
-          width: 30px;
-          height: 30px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           border: 1px solid #d7e7ec;
           background: #f4f9fb;
@@ -604,7 +605,7 @@ app-loan-disbursement-ui {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 0.7rem;
+          font-size: 0.82rem;
           transition: all 0.15s;
 
           &:hover {
@@ -614,15 +615,15 @@ app-loan-disbursement-ui {
         }
 
         .heading-icon {
-          width: 36px;
-          height: 36px;
+          width: 42px;
+          height: 42px;
           border-radius: 10px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           
           i {
-            font-size: 1rem;
+            font-size: 1.12rem;
             color: white;
           }
         }
@@ -631,7 +632,7 @@ app-loan-disbursement-ui {
           flex: 1;
           
           .eyebrow {
-            font-size: 0.76rem;
+            font-size: 0.86rem;
             text-transform: uppercase;
             color: #8aadba;
             letter-spacing: 0.08em;
@@ -640,7 +641,7 @@ app-loan-disbursement-ui {
           
           h2 {
             margin: 0;
-            font-size: 1.12rem;
+            font-size: 1.28rem;
             font-weight: 700;
             color: #1a4b5c;
           }
@@ -662,10 +663,10 @@ app-loan-disbursement-ui {
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 20px;
+        padding: 10px 24px;
         background: #eef7ff;
         border-bottom: 1px solid #bfdbfe;
-        font-size: 0.73rem;
+        font-size: 0.9rem;
         font-weight: 600;
         color: #1d4ed8;
       }
@@ -673,8 +674,8 @@ app-loan-disbursement-ui {
       .loan-info-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        padding: 16px 20px;
+        gap: 16px;
+        padding: 20px 24px;
         border-bottom: 1px solid #eef3f6;
 
         .info-group {
@@ -683,7 +684,7 @@ app-loan-disbursement-ui {
           gap: 4px;
 
           label {
-            font-size: 0.78rem;
+            font-size: 0.88rem;
             text-transform: uppercase;
             color: #8aadba;
             font-weight: 600;
@@ -691,7 +692,7 @@ app-loan-disbursement-ui {
           }
 
           .value {
-            font-size: 0.96rem;
+            font-size: 1.08rem;
             font-weight: 500;
             color: #1a4b5c;
             word-break: break-word;
@@ -703,7 +704,7 @@ app-loan-disbursement-ui {
 
             &.reference {
               font-family: monospace;
-              font-size: 0.75rem;
+              font-size: 0.92rem;
             }
           }
 
@@ -714,12 +715,12 @@ app-loan-disbursement-ui {
       }
 
       .approval-info, .bank-details, .disbursement-info {
-        padding: 16px 20px;
+        padding: 20px 24px;
         border-bottom: 1px solid #eef3f6;
 
         h4 {
           margin: 0 0 12px 0;
-          font-size: 1rem;
+          font-size: 1.1rem;
           font-weight: 700;
           color: #1a4b5c;
           display: flex;
@@ -738,7 +739,7 @@ app-loan-disbursement-ui {
             gap: 4px;
 
             label {
-              font-size: 0.76rem;
+              font-size: 0.86rem;
               text-transform: uppercase;
               color: #8aadba;
               font-weight: 600;
@@ -746,14 +747,14 @@ app-loan-disbursement-ui {
             }
 
             .value {
-              font-size: 0.94rem;
+              font-size: 1.04rem;
               font-weight: 500;
               color: #1a4b5c;
               word-break: break-word;
 
               &.reference {
                 font-family: monospace;
-                font-size: 0.75rem;
+                font-size: 0.92rem;
               }
             }
 
@@ -811,16 +812,16 @@ app-loan-disbursement-ui {
       }
 
       .details-actions {
-        padding: 16px 20px;
+        padding: 18px 24px;
         border-top: 1px solid #eef3f6;
         background: #fafdfe;
 
         .send-btn {
           width: 100%;
-          padding: 10px 20px;
+          padding: 12px 22px;
           border-radius: 40px;
           font-weight: 600;
-          font-size: 0.92rem;
+          font-size: 1rem;
           cursor: pointer;
           transition: all 0.2s;
           display: inline-flex;
@@ -1027,7 +1028,7 @@ app-loan-disbursement-ui {
 
       p {
         color: #6b8a97;
-        font-size: 0.8rem;
+        font-size: 0.92rem;
         margin-bottom: 20px;
       }
 
@@ -1038,6 +1039,7 @@ app-loan-disbursement-ui {
         padding: 12px;
         margin-bottom: 20px;
         font-size: 0.75rem;
+        font-size: 0.86rem;
 
         div {
           margin-bottom: 6px;
@@ -1062,7 +1064,7 @@ app-loan-disbursement-ui {
 
       p {
         color: #8aadba;
-        font-size: 0.85rem;
+        font-size: 1rem;
         margin: 0;
       }
     }
@@ -1080,7 +1082,7 @@ app-loan-disbursement-ui {
 
       p {
         color: #8aadba;
-        font-size: 0.8rem;
+        font-size: 1rem;
         margin: 0;
       }
     }
@@ -1092,7 +1094,7 @@ app-loan-disbursement-ui {
       justify-content: center;
       padding: 4px 10px;
       border-radius: 999px;
-      font-size: 0.7rem;
+      font-size: 0.92rem;
       font-weight: 700;
       white-space: nowrap;
 
@@ -1112,7 +1114,7 @@ app-loan-disbursement-ui {
     .select-btn {
       padding: 4px 12px;
       border-radius: 30px;
-      font-size: 0.7rem;
+      font-size: 0.96rem;
       font-weight: 600;
       cursor: pointer;
       background: white;

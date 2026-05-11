@@ -1399,7 +1399,7 @@ public createGroup(group: Omit<CooperativeLoanGroup, 'id'>): Observable<Cooperat
           this.syncLoanCache([]);
           return [];
         }
-        this.mergeLoanReferenceData(rawLoans);
+        // this.mergeLoanReferenceData(rawLoans);
         const loans = rawLoans.map((loan) => this.mapApiLoanToLoan(loan));
         this.syncLoanCache(loans);
         return loans;
@@ -2501,6 +2501,7 @@ private buildGroupApiPayload(
     status: group.status || 'ACTIVE',
     description: group.description || '',
     patronageRate: Number(group.patronageRate || 0),
+    patronageEligible: Boolean(group.patronageEligible),
     patronageAmount: Number(group.patronageAmount || 0),
     requiresGuarantors: Boolean(group.requiresGuarantors),
     minimumGuarantors: Number(group.minimumGuarantors || 0),
@@ -2680,15 +2681,15 @@ private buildGroupApiPayload(
         existingLoan?.membershipId ??
         0
       ) || undefined,
-      amount: this.resolveLoanNumber(rawLoan.amount, sourceLoan?.amount, existingLoan?.amount) || 0,
-      purpose: this.resolveLoanString(rawLoan.purpose, sourceLoan?.purpose, existingLoan?.purpose),
+      amount: Number(rawLoan.amount || 0),
+      purpose: String(rawLoan.purpose || ''),
       approvedAmount: this.resolveLoanNumber(rawLoan.approvedAmount, sourceLoan?.approvedAmount, existingLoan?.approvedAmount),
-      repaymentAmount: this.resolveLoanNumber(rawLoan.repaymentAmount, sourceLoan?.repaymentAmount, existingLoan?.repaymentAmount) || 0,
-      repaymentTime: this.resolveLoanNumber(rawLoan.repaymentTime, sourceLoan?.repaymentTime, existingLoan?.repaymentTime) || 0,
+      repaymentAmount: Number(rawLoan.repaymentAmount || 0),
+      repaymentTime: Number(rawLoan.repaymentTime || 0),
       repaymentStartDate: this.resolveLoanDate(rawLoan.repaymentStartDate, sourceLoan?.repaymentStartDate, existingLoan?.repaymentStartDate),
       repaymentDay: this.resolveLoanNumber(rawLoan.repaymentDay, sourceLoan?.repaymentDay, existingLoan?.repaymentDay),
-      modeOfPayment: this.resolveLoanString(rawLoan.modeOfPayment, sourceLoan?.modeOfPayment, existingLoan?.modeOfPayment, 'MONTHLY'),
-      requestDate: this.resolveLoanDate(rawLoan.requestDate, sourceLoan?.requestDate, existingLoan?.requestDate) || '',
+      modeOfPayment: String(rawLoan.modeOfPayment || 'MONTHLY'),
+      requestDate: this.extractDateValue(rawLoan.requestDate) || '',
       approvedDate: this.resolveLoanDate(rawLoan.approvedDate, sourceLoan?.approvedDate, existingLoan?.approvedDate) || '',
       approvedBy: rawLoan.approvedBy ?? sourceLoan?.approvedBy ?? existingLoan?.approvedBy,
       disbursedDate: this.resolveLoanDate(rawLoan.disbursedDate, sourceLoan?.disbursedDate, existingLoan?.disbursedDate) || '',

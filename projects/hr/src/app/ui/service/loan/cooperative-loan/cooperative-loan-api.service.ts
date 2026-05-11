@@ -420,13 +420,35 @@ export class CooperativeLoanApiService {
   constructor(private http: HttpClient) {}
 
   private getAuthHeaders(): HttpHeaders {
-    const token = getTokenFromStorage();
-    return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : '',
-      'X-Tenant-ID': this.getTenantId(),
-      'Content-Type': 'application/json'
-    });
+  const token = getTokenFromStorage();
+  const tenantId = this.getTenantId();
+  
+  console.log('[CooperativeLoanApi] Building auth headers, token exists:', !!token);
+  
+  let headers: Record<string, string> = {
+    'X-Tenant-ID': tenantId,
+    'Content-Type': 'application/json'
+  };
+  
+  if (token) {
+    // Make sure token doesn't have any prefixes already
+    let cleanToken = token;
+    if (cleanToken.startsWith('Bearer ')) {
+      cleanToken = cleanToken.slice(7);
+    }
+    headers['Authorization'] = `Bearer ${cleanToken}`;
+  } else {
+    console.warn('[CooperativeLoanApi] No token available for request');
   }
+  
+  // Log headers for debugging (without exposing full token)
+  console.log('[CooperativeLoanApi] Headers:', {
+    'X-Tenant-ID': headers['X-Tenant-ID'],
+    'Authorization': headers['Authorization'] ? 'Bearer [REDACTED]' : 'MISSING'
+  });
+  
+  return new HttpHeaders(headers);
+}
 
   private getTenantId(): string {
     const tenant = sessionStorage.getItem('tenantId')
@@ -446,7 +468,15 @@ export class CooperativeLoanApiService {
       return response as T[];
     }
 
-    const paginatedResponse = response as { content?: T[]; data?: T[] | { content?: T[]; data?: T[] }; items?: T[]; results?: T[] } | null;
+    const paginatedResponse = response as {
+      content?: T[];
+      data?: T[] | { content?: T[]; data?: T[]; items?: T[]; results?: T[]; payload?: T[]; records?: T[]; list?: T[] };
+      items?: T[];
+      results?: T[];
+      payload?: T[];
+      records?: T[];
+      list?: T[];
+    } | null;
     if (paginatedResponse?.content && Array.isArray(paginatedResponse.content)) {
       return paginatedResponse.content;
     }
@@ -471,6 +501,45 @@ export class CooperativeLoanApiService {
 
     if (paginatedResponse?.results && Array.isArray(paginatedResponse.results)) {
       return paginatedResponse.results;
+    }
+
+    if (paginatedResponse?.payload && Array.isArray(paginatedResponse.payload)) {
+      return paginatedResponse.payload;
+    }
+
+    if (paginatedResponse?.records && Array.isArray(paginatedResponse.records)) {
+      return paginatedResponse.records;
+    }
+
+    if (paginatedResponse?.list && Array.isArray(paginatedResponse.list)) {
+      return paginatedResponse.list;
+    }
+
+    if (paginatedResponse?.data && typeof paginatedResponse.data === 'object') {
+      const nestedData = paginatedResponse.data as {
+        content?: T[];
+        data?: T[];
+        items?: T[];
+        results?: T[];
+        payload?: T[];
+        records?: T[];
+        list?: T[];
+      };
+      if (nestedData.items && Array.isArray(nestedData.items)) {
+        return nestedData.items;
+      }
+      if (nestedData.results && Array.isArray(nestedData.results)) {
+        return nestedData.results;
+      }
+      if (nestedData.payload && Array.isArray(nestedData.payload)) {
+        return nestedData.payload;
+      }
+      if (nestedData.records && Array.isArray(nestedData.records)) {
+        return nestedData.records;
+      }
+      if (nestedData.list && Array.isArray(nestedData.list)) {
+        return nestedData.list;
+      }
     }
 
     return [];
@@ -577,7 +646,7 @@ export class CooperativeLoanApiService {
   }
 
   private findCollectionArrayStart(response: string): number {
-    const markers = ['"content"', '"data"', '"items"', '"results"'];
+    const markers = ['"content"', '"data"', '"items"', '"results"', '"payload"', '"records"', '"list"'];
 
     for (const marker of markers) {
       const markerIndex = response.indexOf(marker);

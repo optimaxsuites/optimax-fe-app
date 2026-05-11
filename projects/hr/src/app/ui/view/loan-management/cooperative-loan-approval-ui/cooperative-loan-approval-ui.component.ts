@@ -203,11 +203,20 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     this.groupLookup.clear();
     this.membershipLookup.clear();
 
-    // Build member lookup by both internal id and cooperative memberId.
+    // Build member lookup using ALL possible ID fields to prevent API calls
     this.members.forEach((member) => {
-      [member.id, member.memberId]
-        .filter((value): value is number => typeof value === 'number' && !isNaN(value) && value > 0)
-        .forEach((value) => this.memberLookup.set(value, member));
+      // Store by internal id
+      if (member.id && member.id > 0) {
+        this.memberLookup.set(member.id, member);
+      }
+      // Store by cooperative memberId
+      if (member.memberId && member.memberId > 0) {
+        this.memberLookup.set(member.memberId, member);
+      }
+      // Store by employeeId
+      if (member.employeeId && member.employeeId > 0) {
+        this.memberLookup.set(member.employeeId, member);
+      }
     });
 
     // Build group lookup
@@ -222,69 +231,25 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ==================== HELPER METHODS ====================
-  setDefaultRepaymentStartDate(): void {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    this.approvalRepaymentStartDate = d.toISOString().split('T')[0];
-    this.onRepaymentStartDateChange(this.approvalRepaymentStartDate);
-  }
-
-  getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
-    const directMembershipId = Number(loan.membershipId || 0);
-    if (directMembershipId > 0) {
-      const membership = this.memberships.find((item) => Number(item.id) === directMembershipId);
-      const byMembership = this.members.find((member) => Number(member.id) === Number(membership?.memberId || 0));
-      if (byMembership) {
-        return byMembership;
-      }
+  // ==================== SAFE HELPER METHODS (NO API CALLS) ====================
+  
+  /**
+   * SAFE VERSION - Only uses local cache, never triggers API calls
+   * This prevents the 401 error when member is not found
+   */
+  private safeGetMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
+    const id = loan.cooperativeMemberId;
+    if (id !== null && id !== undefined && Number(id) > 0) {
+      // Only return if exists in local lookup - don't trigger API calls
+      return this.memberLookup.get(Number(id));
     }
-
-    const cooperativeMemberId = Number(loan.cooperativeMemberId || 0);
-    if (cooperativeMemberId > 0) {
-      const byId = this.members.find((member) => Number(member.id) === cooperativeMemberId);
-      if (byId) {
-        return byId;
-      }
-
-      const byMemberId = this.members.find((member) => Number(member.memberId || 0) === cooperativeMemberId);
-      if (byMemberId) {
-        return byMemberId;
-      }
-    }
-
-    const memberId = Number(loan.memberId || 0);
-    if (memberId > 0) {
-      const byMemberId = this.members.find((member) => Number(member.memberId || 0) === memberId);
-      if (byMemberId) {
-        return byMemberId;
-      }
-
-      const byId = this.members.find((member) => Number(member.id) === memberId);
-      if (byId) {
-        return byId;
-      }
-
-      const byEmployeeId = this.members.find((member) => Number(member.employeeId || 0) === memberId);
-      if (byEmployeeId) {
-        return byEmployeeId;
-      }
-    }
-
     return undefined;
   }
 
-  getMemberIdForLoan(loan: CooperativeLoan): number | undefined {
-    return Number(loan.cooperativeMemberId || loan.memberId || 0) || undefined;
-  }
-
-  getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
-    const groupId = loan.cooperativeGroupId || loan.groupId;
-    if (!groupId) return undefined;
-    return this.groupLookup.get(Number(groupId));
-  }
-
-  getMembershipForLoan(loan: CooperativeLoan): CooperativeGroupMembership | undefined {
+  /**
+   * SAFE VERSION - Only uses local cache for membership lookup
+   */
+  private safeGetMembershipForLoan(loan: CooperativeLoan): CooperativeGroupMembership | undefined {
     const directMembershipId = Number(loan.membershipId || 0);
     if (directMembershipId > 0) {
       const byId = this.memberships.find((membership) => Number(membership.id) === directMembershipId);
@@ -293,7 +258,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
       }
     }
 
-    const member = this.getMemberForLoan(loan);
+    const member = this.safeGetMemberForLoan(loan);
     const groupId = Number(loan.cooperativeGroupId || loan.groupId || 0);
     const candidateMemberIds = [
       Number(loan.cooperativeMemberId || 0),
@@ -312,9 +277,43 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
     );
   }
 
+  // ==================== HELPER METHODS ====================
+  setDefaultRepaymentStartDate(): void {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    this.approvalRepaymentStartDate = d.toISOString().split('T')[0];
+    this.onRepaymentStartDateChange(this.approvalRepaymentStartDate);
+  }
+
+  // MODIFIED: Use safe method to prevent API calls
+  getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
+    return this.safeGetMemberForLoan(loan);
+  }
+
+  getMemberIdForLoan(loan: CooperativeLoan): number | undefined {
+    return Number(loan.cooperativeMemberId || loan.memberId || 0) || undefined;
+  }
+
+  getGroupForLoan(loan: CooperativeLoan): CooperativeLoanGroup | undefined {
+    const groupId = loan.cooperativeGroupId || loan.groupId;
+    if (!groupId) return undefined;
+    return this.groupLookup.get(Number(groupId));
+  }
+
+  // MODIFIED: Use safe method to prevent API calls
+  getMembershipForLoan(loan: CooperativeLoan): CooperativeGroupMembership | undefined {
+    return this.safeGetMembershipForLoan(loan);
+  }
+
+  // MODIFIED: Returns fallback text instead of triggering API calls
   getMemberName(loan: CooperativeLoan): string {
-    const member = this.getMemberForLoan(loan);
-    return member?.fullName || '';
+    const member = this.safeGetMemberForLoan(loan);
+    if (member?.fullName) {
+      return member.fullName;
+    }
+    // Return a placeholder instead of triggering API call
+    const id = loan.cooperativeMemberId;
+    return id ? `Member ${id}` : 'Unknown Member';
   }
 
   getMemberIdentifier(loan: CooperativeLoan): string {
@@ -324,7 +323,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
   }
 
   getMembershipId(loan: CooperativeLoan): string {
-    const membership = this.getMembershipForLoan(loan);
+    const membership = this.safeGetMembershipForLoan(loan);
     const group = this.getGroupForLoan(loan);
     const memberId = this.getMemberIdForLoan(loan);
     
@@ -780,7 +779,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
         if (updated) {
           this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
-          if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], updated);
+          if (idx !== -1) this.loans[idx] = updated;
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} approved successfully.`);
           this.closeApprovalModal();
@@ -792,7 +791,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
             this.isSubmitting = false;
             if (freshLoan) {
               const idx = this.loans.findIndex(l => l.id === loanId);
-              if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], freshLoan);
+              if (idx !== -1) this.loans[idx] = freshLoan;
               this.applyFilters();
 
               if (freshLoan.status === 'APPROVED') {
@@ -849,7 +848,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
         if (updated) {
           this.isSubmitting = false;
           const idx = this.loans.findIndex(l => l.id === loanId);
-          if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], updated);
+          if (idx !== -1) this.loans[idx] = updated;
           this.applyFilters();
           this.showSuccess(`Loan ${this.getLoanCode(updated)} rejected.`);
           this.closeRejectModal();
@@ -861,7 +860,7 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
             this.isSubmitting = false;
             if (freshLoan) {
               const idx = this.loans.findIndex(l => l.id === loanId);
-              if (idx !== -1) this.loans[idx] = this.mergeLoanUpdate(this.loans[idx], freshLoan);
+              if (idx !== -1) this.loans[idx] = freshLoan;
               this.applyFilters();
 
               if (freshLoan.status === 'REJECTED') {
@@ -942,27 +941,6 @@ export class CooperativeLoanApprovalUiComponent implements OnInit, OnDestroy {
       case 3: return 'rd';
       default: return 'th';
     }
-  }
-
-  private mergeLoanUpdate(existing: CooperativeLoan, incoming: CooperativeLoan): CooperativeLoan {
-    return {
-      ...existing,
-      ...incoming,
-      cooperativeMemberId: Number(incoming.cooperativeMemberId || incoming.memberId || existing.cooperativeMemberId || existing.memberId || 0),
-      cooperativeGroupId: Number(incoming.cooperativeGroupId || incoming.groupId || existing.cooperativeGroupId || existing.groupId || 0),
-      membershipId: Number(incoming.membershipId || existing.membershipId || 0) || undefined,
-      amount: Number(incoming.amount || existing.amount || 0),
-      repaymentAmount: Number(incoming.repaymentAmount || existing.repaymentAmount || 0),
-      repaymentTime: Number(incoming.repaymentTime || existing.repaymentTime || existing.duration || 0),
-      applicationDate: incoming.applicationDate || existing.applicationDate,
-      requestDate: incoming.requestDate || existing.requestDate,
-      paymentHistory: Array.isArray(incoming.paymentHistory) && incoming.paymentHistory.length > 0
-        ? incoming.paymentHistory
-        : existing.paymentHistory,
-      statusHistory: Array.isArray(incoming.statusHistory) && incoming.statusHistory.length > 0
-        ? incoming.statusHistory
-        : existing.statusHistory
-    };
   }
 
   // ==================== MESSAGE HANDLERS ====================

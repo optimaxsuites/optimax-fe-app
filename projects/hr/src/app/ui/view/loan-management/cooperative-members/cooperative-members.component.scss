@@ -8,6 +8,7 @@ app-cooperative-members {
   .coop-members-container {
     padding: 24px;
     min-height: 100vh;
+    font-size: 2rem;
     background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
@@ -47,7 +48,7 @@ app-cooperative-members {
         p {
           margin: 0;
           color: #6b8a97;
-          font-size: 0.9rem;
+          font-size: 1.18rem;
         }
       }
 
@@ -141,7 +142,7 @@ app-cooperative-members {
           padding: 14px 16px 14px 44px;
           border: 2px solid #e2edf2;
           border-radius: 48px;
-          font-size: 0.9rem;
+          font-size: 1.06rem;
           background: white;
           transition: all 0.3s ease;
 
@@ -182,7 +183,7 @@ app-cooperative-members {
           margin-bottom: 6px;
           font-weight: 600;
           color: #1a4b5c;
-          font-size: 0.7rem;
+          font-size: 0.84rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -192,7 +193,7 @@ app-cooperative-members {
           padding: 10px 12px;
           border: 1px solid #d7e7ec;
           border-radius: 10px;
-          font-size: 0.85rem;
+          font-size: 1.02rem;
           background: white;
           transition: all 0.2s;
 
@@ -211,7 +212,7 @@ app-cooperative-members {
         background: white;
         color: #2E6276;
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.96rem;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -263,7 +264,7 @@ app-cooperative-members {
 
       p {
         color: #2E6276;
-        font-size: 0.9rem;
+        font-size: 1.2rem;
       }
     }
 
@@ -289,13 +290,14 @@ app-cooperative-members {
         padding: 16px 18px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
+        font-size: 1.04rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
 
@@ -337,7 +339,7 @@ app-cooperative-members {
         border-radius: 8px;
         display: inline-block;
         padding: 4px 12px;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
       }
 
       .name-cell {
@@ -359,7 +361,7 @@ app-cooperative-members {
           align-items: center;
           padding: 5px 14px;
           border-radius: 40px;
-          font-size: 0.75rem;
+          font-size: 0.96rem;
           font-weight: 700;
 
           &.status-active {
@@ -400,7 +402,7 @@ app-cooperative-members {
           justify-content: center;
 
           i {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
           }
 
           &.view-btn {
@@ -440,7 +442,7 @@ app-cooperative-members {
 
       .pagination-btn {
         padding: 8px 20px;
-        font-size: 0.85rem;
+        font-size: 0.96rem;
         font-weight: 600;
         border: 1px solid #d7e7ec;
         background: white;
@@ -465,12 +467,12 @@ app-cooperative-members {
         }
 
         i {
-          font-size: 0.75rem;
+          font-size: 0.9rem;
         }
       }
 
       .pagination-info {
-        font-size: 0.9rem;
+        font-size: 0.96rem;
         color: #6f8792;
         font-weight: 500;
       }
@@ -496,7 +498,7 @@ app-cooperative-members {
       p {
         color: #8aadba;
         margin-bottom: 20px;
-        font-size: 1rem;
+        font-size: 1.08rem;
       }
 
       .btn-refresh-small {
@@ -505,6 +507,7 @@ app-cooperative-members {
         border: none;
         padding: 10px 24px;
         border-radius: 40px;
+        font-size: 0.96rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -620,7 +623,7 @@ app-cooperative-members {
       }
       
       .header-title p {
-        font-size: 0.75rem;
+        font-size: 1rem;
       }
     }
 
@@ -632,12 +635,12 @@ app-cooperative-members {
     .members-table th,
     .members-table td {
       padding: 12px 14px;
-      font-size: 0.8rem;
+      font-size: 0.92rem;
     }
 
     .code-cell {
       padding: 3px 8px !important;
-      font-size: 0.7rem !important;
+      font-size: 0.82rem !important;
     }
   }
 }
