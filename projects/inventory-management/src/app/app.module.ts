@@ -10,7 +10,7 @@ import { routes } from './app.routes';
     AppComponent
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     RouterModule.forChild(routes)
   ],
   providers: [],
