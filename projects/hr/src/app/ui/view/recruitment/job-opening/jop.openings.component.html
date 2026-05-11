@@ -1,5 +1,7 @@
 <!-- job-openings.component.html -->
 
+<p-toast></p-toast>
+
 <!-- ─── HERO ──────────────────────────────────────────────────────────────── -->
 <section class="career-hero relative overflow-hidden bg-[#1a4a3a] min-h-[450px] flex items-end pb-10 px-8 md:px-16">
 
@@ -217,17 +219,17 @@
                name="phone" placeholder="123-456-7890" required>
       </div>
 
-       <div>
+      <div>
         <label class="modal-label">Cover Letter</label>
         <textarea  class="modal-input" [(ngModel)]="application.letter"
-               name="email" placeholder="Cover letter (optional)" rows="4">
+               name="letter" placeholder="Cover letter (optional)" rows="4">
         </textarea>
       </div>
 
       <div>
         <label class="modal-label">Upload CV/Resume *</label>
-        <input type="file" class="modal-input" [(ngModel)]="application.file"
-               name="file" required>
+        <input type="file" class="modal-input"
+               name="file" (change)="onMainFileChange($event)" required>
       </div>
 
       <!-- <div *ngFor="let field of selectedJob?.jobVacancyCustomFields">
