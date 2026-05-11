@@ -1,6 +1,8 @@
 export interface AttendanceTableRecord {
   id: string;
   employee: string;
+  attendanceRecordId?: string;
+  employeeId?: string;
   department: string;
   date: string | null;
   checkIn: string | null;

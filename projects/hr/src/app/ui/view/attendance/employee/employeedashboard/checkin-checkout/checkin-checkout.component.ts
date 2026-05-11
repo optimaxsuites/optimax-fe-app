@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
+import { resolveLoanOutstandingAccruedFees } from '../../../../../service/loan/loan-display.util';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -31,11 +32,29 @@ export class CheckinCheckoutComponent implements OnInit {
   //employeeName = 'Chrisha Okorocha';
   //department = 'Engineering';
 
+  private hrEmployeeId: string | null = null;
+  //private hrDepartment: string = '';
+  private hrDepartment = '';
+  private hrEmployeeName = '';
+
   get currentUser() {
     return this.userSession.getCurrentUser();
   }
 
   ngOnInit() {
+    const username = sessionStorage.getItem('userid'); // "chrisha"
+    if (username) {
+      this.attendanceService.resolveHrEmployeeId(username).subscribe(result => {
+        if (result) {
+          this.hrEmployeeId = result.id;
+          this.hrDepartment = result.department;
+          this.hrEmployeeName = result.fullName;
+          console.log('Resolved HR employee ID:', result); // should print the correct ID
+     
+        }
+        });
+    }
+
   setInterval(() => { this.currentTime = new Date(); }, 1000);
 
   // React to attendance changes
@@ -99,6 +118,16 @@ private restoreClockStatus(): void {
   async toggleClock() {
     if (this.isAbsentToday) return; // Block action completely
 
+    if (!this.hrEmployeeId) {
+      console.error('HR employee ID not resolved yet');
+      return;
+    }
+
+    if (!this.hrDepartment) {
+      console.error('HR employee deparment not resolved yet');
+      return;
+    }
+
     this.isGettingLocation = true;
     try {
       if (this.status === 'CLOCKED_OUT') {
@@ -106,9 +135,12 @@ private restoreClockStatus(): void {
         this.attendanceService.setClockStatus('CLOCKED_IN');
 
         await this.attendanceService.clockAction(
-          this.currentUser!.id,
-          this.currentUser!.name,
-          this.currentUser!.department,
+          //this.currentUser!.id,
+          this.hrEmployeeId, //HR employee ID for API
+          //this.currentUser!.name,
+          this.hrEmployeeName,
+          //this.currentUser!.department,
+          this.hrDepartment, //for department
           'IN'
         );
 
@@ -118,9 +150,12 @@ private restoreClockStatus(): void {
     this.attendanceService.setClockStatus('CLOCKED_OUT');
 
     await this.attendanceService.clockAction(
-      this.currentUser!.id,
-      this.currentUser!.name,
-      this.currentUser!.department,
+      //this.currentUser!.id,
+      this.hrEmployeeId, //HR employee ID for API
+      //this.currentUser!.name,
+      this.hrEmployeeName,
+      //this.currentUser!.department,
+      this.hrDepartment, //for department
       'OUT'
     );
   }
