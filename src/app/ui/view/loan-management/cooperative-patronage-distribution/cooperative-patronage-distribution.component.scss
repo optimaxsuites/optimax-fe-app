@@ -1,3 +1,5 @@
+@use '../_loan-status-badges' as loanStatus;
+
 .patronage-distribution-container {
   padding: 24px;
   min-height: 100vh;
@@ -344,6 +346,19 @@
           color: #1a4b5c;
         }
 
+        .batch-checkbox-cell {
+          width: 36px;
+          text-align: center;
+          padding: 10px 8px !important;
+
+          .batch-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #2e6276;
+          }
+        }
+
         .group-code {
           font-family: monospace;
           color: #2E6276;
@@ -352,6 +367,66 @@
         .amount {
           color: #2EB270;
           font-weight: 700;
+        }
+      }
+    }
+
+    .batch-indicator {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #eef7ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      flex-wrap: wrap;
+
+      .batch-count {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1d4ed8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .batch-total {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1a4b5c;
+        background: #dbeafe;
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+
+      .batch-select-all-btn,
+      .batch-clear-btn {
+        padding: 6px 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid;
+        background: white;
+      }
+
+      .batch-select-all-btn {
+        border-color: #3b82f6;
+        color: #1d4ed8;
+
+        &:hover {
+          background: #eff6ff;
+        }
+      }
+
+      .batch-clear-btn {
+        border-color: #f87171;
+        color: #dc2626;
+
+        &:hover {
+          background: #fef2f2;
         }
       }
     }
@@ -411,10 +486,10 @@
       margin-top: 20px;
       display: flex;
       justify-content: flex-end;
+      gap: 12px;
 
+      .secondary-btn,
       .primary-btn {
-        background: linear-gradient(135deg, #2EB270, #239d60);
-        color: white;
         border: none;
         padding: 12px 24px;
         border-radius: 40px;
@@ -430,7 +505,29 @@
           font-size: 1rem;
         }
 
-        &:hover {
+        &:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+
+      .secondary-btn {
+        background: linear-gradient(135deg, #2E6276, #4291b1);
+        color: white;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(46, 98, 118, 0.25);
+        }
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, #2EB270, #239d60);
+        color: white;
+
+        &:hover:not(:disabled) {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(46, 178, 112, 0.25);
         }
@@ -974,29 +1071,8 @@
 
   // Status Badge Styles
   .status-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    white-space: nowrap;
-
-    &.status-active {
-      background: rgba(46, 178, 112, 0.12);
-      color: #1e7e4a;
-    }
-
-    &.status-inactive {
-      background: rgba(108, 117, 125, 0.1);
-      color: #6c757d;
-    }
-
-    &.status-pending {
-      background: rgba(245, 158, 11, 0.15);
-      color: #b45309;
-    }
+    @include loanStatus.advanceLoanStatusBadges(false);
+    font-size: 0.78rem !important;
   }
 
   // Select Button Styles
