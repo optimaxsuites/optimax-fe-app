@@ -34,14 +34,7 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(request);
     }
 
-    // Try multiple token keys (case-sensitive)
-    let accessToken = sessionStorage.getItem('Token');
-    if (!accessToken) {
-      accessToken = sessionStorage.getItem('token');
-    }
-    if (!accessToken) {
-      accessToken = sessionStorage.getItem('accessToken');
-    }
+    const accessToken = this.getStoredAccessToken();
 
     // Log token status for cooperative endpoints (for debugging)
     if (request.url.includes('cooperativeLoans') || request.url.includes('cooperative')) {
@@ -52,15 +45,7 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     }
 
-    // Get tenant ID from hostname
-    const host = window.location.hostname;
-    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    let tenantId = 'optimax';
-
-    if (!isLocalhost) {
-      const parts = host.split('.');
-      tenantId = parts[0] || 'optimax';
-    }
+    const tenantId = this.resolveTenantId();
 
     const defaultTenantEndpoints = ['admin/login'];
     const isDefaultTenantEndpoint = defaultTenantEndpoints.some(path =>
@@ -98,5 +83,75 @@ export class AuthInterceptor implements HttpInterceptor {
         return throwError(() => error);
       })
     );
+  }
+
+  private getStoredAccessToken(): string {
+    const keys = ['Token', 'token', 'accessToken', 'Token2', 'accessToken2'];
+    for (const key of keys) {
+      const raw = sessionStorage.getItem(key) || localStorage.getItem(key);
+      const normalized = this.normalizeToken(raw);
+      if (normalized) {
+        return normalized;
+      }
+    }
+    return '';
+  }
+
+  private normalizeToken(rawToken: string | null): string {
+    const token = String(rawToken || '').trim();
+    if (!token || token === 'undefined' || token === 'null') {
+      return '';
+    }
+
+    const bearerMatch = token.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+      return bearerMatch[1].trim();
+    }
+
+    const cookieMatch = token.match(/=(.*?)(;|$)/);
+    if (cookieMatch?.[1]) {
+      return cookieMatch[1].trim();
+    }
+
+    return token;
+  }
+
+  private resolveTenantId(): string {
+    const fallbackTenant = 'optimax';
+    const storedTenant = sessionStorage.getItem('tenantId')
+      || sessionStorage.getItem('tenant')
+      || localStorage.getItem('tenantId')
+      || localStorage.getItem('tenant');
+    const normalizedStoredTenant = String(storedTenant || '').trim();
+    if (
+      normalizedStoredTenant
+      && normalizedStoredTenant !== 'undefined'
+      && normalizedStoredTenant !== 'null'
+      && /^[a-z0-9-]{2,40}$/i.test(normalizedStoredTenant)
+      && !['be', 'www', 'app', 'erp'].includes(normalizedStoredTenant.toLowerCase())
+    ) {
+      return normalizedStoredTenant;
+    }
+
+    const host = window.location.hostname;
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    if (isLocalhost) {
+      return fallbackTenant;
+    }
+
+    if (host === 'be.optimaxsuites.com' || host.endsWith('.optimaxsuites.com')) {
+      return fallbackTenant;
+    }
+
+    const firstSegment = String(host.split('.')[0] || '').trim();
+    if (
+      firstSegment
+      && /^[a-z0-9-]{2,40}$/i.test(firstSegment)
+      && !['be', 'www', 'app', 'erp'].includes(firstSegment.toLowerCase())
+    ) {
+      return firstSegment;
+    }
+
+    return fallbackTenant;
   }
 }

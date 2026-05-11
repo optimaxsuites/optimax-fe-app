@@ -97,11 +97,11 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
         // Helper to build recent loan row (matches usage in loadDashboard)
         private buildRecentLoanRow(loan: CooperativeLoan): CooperativeDashboardLoanRow {
-          const member = this.getMemberForLoan(loan);
-          const membership = this.resolveMembershipForLoan(loan, member);
-          const group = this.getGroupForLoan(loan) || (membership?.groupId ? this.groupLookup.get(Number(membership.groupId)) : undefined);
+          const group = this.getGroupForLoan(loan);
           const groupCode = group?.code || '';
+          const member = this.getMemberForLoan(loan);
           const memberIdNum = loan.cooperativeMemberId || loan.memberId || member?.id || member?.memberId;
+          const membership = this.resolveMembershipForLoan(loan, member);
           const membershipIdRaw = membership?.membershipId || '';
           // Format Member ID as COP-XXX (zero-padded)
           const formattedCooperativeMemberId = memberIdNum ? `COP-${String(memberIdNum).padStart(3, '0')}` : '';
@@ -132,12 +132,10 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
           this.memberLookup.clear();
           this.groupLookup.clear();
           members.forEach((member) => {
-            [member.id, member.memberId, member.employeeId]
+            this.memberNameLookup.set(member.id, member.fullName);
+            [member.id, member.memberId]
               .filter((value): value is number => typeof value === 'number' && !isNaN(value))
-              .forEach((key) => {
-                this.memberNameLookup.set(key, member.fullName);
-                this.memberLookup.set(key, member);
-              });
+              .forEach((key) => this.memberLookup.set(key, member));
           });
           groups.forEach((group) => {
             this.groupNameLookup.set(group.id, group.name);
@@ -160,46 +158,11 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       }
 
       private getMemberForLoan(loan: CooperativeLoan): CooperativeMember | undefined {
-        const directMembershipId = Number(loan.membershipId || 0);
-        if (directMembershipId > 0) {
-          const membership = this.memberships.find((item) => Number(item.id) === directMembershipId);
-          const byMembership = this.allMembers.find((member) => Number(member.id) === Number(membership?.memberId || 0));
-          if (byMembership) {
-            return byMembership;
-          }
+        const possibleIds = [loan.cooperativeMemberId, loan.memberId].filter(Boolean);
+        for (const id of possibleIds) {
+          const member = this.memberLookup.get(Number(id));
+          if (member) return member;
         }
-
-        const cooperativeMemberId = Number(loan.cooperativeMemberId || 0);
-        if (cooperativeMemberId > 0) {
-          const byId = this.allMembers.find((member) => Number(member.id) === cooperativeMemberId);
-          if (byId) {
-            return byId;
-          }
-
-          const byMemberId = this.allMembers.find((member) => Number(member.memberId || 0) === cooperativeMemberId);
-          if (byMemberId) {
-            return byMemberId;
-          }
-        }
-
-        const memberId = Number(loan.memberId || 0);
-        if (memberId > 0) {
-          const byMemberId = this.allMembers.find((member) => Number(member.memberId || 0) === memberId);
-          if (byMemberId) {
-            return byMemberId;
-          }
-
-          const byId = this.allMembers.find((member) => Number(member.id) === memberId);
-          if (byId) {
-            return byId;
-          }
-
-          const byEmployeeId = this.allMembers.find((member) => Number(member.employeeId || 0) === memberId);
-          if (byEmployeeId) {
-            return byEmployeeId;
-          }
-        }
-
         return undefined;
       }
 
@@ -222,18 +185,8 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
           Number(loan.cooperativeMemberId || 0),
           Number(loan.memberId || 0),
           Number(member?.id || 0),
-          Number(member?.memberId || 0),
-          Number(member?.employeeId || 0)
+          Number(member?.memberId || 0)
         ].filter((value) => value > 0);
-
-        if (!groupIdNum && candidateMemberIds.length > 0) {
-          const candidateMemberships = this.memberships.filter((item: CooperativeGroupMembership) =>
-            candidateMemberIds.includes(Number(item.memberId))
-          );
-          const activeMemberships = candidateMemberships.filter((item: CooperativeGroupMembership) => String(item.status || '').toUpperCase() === 'ACTIVE');
-          const pool = activeMemberships.length > 0 ? activeMemberships : candidateMemberships;
-          return pool[0];
-        }
 
         return this.memberships.find((item: CooperativeGroupMembership) =>
           groupIdNum > 0
@@ -574,7 +527,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
 
     forkJoin({
       groups: this.cooperativeService.loadGroups(),
-      loans: this.cooperativeService.refreshLoans(),
+      loans: this.cooperativeService.getLoans(),
       members: this.cooperativeService.getMembers(),
       memberships: this.cooperativeService.loadGroupMemberships(),
       contributions: this.cooperativeService.loadContributionEntries()
@@ -620,7 +573,7 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       error: () => {
         forkJoin({
           groups: this.cooperativeService.loadGroups(),
-          loans: this.cooperativeService.refreshLoans(),
+          loans: this.cooperativeService.getLoans(),
           members: this.cooperativeService.getMembers(),
           memberships: this.cooperativeService.loadGroupMemberships(),
           contributions: this.cooperativeService.loadContributionEntries()
@@ -1470,30 +1423,14 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
   }
 
   getMemberName(memberId: number | undefined): string {
-    if (typeof memberId === 'number' && memberId > 0) {
-      const byId = this.allMembers.find((member) => Number(member.id) === memberId);
-      if (byId?.fullName) {
-        return byId.fullName;
-      }
-
-      const byMemberId = this.allMembers.find((member) => Number(member.memberId || 0) === memberId);
-      if (byMemberId?.fullName) {
-        return byMemberId.fullName;
-      }
-
-      const byEmployeeId = this.allMembers.find((member) => Number(member.employeeId || 0) === memberId);
-      if (byEmployeeId?.fullName) {
-        return byEmployeeId.fullName;
-      }
+    // Only use cooperativeMemberId for lookup
+    if (typeof memberId === 'number' && this.memberNameLookup.has(memberId)) {
+      return this.memberNameLookup.get(memberId) || 'Unknown Member';
     }
     return 'Unknown Member';
   }
 
-  getMemberNameForLoan(loan: CooperativeLoan): string {
-    return this.getMemberForLoan(loan)?.fullName || 'Unknown Member';
-  }
-
-  public getLoanMemberId(loan: CooperativeLoan): number {
+  private getLoanMemberId(loan: CooperativeLoan): number {
     return loan.cooperativeMemberId || loan.memberId || 0;
   }
 
@@ -1686,4 +1623,18 @@ export class CooperativeDashboardComponent implements OnInit, OnDestroy {
       this.closeMembershipApplicationViewModal();
     });
   }
+
+  approveLoanAndRefresh(loanId: number): void {
+  this.cooperativeService.approveLoan(loanId).subscribe(() => {
+    // ONLY refresh loans, not everything
+    this.cooperativeService.refreshLoans().subscribe(loans => {
+      this.allLoans = loans;
+      this.recentLoans = loans.slice(0, 5);
+      this.pendingApprovals = loans.filter(l => 
+        l.status === 'PENDING' && l.applicationStage === 'READY_FOR_ADMIN_REVIEW'
+      );
+      this.stats = this.cooperativeService.getStats();
+    });
+  });
+}
 }

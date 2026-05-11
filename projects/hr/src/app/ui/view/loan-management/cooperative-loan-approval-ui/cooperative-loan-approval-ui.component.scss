@@ -8,7 +8,7 @@ app-cooperative-loan-approval-ui {
   justify-content: center;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
   
   @include loanStatus.advanceLoanStatusBadges();
@@ -19,6 +19,7 @@ app-cooperative-loan-approval-ui {
   background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
   padding: 20px;
   min-height: 100vh;
+  font-size: 2rem;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -118,7 +119,7 @@ app-cooperative-loan-approval-ui {
       p {
         margin: 4px 0 0;
         color: #6b8a97;
-        font-size: 0.85rem;
+        font-size: 1.18rem;
       }
     }
 
@@ -273,7 +274,7 @@ app-cooperative-loan-approval-ui {
           top: 50%;
           transform: translateY(-50%);
           color: #8aadba;
-          font-size: 0.9rem;
+          font-size: 1rem;
         }
 
         input {
@@ -281,7 +282,7 @@ app-cooperative-loan-approval-ui {
           padding: 10px 12px 10px 40px;
           border: 1px solid #d7e7ec;
           border-radius: 12px;
-          font-size: 0.85rem;
+          font-size: 1.04rem;
           background: white;
           transition: all 0.2s;
 
@@ -307,7 +308,7 @@ app-cooperative-loan-approval-ui {
         margin-bottom: 6px;
         font-weight: 700;
         color: #1a4b5c;
-        font-size: 0.7rem;
+        font-size: 0.84rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -317,7 +318,7 @@ app-cooperative-loan-approval-ui {
         padding: 10px 12px;
         border: 1px solid #d7e7ec;
         border-radius: 10px;
-        font-size: 0.85rem;
+        font-size: 1.02rem;
         background: white;
         transition: all 0.2s;
 
@@ -340,7 +341,7 @@ app-cooperative-loan-approval-ui {
       background: white;
       color: #2E6276;
       font-weight: 600;
-      font-size: 0.8rem;
+      font-size: 0.96rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -380,13 +381,14 @@ app-cooperative-loan-approval-ui {
         padding: 14px 20px;
         text-align: left;
         border-bottom: 1px solid #eef3f6;
+        font-size: 1.04rem;
       }
 
       th {
         background: #f8fcfd;
         color: #1a4b5c;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.98rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         white-space: nowrap;
@@ -415,7 +417,7 @@ app-cooperative-loan-approval-ui {
       td {
         vertical-align: middle;
         color: #2c5a6a;
-        font-size: 0.85rem;
+        font-size: 1.06rem;
       }
 
       tbody tr {
@@ -437,7 +439,7 @@ app-cooperative-loan-approval-ui {
         font-family: monospace;
         font-weight: 600;
         color: #2E6276;
-        font-size: 0.85rem;
+        font-size: 1rem;
       }
 
       .member-name-cell {

@@ -231,6 +231,14 @@ export class CooperativeLoanGroupsComponent implements OnInit {
   get codeControl() { return this.groupForm.get('code'); }
   get descriptionControl() { return this.groupForm.get('description'); }
 
+  get isCodeReadonly(): boolean {
+    if (this.editingGroupId === null) {
+      return false;
+    }
+
+    return !!String(this.codeControl?.value || '').trim();
+  }
+
   // ==================== CONSTRUCTOR ====================
   constructor(
     private cooperativeService: CooperativeService,
@@ -406,6 +414,10 @@ export class CooperativeLoanGroupsComponent implements OnInit {
 
   private mapApiGroupToCooperativeLoanGroup(apiGroup: any): CooperativeLoanGroup {
     const monthlyContributionAmount = this.resolveMonthlyContributionAmount(apiGroup);
+    const hasExplicitPatronageEligible = apiGroup?.patronageEligible !== undefined && apiGroup?.patronageEligible !== null;
+    const patronageEligible = hasExplicitPatronageEligible
+      ? apiGroup.patronageEligible === true
+      : Number(apiGroup?.patronageRate || 0) > 0;
 
     return {
       id: apiGroup.id || apiGroup.groupId,
@@ -420,7 +432,7 @@ export class CooperativeLoanGroupsComponent implements OnInit {
       status: apiGroup.status || 'INACTIVE',
       requiresGuarantors: apiGroup.requiresGuarantors || false,
       minimumGuarantors: apiGroup.minimumGuarantors || 0,
-      patronageEligible: (apiGroup.patronageRate || 0) > 0,
+      patronageEligible,
       patronageRate: apiGroup.patronageRate || 0,
       contributionsBankName: apiGroup.contributionsBankName || '',
       contributionsAccount: apiGroup.contributionsAccount || '',
@@ -690,7 +702,10 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     this.editingGroupId = group.id;
     this.showGroupForm = true;
     this.clearFormMessage();
-    this.groupForm.reset(this.toGroupFormValue(group));
+    this.groupForm.reset(this.toGroupFormValue({
+      ...group,
+      code: this.resolveEditCode(group)
+    }));
   }
 
   saveGroup(): void {
@@ -836,6 +851,15 @@ export class CooperativeLoanGroupsComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private resolveEditCode(group: CooperativeLoanGroup): string {
+    const code = String(group.code || '').trim().toUpperCase();
+    if (code) {
+      return code;
+    }
+
+    return `COOP-${String(group.id || 0).padStart(3, '0')}`;
   }
 
   cancelForm(delayMs = 0): void {

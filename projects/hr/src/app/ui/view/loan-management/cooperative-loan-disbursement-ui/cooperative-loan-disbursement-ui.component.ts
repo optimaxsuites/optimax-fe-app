@@ -8,9 +8,7 @@ import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/c
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { getTokenFromStorage } from '../../../service/loan/cooperative-loan/token-util';
-import { environment } from '../../../shared-component/environments/environment';
+import { HttpClient } from '@angular/common/http';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -424,48 +422,42 @@ sendToAccounting(): void {
   const totalRepayable = Number(loan.amount || 0) * (1 + (Number(group.interestRate || 0) / 100));
 
   this.isSubmitting = true;
-
-  const apiUrl = `${environment.apiBaseUrl}/x/api/v2/accounting/events`;
-
-  const token = getTokenFromStorage();
-  const tenantId = sessionStorage.getItem('tenantId') || sessionStorage.getItem('tenant')
-    || localStorage.getItem('tenantId') || localStorage.getItem('tenant') || 'optimax';
-  const authHeaders = new HttpHeaders({
-    'Authorization': token ? `Bearer ${token}` : '',
-    'X-Tenant-ID': tenantId && tenantId !== 'undefined' && tenantId !== 'null' ? tenantId : 'optimax',
-    'Content-Type': 'application/json'
-  });
-
+  
+  // Use the correct base URL
+  const baseUrl = 'https://be.optimaxsuites.com';
+  const apiUrl = `${baseUrl}/x/api/v2/accounting/events`;
+  
   const accountingEventPayload = {
-    sourceModule: 'HR',
-    eventType: 'LOAN_DISBURSEMENT',
+    id: 0,
+    sourceModule: "HR",
+    eventType: "LOAN_DISBURSEMENT",
     amount: Number(loan.approvedAmount || loan.amount || 0),
-    currency: 'NGN',
+    currency: "NGN",
     reference: instructionReference,
     description: adminComment || `Loan disbursement for ${memberName}`,
     transactionDate: transactionDate,
     metadata: {
-      loanId: String(loan.id ?? ''),
-      loanCode: String(loan.loanCode || loan.loanId || loan.id || ''),
+      loanId: loan.id,
+      loanCode: loan.loanCode || loan.loanId,
       member: memberName,
-      memberId: String(loan.memberId || loan.cooperativeMemberId || ''),
-      membershipId: String(loan.membershipId ?? ''),
+      memberId: loan.memberId || loan.cooperativeMemberId,
+      membershipId: loan.membershipId,
       groupMembershipId: this.getFormattedMembershipId(loan),
-      groupName: String(group.name || ''),
-      groupCode: String(group.code || ''),
-      groupInterestRate: String(group.interestRate ?? ''),
-      repaymentPeriod: String(loan.duration || loan.repaymentTime || ''),
-      approvedAmount: String(Number(loan.approvedAmount || loan.amount || 0)),
-      totalRepayable: String(totalRepayable),
-      modeOfPayment: String(loan.modeOfPayment || 'MONTHLY'),
-      paymentMethod: String(this.paymentMethod),
-      purpose: String(loan.purpose || ''),
-      approvedDate: String(loan.approvedDate || ''),
-      approvedBy: this.getApprovedByName(loan),
-      bankName: String(this.selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A'),
-      accountNumber: String(this.selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A'),
+      groupName: group.name,
+      groupCode: group.code,
+      groupInterestRate: group.interestRate,
+      repaymentPeriod: loan.duration || loan.repaymentTime,
+      approvedAmount: Number(loan.approvedAmount || loan.amount || 0),
+      totalRepayable: totalRepayable,
+      modeOfPayment: loan.modeOfPayment || 'MONTHLY',
+      paymentMethod: this.paymentMethod,
+      purpose: loan.purpose,
+      approvedDate: loan.approvedDate,
+      approvedBy: loan.approvedBy,
+      bankName: this.selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A',
+      accountNumber: this.selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A',
       accountName: memberName,
-      initiatedBy: String(this.disbursementInitiatedBy || sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin'),
+      initiatedBy: this.disbursementInitiatedBy || sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin',
       initiatedAt: transactionDate,
       instructionReference: instructionReference
     }
@@ -476,7 +468,7 @@ sendToAccounting(): void {
   console.log('Payload:', JSON.stringify(accountingEventPayload, null, 2));
   console.log('===================================');
   
-  this.http.post(apiUrl, accountingEventPayload, { headers: authHeaders }).subscribe({
+  this.http.post(apiUrl, accountingEventPayload).subscribe({
     next: (response) => {
       console.log('=== POST SUCCESS RESPONSE ===');
       console.log('Response:', response);
