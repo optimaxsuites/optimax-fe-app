@@ -214,6 +214,12 @@ const routes: Routes = [
 
       },
       {
+        path: 'inventory-management',
+        loadChildren: () => import('../../projects/inventory-management/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
         path: 'admin/sales/:uuid',
         component: SalesPageComponent,
       },
