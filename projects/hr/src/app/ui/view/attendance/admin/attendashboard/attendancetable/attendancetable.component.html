@@ -122,9 +122,10 @@
     <h3>Modify Attendance</h3>
     <button class="close-btn" (click)="cancelEdit()">×</button>
   </div>
-  <p class="employee-info">
-  {{ editingRecord.employee }} — {{ editingRecord.date }}
-</p>
+    <div *ngIf="editingRecord as record" class="employee-info">
+      {{ record.employee }} — {{ record.date }}
+    </div>
+
 
   <div class="form-group">
     <label>Status</label>
