@@ -146,6 +146,10 @@ this.links['lpoLink'] = '/admin/procurement/vendor-portal/lpo/' +uuidV4();
 this.links['VPLLink'] = '/admin/procurement/vendor-portal/vendor-pr-list/' +uuidV4();
 this.links['VQLLink'] = '/admin/procurement/vendor-portal/vendor-quote-list/' +uuidV4();
 
+// inventory ================================================================================================================
+this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
+
+
 }
 
   getLink(linkName: string): string {
