@@ -515,10 +515,18 @@
 
           <div
             *ngIf="isOwnMessage(msg)"
-            class="mt-1 text-[11px] font-medium"
+            class="mt-1 text-[11px] font-medium seen-by-chip"
             [ngClass]="getReadCount(msg) > 0 ? 'text-emerald-600' : 'text-gray-400'"
           >
             {{ readReceiptLabel(msg) }}
+            <span class="hover-people-card" *ngIf="getReadCount(msg) > 0 && readUserCards(msg).length">
+              <span class="hover-people-title">Seen by</span>
+              <span class="hover-people-row" *ngFor="let person of readUserCards(msg)">
+                <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                <span>{{ person.name }}</span>
+              </span>
+            </span>
           </div>
 
           <!-- Thread preview: first 2 replies inline -->
@@ -560,9 +568,13 @@
     border-left: 3px solid #2e6276;
     padding-left: 10px;
   }
-  .msg-row.flash { animation: flash-fade 1.8s ease-out forwards; }
+  .msg-row.flash {
+    animation: flash-fade 2.4s ease-out forwards;
+    box-shadow: inset 0 0 0 1px rgba(46, 98, 118, 0.2);
+  }
   @keyframes flash-fade {
-    0% { background: #fef08a; }
+    0% { background: #b7d7e3; }
+    45% { background: #dbeaf1; }
     100% { background: transparent; }
   }
   .action-btn {

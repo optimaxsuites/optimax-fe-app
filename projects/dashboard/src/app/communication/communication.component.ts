@@ -148,6 +148,12 @@ interface ChatArrivalToast {
   dmId?: string;
 }
 
+interface HoverPerson {
+  name: string;
+  avatarUrl?: string;
+  initials: string;
+}
+
 interface FeedThreadState {
   expanded: boolean;
   loading: boolean;
@@ -299,8 +305,11 @@ export class CommunicationComponent
   feedHome: CollabFeedHome | null = null;
   feedPosts: CollabFeedPost[] = [];
   featuredFeedPosts: CollabFeedPost[] = [];
+  renderedRecentFeedPosts: CollabFeedPost[] = [];
+  renderedFeaturedFeedPosts: CollabFeedPost[] = [];
   trendingTags: string[] = [];
   selectedFeedPostId: number | null = null;
+  showViewedFeedPosts = false;
   feedPage = 1;
   feedPageSize = 10;
   feedHasMore = false;
@@ -322,7 +331,9 @@ export class CommunicationComponent
   expandedFeedMediaItems: Array<{ url: string; label: string; mediaType: string }> = [];
   expandedFeedMediaIndex = 0;
   private feedReactionHoverCache: Record<string, string> = {};
+  private feedReactionUsersCache: Record<string, HoverPerson[]> = {};
   private seenFeedNotificationIds = new Set<number>();
+  private viewedFeedPostIds = new Set<number>();
   private protectedMediaUrlCache: Record<string, string> = {};
   private protectedMediaLoading = new Set<string>();
   readonly feedReactionOptions = [
@@ -500,6 +511,7 @@ export class CommunicationComponent
   private flashId: string | null = null;
   private flashTimer: any;
   private pendingNotificationMessageBackendId: number | null = null;
+  private queuedNotificationTarget: any = null;
   private typingEndpointBlocked = false;
   private scrollFeed = false;
   private scrollThread = false;
@@ -510,8 +522,10 @@ export class CommunicationComponent
   private wsConnected = false;
   private channelSub: any = null;
   private channelPresenceSub: any = null;
+  private channelMessageSubs = new Map<number, any>();
   private dmChannelSubs = new Map<number, any>();
   private dmPresenceSubs = new Map<number, any>();
+  private conversationSyncTimer: any = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -545,6 +559,7 @@ export class CommunicationComponent
     this.connectWebSocket();
     if (this.workspaceMode === 'chat') {
       this.startPresencePoll();
+      this.startConversationSync();
     }
   }
 
@@ -552,6 +567,7 @@ export class CommunicationComponent
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
     if (this.presencePollTimer) clearInterval(this.presencePollTimer);
+    if (this.conversationSyncTimer) clearInterval(this.conversationSyncTimer);
     if (this.callDurationTimer) clearInterval(this.callDurationTimer);
     if (this.recognition) {
       try {
@@ -728,6 +744,18 @@ export class CommunicationComponent
     return this.feedPosts.find((post) => post.id === this.selectedFeedPostId);
   }
 
+  get recentFeedPosts(): CollabFeedPost[] {
+    return this.renderedRecentFeedPosts;
+  }
+
+  get oldFeedPosts(): CollabFeedPost[] {
+    return this.feedPosts.filter((post) => this.viewedFeedPostIds.has(Number(post.id)));
+  }
+
+  get visibleFeaturedFeedPosts(): CollabFeedPost[] {
+    return this.renderedFeaturedFeedPosts;
+  }
+
   get selectedFeedThreadState(): FeedThreadState | null {
     if (!this.selectedFeedPostId) return null;
     return this.feedThreads[this.selectedFeedPostId] || null;
@@ -751,9 +779,11 @@ export class CommunicationComponent
     this.workspaceMode = mode;
     if (mode === 'chat') {
       this.ensureChatBootstrap();
+      this.startConversationSync();
       return;
     }
     this.stopPresencePolling();
+    this.stopConversationSync();
     this.unsubscribeChatStreams();
   }
 
@@ -842,7 +872,6 @@ export class CommunicationComponent
       }
     }
     if (!target) return;
-    sessionStorage.removeItem('optimax_notification_target');
     this.pendingNotificationMessageBackendId =
       Number(target.messageBackendId || target.threadRootMessageBackendId || 0) || null;
     if (target.workspaceMode === 'chat') {
@@ -852,21 +881,42 @@ export class CommunicationComponent
           (item) => Number(item.userId) === Number(target.dmUserId),
         );
         if (contact) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectDm(contact.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
       if (target.channelBackendId) {
         const channel = this.channels.find(
           (item) => Number(item.backendId) === Number(target.channelBackendId),
         );
         if (channel) {
+          sessionStorage.removeItem('optimax_notification_target');
+          this.queuedNotificationTarget = null;
           this.selectChannel(channel.id, true);
           return;
         }
+        this.queuedNotificationTarget = target;
+        sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
+        return;
       }
     }
+    sessionStorage.removeItem('optimax_notification_target');
+    this.queuedNotificationTarget = null;
     this.workspaceMode = 'feed';
+  }
+
+  private replayQueuedNotificationTarget(): void {
+    if (!this.queuedNotificationTarget) {
+      return;
+    }
+    const target = this.queuedNotificationTarget;
+    this.queuedNotificationTarget = null;
+    this.openNotificationTarget(target);
   }
 
   onFeedMediaSelected(event: Event): void {
@@ -926,14 +976,15 @@ export class CommunicationComponent
         this.featuredFeedPosts = home?.featuredPosts || [];
         this.feedPosts = mergedPosts;
         this.trendingTags = home?.trendingTags || [];
+        this.refreshVisibleFeedCollections(nextPosts, append);
         this.preloadFeedMediaUrls(this.feedPosts);
         this.preloadFeedMediaUrls(this.featuredFeedPosts);
         this.workspaceHighlights = this.buildWorkspaceHighlights(this.featuredFeedPosts, this.feedPosts);
         this.workspaceFocusItems = this.buildWorkspaceFocusItems(this.feedPosts);
         const total = Number(home?.feed?.totalSize || mergedPosts.length);
         this.feedHasMore = this.feedPosts.length < total;
-        if (!this.selectedFeedPostId && this.feedPosts.length) {
-          this.selectedFeedPostId = this.feedPosts[0].id;
+        if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+          this.selectedFeedPostId = this.recentFeedPosts[0].id;
         }
         this.loadTaskRoutineSummaries();
         this.loadFeedNotifications();
@@ -950,6 +1001,7 @@ export class CommunicationComponent
               ? [...this.feedPosts, ...nextPosts.filter((post) => !this.feedPosts.some((existing) => existing.id === post.id))]
               : nextPosts;
             this.featuredFeedPosts = this.feedPosts.filter((post) => post.featured).slice(0, 4);
+            this.refreshVisibleFeedCollections(nextPosts, append);
             this.preloadFeedMediaUrls(this.feedPosts);
             this.preloadFeedMediaUrls(this.featuredFeedPosts);
             this.trendingTags = this.buildTrendingTags(this.feedPosts);
@@ -973,8 +1025,8 @@ export class CommunicationComponent
               activeChatCount: this.dmContacts.length,
             };
             this.feedHasMore = this.feedPosts.length < Number(result?.totalSize || this.feedPosts.length);
-            if (!this.selectedFeedPostId && this.feedPosts.length) {
-              this.selectedFeedPostId = this.feedPosts[0].id;
+            if (!this.selectedFeedPostId && this.recentFeedPosts.length) {
+              this.selectedFeedPostId = this.recentFeedPosts[0].id;
             }
             this.loadTaskRoutineSummaries();
             this.loadFeedNotifications();
@@ -997,6 +1049,7 @@ export class CommunicationComponent
   refreshFeed(): void {
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -1005,6 +1058,7 @@ export class CommunicationComponent
     keyboardEvent.preventDefault();
     this.feedPage = 1;
     this.feedHasMore = false;
+    this.showViewedFeedPosts = false;
     this.loadFeedHome(1, false);
   }
 
@@ -1015,7 +1069,16 @@ export class CommunicationComponent
 
   selectFeedPost(post: CollabFeedPost): void {
     this.selectedFeedPostId = post.id;
+    this.markFeedPostViewed(post);
     this.ensureFeedThread(post.id);
+  }
+
+  showOldFeedPosts(): void {
+    this.showViewedFeedPosts = true;
+    this.refreshVisibleFeedCollections([], false, false);
+    if (!this.selectedFeedPost && this.oldFeedPosts.length) {
+      this.selectedFeedPostId = this.oldFeedPosts[0].id;
+    }
   }
 
   ensureFeedThread(postId: number): void {
@@ -1412,6 +1475,7 @@ export class CommunicationComponent
   }
 
   openFeedChannel(post: CollabFeedPost): void {
+    this.markFeedPostViewed(post);
     const channelId = Number(post.channel?.channelId ?? post.channel?.id ?? 0);
     const channel = this.channels.find((item) => item.backendId === channelId);
     this.workspaceMode = 'chat';
@@ -1519,6 +1583,12 @@ export class CommunicationComponent
     this.updateMentionResults(this.draft, target);
     this.chatMentionResults = target.mentionResults;
     this.chatShowMentionMenu = target.showMentionMenu;
+    this.cdr.detectChanges();
+  }
+
+  onThreadReplyDraftChanged(value: string): void {
+    this.threadReplyDraft = value;
+    this.onComposerTyping();
     this.cdr.detectChanges();
   }
 
@@ -1795,6 +1865,102 @@ export class CommunicationComponent
       'optimax_seen_feed_notifications',
       JSON.stringify(Array.from(this.seenFeedNotificationIds).slice(-100)),
     );
+  }
+
+  private restoreViewedFeedPostIds(): void {
+    try {
+      const raw = localStorage.getItem(this.viewedFeedPostsStorageKey());
+      if (!raw) return;
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) {
+        this.viewedFeedPostIds = new Set(ids.map((value) => Number(value)).filter(Boolean));
+      }
+    } catch (_) {}
+  }
+
+  private persistViewedFeedPostIds(): void {
+    localStorage.setItem(
+      this.viewedFeedPostsStorageKey(),
+      JSON.stringify(Array.from(this.viewedFeedPostIds).slice(-300)),
+    );
+  }
+
+  private viewedFeedPostsStorageKey(): string {
+    return `optimax_viewed_feed_posts_${Number(this.me.userId || 0) || 'guest'}`;
+  }
+
+  private refreshVisibleFeedCollections(
+    exposedPosts: CollabFeedPost[] = [],
+    append = false,
+    markAsViewed = true,
+  ): void {
+    if (this.showViewedFeedPosts) {
+      this.renderedRecentFeedPosts = [...this.feedPosts];
+      this.renderedFeaturedFeedPosts = [...this.featuredFeedPosts];
+      return;
+    }
+
+    const baselineViewed = new Set(this.viewedFeedPostIds);
+
+    if (append) {
+      const existingIds = new Set(this.renderedRecentFeedPosts.map((post) => Number(post.id)));
+      const nextVisible = (exposedPosts || []).filter(
+        (post) =>
+          !baselineViewed.has(Number(post.id)) &&
+          !existingIds.has(Number(post.id)),
+      );
+      this.renderedRecentFeedPosts = [...this.renderedRecentFeedPosts, ...nextVisible];
+      if (markAsViewed) {
+        this.markFeedPostsViewed(nextVisible);
+      }
+    } else {
+      this.renderedRecentFeedPosts = this.feedPosts.filter(
+        (post) => !baselineViewed.has(Number(post.id)),
+      );
+      if (markAsViewed) {
+        this.markFeedPostsViewed(this.renderedRecentFeedPosts);
+      }
+    }
+
+    this.renderedFeaturedFeedPosts = this.featuredFeedPosts.filter(
+      (post) => !baselineViewed.has(Number(post.id)),
+    );
+  }
+
+  private markFeedPostsViewed(posts: CollabFeedPost[]): void {
+    const newPostIds = (posts || [])
+      .map((post) => Number(post?.id || 0))
+      .filter((postId) => postId && !this.viewedFeedPostIds.has(postId));
+
+    if (!newPostIds.length) {
+      return;
+    }
+
+    newPostIds.forEach((postId) => this.viewedFeedPostIds.add(postId));
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount(newPostIds);
+  }
+
+  private markFeedPostViewed(post: CollabFeedPost): void {
+    const postId = Number(post?.id || 0);
+    if (!postId || this.viewedFeedPostIds.has(postId)) {
+      return;
+    }
+    this.viewedFeedPostIds.add(postId);
+    this.persistViewedFeedPostIds();
+    this.bumpFeedViewCount([postId]);
+  }
+
+  private bumpFeedViewCount(postIds: number[]): void {
+    const idSet = new Set(postIds.map((value) => Number(value)).filter(Boolean));
+    const incrementViewCount = (post: CollabFeedPost): CollabFeedPost =>
+      idSet.has(Number(post.id))
+        ? { ...post, viewCount: Number(post.viewCount || 0) + 1 }
+        : post;
+    this.feedPosts = this.feedPosts.map(incrementViewCount);
+    this.featuredFeedPosts = this.featuredFeedPosts.map(incrementViewCount);
+    this.renderedRecentFeedPosts = this.renderedRecentFeedPosts.map(incrementViewCount);
+    this.renderedFeaturedFeedPosts = this.renderedFeaturedFeedPosts.map(incrementViewCount);
   }
 
   clearPendingAttachments(refresh = true): void {
@@ -2111,6 +2277,10 @@ export class CommunicationComponent
     return this.feedReactionHoverCache[`${scope}:${id}:${reactionCode}`] || '';
   }
 
+  feedReactionHoverUsers(scope: 'post' | 'comment', id: number, reactionCode: string): HoverPerson[] {
+    return this.feedReactionUsersCache[`${scope}:${id}:${reactionCode}`] || [];
+  }
+
   loadFeedReactionUsers(
     scope: 'post' | 'comment',
     id: number,
@@ -2124,16 +2294,30 @@ export class CommunicationComponent
         : this.collabService.getFeedCommentReactions(id);
     request.subscribe({
       next: (rows) => {
-        const names = (rows || [])
+        const people = (rows || [])
           .filter((row: CollabFeedReactionUser) => (row.reactionCode || '').toUpperCase() === reactionCode)
-          .map((row: CollabFeedReactionUser) => this.feedAuthorName(row.user))
-          .filter(Boolean);
-        this.feedReactionHoverCache[key] = names.length
-          ? names.slice(0, 8).join(', ')
+          .map((row: CollabFeedReactionUser) => {
+            const name = this.feedAuthorName(row.user);
+            const userId = Number(
+              row.user?.userId ||
+              row.user?.id ||
+              0,
+            );
+            return {
+              name,
+              avatarUrl: userId ? this.userAvatarCache[userId] : undefined,
+              initials: initialsFrom(name),
+            } as HoverPerson;
+          })
+          .filter((row: HoverPerson) => Boolean(row.name));
+        this.feedReactionUsersCache[key] = people.slice(0, 8);
+        this.feedReactionHoverCache[key] = people.length
+          ? people.slice(0, 8).map((row) => row.name).join(', ')
           : 'No reactions yet';
         this.cdr.detectChanges();
       },
       error: () => {
+        this.feedReactionUsersCache[key] = [];
         this.feedReactionHoverCache[key] = 'Reaction details unavailable';
       },
     });
@@ -2366,9 +2550,8 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
-      if (this.workspaceMode === 'chat' && this.activeChannelId) {
-        const ch = this.activeChannel;
-        if (ch) this.subscribeToChannel(ch.backendId);
+      for (const ch of this.channels) {
+        this.subscribeToChannel(ch.backendId);
       }
       for (const dm of this.dmContacts) {
         if (dm.dmChannelId) this.subscribeToDmChannel(dm);
@@ -2404,6 +2587,12 @@ export class CommunicationComponent
       } catch (_) {}
       this.channelPresenceSub = null;
     }
+    this.channelMessageSubs.forEach((s) => {
+      try {
+        s.unsubscribe();
+      } catch (_) {}
+    });
+    this.channelMessageSubs.clear();
     this.dmChannelSubs.forEach((s) => {
       try {
         s.unsubscribe();
@@ -2420,58 +2609,52 @@ export class CommunicationComponent
 
   private subscribeToChannel(channelId: number): void {
     if (!this.stompClient || !this.wsConnected) return;
-    if (this.channelSub) {
-      try {
-        this.channelSub.unsubscribe();
-      } catch (_) {}
+    if (!this.channelMessageSubs.has(channelId)) {
+      const sub = this.stompClient.subscribe(
+        `/topic/collab/chat/channel/${channelId}`,
+        (frame: any) => {
+          const ch = this.channels.find((c) => c.backendId === channelId);
+          if (!ch) return;
+          let senderUserId: number | null = null;
+          try {
+            const body = JSON.parse(frame.body || '{}');
+            senderUserId = Number(body.senderUserId ?? body.userId ?? null);
+          } catch (_) {}
+          const isOwnMessage =
+            senderUserId !== null && senderUserId === this.me.userId;
+
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || ch.name,
+              body: incoming.content || `New message in ${ch.name}`,
+              avatarUrl: incoming.avatarUrl,
+              tone: 'channel',
+              channelId: ch.id,
+            });
+          }
+
+          if (ch.id !== this.activeChannelId) {
+            if (!isOwnMessage) {
+              ch.unreadCount = (ch.unreadCount || 0) + 1;
+              ch.hasUnread = true;
+              this.playNotificationSound();
+            }
+            this.syncHeaderState();
+            this.cdr.detectChanges();
+          } else {
+            this.reconcileChannelMessages(ch, frame.body);
+          }
+        },
+      );
+      this.channelMessageSubs.set(channelId, sub);
     }
+
     if (this.channelPresenceSub) {
       try {
         this.channelPresenceSub.unsubscribe();
       } catch (_) {}
     }
-
-    this.channelSub = this.stompClient.subscribe(
-      `/topic/collab/chat/channel/${channelId}`,
-      (frame: any) => {
-        const ch = this.channels.find((c) => c.backendId === channelId);
-        if (!ch) return;
-        let senderUserId: number | null = null;
-        try {
-          const body = JSON.parse(frame.body || '{}');
-          senderUserId = Number(body.senderUserId ?? body.userId ?? null);
-        } catch (_) {}
-        const isOwnMessage =
-          senderUserId !== null && senderUserId === this.me.userId;
-
-        if (ch.id !== this.activeChannelId) {
-          if (!isOwnMessage) {
-            ch.unreadCount = (ch.unreadCount || 0) + 1;
-            ch.hasUnread = true;
-            this.playNotificationSound();
-            const incoming = this.parseIncomingNotification(frame.body);
-            if (
-              this.workspaceMode !== 'chat' ||
-              this.activeView !== 'channel' ||
-              this.activeChannelId !== ch.id ||
-              (typeof document !== 'undefined' && document.visibilityState === 'hidden')
-            ) {
-              this.pushChatArrivalToast({
-                title: incoming.senderName || ch.name,
-                body: incoming.content || `New message in ${ch.name}`,
-                avatarUrl: incoming.avatarUrl,
-                tone: 'channel',
-                channelId: ch.id,
-              });
-            }
-          }
-          this.syncHeaderState();
-          this.cdr.detectChanges();
-        } else {
-          this.reconcileChannelMessages(ch, frame.body);
-        }
-      },
-    );
 
     this.channelPresenceSub = this.stompClient.subscribe(
       `/topic/collab/chat/presence/channel/${channelId}`,
@@ -2505,26 +2688,21 @@ export class CommunicationComponent
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
+          if (!isOwnMessage) {
+            const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatArrivalToast({
+              title: incoming.senderName || contact.fullName,
+              body: incoming.content || `New direct message from ${contact.fullName}`,
+              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+              tone: 'dm',
+              dmId: contact.id,
+            });
+          }
           if (contact.id !== this.activeDmId) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
               this.playNotificationSound();
-              const incoming = this.parseIncomingNotification(frame.body);
-              if (
-                this.workspaceMode !== 'chat' ||
-                this.activeView !== 'dm' ||
-                this.activeDmId !== contact.id ||
-                (typeof document !== 'undefined' && document.visibilityState === 'hidden')
-              ) {
-                this.pushChatArrivalToast({
-                  title: incoming.senderName || contact.fullName,
-                  body: incoming.content || `New direct message from ${contact.fullName}`,
-                  avatarUrl: incoming.avatarUrl || contact.avatarUrl,
-                  tone: 'dm',
-                  dmId: contact.id,
-                });
-              }
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -2900,6 +3078,7 @@ export class CommunicationComponent
     const userId = Number(sessionStorage.getItem('userid') || 0);
     if (!userId) return;
     this.me.userId = userId;
+    this.restoreViewedFeedPostIds();
     this.collabService.getEmployeeByUserId(userId).subscribe({
       next: (emp) => {
         const first = emp.firstName || '',
@@ -3036,6 +3215,7 @@ export class CommunicationComponent
             }
             this.syncHeaderState();
             this.employeesLoading = false;
+            this.replayQueuedNotificationTarget();
             this.cdr.detectChanges();
           },
           error: () => {
@@ -3053,11 +3233,13 @@ export class CommunicationComponent
                 }
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
               error: () => {
                 this.syncHeaderState();
                 this.employeesLoading = false;
+                this.replayQueuedNotificationTarget();
                 this.cdr.detectChanges();
               },
             });
@@ -3112,6 +3294,27 @@ export class CommunicationComponent
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.mapDirectMessageChannels(list);
+    const allowedIds = new Set(
+      list
+        .filter((c) => {
+          if (c.channelType !== 'PRIVATE') return true;
+          const desc = (c.description || '').toLowerCase();
+          const name = (c.name || '').toLowerCase();
+          return !(
+            desc.startsWith('dm between') ||
+            desc.startsWith('direct chat') ||
+            name.match(/^dm-\d+-\d+$/) !== null
+          );
+        })
+        .map((c) => Number(c.channelId ?? c.id)),
+    );
+    this.channelMessageSubs.forEach((sub, channelId) => {
+      if (allowedIds.has(channelId)) return;
+      try {
+        sub.unsubscribe();
+      } catch (_) {}
+      this.channelMessageSubs.delete(channelId);
+    });
     this.channels = list
       .filter((c) => {
         if (c.channelType !== 'PRIVATE') return true;
@@ -3140,6 +3343,9 @@ export class CommunicationComponent
           unreadCount: unreadCount > 0 ? unreadCount : undefined,
         };
       });
+    if (this.wsConnected) {
+      this.channels.forEach((channel) => this.subscribeToChannel(channel.backendId));
+    }
     this.channelsLoading = false;
     if (
       this.channels.length > 0 &&
@@ -3150,6 +3356,7 @@ export class CommunicationComponent
     )
       this.selectChannel(this.channels[0].id);
     this.syncHeaderState();
+    this.replayQueuedNotificationTarget();
     this.cdr.detectChanges();
   }
 
@@ -3582,6 +3789,7 @@ export class CommunicationComponent
         this.collabService
           .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
+        this.startConversationSync();
         this.cdr.detectChanges();
       } else {
         this.loadChannelMessages(ch);
@@ -3608,6 +3816,7 @@ export class CommunicationComponent
     this.syncHeaderState();
     this.messagesLoading = true;
     this.scrollToLatestMessageSoon();
+    this.startConversationSync();
     this.cdr.detectChanges();
     this.getOrCreateDmChannel(contact);
   }
@@ -3615,6 +3824,7 @@ export class CommunicationComponent
   setView(v: 'threads'): void {
     this.workspaceMode = 'chat';
     this.activeView = v;
+    this.stopConversationSync();
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
     this.selectedThreadMsg = null;
@@ -4044,6 +4254,38 @@ export class CommunicationComponent
     if (this.presencePollTimer) {
       clearInterval(this.presencePollTimer);
       this.presencePollTimer = null;
+    }
+  }
+
+  private startConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      return;
+    }
+    this.conversationSyncTimer = setInterval(() => {
+      this.syncActiveConversationState();
+    }, 5000);
+  }
+
+  private stopConversationSync(): void {
+    if (this.conversationSyncTimer) {
+      clearInterval(this.conversationSyncTimer);
+      this.conversationSyncTimer = null;
+    }
+  }
+
+  private syncActiveConversationState(): void {
+    if (this.workspaceMode !== 'chat') {
+      return;
+    }
+    if (this.activeView === 'channel' && this.activeChannel) {
+      this.fetchAndReconcileChannel(this.activeChannel);
+      return;
+    }
+    if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      this.fetchAndReconcileDm(
+        this.activeDmContact,
+        this.activeDmContact.dmChannelId,
+      );
     }
   }
 
@@ -5579,6 +5821,27 @@ export class CommunicationComponent
     return (this.readStateMap[msg.backendId] || []).filter(
       (uid) => uid !== this.me.userId,
     ).length;
+  }
+
+  getReadUsers(msg: Message): string[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => this.userDirectory[uid] || `User ${uid}`);
+  }
+
+  getReadUserCards(msg: Message): HoverPerson[] {
+    if (!msg.backendId) return [];
+    return (this.readStateMap[msg.backendId] || [])
+      .filter((uid) => uid !== this.me.userId)
+      .map((uid) => {
+        const name = this.userDirectory[uid] || `User ${uid}`;
+        return {
+          name,
+          avatarUrl: this.userAvatarCache[uid],
+          initials: initialsFrom(name),
+        } as HoverPerson;
+      });
   }
 
   findMsgInTree(messages: Message[], id: string): Message | null {

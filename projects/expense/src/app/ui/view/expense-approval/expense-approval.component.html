@@ -1,113 +1,139 @@
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-<div class="expense-approval-container">
-  <h1 class="title">Expense Approval Update</h1>
-
-  <div class="expense-details">
-    <div class="detail-row">
-      <label class="detail-label">Merchant:</label>
-      <span class="detail-value">{{ expense?.merchant }}</span>
-    </div>
-    <div class="detail-row">
-      <label class="detail-label">Amount:</label>
-      <span class="detail-value">{{ expense?.amount }}</span>
-    </div>
-    <div class="detail-row">
-      <label class="detail-label">Expense Date:</label>
-      <span class="detail-value">{{ expense?.eventDate }}</span>
-    </div>
-    <div class="detail-row">
-      <label class="detail-label">Category:</label>
-      <span class="detail-value">{{ expense?.category }}</span>
+<div class="expense-approval-shell">
+  <div class="expense-approval-container">
+    <div class="header-row">
+      <div>
+        <p class="eyebrow">Expense Review</p>
+        <h1 class="title">Expense Approval Update</h1>
+        <p class="subtitle">Review the submitted expense details and take action.</p>
+      </div>
+      <button class="btn btn-secondary" (click)="goBack()">Back</button>
     </div>
 
-    <div class="detail-row">
-      <label class="detail-label">Status:</label>
-      <span
-        class="detail-value px-3 py-1 rounded-lg text-sm"
-        [ngClass]="{
-          'text-green-500': expense?.status === 'Approved',
-          'text-red-500': expense?.status === 'Rejected',
-          'text-yellow-500': expense?.status === 'Pending'
-        }"
-        style="color: inherit;"
-      >
-        <mat-icon *ngIf="expense?.status === 'Approved'" class="mr-1 align-middle">check_circle</mat-icon>
-        <mat-icon *ngIf="expense?.status === 'Rejected'" class="mr-1 align-middle">cancel</mat-icon>
-        <mat-icon *ngIf="expense?.status === 'Pending'" class="mr-1 align-middle">access_time</mat-icon>
-        {{ expense?.status }}
-      </span>
-    </div>
+    <div *ngIf="isLoading" class="state-card">Loading expense...</div>
+    <div *ngIf="loadError && !isLoading" class="state-card error">{{ loadError }}</div>
 
-    <div class="detail-row">
-      <label class="detail-label">Comments:</label>
-      <span class="detail-value">{{ expense?.comment }}</span>
-    </div>
-
-    <!-- File Attachments Section -->
-    <div *ngIf="expense?.companyReceipt?.url || expense?.expenseReceipt?.url || expense?.receiptFileName || expense?.invoiceFileName">
-      <div class="detail-row">
-        <label class="detail-label">Attachments:</label>
-        <div class="detail-value">
-
-          <!-- Company Receipt (API-sourced) -->
-          <div *ngIf="expense?.companyReceipt?.url">
-            <a class="attachment-link" (click)="openFileModal(getReceiptWebUrl(expense?.companyReceipt?.url), 'Company Receipt')">
-              <mat-icon class="attach-icon">attach_file</mat-icon>
-              Receipt: {{ getFileName(expense?.companyReceipt?.url) }}
-            </a>
-          </div>
-
-          <!-- Employee Receipt (API-sourced) -->
-          <div *ngIf="expense?.expenseReceipt?.url">
-            <a class="attachment-link" (click)="openFileModal(getReceiptWebUrl(expense?.expenseReceipt?.url), 'Employee Receipt')">
-              <mat-icon class="attach-icon">attach_file</mat-icon>
-              Employee Receipt: {{ getFileName(expense?.expenseReceipt?.url) }}
-            </a>
-          </div>
-
-          <!-- Legacy localStorage filenames -->
-          <div *ngIf="!expense?.companyReceipt?.url && expense?.receiptFileName">
-            <a class="attachment-link" (click)="openFileModal(getReceiptWebUrl(expense?.receiptFileName), 'Receipt')">
-              <mat-icon class="attach-icon">attach_file</mat-icon>
-              Receipt: {{ expense?.receiptFileName }}
-            </a>
-          </div>
-          <div *ngIf="!expense?.expenseReceipt?.url && expense?.invoiceFileName">
-            <a class="attachment-link" (click)="openFileModal(getReceiptWebUrl(expense?.invoiceFileName), 'Invoice')">
-              <mat-icon class="attach-icon">attach_file</mat-icon>
-              Invoice: {{ expense?.invoiceFileName }}
-            </a>
-          </div>
-
+    <ng-container *ngIf="!isLoading && expense">
+      <div class="status-card">
+        <div>
+          <p class="eyebrow">Status</p>
+          <p class="status-value" [ngClass]="statusClass">{{ expense?.status || 'PENDING' }}</p>
+        </div>
+        <div class="action-group" *ngIf="canApproveOrReject()">
+          <button class="btn btn-approve" (click)="approveExpense()" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Processing...' : 'Approve' }}
+          </button>
+          <button class="btn btn-reject" (click)="rejectExpense()" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Processing...' : 'Reject' }}
+          </button>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="dropdown">
-    <button class="btn btn-more" (click)="toggleDropdown()">More Actions &#x25BC;</button>
-    <ul class="dropdown-content" [class.show]="dropdownOpen">
-      <li (click)="editExpense()">Edit</li>
-      <li (click)="downloadExpense()">Download</li>
-      <li (click)="emailExpense()">Email</li>
-      <li (click)="exportExpense()">Export as PDF</li>
-    </ul>
+      <div class="info-grid">
+        <div class="info-card">
+          <label>Expense Name</label>
+          <p>{{ expense?.name || '—' }}</p>
+        </div>
+        <div class="info-card">
+          <label>Merchant</label>
+          <p>{{ merchantName }}</p>
+        </div>
+        <div class="info-card">
+          <label>Category</label>
+          <p>{{ categoryName }}</p>
+        </div>
+        <div class="info-card">
+          <label>Expense Date</label>
+          <p>{{ formattedEventDate }}</p>
+        </div>
+        <div class="info-card">
+          <label>Amount</label>
+          <p>{{ formatAmount(expense?.amount) }} {{ expense?.currency || 'NGN' }}</p>
+        </div>
+        <div class="info-card">
+          <label>Paid By</label>
+          <p>{{ expense?.paidBy || '—' }}</p>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card person-card">
+          <label>Expense By</label>
+          <p class="person-name">{{ expenseByName }}</p>
+          <p class="person-meta">{{ expenseByEmail }}</p>
+        </div>
+        <div class="info-card person-card" *ngIf="approvedByName !== '—'">
+          <label>Approved By</label>
+          <p class="person-name">{{ approvedByName }}</p>
+          <p class="person-meta">{{ approvedByEmail }}</p>
+        </div>
+        <div class="info-card person-card" *ngIf="rejectedByName !== '—'">
+          <label>Rejected By</label>
+          <p class="person-name">{{ rejectedByName }}</p>
+          <p class="person-meta">{{ rejectedByEmail }}</p>
+        </div>
+      </div>
+
+      <div class="info-card" *ngIf="expense?.description">
+        <label>Description</label>
+        <p class="description">{{ expense?.description }}</p>
+      </div>
+
+      <div class="info-card" *ngIf="expense?.rejectionReason">
+        <label>Rejection Reason</label>
+        <p class="description">{{ expense?.rejectionReason }}</p>
+      </div>
+
+      <div class="info-card" *ngIf="expense?.lineItems?.length">
+        <label>Line Items</label>
+        <div class="line-items-table">
+          <div class="line-items-head">
+            <span>Item</span>
+            <span>Qty</span>
+            <span>Unit Price</span>
+            <span>Total</span>
+          </div>
+          <div class="line-items-row" *ngFor="let item of expense?.lineItems">
+            <span>{{ item.name }}</span>
+            <span>{{ item.quantity }}</span>
+            <span>{{ formatAmount(item.unitPrice) }} {{ expense?.currency || 'NGN' }}</span>
+            <span>{{ formatAmount(item.totalPrice) }} {{ expense?.currency || 'NGN' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <label>Attachments</label>
+        <div class="attachments">
+          <button *ngFor="let attachment of receiptAttachments"
+            type="button"
+            class="attachment-link"
+            (click)="openFileModal(attachment.url, attachment.title)">
+            <mat-icon>attach_file</mat-icon>
+            <span>{{ attachment.title }}</span>
+          </button>
+          <p *ngIf="receiptAttachments.length === 0" class="muted">No attachments available.</p>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="btn btn-more" (click)="toggleDropdown()">More Actions</button>
+        <ul class="dropdown-content" [class.show]="dropdownOpen">
+          <li (click)="editExpense()">Edit</li>
+          <li (click)="downloadExpense()">Download</li>
+          <li (click)="emailExpense()">Email</li>
+          <li (click)="exportExpense()">Export as PDF</li>
+        </ul>
+      </div>
+    </ng-container>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════
-     FILE PREVIEW MODAL
-     ═══════════════════════════════════════════════ -->
 <div *ngIf="showFileModal" class="file-modal-overlay" (click)="closeFileModal()">
   <div class="file-modal-container" (click)="$event.stopPropagation()">
-
-    <!-- Modal Header -->
     <div class="file-modal-header">
       <h2 class="file-modal-title">{{ fileModalTitle }}</h2>
       <div class="file-modal-actions">
-        <a [href]="fileModalUrl" target="_blank" rel="noopener noreferrer" class="btn-open-tab"
-           title="Open in new tab">
+        <a [href]="fileModalUrl" target="_blank" rel="noopener noreferrer" class="btn-open-tab" title="Open in new tab">
           <mat-icon>open_in_new</mat-icon>
           Open in New Tab
         </a>
@@ -117,26 +143,17 @@
       </div>
     </div>
 
-    <!-- Modal Body -->
     <div class="file-modal-body">
-
-      <!-- Loading Spinner -->
       <div *ngIf="fileModalLoading" class="file-modal-loading">
         <div class="spinner"></div>
         <p>Loading file...</p>
       </div>
 
-      <!-- Error State -->
       <div *ngIf="fileModalError && !fileModalLoading" class="file-modal-error">
         <mat-icon class="error-icon">broken_image</mat-icon>
         <p>{{ fileModalError }}</p>
-        <a [href]="fileModalUrl" target="_blank" rel="noopener noreferrer" class="btn-open-tab mt-2">
-          <mat-icon>open_in_new</mat-icon>
-          Open in New Tab
-        </a>
       </div>
 
-      <!-- Image Preview -->
       <img
         *ngIf="!fileModalLoading && !fileModalError && isImageUrl(fileModalUrl)"
         [src]="fileModalUrl"
@@ -146,14 +163,12 @@
         (error)="onFileModalError()"
       />
 
-      <!-- PDF Preview -->
       <iframe
         *ngIf="!fileModalLoading && !fileModalError && isPdfUrl(fileModalUrl)"
         [src]="fileModalUrl | safeUrl"
         class="file-modal-iframe"
         (load)="onFileModalLoad()"
       ></iframe>
-
     </div>
   </div>
 </div>

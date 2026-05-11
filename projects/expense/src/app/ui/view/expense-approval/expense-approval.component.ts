@@ -5,34 +5,46 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
 import { SafeUrlPipe } from '../../sharedComponent/safe-url.pipe';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-expense-approval',
   templateUrl: './expense-approval.component.html',
   styleUrls: ['./expense-approval.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, SafeUrlPipe]
+  imports: [CommonModule, MatIconModule, SafeUrlPipe],
+  providers: [MessageService]
 })
 export class ExpenseApprovalComponent implements OnInit {
 
-  expense: any;
+  expense: Expense | null = null;
   expenses: Expense[] = [];
   expenseId: string | null = null;
+  isLoading = false;
+  isSubmitting = false;
+  loadError = '';
   dropdownOpen = false;
   showFileModal = false;
   fileModalUrl = '';
   fileModalTitle = '';
   fileModalLoading = false;
   fileModalError = '';
+  currentUserId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private expenseService: ExpenseService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
+    sessionStorage.removeItem('pendingApprovalRedirect');
+    localStorage.removeItem('pendingApprovalRedirect');
+    sessionStorage.removeItem('postLoginRedirect');
+    localStorage.removeItem('postLoginRedirect');
+    this.currentUserId = this.resolveCurrentUserId();
     const expenseId = this.route.snapshot.paramMap.get('id');
     console.log('Route param id:', expenseId);
     if (expenseId) {
@@ -42,14 +54,20 @@ export class ExpenseApprovalComponent implements OnInit {
   }
 
   fetchExpenseById(id: string): void {
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    this.expense = expenses.find((exp: { id: string }) => exp.id === id);
-
-    if (this.expense) {
-      console.log('Fetched expense from local storage:', this.expense);
-    } else {
-      console.log('Expense not found in local storage');
-    }
+    this.isLoading = true;
+    this.loadError = '';
+    this.expenseService.getExpenseById(id).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.isLoading = false;
+        console.log('Fetched expense from API:', this.expense);
+      },
+      error: (error) => {
+        console.error('Expense not found from API:', error);
+        this.isLoading = false;
+        this.loadError = 'Expense could not be loaded.';
+      }
+    });
   }
 
   goBack(): void {
@@ -57,19 +75,68 @@ export class ExpenseApprovalComponent implements OnInit {
   }
 
   approveExpense(): void {
-    if (this.expense) {
-      this.expense.status = 'Approved';
-      this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/admin/expenses']);
+    if (!this.expense || this.isSubmitting) return;
+    if (this.isOwnExpense(this.expense)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Approve',
+        detail: 'You cannot approve your own expense.'
+      });
+      return;
     }
+    const merchantId = this.expense.merchantId || this.expense.merchant?.id;
+    const categoryId = this.expense.categoryId || this.expense.category?.id;
+    if (!merchantId || !categoryId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Approve',
+        detail: 'Missing Merchant or Category. Please edit the expense first.'
+      });
+      return;
+    }
+    this.isSubmitting = true;
+    this.expenseService.approveExpense(this.expense).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.pushBellNotification(
+          'Expense Approved',
+          `${expense?.name || 'Expense'} has been approved.`,
+        );
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.isSubmitting = false;
+      }
+    });
   }
 
   rejectExpense(): void {
-    if (this.expense) {
-      this.expense.status = 'Rejected';
-      this.expenseService.updateExpense(this.expense.id, this.expense);
-      this.router.navigate(['/admin/expenses']);
+    if (!this.expense || this.isSubmitting) return;
+    if (this.isOwnExpense(this.expense)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cannot Reject',
+        detail: 'You cannot reject your own expense.'
+      });
+      return;
     }
+    const reason = window.prompt('Enter rejection reason', this.expense.rejectionReason || '');
+    if (reason === null) return;
+
+    this.isSubmitting = true;
+    this.expenseService.rejectExpense(this.expense, reason).subscribe({
+      next: (expense) => {
+        this.expense = this.normalizeExpenseMedia(expense);
+        this.pushBellNotification(
+          'Expense Rejected',
+          `${expense?.name || 'Expense'} has been rejected.`,
+        );
+        this.isSubmitting = false;
+      },
+      error: () => {
+        this.isSubmitting = false;
+      }
+    });
   }
 
   downloadExpense(): void {
@@ -166,5 +233,157 @@ export class ExpenseApprovalComponent implements OnInit {
    */
   sanitizeUrl(url: string): SafeResourceUrl {
     return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  get merchantName(): string {
+    return this.expense?.merchant?.name || '—';
+  }
+
+  get categoryName(): string {
+    return this.expense?.category?.name || '—';
+  }
+
+  get formattedEventDate(): string {
+    const value = this.expense?.eventDate;
+    if (!value) return '—';
+    if (Array.isArray(value) && value.length >= 3) {
+      return new Date(value[0], value[1] - 1, value[2]).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+    const parsed = new Date(value as string);
+    return isNaN(parsed.getTime())
+      ? String(value)
+      : parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  get expenseByName(): string {
+    return this.expense?.expenseBy?.fullname || this.expense?.expenseBy?.username || '—';
+  }
+
+  get expenseByEmail(): string {
+    return this.expense?.expenseBy?.email || '—';
+  }
+
+  get approvedByName(): string {
+    return this.expense?.approvedBy?.fullname || this.expense?.approvedBy?.username || '—';
+  }
+
+  get approvedByEmail(): string {
+    return this.expense?.approvedBy?.email || '—';
+  }
+
+  get rejectedByName(): string {
+    return this.expense?.rejectedBy?.fullname || this.expense?.rejectedBy?.username || '—';
+  }
+
+  get rejectedByEmail(): string {
+    return this.expense?.rejectedBy?.email || '—';
+  }
+
+  get statusClass(): string {
+    switch (this.expense?.status) {
+      case 'APPROVED': return 'status-approved';
+      case 'REJECTED': return 'status-rejected';
+      default: return 'status-pending';
+    }
+  }
+
+  get receiptAttachments(): Array<{ title: string; url: string }> {
+    if (!this.expense) return [];
+    const attachments: Array<{ title: string; url: string }> = [];
+
+    const pushMedia = (title: string, media?: any) => {
+      if (media?.url) attachments.push({ title, url: this.getReceiptWebUrl(media.url) });
+    };
+
+    pushMedia('Company Receipt', this.expense.companyReceipt);
+    pushMedia('Employee Receipt', this.expense.expenseReceipt);
+
+    (this.expense.companyReceipts || []).forEach((media, index) =>
+      pushMedia(`Company Receipt ${index + 1}`, media)
+    );
+    (this.expense.expenseReceipts || []).forEach((media, index) =>
+      pushMedia(`Employee Receipt ${index + 1}`, media)
+    );
+
+    const seen = new Set<string>();
+    return attachments.filter((attachment) => {
+      if (seen.has(attachment.url)) return false;
+      seen.add(attachment.url);
+      return true;
+    });
+  }
+
+  canApproveOrReject(): boolean {
+    return this.expense?.status === 'PENDING';
+  }
+
+  formatAmount(value: number | string | null | undefined): string {
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+  }
+
+  private pushBellNotification(title: string, body: string): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('optimax-notification', {
+      detail: {
+        title,
+        body,
+        category: 'module',
+        route: this.expense?.id
+          ? `/admin/expenses/${this.route.snapshot.paramMap.get('uuid') || '10000000-1000-4000-8000-100000000000'}/expensesApproval/${this.expense.id}`
+          : '/admin/expenses'
+      }
+    }));
+  }
+
+  private normalizeExpenseMedia(expense: Expense): Expense {
+    const normalizeMedia = (media: any) =>
+      media ? { ...media, url: this.getReceiptWebUrl(media.url || media.name || media.mediaNo) } : media;
+
+    return {
+      ...expense,
+      companyReceipt: normalizeMedia(expense.companyReceipt),
+      expenseReceipt: normalizeMedia(expense.expenseReceipt),
+      companyReceipts: Array.isArray(expense.companyReceipts)
+        ? expense.companyReceipts.map(normalizeMedia)
+        : [],
+      expenseReceipts: Array.isArray(expense.expenseReceipts)
+        ? expense.expenseReceipts.map(normalizeMedia)
+        : [],
+    };
+  }
+
+  private resolveCurrentUserId(): number | null {
+    const raw =
+      sessionStorage.getItem('userid') ||
+      localStorage.getItem('userid');
+    const parsed = Number(raw);
+    return !isNaN(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private resolveExpenseOwnerId(expense: Expense): number | null {
+    const explicitId = Number((expense as any).expenseById);
+    if (!isNaN(explicitId) && explicitId > 0) return explicitId;
+
+    const expenseBy = expense.expenseBy as any;
+    if (typeof expenseBy === 'number' && expenseBy > 0) return expenseBy;
+    if (typeof expenseBy === 'string') {
+      const parsed = Number(expenseBy);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (expenseBy && typeof expenseBy === 'object') {
+      const userId = Number(expenseBy.userId ?? expenseBy.id);
+      if (!isNaN(userId) && userId > 0) return userId;
+    }
+
+    return null;
+  }
+
+  private isOwnExpense(expense: Expense): boolean {
+    return !!this.currentUserId && this.resolveExpenseOwnerId(expense) === this.currentUserId;
   }
 }

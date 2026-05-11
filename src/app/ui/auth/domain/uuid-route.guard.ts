@@ -10,13 +10,23 @@ export class UuidGuard implements CanActivate {
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
 
   constructor(private router: Router) {}
- 
+
+  private getUuidFromRoute(route: ActivatedRouteSnapshot): string | null {
+    let current: ActivatedRouteSnapshot | null = route;
+    while (current) {
+      if (current.params['uuid']) return current.params['uuid'];
+      current = current.firstChild;
+    }
+
+    const fromUrl = route.url
+      .map(segment => segment.path)
+      .find(segment => this.uuidRegex.test(segment));
+    return fromUrl || null;
+  }
 
   canActivate(route: ActivatedRouteSnapshot): boolean {
-    const child = route.firstChild;
-    // const secondChild = route.lastChild
-    const uuid = child?.params['uuid'];
-    console.log(uuid)
+    const uuid = this.getUuidFromRoute(route);
+    console.log(uuid);
 
     if (!uuid || !this.uuidRegex.test(uuid)) {
       this.router.navigate(['/404']);
@@ -57,4 +67,3 @@ private getUuidFromRoute(route: ActivatedRouteSnapshot): string | null {
   }
 
 }
-

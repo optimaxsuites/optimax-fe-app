@@ -366,9 +366,9 @@
           <div *ngIf="feedHomeLoading" class="workspace-empty">Loading enterprise feed…</div>
           <div *ngIf="!feedHomeLoading && feedHomeError" class="workspace-empty error">{{ feedHomeError }}</div>
 
-          <div class="feed-post-list" *ngIf="!feedHomeLoading && !feedHomeError">
+          <div class="feed-post-list" *ngIf="!feedHomeLoading && !feedHomeError && recentFeedPosts.length; else noRecentPosts">
             <article
-              *ngFor="let post of feedPosts"
+              *ngFor="let post of recentFeedPosts"
               [attr.id]="'post-' + post.id"
               class="feed-post-card"
               [class.selected]="selectedFeedPostId === post.id"
@@ -557,6 +557,14 @@
                   >
                     <i [class]="reaction.icon"></i>
                     <strong *ngIf="feedReactionValue(post, reaction.code)">{{ feedReactionValue(post, reaction.code) }}</strong>
+                    <span class="hover-people-card" *ngIf="feedReactionHoverUsers('post', post.id, reaction.code).length">
+                      <span class="hover-people-title">{{ reaction.label }}</span>
+                      <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('post', post.id, reaction.code)">
+                        <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                        <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                        <span>{{ person.name }}</span>
+                      </span>
+                    </span>
                   </button>
                   <button type="button" class="toolbar-action" (click)="toggleFeedThread(post)">
                     {{ feedThreads[post.id] && feedThreads[post.id].expanded ? 'Hide replies' : 'Reply' }}
@@ -662,6 +670,14 @@
                         >
                           <i [class]="reaction.icon"></i>
                           <strong *ngIf="feedCommentReactionValue(comment, reaction.code)">{{ feedCommentReactionValue(comment, reaction.code) }}</strong>
+                          <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', comment.id, reaction.code).length">
+                            <span class="hover-people-title">{{ reaction.label }}</span>
+                            <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', comment.id, reaction.code)">
+                              <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                              <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                              <span>{{ person.name }}</span>
+                            </span>
+                          </span>
                         </button>
                         <button type="button" class="toolbar-action subtle" (click)="toggleFeedCommentReply(comment)">
                           {{ comment.replyOpen ? 'Cancel' : 'Reply' }}
@@ -772,6 +788,14 @@
                               >
                                 <i [class]="reaction.icon"></i>
                                 <strong *ngIf="feedCommentReactionValue(reply, reaction.code)">{{ feedCommentReactionValue(reply, reaction.code) }}</strong>
+                                <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', reply.id, reaction.code).length">
+                                  <span class="hover-people-title">{{ reaction.label }}</span>
+                                  <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', reply.id, reaction.code)">
+                                    <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                                    <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                                    <span>{{ person.name }}</span>
+                                  </span>
+                                </span>
                               </button>
                               <button type="button" class="toolbar-action subtle" (click)="toggleFeedCommentReply(reply)">
                                 {{ reply.replyOpen ? 'Cancel' : 'Reply' }}
@@ -880,6 +904,14 @@
                                     >
                                       <i [class]="reaction.icon"></i>
                                       <strong *ngIf="feedCommentReactionValue(replyLevel3, reaction.code)">{{ feedCommentReactionValue(replyLevel3, reaction.code) }}</strong>
+                                      <span class="hover-people-card" *ngIf="feedReactionHoverUsers('comment', replyLevel3.id, reaction.code).length">
+                                        <span class="hover-people-title">{{ reaction.label }}</span>
+                                        <span class="hover-people-row" *ngFor="let person of feedReactionHoverUsers('comment', replyLevel3.id, reaction.code)">
+                                          <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                                          <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                                          <span>{{ person.name }}</span>
+                                        </span>
+                                      </span>
                                     </button>
                                   </div>
                                 </div>
@@ -957,6 +989,19 @@
               </button>
             </div>
           </div>
+          <ng-template #noRecentPosts>
+            <div class="workspace-empty" *ngIf="!feedHomeLoading && !feedHomeError">
+              <div>No recent post to view</div>
+              <button
+                *ngIf="oldFeedPosts.length && !showViewedFeedPosts"
+                type="button"
+                class="toolbar-action primary"
+                (click)="showOldFeedPosts()"
+              >
+                Click here to see old post
+              </button>
+            </div>
+          </ng-template>
         </section>
       </div>
 
@@ -980,9 +1025,9 @@
               <h3>Priority company stories</h3>
             </div>
           </div>
-          <div class="featured-feed-grid rail-featured-grid" *ngIf="featuredFeedPosts.length; else noFeaturedStories">
+          <div class="featured-feed-grid rail-featured-grid" *ngIf="visibleFeaturedFeedPosts.length; else noFeaturedStories">
             <article
-              *ngFor="let post of featuredFeedPosts"
+              *ngFor="let post of visibleFeaturedFeedPosts"
               class="featured-feed-item"
               (click)="selectFeedPost(post); toggleFeedThread(post)"
             >
@@ -1089,6 +1134,8 @@
             [myUserId]="me.userId"
             [flashId]="getFlashId()"
             [readCountForMessage]="getReadCount.bind(this)"
+            [readUsersForMessage]="getReadUsers.bind(this)"
+            [readUserCardsForMessage]="getReadUserCards.bind(this)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
             (pinToggled)="togglePin($event)"
@@ -1150,6 +1197,7 @@
           [activeThreadReplyToId]="activeThreadReplyToId"
           [activeThreadReplyTarget]="activeThreadReplyTarget"
           [threadReplyDraft]="threadReplyDraft"
+          [typingUsersLabel]="typingUsersLabel"
           [threadPendingAttachments]="threadPendingAttachments"
           [sendingReply]="sendingReply"
           [pinnedMessages]="pinnedMessages"
@@ -1174,7 +1222,7 @@
           [getEmpAvatarColor]="getEmpAvatarColor"
           [getEmpImageUrl]="getEmpImageUrl"
           (threadClosed)="closeThread()"
-          (threadReplyDraftChange)="threadReplyDraft = $event"
+          (threadReplyDraftChange)="onThreadReplyDraftChanged($event)"
           (threadFilesSelected)="onThreadFilesSelected($event)"
           (threadAttachmentRemoved)="removeThreadPendingAttachment($event)"
           (replyTargetSet)="setThreadReplyTarget($event)"

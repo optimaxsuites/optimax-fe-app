@@ -23,9 +23,10 @@ export interface ScannedReceiptData {
 }
 
 export interface ScannedLineItem {
-  qty:   number;
-  name:  string;
-  price: number;
+  qty:        number;
+  name:       string;
+  unitPrice:  number;
+  totalPrice: number;
 }
 
 // ─────────────────────
@@ -206,10 +207,7 @@ export class ReceiptScannerService {
   private _parseReceiptText(raw: string): ScannedReceiptData {
     const warnings: string[] = [];
 
-    const lines = raw
-      .split('\n')
-      .map(l => l.trim())
-      .filter(l => l.length > 1);
+    const lines = this._normalizeLines(raw);
 
     const merchantName    = this._extractMerchant(lines);
     const merchantPhone   = this._extractMerchantPhone(lines);
@@ -231,7 +229,7 @@ export class ReceiptScannerService {
     const quantity = lineItems.length > 0 ? lineItems.length : null;
 
     const description = lineItems.length > 0
-      ? lineItems.map(i => `${i.qty}x  ${i.name}  —  ₦${i.price.toLocaleString()}`).join('\n')
+      ? lineItems.map(i => `${i.qty}x  ${i.name}  —  ₦${i.totalPrice.toLocaleString()}`).join('\n')
       : '';
 
     const fieldsFound = [merchantName, date, total].filter(Boolean).length;
@@ -274,6 +272,8 @@ export class ReceiptScannerService {
     let taxRate:   number | null = null;
     let taxLabel:  string        = '';
 
+    const totalCandidates: number[] = [];
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
@@ -284,12 +284,11 @@ export class ReceiptScannerService {
         const pctMatch = line.match(/(\d+(?:\.\d{1,2})?)\s*%/);
         if (pctMatch) taxRate = parseFloat(pctMatch[1]);
 
-        const lineWithoutPct = line.replace(/\d+(?:\.\d{1,2})?\s*%/, '');
-        const moneyOnLine    = this._extractNumber(lineWithoutPct);
+        const moneyOnLine    = this._extractLastNumber(line);
         if (moneyOnLine !== null && moneyOnLine > 0) {
           taxAmount = moneyOnLine;
         } else if (i + 1 < lines.length) {
-          const moneyNextLine = this._extractNumber(lines[i + 1]);
+          const moneyNextLine = this._extractLastNumber(lines[i + 1]);
           if (moneyNextLine !== null && moneyNextLine > 0) taxAmount = moneyNextLine;
         }
 
@@ -306,8 +305,8 @@ export class ReceiptScannerService {
 
       // ── Subtotal line ─────────────────────────────────────────────────────
       if (SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) {
-        const n = this._extractNumber(line) ??
-          (i + 1 < lines.length ? this._extractNumber(lines[i + 1]) : null);
+        const n = this._extractLastNumber(line) ??
+          (i + 1 < lines.length ? this._extractLastNumber(lines[i + 1]) : null);
         if (n !== null && n > 0) {
           subTotal = n;
           console.log(`[ReceiptScanner] Subtotal: ${subTotal}`);
@@ -318,9 +317,10 @@ export class ReceiptScannerService {
       // ── Total line 
       if (TOTAL_KEYWORDS.some(kw => kw.test(line)) &&
           !SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) {
-        const n = this._extractNumber(line) ??
-          (i + 1 < lines.length ? this._extractNumber(lines[i + 1]) : null);
+        const n = this._extractLastNumber(line) ??
+          (i + 1 < lines.length ? this._extractLastNumber(lines[i + 1]) : null);
         if (n !== null && n > 0) {
+          totalCandidates.push(n);
           total = n;
           console.log(`[ReceiptScanner] Total candidate: ${total} from "${line}"`);
         }
@@ -332,8 +332,8 @@ export class ReceiptScannerService {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (/\btotal\b/i.test(line) && !SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) {
-          const n = this._extractNumber(line) ??
-            (i + 1 < lines.length ? this._extractNumber(lines[i + 1]) : null);
+          const n = this._extractLastNumber(line) ??
+            (i + 1 < lines.length ? this._extractLastNumber(lines[i + 1]) : null);
           if (n !== null && n > 0) {
             total = n;
             console.log(`[ReceiptScanner] Total fallback: ${total} from "${line}"`);
@@ -347,12 +347,16 @@ export class ReceiptScannerService {
     if (total === null) {
       const rawMatch = rawText.match(/total[^\d\n]*([=₦$£€\s]*[\d,\.]+)/i);
       if (rawMatch) {
-        const fallback = this._extractNumber(rawMatch[1]);
+        const fallback = this._extractLastNumber(rawMatch[1]);
         if (fallback !== null && fallback > 0) {
           total = fallback;
           console.log(`[ReceiptScanner] Total via raw-text fallback: ${total}`);
         }
       }
+    }
+
+    if (totalCandidates.length > 1) {
+      total = totalCandidates[totalCandidates.length - 1];
     }
 
     // Derive missing values
@@ -418,8 +422,8 @@ export class ReceiptScannerService {
     const items: ScannedLineItem[] = [];
 
     let startIndex = 0;
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-      if (/\b(items?|order|qty|description|particulars)\b/i.test(lines[i])) {
+    for (let i = 0; i < Math.min(lines.length, 20); i++) {
+      if (/\b(items?|order|qty|description|particulars|product|ticket\s+no|receipt\s+no)\b/i.test(lines[i])) {
         startIndex = i + 1;
         break;
       }
@@ -440,42 +444,84 @@ export class ReceiptScannerService {
       return false;
     };
 
-    const patternFull   = /^\s*(\d+)\s*[x×]?\s+(.+?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)$/;
-    const patternSimple = /^\s*(.+?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)$/;
+    const patternFull = /^\s*[-*]?\s*(\d+)\s*[x×]?\s+(.+?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)$/;
+    const patternWithUnitAndTotal = /^\s*[-*]?\s*(\d+)\s+(.+?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)$/;
+    const patternSimple = /^\s*[-*]?\s*(.+?)\s+([=₦$£€]?\s*\d[\d,]*(?:\.\d{1,2})?)$/;
 
     const parseNum = (s: string) => parseFloat(s.replace(/,/g, ''));
 
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i];
+      const sanitizedLine = line.replace(/\s{2,}/g, ' ').trim();
 
       if (FOOTER_KEYWORDS.some(kw => kw.test(line)) ||
           SUBTOTAL_KEYWORDS.some(kw => kw.test(line))) break;
 
-      if (skipLine(line) || line.length < 4) continue;
+      if (skipLine(line) || sanitizedLine.length < 4) continue;
 
-      const m1 = line.match(patternFull);
+      const m0 = sanitizedLine.match(patternWithUnitAndTotal);
+      if (m0) {
+        const qty = parseInt(m0[1], 10) || 1;
+        const unitPrice = parseNum(m0[3]);
+        const totalPrice = parseNum(m0[4]);
+        if (totalPrice > 0) {
+          items.push(this._normalizeScannedLineItem({
+            qty,
+            name: this._cleanLineItemName(m0[2]),
+            unitPrice: unitPrice > 0 ? unitPrice : (qty > 0 ? totalPrice / qty : totalPrice),
+            totalPrice
+          }));
+          continue;
+        }
+      }
+
+      const m1 = sanitizedLine.match(patternFull);
       if (m1) {
-        items.push({ qty: m1[1] ? parseInt(m1[1]) : 1, name: this._titleCase(m1[2].trim()), price: parseNum(m1[3]) });
-        continue;
+        const qty = m1[1] ? parseInt(m1[1]) : 1;
+        const totalPrice = parseNum(m1[3]);
+        if (totalPrice > 0) {
+          items.push(this._normalizeScannedLineItem({
+            qty,
+            name: this._cleanLineItemName(m1[2]),
+            unitPrice: qty > 0 ? totalPrice / qty : totalPrice,
+            totalPrice
+          }));
+          continue;
+        }
       }
 
-      const m2 = line.match(patternSimple);
+      const m2 = sanitizedLine.match(patternSimple);
       if (m2) {
-        items.push({ qty: 1, name: this._titleCase(m2[1].trim()), price: parseNum(m2[2]) });
-        continue;
+        const totalPrice = parseNum(m2[2]);
+        if (totalPrice > 0 && /[A-Za-z]{2,}/.test(m2[1])) {
+          items.push(this._normalizeScannedLineItem({
+            qty: 1,
+            name: this._cleanLineItemName(m2[1]),
+            unitPrice: totalPrice,
+            totalPrice
+          }));
+          continue;
+        }
       }
 
-      if (/^[A-Za-z][A-Za-z0-9\s/&'.-]{2,40}$/.test(line) && i + 1 < lines.length) {
+      if (/^[A-Za-z][A-Za-z0-9\s/&'.-]{2,40}$/.test(sanitizedLine) && i + 1 < lines.length) {
         const priceOnly = lines[i + 1].match(/^[=₦$£€\s]*(\d[\d,]+(?:\.\d{1,2})?)$/);
         if (priceOnly) {
-          items.push({ qty: 1, name: this._titleCase(line.trim()), price: parseNum(priceOnly[1]) });
+          const totalPrice = parseNum(priceOnly[1]);
+          items.push(this._normalizeScannedLineItem({
+            qty: 1,
+            name: this._cleanLineItemName(sanitizedLine),
+            unitPrice: totalPrice,
+            totalPrice
+          }));
           i++;
         }
       }
     }
 
-    console.log(`[ReceiptScanner] ${items.length} line items:`, items);
-    return items;
+    const deduped = this._dedupeLineItems(items);
+    console.log(`[ReceiptScanner] ${deduped.length} line items:`, deduped);
+    return deduped;
   }
 
   private _extractDate(text: string): string {
@@ -484,12 +530,18 @@ export class ReceiptScannerService {
       jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12'
     };
 
+    const normalizedText = text
+      .replace(/O(?=\d)/g, '0')
+      .replace(/\|/g, '/');
+
     const patterns: { re: RegExp; handler: (m: RegExpMatchArray) => string }[] = [
       { re: /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/,
         handler: m => `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` },
       { re: /\b(\d{4})[\/\-](\d{2})[\/\-](\d{2})\b/,
         handler: m => `${m[1]}-${m[2]}-${m[3]}` },
       { re: /\b(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[,\s]+(\d{4})\b/i,
+        handler: m => `${m[3]}-${MONTHS[m[2].toLowerCase().slice(0,3)]}-${m[1].padStart(2,'0')}` },
+      { re: /\b(\d{1,2})[-\s](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-\s,]+(\d{4})\b/i,
         handler: m => `${m[3]}-${MONTHS[m[2].toLowerCase().slice(0,3)]}-${m[1].padStart(2,'0')}` },
       { re: /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2})[,\s]+(\d{4})\b/i,
         handler: m => `${m[3]}-${MONTHS[m[1].toLowerCase().slice(0,3)]}-${m[2].padStart(2,'0')}` },
@@ -498,7 +550,7 @@ export class ReceiptScannerService {
     ];
 
     for (const { re, handler } of patterns) {
-      const m = text.match(re);
+      const m = normalizedText.match(re);
       if (m) {
         const result = handler(m);
         console.log('[ReceiptScanner] Date detected:', result);
@@ -513,6 +565,14 @@ export class ReceiptScannerService {
     const cleaned = s.replace(/[=₦$£€,\s]/gi, '');
     const m = cleaned.match(/(\d+(?:\.\d{1,2})?)/);
     return m ? parseFloat(m[1]) : null;
+  }
+
+  private _extractLastNumber(s: string): number | null {
+    if (!s) return null;
+    const matches = s.match(/\d[\d,]*(?:\.\d{1,2})?/g);
+    if (!matches || !matches.length) return null;
+    const last = matches[matches.length - 1];
+    return this._extractNumber(last);
   }
 
   private _extractMerchantPhone(lines: string[]): string {
@@ -551,5 +611,66 @@ export class ReceiptScannerService {
 
   private _titleCase(s: string): string {
     return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).trim();
+  }
+
+  private _normalizeLines(raw: string): string[] {
+    return raw
+      .replace(/\r/g, '\n')
+      .split('\n')
+      .map(line => line
+        .replace(/[|]/g, '/')
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/[—–]/g, '-')
+        .replace(/\s{2,}/g, ' ')
+        .trim())
+      .filter(line => line.length > 1);
+  }
+
+  private _cleanLineItemName(name: string): string {
+    return this._titleCase(
+      name
+        .replace(/^\W+/, '')
+        .replace(/\s{2,}/g, ' ')
+        .replace(/\b(qty|amount|price)\b/gi, '')
+        .trim()
+    );
+  }
+
+  private _dedupeLineItems(items: ScannedLineItem[]): ScannedLineItem[] {
+    const seen = new Set<string>();
+    return items.filter(item => {
+      const key = [
+        item.qty,
+        item.name.toLowerCase().replace(/\s+/g, ' ').trim(),
+        item.totalPrice.toFixed(2)
+      ].join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private _normalizeScannedLineItem(item: Partial<ScannedLineItem>): ScannedLineItem {
+    const qty = Math.max(1, Math.round(Number(item?.qty) || 1));
+    const providedUnitPrice = Number(item?.unitPrice);
+    const providedTotalPrice = Number(item?.totalPrice);
+
+    const unitPrice = Number.isFinite(providedUnitPrice) && providedUnitPrice > 0
+      ? this._roundCurrency(providedUnitPrice)
+      : (Number.isFinite(providedTotalPrice) && providedTotalPrice > 0
+          ? this._roundCurrency(providedTotalPrice / qty)
+          : 0);
+
+    return {
+      qty,
+      name: (item?.name || '').trim(),
+      unitPrice,
+      totalPrice: this._roundCurrency(qty * unitPrice),
+    };
+  }
+
+  private _roundCurrency(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }
