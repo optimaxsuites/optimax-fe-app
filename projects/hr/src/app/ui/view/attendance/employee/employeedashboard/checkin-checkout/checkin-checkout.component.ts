@@ -33,7 +33,9 @@ export class CheckinCheckoutComponent implements OnInit {
   //department = 'Engineering';
 
   private hrEmployeeId: string | null = null;
-  private hrDepartment: string = '';
+  //private hrDepartment: string = '';
+  private hrDepartment = '';
+  private hrEmployeeName = '';
 
   get currentUser() {
     return this.userSession.getCurrentUser();
@@ -46,6 +48,7 @@ export class CheckinCheckoutComponent implements OnInit {
         if (result) {
           this.hrEmployeeId = result.id;
           this.hrDepartment = result.department;
+          this.hrEmployeeName = result.fullName;
           console.log('Resolved HR employee ID:', result); // should print the correct ID
      
         }
@@ -134,7 +137,8 @@ private restoreClockStatus(): void {
         await this.attendanceService.clockAction(
           //this.currentUser!.id,
           this.hrEmployeeId, //HR employee ID for API
-          this.currentUser!.name,
+          //this.currentUser!.name,
+          this.hrEmployeeName,
           //this.currentUser!.department,
           this.hrDepartment, //for department
           'IN'
@@ -148,7 +152,8 @@ private restoreClockStatus(): void {
     await this.attendanceService.clockAction(
       //this.currentUser!.id,
       this.hrEmployeeId, //HR employee ID for API
-      this.currentUser!.name,
+      //this.currentUser!.name,
+      this.hrEmployeeName,
       //this.currentUser!.department,
       this.hrDepartment, //for department
       'OUT'
