@@ -3,7 +3,7 @@ import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { AccountingFormatService } from '../../../core/services/accounting-format.service';
-import { AccountingService, LedgerEntryRaw } from '../../../core/services/accounting.service';
+import { AccountingService } from '../../../core/services/accounting.service';
 import {
   AccountingTransactionDTO,
   BalanceSheetReportDTO,
@@ -249,15 +249,14 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
       this.accountingService.getCashFlowReport(request),
       this.accountingService.getBalanceSheetReport(request),
       this.accountingService.getAccountingTransactions(),
-      this.accountingService.getLedgerEntries(),
       this.accountingService.getYearlyTaxSummary(this.selectedYear),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ([incomeStatementReport, cashFlowReport, balanceSheetReport, transactions, ledgerEntries, yearlyTax]) => {
+        next: ([incomeStatementReport, cashFlowReport, balanceSheetReport, transactions, yearlyTax]) => {
           this.transactions = transactions;
-          this.incomeStatementReport = this.withDerivedIncomeStatement(incomeStatementReport, transactions);
-          this.cashFlowReport = this.withDerivedCashFlow(cashFlowReport, ledgerEntries, request.periodStart, request.periodEnd);
+          this.incomeStatementReport = incomeStatementReport;
+          this.cashFlowReport = cashFlowReport;
           this.balanceSheetReport = balanceSheetReport;
           this.annualTaxRows = (yearlyTax.byMonth ?? []).map((entry: { month: number; amount: number }) => ({
             monthLabel: new Date(this.selectedYear, entry.month, 1).toLocaleString('en-US', { month: 'short' }),
@@ -295,143 +294,6 @@ export class AccountingReportsComponent implements OnInit, OnDestroy {
 
   private sumBalances(items: Array<{ balance: number }>): number {
     return items.reduce((sum, item) => sum + item.balance, 0);
-  }
-
-  private withDerivedIncomeStatement(
-    report: IncomeStatementReportDTO,
-    transactions: AccountingTransactionDTO[],
-  ): IncomeStatementReportDTO {
-    const hasBackendLines = [
-      report.revenue,
-      report.cogs,
-      report.administrativeExpenses,
-      report.salariesAndWages,
-      report.maintenance,
-      report.logisticsAndDistribution,
-      report.otherOperatingExpenses,
-      report.otherItems,
-    ].some((items) => items.length > 0);
-
-    if (hasBackendLines) {
-      return report;
-    }
-
-    const includedIds = new Set(report.reportContext.includedTransactionIds.map((id) => String(id)));
-    const includedTransactions = transactions.filter((transaction) => includedIds.has(String(transaction.id)));
-
-    if (!includedTransactions.length) {
-      return report;
-    }
-
-    const revenue = includedTransactions
-      .map((transaction) => {
-        const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
-        const amount = Number(transaction.amount) || 0;
-        const interestAmount = approvedAmount !== null ? Math.max(amount - approvedAmount, 0) : 0;
-        return interestAmount > 0
-          ? this.toFinancialLineItem(`Interest income - ${transaction.description || transaction.transactionReference || transaction.id}`, interestAmount)
-          : null;
-      })
-      .filter((item): item is FinancialLineItemDTO => !!item);
-
-    const otherItems = includedTransactions
-      .map((transaction) => {
-        const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
-        const amount = Number(transaction.amount) || 0;
-        const principalAmount = approvedAmount !== null ? approvedAmount : amount;
-        return principalAmount > 0
-          ? this.toFinancialLineItem(`Loan principal activity - ${transaction.description || transaction.transactionReference || transaction.id}`, -principalAmount)
-          : null;
-      })
-      .filter((item): item is FinancialLineItemDTO => !!item);
-
-    const revenueTotal = this.sumActualAmounts(revenue);
-    const otherTotal = this.sumActualAmounts(otherItems);
-    const totals = JSON.parse(JSON.stringify(report.totals)) as IncomeStatementReportDTO['totals'];
-    totals.revenue.actualAmount = revenueTotal;
-    totals.grossProfit.actualAmount = revenueTotal;
-    totals.otherItems.actualAmount = otherTotal;
-    totals.ebit.actualAmount = revenueTotal + otherTotal;
-    totals.ebitda.actualAmount = revenueTotal + otherTotal;
-    totals.nibt.actualAmount = revenueTotal + otherTotal;
-    totals.netIncome.actualAmount = revenueTotal + otherTotal;
-
-    return {
-      ...report,
-      revenue,
-      otherItems,
-      totals,
-      monthlyTrend: {
-        ...report.monthlyTrend,
-        revenueAmounts: [revenueTotal],
-        expenseAmounts: [Math.abs(otherTotal)],
-        profitAmounts: [revenueTotal + otherTotal],
-      },
-    };
-  }
-
-  private withDerivedCashFlow(
-    report: CashFlowReportDTO,
-    ledgerEntries: LedgerEntryRaw[],
-    periodStart: string,
-    periodEnd: string,
-  ): CashFlowReportDTO {
-    if (report.operatingActivities.length || report.investingActivities.length || report.financingActivities.length) {
-      return report;
-    }
-
-    const start = new Date(periodStart);
-    const end = new Date(periodEnd);
-    const operatingActivities = ledgerEntries
-      .filter((entry) => this.isCashAccount(entry))
-      .filter((entry) => {
-        const entryDate = this.toDatePipeValue(entry.entryDate) as Date;
-        return entryDate >= start && entryDate <= end;
-      })
-      .map((entry) => {
-        const amount = Number(entry.debit || 0) - Number(entry.credit || 0);
-        const line = entry.journalEntryLine as { description?: string } | null;
-        return {
-          description: line?.description || `${entry.account.accountName} ledger movement`,
-          amount,
-          category: 'operating' as CashFlowLineItemDTO['category'],
-          flowDirection: amount >= 0 ? 'inflow' : 'outflow',
-          indentLevel: 1,
-          isSubtotal: false,
-        };
-      });
-
-    if (!operatingActivities.length) {
-      return report;
-    }
-
-    const operatingCashFlow = operatingActivities.reduce((sum, item) => sum + item.amount, 0);
-    return {
-      ...report,
-      operatingActivities,
-      summary: {
-        ...report.summary,
-        operatingCashFlow,
-        netCashFlow: operatingCashFlow,
-        freeCashFlow: operatingCashFlow,
-        closingBalance: (report.summary.openingBalance ?? 0) + operatingCashFlow,
-      },
-    };
-  }
-
-  private toFinancialLineItem(name: string, actualAmount: number): FinancialLineItemDTO {
-    return { name, actualAmount, previousAmount: 0, budgetAmount: 0, priorYearAmount: 0 };
-  }
-
-  private numberFromMetadata(transaction: AccountingTransactionDTO, key: string): number | null {
-    const parsed = Number(transaction.metadata?.[key]);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  private isCashAccount(entry: LedgerEntryRaw): boolean {
-    const accountName = entry.account?.accountName?.toLowerCase() ?? '';
-    const accountCode = String(entry.account?.accountCode ?? '');
-    return accountName.includes('cash') || accountName.includes('bank') || accountCode.startsWith('10');
   }
 
   private toStatementRows(items: FinancialLineItemDTO[], section: string): Array<{ label: string; amount: number }> {
