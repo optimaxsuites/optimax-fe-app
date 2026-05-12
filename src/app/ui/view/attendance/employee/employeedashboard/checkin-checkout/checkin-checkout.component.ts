@@ -51,6 +51,9 @@ export class CheckinCheckoutComponent implements OnInit {
 
     if (currentUser?.userId) {
 
+      console.log('SESSION USER:', currentUser);
+    console.log('SESSION USER ID:', currentUser.userId);
+
       this.attendanceService
         .resolveHrEmployeeId(currentUser.userId)
         .subscribe(result => {

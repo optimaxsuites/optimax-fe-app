@@ -113,14 +113,32 @@ private getAuthHeaders(): HttpHeaders {
 }
 
 //nna to get the right employee id nnaaaaa
-resolveHrEmployeeId(username: string): Observable<{ id: string; fullName: string; department: string } | null> {
+resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string; fullName: string; department: string } | null> {
   return this.http.get<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`,
     { headers: this.getAuthHeaders() }
   ).pipe(
     map(res => {
       const employees = res.content ?? res;
-      const match = employees.find((e: any) => e.user?.username === username);
+      //to log employees returned from api
+      console.log('Employees API response:', employees);
+      //const match = employees.find((e: any) => e.user?.username === username);
+      
+      employees.forEach((e: any) => {
+        console.log(
+          'EMPLOYEE:',
+          e.id,
+          'LINKED USER:',
+          e.user
+        );
+      });
+      
+      const match = employees.find(
+        (e: any) => e.user?.id?.toString() === sessionUserId.toString()
+      );
+
+      console.log('MATCHED EMPLOYEE:', match);
+
       if (!match) return null;
       return {
         id: match?.id?.toString(),
