@@ -1,0 +1,438 @@
+Inventory Management System Recommendations
+Date: 2026-05-11
+Scope: POS Inventory Submodule evolution into a multi-branch, sector-flexible inventory platform with AI support
+
+1. Executive Summary
+The current POS inventory capability is a lightweight stock and product management layer. It can evolve into a much stronger inventory platform, but it needs a clearer domain model, stronger transaction controls, better branch-aware workflows, and deeper support for movement types, replenishment, traceability, and planning.
+
+The target system should support:
+- Single branch and multi-branch businesses
+- Retail, grocery, pharmacy, hospitality, manufacturing-lite, distribution, wholesale, and service-linked stock flows
+- Simple inventory teams and advanced operations teams
+- Manual operations today and AI-assisted operations over time
+
+2. Product Positioning
+The ideal solution should scale across three maturity levels:
+
+Level 1: Basic
+- Product catalog
+- Branch stock balances
+- Stock in and stock out
+- Supplier master data
+- Reorder alerts
+- Basic valuation and movement history
+
+Level 2: Operational
+- Branch transfers
+- Purchase receiving
+- stock adjustments with approval
+- cycle counts and stock counts
+- batch and expiry tracking
+- low-stock replenishment workflows
+- returns, damages, and write-offs
+- role-based access and audit logs
+
+Level 3: Advanced
+- demand forecasting
+- replenishment planning
+- warehouse zoning and bin tracking
+- serial and lot traceability
+- procurement suggestions
+- inter-branch balancing
+- AI anomaly detection
+- margin and shrinkage intelligence
+- workflow automation and exception management
+
+3. Core Domain Areas To Cover
+
+3.1 Master Data
+- Product master
+- SKU and barcode policies
+- variants and units of measure
+- suppliers and vendor contracts
+- branches, warehouses, stores, and stock locations
+- categories, brands, attributes, tags
+- tax, pricing, discount, and costing policies
+- shelf life, storage condition, reorder rules
+
+3.2 Inventory Ledger
+- Every stock change must create an immutable inventory transaction
+- Never rely only on current quantity fields without ledger support
+- Store on-hand, reserved, available, in-transit, damaged, expired, quarantined quantities separately
+- Maintain movement reason codes
+
+3.3 Stock Movement Types
+- initial stock
+- purchase receipt
+- sales issue
+- sales return
+- customer return to stock
+- supplier return
+- branch transfer out
+- branch transfer in
+- production consumption
+- production output
+- waste and spoilage
+- damage and loss
+- cycle count adjustment
+- manual adjustment
+- bundle assembly and disassembly
+
+3.4 Multi-Branch Architecture
+- branch as operating entity
+- warehouse or store as physical stock location
+- optional sub-location or bin
+- branch-specific assortment and pricing
+- branch-specific reorder thresholds
+- transfer requests with source and destination approval
+- in-transit state between branches
+- branch-level visibility controls
+
+4. Recommended Inventory Data Model
+
+4.1 Product
+- productId
+- sku
+- barcode
+- name
+- description
+- categoryId
+- brandId
+- trackInventory boolean
+- lotTracked boolean
+- serialTracked boolean
+- expiryTracked boolean
+- baseUnitOfMeasure
+- purchaseUnitOfMeasure
+- salesUnitOfMeasure
+- reorderPolicy
+- reorderThreshold
+- reorderQuantity
+- safetyStock
+- leadTimeDays
+
+4.2 Inventory Location
+- branchId
+- warehouseId
+- binId optional
+- locationType
+
+4.3 Inventory Balance
+- productId
+- locationId
+- onHandQty
+- reservedQty
+- availableQty
+- inTransitQty
+- damagedQty
+- expiredQty
+- lastCountedAt
+
+4.4 Inventory Transaction
+- transactionId
+- productId
+- locationId
+- transactionType
+- quantityDelta
+- quantityBefore
+- quantityAfter
+- unitCost
+- unitPrice
+- sourceDocumentType
+- sourceDocumentId
+- reasonCode
+- batchId optional
+- serialId optional
+- userId
+- approvedBy optional
+- createdAt
+
+4.5 Procurement and Replenishment
+- purchase order
+- goods receipt note
+- supplier invoice reference
+- transfer order
+- transfer receipt
+- replenishment recommendation
+
+4.6 Batch and Serial
+- batchId
+- lotNumber
+- manufactureDate
+- expiryDate
+- supplierBatchReference
+- qualityStatus
+
+5. Functional Capabilities
+
+5.1 Product and SKU Management
+- auto-generate SKU with branch-safe uniqueness rules
+- barcode and QR support
+- variant matrix management
+- bundle and kit support
+- substitute item mapping
+- image and document attachments
+
+5.2 Inventory Operations
+- stock in
+- stock out
+- adjustments
+- transfers
+- replenishment requests
+- receiving against purchase orders
+- stock reservations for pending sales
+- cancellation rollback
+- stock locking during checkout and transfer posting
+
+5.3 Counting and Audit
+- full physical count
+- cycle count by category, brand, or location
+- blind count mode
+- variance review and approval
+- recount workflow
+- reason capture for stock variances
+
+5.4 Costing and Valuation
+- weighted average cost
+- FIFO support
+- batch cost support where needed
+- landed cost allocation
+- stock valuation by branch, category, supplier, product
+- margin impact of stock adjustments
+
+5.5 Replenishment
+- min-max rules
+- safety stock
+- demand-based reorder points
+- supplier lead time
+- branch-to-branch redistribution suggestions
+- purchase suggestions
+
+5.6 Expiry and Quality
+- FEFO picking
+- expiry alerts
+- near-expiry discount suggestions
+- quarantine and blocked stock
+- recall handling
+
+5.7 Returns and Reverse Logistics
+- customer returns
+- supplier returns
+- damaged returns
+- restockable vs non-restockable return logic
+
+6. Multi-Branch Requirements
+- Global catalog, branch-specific inventory
+- Branch can inherit master data but override operational rules
+- Transfer workflow:
+  request -> approve -> pick -> dispatch -> in-transit -> receive -> reconcile
+- Branch performance dashboards
+- Regional stock balancing
+- Stock visibility by user role and branch scope
+- Optional central warehouse feeding stores
+
+7. Sector Coverage
+
+7.1 Retail and General Merchandise
+- fast barcode lookup
+- promotions-aware availability
+- branch replenishment
+- shrinkage tracking
+
+7.2 Grocery and Supermarket
+- expiry tracking
+- batch support
+- weighed items and variable barcode support
+- spoilage and markdown workflows
+
+7.3 Pharmacy and Healthcare Retail
+- lot tracking
+- expiry enforcement
+- controlled item restrictions
+- recall support
+
+7.4 Hospitality and Restaurant
+- ingredient inventory
+- recipe and bill of materials consumption
+- wastage logging
+- central kitchen to outlet transfer
+
+7.5 Manufacturing Lite
+- raw material, WIP, finished goods
+- assembly and disassembly
+- production issue and output postings
+
+7.6 Distribution and Wholesale
+- bulk receiving
+- transfer planning
+- sales order reservation
+- customer-specific pricing and pack sizes
+
+7.7 Fashion and Apparel
+- size and color variant matrix
+- seasonality
+- branch assortment planning
+
+7.8 Electronics and Service Centers
+- serial number tracking
+- warranty linkage
+- replacement parts inventory
+
+8. AI Recommendations
+
+8.1 Immediate AI Use Cases
+- smart reorder suggestions
+- low stock urgency scoring
+- dead stock detection
+- excess stock alerts
+- stock anomaly detection
+- duplicate SKU and product detection
+- supplier recommendation hints
+
+8.2 Mid-Term AI Use Cases
+- demand forecasting by branch and product
+- transfer recommendation between branches
+- price markdown recommendation for near-expiry items
+- count variance risk prediction
+- procurement planning assistant
+- stockout root cause summaries
+
+8.3 Advanced AI Use Cases
+- conversational inventory copilot
+- natural-language reporting
+- autonomous replenishment proposals with approval gates
+- fraud and manipulation detection on inventory adjustments
+
+8.4 AI Guardrails
+- AI should recommend, not auto-post, high-risk inventory movements
+- approval required for large adjustments, returns, write-offs, and transfers
+- recommendations must show why the AI suggested an action
+- all AI actions must be logged
+
+9. UX Recommendations
+- dedicated inventory workspace, not just product management
+- list view, movement ledger view, branch view, and analytics view
+- action-first screen for stock in, stock out, transfer, count, and adjustment
+- mobile-friendly receiving and stock count flows
+- scanner-first workflows for stores and warehouses
+- branch context always visible
+- quantity states visible: on hand, reserved, available, in transit
+- stronger empty states and exception states
+
+10. Workflow and Control Recommendations
+- approval matrix by movement type and amount
+- mandatory reason codes for adjustments
+- prevent negative stock unless explicitly allowed by policy
+- dual control for deletion or reversal of posted movements
+- soft delete should be avoided for financial stock history; use reversal entries
+- audit logs for who changed what and when
+
+11. Reporting Requirements
+- stock on hand by branch and location
+- low stock and out-of-stock
+- stock aging
+- expiry aging
+- valuation reports
+- stock movement summary
+- stock movement detail ledger
+- branch transfer reconciliation
+- dead stock and slow-moving stock
+- shrinkage and loss analysis
+- supplier fill-rate and lead time performance
+- GMROI and inventory turnover
+
+12. Integration Requirements
+- POS checkout
+- e-commerce
+- procurement
+- accounting
+- CRM or order management
+- recipe and production module
+- barcode devices and label printing
+- external BI tools
+
+13. Non-Functional Requirements
+- transaction safety and idempotency
+- optimistic or pessimistic concurrency controls
+- strong auditability
+- branch-aware permissions
+- high read performance for checkout
+- eventual consistency only where safe
+- offline capture option for counts and receiving if needed
+
+14. Recommended Technical Design Changes
+- separate product master from inventory ledger cleanly
+- use explicit stock movement types instead of only signed quantity
+- replace delete-as-history-removal with reversal transactions
+- support per-branch inventory aggregates generated from transactions
+- add reservation table for pending orders
+- add transfer order entities
+- add batch and serial entities
+- standardize DTOs and remove mixed legacy inventory payloads
+- add tests for negative-stock protection, transfers, counts, and branch filters
+
+15. Gaps Visible From Current Module
+- inventory and product editing concerns are still heavily mixed
+- stock movement handling is too close to manual quantity mutation
+- branch handling is present but not mature enough for transfer-heavy operations
+- no clear receiving, transfer, count, approval, or reservation workflows
+- no lot, serial, or bin location support
+- AI support is not yet modeled as a first-class capability
+
+16. Phased Roadmap
+
+Phase 1: Stabilize Current Inventory
+- clean product vs inventory boundaries
+- fix stock movement rules
+- add branch-safe workflows
+- add reliable movement ledger
+- improve reporting consistency
+
+Phase 2: Operational Inventory
+- branch transfers
+- purchase receiving
+- stock adjustments with approvals
+- count workflows
+- supplier performance tracking
+- reorder engine
+
+Phase 3: Advanced Traceability
+- batch and serial support
+- expiry and FEFO
+- warehouse bin locations
+- in-transit stock
+- reservation and allocation
+
+Phase 4: AI Layer
+- forecasting
+- replenishment assistant
+- anomaly detection
+- transfer optimizer
+- conversational inventory analytics
+
+17. Recommended KPIs
+- stockout rate
+- low-stock rate
+- inventory turnover
+- days on hand
+- dead stock ratio
+- shrinkage rate
+- fill rate
+- transfer cycle time
+- count accuracy
+- adjustment value by reason
+- gross margin return on inventory investment
+
+18. Final Recommendation
+Build the inventory platform around a ledger-first, branch-aware, approval-driven model. Treat product master, inventory balance, stock movement, replenishment, and reporting as separate but connected domains. Add AI as an assistive layer on top of strong operational controls, not as a shortcut around them.
+
+If the goal is to support almost all sectors from simple to complex, the system should be configurable by capability flags:
+- simple mode
+- retail mode
+- grocery mode
+- hospitality mode
+- wholesale mode
+- traceability mode
+- manufacturing-lite mode
+
+This will let one platform serve smaller businesses without forcing them into enterprise complexity, while still allowing advanced organizations to turn on deeper controls as they mature.

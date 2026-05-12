@@ -498,6 +498,7 @@ export class CollaborationService {
       Authorization: `Bearer ${token}`,
       'X-Tenant-ID': tenantId,
       'X-User-ID': userId,
+      userid: userId,
     });
   }
 
@@ -509,6 +510,7 @@ export class CollaborationService {
       Authorization: `Bearer ${token}`,
       'X-Tenant-ID': tenantId,
       'X-User-ID': userId,
+      userid: userId,
     });
   }
 
@@ -575,9 +577,16 @@ export class CollaborationService {
     );
   }
 
-  getChannelSnapshot(channelId: number): Observable<CollabChannelSnap> {
+  getChannelSnapshot(
+    channelId: number,
+    recentMessageLimit: number | null = 120,
+  ): Observable<CollabChannelSnap> {
+    const query =
+      recentMessageLimit == null
+        ? ''
+        : `?recentMessageLimit=${encodeURIComponent(recentMessageLimit)}`;
     return this.http.get<CollabChannelSnap>(
-      `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me/channel/${channelId}?recentMessageLimit=120`,
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/home/me/channel/${channelId}${query}`,
       { headers: this.headers },
     );
   }

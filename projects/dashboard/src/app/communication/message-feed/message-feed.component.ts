@@ -190,6 +190,9 @@ export class MessageFeedComponent {
       if (msg.deliveryState === 'SENDING') {
         return 'Sending...';
       }
+      if (msg.deliveryState === 'FAILED') {
+        return 'Failed to send';
+      }
       if (msg.deliveryState === 'DELIVERED') {
         return 'Delivered';
       }
@@ -208,6 +211,9 @@ export class MessageFeedComponent {
     event.stopPropagation();
     const userId = Number(mention.dataset['userId'] || 0);
     if (userId > 0) {
+      if (typeof window !== 'undefined') {
+        window.location.hash = `dm-user-${userId}`;
+      }
       this.mentionActivated.emit(userId);
     }
   }
@@ -582,7 +588,7 @@ export class MessageFeedComponent {
       const regex = new RegExp(`(^|[^\\w>])@${escapedLabel}${this.mentionBoundaryAfterRegex}`, 'gi');
       result = result.replace(regex, (_full, prefix) => {
         const mentionText = `@${label}`;
-        return `${prefix || ''}<a href="" class="chat-mention" data-user-id="${candidate.userId}" data-mention="${this.escapeHtml(mentionText)}">${this.escapeHtml(mentionText)}</a>`;
+        return `${prefix || ''}<a href="#dm-user-${candidate.userId}" class="chat-mention" data-user-id="${candidate.userId}" data-mention="${this.escapeHtml(mentionText)}">${this.escapeHtml(mentionText)}</a>`;
       });
     }
     return result;
