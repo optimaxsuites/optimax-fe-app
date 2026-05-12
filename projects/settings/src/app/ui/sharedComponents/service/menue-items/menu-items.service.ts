@@ -52,7 +52,7 @@ export class MenuItemsService {
     },
     {
       label: 'Sales',
-      code: 'SALES',
+      code: 'optimaXSales',
       route: this.navigationLink.getLink('salesLink'),
       icon: 'fas fa-chart-line',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -439,6 +439,17 @@ export class MenuItemsService {
           description: 'Generate sales and inventory reports for business insights and analytics.'
         }
       ]
+    }, 
+    {
+      label: 'Inventory Management',
+      code: 'optimaXInventory',
+      route: this.navigationLink.getLink('inventoryLink'),
+      icon: 'fas fa-file-alt',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Tender module of OptimaXSuites allows organizations to manage procurement notices, bids, and evaluations in a centralized system.',
+      shortDescription: 'Manage procurement notices, bids, and evaluation processes.',
+      locked: true,
+      active: false
     },    
     {
       label: 'Hospitality',

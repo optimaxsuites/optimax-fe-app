@@ -36,6 +36,8 @@
     "pushVendor": "git subtree push --prefix=projects/vendor https://gitlab.com/queensheba/erp-vendor.git master",
     "pullTender": "git subtree pull --prefix=projects/tender https://gitlab.com/queensheba/erp-tender.git master --squash",
     "pushTender": "git subtree push --prefix=projects/tender https://gitlab.com/queensheba/erp-tender.git master",
+    "pullInventoryManagement": "git subtree pull --prefix=projects/inventory-management https://gitlab.com/queensheba/inventory-mgmt.git main --squash",
+    "pushInventoryManagement": "git subtree push --prefix=projects/inventory-management https://gitlab.com/queensheba/inventory-mgmt.git main",
     "pullProductivity": "git subtree pull --prefix=projects/productivity https://gitlab.com/queensheba/erp-productivity.git master --squash",
     "pushProductivity": "git subtree push --prefix=projects/productivity https://gitlab.com/queensheba/erp-productivity.git master"
   },
