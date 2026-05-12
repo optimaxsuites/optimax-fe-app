@@ -154,4 +154,16 @@ export class MessageComposerComponent {
     this.aiOutputExpanded = false;
     this.aiOutputClosed.emit();
   }
+
+  focusComposer(moveCursorToEnd = true): void {
+    const textarea = this.composerEl?.nativeElement;
+    if (!textarea) return;
+    textarea.focus();
+    if (moveCursorToEnd) {
+      const end = textarea.value?.length || 0;
+      textarea.setSelectionRange(end, end);
+    }
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+  }
 }

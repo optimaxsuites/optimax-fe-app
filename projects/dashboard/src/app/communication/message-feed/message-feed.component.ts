@@ -190,6 +190,9 @@ export class MessageFeedComponent {
       if (msg.deliveryState === 'SENDING') {
         return 'Sending...';
       }
+      if (msg.deliveryState === 'FAILED') {
+        return 'Failed to send';
+      }
       if (msg.deliveryState === 'DELIVERED') {
         return 'Delivered';
       }
