@@ -559,6 +559,7 @@ export class CommunicationComponent
   private channelSnapshotLastErrorMessage = new Map<number, string>();
   private dmMembershipRepairAttempted = new Set<string>();
   private dmMembershipRepairInFlight = new Set<string>();
+  private cachedCollabChannels: CollabChannel[] = [];
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -3309,15 +3310,18 @@ export class CommunicationComponent
 
   private loadChannels(silent = false): void {
     if (!silent) this.channelsLoading = true;
+    this.channelsError = null;
     this.collabService.getHomeChannels().subscribe({
       next: (data) => this.mapAndSetChannels(data.channels || []),
       error: () => {
         this.collabService.getChannels().subscribe({
           next: (list) => this.mapAndSetChannels(list),
           error: () => {
-            this.channelsError = 'Could not load channels.';
+            if (!this.channels.length) {
+              this.channelsError = 'Could not load channels.';
+              this.channels = [];
+            }
             this.channelsLoading = false;
-            this.channels = [];
             this.cdr.detectChanges();
           },
         });
@@ -3326,6 +3330,8 @@ export class CommunicationComponent
   }
 
   private mapAndSetChannels(list: CollabChannel[]): void {
+    this.channelsError = null;
+    this.cachedCollabChannels = list;
     this.mapDirectMessageChannels(list);
     const allowedIds = new Set(
       list
@@ -3394,6 +3400,12 @@ export class CommunicationComponent
   }
 
   private mapDirectMessageChannels(list: CollabChannel[]): void {
+    for (const contact of this.dmContacts) {
+      contact.dmChannelId = undefined;
+      contact.unreadCount = undefined;
+      contact.hasUnread = false;
+    }
+
     const dmChannels = list.filter((channel) => {
       const desc = (channel.description || '').toLowerCase();
       const name = (channel.name || '').toLowerCase();
@@ -3405,6 +3417,10 @@ export class CommunicationComponent
 
     for (const channel of dmChannels) {
       const participantIds = this.extractDmParticipantIds(channel);
+      const includesCurrentUser = participantIds.some(
+        (userId) => Number(userId) === Number(this.me.userId),
+      );
+      if (!includesCurrentUser) continue;
       const otherUserId = participantIds.find(
         (userId) => Number(userId) !== Number(this.me.userId),
       );
@@ -3849,6 +3865,23 @@ export class CommunicationComponent
     contact.hasUnread = false;
     contact.unreadCount = undefined;
     this.syncHeaderState();
+    if (
+      contact.dmChannelId &&
+      this.dmMessages[contact.id] !== undefined
+    ) {
+      this.messagesLoading = false;
+      this.scrollFeed = true;
+      this.scrollToLatestMessageSoon();
+      this.subscribeToDmChannel(contact);
+      if (this.lastMessageBackendId) {
+        this.collabService
+          .markRead(contact.dmChannelId, this.lastMessageBackendId)
+          .subscribe({ error: () => {} });
+      }
+      this.startConversationSync();
+      this.cdr.detectChanges();
+      return;
+    }
     this.messagesLoading = true;
     this.scrollToLatestMessageSoon();
     this.startConversationSync();
@@ -3894,77 +3927,127 @@ export class CommunicationComponent
 
   private getOrCreateDmChannel(contact: DmContact, onReady?: (channelId: number) => void): void {
     if (contact.dmChannelId) {
-      const cachedChannelId = contact.dmChannelId;
-      const expectedName = this.expectedDmChannelName(contact);
-      this.collabService.getChannelById(cachedChannelId).subscribe({
-        next: (channel) => {
-          const channelId = Number(channel.channelId ?? channel.id);
-          if (
-            channel.channelType === 'PRIVATE' &&
-            channel.name === expectedName &&
-            channel.status === 'ACTIVE'
-          ) {
-            contact.dmChannelId = channelId;
-            this.subscribeToDmChannel(contact);
-            this.loadDmMessages(contact, channelId);
-            onReady?.(channelId);
-            return;
-          }
-          contact.dmChannelId = undefined;
-          this.getOrCreateDmChannel(contact, onReady);
-        },
-        error: () => {
-          contact.dmChannelId = undefined;
-          this.getOrCreateDmChannel(contact, onReady);
-        },
-      });
+      const cachedChannelId = Number(contact.dmChannelId);
+      this.subscribeToDmChannel(contact);
+      this.loadDmMessages(contact, cachedChannelId);
+      onReady?.(cachedChannelId);
       return;
     }
     const meId = this.me.userId,
       themId = contact.userId;
     const dmName = this.expectedDmChannelName(contact);
-    this.collabService.getChannels().subscribe({
-      next: (all) => {
-        const existing = all.find(
-          (c) => c.channelType === 'PRIVATE' && c.name === dmName,
-        );
-        if (existing) {
-          const chId = Number(existing.channelId ?? existing.id);
-          contact.dmChannelId = chId;
+    const tryExisting = (all: CollabChannel[]): boolean => {
+      const existing = all.find(
+        (c) =>
+          c.channelType === 'PRIVATE' &&
+          c.name === dmName &&
+          (c.status === 'ACTIVE' || !c.status),
+      );
+      if (!existing) return false;
+      const chId = Number(existing.channelId ?? existing.id);
+      contact.dmChannelId = chId;
+      this.loadDmMessages(contact, chId);
+      this.subscribeToDmChannel(contact);
+      onReady?.(chId);
+      return true;
+    };
+
+    if (this.cachedCollabChannels.length && tryExisting(this.cachedCollabChannels)) {
+      return;
+    }
+
+    this.collabService.getHomeChannels().subscribe({
+      next: (data) => {
+        const all = data.channels || [];
+        this.cachedCollabChannels = all;
+        this.mapDirectMessageChannels(all);
+        if (contact.dmChannelId) {
+          const chId = Number(contact.dmChannelId);
           this.loadDmMessages(contact, chId);
           this.subscribeToDmChannel(contact);
           onReady?.(chId);
-        } else {
-          this.collabService
-            .createChannel({
-              name: dmName,
-              description: `DM between ${meId} and ${themId}`,
-              channelType: 'PRIVATE',
-              createdBy: meId,
-            })
-            .subscribe({
-              next: (created) => {
-                const chId = Number(created.channelId ?? created.id);
-                contact.dmChannelId = chId;
-                this.collabService
-                  .addChannelMember(chId, themId)
-                  .subscribe({ error: () => {} });
-                this.loadDmMessages(contact, chId);
-                this.subscribeToDmChannel(contact);
-                onReady?.(chId);
-              },
-              error: () => {
-                this.messagesLoading = false;
-                this.cdr.detectChanges();
-              },
-            });
+          return;
         }
+        if (tryExisting(all)) {
+          return;
+        }
+        this.collabService.getChannels().subscribe({
+          next: (fallbackChannels) => {
+            this.cachedCollabChannels = fallbackChannels;
+            this.mapDirectMessageChannels(fallbackChannels);
+            if (contact.dmChannelId) {
+              const chId = Number(contact.dmChannelId);
+              this.loadDmMessages(contact, chId);
+              this.subscribeToDmChannel(contact);
+              onReady?.(chId);
+              return;
+            }
+            if (tryExisting(fallbackChannels)) {
+              return;
+            }
+            this.createDirectMessageChannel(contact, meId, themId, onReady);
+          },
+          error: () => {
+            this.createDirectMessageChannel(contact, meId, themId, onReady);
+          },
+        });
       },
       error: () => {
-        this.messagesLoading = false;
-        this.cdr.detectChanges();
+        this.collabService.getChannels().subscribe({
+          next: (fallbackChannels) => {
+            this.cachedCollabChannels = fallbackChannels;
+            this.mapDirectMessageChannels(fallbackChannels);
+            if (contact.dmChannelId) {
+              const chId = Number(contact.dmChannelId);
+              this.loadDmMessages(contact, chId);
+              this.subscribeToDmChannel(contact);
+              onReady?.(chId);
+              return;
+            }
+            if (tryExisting(fallbackChannels)) {
+              return;
+            }
+            this.createDirectMessageChannel(contact, meId, themId, onReady);
+          },
+          error: () => {
+            this.createDirectMessageChannel(contact, meId, themId, onReady);
+          },
+        });
       },
     });
+  }
+
+  private createDirectMessageChannel(
+    contact: DmContact,
+    meId: number,
+    themId: number,
+    onReady?: (channelId: number) => void,
+  ): void {
+    this.collabService
+      .createChannel({
+        name: this.expectedDmChannelName(contact),
+        description: `DM between ${meId} and ${themId}`,
+        channelType: 'PRIVATE',
+        createdBy: meId,
+      })
+      .subscribe({
+        next: (created) => {
+          const chId = Number(created.channelId ?? created.id);
+          contact.dmChannelId = chId;
+          this.collabService
+            .addChannelMember(chId, themId)
+            .subscribe({ error: () => {} });
+          this.loadDmMessages(contact, chId);
+          this.subscribeToDmChannel(contact);
+          onReady?.(chId);
+        },
+        error: () => {
+          this.messagesLoading = false;
+          this.conversationAccessMessage =
+            'Could not open this direct conversation right now.';
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   private loadDmMessages(contact: DmContact, channelId: number): void {
@@ -6636,8 +6719,18 @@ export class CommunicationComponent
   }
 
   private resolveAttachmentPreviewUrl(att: any): string | undefined {
-    const type = this.normalizeAttachmentType(att.contentType, att.fileName);
-    if (!this.isImageType(type)) return undefined;
+    if (!att.downloadUrl) return undefined;
+    const type = this.normalizeAttachmentType(
+      att.contentType,
+      att.fileName || att.originalFileName || att.name || att.downloadUrl,
+    );
+    const isPreviewable =
+      this.isImageType(type) ||
+      type === 'application/pdf' ||
+      /\.(doc|docx|xls|xlsx|ppt|pptx)$/i.test(
+        String(att.fileName || att.originalFileName || att.name || ''),
+      );
+    if (!isPreviewable) return undefined;
     const key = att.downloadUrl || `${att.messageId}-${att.fileName}`;
     if (this.attachmentPreviewCache[key]) {
       return this.attachmentPreviewCache[key];

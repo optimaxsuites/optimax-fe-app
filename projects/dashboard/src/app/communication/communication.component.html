@@ -1106,6 +1106,10 @@
             </span>
           </div>
           <div class="workspace-toolbar-actions">
+            <span *ngIf="messagesLoading" class="chat-loading-chip">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Loading history</span>
+            </span>
             <input
               *ngIf="activeView === 'threads'"
               type="search"
