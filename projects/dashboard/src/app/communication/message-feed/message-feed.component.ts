@@ -369,7 +369,7 @@ export class MessageFeedComponent {
     event?.stopPropagation();
     if (!attachment) return;
     this.documentViewerTitle = attachment.name || 'Document preview';
-    this.documentViewerUrl = attachment.downloadUrl || '';
+    this.documentViewerUrl = attachment.previewUrl || attachment.downloadUrl || '';
     this.documentViewerType = this.isPdfAttachment(attachment)
       ? 'pdf'
       : this.isOfficeAttachment(attachment)

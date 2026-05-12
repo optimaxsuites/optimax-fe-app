@@ -279,7 +279,7 @@
               >
                 <span *ngIf="isPdfAttachment(attachment) && attachment.downloadUrl" class="chat-doc-preview-surface pdf">
                   <iframe
-                    [src]="attachment.downloadUrl"
+                    [src]="attachment.previewUrl || attachment.downloadUrl"
                     class="chat-doc-preview-frame"
                     title="PDF preview"
                   ></iframe>
