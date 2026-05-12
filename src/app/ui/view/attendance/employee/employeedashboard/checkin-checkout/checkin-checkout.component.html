@@ -64,7 +64,7 @@
            && isAfterOpening
            && !hasCompletedToday"
     class="main-btn"
-    [disabled]="isGettingLocation"
+    [disabled]="isGettingLocation || !hrEmployeeId"
     (click)="toggleClock()">
     <span *ngIf="!isGettingLocation">Clock Out</span>
     <span *ngIf="isGettingLocation" class="location-loading">
