@@ -116,15 +116,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (Date.now() < this.refreshChannelsCooldownUntil) {
       return;
     }
-    this.collabService.getHomeChannels().subscribe({
-      next: (data) => this.applyChannelTargets(data?.channels || []),
+    this.collabService.getChannels().subscribe({
+      next: (channels) => this.applyChannelTargets(channels || []),
       error: () => {
-        this.collabService.getChannels().subscribe({
-          next: (channels) => this.applyChannelTargets(channels || []),
-          error: () => {
-            this.refreshChannelsCooldownUntil = Date.now() + 30_000;
-          },
-        });
+        this.refreshChannelsCooldownUntil = Date.now() + 30_000;
       },
     });
   }
