@@ -1106,7 +1106,7 @@
             </span>
           </div>
           <div class="workspace-toolbar-actions">
-            <span *ngIf="messagesLoading" class="chat-loading-chip">
+            <span *ngIf="historyLoading" class="chat-loading-chip">
               <i class="pi pi-spin pi-spinner"></i>
               <span>Loading history</span>
             </span>
@@ -1144,7 +1144,7 @@
           <span>{{ conversationAccessMessage }}</span>
         </div>
 
-        <div #feedEl class="chat-feed">
+        <div #feedEl class="chat-feed" (scroll)="onChatFeedScroll()">
           <app-message-feed
             [messages]="rawMessages"
             [loading]="messagesLoading"
@@ -1166,6 +1166,7 @@
             [readUserCardsForMessage]="getReadUserCards.bind(this)"
             [mentionCandidates]="getMentionCandidates()"
             [resolveMentionProfileCard]="resolveMentionProfileCard"
+            (retryMessage)="retryFailedMessage($event)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
             (pinToggled)="togglePin($event)"
@@ -1228,6 +1229,8 @@
           [activeThreadReplyToId]="activeThreadReplyToId"
           [activeThreadReplyTarget]="activeThreadReplyTarget"
           [threadReplyDraft]="threadReplyDraft"
+          [threadMentionResults]="threadMentionResults"
+          [threadShowMentionMenu]="threadShowMentionMenu"
           [typingUsersLabel]="typingUsersLabel"
           [threadPendingAttachments]="threadPendingAttachments"
           [sendingReply]="sendingReply"
@@ -1253,11 +1256,14 @@
           [getEmpAvatarColor]="getEmpAvatarColor"
           [getEmpImageUrl]="getEmpImageUrl"
           [mentionCandidates]="getMentionCandidates()"
+          [mentionLabel]="chatMentionLabel.bind(this)"
           [resolveMentionProfileCard]="resolveMentionProfileCard"
           (threadClosed)="closeThread()"
           (threadReplyDraftChange)="onThreadReplyDraftChanged($event)"
+          (threadMentionSelected)="applyThreadMention($event)"
           (threadFilesSelected)="onThreadFilesSelected($event)"
           (threadAttachmentRemoved)="removeThreadPendingAttachment($event)"
+          (attachmentDownload)="downloadAttachment($event.attachment, $event.event)"
           (replyTargetSet)="setThreadReplyTarget($event)"
           (replyTargetCleared)="clearThreadReplyTarget()"
           (replySent)="sendReply()"
