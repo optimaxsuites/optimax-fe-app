@@ -519,6 +519,9 @@ export class CommunicationComponent
 
   channelsLoading = true;
   channelsError: string | null = null;
+  private channelsRequestInFlight = false;
+  private lastChannelsLoadedAt = 0;
+  private readonly CHANNELS_CACHE_TTL_MS = 15_000;
   employeesLoading = true;
   employeesError: string | null = null;
   messagesLoading = false;
@@ -3300,31 +3303,25 @@ export class CommunicationComponent
             }
             return contact;
           });
-        this.collabService.getChannels().subscribe({
-          next: (channels) => {
-            this.mapDirectMessageChannels(channels || []);
-            const activeDm = this.activeDmContact;
-            if (
-              activeDm &&
-              activeDm.dmChannelId &&
-              this.activeView === 'dm' &&
-              this.dmMessages[activeDm.id] === undefined
-            ) {
-              this.loadDmMessages(activeDm, activeDm.dmChannelId);
-            }
-            this.syncHeaderState();
-            this.employeesLoading = false;
-            this.applyPendingMentionConversation();
-            this.replayQueuedNotificationTarget();
-            this.cdr.detectChanges();
-          },
-          error: () => {
-            this.syncHeaderState();
-            this.employeesLoading = false;
-            this.replayQueuedNotificationTarget();
-            this.cdr.detectChanges();
-          },
-        });
+        if (this.cachedCollabChannels.length) {
+          this.mapDirectMessageChannels(this.cachedCollabChannels);
+        } else {
+          this.loadChannels(true);
+        }
+        const activeDm = this.activeDmContact;
+        if (
+          activeDm &&
+          activeDm.dmChannelId &&
+          this.activeView === 'dm' &&
+          this.dmMessages[activeDm.id] === undefined
+        ) {
+          this.loadDmMessages(activeDm, activeDm.dmChannelId);
+        }
+        this.syncHeaderState();
+        this.employeesLoading = false;
+        this.applyPendingMentionConversation();
+        this.replayQueuedNotificationTarget();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.employeesError = 'Could not load contacts.';
@@ -3354,12 +3351,41 @@ export class CommunicationComponent
 
   // ── Channels ──────────────────────────────────────────
 
-  private loadChannels(silent = false): void {
+  loadChannels(silent = false, force = false): void {
+    const now = Date.now();
+    const hasCachedChannels = this.cachedCollabChannels.length > 0;
+    const cacheIsFresh =
+      hasCachedChannels &&
+      now - this.lastChannelsLoadedAt < this.CHANNELS_CACHE_TTL_MS;
+
+    if (!silent && hasCachedChannels) {
+      this.channelsLoading = false;
+      this.channelsError = null;
+      this.mapAndSetChannels(this.cachedCollabChannels);
+      if (cacheIsFresh && !force) {
+        return;
+      }
+      silent = true;
+    }
+
+    if (this.channelsRequestInFlight) {
+      if (!silent && !hasCachedChannels) {
+        this.channelsLoading = true;
+      }
+      return;
+    }
+
     if (!silent) this.channelsLoading = true;
     this.channelsError = null;
+    this.channelsRequestInFlight = true;
     this.collabService.getChannels().subscribe({
-      next: (list) => this.mapAndSetChannels(list || []),
+      next: (list) => {
+        this.lastChannelsLoadedAt = Date.now();
+        this.mapAndSetChannels(list || []);
+        this.channelsRequestInFlight = false;
+      },
       error: () => {
+        this.channelsRequestInFlight = false;
         if (!this.channels.length) {
           this.channelsError = 'Could not load channels.';
           this.channels = [];
@@ -3682,7 +3708,7 @@ export class CommunicationComponent
               ),
             ).finally(() => {
               this.closeChannelModal();
-              this.loadChannels();
+              this.loadChannels(false, true);
               setTimeout(() => {
                 const ch = this.channels.find((c) => c.backendId === channelId);
                 if (ch) this.selectChannel(ch.id);
@@ -3706,7 +3732,7 @@ export class CommunicationComponent
         .subscribe({
           next: () => {
             this.closeChannelModal();
-            this.loadChannels();
+            this.loadChannels(false, true);
           },
           error: () => {
             m.saving = false;
@@ -3978,9 +4004,13 @@ export class CommunicationComponent
       this.collabService
         .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
+        this.fetchAndReconcileChannel(ch);
         this.startConversationSync();
         this.cdr.detectChanges();
       } else {
+        this.channelSnapshotFailureUntil.delete(ch.backendId);
+        this.channelSnapshotLastErrorStatus.delete(ch.backendId);
+        this.channelSnapshotLastErrorMessage.delete(ch.backendId);
         this.loadChannelMessages(ch);
       }
     }
@@ -4017,6 +4047,7 @@ export class CommunicationComponent
           .markRead(contact.dmChannelId, this.lastMessageBackendId)
           .subscribe({ error: () => {} });
       }
+      this.fetchAndReconcileDm(contact, contact.dmChannelId);
       this.startConversationSync();
       this.cdr.detectChanges();
       return;
@@ -4072,7 +4103,18 @@ export class CommunicationComponent
       );
       contact.dmChannelId = cachedChannelId;
       this.subscribeToDmChannel(contact);
-      this.loadDmMessages(contact, cachedChannelId);
+      if (
+        this.dmMessages[contact.id] !== undefined &&
+        !this.hasRecoverableSnapshotFailure(cachedChannelId)
+      ) {
+        this.messagesLoading = false;
+        this.fetchAndReconcileDm(contact, cachedChannelId);
+      } else {
+        this.channelSnapshotFailureUntil.delete(cachedChannelId);
+        this.channelSnapshotLastErrorStatus.delete(cachedChannelId);
+        this.channelSnapshotLastErrorMessage.delete(cachedChannelId);
+        this.loadDmMessages(contact, cachedChannelId);
+      }
       onReady?.(cachedChannelId);
       return;
     }
@@ -4091,8 +4133,19 @@ export class CommunicationComponent
       if (!existing) return false;
       const chId = Number(existing.channelId ?? existing.id);
       contact.dmChannelId = chId;
-      this.loadDmMessages(contact, chId);
       this.subscribeToDmChannel(contact);
+      if (
+        this.dmMessages[contact.id] !== undefined &&
+        !this.hasRecoverableSnapshotFailure(chId)
+      ) {
+        this.messagesLoading = false;
+        this.fetchAndReconcileDm(contact, chId);
+      } else {
+        this.channelSnapshotFailureUntil.delete(chId);
+        this.channelSnapshotLastErrorStatus.delete(chId);
+        this.channelSnapshotLastErrorMessage.delete(chId);
+        this.loadDmMessages(contact, chId);
+      }
       onReady?.(chId);
       return true;
     };
@@ -4107,8 +4160,19 @@ export class CommunicationComponent
         this.mapDirectMessageChannels(this.cachedCollabChannels);
         if (contact.dmChannelId) {
           const chId = Number(contact.dmChannelId);
-          this.loadDmMessages(contact, chId);
           this.subscribeToDmChannel(contact);
+          if (
+            this.dmMessages[contact.id] !== undefined &&
+            !this.hasRecoverableSnapshotFailure(chId)
+          ) {
+            this.messagesLoading = false;
+            this.fetchAndReconcileDm(contact, chId);
+          } else {
+            this.channelSnapshotFailureUntil.delete(chId);
+            this.channelSnapshotLastErrorStatus.delete(chId);
+            this.channelSnapshotLastErrorMessage.delete(chId);
+            this.loadDmMessages(contact, chId);
+          }
           onReady?.(chId);
           return;
         }
@@ -4147,10 +4211,8 @@ export class CommunicationComponent
           this.subscribeToDmChannel(contact);
           onReady?.(chId);
         },
-        error: () => {
-          this.messagesLoading = false;
-          this.conversationAccessMessage =
-            'Could not open this direct conversation right now.';
+      error: () => {
+        this.messagesLoading = false;
           this.cdr.detectChanges();
         },
       });
@@ -4189,8 +4251,6 @@ export class CommunicationComponent
           return;
         }
         if (contact.id === this.activeDmId && this.activeView === 'dm') {
-          this.conversationAccessMessage =
-            'Could not load this conversation right now.';
           this.messagesLoading = false;
         }
         this.lastMessageBackendId = null;
@@ -4262,10 +4322,6 @@ export class CommunicationComponent
         this.lastMessageBackendId = null;
         this.readStateMap = {};
         if (status === 403 && this.activeView === 'channel' && this.activeChannelId === channel.id) {
-          const detail =
-            this.channelSnapshotLastErrorMessage.get(channel.backendId) ||
-            'You no longer have access to this conversation.';
-          this.conversationAccessMessage = detail;
           this.messagesLoading = false;
         }
         this.cdr.detectChanges();
@@ -6373,7 +6429,7 @@ export class CommunicationComponent
       this.lastMessageBackendId = null;
       this.readStateMap = {};
       this.dmMessages[contact.id] = this.dmMessages[contact.id] ?? [];
-      this.conversationAccessMessage = detail;
+      this.conversationAccessMessage = '';
       contact.dmChannelId = undefined;
       this.cdr.detectChanges();
       return;
@@ -6381,7 +6437,7 @@ export class CommunicationComponent
 
     this.dmMembershipRepairAttempted.add(repairKey);
     this.dmMembershipRepairInFlight.add(repairKey);
-    this.conversationAccessMessage = 'Refreshing this direct conversation…';
+    this.conversationAccessMessage = '';
     contact.dmChannelId = undefined;
     this.channelSnapshotFailureUntil.delete(channelId);
     this.channelSnapshotLastErrorStatus.delete(channelId);

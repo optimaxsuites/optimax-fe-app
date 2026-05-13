@@ -406,8 +406,15 @@ export class MessageFeedComponent {
   }
 
   threadReplyCountLabel(msg: Message): string {
-    const count = Number(msg.threadReplyCount || msg.replies.length || 0);
+    const count = Number(msg.threadReplyCount || this.countReplies(msg.replies || []));
     return count === 1 ? '1 reply' : `${count} replies`;
+  }
+
+  private countReplies(replies: Message[]): number {
+    return (replies || []).reduce(
+      (total, reply) => total + 1 + this.countReplies(reply.replies || []),
+      0,
+    );
   }
 
   threadPreviewReplies(msg: Message): Message[] {

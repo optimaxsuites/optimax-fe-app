@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OptimaXSuites Native App Prototype V3</title>
+  <style>
+    :root {
+      --ink: #122033;
+      --muted: #526576;
+      --line: #d8e2ea;
+      --panel: rgba(255,255,255,.92);
+      --accent: #0f5f6a;
+      --accent-soft: #dff2ef;
+      --bg: linear-gradient(180deg, #f5efe7 0%, #eef5f7 52%, #f9fbfc 100%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .page {
+      min-height: 100vh;
+      padding: 46px;
+      page-break-after: always;
+    }
+    .hero, .panel {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: 0 24px 72px rgba(18, 32, 51, 0.08);
+    }
+    .hero { padding: 38px; }
+    .panel { padding: 22px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 40px; line-height: 1.04; letter-spacing: -0.04em; }
+    h2 { font-size: 28px; line-height: 1.1; letter-spacing: -0.03em; }
+    h3 { font-size: 18px; margin-bottom: 8px; }
+    .lede {
+      margin-top: 16px;
+      max-width: 980px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    .meta {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .meta-card, .score {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px 18px;
+      background: rgba(255,255,255,.85);
+    }
+    .meta-card strong, .score strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-card span {
+      font-size: 18px;
+      line-height: 1.35;
+    }
+    .grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    ul {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .concept-page {
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 22px;
+      align-items: start;
+    }
+    .concept-image {
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 24px 72px rgba(18, 32, 51, 0.08);
+    }
+    .concept-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .copy p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .score { margin-top: 16px; }
+    .footer {
+      margin-top: 16px;
+      color: #66788a;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="hero">
+      <div class="eyebrow">OptimaXSuites Prototype V3</div>
+      <h1>Full-Suite Phone and Tablet Review</h1>
+      <p class="lede">
+        This revision reflects the latest direction precisely: use database names, show the broader OptimaXSuites product, keep Naira as the default currency,
+        and present credible phone and tablet layouts for a real enterprise rollout.
+      </p>
+      <div class="meta">
+        <div class="meta-card">
+          <strong>Product Scope</strong>
+          <span>Full OptimaXSuites, not a narrow app slice</span>
+        </div>
+        <div class="meta-card">
+          <strong>Names Source</strong>
+          <span>Exact database names provided by the client</span>
+        </div>
+        <div class="meta-card">
+          <strong>Recommended</strong>
+          <span>Concept 1 as primary suite direction</span>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="panel">
+          <h3>Included Modules</h3>
+          <ul>
+            <li>Dashboard, Collaboration, Expenses, HR, Attendance, Payroll, Leave</li>
+            <li>Procurement, Inventory, Accounting, POS, CRM, Reports, Settings</li>
+            <li>Cross-module approvals, alerts, summaries, and quick actions</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Database Names Used</h3>
+          <ul>
+            <li>Awe Damilola, oluwadare queensheba, Eniola Amobi</li>
+            <li>Kindness David, Miracle Igbinoghene, Chrisha Okorocha</li>
+            <li>Eseose Odion, Oluwadunsin Awe, Samuel Adegunju</li>
+          </ul>
+        </div>
+      </div>
+      <p class="footer">PRD source: <code>docs/native-app-prototype-v3/prd.md</code></p>
+    </div>
+  </section>
+
+  <section class="page concept-page">
+    <div class="concept-image">
+      <img src="assets/concept-1-optimaxsuites-unified-operations.png" alt="Concept 1 OptimaXSuites Unified Operations" />
+    </div>
+    <div class="copy panel">
+      <div class="eyebrow">Concept 1</div>
+      <h2>Unified Operations</h2>
+      <p>The most complete full-suite story. It balances executive visibility, cross-module navigation, phone usability, and tablet credibility without feeling narrow or overloaded.</p>
+      <div class="score">
+        <strong>Best Use</strong>
+        Primary product direction for OptimaXSuites mobile and tablet rollout
+      </div>
+      <div class="score">
+        <strong>Strengths</strong>
+        Best platform narrative, broadest module coverage, strongest all-around balance
+      </div>
+      <div class="score">
+        <strong>Tradeoff</strong>
+        Less workflow-explicit than Concept 2 and less executive-dense than Concept 3
+      </div>
+    </div>
+  </section>
+
+  <section class="page concept-page">
+    <div class="concept-image">
+      <img src="assets/concept-2-optimaxsuites-workflow-matrix.png" alt="Concept 2 OptimaXSuites Workflow Matrix" />
+    </div>
+    <div class="copy panel">
+      <div class="eyebrow">Concept 2</div>
+      <h2>Workflow Matrix</h2>
+      <p>The strongest departmental workflow concept. It is especially good for Expense, HR, Workforce, approvals, and role-based daily operations.</p>
+      <div class="score">
+        <strong>Best Use</strong>
+        Operations-led rollout and day-to-day team execution
+      </div>
+      <div class="score">
+        <strong>Strengths</strong>
+        Strong HR plus Expense blend, clear progression, practical staff flows
+      </div>
+      <div class="score">
+        <strong>Tradeoff</strong>
+        Slightly less “single suite command center” than Concept 1
+      </div>
+    </div>
+  </section>
+
+  <section class="page concept-page">
+    <div class="concept-image">
+      <img src="assets/concept-3-optimaxsuites-enterprise-grid.png" alt="Concept 3 OptimaXSuites Enterprise Grid" />
+    </div>
+    <div class="copy panel">
+      <div class="eyebrow">Concept 3</div>
+      <h2>Enterprise Grid</h2>
+      <p>The strongest executive and governance concept. It works best when leadership, finance, and operations need denser insight, stronger reporting, and approval oversight.</p>
+      <div class="score">
+        <strong>Best Use</strong>
+        Executive, finance, governance, and reporting-heavy deployment
+      </div>
+      <div class="score">
+        <strong>Strengths</strong>
+        Strongest analytics, oversight, reporting, and enterprise control feel
+      </div>
+      <div class="score">
+        <strong>Tradeoff</strong>
+        Slightly heavier than Concept 1 for casual users
+      </div>
+    </div>
+  </section>
+</body>
+</html>

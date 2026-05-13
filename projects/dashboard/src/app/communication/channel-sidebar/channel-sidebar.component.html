@@ -162,6 +162,16 @@
             />
           </svg>
         </button>
+        <button
+          *ngIf="channelsError && !channelsLoading"
+          type="button"
+          (click)="channelsRetried.emit()"
+          class="ml-1 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-[#2e6276] hover:bg-[#2e6276]/8"
+          title="Retry loading channels"
+        >
+          <i class="pi pi-refresh text-[10px]"></i>
+          <span>Retry</span>
+        </button>
       </div>
 
       <div *ngIf="channelsLoading && !channels.length" class="mt-1 flex flex-col gap-1.5 px-1">
@@ -172,7 +182,16 @@
         *ngIf="channelsError && !channelsLoading"
         class="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg"
       >
-        <span class="text-[13px] text-red-600">{{ channelsError }}</span>
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-[13px] text-red-600">{{ channelsError }}</span>
+          <button
+            type="button"
+            (click)="channelsRetried.emit()"
+            class="flex-shrink-0 text-[12px] font-semibold text-red-600 hover:text-red-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
 
       <ng-container *ngIf="!channelsLoading || channels.length">
