@@ -121,7 +121,7 @@ resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string;
     map(res => {
       const employees = res.content ?? res;
       //to log employees returned from api
-      console.log('Employees API response:', employees);
+      /*console.log('Employees API response:', employees);
       //const match = employees.find((e: any) => e.user?.username === username);
       
       employees.forEach((e: any) => {
@@ -131,6 +131,19 @@ resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string;
           'LINKED USER:',
           e.user
         );
+      }); */
+
+      //
+
+      console.log('==============================');
+      console.log('SESSION USER ID:', sessionUserId);
+      console.log('EMPLOYEES:', employees);
+
+      employees.forEach((e: any, index: number) => {
+        console.log(`EMPLOYEE ${index}:`, e);
+        console.log('employee.id:', e.id);
+        console.log('employee.user:', e.user);
+        console.log('employee.userId:', e.userId);
       });
       
       const match = employees.find(
@@ -139,7 +152,10 @@ resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string;
 
       console.log('MATCHED EMPLOYEE:', match);
 
-      if (!match) return null;
+      if (!match){
+        console.log('HR employee not found');
+        return null;
+      }
       return {
         id: match?.id?.toString(),
         department: match.department?.name ?? '',
