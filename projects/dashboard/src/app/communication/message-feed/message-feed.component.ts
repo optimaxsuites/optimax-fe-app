@@ -87,6 +87,7 @@ export class MessageFeedComponent {
   @Output() deleteDismissed = new EventEmitter<void>();
   @Output() attachmentDownload = new EventEmitter<{ attachment: any; event: Event }>();
   @Output() mentionActivated = new EventEmitter<number>();
+  @Output() retryMessage = new EventEmitter<Message>();
 
   activeMentionProfile: MentionProfileCard | null = null;
   mentionCardPosition: { top: number; left: number } | null = null;
@@ -204,6 +205,12 @@ export class MessageFeedComponent {
     return count === 1 ? 'Seen by 1' : `Seen by ${count}`;
   }
 
+  retryFailed(msg: Message, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.retryMessage.emit(msg);
+  }
+
   onRenderedContentClick(event: Event): void {
     const mention = this.findClosestAnchor(event, 'chat-mention');
     if (!mention) return;
@@ -255,7 +262,7 @@ export class MessageFeedComponent {
   }
 
   attachmentImageSrc(attachment: Message['attachment'] | undefined): string {
-    return attachment?.previewUrl || attachment?.downloadUrl || '';
+    return attachment?.previewUrl || '';
   }
 
   isPdfAttachment(attachment: Message['attachment'] | undefined): boolean {
@@ -367,9 +374,9 @@ export class MessageFeedComponent {
 
   openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): void {
     event?.stopPropagation();
-    if (!attachment) return;
+    if (!attachment?.previewUrl) return;
     this.documentViewerTitle = attachment.name || 'Document preview';
-    this.documentViewerUrl = attachment.previewUrl || attachment.downloadUrl || '';
+    this.documentViewerUrl = attachment.previewUrl;
     this.documentViewerType = this.isPdfAttachment(attachment)
       ? 'pdf'
       : this.isOfficeAttachment(attachment)
@@ -399,8 +406,15 @@ export class MessageFeedComponent {
   }
 
   threadReplyCountLabel(msg: Message): string {
-    const count = Number(msg.threadReplyCount || msg.replies.length || 0);
+    const count = Number(msg.threadReplyCount || this.countReplies(msg.replies || []));
     return count === 1 ? '1 reply' : `${count} replies`;
+  }
+
+  private countReplies(replies: Message[]): number {
+    return (replies || []).reduce(
+      (total, reply) => total + 1 + this.countReplies(reply.replies || []),
+      0,
+    );
   }
 
   threadPreviewReplies(msg: Message): Message[] {

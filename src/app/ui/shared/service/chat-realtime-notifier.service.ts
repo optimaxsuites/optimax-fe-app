@@ -29,6 +29,9 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private channelSubs = new Map<number, any>();
   private userNameCache = new Map<number, string>();
   private refreshChannelsCooldownUntil = 0;
+  private refreshChannelsInFlight = false;
+  private lastChannelsRefreshAt = 0;
+  private readonly refreshChannelsTtlMs = 10_000;
 
   constructor(
     private readonly collabService: CollaborationService,
@@ -116,15 +119,25 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (Date.now() < this.refreshChannelsCooldownUntil) {
       return;
     }
-    this.collabService.getHomeChannels().subscribe({
-      next: (data) => this.applyChannelTargets(data?.channels || []),
+    if (this.refreshChannelsInFlight) {
+      return;
+    }
+    if (
+      this.channelTargets.size &&
+      Date.now() - this.lastChannelsRefreshAt < this.refreshChannelsTtlMs
+    ) {
+      return;
+    }
+    this.refreshChannelsInFlight = true;
+    this.collabService.getChannels().subscribe({
+      next: (channels) => {
+        this.lastChannelsRefreshAt = Date.now();
+        this.refreshChannelsInFlight = false;
+        this.applyChannelTargets(channels || []);
+      },
       error: () => {
-        this.collabService.getChannels().subscribe({
-          next: (channels) => this.applyChannelTargets(channels || []),
-          error: () => {
-            this.refreshChannelsCooldownUntil = Date.now() + 30_000;
-          },
-        });
+        this.refreshChannelsInFlight = false;
+        this.refreshChannelsCooldownUntil = Date.now() + 30_000;
       },
     });
   }
