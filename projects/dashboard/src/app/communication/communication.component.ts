@@ -583,6 +583,7 @@ export class CommunicationComponent
   private channelHistoryExhausted = new Set<number>();
   private historyLoadInFlight = new Set<number>();
   private loadingOlderHistory = false;
+  private historyPagingArmed = false;
   private preserveFeedScrollOffset: number | null = null;
   private dmMembershipRepairAttempted = new Set<string>();
   private dmMembershipRepairInFlight = new Set<string>();
@@ -3976,6 +3977,16 @@ export class CommunicationComponent
   // ── Navigation ────────────────────────────────────────
 
   selectChannel(id: string, switchWorkspace = false): void {
+    if (this.activeView === 'channel' && this.activeChannelId === id) {
+      this.workspaceMode = 'chat';
+      this.messagesLoading = false;
+      this.showChannelDetails = false;
+      this.showPinnedPanel = false;
+      this.showSearch = false;
+      this.scrollToLatestMessageSoon();
+      this.cdr.detectChanges();
+      return;
+    }
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
@@ -4004,19 +4015,30 @@ export class CommunicationComponent
       this.collabService
         .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
-        this.fetchAndReconcileChannel(ch);
         this.startConversationSync();
+        this.scrollToLatestMessageSoon();
         this.cdr.detectChanges();
       } else {
         this.channelSnapshotFailureUntil.delete(ch.backendId);
         this.channelSnapshotLastErrorStatus.delete(ch.backendId);
         this.channelSnapshotLastErrorMessage.delete(ch.backendId);
+        this.historyPagingArmed = false;
         this.loadChannelMessages(ch);
       }
     }
   }
 
   selectDm(contactId: string, switchWorkspace = false): void {
+    if (this.activeView === 'dm' && this.activeDmId === contactId) {
+      this.workspaceMode = 'chat';
+      this.messagesLoading = false;
+      this.showChannelDetails = false;
+      this.showPinnedPanel = false;
+      this.showSearch = false;
+      this.scrollToLatestMessageSoon();
+      this.cdr.detectChanges();
+      return;
+    }
     this.cancelEdit();
     this.confirmDeleteId = null;
     this.conversationAccessMessage = '';
@@ -4047,8 +4069,8 @@ export class CommunicationComponent
           .markRead(contact.dmChannelId, this.lastMessageBackendId)
           .subscribe({ error: () => {} });
       }
-      this.fetchAndReconcileDm(contact, contact.dmChannelId);
       this.startConversationSync();
+      this.scrollToLatestMessageSoon();
       this.cdr.detectChanges();
       return;
     }
@@ -4056,6 +4078,7 @@ export class CommunicationComponent
     this.scrollToLatestMessageSoon();
     this.startConversationSync();
     this.cdr.detectChanges();
+    this.historyPagingArmed = false;
     this.getOrCreateDmChannel(contact);
   }
 
@@ -4108,7 +4131,6 @@ export class CommunicationComponent
         !this.hasRecoverableSnapshotFailure(cachedChannelId)
       ) {
         this.messagesLoading = false;
-        this.fetchAndReconcileDm(contact, cachedChannelId);
       } else {
         this.channelSnapshotFailureUntil.delete(cachedChannelId);
         this.channelSnapshotLastErrorStatus.delete(cachedChannelId);
@@ -4139,7 +4161,6 @@ export class CommunicationComponent
         !this.hasRecoverableSnapshotFailure(chId)
       ) {
         this.messagesLoading = false;
-        this.fetchAndReconcileDm(contact, chId);
       } else {
         this.channelSnapshotFailureUntil.delete(chId);
         this.channelSnapshotLastErrorStatus.delete(chId);
@@ -4166,7 +4187,6 @@ export class CommunicationComponent
             !this.hasRecoverableSnapshotFailure(chId)
           ) {
             this.messagesLoading = false;
-            this.fetchAndReconcileDm(contact, chId);
           } else {
             this.channelSnapshotFailureUntil.delete(chId);
             this.channelSnapshotLastErrorStatus.delete(chId);
@@ -4220,6 +4240,7 @@ export class CommunicationComponent
 
   private loadDmMessages(contact: DmContact, channelId: number): void {
     const hadExistingMessages = this.dmMessages[contact.id] !== undefined;
+    this.historyPagingArmed = false;
     this.messagesLoading = true;
     this.conversationAccessMessage = '';
     this.cdr.detectChanges();
@@ -4302,6 +4323,9 @@ export class CommunicationComponent
             this.scrollFeed = true;
           }
           this.cdr.detectChanges();
+          if (!hadExistingMessages) {
+            this.scrollToLatestMessageSoon();
+          }
           this.consumePendingNotificationHighlight(this.dmMessages[contact.id]);
         });
     });
@@ -4311,6 +4335,7 @@ export class CommunicationComponent
 
   private loadChannelMessages(channel: Channel): void {
     if (!channel.backendId) return;
+    this.historyPagingArmed = false;
     this.messagesLoading = true;
     this.cdr.detectChanges();
     this.getChannelSnapshotWithFallback(
@@ -4348,6 +4373,7 @@ export class CommunicationComponent
             snap.attachments || [],
             snap.readStates || [],
           );
+          this.scrollToLatestMessageSoon();
         });
     });
   }
@@ -4645,7 +4671,7 @@ export class CommunicationComponent
 
   private shouldPollActiveConversationSnapshot(): boolean {
     if (!this.wsConnected) {
-      return true;
+      return false;
     }
     if (this.activeView === 'channel' && this.activeChannel) {
       if (
@@ -4654,7 +4680,7 @@ export class CommunicationComponent
       ) {
         return true;
       }
-      return !this.channelMessageSubs.has(this.activeChannel.backendId);
+      return false;
     }
     if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
       if (
@@ -4663,9 +4689,9 @@ export class CommunicationComponent
       ) {
         return true;
       }
-      return !this.dmChannelSubs.has(this.activeDmContact.dmChannelId);
+      return false;
     }
-    return true;
+    return false;
   }
 
   private ensureChatBootstrap(): void {
@@ -6295,6 +6321,10 @@ export class CommunicationComponent
       this.loadingOlderHistory ||
       !this.feedEl?.nativeElement
     ) {
+      return;
+    }
+    if (!this.historyPagingArmed) {
+      this.historyPagingArmed = true;
       return;
     }
     const el = this.feedEl.nativeElement;
