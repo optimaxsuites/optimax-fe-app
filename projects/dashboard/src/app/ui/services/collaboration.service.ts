@@ -577,6 +577,13 @@ export class CollaborationService {
     );
   }
 
+  getMessagesByChannel(channelId: number): Observable<CollabMessage[]> {
+    return this.http.get<CollabMessage[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/message/channel/${channelId}`,
+      { headers: this.headers },
+    );
+  }
+
   getChannelSnapshot(
     channelId: number,
     recentMessageLimit: number | null = 120,
@@ -763,6 +770,13 @@ export class CollaborationService {
   ): Observable<CollabAttachmentFull[]> {
     return this.http.get<CollabAttachmentFull[]>(
       `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/message/${messageId}`,
+      { headers: this.headers },
+    );
+  }
+
+  getAttachmentsByChannel(channelId: number): Observable<CollabAttachmentFull[]> {
+    return this.http.get<CollabAttachmentFull[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/channel/${channelId}`,
       { headers: this.headers },
     );
   }

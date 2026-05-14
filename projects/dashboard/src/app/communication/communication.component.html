@@ -52,6 +52,7 @@
       (dmSelected)="selectDm($event)"
       (viewSet)="setView($event)"
       (createChannel)="openCreateChannelModal()"
+      (channelsRetried)="loadChannels()"
       (soundToggled)="soundEnabled = !soundEnabled"
       (ringtoneChanged)="setRingtone($event)"
       (emailCompose)="openEmailModal()"
@@ -1108,7 +1109,7 @@
           <div class="workspace-toolbar-actions">
             <span *ngIf="historyLoading" class="chat-loading-chip">
               <i class="pi pi-spin pi-spinner"></i>
-              <span>Loading history</span>
+              <span>Loading messages</span>
             </span>
             <input
               *ngIf="activeView === 'threads'"
@@ -1137,11 +1138,6 @@
               <span>Channel details</span>
             </button>
           </div>
-        </div>
-
-        <div *ngIf="conversationAccessMessage" class="conversation-access-banner">
-          <i class="pi pi-lock"></i>
-          <span>{{ conversationAccessMessage }}</span>
         </div>
 
         <div #feedEl class="chat-feed" (scroll)="onChatFeedScroll()">

@@ -571,7 +571,7 @@ const dbConfig: DBConfig = {
       NgxIndexedDBModule.forRoot(dbConfig),
       
       ServiceWorkerModule.register('ngsw-worker.js', {
-        enabled: !isDevMode(),
+        enabled: false,
         registrationStrategy: 'registerWhenStable:30000'
       }),   
       // ToastrModule.forRoot(),
