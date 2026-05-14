@@ -65,6 +65,12 @@ const routes: Routes = [
   },
 
   {
+    path: 'admin/hr/attendance',
+    redirectTo: 'attendance/uu',
+    pathMatch: 'full',
+  },
+
+  /*{
     path: '',
     // redirectTo: DEFAULT_LOAN_ROUTE,
     redirectTo: DEFAULT_LOAN_ROUTE,
@@ -94,7 +100,7 @@ const routes: Routes = [
     path: 'admin/hr/loan-management/loan-dashboard',
     redirectTo: DEFAULT_LOAN_ROUTE,
     pathMatch: 'full',
-  },
+  },*/
   {
     path: 'admin/hr/loan-management/loan-dashboard/:uuid',
     component: LoanDashboardComponent,

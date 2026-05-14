@@ -26,7 +26,7 @@ export class AppHrComponent {
   ngOnInit(): void {
     this.checkScreenWidth();
     this.userLoginAction();
-    this.exposeGlobalHelpers();  // Added by Eseto expose helper functions for console testing
+    this.exposeGlobalHelpers();  // Added by Ese to expose helper functions for console testing
 
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {

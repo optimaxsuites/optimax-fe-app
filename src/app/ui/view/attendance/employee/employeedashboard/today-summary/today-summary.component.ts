@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
+import { UserSessionService } from '../../../../../service/attendance/user-session.service';
 
 @Component({
   selector: 'app-today-summary',
@@ -12,7 +13,7 @@ export class TodaySummaryComponent implements OnInit {
 
   private attendanceService = inject(AttendancetableService);
   private officehoursService = inject(OfficeHoursService);
-
+  private userSession = inject(UserSessionService);
   summary = {
     hoursWorked: 0,
     expectedHours: 8,
@@ -20,9 +21,13 @@ export class TodaySummaryComponent implements OnInit {
     overtime: 0
   };
 
-  employeeName = 'Chrisha Okorocha'; // later you can get this from auth
+  //employeeName = ''; 
+
+  private currentUser: any;
 
   ngOnInit() {
+    this.currentUser = this.userSession.getCurrentUser();
+
     this.attendanceService.attendance$.subscribe(data => {
       this.calculateTodaySummary(data);
     });
@@ -31,7 +36,15 @@ export class TodaySummaryComponent implements OnInit {
   private calculateTodaySummary(data: AttendanceTableRecord[]) {
   const today = new Date().toISOString().split('T')[0];
 
-  const record = data.find(r => r.employee === this.employeeName && r.date === today);
+  /*const record = data.find(
+    r => r.employee === this.employeeName && r.date === today);*/
+    if (!this.currentUser) return;
+
+    const record = data.find(
+      r =>
+        r.employeeId === Number(this.currentUser.id) &&
+        r.date === today
+    );
 
   const officeHours = this.officehoursService.getOfficeHours();
 

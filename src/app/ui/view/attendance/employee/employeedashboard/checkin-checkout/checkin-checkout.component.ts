@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
-import { resolveLoanOutstandingAccruedFees } from '../../../../../service/loan/loan-display.util';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
