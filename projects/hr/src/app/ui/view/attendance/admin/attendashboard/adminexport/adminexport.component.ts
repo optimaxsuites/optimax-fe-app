@@ -203,10 +203,11 @@ importNow() {
 
     const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-    const formattedData = jsonData
+    const formattedData: AttendanceTableRecord[] = jsonData
       .filter((row: any) => row.ID && row.Employee && row.Date)
       .map((row: any) => ({
-        id: row.ID,
+        id: 0, //attendancerecordID not provided in Excel
+        employeeId:Number(row.ID),
         employee: row.Employee,
         department: row.Department,
         date: this.normalizeDate(row.Date),

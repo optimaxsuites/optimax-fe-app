@@ -1,8 +1,8 @@
 export interface AttendanceTableRecord {
-  id: string;
+  id: number; //attendance record id from backend
+  employeeId: number;
   employee: string;
   attendanceRecordId?: string;
-  employeeId?: string;
   department: string;
   date: string | null;
   checkIn: string | null;
@@ -22,13 +22,14 @@ export interface AttendanceTableRecord {
   overrideOpen?: boolean;
   overrideReason?: string;
   overriddenBy?: {
-    adminId: string;
+    adminId: number;
     adminName: string;
   }
   apiRecordId?: number; //stores the backend record ID
+
   // --- NEW: snapshot of the schedule that was active when this record was created ---
   appliedScheduleType?: 'office-hours' | 'shift';
-  appliedScheduleId?: string;
+  appliedScheduleId?: number;
   appliedExpectedStart?: string;
   appliedExpectedEnd?: string;
   appliedShiftName?: string;

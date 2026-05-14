@@ -14,10 +14,10 @@ export class AttendancetableService {
 
   private attendanceSubject = new BehaviorSubject<AttendanceTableRecord[]>([]);
 
-  // ADD these two properties after attendanceSubject:
+  // added these two properties after attendanceSubject:
   private localRecords = new Map<string, AttendanceTableRecord>(); // key: `${employeeId}_${date}`
 
-  private localKey(employeeId: string, date: string): string {
+  private localKey(employeeId: number, date: string): string {
     return `${employeeId}_${date}`;
   }
 
@@ -43,7 +43,7 @@ export class AttendancetableService {
 }
 
 // ADD this method to register an employee (call it from clockAction when a new record is created):
-private ensureRegistered(id: string, name: string, department: string): void {
+private ensureRegistered(id: number, name: string, department: string): void {
   const already = this.registeredEmployees.some(e => e.id === id);
   if (!already) {
     this.registeredEmployees.push({ id, name, department });
@@ -56,7 +56,7 @@ private mergeAndPublish(apiRecords: AttendanceTableRecord[]): void {
   // For each local record, either replace the matching API record or prepend it
   this.localRecords.forEach((localRecord, key) => {
     const index = merged.findIndex(
-      r => this.localKey(r.id, r.date ?? '') === key
+      r => this.localKey(r.employeeId, r.date ?? '') === key
     );
 
     if (index !== -1) {
@@ -125,8 +125,7 @@ resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string;
       //const match = employees.find((e: any) => e.user?.username === username);
       
       employees.forEach((e: any) => {
-        console.log(
-          'EMPLOYEE:',
+        console.log( 'EMPLOYEE:',
           e.id,
           'LINKED USER:',
           e.user
@@ -192,10 +191,12 @@ private mapApiRecord(api: any): AttendanceTableRecord {
 
   return {
     //id: emp?.id?.toString() ?? api.id?.toString() ?? '',
-    attendanceRecordId: api.id?.toString(),
-    employeeId: emp?.id?.toString(),
-    id: emp?.id?.toString() ?? '',
-    apiRecordId: api.id,
+    //attendanceRecordId: api.id?.toString(),
+    //employeeId: emp?.id?.toString(),
+    //id: emp?.id?.toString() ?? '',
+    //apiRecordId: api.id,
+    id: Number(api.id), //attendancerecordid
+    employeeId: Number(emp?.id), //employeeid
     employee: fullName,
     department,
     date: api.attendanceDate ?? null,
@@ -208,9 +209,14 @@ private mapApiRecord(api: any): AttendanceTableRecord {
     overrideOpen: api.overrideOpen ?? false,
     overrideReason: api.overrideReason ?? '',
     overriddenBy: api.overrideBy
-      ? { adminId: api.overrideBy.userId?.toString(), adminName: api.overrideBy.fullname }
+      ? { adminId: Number(api.overrideBy.userId), 
+        adminName: api.overrideBy.fullname }
       : undefined,
-    appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS' ? 'office-hours' : 'shift',
+    appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS'
+     ? 'office-hours' : 'shift',
+    appliedScheduleId: api.appliedScheduleId
+      ? Number(api.appliedScheduleId)
+      : undefined,
     appliedExpectedStart: api.appliedExpectedStart,
     appliedExpectedEnd: api.appliedExpectedEnd,
     appliedShiftName: api.appliedShiftName
@@ -360,7 +366,7 @@ fetchRecordById(id: number): Observable<AttendanceTableRecord> {
 
 private clockInApi(
   employeeId: number,
-  employeeidStr: string,
+  //employeeIdStr: string,
   checkIn: string,
   checkInLocation: string,
   checkInDistance: number
@@ -382,7 +388,7 @@ private clockInApi(
         // Persist it on the local record so admin can use it later
         const today = new Date().toISOString().split('T')[0];
         const records = [...this.attendanceSubject.value];
-        const record = records.find(r => r.id === employeeidStr && r.date === today);
+        const record = records.find(r => r.employeeId === employeeId && r.date === today);
 
         if (record) {
           record.apiRecordId = returnedId;
@@ -458,10 +464,10 @@ overrideOpenApi(
   });
 }*/
 
-private getTodayRecord(employeeId: string): AttendanceTableRecord | undefined {
+private getTodayRecord(employeeId: number): AttendanceTableRecord | undefined {
   const today = new Date().toISOString().split('T')[0];
   return this.attendanceSubject.value.find(
-    r => r.id === employeeId && r.date === today
+    r => r.employeeId === employeeId && r.date === today
   );
 }
 
@@ -495,9 +501,9 @@ private scheduleAbsentCheck() {
   }
 }
 
-async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
+async clockAction(employeeId: number, employeeName: string, department: string, action: 'IN' | 'OUT') {
 
-  if (this.hasCompletedToday(employeeid)) return;
+  if (this.hasCompletedToday(employeeId)) return;
 
   const now = new Date();
   const today = now.toISOString().split('T')[0];
@@ -507,11 +513,12 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
 
   // Find or create local record
   let record = data.find(r => r.employee === employeeName && r.date === today);
-  this.ensureRegistered(employeeid, employeeName, department);
+  this.ensureRegistered(employeeId, employeeName, department);
 
   if (!record) {
     record = {
-      id: employeeid,
+      id: 0,
+      employeeId: employeeId,
       employee: employeeName,
       department: department,
       date: today,
@@ -570,7 +577,7 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
 
   // Save to local records map so API fetches can't overwrite it
   this.localRecords.set(
-    this.localKey(employeeid, today),
+    this.localKey(employeeId, today),
     { ...record }
   );
 
@@ -581,12 +588,21 @@ async clockAction(employeeid: string, employeeName: string, department: string, 
   this.mergeAndPublish(currentApiData);
 
   // --- API calls (after local record is fully updated) ---
-const numericEmployeeId = parseInt(employeeid);
+const numericEmployeeId = employeeId;
 
 if (action === 'IN') {
-  this.clockInApi(numericEmployeeId, employeeid, now.toISOString(), location?.address ?? '', distanceFromOffice);
+  this.clockInApi(
+    numericEmployeeId, 
+    //employeeId, 
+    now.toISOString(), 
+    location?.address ?? '', 
+    distanceFromOffice);
 } else {
-  this.clockOutApi(numericEmployeeId, now.toISOString(), location?.address ?? '', distanceFromOffice);
+  this.clockOutApi(
+    numericEmployeeId, 
+    now.toISOString(), 
+    location?.address ?? '', 
+    distanceFromOffice);
 }
 
   // --- API calls (after local record is fully updated) ---
@@ -842,12 +858,12 @@ setClockStatus(status: ClockStatus) {
   this.clockStatusSubject.next(status);
 }
 
-updateAttendanceStatus(employeeId: string, employeeName: string, department: string, date: string, newStatus: AttendanceTableRecord['status']) {
+updateAttendanceStatus(employeeId: number, employeeName: string, department: string, date: string, newStatus: AttendanceTableRecord['status']) {
 
   const data = [...this.attendanceSubject.value];
 
   const recordIndex = data.findIndex(
-    r => r.id === employeeId && r.date === date
+    r => r.employeeId === employeeId && r.date === date
   );
 
   if (recordIndex !== -1) {
@@ -862,7 +878,8 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
 
     // If record does not exist for that date, create one
     data.unshift({
-      id: employeeId,
+      id: 0,
+      employeeId: employeeId,
       employee: employeeName,
       department: department,
       date: date,
@@ -881,7 +898,10 @@ updateAttendanceStatus(employeeId: string, employeeName: string, department: str
 
 
 // (empty ahhhh):
-private registeredEmployees: { id: string; name: string; department: string }[] = [];
+private registeredEmployees: { 
+  id: number; 
+  name: string; 
+  department: string }[] = [];
 
 private lastAbsentRunDate: string | null = null;
 
@@ -912,12 +932,13 @@ private autoMarkAbsentIfNeeded() {
   this.registeredEmployees.forEach(emp => {
 
     const recordExists = data.some(
-      r => r.id === emp.id && r.date === today
+      r => r.employeeId === emp.id && r.date === today
     );
 
     if (!recordExists) {
       const absentRecord: AttendanceTableRecord = {
-      id: emp.id,
+      id: 0,
+      employeeId: emp.id,
       employee: emp.name,
       department: emp.department,
       date: today,
@@ -963,10 +984,10 @@ private autoMarkAbsentIfNeeded() {
 
 }
 
-getTodayStatusForEmployee(employeeId: string): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
+getTodayStatusForEmployee(employeeId: number): 'CLOCKED_IN' | 'CLOCKED_OUT' | null {
   const today = new Date().toISOString().split('T')[0];
   const record = this.attendanceSubject.value.find(
-    r => r.id === employeeId && r.date === today
+    r => r.employeeId === employeeId && r.date === today
   );
 
   if (!record) return null;
@@ -975,12 +996,12 @@ getTodayStatusForEmployee(employeeId: string): 'CLOCKED_IN' | 'CLOCKED_OUT' | nu
   return null;
 }
 
-isEmployeeBlockedToday(employeeId: string): boolean {
+isEmployeeBlockedToday(employeeId: number): boolean {
 
   const today = new Date().toISOString().split('T')[0];
 
   const record = this.attendanceSubject.value.find(
-    r => r.id === employeeId && r.date === today
+    r => r.employeeId === employeeId && r.date === today
   );
 
   if (!record) return false;
@@ -993,11 +1014,11 @@ isEmployeeBlockedToday(employeeId: string): boolean {
   return false;
 }
 
-openAttendanceForToday(employeeId: string, actorUserId: number, reason: string) {
+openAttendanceForToday(employeeId: number, actorUserId: number, reason: string) {
 
   const today = new Date().toISOString().split('T')[0];
   const records = [...this.attendanceSubject.value];
-  const record = records.find(r => r.id === employeeId && r.date === today);
+  const record = records.find(r => r.employeeId === employeeId && r.date === today);
 
   if (!record) return;
 
@@ -1026,7 +1047,7 @@ openAttendanceForToday(employeeId: string, actorUserId: number, reason: string) 
   const records = [...this.attendanceSubject.value];
 
   const record = records.find(
-    r => r.id === employeeId && r.date === today
+    r => r.employeeId === employeeId && r.date === today
   );
 
   if (!record) return;
@@ -1037,13 +1058,13 @@ openAttendanceForToday(employeeId: string, actorUserId: number, reason: string) 
   this.attendanceSubject.next(records);
 }*/
 
-hasCompletedToday(employeeId: string): boolean {
+hasCompletedToday(employeeId: number): boolean {
   const today = new Date().toDateString();
 
   const todayRecord = this.attendanceSubject.value.find(record => {
     if (!record.date) return false; //to guar against null
     return (
-      record.id === employeeId &&
+      record.employeeId === employeeId &&
       new Date(record.date).toDateString() === today
     );
   });
@@ -1053,18 +1074,18 @@ hasCompletedToday(employeeId: string): boolean {
 }
 
 overrideAttendance(
-  employeeId: string,
+  employeeId: number,
   date: string,
   newStatus: AttendanceTableRecord['status'],
   newCheckIn: string | null,
   reason: string,
-  admin: { adminId: string; adminName: string }
+  admin: { adminId: number; adminName: string }
 ) {
 
   const data = [...this.attendanceSubject.value];
 
   const record = data.find(
-    r => r.id === employeeId && r.date === date
+    r => r.employeeId === employeeId && r.date === date
   );
 
   if (!record) return;
@@ -1103,7 +1124,7 @@ importAttendance(records: AttendanceTableRecord[]) {
 
     //to check if record already exists (same ID+ date)
     const exists = current.find(
-      r => r.id === newRecord.id && r.date === newRecord.date
+      r => r.employeeId === newRecord.employeeId && r.date === newRecord.date
     );
 
     if (!exists) {
