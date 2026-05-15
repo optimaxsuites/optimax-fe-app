@@ -5,6 +5,8 @@ export interface FilterOptions {
   reportType: 'Actual' | 'Budget' | 'Actual vs Budget' | 'Actual vs Previous Year';
   entity: string;
   period: string;
+  customStartDate?: string;
+  customEndDate?: string;
   showPercentages: boolean;
   showVariance: boolean;
   includeForecasts: boolean;
@@ -38,6 +40,8 @@ export class IncomeStatementFilterComponent implements OnInit {
       reportType: [this.initialFilters?.reportType ?? 'Actual'],
       entity: [this.initialFilters?.entity ?? 'All Locations'],
       period: [this.initialFilters?.period ?? 'This Month'],
+      customStartDate: [this.initialFilters?.customStartDate ?? ''],
+      customEndDate: [this.initialFilters?.customEndDate ?? ''],
       showPercentages: [this.initialFilters?.showPercentages ?? false],
       showVariance: [this.initialFilters?.showVariance ?? false],
       includeForecasts: [this.initialFilters?.includeForecasts ?? false]
@@ -59,6 +63,15 @@ export class IncomeStatementFilterComponent implements OnInit {
   }
 
   resetFilters(): void {
-    this.filterForm.reset(this.initialFilters);
+    this.filterForm.reset({
+      reportType: 'Actual',
+      entity: 'All Locations',
+      period: 'This Month',
+      customStartDate: '',
+      customEndDate: '',
+      showPercentages: false,
+      showVariance: false,
+      includeForecasts: false,
+    });
   }
 }

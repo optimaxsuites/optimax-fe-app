@@ -55,6 +55,17 @@
           <option value="This Year">This Year</option>
           <option value="Custom Range">Custom Range</option>
         </select>
+
+        <div class="date-grid" *ngIf="filterForm.get('period')?.value === 'Custom Range'">
+          <label>
+            <span>Start Date</span>
+            <input type="date" formControlName="customStartDate">
+          </label>
+          <label>
+            <span>End Date</span>
+            <input type="date" formControlName="customEndDate">
+          </label>
+        </div>
       </div>
 
       <div class="form-section">
