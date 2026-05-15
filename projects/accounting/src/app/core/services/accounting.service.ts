@@ -5,11 +5,8 @@ import { catchError, map, shareReplay, switchMap, tap, timeout } from 'rxjs/oper
 
 import {
   AccountDTO,
-  AccountType,
   AccountingTransactionDTO,
   BalanceSheetReportDTO,
-  CashFlowCategory,
-  CashFlowLineItemDTO,
   CashFlowReportDTO,
   DashboardMetricsDTO,
   IncomeStatementReportDTO,
@@ -289,8 +286,15 @@ export class AccountingService {
   }
 
   private fetchCashFlowReport(request: ReportRequestDTO): Observable<CashFlowReportDTO> {
-    this.traceOutgoing('GET', '/ledger-entries', { report: 'cash-flow', request });
-    return this.buildCashFlowReportFromLedger(request);
+    this.traceOutgoing('POST', '/reports/cash-flow', request);
+    return this.http.post<CashFlowReportDTO>(
+      `${this.baseUrl}/reports/cash-flow`,
+      request,
+      { headers: this.buildHeaders() },
+    ).pipe(
+      tap((r) => console.log('✅ cash-flow', r)),
+      catchError((e) => { this.traceError('POST', '/reports/cash-flow', request, e); throw e; }),
+    );
   }
 
   private fetchTaxSummaryReport(request: ReportRequestDTO): Observable<TaxSummaryReportDTO> {
@@ -305,10 +309,6 @@ export class AccountingService {
     );
   }
 
-  // ─── Static fallbacks (no HTTP calls — never fail) ─────────────────────────
-  // These are returned immediately when the backend reports endpoints return 500.
-  // They carry _isFallback = true so the UI can show a notice.
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   private getCollection<T>(path: string): Observable<T[]> {
@@ -320,258 +320,6 @@ export class AccountingService {
     );
   }
 
-  private buildCashFlowReportFromLedger(request: ReportRequestDTO): Observable<CashFlowReportDTO> {
-    return this.getLedgerEntries().pipe(
-      map((entries) => this.createCashFlowReportFromLedger(entries, request)),
-    );
-  }
-
-  private createCashFlowReportFromLedger(entries: LedgerEntryRaw[], request: ReportRequestDTO): CashFlowReportDTO {
-    const periodStart = this.parseApiDate(request.periodStart);
-    const periodEnd = this.parseApiDate(request.periodEnd);
-    const cashEntries = entries.filter((entry) => this.isCashAccount(entry.account));
-
-    const openingBalance = cashEntries
-      .filter((entry) => this.parseApiDate(entry.entryDate).getTime() < periodStart.getTime())
-      .reduce((sum, entry) => sum + this.cashDelta(entry), 0);
-
-    const periodCashEntries = cashEntries.filter((entry) => {
-      const date = this.parseApiDate(entry.entryDate).getTime();
-      return date >= periodStart.getTime() && date <= periodEnd.getTime();
-    });
-
-    const operatingActivities: CashFlowLineItemDTO[] = [];
-    const investingActivities: CashFlowLineItemDTO[] = [];
-    const financingActivities: CashFlowLineItemDTO[] = [];
-
-    periodCashEntries.forEach((entry) => {
-      const amount = this.cashDelta(entry);
-      if (amount === 0) {
-        return;
-      }
-
-      const counterpart = this.findCounterpartEntry(entry, entries);
-      const category = this.classifyCashMovement(counterpart);
-      const item: CashFlowLineItemDTO = {
-        description: this.describeCashMovement(entry, counterpart),
-        amount,
-        category,
-        flowDirection: amount >= 0 ? 'inflow' : 'outflow',
-        indentLevel: 1,
-        isSubtotal: false,
-        sourceModule: SourceModule.MANUAL,
-      };
-
-      if (category === CashFlowCategory.INVESTING) {
-        investingActivities.push(item);
-      } else if (category === CashFlowCategory.FINANCING) {
-        financingActivities.push(item);
-      } else {
-        operatingActivities.push(item);
-      }
-    });
-
-    const operatingCashFlow = this.sumCashFlowItems(operatingActivities);
-    const investingCashFlow = this.sumCashFlowItems(investingActivities);
-    const financingCashFlow = this.sumCashFlowItems(financingActivities);
-    const netCashFlow = operatingCashFlow + investingCashFlow + financingCashFlow;
-    const closingBalance = openingBalance + netCashFlow;
-    const workingCapitalChanges = this.calculateWorkingCapitalChanges(entries, periodStart, periodEnd);
-    const changesInWorkingCapital = workingCapitalChanges.reduce((sum, item) => sum + item.changeAmount, 0);
-
-    return {
-      reportPeriod: request.periodEnd,
-      operatingActivities,
-      investingActivities,
-      financingActivities,
-      summary: {
-        operatingCashFlow,
-        investingCashFlow,
-        financingCashFlow,
-        netCashFlow,
-        openingBalance,
-        closingBalance,
-        freeCashFlow: operatingCashFlow + investingCashFlow,
-      },
-      indirectReconciliation: {
-        netIncome: 0,
-        addBackDepreciation: 0,
-        addBackAmortization: 0,
-        deductGainOnDisposal: 0,
-        changesInWorkingCapital,
-        calculatedOperatingCash: operatingCashFlow,
-      },
-      workingCapitalChanges,
-      taxCashFlowBreakdown: {
-        companiesIncomeTax: 0,
-        valueAddedTax: 0,
-        withholdingTax: 0,
-        educationTaxLevy: 0,
-        naseniLevy: 0,
-        totalTaxPaid: 0,
-      },
-      vatOutputAmount: 0,
-      vatInputRecoverable: 0,
-      periodComparisons: {
-        netCashFlow: this.emptyPeriodComparison(netCashFlow),
-        operatingCashFlow: this.emptyPeriodComparison(operatingCashFlow),
-        investingCashFlow: this.emptyPeriodComparison(investingCashFlow),
-        financingCashFlow: this.emptyPeriodComparison(financingCashFlow),
-      },
-      reportContext: {
-        generatedAt: this.toBackendLocalDateTime(new Date()),
-        generatedBy: 'General Ledger',
-        periodStart: request.periodStart,
-        periodEnd: request.periodEnd,
-        reportPeriodType: request.reportPeriodType,
-        sourceModules: request.sourceModules,
-        includedTransactionIds: periodCashEntries.map((entry) => entry.id),
-        entityName: (request.entityId ?? this.resolveEntityId()) || this.resolveTenantId(),
-        currencyCode: request.currencyCode ?? 'NGN',
-        reportVersion: '2.0-ledger',
-        complianceFramework: 'IFRS / CAMA 2020',
-      },
-    };
-  }
-
-  private findCounterpartEntry(cashEntry: LedgerEntryRaw, entries: LedgerEntryRaw[]): LedgerEntryRaw | null {
-    const journalEntryId = cashEntry.journalEntryLine?.journalEntryId;
-    if (journalEntryId !== undefined && journalEntryId !== null) {
-      const sameJournal = entries
-        .filter((entry) =>
-          entry.id !== cashEntry.id &&
-          entry.journalEntryLine?.journalEntryId === journalEntryId &&
-          !this.isCashAccount(entry.account)
-        )
-        .sort((left, right) => this.absoluteEntryAmount(right) - this.absoluteEntryAmount(left));
-
-      if (sameJournal.length) {
-        return sameJournal[0];
-      }
-    }
-
-    const cashDate = this.parseApiDate(cashEntry.entryDate).getTime();
-    const cashAmount = this.absoluteEntryAmount(cashEntry);
-
-    return entries.find((entry) =>
-      entry.id !== cashEntry.id &&
-      !this.isCashAccount(entry.account) &&
-      this.parseApiDate(entry.entryDate).getTime() === cashDate &&
-      Math.abs(this.absoluteEntryAmount(entry) - cashAmount) < 0.01
-    ) ?? null;
-  }
-
-  private classifyCashMovement(counterpart: LedgerEntryRaw | null): CashFlowCategory {
-    const accountType = counterpart?.account?.accountType;
-    if (accountType === AccountType.LIABILITY || accountType === AccountType.EQUITY) {
-      return CashFlowCategory.FINANCING;
-    }
-
-    if (accountType === AccountType.ASSET) {
-      return CashFlowCategory.INVESTING;
-    }
-
-    return CashFlowCategory.OPERATING;
-  }
-
-  private describeCashMovement(cashEntry: LedgerEntryRaw, counterpart: LedgerEntryRaw | null): string {
-    const rawDescription = cashEntry.journalEntryLine?.description?.trim();
-    const cleanedDescription = rawDescription
-      ? rawDescription.replace(/^(DR|CR):\s*/i, '').trim()
-      : 'Cash movement';
-
-    if (counterpart?.account?.accountName) {
-      return `${cleanedDescription} (${counterpart.account.accountName})`;
-    }
-
-    return cleanedDescription;
-  }
-
-  private calculateWorkingCapitalChanges(
-    entries: LedgerEntryRaw[],
-    periodStart: Date,
-    periodEnd: Date,
-  ): Array<{ accountName: string; accountCode: string; changeAmount: number; effectType: string }> {
-    const changes = new Map<string, { accountName: string; accountCode: string; changeAmount: number }>();
-
-    entries.forEach((entry) => {
-      const date = this.parseApiDate(entry.entryDate).getTime();
-      const accountType = entry.account?.accountType;
-      if (
-        date < periodStart.getTime() ||
-        date > periodEnd.getTime() ||
-        this.isCashAccount(entry.account) ||
-        (accountType !== AccountType.ASSET && accountType !== AccountType.LIABILITY)
-      ) {
-        return;
-      }
-
-      const key = String(entry.account.id);
-      const existing = changes.get(key) ?? {
-        accountName: entry.account.accountName,
-        accountCode: String(entry.account.accountCode),
-        changeAmount: 0,
-      };
-      const accountDelta = accountType === AccountType.ASSET
-        ? Number(entry.debit ?? 0) - Number(entry.credit ?? 0)
-        : Number(entry.credit ?? 0) - Number(entry.debit ?? 0);
-
-      existing.changeAmount += accountType === AccountType.ASSET ? -accountDelta : accountDelta;
-      changes.set(key, existing);
-    });
-
-    return Array.from(changes.values())
-      .filter((change) => Math.abs(change.changeAmount) > 0.01)
-      .map((change) => ({
-        ...change,
-        effectType: change.changeAmount >= 0 ? 'source' : 'use',
-      }));
-  }
-
-  private isCashAccount(account: LedgerEntryRaw['account'] | undefined): boolean {
-    if (!account || account.accountType !== AccountType.ASSET) {
-      return false;
-    }
-
-    const accountName = (account.accountName ?? '').toLowerCase();
-    const accountCode = String(account.accountCode ?? '');
-    return accountCode === '1001' || accountName.includes('cash') || accountName.includes('bank');
-  }
-
-  private cashDelta(entry: LedgerEntryRaw): number {
-    return Number(entry.debit ?? 0) - Number(entry.credit ?? 0);
-  }
-
-  private absoluteEntryAmount(entry: LedgerEntryRaw): number {
-    return Math.max(Math.abs(Number(entry.debit ?? 0)), Math.abs(Number(entry.credit ?? 0)));
-  }
-
-  private sumCashFlowItems(items: CashFlowLineItemDTO[]): number {
-    return items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
-  }
-
-  private emptyPeriodComparison(currentPeriodAmount: number): {
-    currentPeriodAmount: number;
-    priorPeriodAmount: number;
-    changeAmount: number;
-    changePercentage: number;
-  } {
-    return {
-      currentPeriodAmount,
-      priorPeriodAmount: 0,
-      changeAmount: currentPeriodAmount,
-      changePercentage: 0,
-    };
-  }
-
-  private parseApiDate(value: string | number[] | undefined | null): Date {
-    if (Array.isArray(value)) {
-      const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, nanos = 0] = value;
-      return new Date(year, month - 1, day, hour, minute, second, Math.floor(nanos / 1_000_000));
-    }
-
-    return value ? new Date(value) : new Date(Number.NaN);
-  }
 
   private buildReportRequest(period: Date, overrides?: Partial<ReportRequestDTO>): ReportRequestDTO {
     const reportPeriodType = overrides?.reportPeriodType ?? 'monthly';

@@ -89,6 +89,29 @@
   background-color: white;
 }
 
+.date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.date-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #444;
+  font-size: 13px;
+}
+
+.date-grid input {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font: inherit;
+}
+
 .btn {
   padding: 8px 16px;
   border-radius: 4px;
