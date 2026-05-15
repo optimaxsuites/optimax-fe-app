@@ -1,0 +1,370 @@
+// Bank Details Change Request Component Styles
+
+.bank-details-change-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+
+  .header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+
+    h3 {
+      font-size: 1.75rem;
+      color: #2c3e50;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      i {
+        color: #3498db;
+      }
+    }
+
+    .subtitle {
+      color: #7f8c8d;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+
+  .change-request-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .form-section {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #ecf0f1;
+
+    &:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin: 0 0 1.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        color: #3498db;
+      }
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+
+    &.full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+
+      .required {
+        color: #e74c3c;
+        margin-right: 0.25rem;
+      }
+    }
+
+    .form-control {
+      padding: 0.75rem 1rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      }
+
+      &:disabled {
+        background-color: #ecf0f1;
+        color: #7f8c8d;
+        cursor: not-allowed;
+      }
+
+      &[type='text'],
+      &[type='email'],
+      &textarea {
+        resize: none;
+
+        &::placeholder {
+          color: #95a5a6;
+        }
+      }
+    }
+
+    textarea.form-control {
+      min-height: 120px;
+      line-height: 1.5;
+    }
+
+    .form-text,
+    .form-hint {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      strong {
+        color: #2c3e50;
+      }
+
+      i {
+        font-size: 0.75rem;
+      }
+    }
+
+    .form-error {
+      font-size: 0.85rem;
+      color: #e74c3c;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 500;
+
+      i {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  // PrimeNG AutoComplete Customization
+  ::ng-deep .p-autocomplete {
+    width: 100%;
+
+    .p-autocomplete-input {
+      padding: 0.75rem 1rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      width: 100%;
+
+      &:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      }
+    }
+
+    .p-autocomplete-panel {
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .p-autocomplete-items .p-autocomplete-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #ecf0f1;
+
+      &:hover {
+        background-color: #ecf0f1;
+      }
+
+      &.p-highlight {
+        background-color: #3498db;
+        color: white;
+      }
+    }
+  }
+
+  .bank-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    strong {
+      flex: 1;
+    }
+
+    .bank-abbr {
+      background-color: #ecf0f1;
+      color: #7f8c8d;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  }
+
+  .info-box {
+    background: #d6eaf8;
+    border-left: 4px solid #3498db;
+    padding: 1.25rem;
+    border-radius: 6px;
+    margin: 2rem 0;
+    display: flex;
+    gap: 1rem;
+
+    i {
+      color: #3498db;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      margin-top: 0.25rem;
+    }
+
+    strong {
+      display: block;
+      color: #2c3e50;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin: 0;
+      color: #34495e;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid #ecf0f1;
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 140px;
+      justify-content: center;
+
+      &.btn-primary {
+        background-color: #27ae60;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #229954;
+          box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        &:disabled {
+          background-color: #bdc3c7;
+          cursor: not-allowed;
+        }
+      }
+
+      &.btn-secondary {
+        background-color: #95a5a6;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #7f8c8d;
+          box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+        }
+
+        &:disabled {
+          background-color: #bdc3c7;
+          cursor: not-allowed;
+        }
+      }
+
+      i {
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .bank-details-change-container {
+    padding: 1rem;
+
+    .header {
+      h3 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .change-request-form {
+      padding: 1.5rem;
+    }
+
+    .form-section {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .bank-details-change-container {
+    padding: 0.75rem;
+
+    .change-request-form {
+      padding: 1rem;
+    }
+
+    .header h3 {
+      font-size: 1.25rem;
+    }
+
+    .form-group label {
+      font-size: 0.9rem;
+    }
+
+    .form-control {
+      font-size: 0.9rem;
+      padding: 0.65rem 0.75rem;
+    }
+  }
+}

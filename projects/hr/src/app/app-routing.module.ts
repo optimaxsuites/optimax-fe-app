@@ -48,6 +48,7 @@ import { CooperativeLoanApprovalUiComponent } from './ui/view/loan-management/co
 import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
+import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -414,6 +415,10 @@ const routes: Routes = [
   {
     path: 'work-schedule/:uuid',
     component: SchedulingComponent,
+  },
+  {
+    path: 'admin/hr/profile-change-requests',
+    component: ProfileChangeRequestsComponent,
   },
   {
     path: '**',
