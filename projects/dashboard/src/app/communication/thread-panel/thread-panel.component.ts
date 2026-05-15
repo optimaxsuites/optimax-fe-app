@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { Message } from '../communication.component';
 import { CollabMember, EmployeeProfile } from '../../ui/services/collaboration.service';
+import { ComposerMentionOption } from '../message-composer/message-composer.component';
 
 export type RightPanelMode = 'pinned' | 'thread' | 'details' | null;
 
@@ -51,6 +52,8 @@ export class ThreadPanelComponent {
   @Input() activeThreadReplyToId: string | null = null;
   @Input() activeThreadReplyTarget: Message | null = null;
   @Input() threadReplyDraft = '';
+  @Input() threadMentionResults: ComposerMentionOption[] = [];
+  @Input() threadShowMentionMenu = false;
   @Input() typingUsersLabel = '';
   @Input() threadPendingAttachments: Array<{
     name: string;
@@ -85,12 +88,14 @@ export class ThreadPanelComponent {
   @Input() getEmpAvatarColor!: (e: EmployeeProfile) => string;
   @Input() getEmpImageUrl!: (e: EmployeeProfile) => string | undefined;
   @Input() mentionCandidates: MentionCandidate[] = [];
+  @Input() mentionLabel: (employee: ComposerMentionOption) => string = () => '';
   @Input() resolveMentionProfileCard: (payload: { userId?: number; handle?: string }) => MentionProfileCard | null = () => null;
 
   // ── Outputs ─────────────────────────────────────────
   // Thread navigation
   @Output() threadClosed = new EventEmitter<void>();
   @Output() threadReplyDraftChange = new EventEmitter<string>();
+  @Output() threadMentionSelected = new EventEmitter<ComposerMentionOption>();
   @Output() replyTargetSet = new EventEmitter<{ reply: Message; event?: Event }>();
   @Output() replyTargetCleared = new EventEmitter<void>();
   @Output() replySent = new EventEmitter<void>();
@@ -130,6 +135,7 @@ export class ThreadPanelComponent {
   @Output() leaveChannel = new EventEmitter<void>();
   @Output() deleteChannel = new EventEmitter<void>();
   @Output() mentionActivated = new EventEmitter<number>();
+  @Output() attachmentDownload = new EventEmitter<{ attachment: any; event: Event }>();
 
   activeMentionProfile: MentionProfileCard | null = null;
   mentionCardPosition: { top: number; left: number } | null = null;
@@ -153,6 +159,10 @@ export class ThreadPanelComponent {
       e.preventDefault();
       this.replySent.emit();
     }
+  }
+
+  onThreadDraftInput(value: string): void {
+    this.threadReplyDraftChange.emit(value);
   }
 
   trackById(_: number, m: { id: string }): string {
@@ -199,6 +209,9 @@ export class ThreadPanelComponent {
       event.stopPropagation();
       const userId = Number(mention.dataset['userId'] || 0);
       if (userId > 0) {
+        if (typeof window !== 'undefined') {
+          window.location.hash = `dm-user-${userId}`;
+        }
         this.mentionActivated.emit(userId);
       }
       return;
@@ -209,6 +222,32 @@ export class ThreadPanelComponent {
     const href = anchor.getAttribute('href');
     if (!href) return;
     window.open(href, '_blank', 'noopener,noreferrer');
+  }
+
+  openThreadImage(
+    attachment: Message['attachment'] | undefined,
+    event: Event,
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const url = attachment?.previewUrl || '';
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (attachment?.downloadUrl) {
+      this.attachmentDownload.emit({ attachment, event });
+    }
+  }
+
+  downloadThreadAttachment(
+    attachment: Message['attachment'] | undefined,
+    event: Event,
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!attachment) return;
+    this.attachmentDownload.emit({ attachment, event });
   }
 
   messageHtml(content: string): string {
@@ -287,7 +326,7 @@ export class ThreadPanelComponent {
       const regex = new RegExp(`(^|[^\\w>])@${escapedLabel}${this.mentionBoundaryAfterRegex}`, 'gi');
       result = result.replace(regex, (_full, prefix) => {
         const mentionText = `@${label}`;
-        return `${prefix || ''}<a href="" class="thread-mention" data-user-id="${candidate.userId}" data-mention="${this.escapeHtml(mentionText)}">${this.escapeHtml(mentionText)}</a>`;
+        return `${prefix || ''}<a href="#dm-user-${candidate.userId}" class="thread-mention" data-user-id="${candidate.userId}" data-mention="${this.escapeHtml(mentionText)}">${this.escapeHtml(mentionText)}</a>`;
       });
     }
     return result;

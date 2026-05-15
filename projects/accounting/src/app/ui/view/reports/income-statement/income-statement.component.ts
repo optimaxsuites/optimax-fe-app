@@ -19,12 +19,17 @@ import {
   IncomeStatementReportDTO,
   MonthlyTrendDTO,
   PeriodComparisonDTO,
+  ReportContextDTO,
+  ReportPeriodType,
+  ReportRequestDTO,
 } from '../report.dto';
 
 export interface FilterOptions {
   reportType: 'Actual' | 'Budget' | 'Actual vs Budget' | 'Actual vs Previous Year';
   entity: string;
   period: string;
+  customStartDate?: string;
+  customEndDate?: string;
   showPercentages: boolean;
   showVariance: boolean;
   includeForecasts: boolean;
@@ -60,8 +65,23 @@ interface ExpenseDistribution {
   otherOperatingExpenses: number;
 }
 
+interface StatementSection {
+  title: string;
+  rows: FinancialLineItem[];
+  totalLabel: string;
+  total: number;
+  amountTone: 'income' | 'expense' | 'neutral';
+}
+
+interface TransactionMakeup {
+  revenue: FinancialLineItem[];
+  principal: FinancialLineItem[];
+  includedTransactions: AccountingTransactionDTO[];
+}
+
 interface IncomeStatementData {
   period: Date;
+  reportContext: ReportContextDTO;
   revenue: FinancialLineItem[];
   cogs: FinancialLineItem[];
   administrativeExpenses: FinancialLineItem[];
@@ -99,6 +119,7 @@ interface IncomeStatementData {
   };
   monthlyTrend: MonthlyFinancialData;
   expenseDistribution: ExpenseDistribution;
+  transactionMakeup: TransactionMakeup;
 }
 
 @Component({
@@ -120,6 +141,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     reportType: 'Actual',
     entity: 'All Locations',
     period: 'This Month',
+    customStartDate: '',
+    customEndDate: '',
     showPercentages: false,
     showVariance: false,
     includeForecasts: false
@@ -132,6 +155,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   comments: Comment[] = [];
 
   private readonly destroy$ = new Subject<void>();
+  private requestOverrides: Partial<ReportRequestDTO> | null = null;
 
   constructor(
     private readonly accountingService: AccountingService,
@@ -160,6 +184,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   onFiltersApplied(filters: FilterOptions): void {
     this.activeFilters = { ...filters };
+    const range = this.resolveFilterRange(filters);
+
+    if (!range) {
+      this.errorMessage = 'Choose a valid start and end date for the custom income statement range.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.requestOverrides = this.createRequestOverrides(range.start, range.end, range.periodType);
+    this.accountingService.setPeriod(range.start);
+    this.loadReport();
     this.cdr.markForCheck();
   }
 
@@ -296,6 +331,30 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
 
   get otherItems(): FinancialLineItem[] {
     return this.data?.otherItems ?? [];
+  }
+
+  get transactionRevenueMakeup(): FinancialLineItem[] {
+    return this.data?.transactionMakeup.revenue ?? [];
+  }
+
+  get transactionPrincipalMakeup(): FinancialLineItem[] {
+    return this.data?.transactionMakeup.principal ?? [];
+  }
+
+  get hasTransactionMakeup(): boolean {
+    return this.transactionRevenueMakeup.length > 0 || this.transactionPrincipalMakeup.length > 0;
+  }
+
+  get transactionMakeupCount(): number {
+    return this.data?.transactionMakeup.includedTransactions.length ?? 0;
+  }
+
+  get transactionRevenueMakeupTotal(): number {
+    return this.transactionRevenueMakeup.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  get transactionPrincipalMakeupTotal(): number {
+    return this.transactionPrincipalMakeup.reduce((sum, item) => sum + item.amount, 0);
   }
 
   get totalRevenue(): number {
@@ -517,6 +576,136 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     };
   }
 
+  get hasIncomeStatementData(): boolean {
+    if (!this.data) {
+      return false;
+    }
+
+    return [
+      this.data.revenue,
+      this.data.cogs,
+      this.data.administrativeExpenses,
+      this.data.salariesWages,
+      this.data.maintenance,
+      this.data.logisticsDistribution,
+      this.data.otherOperatingExpenses,
+      this.data.otherItems,
+    ].some((items) => items.length > 0) || [
+      this.totalRevenue,
+      this.totalCOGS,
+      this.grossProfit,
+      this.totalOperatingExpenses,
+      this.operatingIncome,
+      this.netIncomeBeforeTax,
+      this.netIncome,
+    ].some((amount) => Math.abs(amount) > 0.01);
+  }
+
+  get reportPeriodLabel(): string {
+    return this.data?.period.toLocaleDateString('en-NG', {
+      month: 'long',
+      year: 'numeric',
+    }) ?? 'Selected period';
+  }
+
+  get statementSections(): StatementSection[] {
+    return [
+      {
+        title: 'Revenue',
+        rows: this.revenueData,
+        totalLabel: 'Total Revenue',
+        total: this.totalRevenue,
+        amountTone: 'income',
+      },
+      {
+        title: 'Cost of Services',
+        rows: this.cogsData,
+        totalLabel: 'Total Cost of Services',
+        total: this.totalCOGS,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Administrative Expenses',
+        rows: this.administrativeExpenses,
+        totalLabel: 'Total Administrative Expenses',
+        total: this.totalAdministrativeExpenses,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Salaries and Wages',
+        rows: this.salariesWages,
+        totalLabel: 'Total Salaries and Wages',
+        total: this.totalSalariesWages,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Maintenance',
+        rows: this.maintenance,
+        totalLabel: 'Total Maintenance',
+        total: this.totalMaintenance,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Logistics and Distribution',
+        rows: this.logisticsDistribution,
+        totalLabel: 'Total Logistics and Distribution',
+        total: this.totalLogisticsDistribution,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Other Operating Expenses',
+        rows: this.otherOperatingExpenses,
+        totalLabel: 'Total Other Operating Expenses',
+        total: this.totalOtherOperatingExpenses,
+        amountTone: 'expense',
+      },
+      {
+        title: 'Other Income and Expenses',
+        rows: this.otherItems,
+        totalLabel: 'Total Other Income and Expenses',
+        total: this.totalOtherItems,
+        amountTone: 'neutral',
+      },
+    ];
+  }
+
+  get summaryCards(): Array<{ label: string; value: number; meta: string; tone: string }> {
+    return [
+      {
+        label: 'Total Revenue',
+        value: this.totalRevenue,
+        meta: `${this.fmt.formatPercentage(Math.abs(this.revenueGrowth))} vs prior period`,
+        tone: this.revenueGrowth >= 0 ? 'good' : 'warning',
+      },
+      {
+        label: 'Gross Profit',
+        value: this.grossProfit,
+        meta: `${this.grossProfitMargin.toFixed(1)}% gross margin`,
+        tone: this.grossProfit >= 0 ? 'good' : 'warning',
+      },
+      {
+        label: 'Operating Income',
+        value: this.operatingIncome,
+        meta: `${this.operatingMargin.toFixed(1)}% operating margin`,
+        tone: this.operatingIncome >= 0 ? 'good' : 'warning',
+      },
+      {
+        label: 'Net Income',
+        value: this.netIncome,
+        meta: `${this.netProfitMargin.toFixed(1)}% net margin`,
+        tone: this.netIncome >= 0 ? 'good' : 'warning',
+      },
+    ];
+  }
+
+  trackBySection(_: number, section: StatementSection): string {
+    return section.title;
+  }
+
+  trackByLineItem(index: number, item: FinancialLineItem): string {
+    return `${item.name}-${index}`;
+  }
+
   get insights(): Array<{ title: string; description: string; trend: 'positive' | 'negative' }> {
     if (!this.data) {
       return [];
@@ -620,6 +809,19 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     rows.push(['Net Income After Tax', this.fmt.formatCurrency(this.data.totals.netIncome.actual)]);
     rows.push(['Net Profit Margin', `${this.data.ratios.netProfitMargin.toFixed(1)}%`]);
 
+    if (this.hasTransactionMakeup) {
+      rows.push([]);
+      rows.push(['TRANSACTION MAKEUP - DRILLDOWN ONLY']);
+      this.transactionRevenueMakeup.forEach((item: FinancialLineItem) => {
+        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
+      });
+      rows.push(['Total Interest Makeup', this.fmt.formatCurrency(this.transactionRevenueMakeupTotal)]);
+      this.transactionPrincipalMakeup.forEach((item: FinancialLineItem) => {
+        rows.push([item.name, this.fmt.formatCurrency(item.amount)]);
+      });
+      rows.push(['Total Principal Makeup', this.fmt.formatCurrency(this.transactionPrincipalMakeupTotal)]);
+    }
+
     const csv = rows.map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -706,7 +908,16 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private requestPeriod(period: Date): void {
-    this.accountingService.setPeriod(period);
+    const start = new Date(period.getFullYear(), period.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(period.getFullYear(), period.getMonth() + 1, 0, 23, 59, 59, 999);
+    this.activeFilters = {
+      ...this.activeFilters,
+      period: 'This Month',
+      customStartDate: this.toDateInput(start),
+      customEndDate: this.toDateInput(end),
+    };
+    this.requestOverrides = this.createRequestOverrides(start, end, 'monthly');
+    this.accountingService.setPeriod(start);
     this.loadReport();
   }
 
@@ -716,7 +927,7 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
 
     forkJoin([
-      this.accountingService.getIncomeStatementReport().pipe(take(1)),
+      this.accountingService.getIncomeStatementReport(this.requestOverrides ?? undefined).pipe(take(1)),
       this.accountingService.getAccountingTransactions().pipe(take(1)),
     ])
       .pipe(take(1), takeUntil(this.destroy$))
@@ -736,52 +947,42 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       });
   }
 
-  private toIncomeStatementData(report: IncomeStatementReportDTO, transactions: AccountingTransactionDTO[] = []): IncomeStatementData {
-    const hasBackendLines = [
-      report.revenue,
-      report.cogs,
-      report.administrativeExpenses,
-      report.salariesAndWages,
-      report.maintenance,
-      report.logisticsAndDistribution,
-      report.otherOperatingExpenses,
-      report.otherItems,
-    ].some((items) => items.length > 0);
-
-    const derived = hasBackendLines
-      ? null
-      : this.deriveFromIncludedTransactions(report, transactions);
-    const totals = derived?.totals ?? report.totals;
+  private toIncomeStatementData(
+    report: IncomeStatementReportDTO,
+    transactions: AccountingTransactionDTO[] = [],
+  ): IncomeStatementData {
+    const transactionMakeup = this.buildTransactionMakeup(report, transactions);
 
     return {
       period: this.toDateValue(report.reportPeriod),
-      revenue: derived?.revenue ?? this.mapLineItems(report.revenue),
-      cogs: derived?.cogs ?? this.mapLineItems(report.cogs),
+      reportContext: report.reportContext,
+      revenue: this.mapLineItems(report.revenue),
+      cogs: this.mapLineItems(report.cogs),
       administrativeExpenses: this.mapLineItems(report.administrativeExpenses),
       salariesWages: this.mapLineItems(report.salariesAndWages),
       maintenance: this.mapLineItems(report.maintenance),
       logisticsDistribution: this.mapLineItems(report.logisticsAndDistribution),
       otherOperatingExpenses: this.mapLineItems(report.otherOperatingExpenses),
-      otherItems: derived?.otherItems ?? this.mapLineItems(report.otherItems),
+      otherItems: this.mapLineItems(report.otherItems),
       totals: {
-        revenue: this.mapComparison(totals.revenue),
-        cogs: this.mapComparison(totals.cogs),
-        grossProfit: this.mapComparison(totals.grossProfit),
-        adminExpenses: this.mapComparison(totals.adminExpenses),
-        salariesWages: this.mapComparison(totals.salariesWages),
-        maintenance: this.mapComparison(totals.maintenance),
-        logistics: this.mapComparison(totals.logistics),
-        otherOpEx: this.mapComparison(totals.otherOpEx),
-        totalOpEx: this.mapComparison(totals.totalOpEx),
-        ebit: this.mapComparison(totals.ebit),
-        ebitda: this.mapComparison(totals.ebitda),
-        otherItems: this.mapComparison(totals.otherItems),
-        nibt: this.mapComparison(totals.nibt),
-        cit: this.mapComparison(totals.cit),
-        educationTax: this.mapComparison(totals.educationTaxLevy),
-        naseniLevy: this.mapComparison(totals.naseniLevy),
-        totalTax: this.mapComparison(totals.totalTax),
-        netIncome: this.mapComparison(totals.netIncome),
+        revenue: this.mapComparison(report.totals.revenue),
+        cogs: this.mapComparison(report.totals.cogs),
+        grossProfit: this.mapComparison(report.totals.grossProfit),
+        adminExpenses: this.mapComparison(report.totals.adminExpenses),
+        salariesWages: this.mapComparison(report.totals.salariesWages),
+        maintenance: this.mapComparison(report.totals.maintenance),
+        logistics: this.mapComparison(report.totals.logistics),
+        otherOpEx: this.mapComparison(report.totals.otherOpEx),
+        totalOpEx: this.mapComparison(report.totals.totalOpEx),
+        ebit: this.mapComparison(report.totals.ebit),
+        ebitda: this.mapComparison(report.totals.ebitda),
+        otherItems: this.mapComparison(report.totals.otherItems),
+        nibt: this.mapComparison(report.totals.nibt),
+        cit: this.mapComparison(report.totals.cit),
+        educationTax: this.mapComparison(report.totals.educationTaxLevy),
+        naseniLevy: this.mapComparison(report.totals.naseniLevy),
+        totalTax: this.mapComparison(report.totals.totalTax),
+        netIncome: this.mapComparison(report.totals.netIncome),
       },
       ratios: {
         revenueGrowthMoM: report.ratios.revenueGrowthMoMPct,
@@ -790,37 +991,66 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         ebitdaMargin: report.ratios.ebitdaMarginPct,
         netProfitMargin: report.ratios.netProfitMarginPct,
       },
-      monthlyTrend: derived?.monthlyTrend ?? this.mapMonthlyTrend(report.monthlyTrend),
+      monthlyTrend: this.mapMonthlyTrend(report.monthlyTrend),
       expenseDistribution: this.mapExpenseDistribution(report.expenseDistribution),
+      transactionMakeup,
     };
   }
 
-  private deriveFromIncludedTransactions(
+  private buildTransactionMakeup(
     report: IncomeStatementReportDTO,
     transactions: AccountingTransactionDTO[],
-  ): {
-    revenue: FinancialLineItem[];
-    cogs: FinancialLineItem[];
-    otherItems: FinancialLineItem[];
-    totals: IncomeStatementReportDTO['totals'];
-    monthlyTrend: MonthlyFinancialData;
-  } | null {
-    const includedIds = new Set(report.reportContext.includedTransactionIds.map((id) => String(id)));
-    const includedTransactions = transactions.filter((transaction) => includedIds.has(String(transaction.id)));
+  ): TransactionMakeup {
+    const emptyMakeup: TransactionMakeup = {
+      revenue: [],
+      principal: [],
+      includedTransactions: [],
+    };
+    const includedIds = new Set((report.reportContext.includedTransactionIds ?? []).map((id) => String(id)));
+    if (!includedIds.size) {
+      return emptyMakeup;
+    }
+
+    const periodStart = this.toDateValue(report.reportContext.periodStart).getTime();
+    const periodEnd = this.toDateValue(report.reportContext.periodEnd).getTime();
+    const includedTransactions = transactions.filter((transaction) => {
+      const transactionDate = this.toDateValue(transaction.transactionDate).getTime();
+      return includedIds.has(String(transaction.id)) &&
+        !Number.isNaN(transactionDate) &&
+        transactionDate >= periodStart &&
+        transactionDate <= periodEnd;
+    });
 
     if (!includedTransactions.length) {
-      return null;
+      return emptyMakeup;
     }
 
     const revenueRows: FinancialLineItem[] = [];
-    const cogsRows: FinancialLineItem[] = [];
-    const otherRows: FinancialLineItem[] = [];
+    const principalRows: FinancialLineItem[] = [];
 
     includedTransactions.forEach((transaction) => {
       const amount = Number(transaction.amount) || 0;
-      const approvedAmount = this.numberFromMetadata(transaction, 'approvedAmount');
-      const interestAmount = approvedAmount !== null ? Math.max(amount - approvedAmount, 0) : 0;
-      const principalAmount = approvedAmount !== null ? approvedAmount : amount;
+      const principalAmount = this.resolvePrincipalAmount(transaction, amount);
+      const explicitInterest = this.firstNumberFromMetadata(transaction, [
+        'interestAmount',
+        'interestValue',
+        'totalInterestAmount',
+        'financeChargeAmount',
+        'feeAmount',
+        'serviceCharge',
+        'serviceChargeAmount',
+      ]);
+      let interestAmount = explicitInterest !== null
+        ? explicitInterest
+        : Math.max(amount - principalAmount, 0);
+      const totalRepayable = this.firstNumberFromMetadata(transaction, [
+        'totalRepayable',
+        'totalRepayment',
+        'totalPayable',
+      ]);
+      if (interestAmount <= 0 && totalRepayable !== null && principalAmount > 0) {
+        interestAmount = Math.max(totalRepayable - principalAmount, 0);
+      }
       const label = transaction.description || transaction.transactionReference || transaction.reference || `Transaction ${transaction.id}`;
 
       if (interestAmount > 0) {
@@ -828,53 +1058,125 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       }
 
       if (principalAmount > 0) {
-        otherRows.push(this.toFinancialLineItem(`Loan principal activity - ${label}`, -principalAmount));
+        principalRows.push(this.toFinancialLineItem(`Loan principal activity - ${label}`, -principalAmount));
       }
     });
 
-    const revenueTotal = revenueRows.reduce((sum, item) => sum + item.amount, 0);
-    const cogsTotal = cogsRows.reduce((sum, item) => sum + item.amount, 0);
-    const otherTotal = otherRows.reduce((sum, item) => sum + item.amount, 0);
-    const grossProfit = revenueTotal - Math.abs(cogsTotal);
-    const ebit = grossProfit + otherTotal;
-    const netIncome = ebit;
-    const totals = this.cloneTotals(report.totals);
-
-    totals.revenue.actualAmount = revenueTotal;
-    totals.cogs.actualAmount = cogsTotal;
-    totals.grossProfit.actualAmount = grossProfit;
-    totals.otherItems.actualAmount = otherTotal;
-    totals.ebit.actualAmount = ebit;
-    totals.ebitda.actualAmount = ebit;
-    totals.nibt.actualAmount = netIncome;
-    totals.netIncome.actualAmount = netIncome;
-
     return {
       revenue: revenueRows,
-      cogs: cogsRows,
-      otherItems: otherRows,
-      totals,
-      monthlyTrend: {
-        labels: report.monthlyTrend.periodLabels,
-        revenue: [revenueTotal],
-        expenses: [Math.abs(cogsTotal + otherTotal)],
-        profit: [netIncome],
-      },
+      principal: principalRows,
+      includedTransactions,
     };
+  }
+
+  private resolvePrincipalAmount(transaction: AccountingTransactionDTO, fallbackAmount: number): number {
+    const directPrincipal = this.firstNumberFromMetadata(transaction, [
+      'approvedAmount',
+      'principalAmount',
+      'loanPrincipal',
+      'loanPrincipalAmount',
+      'disbursementAmount',
+    ]);
+
+    if (directPrincipal !== null) {
+      return directPrincipal;
+    }
+
+    const itemTotal = this.sumMetadataItems(transaction);
+    return itemTotal > 0 ? itemTotal : fallbackAmount;
+  }
+
+  private firstNumberFromMetadata(transaction: AccountingTransactionDTO, keys: string[]): number | null {
+    for (const key of keys) {
+      const parsed = Number(transaction.metadata?.[key]);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  private sumMetadataItems(transaction: AccountingTransactionDTO): number {
+    const items = transaction.metadata?.['items'];
+    if (!Array.isArray(items)) {
+      return 0;
+    }
+
+    return items.reduce((sum, item) => {
+      const amount = Number(item?.amount);
+      return Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
   }
 
   private toFinancialLineItem(name: string, amount: number): FinancialLineItem {
     return { name, amount, prevAmount: 0, budget: 0, prevYearAmount: 0 };
   }
 
-  private numberFromMetadata(transaction: AccountingTransactionDTO, key: string): number | null {
-    const value = transaction.metadata?.[key];
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+  private resolveFilterRange(filters: FilterOptions): { start: Date; end: Date; periodType: ReportPeriodType } | null {
+    const today = new Date();
+
+    if (filters.period === 'Custom Range') {
+      if (!filters.customStartDate || !filters.customEndDate || filters.customStartDate > filters.customEndDate) {
+        return null;
+      }
+
+      const start = new Date(`${filters.customStartDate}T00:00:00`);
+      const end = new Date(`${filters.customEndDate}T23:59:59.999`);
+      return {
+        start,
+        end,
+        periodType: this.resolvePeriodType(start, end),
+      };
+    }
+
+    if (filters.period === 'This Year') {
+      return {
+        start: new Date(today.getFullYear(), 0, 1, 0, 0, 0, 0),
+        end: new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999),
+        periodType: 'yearly',
+      };
+    }
+
+    if (filters.period === 'This Quarter') {
+      const quarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
+      return {
+        start: new Date(today.getFullYear(), quarterStartMonth, 1, 0, 0, 0, 0),
+        end: new Date(today.getFullYear(), quarterStartMonth + 3, 0, 23, 59, 59, 999),
+        periodType: 'quarterly',
+      };
+    }
+
+    const monthOffset = filters.period === 'Last Month' ? -1 : 0;
+    const period = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+    return {
+      start: new Date(period.getFullYear(), period.getMonth(), 1, 0, 0, 0, 0),
+      end: new Date(period.getFullYear(), period.getMonth() + 1, 0, 23, 59, 59, 999),
+      periodType: 'monthly',
+    };
   }
 
-  private cloneTotals(totals: IncomeStatementReportDTO['totals']): IncomeStatementReportDTO['totals'] {
-    return JSON.parse(JSON.stringify(totals));
+  private resolvePeriodType(start: Date, end: Date): ReportPeriodType {
+    const daySpan = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86_400_000));
+    if (daySpan > 365) {
+      return 'yearly';
+    }
+
+    if (daySpan > 92) {
+      return 'quarterly';
+    }
+
+    return 'monthly';
+  }
+
+  private createRequestOverrides(start: Date, end: Date, reportPeriodType: ReportPeriodType): Partial<ReportRequestDTO> {
+    return {
+      periodStart: this.toBackendLocalDateTime(start),
+      periodEnd: this.toBackendLocalDateTime(end),
+      reportPeriodType,
+      includeTransactionIds: true,
+      includeDrilldown: true,
+    };
   }
 
   private toDateValue(value: string | number[]): Date {
@@ -884,6 +1186,25 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     }
 
     return new Date(value);
+  }
+
+  private toDateInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toBackendLocalDateTime(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
   private mapLineItems(items: FinancialLineItemDTO[]): FinancialLineItem[] {

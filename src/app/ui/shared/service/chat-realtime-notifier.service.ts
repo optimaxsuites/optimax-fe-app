@@ -28,6 +28,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private channelTargets = new Map<number, GlobalChatChannelTarget>();
   private channelSubs = new Map<number, any>();
   private userNameCache = new Map<number, string>();
+  private refreshChannelsCooldownUntil = 0;
+  private refreshChannelsInFlight = false;
+  private lastChannelsRefreshAt = 0;
+  private readonly refreshChannelsTtlMs = 10_000;
 
   constructor(
     private readonly collabService: CollaborationService,
@@ -89,6 +93,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         Authorization: `Bearer ${token}`,
         'X-Tenant-ID': tenantId,
         'X-User-ID': String(this.currentUserId),
+        userid: String(this.currentUserId),
       },
     });
 
@@ -111,63 +116,85 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   }
 
   private refreshChannels(): void {
-    this.collabService.getHomeChannels().subscribe({
-      next: (data) => {
-        const channels = data?.channels || [];
-        const nextTargets = new Map<number, GlobalChatChannelTarget>();
-        let unreadChannels = 0;
-        let unreadDirectMessages = 0;
-
-        for (const channel of channels) {
-          const backendId = Number(channel.channelId ?? channel.id);
-          if (!backendId) {
-            continue;
-          }
-          const unreadCount = Number(channel.unreadCount || 0);
-          if (this.isDirectMessageChannel(channel)) {
-            unreadDirectMessages += unreadCount;
-            const dmUserId = this.extractOtherDmUserId(channel);
-            nextTargets.set(backendId, {
-              backendId,
-              type: 'dm',
-              dmUserId,
-              label: 'Direct message',
-              unreadCount,
-            });
-          } else {
-            unreadChannels += unreadCount;
-            nextTargets.set(backendId, {
-              backendId,
-              type: 'channel',
-              channelId: String(backendId),
-              label: channel.name || 'Channel',
-              unreadCount,
-            });
-          }
-        }
-
-        this.headerStateService.updateUnreadCounts({
-          unreadChannels,
-          unreadDirectMessages,
-        });
-
-        this.channelSubs.forEach((sub, backendId) => {
-          if (nextTargets.has(backendId)) {
-            return;
-          }
-          try {
-            sub.unsubscribe();
-          } catch (_) {}
-          this.channelSubs.delete(backendId);
-        });
-
-        this.channelTargets = nextTargets;
-        if (this.wsConnected) {
-          nextTargets.forEach((target) => this.subscribeToChannel(target));
-        }
+    if (Date.now() < this.refreshChannelsCooldownUntil) {
+      return;
+    }
+    if (this.refreshChannelsInFlight) {
+      return;
+    }
+    if (
+      this.channelTargets.size &&
+      Date.now() - this.lastChannelsRefreshAt < this.refreshChannelsTtlMs
+    ) {
+      return;
+    }
+    this.refreshChannelsInFlight = true;
+    this.collabService.getChannels().subscribe({
+      next: (channels) => {
+        this.lastChannelsRefreshAt = Date.now();
+        this.refreshChannelsInFlight = false;
+        this.applyChannelTargets(channels || []);
       },
-      error: () => {},
+      error: () => {
+        this.refreshChannelsInFlight = false;
+        this.refreshChannelsCooldownUntil = Date.now() + 30_000;
+      },
     });
+  }
+
+  private applyChannelTargets(channels: CollabChannel[]): void {
+    this.refreshChannelsCooldownUntil = 0;
+    const nextTargets = new Map<number, GlobalChatChannelTarget>();
+    let unreadChannels = 0;
+    let unreadDirectMessages = 0;
+
+    for (const channel of channels) {
+      const backendId = Number(channel.channelId ?? channel.id);
+      if (!backendId) {
+        continue;
+      }
+      const unreadCount = Number(channel.unreadCount || 0);
+      if (this.isDirectMessageChannel(channel)) {
+        unreadDirectMessages += unreadCount;
+        const dmUserId = this.extractOtherDmUserId(channel);
+        nextTargets.set(backendId, {
+          backendId,
+          type: 'dm',
+          dmUserId,
+          label: 'Direct message',
+          unreadCount,
+        });
+      } else {
+        unreadChannels += unreadCount;
+        nextTargets.set(backendId, {
+          backendId,
+          type: 'channel',
+          channelId: String(backendId),
+          label: channel.name || 'Channel',
+          unreadCount,
+        });
+      }
+    }
+
+    this.headerStateService.updateUnreadCounts({
+      unreadChannels,
+      unreadDirectMessages,
+    });
+
+    this.channelSubs.forEach((sub, backendId) => {
+      if (nextTargets.has(backendId)) {
+        return;
+      }
+      try {
+        sub.unsubscribe();
+      } catch (_) {}
+      this.channelSubs.delete(backendId);
+    });
+
+    this.channelTargets = nextTargets;
+    if (this.wsConnected) {
+      nextTargets.forEach((target) => this.subscribeToChannel(target));
+    }
   }
 
   private subscribeToChannel(target: GlobalChatChannelTarget): void {

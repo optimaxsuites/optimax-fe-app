@@ -52,6 +52,7 @@
       (dmSelected)="selectDm($event)"
       (viewSet)="setView($event)"
       (createChannel)="openCreateChannelModal()"
+      (channelsRetried)="loadChannels()"
       (soundToggled)="soundEnabled = !soundEnabled"
       (ringtoneChanged)="setRingtone($event)"
       (emailCompose)="openEmailModal()"
@@ -99,14 +100,16 @@
           [class.active]="workspaceMode === 'feed'"
           (click)="setWorkspaceMode('feed')"
         >
-          Enterprise feed
+          <i class="pi pi-megaphone"></i>
+          <span>Enterprise feed</span>
         </button>
         <button
           type="button"
           [class.active]="workspaceMode === 'chat'"
           (click)="setWorkspaceMode('chat')"
         >
-          Chat workspace
+          <i class="pi pi-comments"></i>
+          <span>Chat workspace</span>
         </button>
       </div>
 
@@ -118,22 +121,38 @@
           [(ngModel)]="feedQuery"
           (keydown.enter)="onFeedSearchEnter($event)"
         />
-        <button type="button" class="toolbar-action primary" (click)="refreshFeed()">
-          Refresh feed
+        <button type="button" class="toolbar-action icon-action" [class.active]="showFeedRail" (click)="toggleFeedRail()">
+          <i class="pi" [ngClass]="showFeedRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
+          <span>{{ showFeedRail ? 'Hide side panel' : 'Show side panel' }}</span>
+        </button>
+        <button type="button" class="toolbar-action primary icon-action" (click)="refreshFeed()">
+          <i class="pi pi-refresh"></i>
+          <span>Refresh feed</span>
         </button>
       </div>
 
       <div class="workspace-toolbar-actions" *ngIf="workspaceMode === 'chat'">
-        <button type="button" class="toolbar-action" (click)="openCreateChannelModal()">
-          New channel
+        <button type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()">
+          <i class="pi pi-plus-circle"></i>
+          <span>New channel</span>
         </button>
-        <button type="button" class="toolbar-action primary" (click)="setWorkspaceMode('feed')">
-          Back to feed
+        <button
+          type="button"
+          class="toolbar-action icon-action"
+          [class.active]="showChatRail"
+          (click)="toggleChatRail()"
+        >
+          <i class="pi" [ngClass]="showChatRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
+          <span>{{ showChatRail ? 'Hide side panel' : 'Show side panel' }}</span>
+        </button>
+        <button type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')">
+          <i class="pi pi-arrow-left"></i>
+          <span>Back to feed</span>
         </button>
       </div>
     </section>
 
-    <section *ngIf="workspaceMode === 'feed'" class="feed-workspace">
+    <section *ngIf="workspaceMode === 'feed'" class="feed-workspace" [class.rail-open]="showFeedRail">
       <div class="feed-primary">
         <section class="feed-composer-card">
           <div class="feed-composer-header">
@@ -1005,7 +1024,7 @@
         </section>
       </div>
 
-      <aside class="feed-rail">
+      <aside class="feed-rail" *ngIf="showFeedRail">
         <section class="rail-card">
           <div class="rail-card-header">
             <div>
@@ -1067,7 +1086,9 @@
     <section
       *ngIf="workspaceMode === 'chat'"
       class="chat-workspace"
+      [class.rail-open]="showChatRail && !rightPanelOpen"
       [class.right-panel-open]="rightPanelOpen"
+      [style.--chat-rail-width.px]="chatRailWidth"
       [style.--thread-panel-width.px]="threadPanelWidth"
     >
       <div class="chat-panel">
@@ -1086,6 +1107,10 @@
             </span>
           </div>
           <div class="workspace-toolbar-actions">
+            <span *ngIf="historyLoading" class="chat-loading-chip">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Loading messages</span>
+            </span>
             <input
               *ngIf="activeView === 'threads'"
               type="search"
@@ -1096,27 +1121,26 @@
             <button
               *ngIf="activeView === 'channel'"
               type="button"
-              class="toolbar-action"
+              class="toolbar-action icon-action"
               (click)="togglePinnedPanel()"
             >
-              Pinned
+              <i class="pi pi-thumbtack"></i>
+              <span>Pinned</span>
             </button>
             <button
               *ngIf="activeView === 'channel'"
               type="button"
-              class="toolbar-action"
+              class="toolbar-action icon-action"
               [class.active]="showChannelDetails"
               (click)="toggleChannelDetails()"
             >
-              Channel details
-            </button>
-            <button type="button" class="toolbar-action primary" (click)="setWorkspaceMode('feed')">
-              Return to feed
+              <i class="pi pi-info-circle"></i>
+              <span>Channel details</span>
             </button>
           </div>
         </div>
 
-        <div #feedEl class="chat-feed">
+        <div #feedEl class="chat-feed" (scroll)="onChatFeedScroll()">
           <app-message-feed
             [messages]="rawMessages"
             [loading]="messagesLoading"
@@ -1138,6 +1162,7 @@
             [readUserCardsForMessage]="getReadUserCards.bind(this)"
             [mentionCandidates]="getMentionCandidates()"
             [resolveMentionProfileCard]="resolveMentionProfileCard"
+            (retryMessage)="retryFailedMessage($event)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
             (pinToggled)="togglePin($event)"
@@ -1200,6 +1225,8 @@
           [activeThreadReplyToId]="activeThreadReplyToId"
           [activeThreadReplyTarget]="activeThreadReplyTarget"
           [threadReplyDraft]="threadReplyDraft"
+          [threadMentionResults]="threadMentionResults"
+          [threadShowMentionMenu]="threadShowMentionMenu"
           [typingUsersLabel]="typingUsersLabel"
           [threadPendingAttachments]="threadPendingAttachments"
           [sendingReply]="sendingReply"
@@ -1225,11 +1252,14 @@
           [getEmpAvatarColor]="getEmpAvatarColor"
           [getEmpImageUrl]="getEmpImageUrl"
           [mentionCandidates]="getMentionCandidates()"
+          [mentionLabel]="chatMentionLabel.bind(this)"
           [resolveMentionProfileCard]="resolveMentionProfileCard"
           (threadClosed)="closeThread()"
           (threadReplyDraftChange)="onThreadReplyDraftChanged($event)"
+          (threadMentionSelected)="applyThreadMention($event)"
           (threadFilesSelected)="onThreadFilesSelected($event)"
           (threadAttachmentRemoved)="removeThreadPendingAttachment($event)"
+          (attachmentDownload)="downloadAttachment($event.attachment, $event.event)"
           (replyTargetSet)="setThreadReplyTarget($event)"
           (replyTargetCleared)="clearThreadReplyTarget()"
           (replySent)="sendReply()"
@@ -1260,7 +1290,11 @@
         ></app-thread-panel>
       </aside>
 
-      <aside class="feed-rail" *ngIf="!rightPanelOpen">
+      <aside class="feed-rail chat-side-rail" *ngIf="showChatRail && !rightPanelOpen">
+        <div
+          class="chat-rail-resizer"
+          (mousedown)="startResizeChatRail($event)"
+        ></div>
         <section class="rail-card" *ngIf="taskRoutineTodos.length">
           <div class="rail-card-header">
             <div>

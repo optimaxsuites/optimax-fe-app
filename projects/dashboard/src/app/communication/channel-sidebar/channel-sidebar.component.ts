@@ -48,6 +48,7 @@ export class ChannelSidebarComponent {
   @Output() dmSelected = new EventEmitter<string>();
   @Output() viewSet = new EventEmitter<'threads'>();
   @Output() createChannel = new EventEmitter<void>();
+  @Output() channelsRetried = new EventEmitter<void>();
   @Output() soundToggled = new EventEmitter<void>();
   @Output() ringtoneChanged = new EventEmitter<string>();
   @Output() emailCompose = new EventEmitter<void>();

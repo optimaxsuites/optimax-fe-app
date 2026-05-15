@@ -32,12 +32,24 @@ export class MonthlyattendancelistComponent implements OnInit {
 
   loadAttendance() {
 
-    const username = sessionStorage.getItem('userid');
+    const currentUser = this.userSession.getCurrentUser();
+
+    console.log('getCurrentUser resolved:', currentUser);
+
+    if (!currentUser?.userId) {
+      console.error('No logged in user');
+      return;
+    }
+
+    this.attendanceService
+      .resolveHrEmployeeId(currentUser.userId)
+
+    /*const username = sessionStorage.getItem('userid');
 
     if (!username) return;
 
     this.attendanceService
-      .resolveHrEmployeeId(username)
+      .resolveHrEmployeeId(username)*/
       .subscribe(result => {
 
         if (!result) {

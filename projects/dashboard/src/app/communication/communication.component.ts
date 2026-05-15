@@ -11,6 +11,7 @@ import {
 import { Client } from '@stomp/stompjs';
 import {
   CollabChannel,
+  CollabChannelSnap,
   CollabMessage,
   CollabMember,
   CollaborationService,
@@ -32,6 +33,7 @@ import { HeaderStateService } from '../../../../../src/app/ui/shared/service/hea
 import {
   ComposerLinkPreview,
   ComposerMentionOption,
+  MessageComposerComponent,
 } from './message-composer/message-composer.component';
 
 // damilola worked on this: feed-first collaboration, unread syncing, read receipts, and richer notifications.
@@ -73,13 +75,27 @@ export interface Message {
   replyToMessageId?: number;
   threadRootMessageId?: number;
   deleting?: boolean;
-  deliveryState?: 'SENDING' | 'DELIVERED' | 'READ';
+  deliveryState?: 'SENDING' | 'DELIVERED' | 'READ' | 'FAILED';
   sourceType?: 'channel' | 'dm';
   sourceLabel?: string;
   sourceSecondaryLabel?: string;
   threadSummary?: string;
   threadReplyCount?: number;
   threadLastActivityRaw?: string | number[];
+  retryMeta?: {
+    mode: 'channel' | 'dm' | 'thread';
+    backendChannelId: number;
+    content: string;
+    files?: File[];
+    attachments?: Array<{
+      name: string;
+      size: string;
+      type?: string;
+      previewUrl?: string;
+    }>;
+    replyToMessageId?: number;
+    threadRootMessageId?: number;
+  };
 }
 
 export interface Channel {
@@ -298,6 +314,7 @@ export class CommunicationComponent
   implements OnInit, AfterViewChecked, OnDestroy
 {
   @ViewChild('feedEl') feedEl!: ElementRef<HTMLDivElement>;
+  @ViewChild(MessageComposerComponent) messageComposer?: MessageComposerComponent;
   @ViewChild('threadEl') threadEl!: ElementRef<HTMLDivElement>;
   @ViewChild('feedComposerEl') feedComposerEl?: ElementRef<HTMLDivElement>;
 
@@ -375,6 +392,8 @@ export class CommunicationComponent
   activeThreadReplyToId: string | null = null;
   showPinnedPanel = false;
   showChannelDetails = false;
+  showChatRail = false;
+  showFeedRail = false;
   showSearch = false;
   searchQuery = '';
   searchResults: { msg: Message; channelId: string; channelName: string }[] =
@@ -385,6 +404,8 @@ export class CommunicationComponent
   chatMentionResults: EmployeeProfile[] = [];
   chatShowMentionMenu = false;
   threadReplyDraft = '';
+  threadMentionResults: EmployeeProfile[] = [];
+  threadShowMentionMenu = false;
   threadPendingFiles: File[] = [];
   threadPendingAttachments: Array<{
     name: string;
@@ -474,12 +495,16 @@ export class CommunicationComponent
 
   sidebarWidth = 240;
   threadPanelWidth = 460;
+  chatRailWidth = 340;
   readonly SIDEBAR_MIN = 200;
   readonly SIDEBAR_MAX = 340;
   readonly THREAD_MIN = 360;
   readonly THREAD_MAX = 720;
+  readonly CHAT_RAIL_MIN = 300;
+  readonly CHAT_RAIL_MAX = 520;
   isResizingSidebar = false;
   isResizingThread = false;
+  isResizingChatRail = false;
   private resizeStartX = 0;
   private resizeStartWidth = 0;
 
@@ -494,9 +519,13 @@ export class CommunicationComponent
 
   channelsLoading = true;
   channelsError: string | null = null;
+  private channelsRequestInFlight = false;
+  private lastChannelsLoadedAt = 0;
+  private readonly CHANNELS_CACHE_TTL_MS = 15_000;
   employeesLoading = true;
   employeesError: string | null = null;
   messagesLoading = false;
+  conversationAccessMessage = '';
   soundEnabled = true;
   selectedRingtone = 'classic';
   readonly ringtoneOptions = [
@@ -530,6 +559,7 @@ export class CommunicationComponent
   private scrollThread = false;
   private chatResourcesLoaded = false;
   private chatRealtimeStarted = false;
+  private pendingMentionConversationUserId: number | null = null;
 
   private stompClient: any = null;
   private wsConnected = false;
@@ -539,6 +569,25 @@ export class CommunicationComponent
   private dmChannelSubs = new Map<number, any>();
   private dmPresenceSubs = new Map<number, any>();
   private conversationSyncTimer: any = null;
+  private readonly INITIAL_CHAT_HISTORY_LIMIT = 30;
+  private readonly CHAT_HISTORY_PAGE_SIZE = 30;
+  private readonly MAX_CHAT_HISTORY_LIMIT = 240;
+  private channelSnapshotInFlight = new Map<
+    string,
+    Promise<CollabChannelSnap | null>
+  >();
+  private channelSnapshotFailureUntil = new Map<number, number>();
+  private channelSnapshotLastErrorStatus = new Map<number, number>();
+  private channelSnapshotLastErrorMessage = new Map<number, string>();
+  private channelHistoryLimit = new Map<number, number>();
+  private channelHistoryExhausted = new Set<number>();
+  private historyLoadInFlight = new Set<number>();
+  private loadingOlderHistory = false;
+  private historyPagingArmed = false;
+  private preserveFeedScrollOffset: number | null = null;
+  private dmMembershipRepairAttempted = new Set<string>();
+  private dmMembershipRepairInFlight = new Set<string>();
+  private cachedCollabChannels: CollabChannel[] = [];
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -562,6 +611,7 @@ export class CommunicationComponent
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
       );
+      window.addEventListener('hashchange', this.handleMentionHashChange);
     }
     this.checkVoiceSupport();
     this.loadCurrentUser();
@@ -574,6 +624,7 @@ export class CommunicationComponent
       this.startPresencePoll();
       this.startConversationSync();
     }
+    this.processMentionHashNavigation();
   }
 
   ngOnDestroy() {
@@ -608,6 +659,7 @@ export class CommunicationComponent
         'optimax-open-collab-target',
         this.handleNotificationTarget as EventListener,
       );
+      window.removeEventListener('hashchange', this.handleMentionHashChange);
     }
   }
 
@@ -616,6 +668,16 @@ export class CommunicationComponent
       this.feedEl.nativeElement.scrollTop =
         this.feedEl.nativeElement.scrollHeight;
       this.scrollFeed = false;
+    } else if (
+      this.preserveFeedScrollOffset != null &&
+      this.feedEl?.nativeElement
+    ) {
+      const el = this.feedEl.nativeElement;
+      el.scrollTop = Math.max(
+        el.scrollHeight - this.preserveFeedScrollOffset,
+        0,
+      );
+      this.preserveFeedScrollOffset = null;
     }
     if (this.scrollThread && this.threadEl?.nativeElement) {
       this.threadEl.nativeElement.scrollTop =
@@ -798,6 +860,10 @@ export class CommunicationComponent
     this.stopPresencePolling();
     this.stopConversationSync();
     this.unsubscribeChatStreams();
+  }
+
+  toggleFeedRail(): void {
+    this.showFeedRail = !this.showFeedRail;
   }
 
   onFeedComposerInput(event: Event): void {
@@ -1601,6 +1667,13 @@ export class CommunicationComponent
 
   onThreadReplyDraftChanged(value: string): void {
     this.threadReplyDraft = value;
+    const target = {
+      mentionResults: [] as EmployeeProfile[],
+      showMentionMenu: false,
+    };
+    this.updateMentionResults(this.threadReplyDraft, target);
+    this.threadMentionResults = target.mentionResults;
+    this.threadShowMentionMenu = target.showMentionMenu;
     this.onComposerTyping();
     this.cdr.detectChanges();
   }
@@ -1609,6 +1682,16 @@ export class CommunicationComponent
     this.draft = this.replaceMentionToken(this.draft, employee as EmployeeProfile);
     this.chatMentionResults = [];
     this.chatShowMentionMenu = false;
+    this.cdr.detectChanges();
+  }
+
+  applyThreadMention(employee: ComposerMentionOption): void {
+    this.threadReplyDraft = this.replaceMentionToken(
+      this.threadReplyDraft,
+      employee as EmployeeProfile,
+    );
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.cdr.detectChanges();
   }
 
@@ -2550,6 +2633,7 @@ export class CommunicationComponent
         Authorization: token ? `Bearer ${token}` : '',
         'X-Tenant-ID': tenantId,
         'X-User-ID': userId,
+        userid: userId,
       },
     });
     this.stompClient = client;
@@ -2851,7 +2935,7 @@ export class CommunicationComponent
 
       // If it's a reply, nest under its parent
       if (m.replyToMessageId) {
-        const parent = filtered.find((p) => p.backendId === m.replyToMessageId);
+        const parent = this.findMsgByBackendId(filtered, m.replyToMessageId);
         if (parent) {
           const alreadyInParent = parent.replies.find(
             (r) => r.backendId === m.id,
@@ -2931,6 +3015,7 @@ export class CommunicationComponent
       ),
     ];
 
+    const shouldAutoScroll = this.shouldAutoScrollFeed() || !existing.length;
     const apply = () => {
       this.loadMemberAvatars(senderIds);
       this.channelMessages[ch.id] = [
@@ -2962,7 +3047,7 @@ export class CommunicationComponent
         }
       }
 
-      this.scrollFeed = true;
+      this.scrollFeed = shouldAutoScroll;
       this.cdr.detectChanges();
     };
 
@@ -2998,6 +3083,7 @@ export class CommunicationComponent
       ),
     ];
 
+    const shouldAutoScroll = this.shouldAutoScrollFeed() || !existing.length;
     const apply = () => {
       this.dmMessages[contact.id] = [
         ...this.applyServerMessages(existing, serverMessages),
@@ -3037,7 +3123,7 @@ export class CommunicationComponent
         }
       }
 
-      this.scrollFeed = true;
+      this.scrollFeed = shouldAutoScroll;
       this.cdr.detectChanges();
     };
 
@@ -3046,17 +3132,30 @@ export class CommunicationComponent
   }
 
   private fetchAndReconcileChannel(ch: Channel): void {
-    this.collabService.getChannelSnapshot(ch.backendId).subscribe({
-      next: (snap) => this.reconcileChannelMessages(ch, JSON.stringify(snap)),
-      error: () => {},
+    this.getChannelSnapshotWithFallback(
+      ch.backendId,
+      this.currentHistoryLimit(ch.backendId),
+    ).then((snap) => {
+      if (snap) {
+        if (this.activeView === 'channel' && this.activeChannelId === ch.id) {
+          this.conversationAccessMessage = '';
+        }
+        this.reconcileChannelMessages(ch, JSON.stringify(snap));
+      }
     });
   }
 
   private fetchAndReconcileDm(contact: DmContact, channelId: number): void {
-    this.collabService.getChannelSnapshot(channelId).subscribe({
-      next: (snap) =>
-        this.reconcileDmMessages(contact, channelId, JSON.stringify(snap)),
-      error: () => {},
+    this.getChannelSnapshotWithFallback(
+      channelId,
+      this.currentHistoryLimit(channelId),
+    ).then((snap) => {
+      if (snap) {
+        if (this.activeView === 'dm' && this.activeDmId === contact.id) {
+          this.conversationAccessMessage = '';
+        }
+        this.reconcileDmMessages(contact, channelId, JSON.stringify(snap));
+      }
     });
   }
 
@@ -3205,50 +3304,25 @@ export class CommunicationComponent
             }
             return contact;
           });
-        this.collabService.getHomeChannels().subscribe({
-          next: (data) => {
-            this.mapDirectMessageChannels(data.channels || []);
-            const activeDm = this.activeDmContact;
-            if (
-              activeDm &&
-              activeDm.dmChannelId &&
-              this.activeView === 'dm' &&
-              this.dmMessages[activeDm.id] === undefined
-            ) {
-              this.loadDmMessages(activeDm, activeDm.dmChannelId);
-            }
-            this.syncHeaderState();
-            this.employeesLoading = false;
-            this.replayQueuedNotificationTarget();
-            this.cdr.detectChanges();
-          },
-          error: () => {
-            this.collabService.getChannels().subscribe({
-              next: (channels) => {
-                this.mapDirectMessageChannels(channels);
-                const activeDm = this.activeDmContact;
-                if (
-                  activeDm &&
-                  activeDm.dmChannelId &&
-                  this.activeView === 'dm' &&
-                  this.dmMessages[activeDm.id] === undefined
-                ) {
-                  this.loadDmMessages(activeDm, activeDm.dmChannelId);
-                }
-                this.syncHeaderState();
-                this.employeesLoading = false;
-                this.replayQueuedNotificationTarget();
-                this.cdr.detectChanges();
-              },
-              error: () => {
-                this.syncHeaderState();
-                this.employeesLoading = false;
-                this.replayQueuedNotificationTarget();
-                this.cdr.detectChanges();
-              },
-            });
-          },
-        });
+        if (this.cachedCollabChannels.length) {
+          this.mapDirectMessageChannels(this.cachedCollabChannels);
+        } else {
+          this.loadChannels(true);
+        }
+        const activeDm = this.activeDmContact;
+        if (
+          activeDm &&
+          activeDm.dmChannelId &&
+          this.activeView === 'dm' &&
+          this.dmMessages[activeDm.id] === undefined
+        ) {
+          this.loadDmMessages(activeDm, activeDm.dmChannelId);
+        }
+        this.syncHeaderState();
+        this.employeesLoading = false;
+        this.applyPendingMentionConversation();
+        this.replayQueuedNotificationTarget();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.employeesError = 'Could not load contacts.';
@@ -3278,25 +3352,54 @@ export class CommunicationComponent
 
   // ── Channels ──────────────────────────────────────────
 
-  private loadChannels(silent = false): void {
+  loadChannels(silent = false, force = false): void {
+    const now = Date.now();
+    const hasCachedChannels = this.cachedCollabChannels.length > 0;
+    const cacheIsFresh =
+      hasCachedChannels &&
+      now - this.lastChannelsLoadedAt < this.CHANNELS_CACHE_TTL_MS;
+
+    if (!silent && hasCachedChannels) {
+      this.channelsLoading = false;
+      this.channelsError = null;
+      this.mapAndSetChannels(this.cachedCollabChannels);
+      if (cacheIsFresh && !force) {
+        return;
+      }
+      silent = true;
+    }
+
+    if (this.channelsRequestInFlight) {
+      if (!silent && !hasCachedChannels) {
+        this.channelsLoading = true;
+      }
+      return;
+    }
+
     if (!silent) this.channelsLoading = true;
-    this.collabService.getHomeChannels().subscribe({
-      next: (data) => this.mapAndSetChannels(data.channels || []),
+    this.channelsError = null;
+    this.channelsRequestInFlight = true;
+    this.collabService.getChannels().subscribe({
+      next: (list) => {
+        this.lastChannelsLoadedAt = Date.now();
+        this.mapAndSetChannels(list || []);
+        this.channelsRequestInFlight = false;
+      },
       error: () => {
-        this.collabService.getChannels().subscribe({
-          next: (list) => this.mapAndSetChannels(list),
-          error: () => {
-            this.channelsError = 'Could not load channels.';
-            this.channelsLoading = false;
-            this.channels = [];
-            this.cdr.detectChanges();
-          },
-        });
+        this.channelsRequestInFlight = false;
+        if (!this.channels.length) {
+          this.channelsError = 'Could not load channels.';
+          this.channels = [];
+        }
+        this.channelsLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
 
   private mapAndSetChannels(list: CollabChannel[]): void {
+    this.channelsError = null;
+    this.cachedCollabChannels = list;
     this.mapDirectMessageChannels(list);
     const allowedIds = new Set(
       list
@@ -3365,6 +3468,12 @@ export class CommunicationComponent
   }
 
   private mapDirectMessageChannels(list: CollabChannel[]): void {
+    for (const contact of this.dmContacts) {
+      contact.dmChannelId = undefined;
+      contact.unreadCount = undefined;
+      contact.hasUnread = false;
+    }
+
     const dmChannels = list.filter((channel) => {
       const desc = (channel.description || '').toLowerCase();
       const name = (channel.name || '').toLowerCase();
@@ -3374,8 +3483,15 @@ export class CommunicationComponent
       );
     });
 
+    const bestChannelByUserId = new Map<number, CollabChannel>();
+    const unreadByUserId = new Map<number, number>();
+
     for (const channel of dmChannels) {
       const participantIds = this.extractDmParticipantIds(channel);
+      const includesCurrentUser = participantIds.some(
+        (userId) => Number(userId) === Number(this.me.userId),
+      );
+      if (!includesCurrentUser) continue;
       const otherUserId = participantIds.find(
         (userId) => Number(userId) !== Number(this.me.userId),
       );
@@ -3384,13 +3500,105 @@ export class CommunicationComponent
         (entry) => Number(entry.userId) === Number(otherUserId),
       );
       if (!contact) continue;
-      contact.dmChannelId = Number(channel.channelId ?? channel.id);
-      if (channel.unreadCount != null) {
-        const unreadCount = Number(channel.unreadCount || 0);
-        contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
-        contact.hasUnread = unreadCount > 0;
+      const existingBest = bestChannelByUserId.get(Number(otherUserId));
+      if (
+        !existingBest ||
+        this.compareDmChannelPriority(channel, existingBest) < 0
+      ) {
+        bestChannelByUserId.set(Number(otherUserId), channel);
       }
+      const unreadCount = Number(channel.unreadCount || 0);
+      unreadByUserId.set(
+        Number(otherUserId),
+        Math.max(unreadByUserId.get(Number(otherUserId)) || 0, unreadCount),
+      );
     }
+
+    for (const contact of this.dmContacts) {
+      const selected = bestChannelByUserId.get(Number(contact.userId));
+      if (!selected) continue;
+      contact.dmChannelId = Number(selected.channelId ?? selected.id);
+      const unreadCount = unreadByUserId.get(Number(contact.userId)) || 0;
+      contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
+      contact.hasUnread = unreadCount > 0;
+    }
+  }
+
+  private compareDmChannelPriority(
+    left: CollabChannel,
+    right: CollabChannel,
+  ): number {
+    const leftStamp = this.channelCreatedAtValue(left);
+    const rightStamp = this.channelCreatedAtValue(right);
+    if (leftStamp !== rightStamp) {
+      return leftStamp - rightStamp;
+    }
+    return Number(left.channelId ?? left.id) - Number(right.channelId ?? right.id);
+  }
+
+  private channelCreatedAtValue(channel: CollabChannel): number {
+    const createdAt = Array.isArray(channel.createdAt) ? channel.createdAt : [];
+    if (!createdAt.length) {
+      return Number(channel.channelId ?? channel.id) || Number.MAX_SAFE_INTEGER;
+    }
+    const [
+      year,
+      month,
+      day,
+      hour = 0,
+      minute = 0,
+      second = 0,
+      nano = 0,
+    ] = createdAt;
+    return new Date(
+      year || 0,
+      Math.max((month || 1) - 1, 0),
+      day || 1,
+      hour || 0,
+      minute || 0,
+      second || 0,
+      Math.floor((nano || 0) / 1_000_000),
+    ).getTime();
+  }
+
+  private findAlternateDmChannelId(
+    contact: DmContact,
+    currentChannelId: number,
+  ): number | null {
+    const candidates = (this.cachedCollabChannels || [])
+      .filter((channel) => {
+        const participantIds = this.extractDmParticipantIds(channel);
+        return (
+          channel.channelType === 'PRIVATE' &&
+          participantIds.includes(Number(this.me.userId)) &&
+          participantIds.includes(Number(contact.userId)) &&
+          Number(channel.channelId ?? channel.id) !== Number(currentChannelId)
+        );
+      })
+      .sort((left, right) => this.compareDmChannelPriority(left, right));
+
+    if (!candidates.length) {
+      return null;
+    }
+    return Number(candidates[0].channelId ?? candidates[0].id) || null;
+  }
+
+  private findBestDmChannelId(contact: DmContact): number | null {
+    const candidates = (this.cachedCollabChannels || [])
+      .filter((channel) => {
+        const participantIds = this.extractDmParticipantIds(channel);
+        return (
+          channel.channelType === 'PRIVATE' &&
+          participantIds.includes(Number(this.me.userId)) &&
+          participantIds.includes(Number(contact.userId))
+        );
+      })
+      .sort((left, right) => this.compareDmChannelPriority(left, right));
+
+    if (!candidates.length) {
+      return null;
+    }
+    return Number(candidates[0].channelId ?? candidates[0].id) || null;
   }
 
   private extractDmParticipantIds(channel: CollabChannel): number[] {
@@ -3501,7 +3709,7 @@ export class CommunicationComponent
               ),
             ).finally(() => {
               this.closeChannelModal();
-              this.loadChannels();
+              this.loadChannels(false, true);
               setTimeout(() => {
                 const ch = this.channels.find((c) => c.backendId === channelId);
                 if (ch) this.selectChannel(ch.id);
@@ -3525,7 +3733,7 @@ export class CommunicationComponent
         .subscribe({
           next: () => {
             this.closeChannelModal();
-            this.loadChannels();
+            this.loadChannels(false, true);
           },
           error: () => {
             m.saving = false;
@@ -3769,8 +3977,19 @@ export class CommunicationComponent
   // ── Navigation ────────────────────────────────────────
 
   selectChannel(id: string, switchWorkspace = false): void {
+    if (this.activeView === 'channel' && this.activeChannelId === id) {
+      this.workspaceMode = 'chat';
+      this.messagesLoading = false;
+      this.showChannelDetails = false;
+      this.showPinnedPanel = false;
+      this.showSearch = false;
+      this.scrollToLatestMessageSoon();
+      this.cdr.detectChanges();
+      return;
+    }
     this.cancelEdit();
     this.confirmDeleteId = null;
+    this.conversationAccessMessage = '';
     this.workspaceMode = 'chat';
     this.showChannelDetails = false;
     this.activeChannelId = id;
@@ -3786,24 +4005,43 @@ export class CommunicationComponent
       ch.unreadCount = undefined;
       this.syncHeaderState();
       this.presenceChannelId = ch.backendId;
-      if (this.channelMessages[id] !== undefined) {
-        this.scrollFeed = true;
-        this.scrollToLatestMessageSoon();
-        this.subscribeToChannel(ch.backendId);
-        this.collabService
-          .setPresenceOnline(ch.backendId)
+    if (
+      this.channelMessages[id] !== undefined &&
+      !this.hasRecoverableSnapshotFailure(ch.backendId)
+    ) {
+      this.messagesLoading = false;
+      this.conversationAccessMessage = '';
+      this.subscribeToChannel(ch.backendId);
+      this.collabService
+        .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
         this.startConversationSync();
+        this.scrollToLatestMessageSoon();
         this.cdr.detectChanges();
       } else {
+        this.channelSnapshotFailureUntil.delete(ch.backendId);
+        this.channelSnapshotLastErrorStatus.delete(ch.backendId);
+        this.channelSnapshotLastErrorMessage.delete(ch.backendId);
+        this.historyPagingArmed = false;
         this.loadChannelMessages(ch);
       }
     }
   }
 
   selectDm(contactId: string, switchWorkspace = false): void {
+    if (this.activeView === 'dm' && this.activeDmId === contactId) {
+      this.workspaceMode = 'chat';
+      this.messagesLoading = false;
+      this.showChannelDetails = false;
+      this.showPinnedPanel = false;
+      this.showSearch = false;
+      this.scrollToLatestMessageSoon();
+      this.cdr.detectChanges();
+      return;
+    }
     this.cancelEdit();
     this.confirmDeleteId = null;
+    this.conversationAccessMessage = '';
     this.workspaceMode = 'chat';
     this.activeDmId = contactId;
     this.activeView = 'dm';
@@ -3818,15 +4056,35 @@ export class CommunicationComponent
     contact.hasUnread = false;
     contact.unreadCount = undefined;
     this.syncHeaderState();
+    if (
+      contact.dmChannelId &&
+      this.dmMessages[contact.id] !== undefined &&
+      !this.hasRecoverableSnapshotFailure(contact.dmChannelId)
+    ) {
+      this.messagesLoading = false;
+      this.conversationAccessMessage = '';
+      this.subscribeToDmChannel(contact);
+      if (this.lastMessageBackendId) {
+        this.collabService
+          .markRead(contact.dmChannelId, this.lastMessageBackendId)
+          .subscribe({ error: () => {} });
+      }
+      this.startConversationSync();
+      this.scrollToLatestMessageSoon();
+      this.cdr.detectChanges();
+      return;
+    }
     this.messagesLoading = true;
     this.scrollToLatestMessageSoon();
     this.startConversationSync();
     this.cdr.detectChanges();
+    this.historyPagingArmed = false;
     this.getOrCreateDmChannel(contact);
   }
 
   setView(v: 'threads'): void {
     this.workspaceMode = 'chat';
+    this.conversationAccessMessage = '';
     this.activeView = v;
     this.stopConversationSync();
     this.activeThreadId = null;
@@ -3854,63 +4112,175 @@ export class CommunicationComponent
 
   // ── DM ────────────────────────────────────────────────
 
+  private expectedDmChannelName(contact: DmContact): string {
+    const meId = this.me.userId;
+    const themId = contact.userId;
+    return `dm-${Math.min(meId, themId)}-${Math.max(meId, themId)}`;
+  }
+
   private getOrCreateDmChannel(contact: DmContact, onReady?: (channelId: number) => void): void {
     if (contact.dmChannelId) {
+      const preferredChannelId = this.findBestDmChannelId(contact);
+      const cachedChannelId = Number(
+        preferredChannelId || contact.dmChannelId,
+      );
+      contact.dmChannelId = cachedChannelId;
       this.subscribeToDmChannel(contact);
-      this.loadDmMessages(contact, contact.dmChannelId);
-      onReady?.(contact.dmChannelId);
+      if (
+        this.dmMessages[contact.id] !== undefined &&
+        !this.hasRecoverableSnapshotFailure(cachedChannelId)
+      ) {
+        this.messagesLoading = false;
+      } else {
+        this.channelSnapshotFailureUntil.delete(cachedChannelId);
+        this.channelSnapshotLastErrorStatus.delete(cachedChannelId);
+        this.channelSnapshotLastErrorMessage.delete(cachedChannelId);
+        this.loadDmMessages(contact, cachedChannelId);
+      }
+      onReady?.(cachedChannelId);
       return;
     }
     const meId = this.me.userId,
       themId = contact.userId;
-    const dmName = `dm-${Math.min(meId, themId)}-${Math.max(meId, themId)}`;
+    const dmName = this.expectedDmChannelName(contact);
+    const tryExisting = (all: CollabChannel[]): boolean => {
+      const existing = all
+        .filter(
+          (c) =>
+            c.channelType === 'PRIVATE' &&
+            c.name === dmName &&
+            (c.status === 'ACTIVE' || !c.status),
+        )
+        .sort((left, right) => this.compareDmChannelPriority(left, right))[0];
+      if (!existing) return false;
+      const chId = Number(existing.channelId ?? existing.id);
+      contact.dmChannelId = chId;
+      this.subscribeToDmChannel(contact);
+      if (
+        this.dmMessages[contact.id] !== undefined &&
+        !this.hasRecoverableSnapshotFailure(chId)
+      ) {
+        this.messagesLoading = false;
+      } else {
+        this.channelSnapshotFailureUntil.delete(chId);
+        this.channelSnapshotLastErrorStatus.delete(chId);
+        this.channelSnapshotLastErrorMessage.delete(chId);
+        this.loadDmMessages(contact, chId);
+      }
+      onReady?.(chId);
+      return true;
+    };
+
+    if (this.cachedCollabChannels.length && tryExisting(this.cachedCollabChannels)) {
+      return;
+    }
+
     this.collabService.getChannels().subscribe({
       next: (all) => {
-        const existing = all.find(
-          (c) => c.channelType === 'PRIVATE' && c.name === dmName,
-        );
-        if (existing) {
-          const chId = Number(existing.channelId ?? existing.id);
-          contact.dmChannelId = chId;
-          this.loadDmMessages(contact, chId);
+        this.cachedCollabChannels = all || [];
+        this.mapDirectMessageChannels(this.cachedCollabChannels);
+        if (contact.dmChannelId) {
+          const chId = Number(contact.dmChannelId);
           this.subscribeToDmChannel(contact);
+          if (
+            this.dmMessages[contact.id] !== undefined &&
+            !this.hasRecoverableSnapshotFailure(chId)
+          ) {
+            this.messagesLoading = false;
+          } else {
+            this.channelSnapshotFailureUntil.delete(chId);
+            this.channelSnapshotLastErrorStatus.delete(chId);
+            this.channelSnapshotLastErrorMessage.delete(chId);
+            this.loadDmMessages(contact, chId);
+          }
           onReady?.(chId);
-        } else {
-          this.collabService
-            .createChannel({
-              name: dmName,
-              description: `DM between ${meId} and ${themId}`,
-              channelType: 'PRIVATE',
-              createdBy: meId,
-            })
-            .subscribe({
-              next: (created) => {
-                const chId = Number(created.channelId ?? created.id);
-                contact.dmChannelId = chId;
-                this.collabService
-                  .addChannelMember(chId, themId)
-                  .subscribe({ error: () => {} });
-                this.loadDmMessages(contact, chId);
-                this.subscribeToDmChannel(contact);
-                onReady?.(chId);
-              },
-              error: () => {
-                this.messagesLoading = false;
-                this.cdr.detectChanges();
-              },
-            });
+          return;
         }
+        if (tryExisting(this.cachedCollabChannels)) {
+          return;
+        }
+        this.createDirectMessageChannel(contact, meId, themId, onReady);
       },
       error: () => {
-        this.messagesLoading = false;
-        this.cdr.detectChanges();
+        this.createDirectMessageChannel(contact, meId, themId, onReady);
       },
     });
   }
 
+  private createDirectMessageChannel(
+    contact: DmContact,
+    meId: number,
+    themId: number,
+    onReady?: (channelId: number) => void,
+  ): void {
+    this.collabService
+      .createChannel({
+        name: this.expectedDmChannelName(contact),
+        description: `DM between ${meId} and ${themId}`,
+        channelType: 'PRIVATE',
+        createdBy: meId,
+      })
+      .subscribe({
+        next: (created) => {
+          const chId = Number(created.channelId ?? created.id);
+          contact.dmChannelId = chId;
+          this.collabService
+            .addChannelMember(chId, themId)
+            .subscribe({ error: () => {} });
+          this.loadDmMessages(contact, chId);
+          this.subscribeToDmChannel(contact);
+          onReady?.(chId);
+        },
+      error: () => {
+        this.messagesLoading = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
   private loadDmMessages(contact: DmContact, channelId: number): void {
-    this.collabService.getChannelSnapshot(channelId).subscribe({
-      next: (snap) => {
+    const hadExistingMessages = this.dmMessages[contact.id] !== undefined;
+    this.historyPagingArmed = false;
+    this.messagesLoading = true;
+    this.conversationAccessMessage = '';
+    this.cdr.detectChanges();
+    this.getChannelSnapshotWithFallback(
+      channelId,
+      this.currentHistoryLimit(channelId),
+    ).then((snap) => {
+      if (!snap) {
+        const status = this.channelSnapshotLastErrorStatus.get(channelId) || 0;
+        if (status === 403) {
+          void this.handleForbiddenDmSnapshot(contact, channelId);
+          return;
+        }
+        const alternateChannelId =
+          status >= 500 || status === 0
+            ? this.findAlternateDmChannelId(contact, channelId)
+            : null;
+        if (alternateChannelId) {
+          contact.dmChannelId = alternateChannelId;
+          this.channelHistoryLimit.set(
+            alternateChannelId,
+            this.currentHistoryLimit(channelId),
+          );
+          this.channelSnapshotFailureUntil.delete(alternateChannelId);
+          this.channelSnapshotLastErrorStatus.delete(alternateChannelId);
+          this.channelSnapshotLastErrorMessage.delete(alternateChannelId);
+          this.subscribeToDmChannel(contact);
+          this.loadDmMessages(contact, alternateChannelId);
+          return;
+        }
+        if (contact.id === this.activeDmId && this.activeView === 'dm') {
+          this.messagesLoading = false;
+        }
+        this.lastMessageBackendId = null;
+        this.readStateMap = {};
+        this.cdr.detectChanges();
+        return;
+      }
+        this.conversationAccessMessage = '';
+        this.dmMembershipRepairAttempted.delete(this.dmMembershipRepairKey(contact, channelId));
         this.messagesLoading = false;
         this.lastMessageBackendId = null;
         this.readStateMap = {};
@@ -3949,18 +4319,15 @@ export class CommunicationComponent
             contact.unreadCount = undefined;
             this.syncHeaderState();
           }
-          this.scrollFeed = true;
+          if (!hadExistingMessages) {
+            this.scrollFeed = true;
+          }
           this.cdr.detectChanges();
+          if (!hadExistingMessages) {
+            this.scrollToLatestMessageSoon();
+          }
           this.consumePendingNotificationHighlight(this.dmMessages[contact.id]);
         });
-      },
-      error: () => {
-        this.messagesLoading = false;
-        this.lastMessageBackendId = null;
-        this.readStateMap = {};
-        this.dmMessages[contact.id] = [];
-        this.cdr.detectChanges();
-      },
     });
   }
 
@@ -3968,10 +4335,24 @@ export class CommunicationComponent
 
   private loadChannelMessages(channel: Channel): void {
     if (!channel.backendId) return;
+    this.historyPagingArmed = false;
     this.messagesLoading = true;
     this.cdr.detectChanges();
-    this.collabService.getChannelSnapshot(channel.backendId).subscribe({
-      next: (snap) => {
+    this.getChannelSnapshotWithFallback(
+      channel.backendId,
+      this.currentHistoryLimit(channel.backendId),
+    ).then((snap) => {
+      if (!snap) {
+        const status = this.channelSnapshotLastErrorStatus.get(channel.backendId) || 0;
+        this.lastMessageBackendId = null;
+        this.readStateMap = {};
+        if (status === 403 && this.activeView === 'channel' && this.activeChannelId === channel.id) {
+          this.messagesLoading = false;
+        }
+        this.cdr.detectChanges();
+        return;
+      }
+        this.conversationAccessMessage = '';
         this.messagesLoading = false;
         if (!snap.messages?.length) {
           this.lastMessageBackendId = null;
@@ -3992,14 +4373,8 @@ export class CommunicationComponent
             snap.attachments || [],
             snap.readStates || [],
           );
+          this.scrollToLatestMessageSoon();
         });
-      },
-      error: () => {
-        this.messagesLoading = false;
-        this.channelMessages[channel.id] =
-          this.channelMessages[channel.id] ?? [];
-        this.cdr.detectChanges();
-      },
     });
   }
 
@@ -4126,6 +4501,7 @@ export class CommunicationComponent
     reactions: any[],
     attachments: any[],
     readStates: any[] = [],
+    preserveScrollPosition = false,
   ): void {
     if (messages.length)
       this.lastMessageBackendId = messages[messages.length - 1].id;
@@ -4153,7 +4529,7 @@ export class CommunicationComponent
       this.syncHeaderState();
     }
     this.subscribeToChannel(channel.backendId);
-    this.scrollFeed = true;
+    this.scrollFeed = !preserveScrollPosition;
     this.cdr.detectChanges();
     this.consumePendingNotificationHighlight(this.channelMessages[channel.id]);
   }
@@ -4278,6 +4654,9 @@ export class CommunicationComponent
     if (this.workspaceMode !== 'chat') {
       return;
     }
+    if (!this.shouldPollActiveConversationSnapshot()) {
+      return;
+    }
     if (this.activeView === 'channel' && this.activeChannel) {
       this.fetchAndReconcileChannel(this.activeChannel);
       return;
@@ -4288,6 +4667,31 @@ export class CommunicationComponent
         this.activeDmContact.dmChannelId,
       );
     }
+  }
+
+  private shouldPollActiveConversationSnapshot(): boolean {
+    if (!this.wsConnected) {
+      return false;
+    }
+    if (this.activeView === 'channel' && this.activeChannel) {
+      if (
+        this.hasRecoverableSnapshotFailure(this.activeChannel.backendId) ||
+        this.channelMessages[this.activeChannel.id] === undefined
+      ) {
+        return true;
+      }
+      return false;
+    }
+    if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      if (
+        this.hasRecoverableSnapshotFailure(this.activeDmContact.dmChannelId) ||
+        this.dmMessages[this.activeDmId] === undefined
+      ) {
+        return true;
+      }
+      return false;
+    }
+    return false;
   }
 
   private ensureChatBootstrap(): void {
@@ -4437,6 +4841,13 @@ export class CommunicationComponent
       outboundContent,
       this.pendingAttachments,
     );
+    optimistic.retryMeta = {
+      mode: 'channel',
+      backendChannelId: channel.backendId,
+      content: outboundContent,
+      files: [...this.pendingFiles],
+      attachments: this.pendingAttachments.map((item) => ({ ...item })),
+    };
     (this.channelMessages[channel.id] ??= []).push(optimistic);
     const capturedFiles = [...this.pendingFiles];
     const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
@@ -4459,6 +4870,7 @@ export class CommunicationComponent
           optimistic.backendId = saved.id;
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
+          optimistic.retryMeta = undefined;
           this.sendingMessage = false;
           this.playNotificationSound();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -4473,10 +4885,7 @@ export class CommunicationComponent
           else this.cdr.detectChanges();
         },
         error: () => {
-          const idx = (this.channelMessages[channel.id] ?? []).indexOf(
-            optimistic,
-          );
-          if (idx !== -1) this.channelMessages[channel.id].splice(idx, 1);
+          optimistic.deliveryState = 'FAILED';
           this.sendingMessage = false;
           this.cdr.detectChanges();
         },
@@ -4503,6 +4912,13 @@ export class CommunicationComponent
       outboundContent,
       this.pendingAttachments,
     );
+    optimistic.retryMeta = {
+      mode: 'dm',
+      backendChannelId: chId,
+      content: outboundContent,
+      files: [...this.pendingFiles],
+      attachments: this.pendingAttachments.map((item) => ({ ...item })),
+    };
     (this.dmMessages[contact.id] ??= []).push(optimistic);
     const capturedFiles = [...this.pendingFiles];
     const capturedAttachments = this.pendingAttachments.map((item) => ({ ...item }));
@@ -4525,6 +4941,7 @@ export class CommunicationComponent
           optimistic.backendId = saved.id;
           optimistic.id = `backend-${saved.id}`;
           optimistic.deliveryState = 'DELIVERED';
+          optimistic.retryMeta = undefined;
           this.sendingMessage = false;
           this.playNotificationSound();
           if (capturedFiles.length && capturedAttachments.length) {
@@ -4543,8 +4960,7 @@ export class CommunicationComponent
           } else this.cdr.detectChanges();
         },
         error: () => {
-          const idx = (this.dmMessages[contact.id] ?? []).indexOf(optimistic);
-          if (idx !== -1) this.dmMessages[contact.id].splice(idx, 1);
+          optimistic.deliveryState = 'FAILED';
           this.sendingMessage = false;
           this.cdr.detectChanges();
         },
@@ -4555,7 +4971,7 @@ export class CommunicationComponent
     channel: Channel,
     messageId: number,
     files: File[],
-    metadata: Array<{ name: string; size: string; type: string; previewUrl?: string }>,
+    metadata: Array<{ name: string; size: string; type?: string; previewUrl?: string }>,
     optimistic: Message,
   ): void {
     this.uploadingAttachment = true;
@@ -4851,6 +5267,8 @@ export class CommunicationComponent
     this.activeThreadId = msg.id;
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.clearThreadPendingAttachments();
     this.scrollThread = true;
     this.cdr.detectChanges();
@@ -4860,6 +5278,8 @@ export class CommunicationComponent
     this.activeThreadId = null;
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.clearThreadPendingAttachments();
   }
 
@@ -4867,6 +5287,8 @@ export class CommunicationComponent
     payload.event?.stopPropagation();
     this.activeThreadReplyToId = payload.reply.id;
     this.threadReplyDraft = '';
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.clearThreadPendingAttachments();
     this.cdr.detectChanges();
   }
@@ -4874,6 +5296,8 @@ export class CommunicationComponent
   clearThreadReplyTarget(): void {
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.clearThreadPendingAttachments();
     this.cdr.detectChanges();
   }
@@ -4883,9 +5307,15 @@ export class CommunicationComponent
    * DM threads use the DM channel's backendId as channelId.
    */
   sendReply(): void {
-    const text = this.threadReplyDraft.trim(),
-      rootMsg = this.activeThread;
-    if (!text || !rootMsg || this.sendingReply) return;
+    const text = this.threadReplyDraft.trim();
+    const rootMsg = this.activeThread;
+    if (
+      (!text && !this.threadPendingAttachments.length) ||
+      !rootMsg ||
+      this.sendingReply
+    ) {
+      return;
+    }
 
     const source = this.resolveThreadMessageSource(rootMsg);
     const isDm = source?.type === 'dm';
@@ -4897,30 +5327,50 @@ export class CommunicationComponent
       ? (this.findMsgInTree(rootMsg.replies, this.activeThreadReplyToId) ??
         rootMsg)
       : rootMsg;
+    const replyingToNestedMessage = Boolean(this.activeThreadReplyToId);
     const threadRootId = rootMsg.backendId,
       replyToId = replyTarget.backendId ?? rootMsg.backendId;
+    const outboundContent =
+      text || this.attachmentsPlaceholderText(this.threadPendingAttachments);
 
     if (!channelId || !rootMsg.backendId) {
-      const opt = this.makeLocalMsg(text);
+      const opt = this.makeLocalMsg(
+        outboundContent,
+        this.threadPendingAttachments,
+      );
       opt.replyToMessageId = replyToId;
       opt.threadRootMessageId = threadRootId;
-      if (this.activeThreadReplyToId) replyTarget.replies.push(opt);
+      if (replyingToNestedMessage) replyTarget.replies.push(opt);
       else rootMsg.replies.push(opt);
       this.threadReplyDraft = '';
+      this.threadMentionResults = [];
+      this.threadShowMentionMenu = false;
       this.activeThreadReplyToId = null;
+      this.clearThreadPendingAttachments();
       this.scrollThread = true;
       this.cdr.detectChanges();
       return;
     }
 
     this.sendingReply = true;
-    const optimistic = this.makeLocalMsg(text);
+    const optimistic = this.makeLocalMsg(
+      outboundContent,
+      this.threadPendingAttachments,
+    );
     optimistic.replyToMessageId = replyToId;
     optimistic.threadRootMessageId = threadRootId;
-    if (this.activeThreadReplyToId) replyTarget.replies.push(optimistic);
+    if (replyingToNestedMessage) replyTarget.replies.push(optimistic);
     else rootMsg.replies.push(optimistic);
+    const capturedFiles = [...this.threadPendingFiles];
+    const capturedAttachments = this.threadPendingAttachments.map((item) => ({
+      ...item,
+    }));
     this.threadReplyDraft = '';
+    this.threadMentionResults = [];
+    this.threadShowMentionMenu = false;
     this.activeThreadReplyToId = null;
+    this.threadPendingFiles = [];
+    this.threadPendingAttachments = [];
     this.scrollThread = true;
     this.cdr.detectChanges();
 
@@ -4928,7 +5378,7 @@ export class CommunicationComponent
       .sendMessage({
         channelId,
         senderUserId: this.me.userId,
-        content: text,
+        content: outboundContent,
         messageType: 'TEXT',
         replyToMessageId: replyToId ?? null,
         threadRootMessageId: threadRootId ?? null,
@@ -4938,10 +5388,24 @@ export class CommunicationComponent
           optimistic.backendId = saved.id;
           optimistic.id = `backend-${saved.id}`;
           this.sendingReply = false;
+          if (capturedFiles.length && capturedAttachments.length) {
+            const attachmentChannel: Channel = {
+              id: `thread-${channelId}`,
+              backendId: channelId,
+              name: '',
+            };
+            this.uploadAttachmentsForMessage(
+              attachmentChannel,
+              saved.id,
+              capturedFiles,
+              capturedAttachments,
+              optimistic,
+            );
+          }
           this.cdr.detectChanges();
         },
         error: () => {
-          const bucket = this.activeThreadReplyToId
+          const bucket = replyingToNestedMessage
             ? replyTarget.replies
             : rootMsg.replies;
           const idx = bucket.indexOf(optimistic);
@@ -4970,11 +5434,11 @@ export class CommunicationComponent
     const refresh = () => {
       this.reactingIds.delete(msg.id);
       const ch = this.activeChannel;
-      if (ch?.backendId)
-        this.collabService.getChannelSnapshot(ch.backendId).subscribe({
-          next: (snap) => this.refreshReactionCounts(ch, snap.reactions || []),
-          error: () => {},
+      if (ch?.backendId) {
+        this.getChannelSnapshotWithFallback(ch.backendId).then((snap) => {
+          if (snap) this.refreshReactionCounts(ch, snap.reactions || []);
         });
+      }
     };
     const rollback = () => {
       msg.liked = wasLiked;
@@ -5092,10 +5556,16 @@ export class CommunicationComponent
     if (!userId || Number(userId) === Number(this.me.userId)) {
       return;
     }
-    let contact = this.dmContacts.find((dm) => Number(dm.userId) === Number(userId));
+    let contact = this.dmContacts.find(
+      (dm) =>
+        Number(dm.userId) === Number(userId) ||
+        Number(dm.employeeId || 0) === Number(userId),
+    );
     if (!contact) {
       const employee = this.allEmployees.find(
-        (entry) => Number(entry.user?.userId || entry.user?.id || 0) === Number(userId),
+        (entry) =>
+          Number(entry.user?.userId || entry.user?.id || entry.id || 0) === Number(userId) ||
+          Number(entry.id || 0) === Number(userId),
       );
       if (!employee) {
         return;
@@ -5126,6 +5596,47 @@ export class CommunicationComponent
       this.cdr.detectChanges();
     }
     this.selectDm(contact.id, true);
+    this.focusMessageComposerSoon();
+    this.clearMentionHash();
+  }
+
+  private focusMessageComposerSoon(): void {
+    setTimeout(() => this.messageComposer?.focusComposer(), 0);
+    setTimeout(() => this.messageComposer?.focusComposer(), 180);
+  }
+
+  private handleMentionHashChange = (): void => {
+    this.processMentionHashNavigation();
+  };
+
+  private processMentionHashNavigation(): void {
+    if (typeof window === 'undefined') return;
+    const match = window.location.hash.match(/^#dm-user-(\d+)$/i);
+    if (!match) return;
+    const userId = Number(match[1]);
+    if (!userId || Number(userId) === Number(this.me.userId)) {
+      this.clearMentionHash();
+      return;
+    }
+    if (!this.dmContacts.length && !this.allEmployees.length) {
+      this.pendingMentionConversationUserId = userId;
+      return;
+    }
+    this.pendingMentionConversationUserId = null;
+    this.openMentionConversation(userId);
+  }
+
+  private applyPendingMentionConversation(): void {
+    if (!this.pendingMentionConversationUserId) return;
+    const userId = this.pendingMentionConversationUserId;
+    this.pendingMentionConversationUserId = null;
+    this.openMentionConversation(userId);
+  }
+
+  private clearMentionHash(): void {
+    if (typeof window === 'undefined') return;
+    if (!window.location.hash.startsWith('#dm-user-')) return;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }
 
   // ── Email ─────────────────────────────────────────────
@@ -5607,6 +6118,12 @@ export class CommunicationComponent
     this.resizeStartWidth = this.threadPanelWidth;
     e.preventDefault();
   }
+  startResizeChatRail(e: MouseEvent): void {
+    this.isResizingChatRail = true;
+    this.resizeStartX = e.clientX;
+    this.resizeStartWidth = this.chatRailWidth;
+    e.preventDefault();
+  }
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(e: MouseEvent): void {
@@ -5626,12 +6143,21 @@ export class CommunicationComponent
           this.resizeStartWidth + (this.resizeStartX - e.clientX),
         ),
       );
+    if (this.isResizingChatRail)
+      this.chatRailWidth = Math.min(
+        this.CHAT_RAIL_MAX,
+        Math.max(
+          this.CHAT_RAIL_MIN,
+          this.resizeStartWidth + (this.resizeStartX - e.clientX),
+        ),
+      );
   }
 
   @HostListener('document:mouseup')
   onMouseUp(): void {
     this.isResizingSidebar = false;
     this.isResizingThread = false;
+    this.isResizingChatRail = false;
   }
 
   // ── Computed getters ──────────────────────────────────
@@ -5649,6 +6175,10 @@ export class CommunicationComponent
     return this.activeView === 'dm'
       ? this.dmMessages[this.activeDmId] || []
       : this.channelMessages[this.activeChannelId] || [];
+  }
+
+  get historyLoading(): boolean {
+    return this.messagesLoading || this.loadingOlderHistory;
   }
 
   get threadMessages(): Message[] {
@@ -5720,11 +6250,232 @@ export class CommunicationComponent
       this.showPinnedPanel || !!this.activeThreadId || this.showChannelDetails
     );
   }
+
+  toggleChatRail(): void {
+    this.showChatRail = !this.showChatRail;
+  }
+
   get rightPanelMode(): 'pinned' | 'thread' | 'details' | null {
     if (this.showChannelDetails) return 'details';
     if (this.showPinnedPanel) return 'pinned';
     if (this.activeThreadId) return 'thread';
     return null;
+  }
+
+  private async getChannelSnapshotWithFallback(
+    channelId: number,
+    recentMessageLimit = this.INITIAL_CHAT_HISTORY_LIMIT,
+  ): Promise<CollabChannelSnap | null> {
+    const now = Date.now();
+    const failureUntil = this.channelSnapshotFailureUntil.get(channelId) || 0;
+    if (failureUntil > now) {
+      return null;
+    }
+    const requestKey = this.snapshotRequestKey(channelId, recentMessageLimit);
+    const existingRequest = this.channelSnapshotInFlight.get(requestKey);
+    if (existingRequest) {
+      return existingRequest;
+    }
+
+    const request = firstValueFrom(
+      this.collabService.getChannelSnapshot(channelId, recentMessageLimit),
+    )
+      .then((snap) => {
+        this.channelSnapshotFailureUntil.delete(channelId);
+        this.channelSnapshotLastErrorStatus.delete(channelId);
+        this.channelSnapshotLastErrorMessage.delete(channelId);
+        return snap;
+      })
+      .catch((error: any) => {
+        const status = Number(error?.status || 0);
+        const message = String(
+          error?.error?.message || error?.message || '',
+        ).trim();
+        this.channelSnapshotLastErrorStatus.set(channelId, status);
+        this.channelSnapshotLastErrorMessage.set(channelId, message);
+        if (status >= 500 || !status) {
+          this.channelSnapshotFailureUntil.set(channelId, Date.now() + 4_000);
+        }
+        return null;
+      })
+      .finally(() => {
+        this.channelSnapshotInFlight.delete(requestKey);
+      });
+
+    this.channelSnapshotInFlight.set(requestKey, request);
+    return request;
+  }
+
+  private dmMembershipRepairKey(contact: DmContact, channelId: number): string {
+    return `${contact.id}:${channelId}`;
+  }
+
+  private hasRecoverableSnapshotFailure(channelId: number): boolean {
+    const status = this.channelSnapshotLastErrorStatus.get(channelId) || 0;
+    return status >= 500 || !status;
+  }
+
+  onChatFeedScroll(): void {
+    if (
+      this.messagesLoading ||
+      this.loadingOlderHistory ||
+      !this.feedEl?.nativeElement
+    ) {
+      return;
+    }
+    if (!this.historyPagingArmed) {
+      this.historyPagingArmed = true;
+      return;
+    }
+    const el = this.feedEl.nativeElement;
+    if (el.scrollTop > 80) {
+      return;
+    }
+    if (this.activeView === 'channel' && this.activeChannel) {
+      void this.loadOlderHistory(this.activeChannel.backendId, 'channel');
+      return;
+    }
+    if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      void this.loadOlderHistory(this.activeDmContact.dmChannelId, 'dm');
+    }
+  }
+
+  private async loadOlderHistory(
+    channelId: number,
+    mode: 'channel' | 'dm',
+  ): Promise<void> {
+    if (
+      this.channelHistoryExhausted.has(channelId) ||
+      this.historyLoadInFlight.has(channelId)
+    ) {
+      return;
+    }
+
+    const currentLimit = this.currentHistoryLimit(channelId);
+    const nextLimit = Math.min(
+      currentLimit + this.CHAT_HISTORY_PAGE_SIZE,
+      this.MAX_CHAT_HISTORY_LIMIT,
+    );
+    if (nextLimit <= currentLimit) {
+      this.channelHistoryExhausted.add(channelId);
+      return;
+    }
+
+    const currentCount = this.rawMessages.length;
+    if (this.feedEl?.nativeElement) {
+      const el = this.feedEl.nativeElement;
+      this.preserveFeedScrollOffset = el.scrollHeight - el.scrollTop;
+    }
+
+    this.loadingOlderHistory = true;
+    this.historyLoadInFlight.add(channelId);
+    this.channelHistoryLimit.set(channelId, nextLimit);
+    this.cdr.detectChanges();
+
+    const snap = await this.getChannelSnapshotWithFallback(channelId, nextLimit);
+
+    this.historyLoadInFlight.delete(channelId);
+    this.loadingOlderHistory = false;
+    if (!snap) {
+      this.channelHistoryLimit.set(channelId, currentLimit);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if ((snap.messages || []).length <= currentCount) {
+      this.channelHistoryExhausted.add(channelId);
+    }
+
+    this.conversationAccessMessage = '';
+
+    if (mode === 'channel' && this.activeChannel?.backendId === channelId) {
+      const senderIds = [...new Set((snap.messages || []).map((m) => m.senderUserId))];
+      this.loadUserDirectory(senderIds, () => {
+        this.loadMemberAvatars(senderIds);
+        this.buildAndRenderMessages(
+          this.activeChannel!,
+          snap.messages || [],
+          snap.reactions || [],
+          snap.attachments || [],
+          snap.readStates || [],
+          true,
+        );
+      });
+      return;
+    }
+    if (mode === 'dm' && this.activeDmContact?.dmChannelId === channelId) {
+      const senderIds = [...new Set((snap.messages || []).map((m) => m.senderUserId))];
+      const activeContact = this.activeDmContact;
+      this.loadUserDirectory(senderIds, () => {
+        this.loadMemberAvatars(senderIds);
+        this.dmMessages[activeContact.id] = this.buildMessageList(
+          snap.messages || [],
+          snap.reactions || [],
+          snap.attachments || [],
+        );
+        this.updateDmConversationMeta(activeContact, this.dmMessages[activeContact.id]);
+        this.buildReadStateMap(snap.messages || [], snap.readStates || []);
+        this.applyReadStateToMessages(this.dmMessages[activeContact.id]);
+        this.lastMessageBackendId = snap.messages?.length
+          ? snap.messages[snap.messages.length - 1].id
+          : null;
+        this.cdr.detectChanges();
+      });
+    }
+  }
+
+  private currentHistoryLimit(channelId: number): number {
+    return this.channelHistoryLimit.get(channelId) || this.INITIAL_CHAT_HISTORY_LIMIT;
+  }
+
+  private shouldAutoScrollFeed(): boolean {
+    const el = this.feedEl?.nativeElement;
+    if (!el) {
+      return true;
+    }
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    return distanceFromBottom <= 120;
+  }
+
+  private snapshotRequestKey(channelId: number, recentMessageLimit: number): string {
+    return `${channelId}:${recentMessageLimit}`;
+  }
+
+  private async handleForbiddenDmSnapshot(
+    contact: DmContact,
+    channelId: number,
+  ): Promise<void> {
+    const repairKey = this.dmMembershipRepairKey(contact, channelId);
+    const detail =
+      this.channelSnapshotLastErrorMessage.get(channelId) ||
+      'You do not currently have access to this direct conversation.';
+
+    if (this.dmMembershipRepairInFlight.has(repairKey)) {
+      return;
+    }
+
+    if (this.dmMembershipRepairAttempted.has(repairKey)) {
+      this.messagesLoading = false;
+      this.lastMessageBackendId = null;
+      this.readStateMap = {};
+      this.dmMessages[contact.id] = this.dmMessages[contact.id] ?? [];
+      this.conversationAccessMessage = '';
+      contact.dmChannelId = undefined;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.dmMembershipRepairAttempted.add(repairKey);
+    this.dmMembershipRepairInFlight.add(repairKey);
+    this.conversationAccessMessage = '';
+    contact.dmChannelId = undefined;
+    this.channelSnapshotFailureUntil.delete(channelId);
+    this.channelSnapshotLastErrorStatus.delete(channelId);
+    this.channelSnapshotLastErrorMessage.delete(channelId);
+    this.cdr.detectChanges();
+
+    this.dmMembershipRepairInFlight.delete(repairKey);
+    this.getOrCreateDmChannel(contact);
   }
 
   private latestThreadTimestamp(message: Message): number {
@@ -5921,7 +6672,11 @@ export class CommunicationComponent
     const normalizedHandle = (payload?.handle || '').replace(/^@/, '').trim().toLowerCase();
 
     const findEmployeeByUserId = (userId: number): EmployeeProfile | undefined =>
-      this.allEmployees.find((employee) => Number(employee.user?.userId || employee.user?.id || 0) === userId);
+      this.allEmployees.find(
+        (employee) =>
+          Number(employee.user?.userId || employee.user?.id || employee.id || 0) === userId ||
+          Number(employee.id || 0) === userId,
+      );
 
     let userId = explicitUserId;
     let employee = userId ? findEmployeeByUserId(userId) : undefined;
@@ -6022,23 +6777,7 @@ export class CommunicationComponent
   ): void {
     e.preventDefault();
     if (!attachment.downloadUrl) return;
-    const token = sessionStorage.getItem('token') || '',
-      tenantId = sessionStorage.getItem('tenantId') || 'default',
-      userId = sessionStorage.getItem('userid') || '';
-    const url = attachment.downloadUrl.startsWith('http')
-      ? attachment.downloadUrl
-      : `${this.collabService.apiBaseUrl}${attachment.downloadUrl}`;
-    fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-Tenant-ID': tenantId,
-        'X-User-ID': userId,
-      },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status}`);
-        return r.blob();
-      })
+    firstValueFrom(this.collabService.fetchChatAttachmentBlob(attachment.downloadUrl))
       .then((blob) => {
         const obj = URL.createObjectURL(blob);
         const a = Object.assign(document.createElement('a'), {
@@ -6396,8 +7135,18 @@ export class CommunicationComponent
   }
 
   private resolveAttachmentPreviewUrl(att: any): string | undefined {
-    const type = this.normalizeAttachmentType(att.contentType, att.fileName);
-    if (!this.isImageType(type)) return undefined;
+    if (!att.downloadUrl) return undefined;
+    const type = this.normalizeAttachmentType(
+      att.contentType,
+      att.fileName || att.originalFileName || att.name || att.downloadUrl,
+    );
+    const isPreviewable =
+      this.isImageType(type) ||
+      type === 'application/pdf' ||
+      /\.(doc|docx|xls|xlsx|ppt|pptx)$/i.test(
+        String(att.fileName || att.originalFileName || att.name || ''),
+      );
+    if (!isPreviewable) return undefined;
     const key = att.downloadUrl || `${att.messageId}-${att.fileName}`;
     if (this.attachmentPreviewCache[key]) {
       return this.attachmentPreviewCache[key];
@@ -6570,6 +7319,56 @@ export class CommunicationComponent
       msg.attachment = msg.attachments[0];
     }
     return msg;
+  }
+
+  retryFailedMessage(msg: Message): void {
+    if (!msg.retryMeta || msg.deliveryState !== 'FAILED') {
+      return;
+    }
+    if (msg.retryMeta.mode === 'thread') {
+      return;
+    }
+    msg.deliveryState = 'SENDING';
+    this.cdr.detectChanges();
+    const retryMeta = msg.retryMeta;
+    this.collabService
+      .sendMessage({
+        channelId: retryMeta.backendChannelId,
+        senderUserId: this.me.userId,
+        content: retryMeta.content,
+        messageType: 'TEXT',
+        replyToMessageId: retryMeta.replyToMessageId,
+        threadRootMessageId: retryMeta.threadRootMessageId,
+      })
+      .subscribe({
+        next: (saved) => {
+          msg.backendId = saved.id;
+          msg.id = `backend-${saved.id}`;
+          msg.deliveryState = 'DELIVERED';
+          const files = retryMeta.files || [];
+          const attachments = retryMeta.attachments || [];
+          msg.retryMeta = undefined;
+          if (files.length && attachments.length) {
+            this.uploadAttachmentsForMessage(
+              {
+                id: this.activeChannelId || `dm-${retryMeta.backendChannelId}`,
+                backendId: retryMeta.backendChannelId,
+                name: this.activeChannel?.name || this.activeDmContact?.fullName || '',
+              },
+              saved.id,
+              files,
+              attachments,
+              msg,
+            );
+          } else {
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {
+          msg.deliveryState = 'FAILED';
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   // Legacy aliases kept for compatibility

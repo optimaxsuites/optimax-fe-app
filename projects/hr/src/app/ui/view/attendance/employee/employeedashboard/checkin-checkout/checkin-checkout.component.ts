@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
-import { resolveLoanOutstandingAccruedFees } from '../../../../../service/loan/loan-display.util';
 
 type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 
@@ -32,17 +31,49 @@ export class CheckinCheckoutComponent implements OnInit {
   //employeeName = 'Chrisha Okorocha';
   //department = 'Engineering';
 
-  private hrEmployeeId: string | null = null;
+  /*private*/hrEmployeeId: string | null = null;
   //private hrDepartment: string = '';
-  private hrDepartment = '';
-  private hrEmployeeName = '';
+  /*private*/ hrDepartment = '';
+  /*private*/ hrEmployeeName = '';
 
   get currentUser() {
     return this.userSession.getCurrentUser();
   }
 
+  
+
   ngOnInit() {
-    const username = sessionStorage.getItem('userid'); // "chrisha"
+
+    const currentUser = this.userSession.getCurrentUser();
+
+    console.log('getCurrentUser resolved:', currentUser);
+
+    if (currentUser?.userId) {
+
+      console.log('SESSION USER:', currentUser);
+    console.log('SESSION USER ID:', currentUser.userId);
+
+      this.attendanceService
+        .resolveHrEmployeeId(currentUser.userId)
+        .subscribe(result => {
+
+          console.log('Resolved HR employee:', result);
+
+          if (!result) {
+            console.error('HR employee not found');
+            return;
+          }
+
+          this.hrEmployeeId = result.id;
+          this.hrDepartment = result.department;
+          this.hrEmployeeName = result.fullName;
+
+          console.log('HR employee ID resolved:', this.hrEmployeeId);
+        });
+    }
+
+
+    /*const username = sessionStorage.getItem('userid'); // "chrisha"
     if (username) {
       this.attendanceService.resolveHrEmployeeId(username).subscribe(result => {
         if (result) {
@@ -53,7 +84,7 @@ export class CheckinCheckoutComponent implements OnInit {
      
         }
         });
-    }
+    }*/
 
   setInterval(() => { this.currentTime = new Date(); }, 1000);
 
@@ -131,6 +162,14 @@ private restoreClockStatus(): void {
     this.isGettingLocation = true;
     try {
       if (this.status === 'CLOCKED_OUT') {
+
+        console.log('CLOCK PAYLOAD:', {
+          employeeId: this.hrEmployeeId,
+          employeeName: this.hrEmployeeName,
+          department: this.hrDepartment,
+          action: 'IN'
+        });
+    
         this.status = 'CLOCKED_IN';
         this.attendanceService.setClockStatus('CLOCKED_IN');
 
@@ -145,6 +184,13 @@ private restoreClockStatus(): void {
         );
 
   } else {
+
+      console.log('CLOCK PAYLOAD:', {
+        employeeId: this.hrEmployeeId,
+        employeeName: this.hrEmployeeName,
+        department: this.hrDepartment,
+        action: 'OUT'
+      });
 
     this.status = 'CLOCKED_OUT';
     this.attendanceService.setClockStatus('CLOCKED_OUT');
