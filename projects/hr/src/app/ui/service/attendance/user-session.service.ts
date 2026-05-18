@@ -4,14 +4,14 @@ import { Injectable } from '@angular/core';
 export class UserSessionService {
 
   getCurrentUser(): {
-    id: string;        // employee record ID
-    userId: string;    // auth/session user ID
+    id: number;        // employee record ID
+    userId: number;    // auth/session user ID
     name: string;
     department: string;
   } | null {
 
     // Logged-in auth user ID
-    const userId = sessionStorage.getItem('userid');
+    const userId = Number(sessionStorage.getItem('userid'));
 
     if (!userId) {
       console.warn('userid not found in sessionStorage');
@@ -60,7 +60,7 @@ export class UserSessionService {
 
       return {
         id: employeeId,
-        userId,
+        userId: Number(userId),
         name,
         department
       };
@@ -71,7 +71,7 @@ export class UserSessionService {
     }
   }
 }
-
+//
 /*import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })

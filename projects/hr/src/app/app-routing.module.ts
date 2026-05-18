@@ -41,6 +41,10 @@ import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/
 import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
 import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
 import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
+import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
+import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
+import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
+import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
 // import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
 import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
 import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';

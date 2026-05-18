@@ -2,7 +2,7 @@ export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
   employeeId: number;
   employee: string;
-  attendanceRecordId?: string;
+  attendanceRecordId?: number;
   department: string;
   date: string | null;
   checkIn: string | null;

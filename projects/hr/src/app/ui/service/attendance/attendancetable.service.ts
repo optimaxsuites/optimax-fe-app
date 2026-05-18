@@ -113,7 +113,7 @@ private getAuthHeaders(): HttpHeaders {
 }
 
 //nna to get the right employee id nnaaaaa
-resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string; fullName: string; department: string } | null> {
+resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number; fullName: string; department: string } | null> {
   return this.http.get<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`,
     { headers: this.getAuthHeaders() }
@@ -146,7 +146,7 @@ resolveHrEmployeeId(/*username*/sessionUserId: string): Observable<{ id: string;
       });
       
       const match = employees.find(
-        (e: any) => e.user?.id?.toString() === sessionUserId.toString()
+        (e: any) => Number(e.user?.id) === sessionUserId
       );
 
       console.log('MATCHED EMPLOYEE:', match);
@@ -209,7 +209,7 @@ private mapApiRecord(api: any): AttendanceTableRecord {
     overrideOpen: api.overrideOpen ?? false,
     overrideReason: api.overrideReason ?? '',
     overriddenBy: api.overrideBy
-      ? { adminId: Number(api.overrideBy.userId), 
+      ? { adminId: Number(api.overrideBy.hrEmployeeId), 
         adminName: api.overrideBy.fullname }
       : undefined,
     appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS'
