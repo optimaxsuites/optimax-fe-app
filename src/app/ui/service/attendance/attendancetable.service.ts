@@ -209,7 +209,7 @@ private mapApiRecord(api: any): AttendanceTableRecord {
     overrideOpen: api.overrideOpen ?? false,
     overrideReason: api.overrideReason ?? '',
     overriddenBy: api.overrideBy
-      ? { adminId: Number(api.overrideBy.userId), 
+      ? { adminId: Number(api.overrideBy.hrEmployeeId), 
         adminName: api.overrideBy.fullname }
       : undefined,
     appliedScheduleType: api.appliedScheduleType === 'OFFICE_HOURS'
