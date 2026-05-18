@@ -42,7 +42,7 @@ export class MonthlyattendancelistComponent implements OnInit {
     }
 
     this.attendanceService
-      .resolveHrEmployeeId(currentUser.userId)
+      .resolveHrEmployeeId(Number(currentUser.userId))
 
     /*const username = sessionStorage.getItem('userid');
 
@@ -60,14 +60,14 @@ export class MonthlyattendancelistComponent implements OnInit {
         const hrEmployeeId = result.id;
 
         this.attendanceService.fetchByEmployee(
-          parseInt(hrEmployeeId)
+          Number(hrEmployeeId)
         );
 
         this.attendanceService.attendance$
           .subscribe(data => {
 
             this.attendanceData = data.filter(
-              r => String(r.id).trim() === String(hrEmployeeId).trim()
+              r => Number(r.employeeId) === Number(hrEmployeeId)
             );
 
             this.applyMonthFilter();
