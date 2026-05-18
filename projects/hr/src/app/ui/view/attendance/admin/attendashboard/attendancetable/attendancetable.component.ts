@@ -7,6 +7,7 @@ import { MOCK_ATTENDANCE } from '../../../../../domain/attendance/attendancetabl
 //import { AttendancefilterComponent } from './attendancefilter/attendancefilter.component';
 import * as L from 'leaflet';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
+import { UserSessionService } from '../../../../../service/attendance/user-session.service';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
@@ -23,7 +24,8 @@ L.Icon.Default.mergeOptions({
 })
 export class AttendancetableComponent implements OnInit{
 
-  private attendancetableService = inject(AttendancetableService)
+  private attendancetableService = inject(AttendancetableService);
+  private userSession = inject(UserSessionService);
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
@@ -45,7 +47,7 @@ private mapInstance: L.Map | null = null;
 
  private closingTimer: any;
 
-selectedLocation: { recordId: string; type: 'in' | 'out' } | null = null;
+selectedLocation: { recordId: number; type: 'in' | 'out' } | null = null;
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];
@@ -347,10 +349,22 @@ saveModification() {
     return;
   }
 
-  const admin = {
+  /*const admin = {
     adminId: 'ADMIN001',
     adminName: 'HR Admin'
-  };
+  };*/
+
+  const currentUser = this.userSession.getCurrentUser();
+
+if (!currentUser) {
+  alert('No logged in user found');
+  return;
+}
+
+const admin = {
+  adminId: Number(currentUser.userId),
+  adminName: currentUser.name
+};
 
   this.attendancetableService.overrideAttendance(
     this.editingRecord.id,

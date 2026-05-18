@@ -8,8 +8,6 @@ import { AttendashboardComponent } from './admin/attendashboard/attendashboard.c
 //import { AttendancesummaryComponent } from './admin/attendancesummary/attendancesummary.component';
 import { EmployeedashboardComponent } from './employee/employeedashboard/employeedashboard.component';
 //import { EmployeesummaryComponent } from './employee/employeesummary/employeesummary.component';
-import { CorrectionrequestComponent } from './employee/correctionrequest/correctionrequest.component';
-import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corrections.component';
 
 @Component({
   selector: 'app-attendance',
