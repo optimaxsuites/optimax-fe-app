@@ -22,15 +22,29 @@ export class TodaySummaryComponent implements OnInit {
   };
 
   //employeeName = ''; 
+  hrEmployeeId: number | null = null;
 
   private currentUser: any;
 
   ngOnInit() {
     this.currentUser = this.userSession.getCurrentUser();
 
-    this.attendanceService.attendance$.subscribe(data => {
+    if(!this.currentUser?.userId) {
+      console.error('No logged in user');
+    }
+
+    this.attendanceService.resolveHrEmployeeId(this.currentUser.userId).subscribe(result => {
+      if (!result) {
+        console.error('HR employee not found');
+        return;
+      }
+      this.hrEmployeeId = Number(result.id);  
+
+      this.attendanceService.attendance$.subscribe(data => {
       this.calculateTodaySummary(data);
     });
+    });
+
   }
 
   private calculateTodaySummary(data: AttendanceTableRecord[]) {
@@ -38,11 +52,11 @@ export class TodaySummaryComponent implements OnInit {
 
   /*const record = data.find(
     r => r.employee === this.employeeName && r.date === today);*/
-    if (!this.currentUser) return;
+    if (!this.hrEmployeeId) return;
 
     const record = data.find(
       r =>
-        r.employeeId === Number(this.currentUser.id) &&
+        Number(r.employeeId) === this.hrEmployeeId &&
         r.date === today
     );
 

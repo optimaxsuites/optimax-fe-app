@@ -31,7 +31,7 @@ export class CheckinCheckoutComponent implements OnInit {
   //employeeName = 'Chrisha Okorocha';
   //department = 'Engineering';
 
-  /*private*/hrEmployeeId: string | null = null;
+  /*private*/hrEmployeeId: number | null = null;
   //private hrDepartment: string = '';
   /*private*/ hrDepartment = '';
   /*private*/ hrEmployeeName = '';
@@ -54,7 +54,7 @@ export class CheckinCheckoutComponent implements OnInit {
     console.log('SESSION USER ID:', currentUser.userId);
 
       this.attendanceService
-        .resolveHrEmployeeId(currentUser.userId)
+        .resolveHrEmployeeId(Number(currentUser.userId))
         .subscribe(result => {
 
           console.log('Resolved HR employee:', result);
@@ -90,9 +90,13 @@ export class CheckinCheckoutComponent implements OnInit {
 
   // React to attendance changes
   this.attendanceService.attendance$.subscribe(() => {
-    const userId = this.currentUser?.id!;
-    this.hasCompletedToday = this.attendanceService.hasCompletedToday(userId);
-    this.isAbsentToday = this.attendanceService.isEmployeeBlockedToday(userId);
+    //const userId = this.currentUser?.id!;
+
+    if (!this.hrEmployeeId) return;
+    const employeeId = Number(this.hrEmployeeId);
+
+    this.hasCompletedToday = this.attendanceService.hasCompletedToday(employeeId);
+    this.isAbsentToday = this.attendanceService.isEmployeeBlockedToday(employeeId);
 
     // Restore clock status from today's record after refresh
     this.restoreClockStatus();
@@ -109,6 +113,26 @@ export class CheckinCheckoutComponent implements OnInit {
 }
 
 private restoreClockStatus(): void {
+
+if (!this.hrEmployeeId) return;
+
+const employeeId = Number(this.hrEmployeeId);
+
+const restored =
+this.attendanceService.getTodayStatusForEmployee(employeeId);
+
+if (restored === 'CLOCKED_IN') {
+this.status = 'CLOCKED_IN';
+this.attendanceService.setClockStatus('CLOCKED_IN');
+
+} else if (restored === 'CLOCKED_OUT') {
+
+this.status = 'CLOCKED_OUT';
+this.attendanceService.setClockStatus('CLOCKED_OUT');
+}
+}
+
+/*private restoreClockStatus(): void {
   const userId = this.currentUser?.id!;
   const restored = this.attendanceService.getTodayStatusForEmployee(userId);
 
@@ -119,7 +143,7 @@ private restoreClockStatus(): void {
     this.status = 'CLOCKED_OUT';
     this.attendanceService.setClockStatus('CLOCKED_OUT');
   }
-}
+}*/
 
   /*ngOnInit() {
     setInterval(() => {
