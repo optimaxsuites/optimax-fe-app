@@ -303,6 +303,37 @@
               <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
             </div>
           </div>
+
+           <div class="info-block">
+            <div class="info-block-header">
+              <div>
+                <p class="block-title">Bank Details</p>
+                <p class="block-copy">Payroll destination currently on file</p>
+              </div>
+              <button
+                type="button"
+                class="inline-action-btn"
+                (click)="openBankChangeRequest()"
+              >
+                Request change
+              </button>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Account number</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.accountNumber || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Bank Name</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.bankName || '-' }}</span>
+            </div>
+            <!-- <div class="info-row">
+              <span class="info-label">Supervisor</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
+            </div> -->
+          </div>
         </div>
       </div>
 
@@ -445,23 +476,7 @@
 
     <section class="grid xl:grid-cols-3 gap-4">
       <div class="info-card">
-        <div class="card-header">
-          <p class="card-title">Leave Summary</p>
-        </div>
-        <div class="stat-stack">
-          <div class="stat-card">
-            <span class="stat-label">Available days left</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} day(s)</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Days used</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} day(s)</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Total accrued</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} day(s)</span>
-          </div>
-        </div>
+        <app-employee-change-requests-summary></app-employee-change-requests-summary>
       </div>
 
       <div class="info-card">
@@ -512,6 +527,83 @@
     <p class="text-sm text-slate-500">No employee record found.</p>
   </div>
 </ng-template>
+
+<app-modal *ngIf="isBankChangeRequestOpen" [header]="'Request bank detail change'" (close)="closeBankChangeRequest()">
+  <form [formGroup]="bankChangeRequestForm" (ngSubmit)="submitBankChangeRequest()" class="bank-change-form">
+    <div class="bank-change-summary">
+      <p class="bank-change-summary__title">Current bank details</p>
+      <div class="bank-change-summary__grid">
+        <div>
+          <span>Bank name</span>
+          <strong>{{ employeeInView?.bankName || '-' }}</strong>
+        </div>
+        <div>
+          <span>Account number</span>
+          <strong>{{ employeeInView?.accountNumber || '-' }}</strong>
+        </div>
+      </div>
+      <p class="bank-change-summary__copy">Enter the replacement details below. HR will receive this request for review.</p>
+    </div>
+
+    <div class="bank-change-grid">
+      <div class="bank-change-field">
+        <label for="requestedBankName">New bank name</label>
+        <select
+          id="requestedBankName"
+          formControlName="requestedBankName"
+        >
+          <option value="">-- Select a bank --</option>
+          <option *ngFor="let bank of nigerianBanks" [value]="bank">{{ bank }}</option>
+        </select>
+        <p class="bank-change-error" *ngIf="bankChangeRequestForm.get('requestedBankName')?.touched && bankChangeRequestForm.get('requestedBankName')?.invalid">
+          Select the bank you want HR to update.
+        </p>
+      </div>
+
+      <div class="bank-change-field">
+        <label for="requestedAccountNumber">New account number</label>
+        <input
+          id="requestedAccountNumber"
+          type="text"
+          inputmode="numeric"
+          formControlName="requestedAccountNumber"
+          placeholder="10-digit account number"
+        />
+        <p class="bank-change-error" *ngIf="bankChangeRequestForm.get('requestedAccountNumber')?.touched && bankChangeRequestForm.get('requestedAccountNumber')?.invalid">
+          Enter a valid 10-digit account number.
+        </p>
+      </div>
+
+      <div class="bank-change-field bank-change-field--full">
+        <label for="requestReason">Note for HR</label>
+        <textarea
+          id="requestReason"
+          rows="4"
+          formControlName="requestReason"
+          placeholder="Optional context for HR"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="bank-change-actions">
+      <button
+        type="button"
+        class="secondary-link-btn"
+        (click)="closeBankChangeRequest()"
+        [disabled]="submittingBankChangeRequest"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="edit-btn"
+        [disabled]="bankChangeRequestForm.invalid || submittingBankChangeRequest"
+      >
+        {{ submittingBankChangeRequest ? 'Sending...' : 'Send request' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
 
 <app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
   <div class="staff-id-modal">

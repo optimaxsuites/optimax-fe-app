@@ -31,6 +31,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
 import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
@@ -229,6 +230,12 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
 import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
 import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 import { BrowserModule } from '@angular/platform-browser';
+import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+import { BankDetailsChangeRequestComponent } from './ui/view/profile-change-requests/bank-details-change-request/bank-details-change-request.component';
+import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-change-requests/employee-change-requests-dashboard/employee-change-requests-dashboard.component';
+import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
+// import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+
 
 @NgModule({
   declarations: [
@@ -382,7 +389,11 @@ import { BrowserModule } from '@angular/platform-browser';
     CooperativePatronageDistributionComponent,
     ProductivityWorkspaceComponent,
     InterviewResponseComponent,
-    InviteModalComponent
+    InviteModalComponent,
+    ProfileChangeRequestsComponent,
+    BankDetailsChangeRequestComponent,
+    EmployeeChangeRequestsDashboardComponent,
+    EmployeeChangeRequestsSummaryComponent
   ],
   imports: [
     AppHrRoutingModule,
@@ -443,6 +454,7 @@ import { BrowserModule } from '@angular/platform-browser';
     LargeSideModalComponent,
     FooterComponent,
     MenuModule,
+    AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
     AppHrRoutingModule,
   ],

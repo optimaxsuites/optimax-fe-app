@@ -10,15 +10,19 @@ export interface JobDTO {
     specification?: string;
     experience?: string;
     qualification?: string;
-    fields?: CustomField[]; 
+    fields?: JobVacancyCustomFieldsDTO[]; 
 }
   
-  export interface CustomField {
+  export interface JobVacancyCustomFieldsDTO {
+    id?: number;
     label?: string;
     type?: string; // e.g., 'text', 'textarea', 'select', etc.
     options?: string[]; // for dropdown/select fields
     required?: boolean;
   }
+
+export type CustomField = JobVacancyCustomFieldsDTO;
+export type JobVacancyDTO = JobDTO;
 
 
 export interface JobExperienceDTO{
