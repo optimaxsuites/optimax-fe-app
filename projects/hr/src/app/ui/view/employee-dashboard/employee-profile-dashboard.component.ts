@@ -4,6 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
+import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
@@ -27,7 +28,36 @@ export class EmployeeProfileDashboardComponent {
   isStaffIdOpen = false;
   staffIdQrDataUrl = '';
   staffIdBarcodeDataUrl = '';
+  isBankChangeRequestOpen = false;
+  bankChangeRequestForm: FormGroup;
+  submittingBankChangeRequest = false;
   editForm: FormGroup;
+  nigerianBanks = [
+    'Access Bank',
+    'Zenith Bank',
+    'GTBank',
+    'FCMB',
+    'First Bank',
+    'Fidelity Bank',
+    'UBA',
+    'Intercontinental Bank',
+    'Standard Chartered',
+    'HSBC',
+    'Diamond Bank',
+    'Polaris Bank',
+    'Wema Bank',
+    'Stanbic IBTC',
+    'Ecobank',
+    'Union Bank',
+    'Heritage Bank',
+    'Keystone Bank',
+    'Providus Bank',
+    'Titan Bank',
+    'ALAT',
+    'Taj Bank',
+    'Opay',
+    'Moniepoint',
+  ];
   pendingProfilePhotoDataUrl: string | null = null;
   pendingProfilePhotoName: string | null = null;
   pendingProfilePhotoFile: File | null = null;
@@ -46,13 +76,19 @@ export class EmployeeProfileDashboardComponent {
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private profileChangeRequestService: ProfileChangeRequestService
   ) {
     this.editForm = this.fb.group({
       phone: [''],
       email: ['', [Validators.email]],
       address: [''],
       workEmail: [{ value: '', disabled: true }],
+    });
+    this.bankChangeRequestForm = this.fb.group({
+      requestedBankName: ['', Validators.required],
+      requestedAccountNumber: ['', Validators.required],
+      reason: [''],
     });
   }
 
@@ -753,5 +789,62 @@ export class EmployeeProfileDashboardComponent {
   private toNumber(value: any): number {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  openBankChangeRequest(): void {
+    this.bankChangeRequestForm.reset();
+    this.isBankChangeRequestOpen = true;
+  }
+
+  closeBankChangeRequest(): void {
+    this.isBankChangeRequestOpen = false;
+    this.bankChangeRequestForm.reset();
+  }
+
+  submitBankChangeRequest(): void {
+    if (this.bankChangeRequestForm.invalid || !this.employeeInView) {
+      return;
+    }
+
+    this.submittingBankChangeRequest = true;
+
+    const formValue = this.bankChangeRequestForm.value;
+    const currentBank = {
+      bankName: this.employeeInView.bankName || '',
+      accountNumber: this.employeeInView.accountNumber || '',
+    };
+    const requestedBank = {
+      bankName: formValue.requestedBankName,
+      accountNumber: formValue.requestedAccountNumber,
+    };
+
+    this.profileChangeRequestService.submitBankChangeRequest(
+      this.employeeInView.id,
+      `${this.employeeInView.firstName} ${this.employeeInView.lastName}`,
+      currentBank,
+      requestedBank,
+      formValue.reason || undefined
+    ).subscribe({
+      next: () => {
+        this.submittingBankChangeRequest = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Request submitted',
+          detail: 'Your bank change request has been submitted for HR review.',
+          key: 'global',
+        });
+        this.closeBankChangeRequest();
+      },
+      error: (error) => {
+        this.submittingBankChangeRequest = false;
+        console.error('Error submitting bank change request:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Submission failed',
+          detail: 'Failed to submit bank change request. Please try again.',
+          key: 'global',
+        });
+      },
+    });
   }
 }
