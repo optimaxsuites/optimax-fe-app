@@ -137,7 +137,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       },
       error: () => {
         this.refreshChannelsInFlight = false;
-        this.refreshChannelsCooldownUntil = Date.now() + 30_000;
+        this.refreshChannelsCooldownUntil = Date.now() + 5_000;
       },
     });
   }

@@ -584,6 +584,7 @@ export class CommunicationComponent
   private historyLoadInFlight = new Set<number>();
   private loadingOlderHistory = false;
   private historyPagingArmed = false;
+  private pendingForcedChannelsRefresh = false;
   private preserveFeedScrollOffset: number | null = null;
   private dmMembershipRepairAttempted = new Set<string>();
   private dmMembershipRepairInFlight = new Set<string>();
@@ -3370,6 +3371,9 @@ export class CommunicationComponent
     }
 
     if (this.channelsRequestInFlight) {
+      if (force) {
+        this.pendingForcedChannelsRefresh = true;
+      }
       if (!silent && !hasCachedChannels) {
         this.channelsLoading = true;
       }
@@ -3384,9 +3388,11 @@ export class CommunicationComponent
         this.lastChannelsLoadedAt = Date.now();
         this.mapAndSetChannels(list || []);
         this.channelsRequestInFlight = false;
+        this.flushPendingForcedChannelsRefresh();
       },
       error: () => {
         this.channelsRequestInFlight = false;
+        this.flushPendingForcedChannelsRefresh();
         if (!this.channels.length) {
           this.channelsError = 'Could not load channels.';
           this.channels = [];
@@ -3399,6 +3405,12 @@ export class CommunicationComponent
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.channelsError = null;
+    const existingChannelUnread = new Map(
+      this.channels.map((channel) => [
+        Number(channel.backendId),
+        Number(channel.unreadCount || 0),
+      ]),
+    );
     this.cachedCollabChannels = list;
     this.mapDirectMessageChannels(list);
     const allowedIds = new Set(
@@ -3438,7 +3450,11 @@ export class CommunicationComponent
         const isActiveChannel =
           this.activeView === 'channel' &&
           String(backendId) === String(this.activeChannelId);
-        const unreadCount = isActiveChannel ? 0 : Number(c.unreadCount ?? 0);
+        const serverUnreadCount = Number(c.unreadCount ?? 0);
+        const preservedUnreadCount = existingChannelUnread.get(backendId) || 0;
+        const unreadCount = isActiveChannel
+          ? 0
+          : Math.max(serverUnreadCount, preservedUnreadCount);
         return {
           id: String(backendId),
           backendId,
@@ -3468,6 +3484,12 @@ export class CommunicationComponent
   }
 
   private mapDirectMessageChannels(list: CollabChannel[]): void {
+    const existingDmUnread = new Map(
+      this.dmContacts.map((contact) => [
+        Number(contact.userId),
+        Number(contact.unreadCount || 0),
+      ]),
+    );
     for (const contact of this.dmContacts) {
       contact.dmChannelId = undefined;
       contact.unreadCount = undefined;
@@ -3518,10 +3540,21 @@ export class CommunicationComponent
       const selected = bestChannelByUserId.get(Number(contact.userId));
       if (!selected) continue;
       contact.dmChannelId = Number(selected.channelId ?? selected.id);
-      const unreadCount = unreadByUserId.get(Number(contact.userId)) || 0;
+      const unreadCount = Math.max(
+        unreadByUserId.get(Number(contact.userId)) || 0,
+        existingDmUnread.get(Number(contact.userId)) || 0,
+      );
       contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
       contact.hasUnread = unreadCount > 0;
     }
+  }
+
+  private flushPendingForcedChannelsRefresh(): void {
+    if (!this.pendingForcedChannelsRefresh) {
+      return;
+    }
+    this.pendingForcedChannelsRefresh = false;
+    setTimeout(() => this.loadChannels(true, true), 0);
   }
 
   private compareDmChannelPriority(
@@ -4018,12 +4051,14 @@ export class CommunicationComponent
         this.startConversationSync();
         this.scrollToLatestMessageSoon();
         this.cdr.detectChanges();
+        this.focusMessageComposerSoon();
       } else {
         this.channelSnapshotFailureUntil.delete(ch.backendId);
         this.channelSnapshotLastErrorStatus.delete(ch.backendId);
         this.channelSnapshotLastErrorMessage.delete(ch.backendId);
         this.historyPagingArmed = false;
         this.loadChannelMessages(ch);
+        this.focusMessageComposerSoon();
       }
     }
   }
@@ -4072,6 +4107,7 @@ export class CommunicationComponent
       this.startConversationSync();
       this.scrollToLatestMessageSoon();
       this.cdr.detectChanges();
+      this.focusMessageComposerSoon();
       return;
     }
     this.messagesLoading = true;
@@ -4080,6 +4116,7 @@ export class CommunicationComponent
     this.cdr.detectChanges();
     this.historyPagingArmed = false;
     this.getOrCreateDmChannel(contact);
+    this.focusMessageComposerSoon();
   }
 
   setView(v: 'threads'): void {
@@ -4240,6 +4277,7 @@ export class CommunicationComponent
 
   private loadDmMessages(contact: DmContact, channelId: number): void {
     const hadExistingMessages = this.dmMessages[contact.id] !== undefined;
+    const existingMessages = [...(this.dmMessages[contact.id] || [])];
     this.historyPagingArmed = false;
     this.messagesLoading = true;
     this.conversationAccessMessage = '';
@@ -4301,10 +4339,14 @@ export class CommunicationComponent
         ];
         this.loadUserDirectory(senderIds, () => {
           this.loadMemberAvatars(senderIds);
-          this.dmMessages[contact.id] = this.buildMessageList(
+          const renderedMessages = this.buildMessageList(
             snap.messages,
             snap.reactions || [],
             snap.attachments || [],
+          );
+          this.dmMessages[contact.id] = this.mergeRenderedMessagesWithPending(
+            renderedMessages,
+            existingMessages,
           );
           this.updateDmConversationMeta(contact, this.dmMessages[contact.id]);
           this.buildReadStateMap(snap.messages, snap.readStates || []);
@@ -4335,6 +4377,7 @@ export class CommunicationComponent
 
   private loadChannelMessages(channel: Channel): void {
     if (!channel.backendId) return;
+    const existingMessages = [...(this.channelMessages[channel.id] || [])];
     this.historyPagingArmed = false;
     this.messagesLoading = true;
     this.cdr.detectChanges();
@@ -4366,14 +4409,37 @@ export class CommunicationComponent
         ];
         this.loadUserDirectory(senderIds, () => {
           this.loadMemberAvatars(senderIds);
-          this.buildAndRenderMessages(
-            channel,
+          const renderedMessages = this.buildMessageList(
             snap.messages,
             snap.reactions || [],
             snap.attachments || [],
-            snap.readStates || [],
           );
+          this.channelMessages[channel.id] = this.mergeRenderedMessagesWithPending(
+            renderedMessages,
+            existingMessages,
+          );
+          this.lastMessageBackendId = snap.messages[snap.messages.length - 1].id;
+          this.buildReadStateMap(snap.messages, snap.readStates || []);
+          this.applyReadStateToMessages(this.channelMessages[channel.id]);
+          if (this.lastMessageBackendId)
+            this.collabService
+              .markRead(channel.backendId, this.lastMessageBackendId)
+              .subscribe({ error: () => {} });
+          this.collabService
+            .setPresenceOnline(channel.backendId)
+            .subscribe({ error: () => {} });
+          this.presenceChannelId = channel.backendId;
+          this.pollChannelPresence(channel.backendId);
+          if (channel.id === this.activeChannelId && this.activeView === 'channel') {
+            channel.hasUnread = false;
+            channel.unreadCount = undefined;
+            this.syncHeaderState();
+          }
+          this.subscribeToChannel(channel.backendId);
+          this.scrollFeed = true;
+          this.cdr.detectChanges();
           this.scrollToLatestMessageSoon();
+          this.consumePendingNotificationHighlight(this.channelMessages[channel.id]);
         });
     });
   }
@@ -4493,6 +4559,47 @@ export class CommunicationComponent
     };
 
     return roots.map((r) => toLocal(r));
+  }
+
+  private mergeRenderedMessagesWithPending(
+    rendered: Message[],
+    existing: Message[],
+  ): Message[] {
+    const next = [...rendered];
+
+    const attachPending = (pending: Message): void => {
+      if (pending.backendId) return;
+
+      if (pending.replyToMessageId) {
+        const parent = this.findMsgByBackendId(next, pending.replyToMessageId);
+        if (parent) {
+          const replyExists = parent.replies.some(
+            (reply) => reply.id === pending.id,
+          );
+          if (!replyExists) {
+            parent.replies = [...parent.replies, pending];
+          }
+          return;
+        }
+      }
+
+      const rootExists = next.some((message) => message.id === pending.id);
+      if (!rootExists) {
+        next.push(pending);
+      }
+    };
+
+    const walk = (items: Message[]) => {
+      for (const item of items || []) {
+        attachPending(item);
+        if (item.replies?.length) {
+          walk(item.replies);
+        }
+      }
+    };
+
+    walk(existing);
+    return next;
   }
 
   private buildAndRenderMessages(
@@ -4858,6 +4965,7 @@ export class CommunicationComponent
     this.pendingAttachments = [];
     this.scrollFeed = true;
     this.cdr.detectChanges();
+    this.focusMessageComposerSoon();
     this.collabService
       .sendMessage({
         channelId: channel.backendId,
@@ -4883,11 +4991,13 @@ export class CommunicationComponent
             );
           }
           else this.cdr.detectChanges();
+          this.focusMessageComposerSoon();
         },
         error: () => {
           optimistic.deliveryState = 'FAILED';
           this.sendingMessage = false;
           this.cdr.detectChanges();
+          this.focusMessageComposerSoon();
         },
       });
   }
@@ -4929,6 +5039,7 @@ export class CommunicationComponent
     this.pendingAttachments = [];
     this.scrollFeed = true;
     this.cdr.detectChanges();
+    this.focusMessageComposerSoon();
     this.collabService
       .sendMessage({
         channelId: chId,
@@ -4958,11 +5069,13 @@ export class CommunicationComponent
               optimistic,
             );
           } else this.cdr.detectChanges();
+          this.focusMessageComposerSoon();
         },
         error: () => {
           optimistic.deliveryState = 'FAILED';
           this.sendingMessage = false;
           this.cdr.detectChanges();
+          this.focusMessageComposerSoon();
         },
       });
   }
