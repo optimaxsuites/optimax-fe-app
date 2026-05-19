@@ -577,8 +577,11 @@ export class CommunicationComponent
     Promise<CollabChannelSnap | null>
   >();
   private channelSnapshotFailureUntil = new Map<number, number>();
+  private channelSnapshotConsecutiveFailures = new Map<number, number>();
   private channelSnapshotLastErrorStatus = new Map<number, number>();
   private channelSnapshotLastErrorMessage = new Map<number, string>();
+  private readonly SNAPSHOT_POLL_MAX_FAILURES = 6;
+  private attachmentPreviewFailed = new Set<string>();
   private channelHistoryLimit = new Map<number, number>();
   private channelHistoryExhausted = new Set<number>();
   private historyLoadInFlight = new Set<number>();
@@ -615,6 +618,7 @@ export class CommunicationComponent
       window.addEventListener('hashchange', this.handleMentionHashChange);
     }
     this.checkVoiceSupport();
+    this.requestBrowserNotificationPermission();
     this.loadCurrentUser();
     this.loadFeedHome();
     this.loadChannels();
@@ -2730,6 +2734,11 @@ export class CommunicationComponent
               tone: 'channel',
               channelId: ch.id,
             });
+            this.showBrowserNotification(
+              incoming.senderName || ch.name,
+              incoming.content || `New message in ${ch.name}`,
+              { tag: `channel-${ch.id}`, icon: incoming.avatarUrl },
+            );
           }
 
           if (ch.id !== this.activeChannelId) {
@@ -2791,6 +2800,11 @@ export class CommunicationComponent
               tone: 'dm',
               dmId: contact.id,
             });
+            this.showBrowserNotification(
+              incoming.senderName || contact.fullName,
+              incoming.content || `New direct message from ${contact.fullName}`,
+              { tag: `dm-${contact.id}`, icon: incoming.avatarUrl || contact.avatarUrl },
+            );
           }
           if (contact.id !== this.activeDmId) {
             if (!isOwnMessage) {
@@ -4054,6 +4068,7 @@ export class CommunicationComponent
         this.focusMessageComposerSoon();
       } else {
         this.channelSnapshotFailureUntil.delete(ch.backendId);
+        this.channelSnapshotConsecutiveFailures.delete(ch.backendId);
         this.channelSnapshotLastErrorStatus.delete(ch.backendId);
         this.channelSnapshotLastErrorMessage.delete(ch.backendId);
         this.historyPagingArmed = false;
@@ -4170,6 +4185,7 @@ export class CommunicationComponent
         this.messagesLoading = false;
       } else {
         this.channelSnapshotFailureUntil.delete(cachedChannelId);
+        this.channelSnapshotConsecutiveFailures.delete(cachedChannelId);
         this.channelSnapshotLastErrorStatus.delete(cachedChannelId);
         this.channelSnapshotLastErrorMessage.delete(cachedChannelId);
         this.loadDmMessages(contact, cachedChannelId);
@@ -4781,6 +4797,10 @@ export class CommunicationComponent
       return false;
     }
     if (this.activeView === 'channel' && this.activeChannel) {
+      const failures = this.channelSnapshotConsecutiveFailures.get(this.activeChannel.backendId) || 0;
+      if (failures >= this.SNAPSHOT_POLL_MAX_FAILURES) {
+        return false;
+      }
       if (
         this.hasRecoverableSnapshotFailure(this.activeChannel.backendId) ||
         this.channelMessages[this.activeChannel.id] === undefined
@@ -4790,6 +4810,10 @@ export class CommunicationComponent
       return false;
     }
     if (this.activeView === 'dm' && this.activeDmContact?.dmChannelId) {
+      const failures = this.channelSnapshotConsecutiveFailures.get(this.activeDmContact.dmChannelId) || 0;
+      if (failures >= this.SNAPSHOT_POLL_MAX_FAILURES) {
+        return false;
+      }
       if (
         this.hasRecoverableSnapshotFailure(this.activeDmContact.dmChannelId) ||
         this.dmMessages[this.activeDmId] === undefined
@@ -4922,6 +4946,35 @@ export class CommunicationComponent
           oscillator.onended = () => ctx.close();
         }
       });
+    } catch (_) {}
+  }
+
+  private requestBrowserNotificationPermission(): void {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
+  private showBrowserNotification(
+    title: string,
+    body: string,
+    options: { tag?: string; icon?: string } = {},
+  ): void {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible') return;
+    try {
+      const notif = new Notification(title, {
+        body,
+        tag: options.tag,
+        icon: options.icon || undefined,
+        silent: true,
+      });
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+      };
     } catch (_) {}
   }
 
@@ -6395,6 +6448,7 @@ export class CommunicationComponent
     )
       .then((snap) => {
         this.channelSnapshotFailureUntil.delete(channelId);
+        this.channelSnapshotConsecutiveFailures.delete(channelId);
         this.channelSnapshotLastErrorStatus.delete(channelId);
         this.channelSnapshotLastErrorMessage.delete(channelId);
         return snap;
@@ -6407,7 +6461,14 @@ export class CommunicationComponent
         this.channelSnapshotLastErrorStatus.set(channelId, status);
         this.channelSnapshotLastErrorMessage.set(channelId, message);
         if (status >= 500 || !status) {
-          this.channelSnapshotFailureUntil.set(channelId, Date.now() + 4_000);
+          const failures = (this.channelSnapshotConsecutiveFailures.get(channelId) || 0) + 1;
+          this.channelSnapshotConsecutiveFailures.set(channelId, failures);
+          const backoffMs = Math.min(4_000 * Math.pow(2, failures - 1), 120_000);
+          this.channelSnapshotFailureUntil.set(channelId, Date.now() + backoffMs);
+          if (failures >= this.SNAPSHOT_POLL_MAX_FAILURES) {
+            this.messagesLoading = false;
+            this.cdr.detectChanges();
+          }
         }
         return null;
       })
@@ -7264,12 +7325,15 @@ export class CommunicationComponent
     if (this.attachmentPreviewCache[key]) {
       return this.attachmentPreviewCache[key];
     }
-    if (!this.attachmentPreviewLoading.has(key) && att.downloadUrl) {
+    if (!this.attachmentPreviewLoading.has(key) && !this.attachmentPreviewFailed.has(key) && att.downloadUrl) {
       this.attachmentPreviewLoading.add(key);
       this.fetchAttachmentBlobUrl(att.downloadUrl)
         .then((url) => {
           this.attachmentPreviewCache[key] = url;
           this.syncAttachmentPreviewUrls(key, url);
+        })
+        .catch(() => {
+          this.attachmentPreviewFailed.add(key);
         })
         .finally(() => {
           this.attachmentPreviewLoading.delete(key);
@@ -7313,7 +7377,7 @@ export class CommunicationComponent
   private async fetchAttachmentBlobUrl(downloadUrl: string): Promise<string> {
     const blob = await firstValueFrom(
       this.collabService.fetchChatAttachmentBlob(downloadUrl),
-    );
+    ).catch((err) => { throw err; });
     return URL.createObjectURL(blob);
   }
 
