@@ -427,7 +427,7 @@ const routes: Routes = [
     component: SchedulingComponent,
   },
   {
-    path: 'admin/hr/profile-change-requests',
+    path: 'profile-change-requests/:uuid',
     component: ProfileChangeRequestsComponent,
   },
   {

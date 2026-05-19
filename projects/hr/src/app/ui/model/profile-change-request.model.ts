@@ -14,15 +14,17 @@ export type RequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface RequestDTO {
   id?: number;
+  profileChangeRequestId?: number;
   fieldName: string;      // e.g., 'bankName', 'accountNumber', 'name', 'phone'
   value: any;             // New value(s)
   oldValue: any;          // Current value(s)
 }
 
 export interface ProfileChangeRequestDTO {
-  id?: string;            // UUID or timestamp-based ID for localStorage
+  id?: string | number;   // Backend ID or timestamp-based ID for localStorage fallback
   employeeId: string | number;
   employeeName?: string;  // For display in HR table
+  employeeEmail?: string; // For local notification flow until backend joins employee data
   requestType: RequestType;
   fieldChangeType: FieldChangeType;
   request: RequestDTO[];
@@ -30,11 +32,7 @@ export interface ProfileChangeRequestDTO {
   status: RequestStatus;
   submittedDate: Date;
   processedDate?: Date;
-  processedBy?: {
-    id: string | number;
-    name: string;
-    email: string;
-  };
+  processedBy?: any;
   rejectionReason?: string;
 }
 

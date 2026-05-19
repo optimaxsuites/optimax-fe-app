@@ -12,14 +12,14 @@
     <div class="filter-group">
       <label>Status:</label>
       <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-        <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+        <option *ngFor="let opt of statusOptions" [ngValue]="opt.value">{{ opt.label }}</option>
       </select>
     </div>
 
     <div class="filter-group">
       <label>Field Type:</label>
       <select [(ngModel)]="fieldTypeFilter" (change)="applyFilters()" class="filter-select">
-        <option *ngFor="let opt of fieldTypeOptions" [value]="opt.value">{{ opt.label }}</option>
+        <option *ngFor="let opt of fieldTypeOptions" [ngValue]="opt.value">{{ opt.label }}</option>
       </select>
     </div>
 

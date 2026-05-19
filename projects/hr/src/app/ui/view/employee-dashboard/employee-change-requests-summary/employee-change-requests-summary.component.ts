@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
 import { ProfileChangeRequestService } from '../../../service/profile-change-request.service';
 import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.model';
 import { Subject } from 'rxjs';
@@ -9,7 +9,9 @@ import { takeUntil } from 'rxjs/operators';
   templateUrl: './employee-change-requests-summary.component.html',
   styleUrl: './employee-change-requests-summary.component.scss'
 })
-export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnDestroy {
+export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnChanges, OnDestroy {
+  @Input() employeeId: string | number | null = null;
+
   employeeRequests: ProfileChangeRequestDTO[] = [];
   pendingCount = 0;
   approvedCount = 0;
@@ -21,10 +23,17 @@ export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnDestroy
 
   ngOnInit(): void {
     this.loadRequests();
-    // Subscribe to requests observable for real-time updates
+
+    // Keep the card in sync with service updates without triggering another GET.
     this.profileChangeRequestService.requests$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.loadRequests());
+      .subscribe((requests) => this.applyEmployeeRequests(requests));
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['employeeId'] && !changes['employeeId'].firstChange) {
+      this.loadRequests();
+    }
   }
 
   ngOnDestroy(): void {
@@ -45,8 +54,7 @@ export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnDestroy
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (requests) => {
-          this.employeeRequests = requests;
-          this.calculateStats();
+          this.setEmployeeRequests(requests);
           this.loading = false;
         },
         error: (error) => {
@@ -62,17 +70,52 @@ export class EmployeeChangeRequestsSummaryComponent implements OnInit, OnDestroy
     this.rejectedCount = this.employeeRequests.filter(r => r.status === 'rejected').length;
   }
 
+  private applyEmployeeRequests(requests: ProfileChangeRequestDTO[]): void {
+    const employeeId = this.getEmployeeId();
+    if (!employeeId) {
+      return;
+    }
+
+    this.setEmployeeRequests(
+      requests.filter((request) => String(request.employeeId) === String(employeeId))
+    );
+  }
+
+  private setEmployeeRequests(requests: ProfileChangeRequestDTO[]): void {
+    this.employeeRequests = requests;
+    this.calculateStats();
+  }
+
   private getEmployeeId(): string | null {
+    if (this.employeeId !== null && this.employeeId !== undefined && String(this.employeeId).trim()) {
+      return String(this.employeeId);
+    }
+
     const employeeInView = localStorage.getItem('employeeInView');
     if (employeeInView) {
       try {
         const parsed = JSON.parse(employeeInView);
-        return parsed?.id || null;
+        if (parsed?.id) {
+          return String(parsed.id);
+        }
       } catch {
-        return null;
+        // Fall through to current employee cache/session fallback.
       }
     }
-    return null;
+
+    const currentEmployee = localStorage.getItem('currentEmployee') || sessionStorage.getItem('currentEmployee');
+    if (currentEmployee) {
+      try {
+        const parsed = JSON.parse(currentEmployee);
+        if (parsed?.id) {
+          return String(parsed.id);
+        }
+      } catch {
+        // Fall through to user id fallback.
+      }
+    }
+
+    return sessionStorage.getItem('userid') || localStorage.getItem('userid');
   }
 
   getStatusLabel(status: string): string {
