@@ -1,6 +1,6 @@
 export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
-  employeeId: number;
+  employeeId?: number;
   employee: string;
   attendanceRecordId?: number;
   department: string;

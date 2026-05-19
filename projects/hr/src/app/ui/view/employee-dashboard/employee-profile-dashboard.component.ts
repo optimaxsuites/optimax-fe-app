@@ -801,6 +801,16 @@ export class EmployeeProfileDashboardComponent {
     this.bankChangeRequestForm.reset();
   }
 
+  onBankChangeRequestSubmitted(event: any): void {
+    this.closeBankChangeRequest();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your bank change request has been submitted for HR review.',
+      key: 'global',
+    });
+  }
+
   submitBankChangeRequest(): void {
     if (this.bankChangeRequestForm.invalid || !this.employeeInView) {
       return;

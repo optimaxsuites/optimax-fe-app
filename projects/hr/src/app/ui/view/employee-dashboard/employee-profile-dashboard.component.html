@@ -476,7 +476,7 @@
 
     <section class="grid xl:grid-cols-3 gap-4">
       <div class="info-card">
-        <app-employee-change-requests-summary></app-employee-change-requests-summary>
+        <app-employee-change-requests-summary [employeeId]="employeeInView?.id"></app-employee-change-requests-summary>
       </div>
 
       <div class="info-card">
@@ -529,82 +529,11 @@
 </ng-template>
 
 <app-modal *ngIf="isBankChangeRequestOpen" [header]="'Request bank detail change'" (close)="closeBankChangeRequest()">
-  <form [formGroup]="bankChangeRequestForm" (ngSubmit)="submitBankChangeRequest()" class="bank-change-form">
-    <div class="bank-change-summary">
-      <p class="bank-change-summary__title">Current bank details</p>
-      <div class="bank-change-summary__grid">
-        <div>
-          <span>Bank name</span>
-          <strong>{{ employeeInView?.bankName || '-' }}</strong>
-        </div>
-        <div>
-          <span>Account number</span>
-          <strong>{{ employeeInView?.accountNumber || '-' }}</strong>
-        </div>
-      </div>
-      <p class="bank-change-summary__copy">Enter the replacement details below. HR will receive this request for review.</p>
-    </div>
-
-    <div class="bank-change-grid">
-      <div class="bank-change-field">
-        <label for="requestedBankName">New bank name</label>
-        <select
-          id="requestedBankName"
-          formControlName="requestedBankName"
-        >
-          <option value="">-- Select a bank --</option>
-          <option *ngFor="let bank of nigerianBanks" [value]="bank">{{ bank }}</option>
-        </select>
-        <p class="bank-change-error" *ngIf="bankChangeRequestForm.get('requestedBankName')?.touched && bankChangeRequestForm.get('requestedBankName')?.invalid">
-          Select the bank you want HR to update.
-        </p>
-      </div>
-
-      <div class="bank-change-field">
-        <label for="requestedAccountNumber">New account number</label>
-        <input
-          id="requestedAccountNumber"
-          type="text"
-          inputmode="numeric"
-          formControlName="requestedAccountNumber"
-          placeholder="10-digit account number"
-        />
-        <p class="bank-change-error" *ngIf="bankChangeRequestForm.get('requestedAccountNumber')?.touched && bankChangeRequestForm.get('requestedAccountNumber')?.invalid">
-          Enter a valid 10-digit account number.
-        </p>
-      </div>
-
-      <div class="bank-change-field bank-change-field--full">
-        <label for="requestReason">Note for HR</label>
-        <textarea
-          id="requestReason"
-          rows="4"
-          formControlName="requestReason"
-          placeholder="Optional context for HR"
-        ></textarea>
-      </div>
-    </div>
-
-    <div class="bank-change-actions">
-      <button
-        type="button"
-        class="secondary-link-btn"
-        (click)="closeBankChangeRequest()"
-        [disabled]="submittingBankChangeRequest"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        class="edit-btn"
-        [disabled]="bankChangeRequestForm.invalid || submittingBankChangeRequest"
-      >
-        {{ submittingBankChangeRequest ? 'Sending...' : 'Send request' }}
-      </button>
-    </div>
-  </form>
+  <app-bank-details-change-request
+    [employee]="employeeInView"
+    (requestSubmitted)="onBankChangeRequestSubmitted($event)"
+  ></app-bank-details-change-request>
 </app-modal>
-
 <app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
   <div class="staff-id-modal">
     <div class="staff-id-toolbar">
