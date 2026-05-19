@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OptimaXSuites ERP UI Transition Mockup</title>
+  <style>
+    :root {
+      --brand-green: #2eb270;
+      --brand-green-strong: #23945c;
+      --brand-green-soft: #e8f9f0;
+      --brand-blue: #2e6276;
+      --brand-blue-strong: #234d5d;
+      --brand-blue-soft: #edf5f8;
+      --bg: #f3f6f7;
+      --surface: #ffffff;
+      --surface-2: #f8fbfc;
+      --line: #d7e3e7;
+      --text: #24313a;
+      --muted: #6c7b86;
+      --shadow: 0 22px 56px rgba(35, 53, 65, 0.1);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --font: "Roboto Slab", "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top right, rgba(46, 178, 112, 0.08), transparent 22%),
+        linear-gradient(180deg, #f7fafb 0%, #eef3f5 100%);
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      padding: 24px 18px;
+      background: linear-gradient(180deg, #244655 0%, #2e6276 100%);
+      color: #fff;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      padding: 18px 18px 16px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #dff4ed;
+      font-weight: 700;
+    }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--brand-green);
+      box-shadow: 0 0 0 6px rgba(46, 178, 112, 0.16);
+    }
+
+    .brand h1 {
+      margin: 16px 0 8px;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .brand p {
+      margin: 0;
+      color: rgba(255,255,255,0.78);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .nav-group {
+      margin-top: 20px;
+    }
+
+    .nav-label {
+      margin: 0 0 10px;
+      padding: 0 8px;
+      color: rgba(255,255,255,0.62);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      color: rgba(255,255,255,0.9);
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: background-color .18s ease, transform .18s ease;
+    }
+
+    .nav-button:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateX(2px);
+    }
+
+    .nav-button.active {
+      background: linear-gradient(135deg, rgba(46,178,112,0.24), rgba(255,255,255,0.12));
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .nav-button span:last-child {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .nav-footer {
+      margin-top: 20px;
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .nav-footer a {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 42px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .nav-footer a:first-child {
+      background: #fff;
+      color: var(--brand-blue);
+    }
+
+    .nav-footer a:last-child {
+      border: 1px solid rgba(255,255,255,0.18);
+      color: #fff;
+    }
+
+    .main {
+      padding: 20px 22px 36px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(215, 227, 231, 0.9);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 50px;
+      padding: 0 16px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chip,
+    .ghost-button,
+    .primary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .chip {
+      background: var(--brand-blue-soft);
+      color: var(--brand-blue);
+      border: 1px solid #d5e5ea;
+    }
+
+    .ghost-button {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, var(--brand-green-strong), var(--brand-green));
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(46, 178, 112, 0.22);
+    }
+
+    .hero {
+      padding: 24px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,251,252,0.95)),
+        linear-gradient(135deg, var(--brand-blue-soft), transparent);
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--brand-green-soft);
+      color: var(--brand-green-strong);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .hero h2 {
+      margin: 14px 0 8px;
+      font-size: 38px;
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .stat strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .stat span {
+      display: block;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .module-panel {
+      display: none;
+      padding: 20px;
+      border-radius: var(--radius-xl);
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+
+    .module-panel.active {
+      display: block;
+    }
+
+    .module-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .module-header h3 {
+      margin: 10px 0 6px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .module-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+      max-width: 880px;
+    }
+
+    .module-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tabbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      margin-bottom: 16px;
+    }
+
+    .tab-button {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: #fff;
+      color: var(--brand-blue);
+      box-shadow: 0 8px 18px rgba(36, 70, 85, 0.08);
+      border: 1px solid #deeaee;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .layout-2,
+    .layout-3,
+    .metric-grid,
+    .table-toolbar,
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .layout-2 {
+      grid-template-columns: 1.05fr .95fr;
+    }
+
+    .layout-3 {
+      grid-template-columns: .88fr 1.18fr .86fr;
+    }
+
+    .metric-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 14px;
+    }
+
+    .card,
+    .table-card,
+    .form-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .card h4,
+    .table-card h4,
+    .form-card h4 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .card p,
+    .table-card p,
+    .form-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 13px;
+    }
+
+    .summary-number {
+      margin-top: 14px;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+    }
+
+    .inline-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .inline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #edf2f4;
+      font-size: 13px;
+    }
+
+    .inline-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status.green {
+      background: var(--brand-green-soft);
+      color: var(--brand-green-strong);
+    }
+
+    .status.blue {
+      background: var(--brand-blue-soft);
+      color: var(--brand-blue);
+    }
+
+    .status.orange {
+      background: #fff3e9;
+      color: #b0672c;
+    }
+
+    .table-toolbar {
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .filter,
+    .dropdown {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 14px;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: #f4f8fa;
+      color: var(--muted);
+      text-align: left;
+      padding: 12px 14px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tbody td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #edf2f4;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #fbfdfe;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .input,
+    .textarea,
+    .select {
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+    }
+
+    .textarea {
+      min-height: 120px;
+      padding: 12px;
+      align-items: flex-start;
+      line-height: 1.6;
+    }
+
+    .segment {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .segment span {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .split-callout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .matrix {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .matrix-item {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .print-all {
+      display: none;
+    }
+
+    @media (max-width: 1320px) {
+      .app-shell,
+      .layout-2,
+      .layout-3,
+      .split-callout {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 980px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+      }
+
+      .topbar,
+      .module-header,
+      .table-toolbar,
+      .form-grid,
+      .hero-stats,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .app-shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: relative;
+        height: auto;
+        padding-bottom: 12px;
+      }
+
+      .topbar {
+        margin-top: 16px;
+      }
+
+      .module-panel {
+        display: block !important;
+        break-inside: avoid;
+      }
+
+      .tab-content {
+        display: block !important;
+      }
+
+      .tabbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><span class="brand-dot"></span> OptimaX ERP Web UI</div>
+        <h1>UI Transition Mockup</h1>
+        <p>A calmer, implementation-oriented redesign aligned to the current OptimaX ERP shell: sidebar navigation, tab-driven modules, forms, filters, and tables.</p>
+      </div>
+
+      <div class="nav-group">
+        <p class="nav-label">Primary Modules</p>
+        <div class="nav-list">
+          <button class="nav-button active" data-module-target="dashboard"><span>Dashboard</span><span>01</span></button>
+          <button class="nav-button" data-module-target="hr"><span>HR and Payroll</span><span>02</span></button>
+          <button class="nav-button" data-module-target="accounting"><span>Accounting</span><span>03</span></button>
+          <button class="nav-button" data-module-target="expenses"><span>Expenses</span><span>04</span></button>
+          <button class="nav-button" data-module-target="sales"><span>Sales</span><span>05</span></button>
+          <button class="nav-button" data-module-target="crm"><span>CRM</span><span>06</span></button>
+          <button class="nav-button" data-module-target="procurement"><span>Procurement</span><span>07</span></button>
+          <button class="nav-button" data-module-target="vendor"><span>Vendor and Tender</span><span>08</span></button>
+          <button class="nav-button" data-module-target="inventory"><span>Inventory</span><span>09</span></button>
+          <button class="nav-button" data-module-target="purchase"><span>Purchase</span><span>10</span></button>
+          <button class="nav-button" data-module-target="pos"><span>POS and Hospitality</span><span>11</span></button>
+          <button class="nav-button" data-module-target="productivity"><span>Productivity and AI</span><span>12</span></button>
+          <button class="nav-button" data-module-target="settings"><span>Settings and Admin</span><span>13</span></button>
+        </div>
+      </div>
+
+      <div class="nav-footer">
+        <a href="optimaxsuites-erp-redesign.pdf">Open PDF</a>
+        <a href="#top">Prototype File</a>
+      </div>
+    </aside>
+
+    <main class="main" id="top">
+      <div class="topbar">
+        <div class="search">Global Search: modules, employees, invoices, POs, journals, vendors, tenders, tasks</div>
+        <div class="top-actions">
+          <span class="chip">Tenant: OptimaXSuites Demo</span>
+          <span class="ghost-button">Approvals 14</span>
+          <span class="ghost-button">Notifications 5</span>
+          <span class="primary-button">Create New</span>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div class="eyebrow">Modern ERP Shell</div>
+        <h2>OptimaX ERP, redesigned as a real product interface.</h2>
+        <p>
+          This mockup keeps the familiar OptimaX navigation logic and module structure, but upgrades the visual system: lighter hierarchy, stronger spacing, better tables,
+          calmer typography, improved tab patterns, and more credible operational workspaces. Each module below is clickable and reveals realistic UI components rather than poster-style concept tiles.
+        </p>
+        <div class="hero-stats">
+          <div class="stat"><strong>Navigation</strong><span>Sidebar and tabs</span></div>
+          <div class="stat"><strong>Forms</strong><span>Dense but readable</span></div>
+          <div class="stat"><strong>Tables</strong><span>Review-first layouts</span></div>
+          <div class="stat"><strong>Prototype</strong><span>Static and clickable</span></div>
+        </div>
+      </section>
+
+      <section class="module-panel active" id="module-dashboard">
+        <div class="module-header">
+          <div>
+            <div class="eyebrow">Dashboard</div>
+            <h3>Executive and Operations Dashboard</h3>
+            <p>A cleaner home surface that behaves like the current ERP entry point but with better metric hierarchy, a more usable approval queue, and cross-module action tiles that do not overpower the screen.</p>
+          </div>
+          <div class="module-tools">
+            <span class="chip">Role: Executive</span>
+            <span class="ghost-button">Switch View</span>
+          </div>
+        </div>
+        <div class="metric-grid">
+          <div class="card"><h4>Cash Position</h4><p>Available treasury and operational liquidity.</p><div class="summary-number">₦248.6M</div></div>
+          <div class="card"><h4>Open Approvals</h4><p>Pending decisions across all modules.</p><div class="summary-number">14</div></div>
+          <div class="card"><h4>Sales This Month</h4><p>Invoice-backed booked revenue.</p><div class="summary-number">₦418.2M</div></div>
+          <div class="card"><h4>People Alerts</h4><p>Attendance, payroll, leave exceptions.</p><div class="summary-number">9</div></div>
+        </div>
+        <div class="layout-3">
+          <div class="table-card">
+            <h4>Approval Queue</h4>
+            <div class="inline-list">
+              <div class="inline-row"><span>Payroll funding release</span><span class="status orange">Due now</span></div>
+              <div class="inline-row"><span>Procurement request PR-191</span><span class="status blue">Finance review</span></div>
+              <div class="inline-row"><span>Leave escalation</span><span class="status green">HR reviewed</span></div>
+              <div class="inline-row"><span>Inventory adjustment</span><span class="status orange">Supervisor hold</span></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <h4>Operational Snapshot</h4>
+            <table>
+              <thead><tr><th>Area</th><th>Status</th><th>Signal</th></tr></thead>
+              <tbody>
+                <tr><td>Accounting close</td><td><span class="status blue">In progress</span></td><td>2 sync mismatches</td></tr>
+                <tr><td>Inventory</td><td><span class="status green">Stable</span></td><td>12 low stock items</td></tr>
+                <tr><td>CRM</td><td><span class="status orange">Collections risk</span></td><td>₦21.4M overdue</td></tr>
+                <tr><td>HR</td><td><span class="status green">Healthy</span></td><td>92% payroll readiness</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-card">
+            <h4>Action Tiles</h4>
+            <div class="matrix">
+              <div class="matrix-item"><span>Review finance mismatches</span><span class="status orange">Open</span></div>
+              <div class="matrix-item"><span>Approve key vendors</span><span class="status blue">3 pending</span></div>
+              <div class="matrix-item"><span>Resolve stock transfer</span><span class="status green">Assigned</span></div>
+              <div class="matrix-item"><span>Check daily POS summaries</span><span class="status blue">Ready</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-hr">
+        <div class="module-header">
+          <div>
+            <div class="eyebrow">HR and Payroll</div>
+            <h3>People Records, Attendance, Leave, Payroll</h3>
+            <p>This mirrors the current HR-heavy ERP usage: record forms, operational tabs, and payroll readiness views are all first-class instead of hidden behind generic tiles.</p>
+          </div>
+          <div class="module-tools">
+            <span class="chip">1,284 Staff</span>
+            <span class="ghost-button">Export Roster</span>
+          </div>
+        </div>
+        <div class="tabbar">
+          <button class="tab-button active" data-tab-target="hr-people">Employee Profile</button>
+          <button class="tab-button" data-tab-target="hr-leave">Leave and Attendance</button>
+          <button class="tab-button" data-tab-target="hr-payroll">Payroll Run</button>
+        </div>
+        <div class="tab-content active" id="tab-hr-people">
+          <div class="layout-2">
+            <div class="form-card">
+              <h4>Employee Profile Form</h4>
+              <div class="form-grid">
+                <div class="field"><div class="label">First Name</div><div class="input">Damilola</div></div>
+                <div class="field"><div class="label">Last Name</div><div class="input">Awe</div></div>
+                <div class="field"><div class="label">Work Email</div><div class="input">damilola.awe@optimaxsuite.com</div></div>
+                <div class="field"><div class="label">Phone</div><div class="input">0803 000 0000</div></div>
+                <div class="field"><div class="label">Department</div><div class="select">Finance Operations</div></div>
+                <div class="field"><div class="label">Level</div><div class="select">L7 Manager</div></div>
+                <div class="field"><div class="label">Bank</div><div class="select">GTBank</div></div>
+                <div class="field"><div class="label">Account Number</div><div class="input">0123456789</div></div>
+                <div class="field full"><div class="label">Address</div><div class="textarea">12 Admiralty Way, Lekki Phase 1, Lagos</div></div>
+              </div>
+            </div>
+            <div class="table-card">
+              <h4>Profile Side Panels</h4>
+              <div class="split-callout">
+                <div class="card">
+                  <h4>Documents</h4>
+                  <div class="inline-list">
+                    <div class="inline-row"><span>NIN and BVN</span><span class="status green">Verified</span></div>
+                    <div class="inline-row"><span>Offer letter</span><span class="status blue">Available</span></div>
+                    <div class="inline-row"><span>Profile change request</span><span class="status orange">Pending</span></div>
+                  </div>
+                </div>
+                <div class="card">
+                  <h4>Job Timeline</h4>
+                  <div class="inline-list">
+                    <div class="inline-row"><span>Joined</span><span>12 Jan 2024</span></div>
+                    <div class="inline-row"><span>Last review</span><span>16 Apr 2026</span></div>
+                    <div class="inline-row"><span>Next appraisal</span><span>05 Jul 2026</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="footer-note">Pattern: master-detail employee page with visible forms, tabs, and profile sidecards.</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-hr-leave">
+          <div class="layout-2">
+            <div class="table-card">
+              <h4>Leave Requests</h4>
+              <div class="table-toolbar">
+                <div class="filter">Search employee or request ID</div>
+                <div class="dropdown">Status: Pending</div>
+                <div class="dropdown">Department: All</div>
+                <div class="ghost-button">Apply</div>
+              </div>
+              <table>
+                <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Kindness David</td><td>Annual Leave</td><td>20 May - 24 May</td><td><span class="status orange">Pending</span></td></tr>
+                  <tr><td>Chrisha Okorocha</td><td>Sick Leave</td><td>17 May - 18 May</td><td><span class="status green">Approved</span></td></tr>
+                  <tr><td>Samuel Adegunju</td><td>Study Leave</td><td>02 Jun - 06 Jun</td><td><span class="status blue">HR review</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-card">
+              <h4>Attendance Exceptions</h4>
+              <div class="metric-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px;">
+                <div class="card"><h4>Late Arrivals</h4><div class="summary-number">23</div></div>
+                <div class="card"><h4>Missing Clock-outs</h4><div class="summary-number">7</div></div>
+              </div>
+              <div class="matrix">
+                <div class="matrix-item"><span>Warehouse Team A, today</span><span class="status orange">Review</span></div>
+                <div class="matrix-item"><span>Sales mobile staff, yesterday</span><span class="status blue">Override</span></div>
+                <div class="matrix-item"><span>Finance unit, Monday</span><span class="status green">Resolved</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-hr-payroll">
+          <div class="layout-3">
+            <div class="card"><h4>Run Readiness</h4><div class="inline-list"><div class="inline-row"><span>Attendance posted</span><span class="status green">Done</span></div><div class="inline-row"><span>Leave offsets</span><span class="status green">Done</span></div><div class="inline-row"><span>Funding released</span><span class="status orange">Pending</span></div></div></div>
+            <div class="table-card">
+              <h4>Variance Table</h4>
+              <table>
+                <thead><tr><th>Employee</th><th>Variance</th><th>Reason</th><th>State</th></tr></thead>
+                <tbody>
+                  <tr><td>Eniola Amobi</td><td>₦45,000</td><td>Backdated allowance</td><td><span class="status blue">Review</span></td></tr>
+                  <tr><td>Miracle Igbinoghene</td><td>₦18,500</td><td>Shift overtime</td><td><span class="status green">Accepted</span></td></tr>
+                  <tr><td>Eseose Odion</td><td>₦31,200</td><td>Leave reversal</td><td><span class="status orange">Check</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card"><h4>Payroll Actions</h4><div class="segment"><span>Preview register</span><span>Lock run</span><span>Send for treasury</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-accounting">
+        <div class="module-header">
+          <div>
+            <div class="eyebrow">Accounting</div>
+            <h3>Bookkeeping, Reconciliation, Sync Layer, Reports</h3>
+            <p>The current tab-driven accounting shell is preserved, but the content areas become more professional: better filter rows, split review panes, and stronger exception-first workflows.</p>
+          </div>
+          <div class="module-tools">
+            <span class="chip">Period: May 2026</span>
+            <span class="ghost-button">Close Checklist</span>
+          </div>
+        </div>
+        <div class="tabbar">
+          <button class="tab-button active" data-tab-target="acc-book">Book Keeping</button>
+          <button class="tab-button" data-tab-target="acc-bank">Banks and Payments</button>
+          <button class="tab-button" data-tab-target="acc-sync">Paystack Sync Layer</button>
+          <button class="tab-button" data-tab-target="acc-report">Reports</button>
+        </div>
+        <div class="tab-content active" id="tab-acc-book">
+          <div class="layout-2">
+            <div class="table-card">
+              <h4>Journal Review Table</h4>
+              <div class="table-toolbar">
+                <div class="filter">Search account, reference, source module</div>
+                <div class="dropdown">Status: Approved</div>
+                <div class="dropdown">Source: All</div>
+                <div class="ghost-button">Filter</div>
+              </div>
+              <table>
+                <thead><tr><th>Reference</th><th>Source</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>JV-2026-1041</td><td>Expenses</td><td>₦2,420,000</td><td><span class="status green">Posted</span></td></tr>
+                  <tr><td>JV-2026-1042</td><td>Sales</td><td>₦8,145,000</td><td><span class="status blue">Approved</span></td></tr>
+                  <tr><td>JV-2026-1043</td><td>Payroll</td><td>₦36,910,000</td><td><span class="status orange">Awaiting</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-card">
+              <h4>Journal Entry Form</h4>
+              <div class="form-grid">
+                <div class="field"><div class="label">Date</div><div class="input">17 May 2026</div></div>
+                <div class="field"><div class="label">Source Module</div><div class="select">Accounting</div></div>
+                <div class="field"><div class="label">Debit Account</div><div class="select">Cash at Bank</div></div>
+                <div class="field"><div class="label">Credit Account</div><div class="select">Accounts Receivable</div></div>
+                <div class="field"><div class="label">Amount</div><div class="input">₦4,250,000</div></div>
+                <div class="field"><div class="label">Reference</div><div class="input">SO-2026-311</div></div>
+                <div class="field full"><div class="label">Narration</div><div class="textarea">Settlement of receivable against customer invoice batch.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-acc-bank">
+          <div class="layout-3">
+            <div class="card"><h4>Bank Balances</h4><div class="summary-number">₦248.6M</div><p>Across funding and settlement accounts.</p></div>
+            <div class="table-card">
+              <h4>Reconciliation Issues</h4>
+              <table>
+                <thead><tr><th>Account</th><th>Mismatch</th><th>State</th></tr></thead>
+                <tbody>
+                  <tr><td>Main Ops Account</td><td>₦1,200,000</td><td><span class="status orange">Investigate</span></td></tr>
+                  <tr><td>Collections Account</td><td>₦0</td><td><span class="status green">Matched</span></td></tr>
+                  <tr><td>Payroll Funding</td><td>₦640,000</td><td><span class="status blue">Review</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card"><h4>Batch Actions</h4><div class="segment"><span>Import statement</span><span>Match entries</span><span>Escalate mismatch</span></div></div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-acc-sync">
+          <div class="layout-2">
+            <div class="table-card">
+              <h4>Paystack Sync Layer</h4>
+              <div class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+                <div class="card"><h4>Latest Balance</h4><div class="summary-number">₦92.4M</div></div>
+                <div class="card"><h4>Last Sync</h4><div class="summary-number" style="font-size:20px;">2 min ago</div></div>
+                <div class="card"><h4>Open Mismatches</h4><div class="summary-number">12</div></div>
+              </div>
+              <table>
+                <thead><tr><th>Reference</th><th>Type</th><th>Status</th><th>Reconciliation</th></tr></thead>
+                <tbody>
+                  <tr><td>TRF_OPT_1031</td><td>Transfer</td><td>success</td><td><span class="status green">Matched</span></td></tr>
+                  <tr><td>TRF_OPT_1037</td><td>Transfer</td><td>failed</td><td><span class="status orange">Unmatched</span></td></tr>
+                  <tr><td>PAY_OPT_2082</td><td>Payment</td><td>success</td><td><span class="status blue">Pending review</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <h4>Manual Sync Actions</h4>
+              <div class="segment">
+                <span>Refresh balance snapshot</span>
+                <span>Sync transfers</span>
+                <span>Sync payments</span>
+                <span>View sync job history</span>
+              </div>
+              <div class="inline-list">
+                <div class="inline-row"><span>Last job</span><span class="status green">Completed</span></div>
+                <div class="inline-row"><span>Triggered by</span><span>Manual trigger</span></div>
+                <div class="inline-row"><span>Catch-up status</span><span>Webhook recovery clean</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-acc-report">
+          <div class="layout-2">
+            <div class="table-card">
+              <h4>Report Selector</h4>
+              <div class="form-grid">
+                <div class="field"><div class="label">Report</div><div class="select">Balance Sheet</div></div>
+                <div class="field"><div class="label">Period</div><div class="select">Monthly</div></div>
+                <div class="field"><div class="label">Start Date</div><div class="input">01 May 2026</div></div>
+                <div class="field"><div class="label">End Date</div><div class="input">31 May 2026</div></div>
+              </div>
+            </div>
+            <div class="card"><h4>Report Preview</h4><p>Balance sheet, income statement, cash flow, tax summary, and disbursement health all become standard preview panels with export actions fixed in place.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-expenses">
+        <div class="module-header"><div><div class="eyebrow">Expenses</div><h3>Expense Submission and Approval</h3><p>Submission forms and review tables are placed side by side for finance and department approvers.</p></div><div class="module-tools"><span class="chip">42 open claims</span></div></div>
+        <div class="layout-2">
+          <div class="form-card">
+            <h4>Expense Form</h4>
+            <div class="form-grid">
+              <div class="field"><div class="label">Expense Type</div><div class="select">Travel and Logistics</div></div>
+              <div class="field"><div class="label">Department</div><div class="select">Sales</div></div>
+              <div class="field"><div class="label">Amount</div><div class="input">₦186,500</div></div>
+              <div class="field"><div class="label">Date</div><div class="input">17 May 2026</div></div>
+              <div class="field full"><div class="label">Description</div><div class="textarea">Regional client visit and field activity reimbursement.</div></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <h4>Approval Table</h4>
+            <table>
+              <thead><tr><th>Claim</th><th>Owner</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>EXP-421</td><td>Oluwadare Queensheba</td><td>₦186,500</td><td><span class="status orange">Pending</span></td></tr>
+                <tr><td>EXP-418</td><td>Miracle Igbinoghene</td><td>₦63,200</td><td><span class="status green">Approved</span></td></tr>
+                <tr><td>EXP-409</td><td>Eseose Odion</td><td>₦28,900</td><td><span class="status blue">Finance review</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-sales">
+        <div class="module-header"><div><div class="eyebrow">Sales</div><h3>Quotation, Orders, Fulfilment</h3><p>The sales workspace emphasizes quotation forms, order tracking tables, and customer-side next actions instead of oversized decorative cards.</p></div><div class="module-tools"><span class="chip">₦186M pipeline</span></div></div>
+        <div class="tabbar">
+          <button class="tab-button active" data-tab-target="sales-quote">Quotation Form</button>
+          <button class="tab-button" data-tab-target="sales-order">Sales Orders</button>
+        </div>
+        <div class="tab-content active" id="tab-sales-quote">
+          <div class="layout-2">
+            <div class="form-card">
+              <h4>Quotation Builder</h4>
+              <div class="form-grid">
+                <div class="field"><div class="label">Customer</div><div class="select">Apex Retail Group</div></div>
+                <div class="field"><div class="label">Validity</div><div class="input">30 days</div></div>
+                <div class="field full"><div class="label">Items</div><div class="textarea">ERP Subscription Enterprise, POS rollout, implementation support, training package.</div></div>
+              </div>
+            </div>
+            <div class="table-card">
+              <h4>Line Items</h4>
+              <table>
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+                <tbody>
+                  <tr><td>ERP Enterprise Suite</td><td>1</td><td>₦12,000,000</td><td>₦12,000,000</td></tr>
+                  <tr><td>POS Terminal Bundle</td><td>8</td><td>₦650,000</td><td>₦5,200,000</td></tr>
+                  <tr><td>Implementation Support</td><td>1</td><td>₦3,800,000</td><td>₦3,800,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-sales-order">
+          <div class="table-card">
+            <h4>Sales Order Tracker</h4>
+            <table>
+              <thead><tr><th>Order</th><th>Customer</th><th>Fulfilment</th><th>Collection</th></tr></thead>
+              <tbody>
+                <tr><td>SO-311</td><td>Apex Retail Group</td><td><span class="status blue">Implementation</span></td><td><span class="status green">Deposit paid</span></td></tr>
+                <tr><td>SO-307</td><td>Kingdom Health</td><td><span class="status orange">Waiting stock</span></td><td><span class="status orange">Overdue</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-crm">
+        <div class="module-header"><div><div class="eyebrow">CRM</div><h3>Pipeline, Accounts, Follow-ups</h3><p>CRM becomes a cleaner commercial cockpit with dropdown filters, status lanes, and account summary cards that tie into collections.</p></div><div class="module-tools"><span class="chip">7 at-risk accounts</span></div></div>
+        <div class="layout-3">
+          <div class="card"><h4>Funnel Snapshot</h4><div class="inline-list"><div class="inline-row"><span>Discover</span><span>23</span></div><div class="inline-row"><span>Negotiate</span><span>11</span></div><div class="inline-row"><span>Close</span><span>4</span></div></div></div>
+          <div class="table-card">
+            <h4>Opportunity Table</h4>
+            <table>
+              <thead><tr><th>Opportunity</th><th>Owner</th><th>Stage</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Manufacturing ERP Bundle</td><td>Sales Team A</td><td><span class="status blue">Negotiation</span></td><td>₦44M</td></tr>
+                <tr><td>Hospitality Rollout</td><td>Key Accounts</td><td><span class="status orange">Proposal</span></td><td>₦21M</td></tr>
+                <tr><td>Retail Renewal</td><td>Renewals Desk</td><td><span class="status green">Closing</span></td><td>₦16M</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card"><h4>Next Actions</h4><div class="matrix"><div class="matrix-item"><span>Call overdue accounts</span><span class="status orange">Today</span></div><div class="matrix-item"><span>Renewal briefing</span><span class="status blue">Tomorrow</span></div></div></div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-procurement">
+        <div class="module-header"><div><div class="eyebrow">Procurement</div><h3>Requests, Approvals, Sourcing</h3><p>Procurement adopts a review-friendly layout with request tables, sourcing comparison cards, and clearer approval actions.</p></div><div class="module-tools"><span class="chip">24 active requests</span></div></div>
+        <div class="layout-2">
+          <div class="table-card">
+            <h4>Procurement Requests</h4>
+            <table>
+              <thead><tr><th>PR</th><th>Category</th><th>Requester</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>PR-191</td><td>IT Infrastructure</td><td>Admin</td><td><span class="status blue">Finance review</span></td></tr>
+                <tr><td>PR-188</td><td>Inventory Restock</td><td>Warehouse</td><td><span class="status orange">Awaiting approval</span></td></tr>
+                <tr><td>PR-174</td><td>Hospitality Supply</td><td>Operations</td><td><span class="status green">Sourcing</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h4>Sourcing Comparison</h4>
+            <div class="matrix">
+              <div class="matrix-item"><span>Vendor A, lowest landed cost</span><span class="status green">Preferred</span></div>
+              <div class="matrix-item"><span>Vendor B, delivery risk</span><span class="status orange">Watch</span></div>
+              <div class="matrix-item"><span>Vendor C, compliance score 98%</span><span class="status blue">Strong</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-vendor">
+        <div class="module-header"><div><div class="eyebrow">Vendor and Tender</div><h3>Vendor Registry and Tender Workspace</h3><p>Vendor onboarding and tender management sit together but still feel operational: registration forms, compliance documents, bid timelines, and shortlist tables.</p></div><div class="module-tools"><span class="chip">3 tenders closing soon</span></div></div>
+        <div class="layout-2">
+          <div class="form-card">
+            <h4>Vendor Registration</h4>
+            <div class="form-grid">
+              <div class="field"><div class="label">Vendor Name</div><div class="input">North Axis Supplies</div></div>
+              <div class="field"><div class="label">Category</div><div class="select">Technology Hardware</div></div>
+              <div class="field"><div class="label">Contact Email</div><div class="input">ops@northaxis.com</div></div>
+              <div class="field"><div class="label">Compliance Status</div><div class="select">Document Review</div></div>
+              <div class="field full"><div class="label">Notes</div><div class="textarea">Primary vendor for batch procurement. Tax certificate pending upload.</div></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <h4>Tender Timeline</h4>
+            <table>
+              <thead><tr><th>Tender</th><th>Stage</th><th>Deadline</th><th>State</th></tr></thead>
+              <tbody>
+                <tr><td>TDR-44</td><td>Technical review</td><td>18 May 2026</td><td><span class="status orange">Due</span></td></tr>
+                <tr><td>TDR-41</td><td>Finance opening</td><td>20 May 2026</td><td><span class="status blue">Scheduled</span></td></tr>
+                <tr><td>TDR-36</td><td>Award memo</td><td>22 May 2026</td><td><span class="status green">On track</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-inventory">
+        <div class="module-header"><div><div class="eyebrow">Inventory</div><h3>Products, Stock, Movements</h3><p>The inventory shell keeps simple tabs like the current app but uses better tables, less visual noise, and stronger operational summaries.</p></div><div class="module-tools"><span class="chip">12 low-stock items</span></div></div>
+        <div class="tabbar">
+          <button class="tab-button active" data-tab-target="inv-products">Products</button>
+          <button class="tab-button" data-tab-target="inv-movement">Stock Movements</button>
+        </div>
+        <div class="tab-content active" id="tab-inv-products">
+          <div class="table-card">
+            <div class="table-toolbar">
+              <div class="filter">Search SKU, product, category</div>
+              <div class="dropdown">Warehouse: Main</div>
+              <div class="dropdown">Stock State: All</div>
+              <div class="ghost-button">Export</div>
+            </div>
+            <table>
+              <thead><tr><th>SKU</th><th>Product</th><th>Available</th><th>Reorder</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>SKU-1012</td><td>Thermal Receipt Roll</td><td>41</td><td>80</td><td><span class="status orange">Low</span></td></tr>
+                <tr><td>SKU-2319</td><td>Wireless Barcode Scanner</td><td>118</td><td>40</td><td><span class="status green">Healthy</span></td></tr>
+                <tr><td>SKU-9104</td><td>Mini POS Terminal</td><td>23</td><td>30</td><td><span class="status orange">Reorder</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="tab-content" id="tab-inv-movement">
+          <div class="layout-2">
+            <div class="table-card">
+              <h4>Movement Log</h4>
+              <table>
+                <thead><tr><th>Reference</th><th>Type</th><th>Qty</th><th>Time</th></tr></thead>
+                <tbody>
+                  <tr><td>MV-8201</td><td>Transfer out</td><td>40</td><td>09:18</td></tr>
+                  <tr><td>MV-8202</td><td>Receive in</td><td>120</td><td>10:42</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card"><h4>Warehouse Summary</h4><div class="matrix"><div class="matrix-item"><span>Fast-moving items</span><span>28</span></div><div class="matrix-item"><span>Congested bins</span><span class="status orange">4</span></div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-purchase">
+        <div class="module-header"><div><div class="eyebrow">Purchase</div><h3>Purchase Orders and Receiving</h3><p>Purchase orders get a clearer document-first layout with PO header forms, line tables, and receiving checkpoints.</p></div><div class="module-tools"><span class="chip">17 open POs</span></div></div>
+        <div class="layout-2">
+          <div class="form-card">
+            <h4>Purchase Order Header</h4>
+            <div class="form-grid">
+              <div class="field"><div class="label">PO Number</div><div class="input">PO-2026-171</div></div>
+              <div class="field"><div class="label">Vendor</div><div class="select">North Axis Supplies</div></div>
+              <div class="field"><div class="label">Delivery Date</div><div class="input">24 May 2026</div></div>
+              <div class="field"><div class="label">Approval State</div><div class="select">Approved</div></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <h4>Receiving Progress</h4>
+            <table>
+              <thead><tr><th>Item</th><th>Ordered</th><th>Received</th><th>State</th></tr></thead>
+              <tbody>
+                <tr><td>Barcode Scanners</td><td>40</td><td>20</td><td><span class="status blue">Partial</span></td></tr>
+                <tr><td>Receipt Rolls</td><td>200</td><td>200</td><td><span class="status green">Complete</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-pos">
+        <div class="module-header"><div><div class="eyebrow">POS and Hospitality</div><h3>Checkout, Shift, Frontline Operations</h3><p>The transaction layer is faster and cleaner: large cart panel, fixed payment area, and separate supervisor review cards for issues and shift health.</p></div><div class="module-tools"><span class="chip">8 registers live</span></div></div>
+        <div class="layout-2">
+          <div class="table-card">
+            <h4>POS Counter Surface</h4>
+            <div class="split-callout">
+              <div class="card"><h4>Basket</h4><div class="inline-list"><div class="inline-row"><span>Mini POS Terminal</span><span>₦350,000</span></div><div class="inline-row"><span>Receipt Roll Pack</span><span>₦15,000</span></div></div></div>
+              <div class="card"><h4>Payment Pane</h4><div class="summary-number">₦365,000</div><p>Cash, card, transfer, split payment, supervisor override.</p></div>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Shift Summary</h4>
+            <div class="inline-list">
+              <div class="inline-row"><span>Transactions</span><span>184</span></div>
+              <div class="inline-row"><span>Revenue</span><span>₦12.4M</span></div>
+              <div class="inline-row"><span>Voids</span><span class="status orange">3</span></div>
+              <div class="inline-row"><span>Service issues</span><span class="status blue">2</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-productivity">
+        <div class="module-header"><div><div class="eyebrow">Productivity and AI</div><h3>Projects, Tasks, AI Assistance</h3><p>Productivity is grounded in work items and review boards. AI appears as contextual assistive UI, not as a separate novelty surface.</p></div><div class="module-tools"><span class="chip">126 active tasks</span></div></div>
+        <div class="layout-2">
+          <div class="table-card">
+            <h4>Task Board</h4>
+            <table>
+              <thead><tr><th>Work Item</th><th>Owner</th><th>Module</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Accounting sync rollout</td><td>Dami</td><td>Accounting</td><td><span class="status blue">In review</span></td></tr>
+                <tr><td>Inventory heatmap redesign</td><td>UI Team</td><td>Inventory</td><td><span class="status green">In progress</span></td></tr>
+                <tr><td>Payroll exception policy</td><td>HR Ops</td><td>HR</td><td><span class="status orange">Blocked</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h4>AI Work Brief</h4>
+            <p>Summarize finance mismatches, draft action notes for HR exceptions, propose vendor shortlist questions, and explain sales collection risk in plain English. Every action remains user-confirmed.</p>
+            <div class="segment"><span>Summarize</span><span>Explain</span><span>Draft follow-up</span><span>Prepare report note</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="module-panel" id="module-settings">
+        <div class="module-header"><div><div class="eyebrow">Settings and Admin</div><h3>Roles, Permissions, Tenant Identity</h3><p>The admin layer becomes cleaner and less intimidating while keeping configuration density where it matters.</p></div><div class="module-tools"><span class="chip">41 permission packs</span></div></div>
+        <div class="layout-2">
+          <div class="table-card">
+            <h4>Role Matrix</h4>
+            <table>
+              <thead><tr><th>Role</th><th>Modules</th><th>Last Updated</th><th>State</th></tr></thead>
+              <tbody>
+                <tr><td>Finance Admin</td><td>Accounting, Reports, Expenses</td><td>16 May 2026</td><td><span class="status green">Active</span></td></tr>
+                <tr><td>HR Manager</td><td>HR, Payroll, Leave</td><td>14 May 2026</td><td><span class="status blue">Reviewed</span></td></tr>
+                <tr><td>Procurement Lead</td><td>Procurement, Vendor, Tender</td><td>13 May 2026</td><td><span class="status orange">Needs signoff</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="form-card">
+            <h4>Tenant Branding and Controls</h4>
+            <div class="form-grid">
+              <div class="field"><div class="label">Tenant Name</div><div class="input">OptimaXSuites Demo</div></div>
+              <div class="field"><div class="label">Primary Color</div><div class="select">Celadon Green</div></div>
+              <div class="field"><div class="label">Secondary Color</div><div class="select">Blue Green</div></div>
+              <div class="field"><div class="label">Environment</div><div class="select">Production-like Demo</div></div>
+              <div class="field full"><div class="label">Security Note</div><div class="textarea">Swagger, permissions, approval overrides, and audit logs are consolidated here with clearer review messaging.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-note">All modules in this mockup are static. Navigation and tabs are clickable, but there is no backend connection.</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const moduleButtons = Array.from(document.querySelectorAll('[data-module-target]'));
+    const modulePanels = Array.from(document.querySelectorAll('.module-panel'));
+
+    function activateModule(moduleId) {
+      moduleButtons.forEach(button => {
+        button.classList.toggle('active', button.dataset.moduleTarget === moduleId);
+      });
+      modulePanels.forEach(panel => {
+        panel.classList.toggle('active', panel.id === 'module-' + moduleId);
+      });
+    }
+
+    moduleButtons.forEach(button => {
+      button.addEventListener('click', () => activateModule(button.dataset.moduleTarget));
+    });
+
+    const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
+
+    function activateTab(button) {
+      const tabbar = button.closest('.tabbar');
+      const panel = button.closest('.module-panel');
+      if (!tabbar || !panel) return;
+      const target = button.dataset.tabTarget;
+      tabbar.querySelectorAll('.tab-button').forEach(tab => {
+        tab.classList.toggle('active', tab === button);
+      });
+      panel.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === 'tab-' + target);
+      });
+    }
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => activateTab(button));
+    });
+  </script>
+</body>
+</html>

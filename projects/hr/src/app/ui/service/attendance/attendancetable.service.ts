@@ -156,10 +156,10 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
         return null;
       }
       return {
-        id: match?.id?.toString(),
+        id: Number(match.id),
         department: match.department?.name ?? '',
         fullName: `${match.firstName ?? ''} ${match.lastName ?? ''}`.trim()
-      }; 
+      };
     })
   );
 }
