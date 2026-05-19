@@ -282,22 +282,20 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   } {
     try {
       const payload = JSON.parse(frameBody || '{}');
+      const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
       return {
         senderName: this.notificationText(
-          payload.senderName ?? payload.authorName,
+          msg.senderName ?? msg.authorName,
           'New message',
         ),
-        content: this.notificationText(
-          payload.content ?? payload.message,
-          '',
-        )
+        content: this.notificationText(msg.content, '')
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 160),
-        senderUserId: Number(payload.senderUserId ?? payload.userId ?? 0) || undefined,
-        messageBackendId: Number(payload.id ?? payload.messageId ?? 0) || undefined,
+        senderUserId: Number(msg.senderUserId ?? msg.userId ?? 0) || undefined,
+        messageBackendId: Number(msg.id ?? msg.messageId ?? 0) || undefined,
         threadRootMessageBackendId:
-          Number(payload.threadRootMessageId ?? 0) || undefined,
+          Number(msg.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
       return { senderName: 'New message', content: '' };
