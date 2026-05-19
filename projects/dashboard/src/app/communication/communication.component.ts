@@ -125,6 +125,7 @@ export interface DmContact {
   hasUnread?: boolean;
   unreadCount?: number;
   dmChannelId?: number;
+  dmChannelIds?: number[];
   lastMessagePreview?: string;
   lastMessageTime?: string;
 }
@@ -1813,16 +1814,14 @@ export class CommunicationComponent
   } {
     try {
       const payload = JSON.parse(frameBody || '{}');
-      const senderUserId = Number(payload.senderUserId ?? payload.userId ?? 0);
+      const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
+      const senderUserId = Number(msg.senderUserId ?? msg.userId ?? 0);
       const senderName =
         this.userDirectory[senderUserId] ||
-        this.notificationFieldText(payload.senderName, '') ||
-        this.notificationFieldText(payload.authorName, '') ||
+        this.notificationFieldText(msg.senderName, '') ||
+        this.notificationFieldText(msg.authorName, '') ||
         'New message';
-      const content = this.notificationFieldText(
-        payload.content ?? payload.message,
-        '',
-      )
+      const content = this.notificationFieldText(msg.content, '')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 120);
@@ -1836,8 +1835,8 @@ export class CommunicationComponent
             payload.channelName ?? payload.channelCode ?? payload.channelType,
             '',
           ) || 'New message',
-        messageBackendId: Number(payload.id ?? payload.messageId ?? 0) || undefined,
-        threadRootMessageBackendId: Number(payload.threadRootMessageId ?? 0) || undefined,
+        messageBackendId: Number(msg.id ?? msg.messageId ?? 0) || undefined,
+        threadRootMessageBackendId: Number(msg.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
       return { senderName: 'New message', content: '', contextLabel: 'New message' };
@@ -2656,7 +2655,7 @@ export class CommunicationComponent
         this.subscribeToChannel(ch.backendId);
       }
       for (const dm of this.dmContacts) {
-        if (dm.dmChannelId) this.subscribeToDmChannel(dm);
+        this.subscribeToDmContactChannels(dm);
       }
     };
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
@@ -2720,7 +2719,8 @@ export class CommunicationComponent
           let senderUserId: number | null = null;
           try {
             const body = JSON.parse(frame.body || '{}');
-            senderUserId = Number(body.senderUserId ?? body.userId ?? null);
+            const msg = (body.message && typeof body.message === 'object') ? body.message : body;
+            senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
@@ -2776,9 +2776,16 @@ export class CommunicationComponent
     );
   }
 
-  private subscribeToDmChannel(contact: DmContact): void {
-    if (!this.stompClient || !this.wsConnected || !contact.dmChannelId) return;
-    const chId = contact.dmChannelId;
+  private subscribeToDmContactChannels(contact: DmContact): void {
+    for (const chId of this.dmChannelIdsFor(contact)) {
+      this.subscribeToDmChannel(contact, chId);
+    }
+  }
+
+  private subscribeToDmChannel(contact: DmContact, explicitChannelId?: number): void {
+    if (!this.stompClient || !this.wsConnected) return;
+    const chId = Number(explicitChannelId || contact.dmChannelId || 0);
+    if (!chId) return;
 
     if (!this.dmChannelSubs.has(chId)) {
       const sub = this.stompClient.subscribe(
@@ -2787,7 +2794,8 @@ export class CommunicationComponent
           let senderUserId: number | null = null;
           try {
             const body = JSON.parse(frame.body || '{}');
-            senderUserId = Number(body.senderUserId ?? body.userId ?? null);
+            const msg = (body.message && typeof body.message === 'object') ? body.message : body;
+            senderUserId = Number(msg.senderUserId ?? msg.userId ?? null);
           } catch (_) {}
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
@@ -3290,6 +3298,11 @@ export class CommunicationComponent
             const existing = existingContacts.get(contact.userId);
             if (existing) {
               contact.dmChannelId = existing.dmChannelId;
+              contact.dmChannelIds = existing.dmChannelIds
+                ? [...existing.dmChannelIds]
+                : existing.dmChannelId
+                  ? [existing.dmChannelId]
+                  : undefined;
               contact.unreadCount = existing.unreadCount;
               contact.hasUnread = existing.hasUnread;
               contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
@@ -3506,6 +3519,7 @@ export class CommunicationComponent
     );
     for (const contact of this.dmContacts) {
       contact.dmChannelId = undefined;
+      contact.dmChannelIds = undefined;
       contact.unreadCount = undefined;
       contact.hasUnread = false;
     }
@@ -3520,6 +3534,7 @@ export class CommunicationComponent
     });
 
     const bestChannelByUserId = new Map<number, CollabChannel>();
+    const channelIdsByUserId = new Map<number, Set<number>>();
     const unreadByUserId = new Map<number, number>();
 
     for (const channel of dmChannels) {
@@ -3543,6 +3558,9 @@ export class CommunicationComponent
       ) {
         bestChannelByUserId.set(Number(otherUserId), channel);
       }
+      const channelIds = channelIdsByUserId.get(Number(otherUserId)) || new Set<number>();
+      channelIds.add(Number(channel.channelId ?? channel.id));
+      channelIdsByUserId.set(Number(otherUserId), channelIds);
       const unreadCount = Number(channel.unreadCount || 0);
       unreadByUserId.set(
         Number(otherUserId),
@@ -3554,6 +3572,9 @@ export class CommunicationComponent
       const selected = bestChannelByUserId.get(Number(contact.userId));
       if (!selected) continue;
       contact.dmChannelId = Number(selected.channelId ?? selected.id);
+      contact.dmChannelIds = Array.from(
+        channelIdsByUserId.get(Number(contact.userId)) || new Set<number>(),
+      );
       const unreadCount = Math.max(
         unreadByUserId.get(Number(contact.userId)) || 0,
         existingDmUnread.get(Number(contact.userId)) || 0,
@@ -3561,6 +3582,23 @@ export class CommunicationComponent
       contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
       contact.hasUnread = unreadCount > 0;
     }
+
+    if (this.wsConnected) {
+      for (const contact of this.dmContacts) {
+        this.subscribeToDmContactChannels(contact);
+      }
+    }
+  }
+
+  private dmChannelIdsFor(contact: DmContact): number[] {
+    const explicitIds = (contact.dmChannelIds || [])
+      .map((value) => Number(value))
+      .filter((value) => value > 0);
+    const fallbackId = Number(contact.dmChannelId || 0);
+    if (fallbackId > 0 && !explicitIds.includes(fallbackId)) {
+      explicitIds.unshift(fallbackId);
+    }
+    return Array.from(new Set(explicitIds));
   }
 
   private flushPendingForcedChannelsRefresh(): void {
@@ -4113,7 +4151,7 @@ export class CommunicationComponent
     ) {
       this.messagesLoading = false;
       this.conversationAccessMessage = '';
-      this.subscribeToDmChannel(contact);
+      this.subscribeToDmContactChannels(contact);
       if (this.lastMessageBackendId) {
         this.collabService
           .markRead(contact.dmChannelId, this.lastMessageBackendId)
@@ -4177,7 +4215,10 @@ export class CommunicationComponent
         preferredChannelId || contact.dmChannelId,
       );
       contact.dmChannelId = cachedChannelId;
-      this.subscribeToDmChannel(contact);
+      contact.dmChannelIds = this.dmChannelIdsFor(contact).length
+        ? this.dmChannelIdsFor(contact)
+        : [cachedChannelId];
+      this.subscribeToDmContactChannels(contact);
       if (
         this.dmMessages[contact.id] !== undefined &&
         !this.hasRecoverableSnapshotFailure(cachedChannelId)
@@ -4208,7 +4249,8 @@ export class CommunicationComponent
       if (!existing) return false;
       const chId = Number(existing.channelId ?? existing.id);
       contact.dmChannelId = chId;
-      this.subscribeToDmChannel(contact);
+      contact.dmChannelIds = [chId];
+      this.subscribeToDmContactChannels(contact);
       if (
         this.dmMessages[contact.id] !== undefined &&
         !this.hasRecoverableSnapshotFailure(chId)
@@ -4234,7 +4276,7 @@ export class CommunicationComponent
         this.mapDirectMessageChannels(this.cachedCollabChannels);
         if (contact.dmChannelId) {
           const chId = Number(contact.dmChannelId);
-          this.subscribeToDmChannel(contact);
+          this.subscribeToDmContactChannels(contact);
           if (
             this.dmMessages[contact.id] !== undefined &&
             !this.hasRecoverableSnapshotFailure(chId)
@@ -4277,11 +4319,12 @@ export class CommunicationComponent
         next: (created) => {
           const chId = Number(created.channelId ?? created.id);
           contact.dmChannelId = chId;
+          contact.dmChannelIds = [chId];
           this.collabService
             .addChannelMember(chId, themId)
             .subscribe({ error: () => {} });
           this.loadDmMessages(contact, chId);
-          this.subscribeToDmChannel(contact);
+          this.subscribeToDmContactChannels(contact);
           onReady?.(chId);
         },
       error: () => {
@@ -4314,6 +4357,7 @@ export class CommunicationComponent
             : null;
         if (alternateChannelId) {
           contact.dmChannelId = alternateChannelId;
+          contact.dmChannelIds = [alternateChannelId];
           this.channelHistoryLimit.set(
             alternateChannelId,
             this.currentHistoryLimit(channelId),
@@ -4321,7 +4365,7 @@ export class CommunicationComponent
           this.channelSnapshotFailureUntil.delete(alternateChannelId);
           this.channelSnapshotLastErrorStatus.delete(alternateChannelId);
           this.channelSnapshotLastErrorMessage.delete(alternateChannelId);
-          this.subscribeToDmChannel(contact);
+          this.subscribeToDmContactChannels(contact);
           this.loadDmMessages(contact, alternateChannelId);
           return;
         }
@@ -5065,6 +5109,7 @@ export class CommunicationComponent
       this.getOrCreateDmChannel(contact, (resolvedChannelId) => {
         if (contact.id !== this.activeDmId) return;
         contact.dmChannelId = resolvedChannelId;
+        contact.dmChannelIds = [resolvedChannelId];
         this.sendDmMessage();
       });
       return;
@@ -6635,6 +6680,7 @@ export class CommunicationComponent
       this.dmMessages[contact.id] = this.dmMessages[contact.id] ?? [];
       this.conversationAccessMessage = '';
       contact.dmChannelId = undefined;
+      contact.dmChannelIds = undefined;
       this.cdr.detectChanges();
       return;
     }
@@ -6643,6 +6689,7 @@ export class CommunicationComponent
     this.dmMembershipRepairInFlight.add(repairKey);
     this.conversationAccessMessage = '';
     contact.dmChannelId = undefined;
+    contact.dmChannelIds = undefined;
     this.channelSnapshotFailureUntil.delete(channelId);
     this.channelSnapshotLastErrorStatus.delete(channelId);
     this.channelSnapshotLastErrorMessage.delete(channelId);
