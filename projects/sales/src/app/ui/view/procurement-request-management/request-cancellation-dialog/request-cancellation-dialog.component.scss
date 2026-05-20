@@ -1,0 +1,241 @@
+// src/app/modules/commerce/submodule-a-procurement-request/components/request-cancellation-dialog/request-cancellation-dialog.component.scss
+
+.cancellation-dialog {
+  padding: 0;
+  max-width: 550px;
+  width: 100%;
+  
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff3e0;
+      
+      i {
+        font-size: 1.75rem;
+        color: #ffc107;
+      }
+    }
+    
+    &.warning .header-icon {
+      background-color: #fff3e0;
+      i {
+        color: #ffc107;
+      }
+    }
+    
+    &:not(.warning) .header-icon {
+      background-color: #f8d7da;
+      i {
+        color: #dc3545;
+      }
+    }
+    
+    .header-text {
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+      
+      p {
+        margin: 0.25rem 0 0;
+        font-weight: 500;
+      }
+    }
+  }
+  
+  .alert {
+    margin: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: flex-start;
+    
+    i {
+      margin-top: 0.125rem;
+    }
+  }
+  
+  form {
+    padding: 0 1.5rem 1.5rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+    
+    &.required:after {
+      content: " *";
+      color: #dc3545;
+    }
+  }
+  
+  .reason-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    .reason-option {
+      .reason-label {
+        display: block;
+        cursor: pointer;
+        
+        .reason-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 1rem;
+          border: 1px solid #dee2e6;
+          border-radius: 0.5rem;
+          transition: all 0.2s;
+          background-color: white;
+          
+          .reason-text {
+            font-size: 0.9375rem;
+          }
+          
+          i {
+            font-size: 1.25rem;
+            color: #198754;
+            opacity: 0;
+            transition: opacity 0.2s;
+          }
+        }
+        
+        .reason-radio {
+          display: none;
+        }
+        
+        input:checked + .reason-content {
+          border-color: #198754;
+          background-color: #f0fdf4;
+          
+          i {
+            opacity: 1;
+          }
+        }
+        
+        &:hover .reason-content {
+          border-color: #86b7fe;
+          background-color: #f8f9fa;
+        }
+      }
+    }
+  }
+  
+  textarea.form-control {
+    resize: vertical;
+    
+    &.is-invalid {
+      border-color: #dc3545;
+      background-image: none;
+    }
+  }
+  
+  .form-check {
+    padding-left: 1.75rem;
+    
+    .form-check-input {
+      margin-left: -1.75rem;
+      margin-top: 0.2rem;
+      cursor: pointer;
+      
+      &:checked {
+        background-color: #198754;
+        border-color: #198754;
+      }
+    }
+    
+    .form-check-label {
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: #495057;
+    }
+  }
+  
+  .invalid-feedback {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    
+    .btn {
+      padding: 0.5rem 1.25rem;
+      font-weight: 500;
+      
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+    
+    .btn-secondary {
+      background-color: #f8f9fa;
+      border-color: #dee2e6;
+      color: #495057;
+      
+      &:hover {
+        background-color: #e9ecef;
+      }
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 576px) {
+  .cancellation-dialog {
+    .dialog-header {
+      padding: 1rem;
+      
+      .header-icon {
+        width: 36px;
+        height: 36px;
+        
+        i {
+          font-size: 1.25rem;
+        }
+      }
+      
+      .header-text h2 {
+        font-size: 1.25rem;
+      }
+    }
+    
+    .alert {
+      margin: 0.75rem 1rem;
+    }
+    
+    form {
+      padding: 0 1rem 1rem;
+    }
+    
+    .dialog-actions {
+      flex-direction: column-reverse;
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+}

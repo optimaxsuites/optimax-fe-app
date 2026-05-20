@@ -71,7 +71,10 @@ import { ErrorToastInterceptor } from './ui/shared-component/service/error-messa
 
 import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.component';
 
-
+import { ProcurementRequestListComponent } from './ui/view/procurement-request-management/procurement-request-list/procurement-request-list.component';
+import { ProcurementRequestManagementComponent } from './ui/view/procurement-request-management/procurement-request-management.component';
+import { ProcurementRequestFormComponent } from './ui/view/procurement-request-management/procurement-request-form/procurement-request-form.component';
+import { ProcurementRequestDetailComponent } from './ui/view/procurement-request-management/procurement-request-detail/procurement-request-detail.component';
 @NgModule({
   declarations: [
     App,
@@ -80,6 +83,9 @@ import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.comp
     SideModalComponent,
     SidebarComponent,
     NavTabComponent,
+    ProcurementRequestListComponent,
+    ProcurementRequestManagementComponent,
+
   ],
   imports: [
     BrowserModule,
@@ -139,8 +145,8 @@ import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.comp
     ProfileInfoComponent,
     UserInterfaceComponent,
     BackButtonComponent,
-
-    // TableComponent
+    ProcurementRequestFormComponent,
+    ProcurementRequestDetailComponent,
   ],
   exports: [TableComponent],
   providers: [
@@ -163,8 +169,8 @@ import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.comp
     provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
-    DecimalPipe,
+    DecimalPipe
   ],
-  bootstrap: [App],
+  bootstrap: [App]
 })
 export class AppModule {}
