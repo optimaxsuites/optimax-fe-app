@@ -107,15 +107,6 @@
 
     <section class="workspace-toolbar">
       <div class="workspace-toolbar-leading">
-        <button
-          *ngIf="isMobileViewport()"
-          type="button"
-          class="toolbar-action icon-action mobile-nav-trigger"
-          (click)="toggleMobileSidebar()"
-        >
-          <i class="pi pi-bars"></i>
-          <span>Menu</span>
-        </button>
         <div class="workspace-segment">
         <button
           type="button"
@@ -144,33 +135,58 @@
           [(ngModel)]="feedQuery"
           (keydown.enter)="onFeedSearchEnter($event)"
         />
-        <button type="button" class="toolbar-action icon-action" [class.active]="showFeedRail" (click)="toggleFeedRail()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" [class.active]="showFeedRail" (click)="toggleFeedRail()">
           <i class="pi" [ngClass]="showFeedRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
           <span>{{ showFeedRail ? 'Hide side panel' : 'Show side panel' }}</span>
         </button>
-        <button type="button" class="toolbar-action primary icon-action" (click)="refreshFeed()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action primary icon-action" (click)="refreshFeed()">
           <i class="pi pi-refresh"></i>
           <span>Refresh feed</span>
+        </button>
+        <button
+          *ngIf="isMobileViewport()"
+          type="button"
+          class="toolbar-action icon-action mobile-nav-trigger icon-only-mobile"
+          (click)="toggleMobileSidebar()"
+          title="Open collaboration menu"
+          aria-label="Open collaboration menu"
+        >
+          <i class="pi pi-bars"></i>
+          <span>Menu</span>
         </button>
       </div>
 
       <div class="workspace-toolbar-actions" *ngIf="workspaceMode === 'chat'">
-        <button type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()" title="New channel" aria-label="New channel">
           <i class="pi pi-plus-circle"></i>
           <span>New channel</span>
         </button>
         <button
+          *ngIf="!isMobileViewport()"
           type="button"
           class="toolbar-action icon-action"
           [class.active]="showChatRail"
           (click)="toggleChatRail()"
+          [title]="showChatRail ? 'Hide side panel' : 'Show side panel'"
+          [attr.aria-label]="showChatRail ? 'Hide side panel' : 'Show side panel'"
         >
           <i class="pi" [ngClass]="showChatRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
           <span>{{ showChatRail ? 'Hide side panel' : 'Show side panel' }}</span>
         </button>
-        <button type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')" title="Back to feed" aria-label="Back to feed">
           <i class="pi pi-arrow-left"></i>
           <span>Back to feed</span>
+        </button>
+        <button
+          *ngIf="isMobileViewport()"
+          type="button"
+          class="toolbar-action icon-action mobile-nav-trigger icon-only-mobile"
+          (click)="toggleMobileSidebar()"
+          title="Open collaboration menu"
+          aria-label="Open collaboration menu"
+        >
+          <i class="pi pi-bars"></i>
+          <span>Menu</span>
         </button>
       </div>
     </section>
@@ -1117,15 +1133,6 @@
       <div class="chat-panel">
         <div class="chat-topbar">
           <div class="chat-topbar-title">
-            <button
-              *ngIf="isMobileViewport()"
-              type="button"
-              class="toolbar-action icon-action mobile-nav-trigger mobile-chat-trigger"
-              (click)="toggleMobileSidebar()"
-            >
-              <i class="pi pi-bars"></i>
-              <span>Menu</span>
-            </button>
             <div>
             <p class="feed-section-kicker">Messaging</p>
             <h2>

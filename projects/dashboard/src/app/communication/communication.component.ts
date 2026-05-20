@@ -822,7 +822,11 @@ export class CommunicationComponent
       threadRootMessageBackendId: payload.threadRootMessageBackendId,
     };
     this.chatArrivalToasts = [toast, ...this.chatArrivalToasts].slice(0, 3);
-    const timer = setTimeout(() => this.dismissChatArrivalToast(toastId), 4000);
+    this.triggerMobileHaptics();
+    const timer = setTimeout(
+      () => this.dismissChatArrivalToast(toastId),
+      this.isMobileViewport() ? 6500 : 4000,
+    );
     this.chatArrivalToastTimers.set(toastId, timer);
     this.cdr.detectChanges();
   }
@@ -935,6 +939,10 @@ export class CommunicationComponent
   }
 
   toggleFeedRail(): void {
+    if (this.isMobileViewport()) {
+      this.showFeedRail = false;
+      return;
+    }
     this.showFeedRail = !this.showFeedRail;
   }
 
@@ -5547,6 +5555,7 @@ export class CommunicationComponent
         oscillator.start(ctx.currentTime + tone.start);
         oscillator.stop(ctx.currentTime + tone.stop);
       });
+      this.triggerMobileHaptics(urgent);
     } catch (_) {}
   }
 
@@ -5623,14 +5632,29 @@ export class CommunicationComponent
     }
   }
 
+  private triggerMobileHaptics(urgent = false): void {
+    try {
+      if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') {
+        return;
+      }
+      navigator.vibrate(urgent ? [220, 120, 260] : [140, 70, 140]);
+    } catch (_) {}
+  }
+
   private showBrowserNotification(
     title: string,
     body: string,
     options: { tag?: string; icon?: string; target?: any } = {},
   ): void {
-    if (typeof Notification === 'undefined') return;
-    if (Notification.permission !== 'granted') return;
-    if (document.visibilityState === 'visible' && document.hasFocus()) return;
+    if (typeof Notification === 'undefined') {
+      this.triggerMobileHaptics(true);
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      this.triggerMobileHaptics(true);
+      return;
+    }
+    if (!this.isMobileViewport() && document.visibilityState === 'visible' && document.hasFocus()) return;
     try {
       const notif = new Notification(title, {
         body,
@@ -5653,7 +5677,9 @@ export class CommunicationComponent
         }
         notif.close();
       };
-    } catch (_) {}
+    } catch (_) {
+      this.triggerMobileHaptics(true);
+    }
   }
 
   setRingtone(tone: string): void {
@@ -7205,6 +7231,10 @@ export class CommunicationComponent
   }
 
   toggleChatRail(): void {
+    if (this.isMobileViewport()) {
+      this.showChatRail = false;
+      return;
+    }
     this.showChatRail = !this.showChatRail;
   }
 
