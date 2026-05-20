@@ -1,0 +1,514 @@
+<div class="min-h-screen bg-gray-50 p-6 md:p-8 lg:p-10">
+  <div class="w-full space-y-8 animate-fadeInUp">
+    <!-- Header -->
+    <header class="bg-white rounded-xl shadow-sm p-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-lg bg-customBlue flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+              </path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Paystack Wallet Integration</h1>
+            <p class="text-base text-gray-600 mt-1">Manage secure payments, view transaction histories, and initiate payroll transfers.</p>
+          </div>
+        </div>
+        <div class="px-4 py-2 bg-customBlue/10 rounded-lg border border-customBlue/20">
+          <span class="text-sm font-semibold text-customBlue">Paystack Gateway • NGN</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex border-b border-gray-200 mt-8">
+        <button (click)="setActiveTab('balance')"
+          class="px-6 py-3 font-semibold text-sm transition-all border-b-2 -mb-px flex items-center gap-2"
+          [class.border-customBlue]="activeTab === 'balance'"
+          [class.text-customBlue]="activeTab === 'balance'"
+          [class.border-transparent]="activeTab !== 'balance'"
+          [class.text-gray-500]="activeTab !== 'balance'"
+          [class.hover:text-gray-700]="activeTab !== 'balance'">
+          <i class="pi pi-wallet"></i> Wallet Balance
+        </button>
+        <button (click)="setActiveTab('transactions')"
+          class="px-6 py-3 font-semibold text-sm transition-all border-b-2 -mb-px flex items-center gap-2"
+          [class.border-customBlue]="activeTab === 'transactions'"
+          [class.text-customBlue]="activeTab === 'transactions'"
+          [class.border-transparent]="activeTab !== 'transactions'"
+          [class.text-gray-500]="activeTab !== 'transactions'"
+          [class.hover:text-gray-700]="activeTab !== 'transactions'">
+          <i class="pi pi-list"></i> Transaction History
+        </button>
+        <button (click)="setActiveTab('transfer')"
+          class="px-6 py-3 font-semibold text-sm transition-all border-b-2 -mb-px flex items-center gap-2"
+          [class.border-customBlue]="activeTab === 'transfer'"
+          [class.text-customBlue]="activeTab === 'transfer'"
+          [class.border-transparent]="activeTab !== 'transfer'"
+          [class.text-gray-500]="activeTab !== 'transfer'"
+          [class.hover:text-gray-700]="activeTab !== 'transfer'">
+          <i class="pi pi-send"></i> Fund Transfer
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB CONTENTS -->
+
+    <!-- Wallet Balance Tab -->
+    <div *ngIf="activeTab === 'balance'" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Balance Card -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-5">
+            <svg class="w-32 h-32 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <label class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Wallet Balance</label>
+              <button (click)="refreshBalance()" [disabled]="balanceLoading"
+                class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-customBlue transition-all"
+                title="Refresh Wallet Balance">
+                <svg class="w-5 h-5" [class.animate-spin]="balanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Loading State -->
+            <div *ngIf="balanceLoading" class="py-4 flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin"></div>
+              <span class="text-gray-500 font-medium">Fetching wallet balance...</span>
+            </div>
+
+            <!-- Error State -->
+            <div *ngIf="balanceError && !balanceLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 my-2">
+              <div class="flex items-start gap-2">
+                <i class="pi pi-times-circle mt-0.5 text-red-500"></i>
+                <div>
+                  <p class="font-semibold">Failed to load balance</p>
+                  <p class="text-xs mt-1">{{ balanceError }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Balance Value -->
+            <div *ngIf="!balanceLoading && !balanceError">
+              <h2 class="text-4xl font-extrabold text-customBlue tracking-tight">
+                {{ formatNaira(balanceData?.balance) }}
+              </h2>
+              <p class="text-sm text-gray-500 mt-2 font-medium">Active currency: {{ balanceData?.currency || 'NGN' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats Cards (For premium experience) -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
+          <div class="w-12 h-12 bg-emerald-100 border border-emerald-200 rounded-lg flex items-center justify-center text-customGreen">
+            <i class="pi pi-arrow-down-left text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-500 uppercase">Settled Inflow</p>
+            <p class="text-xl font-bold text-gray-900 mt-1">Multi-channel Settlement Enabled</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
+          <div class="w-12 h-12 bg-customBlue/10 border border-customBlue/20 rounded-lg flex items-center justify-center text-customBlue">
+            <i class="pi pi-check-circle text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-500 uppercase">Transfer Capability</p>
+            <p class="text-xl font-bold text-gray-900 mt-1">Fully Connected & Audited</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Tab -->
+    <div *ngIf="activeTab === 'transactions'" class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <!-- Filters Header -->
+      <div class="p-6 border-b border-gray-150 bg-gray-50/50">
+        <div class="flex flex-col lg:flex-row gap-4 items-end">
+          
+          <!-- Start Date -->
+          <div class="flex-1 w-full">
+            <label class="text-xs font-semibold text-gray-600 uppercase mb-2 block">Start Date</label>
+            <input type="date" [(ngModel)]="txStartDate" (ngModelChange)="applyTxFilters()"
+              class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm font-medium text-gray-700" />
+          </div>
+
+          <!-- End Date -->
+          <div class="flex-1 w-full">
+            <label class="text-xs font-semibold text-gray-600 uppercase mb-2 block">End Date</label>
+            <input type="date" [(ngModel)]="txEndDate" (ngModelChange)="applyTxFilters()"
+              class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm font-medium text-gray-700" />
+          </div>
+
+          <!-- Transaction Type Filter -->
+          <div class="w-full lg:w-48">
+            <label class="text-xs font-semibold text-gray-600 uppercase mb-2 block">Type</label>
+            <select [(ngModel)]="txTypeFilter" (ngModelChange)="applyTxFilters()"
+              class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue outline-none text-sm font-medium text-gray-700">
+              <option value="">ALL TYPES</option>
+              <option value="DEBIT">DEBIT (Outflow)</option>
+              <option value="CREDIT">CREDIT (Inflow)</option>
+            </select>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2 w-full lg:w-auto">
+            <button (click)="loadTransactions()" [disabled]="txLoading"
+              class="px-5 py-2.5 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 text-sm w-full lg:w-auto">
+              <svg class="w-4 h-4" [class.animate-spin]="txLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              <span>Refresh</span>
+            </button>
+            <button (click)="clearTxFilters()"
+              class="px-5 py-2.5 bg-white hover:bg-gray-150 border border-gray-300 text-gray-700 rounded-lg font-semibold transition-colors text-sm w-full lg:w-auto">
+              Clear Filters
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="txLoading" class="py-24 text-center">
+        <div class="inline-block w-12 h-12 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin mb-4"></div>
+        <p class="text-gray-500 font-semibold text-lg">Retrieving Paystack records...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="txError && !txLoading" class="p-8 text-center max-w-md mx-auto">
+        <div class="w-16 h-16 bg-red-50 border border-red-200 rounded-full flex items-center justify-center text-red-600 mx-auto mb-4">
+          <i class="pi pi-exclamation-triangle text-3xl"></i>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900">Failed to fetch transactions</h4>
+        <p class="text-gray-500 text-sm mt-2 mb-6">{{ txError }}</p>
+        <button (click)="loadTransactions()" class="px-5 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-semibold text-sm">
+          Try Again
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!txLoading && !txError && transactions.length === 0" class="py-24 text-center max-w-md mx-auto">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 mx-auto mb-4">
+          <i class="pi pi-folder-open text-3xl"></i>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900">No Transactions Found</h4>
+        <p class="text-gray-500 text-sm mt-2">Adjust your filters or initiate payouts to generate wallet activity logs.</p>
+      </div>
+
+      <!-- Table View -->
+      <div *ngIf="!txLoading && !txError && transactions.length > 0">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-customBlue text-white">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Date</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Reference</th>
+                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Type</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Description</th>
+                <th class="px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider">Amount</th>
+                <th class="px-6 py-4 text-center text-sm font-semibold uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let tx of paginatedTransactions" (click)="viewTransactionDetail(tx.reference)" class="hover:bg-gray-50 transition-colors ledger-row cursor-pointer">
+                <!-- Date -->
+                <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                  {{ formatTxDate(tx.createdAt) }}
+                </td>
+                
+                <!-- Reference -->
+                <td class="px-6 py-4 text-sm text-gray-900 font-semibold whitespace-nowrap">
+                  {{ tx.reference }}
+                </td>
+
+                <!-- Type -->
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <span class="inline-flex px-2.5 py-1 rounded-md text-xs font-bold leading-none tracking-wide"
+                    [ngClass]="getTypeClass(tx.type)">
+                    {{ tx.type }}
+                  </span>
+                </td>
+
+                <!-- Description -->
+                <td class="px-6 py-4 text-sm text-gray-800 font-medium">
+                  {{ tx.description || '—' }}
+                </td>
+
+                <!-- Amount -->
+                <td class="px-6 py-4 text-right whitespace-nowrap text-sm">
+                  <span [ngClass]="getTypeAmountClass(tx.type)">
+                    {{ formatNaira(tx.amount) }}
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <span class="inline-flex px-2.5 py-1 rounded-md text-xs font-bold leading-none"
+                    [ngClass]="getStatusClass(tx.status)">
+                    {{ tx.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <div class="text-sm text-gray-600">
+            Showing <span class="font-semibold text-gray-900">{{ getTxPageStart() }}</span> to <span
+              class="font-semibold text-gray-900">{{ getTxPageEnd() }}</span> of <span
+              class="font-semibold text-gray-900">{{ transactions.length }}</span> transactions
+          </div>
+
+          <!-- Page Navigation -->
+          <div class="flex items-center gap-1">
+            <button (click)="txPrevPage()" [disabled]="txCurrentPage === 1"
+              class="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="pi pi-angle-left text-gray-600"></i>
+            </button>
+
+            <span class="px-4 py-2 text-sm font-semibold text-gray-700">
+              Page {{ txCurrentPage }} of {{ txTotalPages }}
+            </span>
+
+            <button (click)="txNextPage()" [disabled]="txCurrentPage === txTotalPages"
+              class="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="pi pi-angle-right text-gray-600"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fund Transfer Tab -->
+    <div *ngIf="activeTab === 'transfer'" class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div class="p-6 border-b border-gray-200 bg-gray-50/50">
+        <h3 class="text-xl font-bold text-gray-900">Initiate Single Payout</h3>
+        <p class="text-xs text-gray-500 mt-1">This payment automatically references employee bank routing and details stored in the HR system.</p>
+      </div>
+
+      <div class="p-8 space-y-6">
+        <!-- Error Banner -->
+        <div *ngIf="transferError" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg text-red-700 text-sm flex items-start gap-2">
+          <i class="pi pi-times-circle text-lg mt-0.5"></i>
+          <div>
+            <p class="font-bold">Transfer Failed</p>
+            <p class="text-xs mt-1">{{ transferError }}</p>
+          </div>
+        </div>
+
+        <!-- Success Banner -->
+        <div *ngIf="lastTransferReference" class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg text-emerald-800 text-sm flex items-start gap-2">
+          <i class="pi pi-check-circle text-lg mt-0.5"></i>
+          <div>
+            <p class="font-bold">Transfer Dispatched Successfully</p>
+            <p class="text-xs mt-1 font-semibold">Reference: {{ lastTransferReference }}</p>
+            <p class="text-xs mt-1 text-gray-500">The payout has been successfully queued at the bank gateway. Check your Wallet Balance and Transactions history shortly for ledger settlement confirmation.</p>
+          </div>
+        </div>
+
+        <form (ngSubmit)="openConfirmDialog()" class="space-y-6">
+          <!-- Dropdown Selection -->
+          <div>
+            <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 block">Recipient (Employee)</label>
+            <div class="relative">
+              <select [(ngModel)]="selectedEmployeeId" name="employeeId" required
+                class="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm font-medium text-gray-700">
+                <option [value]="null" disabled selected>-- Select an employee --</option>
+                <option *ngFor="let emp of employees" [value]="emp.id">
+                  {{ getEmployeeDisplayName(emp) }} ({{ emp.bankName || 'No bank mapped' }} • {{ emp.accountNumber || 'No Account Mapped' }})
+                </option>
+              </select>
+              <div *ngIf="employeesLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                <div class="w-4 h-4 border-2 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+              <i class="pi pi-info-circle"></i> Wallet payouts are processed only to verified bank details mapped in employee records.
+            </p>
+          </div>
+
+          <!-- Amount Input -->
+          <div>
+            <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 block">Transfer Amount (₦)</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">₦</span>
+              <input type="number" [(ngModel)]="transferAmount" name="amount" required min="1" step="0.01" placeholder="0.00"
+                class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm font-bold text-gray-900" />
+            </div>
+          </div>
+
+          <!-- Confirm / Submit Button -->
+          <div class="pt-4">
+            <button type="submit" [disabled]="!isTransferFormValid || isTransferring"
+              class="w-full bg-customBlue hover:bg-customBlueHover text-white py-3.5 px-6 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-3 text-base disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="isTransferring" class="loading-spinner"></span>
+              <span>{{ isTransferring ? 'Initiating Wallet Transfer...' : 'Proceed to Transfer' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Payout Confirmation Dialog (Tailwind Premium Overlay Modal) -->
+  <div *ngIf="showConfirmDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-fadeInUp">
+      
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-gray-200 flex items-center gap-3 bg-customBlue text-white rounded-t-xl">
+        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+          <i class="pi pi-exclamation-circle text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold">Confirm Fund Outflow</h3>
+          <p class="text-xs text-white/70">Verify payment specifications before settlement authorization.</p>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-gray-600">Are you sure you want to authorize this wallet payout? This action will immediately debit the Paystack balance and route the transfer.</p>
+        
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>Recipient Name</span>
+            <span class="font-semibold text-gray-900">{{ getEmployeeDisplayName(selectedEmployee) }}</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>Bank Partner</span>
+            <span class="font-semibold text-gray-900">{{ selectedEmployee?.bankName || '—' }}</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>Account Identifier</span>
+            <span class="font-semibold text-gray-900">{{ selectedEmployee?.accountNumber || '—' }}</span>
+          </div>
+          <div class="border-t border-gray-200 pt-3 flex justify-between items-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-700">Settlement Amount</span>
+            <span class="text-lg font-extrabold text-customBlue">{{ formatNaira(transferAmount) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3 rounded-b-xl">
+        <button (click)="cancelTransfer()"
+          class="px-5 py-2.5 text-gray-700 font-semibold rounded-lg hover:bg-gray-250 transition-colors text-sm">
+          Cancel Action
+        </button>
+        <button (click)="confirmTransfer()"
+          class="px-5 py-2.5 bg-customBlue hover:bg-customBlueHover text-white font-semibold rounded-lg transition-colors shadow-sm text-sm">
+          Confirm & Dispatch
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Transaction Detail Dialog (Tailwind Premium Overlay Modal) -->
+  <div *ngIf="showDetailDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full animate-fadeInUp">
+      
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-gray-200 flex items-center justify-between bg-customBlue text-white rounded-t-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+            <i class="pi pi-info-circle text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold">Transaction Ledger Specification</h3>
+            <p class="text-xs text-white/70">Verified core routing logs from processor</p>
+          </div>
+        </div>
+        <button (click)="closeDetailDialog()" class="text-white hover:text-gray-200 transition-colors">
+          <i class="pi pi-times text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6">
+        <!-- Spinner while Loading -->
+        <div *ngIf="txDetailLoading" class="py-12 flex flex-col items-center justify-center gap-3">
+          <div class="w-10 h-10 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin"></div>
+          <span class="text-gray-500 font-semibold text-sm">Fetching ledger specification details...</span>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="txDetailError && !txDetailLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          <div class="flex items-start gap-2">
+            <i class="pi pi-times-circle mt-0.5 text-red-500"></i>
+            <div class="flex-1">
+              <p class="font-semibold">Retrieval Failed</p>
+              <p class="text-xs mt-1">{{ txDetailError }}</p>
+              <button (click)="viewTransactionDetail(selectedTxDetail?.reference || '')" class="mt-3 px-4 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded font-semibold text-xs transition-colors">
+                Retry Connection
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div *ngIf="!txDetailLoading && !txDetailError && selectedTxDetail" class="space-y-4">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Processor Reference</span>
+              <span class="font-mono font-bold text-gray-900">{{ selectedTxDetail.reference }}</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Flow Classification</span>
+              <span class="font-semibold" [ngClass]="getTypeAmountClass(selectedTxDetail.type)">{{ selectedTxDetail.type }}</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Settlement Amount</span>
+              <span class="font-bold text-gray-900">{{ formatNaira(selectedTxDetail.amount) }}</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Active Currency</span>
+              <span class="font-semibold text-gray-900">{{ selectedTxDetail.currency }}</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Gateway Status</span>
+              <span class="inline-flex px-2 py-0.5 rounded text-xs font-bold" [ngClass]="getStatusClass(selectedTxDetail.status)">
+                {{ selectedTxDetail.status }}
+              </span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Initiated Timestamp</span>
+              <span class="font-semibold text-gray-900">{{ formatTxDate(selectedTxDetail.createdAt) }}</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Origin Module</span>
+              <span class="font-semibold text-gray-900">{{ selectedTxDetail.source }}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-3 flex flex-col gap-1">
+              <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Audit Description</span>
+              <span class="text-xs text-gray-800 font-medium bg-white p-2.5 rounded border border-gray-150 mt-1 leading-relaxed">
+                {{ selectedTxDetail.description || 'No additional log details captured for this ledger.' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-end rounded-b-xl">
+        <button (click)="closeDetailDialog()"
+          class="px-5 py-2.5 bg-customBlue hover:bg-customBlueHover text-white font-semibold rounded-lg transition-colors shadow-sm text-sm">
+          Dismiss Details
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

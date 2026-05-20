@@ -31,34 +31,14 @@ export class AuthInterceptor implements HttpInterceptor {
             localStorage.getItem("accessToken2") ||
             localStorage.getItem("token");
 
-        // Determine tenant ID from URL path or hostname
-        const url = window.location.pathname;
-        const host = window.location.hostname;
-        const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-        
-        // Extract UUID from path (mirroring Hospitality pattern)
-        const pathParts = url.split('/').filter(p => !!p);
-        let tenantIdFromUrl = '';
-        
-        if (pathParts.length > 0) {
-            const lastPart = pathParts[pathParts.length - 1];
-            // Check if it's a UUID (length > 20) or 'default'
-            if (lastPart === 'default' || lastPart.length > 20 || /^[a-f0-9-]{32,}$/.test(lastPart)) {
-                tenantIdFromUrl = lastPart;
-            }
-        }
-
-        const validPathTenant = (tenantIdFromUrl && tenantIdFromUrl !== 'default') ? tenantIdFromUrl.toLowerCase() : '';
-        
-        // Default to 'optimax'
-        let tenantId = 'optimax';
-        
-        if (validPathTenant) {
-            tenantId = validPathTenant;
-        } else if (!isLocalhost) {
-            const parts = host.split('.');
-            tenantId = (parts[0] || 'optimax').toLowerCase();
-        }
+        // The tenant for this app is always 'optimax'.
+        // Do NOT derive from the hostname subdomain (e.g. "accounting.optimaxsuites.com"
+        // has subdomain "accounting", which is an app name, NOT the tenant slug).
+        // Do NOT derive from URL path segments — NavigationLinksService appends random
+        // UUIDs to every route for obfuscation, they are not tenant identifiers.
+        // Do NOT read localStorage 'tenantId' — that is set from data.ecode (a company
+        // employee code / numeric ID), not the tenant slug.
+        const tenantId = 'optimax';
 
         const defaultTenantEndpoints = ['/auth/signin', '/auth/signup', '/auth/register', '/auth/forgot-password'];
         const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>

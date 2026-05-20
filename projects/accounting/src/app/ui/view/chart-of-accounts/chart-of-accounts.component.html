@@ -84,8 +84,8 @@
           </thead>
           <tbody class="divide-y divide-gray-200">
             <tr *ngFor="let account of paginatedAccounts" 
-                class="transition-colors hover:bg-blue-50/50"
-                [ngClass]="{'bg-gray-50/30': account.level! > 0}">
+                class="transition-colors hover:bg-blue-50"
+                [style.backgroundColor]="account.level! > 0 ? 'rgba(249,250,251,0.5)' : ''">
               <td class="px-4 py-4">
                 <input type="checkbox" [(ngModel)]="account.selected" (change)="onAccountSelectionChange()"
                   class="w-4 h-4 text-customBlue bg-white border-gray-300 rounded focus:ring-customBlue focus:ring-2" />
