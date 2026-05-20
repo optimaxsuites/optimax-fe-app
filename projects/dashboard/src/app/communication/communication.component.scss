@@ -279,6 +279,12 @@
   display: none !important;
 }
 
+.icon-only-mobile {
+  i {
+    flex-shrink: 0;
+  }
+}
+
 .chat-loading-chip {
   display: inline-flex;
   align-items: center;
@@ -1986,16 +1992,17 @@
     flex-direction: column;
   }
 
+  .workspace-toolbar-actions {
+    align-items: stretch;
+  }
+
   .feed-media-chip {
     align-items: flex-start;
   }
 
   .mobile-nav-trigger {
     display: inline-flex !important;
-  }
-
-  .mobile-chat-trigger {
-    align-self: flex-start;
+    margin-left: auto;
   }
 
   .mobile-sidebar-backdrop {
@@ -2011,15 +2018,15 @@
 
   .workspace-sidebar-shell {
     position: absolute;
-    left: 0;
+    right: 0;
     top: 0;
     bottom: 0;
     z-index: 40;
     width: min(86vw, 340px) !important;
     min-width: 0;
     max-width: 340px;
-    border-radius: 0 1.35rem 1.35rem 0;
-    transform: translateX(calc(-100% - 1rem));
+    border-radius: 1.35rem 0 0 1.35rem;
+    transform: translateX(calc(100% + 1rem));
     transition: transform 0.24s ease;
     box-shadow: 0 28px 70px rgba(15, 23, 42, 0.2);
 
@@ -2056,7 +2063,7 @@
 
   .workspace-toolbar-leading {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 
@@ -2147,11 +2154,17 @@
     margin-top: 0.75rem;
   }
 
+  .workspace-toolbar-actions .mobile-nav-trigger {
+    align-self: flex-end;
+  }
+
   .chat-arrival-stack {
+    position: fixed;
     top: 0.75rem;
     right: 0.75rem;
     left: 0.75rem;
     width: auto;
+    z-index: 60;
   }
 }
 
@@ -2206,6 +2219,18 @@
   .workspace-toolbar-actions .toolbar-action {
     width: 100%;
     min-width: 0;
+  }
+
+  .icon-only-mobile {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px;
+    padding: 0 !important;
+    justify-content: center;
+
+    span {
+      display: none;
+    }
   }
 
   .chat-workspace,
