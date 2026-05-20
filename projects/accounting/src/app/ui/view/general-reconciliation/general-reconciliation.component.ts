@@ -1,6 +1,7 @@
 import { Component, Type } from '@angular/core';
 import { ReconciliationComponent } from '../reconcillation/reconciliation.component';
 import { SalesReconciliationComponent } from '../sales-reconciliation/sales-reconciliation.component';
+import { BankTransactionsComponent } from '../bank-transactions/bank-transactions.component';
 
 export interface TabConfig {
   name: string;
@@ -31,6 +32,11 @@ export class GeneralReconciliationComponent {
     {
       name: 'Sales Reconciliation',
       component: SalesReconciliationComponent,
+    },
+
+    {
+      name: 'Bank Transactions',
+      component: BankTransactionsComponent,
     },
   ];
 }

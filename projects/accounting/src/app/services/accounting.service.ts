@@ -109,6 +109,10 @@ export class AccountingService {
     return this.http.delete<void>(`${this.baseUrl}/events/${id}`, { headers: this.getHeaders() });
   }
 
+  updateEvent(id: number, event: Partial<AccountingEventDTO>): Observable<AccountingEventDTO> {
+    return this.http.put<AccountingEventDTO>(`${this.baseUrl}/events/${id}`, event, { headers: this.getHeaders() });
+  }
+
   // ── Transactions ─────────────────────────────────────
   getTransactions(page: number = 0, size: number = 10): Observable<PaginationResult<AccountingTransactionDTO>> {
     const params = new HttpParams().set('page', (page + 1).toString()).set('size', size.toString());

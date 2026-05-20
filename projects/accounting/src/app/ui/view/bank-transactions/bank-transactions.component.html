@@ -1,0 +1,596 @@
+<div>
+  <!-- Header -->
+  <div class="pb-8 flex flex-col gap-3">
+    <h1 class="text-4xl font-bold text-customBlue">Bank Transactions.</h1>
+    <p class="text-2xl text-customGray">Track and manage your bank transactions</p>
+  </div>
+
+  <!-- selector and card side-by-side row -->
+  <div class="flex flex-row flex-wrap items-start justify-start gap-8 mt-4">
+    
+    <!-- Left Column: Select Bank Dropdown -->
+    <div class="flex flex-col gap-3">
+      <p class="text-2xl text-customBlue font-semibold m-0">Select Bank</p>
+      
+      <div class="relative">
+        <div class="p-3 rounded-lg bg-white border border-gray-200 shadow-sm flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition w-80 justify-between" (click)="toggleDropdown(); $event.stopPropagation()">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 p-0.5">
+              <!-- Inline Bank SVGs for main selector -->
+              <ng-container [ngSwitch]="selectedBank.name">
+                <!-- Access Bank -->
+                <svg *ngSwitchCase="'Access Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                  <rect width="500" height="500" fill="white"/>
+                  <g clip-path="url(#clip_access_main)">
+                    <path d="M249.98 331.376L319.769 261.578L250.031 191.819L180.222 261.618V261.638L249.98 331.376ZM250.031 215.136L296.472 261.578L249.98 308.07L203.538 261.628L250.031 215.136Z" fill="#F4821F"/>
+                    <path d="M226.844 75.508V98.8146L389.658 261.568L249.97 401.195L110.402 261.618L180.191 191.829H156.884L87.0957 261.618L249.97 424.492L412.904 261.568L226.844 75.508Z" fill="#F4821F"/>
+                    <path d="M133.618 261.628L133.638 261.638L249.97 377.97H249.98L366.351 261.568L226.844 122.041V145.337L343.095 261.578H343.085L249.97 354.673L156.925 261.628L226.723 191.829H203.417L133.638 261.608L133.618 261.628Z" fill="#F4821F"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip_access_main">
+                      <rect width="325.808" height="348.984" fill="white" transform="translate(87.0957 75.508)"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+                <!-- Wema Bank -->
+                <svg *ngSwitchCase="'Wema Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                  <rect width="500" height="500" fill="white"/>
+                  <g clip-path="url(#clip_wema_main)">
+                    <path d="M403.105 172.276C402.289 170.939 400.816 170.123 399.251 170.123H381.75C380.028 170.123 378.463 171.097 377.693 172.639L280.417 368.029L276.767 361.41L365.338 176.606C366.018 175.201 365.927 173.546 365.088 172.231C364.249 170.916 362.821 170.123 361.257 170.123H344.187C342.441 170.123 340.854 171.12 340.106 172.684L262.598 332.574L255.82 319.176L327.751 176.697C328.454 175.291 328.386 173.614 327.57 172.276C326.754 170.939 325.28 170.123 323.716 170.123H306.215C304.492 170.123 302.928 171.097 302.157 172.639L242.4 292.653L238.183 284.31L289.825 176.606C290.505 175.201 290.414 173.546 289.575 172.231C288.737 170.916 287.308 170.123 285.744 170.123H268.674C266.928 170.123 265.341 171.12 264.593 172.684L224.037 256.358L180.103 169.624C178.97 167.38 176.249 166.496 174.005 167.629C171.761 168.762 170.877 171.483 172.01 173.727L219.027 266.628L187.063 332.597L104.568 169.624C103.457 167.38 100.714 166.496 98.4921 167.629C96.2478 168.762 95.3637 171.483 96.4972 173.704L183.118 344.816C183.889 346.334 185.453 347.309 187.153 347.309H187.199C188.922 347.309 190.486 346.312 191.234 344.748L224.196 276.761L228.072 284.423L192.027 359.596C191.393 360.911 191.438 362.475 192.027 363.745L201.095 379.954C201.911 381.427 203.385 382.334 205.153 382.289C206.831 382.243 208.372 381.291 209.12 379.772L242.445 312.851L245.641 319.176L209.12 391.515C207.987 393.76 208.894 396.48 211.115 397.613C211.773 397.953 212.476 398.112 213.156 398.112C214.811 398.112 216.42 397.205 217.214 395.618L250.719 329.242L258.608 344.838C259.379 346.38 261.011 347.241 262.689 347.332C264.412 347.332 265.976 346.334 266.724 344.77L347.043 179.191H354.071L267.563 359.596C266.928 360.911 266.974 362.475 267.676 363.745L276.631 379.954C277.447 381.427 278.943 382.334 280.689 382.289C282.366 382.243 283.908 381.291 284.656 379.772L384.561 179.191H391.884L284.679 391.515C283.545 393.76 284.452 396.48 286.674 397.613C287.331 397.953 288.034 398.112 288.714 398.112C290.369 398.112 291.978 397.205 292.772 395.618L403.287 176.697C403.989 175.291 403.921 173.614 403.105 172.276ZM229.16 266.514L271.508 179.191H278.535L233.014 274.131L229.16 266.537V266.514ZM204.881 368.029L201.231 361.41L233.241 294.625L237.367 302.763L204.881 368.007V368.029ZM247.5 302.741L309.026 179.191H316.348L250.742 309.133L247.5 302.741Z" fill="#991988"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip_wema_main">
+                      <rect width="307.764" height="230.959" fill="white" transform="translate(95.998 167.131)"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+                <!-- Zenith Bank -->
+                <svg *ngSwitchCase="'Zenith Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                  <rect width="500" height="500" fill="white"/>
+                  <g clip-path="url(#clip_zenith_main)">
+                    <path d="M151.808 123.398H382.105L131.13 327.504L244.905 190.982L159.409 189.81C150.324 189.682 141.753 193.986 136.405 201.33L133.895 204.792" fill="#898989"/>
+                    <path d="M346.939 353.694H116.643L367.636 149.606L253.861 286.129L339.357 287.301C348.441 287.429 357.013 283.125 362.361 275.781L364.87 272.319" fill="#E31E24"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip_zenith_main">
+                      <rect width="265.462" height="230.297" fill="white" transform="translate(116.643 123.398)"/>
+                    </clipPath>
+                  </defs>
+                </svg>
+                <!-- GTBank -->
+                <svg *ngSwitchCase="'GTBank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                  <rect width="500" height="500" fill="white"/>
+                  <rect x="127.227" y="127.227" width="245.546" height="245.546" fill="#DE4A07"/>
+                  <path d="M212.487 282.676H225.323V325.489H236.581V282.676H249.417V273.267H212.487V282.676Z" fill="white"/>
+                  <path d="M252.775 299.456C252.775 316.462 256.799 326.39 274.784 326.39C279.405 326.39 283.586 325.714 287.688 324.823V314.974C283.958 314.974 279.856 316.541 276.204 316.541C266.58 316.541 264.416 311.988 264.416 299.378C264.416 286.768 266.58 282.215 276.351 282.215C279.934 282.215 283.811 282.813 287.688 283.782V273.933C283.135 272.885 278.886 272.366 274.784 272.366C256.956 272.366 252.775 282.069 252.775 299.446V299.456Z" fill="white"/>
+                  <path d="M314.689 272.376C296.411 272.376 292.309 282.225 292.309 299.378C292.309 316.531 296.411 326.38 314.689 326.38C332.968 326.38 337.149 316.531 337.149 299.378C337.149 282.225 333.115 272.376 314.689 272.376ZM314.689 316.541C305.888 316.541 303.949 311.694 303.949 299.378C303.949 287.062 305.888 282.215 314.689 282.215C323.491 282.215 325.508 287.062 325.508 299.378C325.508 311.694 323.569 316.541 314.689 316.541Z" fill="white"/>
+                  <path d="M189.138 305.262H196.97V316.394C196.97 316.394 189.774 318.195 185.153 316.932C179.181 315.63 178.016 310.676 178.016 300.416C178.016 287.355 183.283 282.783 193.729 282.783C197.538 282.783 202.306 283.38 207.162 284.35V274.501C202.159 273.531 196.862 272.934 192.32 272.934C173.816 272.934 166.385 282.734 166.385 299.965C166.385 317.197 170.301 326.507 187.16 327.095H187.268C187.777 327.104 188.296 327.124 188.834 327.124C189.079 327.124 189.333 327.124 189.568 327.114C189.803 327.124 190.038 327.114 190.273 327.104C190.734 327.104 191.194 327.075 191.644 327.046C192.672 326.967 193.68 326.86 194.669 326.723C194.699 326.723 194.728 326.713 194.757 326.713C201.973 325.685 207.485 323.169 207.485 323.169V296.47H189.128V305.272L189.138 305.262Z" fill="white"/>
+                  <path d="M337.149 160.266H268.342V228.378H337.149V160.266Z" fill="white"/>
+                </svg>
+              </ng-container>
+            </div>
+            <div class="flex flex-col text-left">
+              <span class="font-bold text-gray-800 text-xl leading-tight">{{ selectedBank.name }}</span>
+              <span class="mt-1">
+                <span class="bg-white text-customGreen border border-customGreen px-2 py-0.5 rounded-full text-md font-semibold">
+                  {{ selectedBank.accountNumber }}
+                </span>
+              </span>
+            </div>
+          </div>
+          <i class="fa fa-chevron-down text-gray-400 text-xs"></i>
+        </div>
+
+        <!-- Search dropdown -->
+        <div *ngIf="showDropdown" class="absolute left-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-3" (click)="$event.stopPropagation()">
+          <!-- Search input -->
+          <div class="relative mb-3">
+            <i class="fa fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+            <input type="text" class="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-transparent" placeholder="Search account by name or number..." [(ngModel)]="dropdownSearchText">
+          </div>
+
+          <!-- Accounts list -->
+          <div class="flex flex-col gap-1 max-h-52 overflow-y-auto">
+            <button type="button" *ngFor="let bank of getFilteredBankAccounts()" class="w-full flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition text-left cursor-pointer border-none bg-transparent" (click)="selectBank(bank)">
+              <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100 p-0.5">
+                <!-- Inline Bank SVGs for list items -->
+                <ng-container [ngSwitch]="bank.name">
+                  <!-- Access Bank -->
+                  <svg *ngSwitchCase="'Access Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                    <rect width="500" height="500" fill="white"/>
+                    <g clip-path="url(#clip_access_list)">
+                      <path d="M249.98 331.376L319.769 261.578L250.031 191.819L180.222 261.618V261.638L249.98 331.376ZM250.031 215.136L296.472 261.578L249.98 308.07L203.538 261.628L250.031 215.136Z" fill="#F4821F"/>
+                      <path d="M226.844 75.508V98.8146L389.658 261.568L249.97 401.195L110.402 261.618L180.191 191.829H156.884L87.0957 261.618L249.97 424.492L412.904 261.568L226.844 75.508Z" fill="#F4821F"/>
+                      <path d="M133.618 261.628L133.638 261.638L249.97 377.97H249.98L366.351 261.568L226.844 122.041V145.337L343.095 261.578H343.085L249.97 354.673L156.925 261.628L226.723 191.829H203.417L133.638 261.608L133.618 261.628Z" fill="#F4821F"/>
+                    </g>
+                    <defs>
+                      <clipPath id="clip_access_list">
+                        <rect width="325.808" height="348.984" fill="white" transform="translate(87.0957 75.508)"/>
+                      </clipPath>
+                    </defs>
+                  </svg>
+                  <!-- Wema Bank -->
+                  <svg *ngSwitchCase="'Wema Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                    <rect width="500" height="500" fill="white"/>
+                    <g clip-path="url(#clip_wema_list)">
+                      <path d="M403.105 172.276C402.289 170.939 400.816 170.123 399.251 170.123H381.75C380.028 170.123 378.463 171.097 377.693 172.639L280.417 368.029L276.767 361.41L365.338 176.606C366.018 175.201 365.927 173.546 365.088 172.231C364.249 170.916 362.821 170.123 361.257 170.123H344.187C342.441 170.123 340.854 171.12 340.106 172.684L262.598 332.574L255.82 319.176L327.751 176.697C328.454 175.291 328.386 173.614 327.57 172.276C326.754 170.939 325.28 170.123 323.716 170.123H306.215C304.492 170.123 302.928 171.097 302.157 172.639L242.4 292.653L238.183 284.31L289.825 176.606C290.505 175.201 290.414 173.546 289.575 172.231C288.737 170.916 287.308 170.123 285.744 170.123H268.674C266.928 170.123 265.341 171.12 264.593 172.684L224.037 256.358L180.103 169.624C178.97 167.38 176.249 166.496 174.005 167.629C171.761 168.762 170.877 171.483 172.01 173.727L219.027 266.628L187.063 332.597L104.568 169.624C103.457 167.38 100.714 166.496 98.4921 167.629C96.2478 168.762 95.3637 171.483 96.4972 173.704L183.118 344.816C183.889 346.334 185.453 347.309 187.153 347.309H187.199C188.922 347.309 190.486 346.312 191.234 344.748L224.196 276.761L228.072 284.423L192.027 359.596C191.393 360.911 191.438 362.475 192.027 363.745L201.095 379.954C201.911 381.427 203.385 382.334 205.153 382.289C206.831 382.243 208.372 381.291 209.12 379.772L242.445 312.851L245.641 319.176L209.12 391.515C207.987 393.76 208.894 396.48 211.115 397.613C211.773 397.953 212.476 398.112 213.156 398.112C214.811 398.112 216.42 397.205 217.214 395.618L250.719 329.242L258.608 344.838C259.379 346.38 261.011 347.241 262.689 347.332C264.412 347.332 265.976 346.334 266.724 344.77L347.043 179.191H354.071L267.563 359.596C266.928 360.911 266.974 362.475 267.676 363.745L276.631 379.954C277.447 381.427 278.943 382.334 280.689 382.289C282.366 382.243 283.908 381.291 284.656 379.772L384.561 179.191H391.884L284.679 391.515C283.545 393.76 284.452 396.48 286.674 397.613C287.331 397.953 288.034 398.112 288.714 398.112C290.369 398.112 291.978 397.205 292.772 395.618L403.287 176.697C403.989 175.291 403.921 173.614 403.105 172.276ZM229.16 266.514L271.508 179.191H278.535L233.014 274.131L229.16 266.537V266.514ZM204.881 368.029L201.231 361.41L233.241 294.625L237.367 302.763L204.881 368.007V368.029ZM247.5 302.741L309.026 179.191H316.348L250.742 309.133L247.5 302.741Z" fill="#991988"/>
+                    </g>
+                    <defs>
+                      <clipPath id="clip_wema_list">
+                        <rect width="307.764" height="230.959" fill="white" transform="translate(95.998 167.131)"/>
+                      </clipPath>
+                    </defs>
+                  </svg>
+                  <!-- Zenith Bank -->
+                  <svg *ngSwitchCase="'Zenith Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                    <rect width="500" height="500" fill="white"/>
+                    <g clip-path="url(#clip_zenith_list)">
+                      <path d="M151.808 123.398H382.105L131.13 327.504L244.905 190.982L159.409 189.81C150.324 189.682 141.753 193.986 136.405 201.33L133.895 204.792" fill="#898989"/>
+                      <path d="M346.939 353.694H116.643L367.636 149.606L253.861 286.129L339.357 287.301C348.441 287.429 357.013 283.125 362.361 275.781L364.87 272.319" fill="#E31E24"/>
+                    </g>
+                    <defs>
+                      <clipPath id="clip_zenith_list">
+                        <rect width="265.462" height="230.297" fill="white" transform="translate(116.643 123.398)"/>
+                      </clipPath>
+                    </defs>
+                  </svg>
+                  <!-- GTBank -->
+                  <svg *ngSwitchCase="'GTBank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                    <rect width="500" height="500" fill="white"/>
+                    <rect x="127.227" y="127.227" width="245.546" height="245.546" fill="#DE4A07"/>
+                    <path d="M212.487 282.676H225.323V325.489H236.581V282.676H249.417V273.267H212.487V282.676Z" fill="white"/>
+                    <path d="M252.775 299.456C252.775 316.462 256.799 326.39 274.784 326.39C279.405 326.39 283.586 325.714 287.688 324.823V314.974C283.958 314.974 279.856 316.541 276.204 316.541C266.58 316.541 264.416 311.988 264.416 299.378C264.416 286.768 266.58 282.215 276.351 282.215C279.934 282.215 283.811 282.813 287.688 283.782V273.933C283.135 272.885 278.886 272.366 274.784 272.366C256.956 272.366 252.775 282.069 252.775 299.446V299.456Z" fill="white"/>
+                    <path d="M314.689 272.376C296.411 272.376 292.309 282.225 292.309 299.378C292.309 316.531 296.411 326.38 314.689 326.38C332.968 326.38 337.149 316.531 337.149 299.378C337.149 282.225 333.115 272.376 314.689 272.376ZM314.689 316.541C305.888 316.541 303.949 311.694 303.949 299.378C303.949 287.062 305.888 282.215 314.689 282.215C323.491 282.215 325.508 287.062 325.508 299.378C325.508 311.694 323.569 316.541 314.689 316.541Z" fill="white"/>
+                    <path d="M189.138 305.262H196.97V316.394C196.97 316.394 189.774 318.195 185.153 316.932C179.181 315.63 178.016 310.676 178.016 300.416C178.016 287.355 183.283 282.783 193.729 282.783C197.538 282.783 202.306 283.38 207.162 284.35V274.501C202.159 273.531 196.862 272.934 192.32 272.934C173.816 272.934 166.385 282.734 166.385 299.965C166.385 317.197 170.301 326.507 187.16 327.095H187.268C187.777 327.104 188.296 327.124 188.834 327.124C189.079 327.124 189.333 327.124 189.568 327.114C189.803 327.124 190.038 327.114 190.273 327.104C190.734 327.104 191.194 327.075 191.644 327.046C192.672 326.967 193.68 326.86 194.669 326.723C194.699 326.723 194.728 326.713 194.757 326.713C201.973 325.685 207.485 323.169 207.485 323.169V296.47H189.128V305.272L189.138 305.262Z" fill="white"/>
+                    <path d="M337.149 160.266H268.342V228.378H337.149V160.266Z" fill="white"/>
+                  </svg>
+                </ng-container>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-bold text-gray-800 text-xl leading-">{{ bank.name }}</span>
+                <span class="mt-0.5">
+                  <span class="bg-customGray text-customGreen px-2 py-0.5 rounded-full text-[10px] font-medium">
+                    {{ bank.accountNumber }}
+                  </span>
+                </span>
+              </div>
+            </button>
+
+            <!-- No results -->
+            <div *ngIf="getFilteredBankAccounts().length === 0" class="text-center py-4 text-xs text-gray-400">
+              No matching accounts found
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Card & Sync Alert -->
+    <div class="flex flex-col items-start gap-1 w-full max-w-md">
+      <!-- selected bank card -->
+      <div class="bank-card">
+    <div class="flex items-center w-full">
+      <!-- Centered Left: Bank logo SVG -->
+      <div class="logo-container">
+        <ng-container [ngSwitch]="selectedBank.name">
+          <!-- Access Bank -->
+          <svg *ngSwitchCase="'Access Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+            <rect width="500" height="500" fill="white"/>
+            <g clip-path="url(#clip_access_card)">
+              <path d="M249.98 331.376L319.769 261.578L250.031 191.819L180.222 261.618V261.638L249.98 331.376ZM250.031 215.136L296.472 261.578L249.98 308.07L203.538 261.628L250.031 215.136Z" fill="#F4821F"/>
+              <path d="M226.844 75.508V98.8146L389.658 261.568L249.97 401.195L110.402 261.618L180.191 191.829H156.884L87.0957 261.618L249.97 424.492L412.904 261.568L226.844 75.508Z" fill="#F4821F"/>
+              <path d="M133.618 261.628L133.638 261.638L249.97 377.97H249.98L366.351 261.568L226.844 122.041V145.337L343.095 261.578H343.085L249.97 354.673L156.925 261.628L226.723 191.829H203.417L133.638 261.608L133.618 261.628Z" fill="#F4821F"/>
+            </g>
+            <defs>
+              <clipPath id="clip_access_card">
+                <rect width="325.808" height="348.984" fill="white" transform="translate(87.0957 75.508)"/>
+              </clipPath>
+            </defs>
+          </svg>
+          <!-- Wema Bank -->
+          <svg *ngSwitchCase="'Wema Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+            <rect width="500" height="500" fill="white"/>
+            <g clip-path="url(#clip_wema_card)">
+              <path d="M403.105 172.276C402.289 170.939 400.816 170.123 399.251 170.123H381.75C380.028 170.123 378.463 171.097 377.693 172.639L280.417 368.029L276.767 361.41L365.338 176.606C366.018 175.201 365.927 173.546 365.088 172.231C364.249 170.916 362.821 170.123 361.257 170.123H344.187C342.441 170.123 340.854 171.12 340.106 172.684L262.598 332.574L255.82 319.176L327.751 176.697C328.454 175.291 328.386 173.614 327.57 172.276C326.754 170.939 325.28 170.123 323.716 170.123H306.215C304.492 170.123 302.928 171.097 302.157 172.639L242.4 292.653L238.183 284.31L289.825 176.606C290.505 175.201 290.414 173.546 289.575 172.231C288.737 170.916 287.308 170.123 285.744 170.123H268.674C266.928 170.123 265.341 171.12 264.593 172.684L224.037 256.358L180.103 169.624C178.97 167.38 176.249 166.496 174.005 167.629C171.761 168.762 170.877 171.483 172.01 173.727L219.027 266.628L187.063 332.597L104.568 169.624C103.457 167.38 100.714 166.496 98.4921 167.629C96.2478 168.762 95.3637 171.483 96.4972 173.704L183.118 344.816C183.889 346.334 185.453 347.309 187.153 347.309H187.199C188.922 347.309 190.486 346.312 191.234 344.748L224.196 276.761L228.072 284.423L192.027 359.596C191.393 360.911 191.438 362.475 192.027 363.745L201.095 379.954C201.911 381.427 203.385 382.334 205.153 382.289C206.831 382.243 208.372 381.291 209.12 379.772L242.445 312.851L245.641 319.176L209.12 391.515C207.987 393.76 208.894 396.48 211.115 397.613C211.773 397.953 212.476 398.112 213.156 398.112C214.811 398.112 216.42 397.205 217.214 395.618L250.719 329.242L258.608 344.838C259.379 346.38 261.011 347.241 262.689 347.332C264.412 347.332 265.976 346.334 266.724 344.77L347.043 179.191H354.071L267.563 359.596C266.928 360.911 266.974 362.475 267.676 363.745L276.631 379.954C277.447 381.427 278.943 382.334 280.689 382.289C282.366 382.243 283.908 381.291 284.656 379.772L384.561 179.191H391.884L284.679 391.515C283.545 393.76 284.452 396.48 286.674 397.613C287.331 397.953 288.034 398.112 288.714 398.112C290.369 398.112 291.978 397.205 292.772 395.618L403.287 176.697C403.989 175.291 403.921 173.614 403.105 172.276ZM229.16 266.514L271.508 179.191H278.535L233.014 274.131L229.16 266.537V266.514ZM204.881 368.029L201.231 361.41L233.241 294.625L237.367 302.763L204.881 368.007V368.029ZM247.5 302.741L309.026 179.191H316.348L250.742 309.133L247.5 302.741Z" fill="#991988"/>
+            </g>
+            <defs>
+              <clipPath id="clip_wema_card">
+                <rect width="307.764" height="230.959" fill="white" transform="translate(95.998 167.131)"/>
+              </clipPath>
+            </defs>
+          </svg>
+          <!-- Zenith Bank -->
+          <svg *ngSwitchCase="'Zenith Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+            <rect width="500" height="500" fill="white"/>
+            <g clip-path="url(#clip_zenith_card)">
+              <path d="M151.808 123.398H382.105L131.13 327.504L244.905 190.982L159.409 189.81C150.324 189.682 141.753 193.986 136.405 201.33L133.895 204.792" fill="#898989"/>
+              <path d="M346.939 353.694H116.643L367.636 149.606L253.861 286.129L339.357 287.301C348.441 287.429 357.013 283.125 362.361 275.781L364.87 272.319" fill="#E31E24"/>
+            </g>
+            <defs>
+              <clipPath id="clip_zenith_card">
+                <rect width="265.462" height="230.297" fill="white" transform="translate(116.643 123.398)"/>
+              </clipPath>
+            </defs>
+          </svg>
+          <!-- GTBank -->
+          <svg *ngSwitchCase="'GTBank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+            <rect width="500" height="500" fill="white"/>
+            <rect x="127.227" y="127.227" width="245.546" height="245.546" fill="#DE4A07"/>
+            <path d="M212.487 282.676H225.323V325.489H236.581V282.676H249.417V273.267H212.487V282.676Z" fill="white"/>
+            <path d="M252.775 299.456C252.775 316.462 256.799 326.39 274.784 326.39C279.405 326.39 283.586 325.714 287.688 324.823V314.974C283.958 314.974 279.856 316.541 276.204 316.541C266.58 316.541 264.416 311.988 264.416 299.378C264.416 286.768 266.58 282.215 276.351 282.215C279.934 282.215 283.811 282.813 287.688 283.782V273.933C283.135 272.885 278.886 272.366 274.784 272.366C256.956 272.366 252.775 282.069 252.775 299.446V299.456Z" fill="white"/>
+            <path d="M314.689 272.376C296.411 272.376 292.309 282.225 292.309 299.378C292.309 316.531 296.411 326.38 314.689 326.38C332.968 326.38 337.149 316.531 337.149 299.378C337.149 282.225 333.115 272.376 314.689 272.376ZM314.689 316.541C305.888 316.541 303.949 311.694 303.949 299.378C303.949 287.062 305.888 282.215 314.689 282.215C323.491 282.215 325.508 287.062 325.508 299.378C325.508 311.694 323.569 316.541 314.689 316.541Z" fill="white"/>
+            <path d="M189.138 305.262H196.97V316.394C196.97 316.394 189.774 318.195 185.153 316.932C179.181 315.63 178.016 310.676 178.016 300.416C178.016 287.355 183.283 282.783 193.729 282.783C197.538 282.783 202.306 283.38 207.162 284.35V274.501C202.159 273.531 196.862 272.934 192.32 272.934C173.816 272.934 166.385 282.734 166.385 299.965C166.385 317.197 170.301 326.507 187.16 327.095H187.268C187.777 327.104 188.296 327.124 188.834 327.124C189.079 327.124 189.333 327.124 189.568 327.114C189.803 327.124 190.038 327.114 190.273 327.104C190.734 327.104 191.194 327.075 191.644 327.046C192.672 326.967 193.68 326.86 194.669 326.723C194.699 326.723 194.728 326.713 194.757 326.713C201.973 325.685 207.485 323.169 207.485 323.169V296.47H189.128V305.272L189.138 305.262Z" fill="white"/>
+            <path d="M337.149 160.266H268.342V228.378H337.149V160.266Z" fill="white"/>
+          </svg>
+        </ng-container>
+      </div>
+
+      <!-- Right Column: Info -->
+      <div class="info-container">
+        <!-- Bank Name: bold, xl -->
+        <h2 class="bank-title">
+          {{ selectedBank.name }} PLC
+        </h2>
+        
+        <!-- Account Number: text-sm -->
+        <p class="account-no">
+          Account Number: {{ selectedBank.accountNumber }}
+        </p>
+
+        <!-- Balance Section -->
+        <div class="balance-section">
+          <div class="balance-meta">
+            <span class="balance-label">Available Balance</span>
+            <span class="balance-value">
+              <ng-container *ngIf="showBalance">
+                ₦{{ selectedBank.balance | number:'1.2-2' }}
+              </ng-container>
+              <ng-container *ngIf="!showBalance">
+                ••••••••••
+              </ng-container>
+            </span>
+          </div>
+
+          <!-- Sync and Eye Action Buttons -->
+          <div class="actions-row">
+            <!-- Sync Button -->
+            <button type="button" class="btn-action-round" (click)="syncBalance()" [title]="'Sync Balance'">
+              <i class="fa fa-refresh" [class.fa-spin]="syncingBalance"></i>
+            </button>
+            <!-- Toggle Visibility Button -->
+            <button type="button" class="btn-action-round" (click)="toggleBalanceVisibility()" [title]="showBalance ? 'Hide Balance' : 'Show Balance'">
+              <i class="fa" [ngClass]="showBalance ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync warning alert -->
+  <div class="sync-alert">
+    <i class="fa fa-exclamation-triangle"></i>
+    <span>Last synced: {{ lastSyncedDate | date:'MMM d, y, h:mm:ss a' }}</span>
+  </div>
+  </div>
+
+  <!-- Premium Modern Sections Container -->
+  <div class="bank-tx-container mt-6">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card matched">
+        <div class="stat-meta">
+          <span class="stat-label">Matched</span>
+          <span class="stat-value">{{ getStats().matched }}</span>
+        </div>
+        <div class="stat-icon-wrapper">
+          <i class="fa fa-check"></i>
+        </div>
+      </div>
+      
+      <div class="stat-card pending">
+        <div class="stat-meta">
+          <span class="stat-label">Partially Matched</span>
+          <span class="stat-value">{{ getStats().partiallyMatched }}</span>
+        </div>
+        <div class="stat-icon-wrapper">
+          <i class="fa fa-adjust"></i>
+        </div>
+      </div>
+
+      <div class="stat-card outflow">
+        <div class="stat-meta">
+          <span class="stat-label">Unmatched</span>
+          <span class="stat-value">{{ getStats().unmatched }}</span>
+        </div>
+        <div class="stat-icon-wrapper">
+          <i class="fa fa-times"></i>
+        </div>
+      </div>
+
+      <div class="stat-card inflow">
+        <div class="stat-meta">
+          <span class="stat-label">Total Inflow</span>
+          <span class="stat-value">{{ formatNaira(getStats().totalInflow) }}</span>
+        </div>
+        <div class="stat-icon-wrapper">
+          <i class="fa fa-arrow-down"></i>
+        </div>
+      </div>
+
+      <div class="stat-card outflow">
+        <div class="stat-meta">
+          <span class="stat-label">Total Outflow</span>
+          <span class="stat-value">{{ formatNaira(getStats().totalOutflow) }}</span>
+        </div>
+        <div class="stat-icon-wrapper">
+          <i class="fa fa-arrow-up"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Panel -->
+    <div class="filters-panel">
+      <div class="search-input-wrapper">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" class="search-control" placeholder="Search by description, reference, source..." [(ngModel)]="searchText" (ngModelChange)="currentPage = 1">
+      </div>
+
+      <div class="filter-controls">
+        <!-- Date Range Start -->
+        <div class="filter-group">
+          <span class="filter-label">Start Date</span>
+          <input type="date" class="filter-select" [(ngModel)]="startDate" (ngModelChange)="currentPage = 1">
+        </div>
+
+        <!-- Date Range End -->
+        <div class="filter-group">
+          <span class="filter-label">End Date</span>
+          <input type="date" class="filter-select" [(ngModel)]="endDate" (ngModelChange)="currentPage = 1">
+        </div>
+
+        <!-- Type Select -->
+        <div class="filter-group">
+          <span class="filter-label">Type</span>
+          <select class="filter-select" [(ngModel)]="selectedType" (ngModelChange)="currentPage = 1">
+            <option value="All">All Types</option>
+            <option value="CREDIT">CREDIT (Inflow)</option>
+            <option value="DEBIT">DEBIT (Outflow)</option>
+          </select>
+        </div>
+
+        <!-- Status Select -->
+        <div class="filter-group">
+          <span class="filter-label">Status</span>
+          <select class="filter-select" [(ngModel)]="selectedStatus" (ngModelChange)="currentPage = 1">
+            <option value="All">All Statuses</option>
+            <option value="MATCHED">MATCHED</option>
+            <option value="PARTIALLY_MATCHED">PARTIALLY MATCHED</option>
+            <option value="UNMATCHED">UNMATCHED</option>
+          </select>
+        </div>
+
+        <!-- Clear Button -->
+        <button type="button" class="btn-sync" style="background: #64748b;" (click)="clearFilters()">
+          Clear
+        </button>
+
+        <!-- Sync Button -->
+        <button type="button" class="btn-sync" [disabled]="loading" (click)="syncTransactions()">
+          <i class="fa fa-refresh" [class.fa-spin]="loading" style="margin-right: 0.25rem;"></i>
+          Sync
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="table-card mt-6">
+      <div class="table-container">
+        <table class="premium-table">
+          <thead>
+            <tr>
+              <th class="px-6 py-4 text-left">Date</th>
+              <th class="px-6 py-4 text-left">Description</th>
+              <th class="px-6 py-4 text-left">Reference</th>
+              <th class="px-6 py-4 text-center">Type</th>
+              <th class="px-6 py-4 text-right">Amount</th>
+              <th class="px-6 py-4 text-center">Status</th>
+              <th class="px-6 py-4 text-left">Account</th>
+              <th class="px-6 py-4 text-left" style="padding-left: 1.25rem;">Source</th>
+              <th class="px-6 py-4 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loading State -->
+            <tr *ngIf="loading">
+              <td colspan="9" class="text-center py-12">
+                <div class="inline-block w-8 h-8 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin mb-2"></div>
+                <p class="text-xs text-gray-500 font-semibold">Synchronizing transactions...</p>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr *ngIf="!loading && getPaginatedTransactions().length === 0">
+              <td colspan="9" class="empty-state-cell">
+                <div class="empty-state">
+                  <i class="fa fa-folder-open-o"></i>
+                  <h3>No Transactions Found</h3>
+                  <p>Try adjusting your search criteria or date filters.</p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr *ngFor="let tx of getPaginatedTransactions()" class="data-row" (click)="viewTransactionDetail(tx)" style="cursor: pointer;">
+              <!-- Date -->
+              <td class="cell-date whitespace-nowrap">{{ tx.transactionDate | date:'dd/MM/yyyy' }}</td>
+              
+              <!-- Description -->
+              <td class="cell-desc">
+                <div class="desc-text" [title]="tx.description">{{ tx.description }}</div>
+                <div class="sub-text" *ngIf="tx.category">{{ tx.category }}</div>
+              </td>
+
+              <!-- Reference -->
+              <td class="cell-ref font-mono">{{ tx.externalReference }}</td>
+
+              <!-- Type -->
+              <td class="text-center">
+                <span class="inline-block px-3 py-1 rounded-md text-xs font-bold"
+                  [ngClass]="tx.transactionType === 'CREDIT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                  {{ tx.transactionType }}
+                </span>
+              </td>
+
+              <!-- Amount -->
+              <td class="text-right whitespace-nowrap font-bold" [ngClass]="tx.transactionType === 'CREDIT' ? 'credit-amt' : 'debit-amt'">
+                {{ formatNaira(tx.amount) }}
+              </td>
+
+              <!-- Status -->
+              <td class="text-center whitespace-nowrap">
+                <span class="status-pill" [ngClass]="getStatusClass(tx.status)">
+                  <span class="dot"></span>
+                  <span>{{ tx.status }}</span>
+                </span>
+              </td>
+
+              <!-- Account -->
+              <td class="whitespace-nowrap font-medium text-gray-700">{{ tx.bankAccount.accountName }}</td>
+
+              <!-- Source -->
+              <td class="whitespace-nowrap" style="padding-left: 1.25rem;">
+                <span class="inline-block px-2.5 py-0.5 rounded text-xs font-semibold"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-800': tx.source === 'POS',
+                    'bg-purple-100 text-purple-800': tx.source === 'HR',
+                    'bg-indigo-100 text-indigo-800': tx.source === 'HOSPITALITY',
+                    'bg-teal-100 text-teal-800': tx.source === 'BANK',
+                    'bg-orange-100 text-orange-800': tx.source === 'EXPENSE',
+                    'bg-gray-100 text-gray-800': tx.source === 'MANUAL'
+                  }">
+                  {{ tx.source }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="text-center" (click)="$event.stopPropagation()">
+                <div class="actions-wrapper">
+                  <!-- View Details -->
+                  <button type="button" class="action-btn view-btn" (click)="viewTransactionDetail(tx)" title="View Details">
+                    <i class="fa fa-eye"></i>
+                  </button>
+                  <!-- Match Action (if unmatched) -->
+                  <button type="button" class="action-btn match-btn" *ngIf="tx.status !== 'MATCHED'" (click)="matchTransaction(tx)" title="Auto Match">
+                    <i class="fa fa-link"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-panel" *ngIf="!loading && filterTransactions().length > 0">
+        <div class="page-meta">
+          Showing <span class="font-semibold text-gray-900">{{ getPageStart() }}</span> to <span class="font-semibold text-gray-900">{{ getPageEnd() }}</span> of <span class="font-semibold text-gray-900">{{ filterTransactions().length }}</span> transactions
+        </div>
+        <div class="page-controls">
+          <button type="button" class="pag-btn" [disabled]="currentPage === 1" (click)="previousPage()">
+            <i class="fa fa-angle-left"></i>
+          </button>
+          <span class="page-indicator">Page {{ currentPage }} of {{ getTotalPages() }}</span>
+          <button type="button" class="pag-btn" [disabled]="currentPage === getTotalPages()" (click)="nextPage()">
+            <i class="fa fa-angle-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal-backdrop" *ngIf="showDetailModal" (click)="closeDetailModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Transaction Ledger Specification</h3>
+        <button type="button" class="modal-close" (click)="closeDetailModal()">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="item-label">Transaction ID</span>
+            <span class="item-value font-mono">{{ selectedTransaction?.id }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Reconciliation Status</span>
+            <span class="item-value">
+              <span class="status-pill" [ngClass]="getStatusClass(selectedTransaction?.status || '')">
+                <span class="dot"></span>
+                <span>{{ selectedTransaction?.status }}</span>
+              </span>
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Transaction Date</span>
+            <span class="item-value">{{ selectedTransaction?.transactionDate | date:'dd MMMM yyyy' }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Type</span>
+            <span class="item-value font-semibold" [ngClass]="selectedTransaction?.transactionType === 'CREDIT' ? 'text-green-600' : 'text-red-500'">
+              {{ selectedTransaction?.transactionType }}
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Amount</span>
+            <span class="item-value font-highlight" [ngClass]="selectedTransaction?.transactionType === 'CREDIT' ? 'credit-amt' : 'debit-amt'">
+              {{ formatNaira(selectedTransaction?.amount || 0) }}
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Reference</span>
+            <span class="item-value font-mono" style="color: #2563eb;">{{ selectedTransaction?.externalReference }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Bank Account</span>
+            <span class="item-value">{{ selectedTransaction?.bankAccount?.accountName }}</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="item-label">Source Module</span>
+            <span class="item-value">{{ selectedTransaction?.source }}</span>
+          </div>
+
+          <div class="detail-item full-width" *ngIf="selectedTransaction?.matchedWith">
+            <span class="item-label">Matched Ledger Reference</span>
+            <span class="item-value font-mono bg-blue-50 border border-blue-100 p-2.5 rounded flex items-center justify-between" style="color: #2563eb;">
+              <span>{{ selectedTransaction?.matchedWith }}</span>
+              <span class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-sans">Confidence: {{ selectedTransaction?.confidence }}%</span>
+            </span>
+          </div>
+
+          <div class="detail-item full-width">
+            <span class="item-label">Audit Description</span>
+            <span class="item-value bg-gray-50 border border-gray-150 p-3 rounded text-sm text-gray-700 leading-relaxed">
+              {{ selectedTransaction?.description || 'No additional log details captured for this ledger.' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeDetailModal()">Dismiss</button>
+        <button type="button" class="btn-primary" *ngIf="selectedTransaction?.status !== 'MATCHED'" (click)="matchTransaction(selectedTransaction!); closeDetailModal()">Match Now</button>
+      </div>
+    </div>
+  </div>
+</div>

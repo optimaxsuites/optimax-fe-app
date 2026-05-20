@@ -391,3 +391,87 @@ export interface CooperativePaymentRecordDTO {
   status: any;
   notes?: string;
 }
+
+// ── Paystack Integration ──────────────────────────────────────────────────────
+
+export enum PaystackTransactionStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED  = 'FAILED'
+}
+
+export enum PaystackTransactionType {
+  DEBIT  = 'DEBIT',
+  CREDIT = 'CREDIT'
+}
+
+export enum PaystackTransactionSource {
+  HR          = 'HR',
+  POS         = 'POS',
+  EXPENSE     = 'EXPENSE',
+  MARKETPLACE = 'MARKETPLACE',
+  MANUAL      = 'MANUAL'
+}
+
+export interface PaystackBalanceDTO {
+  currency: string;
+  balance:  number;
+}
+
+export interface PaystackTransactionDTO {
+  reference:   string;
+  type:        PaystackTransactionType;
+  amount:      number;
+  currency:    string;
+  status:      PaystackTransactionStatus;
+  description: string;
+  source:      PaystackTransactionSource;
+  createdAt:   string;
+}
+
+export interface PaystackInitializePayload {
+  email:       string;
+  amount:      number;
+  callbackUrl: string;
+}
+
+export interface PaystackInitializeDTO {
+  authorizationUrl: string;
+  reference:        string;
+}
+
+export interface PaystackVerifyDTO {
+  reference: string;
+  status:    PaystackTransactionStatus;
+  amount:    number;
+  currency:  string;
+}
+
+export interface PaystackRecipientPayload {
+  name:          string;
+  accountNumber: string;
+  bankCode:      string;
+}
+
+export interface PaystackRecipientDTO {
+  recipientCode: string;
+  name:          string;
+}
+
+export interface PaystackTransferPayload {
+  employeeId: number;
+  amount:     number;
+}
+
+export interface PaystackTransferDTO {
+  reference:    string;
+  status:       PaystackTransactionStatus;
+  amount?:      number;
+  description?: string;
+}
+
+export interface PaystackApiResponse<T> {
+  status:   boolean;
+  message?: string;
+  data:     T;
+}
