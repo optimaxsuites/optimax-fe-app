@@ -589,6 +589,7 @@ export class CommunicationComponent
   private loadingOlderHistory = false;
   private historyPagingArmed = false;
   private pendingForcedChannelsRefresh = false;
+  private channelsRetryTimer: number | null = null;
   private preserveFeedScrollOffset: number | null = null;
   private dmMembershipRepairAttempted = new Set<string>();
   private dmMembershipRepairInFlight = new Set<string>();
@@ -636,6 +637,7 @@ export class CommunicationComponent
   ngOnDestroy() {
     if (this.flashTimer) clearTimeout(this.flashTimer);
     if (this.typingTimer) clearTimeout(this.typingTimer);
+    if (this.channelsRetryTimer != null) clearTimeout(this.channelsRetryTimer);
     if (this.presencePollTimer) clearInterval(this.presencePollTimer);
     if (this.conversationSyncTimer) clearInterval(this.conversationSyncTimer);
     if (this.callDurationTimer) clearInterval(this.callDurationTimer);
@@ -2651,6 +2653,7 @@ export class CommunicationComponent
           this.loadChannels(true);
         },
       );
+      this.loadChannels(true, true);
       for (const ch of this.channels) {
         this.subscribeToChannel(ch.backendId);
       }
@@ -2726,6 +2729,7 @@ export class CommunicationComponent
             senderUserId !== null && senderUserId === this.me.userId;
 
           if (!isOwnMessage) {
+            this.loadChannels(true, true);
             const incoming = this.parseIncomingNotification(frame.body);
             this.pushChatArrivalToast({
               title: incoming.senderName || ch.name,
@@ -2800,6 +2804,7 @@ export class CommunicationComponent
           const isOwnMessage =
             senderUserId !== null && senderUserId === this.me.userId;
           if (!isOwnMessage) {
+            this.loadChannels(true, true);
             const incoming = this.parseIncomingNotification(frame.body);
             this.pushChatArrivalToast({
               title: incoming.senderName || contact.fullName,
@@ -3204,6 +3209,7 @@ export class CommunicationComponent
     const userId = Number(sessionStorage.getItem('userid') || 0);
     if (!userId) return;
     this.me.userId = userId;
+    this.applySessionUserFallback(userId);
     this.restoreViewedFeedPostIds();
     this.collabService.getEmployeeByUserId(userId).subscribe({
       next: (emp) => {
@@ -3252,8 +3258,57 @@ export class CommunicationComponent
           this.startPresencePoll();
         }
       },
-      error: () => {},
+      error: () => {
+        if (!this.chatRealtimeStarted) {
+          this.connectWebSocket();
+        }
+        if (this.workspaceMode === 'chat') {
+          this.startPresencePoll();
+        }
+        this.cdr.detectChanges();
+      },
     });
+  }
+
+  private applySessionUserFallback(userId: number): void {
+    try {
+      const raw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const displayName =
+        parsed?.fullname ||
+        parsed?.name ||
+        parsed?.username ||
+        sessionStorage.getItem('fullname') ||
+        localStorage.getItem('fullname') ||
+        `User ${userId}`;
+      const avatarUrl =
+        parsed?.profileImage ||
+        parsed?.imageUrl ||
+        parsed?.avatarUrl ||
+        parsed?.profilePicture ||
+        parsed?.photoUrl ||
+        parsed?.employee?.profileImage ||
+        parsed?.employeeProfile?.profileImage ||
+        '';
+      this.me = {
+        name: displayName,
+        shortName: displayName,
+        initials: initialsFrom(displayName),
+        avatarColor: '#2e6276',
+        userId,
+        avatarUrl,
+      };
+      this.headerStateService.setProfile({
+        name: displayName,
+        username: parsed?.username || parsed?.fullname || displayName,
+        accountId: String(parsed?.id || parsed?.userId || userId),
+        initials: initialsFrom(displayName),
+        imageUrl: avatarUrl,
+      });
+      this.userDirectory[userId] = displayName;
+    } catch (_) {}
   }
 
   // ── Employees ─────────────────────────────────────────
@@ -3272,8 +3327,8 @@ export class CommunicationComponent
         this.dmContacts = list
           .filter(
             (e) =>
-              e.user?.userId != null &&
-              Number(e.user.userId) !== Number(this.me.userId),
+              this.employeeUserId(e) != null &&
+              Number(this.employeeUserId(e)) !== Number(this.me.userId),
           )
           .map((e) => {
             const first = e.firstName || '',
@@ -3282,10 +3337,11 @@ export class CommunicationComponent
               `${first} ${last}`.trim() ||
               e.user?.fullname ||
               `Employee ${e.id}`;
+            const employeeUserId = Number(this.employeeUserId(e));
             const contact: DmContact = {
               id: `emp-${e.id}`,
               employeeId: e.id,
-              userId: Number(e.user!.userId),
+              userId: employeeUserId,
               shortName: last ? `${first} ${last[0]}.` : first || fullName,
               fullName,
               initials: initialsFrom(fullName),
@@ -3298,11 +3354,6 @@ export class CommunicationComponent
             const existing = existingContacts.get(contact.userId);
             if (existing) {
               contact.dmChannelId = existing.dmChannelId;
-              contact.dmChannelIds = existing.dmChannelIds
-                ? [...existing.dmChannelIds]
-                : existing.dmChannelId
-                  ? [existing.dmChannelId]
-                  : undefined;
               contact.unreadCount = existing.unreadCount;
               contact.hasUnread = existing.hasUnread;
               contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
@@ -3412,20 +3463,33 @@ export class CommunicationComponent
     this.channelsRequestInFlight = true;
     this.collabService.getChannels().subscribe({
       next: (list) => {
+        this.clearChannelsRetryTimer();
         this.lastChannelsLoadedAt = Date.now();
         this.mapAndSetChannels(list || []);
         this.channelsRequestInFlight = false;
         this.flushPendingForcedChannelsRefresh();
       },
       error: () => {
-        this.channelsRequestInFlight = false;
-        this.flushPendingForcedChannelsRefresh();
-        if (!this.channels.length) {
-          this.channelsError = 'Could not load channels.';
-          this.channels = [];
-        }
-        this.channelsLoading = false;
-        this.cdr.detectChanges();
+        this.collabService.getHomeChannels().subscribe({
+          next: (home) => {
+            this.clearChannelsRetryTimer();
+            this.lastChannelsLoadedAt = Date.now();
+            this.mapAndSetChannels(home?.channels || []);
+            this.channelsRequestInFlight = false;
+            this.flushPendingForcedChannelsRefresh();
+          },
+          error: () => {
+            this.channelsRequestInFlight = false;
+            this.flushPendingForcedChannelsRefresh();
+            if (!this.channels.length) {
+              this.channelsError = 'Could not load channels.';
+              this.channels = [];
+              this.scheduleChannelsRetry();
+            }
+            this.channelsLoading = false;
+            this.cdr.detectChanges();
+          },
+        });
       },
     });
   }
@@ -3564,7 +3628,7 @@ export class CommunicationComponent
       const unreadCount = Number(channel.unreadCount || 0);
       unreadByUserId.set(
         Number(otherUserId),
-        Math.max(unreadByUserId.get(Number(otherUserId)) || 0, unreadCount),
+        (unreadByUserId.get(Number(otherUserId)) || 0) + unreadCount,
       );
     }
 
@@ -3607,6 +3671,24 @@ export class CommunicationComponent
     }
     this.pendingForcedChannelsRefresh = false;
     setTimeout(() => this.loadChannels(true, true), 0);
+  }
+
+  private scheduleChannelsRetry(): void {
+    if (this.channelsRetryTimer != null) {
+      return;
+    }
+    this.channelsRetryTimer = window.setTimeout(() => {
+      this.channelsRetryTimer = null;
+      this.loadChannels(true, true);
+    }, 1500);
+  }
+
+  private clearChannelsRetryTimer(): void {
+    if (this.channelsRetryTimer == null) {
+      return;
+    }
+    window.clearTimeout(this.channelsRetryTimer);
+    this.channelsRetryTimer = null;
   }
 
   private compareDmChannelPriority(
@@ -4077,6 +4159,7 @@ export class CommunicationComponent
     this.conversationAccessMessage = '';
     this.workspaceMode = 'chat';
     this.showChannelDetails = false;
+    this.preserveFeedScrollOffset = null;
     this.activeChannelId = id;
     this.activeView = 'channel';
     this.activeDmId = '';
@@ -4139,6 +4222,7 @@ export class CommunicationComponent
     this.showPinnedPanel = false;
     this.showSearch = false;
     this.showChannelDetails = false;
+    this.preserveFeedScrollOffset = null;
     const contact = this.dmContacts.find((d) => d.id === contactId);
     if (!contact) return;
     contact.hasUnread = false;
@@ -5078,6 +5162,7 @@ export class CommunicationComponent
           optimistic.retryMeta = undefined;
           this.sendingMessage = false;
           this.playNotificationSound();
+          this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
             this.uploadAttachmentsForMessage(
               channel,
@@ -5153,6 +5238,7 @@ export class CommunicationComponent
           optimistic.retryMeta = undefined;
           this.sendingMessage = false;
           this.playNotificationSound();
+          this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
             const fakeCh: Channel = {
               id: `dm-${chId}`,
@@ -5471,11 +5557,16 @@ export class CommunicationComponent
     if (this.activeThreadId === msg.id) {
       this.activeThreadId = null;
       this.activeThreadReplyToId = null;
+      this.selectedThreadMsg = null;
       return;
     }
     this.showPinnedPanel = false;
     this.showChannelDetails = false;
     this.activeThreadId = msg.id;
+    this.selectedThreadMsg = {
+      ...msg,
+      replies: [...(msg.replies || [])],
+    };
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
     this.threadMentionResults = [];
@@ -5487,6 +5578,7 @@ export class CommunicationComponent
 
   closeThread(): void {
     this.activeThreadId = null;
+    this.selectedThreadMsg = null;
     this.activeThreadReplyToId = null;
     this.threadReplyDraft = '';
     this.threadMentionResults = [];
@@ -5558,6 +5650,10 @@ export class CommunicationComponent
       this.threadShowMentionMenu = false;
       this.activeThreadReplyToId = null;
       this.clearThreadPendingAttachments();
+      this.selectedThreadMsg = {
+        ...rootMsg,
+        replies: [...rootMsg.replies],
+      };
       this.scrollThread = true;
       this.cdr.detectChanges();
       return;
@@ -5570,6 +5666,15 @@ export class CommunicationComponent
     );
     optimistic.replyToMessageId = replyToId;
     optimistic.threadRootMessageId = threadRootId;
+    optimistic.retryMeta = {
+      mode: 'thread',
+      backendChannelId: channelId,
+      content: outboundContent,
+      files: [...this.threadPendingFiles],
+      attachments: this.threadPendingAttachments.map((item) => ({ ...item })),
+      replyToMessageId: replyToId,
+      threadRootMessageId: threadRootId,
+    };
     if (replyingToNestedMessage) replyTarget.replies.push(optimistic);
     else rootMsg.replies.push(optimistic);
     const capturedFiles = [...this.threadPendingFiles];
@@ -5582,6 +5687,10 @@ export class CommunicationComponent
     this.activeThreadReplyToId = null;
     this.threadPendingFiles = [];
     this.threadPendingAttachments = [];
+    this.selectedThreadMsg = {
+      ...rootMsg,
+      replies: [...rootMsg.replies],
+    };
     this.scrollThread = true;
     this.cdr.detectChanges();
 
@@ -5598,7 +5707,14 @@ export class CommunicationComponent
         next: (saved) => {
           optimistic.backendId = saved.id;
           optimistic.id = `backend-${saved.id}`;
+          optimistic.deliveryState = 'DELIVERED';
+          optimistic.retryMeta = undefined;
           this.sendingReply = false;
+          this.syncActiveConversationState();
+          this.selectedThreadMsg = {
+            ...rootMsg,
+            replies: [...rootMsg.replies],
+          };
           if (capturedFiles.length && capturedAttachments.length) {
             const attachmentChannel: Channel = {
               id: `thread-${channelId}`,
@@ -5616,12 +5732,12 @@ export class CommunicationComponent
           this.cdr.detectChanges();
         },
         error: () => {
-          const bucket = replyingToNestedMessage
-            ? replyTarget.replies
-            : rootMsg.replies;
-          const idx = bucket.indexOf(optimistic);
-          if (idx !== -1) bucket.splice(idx, 1);
+          optimistic.deliveryState = 'FAILED';
           this.sendingReply = false;
+          this.selectedThreadMsg = {
+            ...rootMsg,
+            replies: [...rootMsg.replies],
+          };
           this.cdr.detectChanges();
         },
       });
@@ -6430,6 +6546,12 @@ export class CommunicationComponent
 
   get activeThread(): Message | null {
     if (!this.activeThreadId) return null;
+    if (
+      this.selectedThreadMsg &&
+      this.selectedThreadMsg.id === this.activeThreadId
+    ) {
+      return this.selectedThreadMsg;
+    }
     for (const ch of this.channels) {
       const f = this.findMsgInTree(
         this.channelMessages[ch.id] || [],
@@ -6800,7 +6922,26 @@ export class CommunicationComponent
     setTimeout(() => {
       this.scrollFeed = true;
       this.cdr.detectChanges();
+      this.highlightLatestActiveMessageSoon();
     }, 120);
+  }
+
+  private highlightLatestActiveMessageSoon(): void {
+    setTimeout(() => {
+      const latest = this.findLatestMessage(this.rawMessages || []);
+      if (!latest) return;
+      this.flashId = latest.id;
+      clearTimeout(this.flashTimer);
+      const el = document.getElementById('msg-' + latest.id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      this.cdr.detectChanges();
+      this.flashTimer = setTimeout(() => {
+        this.flashId = null;
+        this.cdr.detectChanges();
+      }, 1800);
+    }, 180);
   }
 
   get allThreaded(): { msg: Message; channelName: string }[] {
@@ -6817,17 +6958,22 @@ export class CommunicationComponent
     const bannedUserIds = new Set(this.bannedChannelMembers.map((m) => m.userId));
     return this.allEmployees.filter(
       (e) =>
-        e.user?.userId != null &&
-        !memberUserIds.has(Number(e.user.userId)) &&
-        !bannedUserIds.has(Number(e.user.userId)) &&
-        Number(e.user.userId) !== this.me.userId,
+        this.employeeUserId(e) != null &&
+        !memberUserIds.has(Number(this.employeeUserId(e))) &&
+        !bannedUserIds.has(Number(this.employeeUserId(e))) &&
+        Number(this.employeeUserId(e)) !== this.me.userId,
     );
   }
 
   get modalEmployees(): EmployeeProfile[] {
     return this.allEmployees.filter(
-      (e) => e.user?.userId != null && Number(e.user.userId) !== this.me.userId,
+      (e) => this.employeeUserId(e) != null && Number(this.employeeUserId(e)) !== this.me.userId,
     );
+  }
+
+  private employeeUserId(employee: EmployeeProfile): number | null {
+    const userId = employee.user?.userId ?? employee.user?.id ?? null;
+    return userId == null ? null : Number(userId);
   }
 
   isChannelOwner(): boolean {
@@ -7547,9 +7693,6 @@ export class CommunicationComponent
 
   retryFailedMessage(msg: Message): void {
     if (!msg.retryMeta || msg.deliveryState !== 'FAILED') {
-      return;
-    }
-    if (msg.retryMeta.mode === 'thread') {
       return;
     }
     msg.deliveryState = 'SENDING';

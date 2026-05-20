@@ -1270,6 +1270,7 @@
           (replyDeleteRequested)="requestReplyDelete($event)"
           (replyDeleteConfirmed)="confirmReplyDelete($event)"
           (replyDeleteDismissed)="dismissReplyDelete()"
+          (replyRetryRequested)="retryFailedMessage($event)"
           (replyLikeToggled)="toggleLike($event)"
           (pinnedPanelClosed)="closePinnedPanel()"
           (pinnedJumpTo)="openThread({ msg: $event })"

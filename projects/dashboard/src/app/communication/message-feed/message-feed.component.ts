@@ -410,6 +410,10 @@ export class MessageFeedComponent {
     return count === 1 ? '1 reply' : `${count} replies`;
   }
 
+  totalReplyCount(msg: Message): number {
+    return Number(msg.threadReplyCount || this.countReplies(msg.replies || []));
+  }
+
   private countReplies(replies: Message[]): number {
     return (replies || []).reduce(
       (total, reply) => total + 1 + this.countReplies(reply.replies || []),

@@ -112,6 +112,7 @@ export class ThreadPanelComponent {
   @Output() replyDeleteRequested = new EventEmitter<{ reply: Message; event?: Event }>();
   @Output() replyDeleteConfirmed = new EventEmitter<{ reply: Message; rootMsg: Message; event?: Event }>();
   @Output() replyDeleteDismissed = new EventEmitter<void>();
+  @Output() replyRetryRequested = new EventEmitter<Message>();
 
   // Reply like
   @Output() replyLikeToggled = new EventEmitter<{ msg: Message; event?: Event }>();
@@ -172,6 +173,16 @@ export class ThreadPanelComponent {
   messageAttachments(msg: Message): NonNullable<Message['attachments']> {
     if (msg.attachments?.length) return msg.attachments;
     return msg.attachment ? [msg.attachment] : [];
+  }
+
+  totalReplies(msg: Message | null | undefined): number {
+    if (!msg?.replies?.length) {
+      return 0;
+    }
+    return msg.replies.reduce(
+      (total, reply) => total + 1 + this.totalReplies(reply),
+      0,
+    );
   }
 
   imageAttachments(msg: Message): NonNullable<Message['attachments']> {
