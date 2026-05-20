@@ -29,7 +29,7 @@ export class AttendancetableService {
 
   private absentTimeout: any;
   private absentInterval: any;
-  private apiRecordId: number | null = null;
+  //private apiRecordId: number | null = null;
 
   constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
   // Seed registeredEmployees from current session so absent check works
@@ -79,32 +79,6 @@ private getAuthHeaders(): HttpHeaders {
 
     const tenantId = 'optimax';
 
- /* const tenantId = sessionStorage.getItem('tenantId')
-                ?? sessionStorage.getItem('X-Tenant-ID')
-                ?? sessionStorage.getItem('clientId')
-                ?? sessionStorage.getItem('tenant')
-                ?? 'default'; // check DevTools for the actual sessionStorage key
-*/
-  // Try to get tenant ID from userBranchInfoRegData
-  /*let tenantId = '';
-  const branchRaw = sessionStorage.getItem('userBranchInfoRegData');
-  if (branchRaw) {
-    try {
-      const branch = JSON.parse(branchRaw);
-      // ⚠️ adjust field name after checking DevTools
-      tenantId = branch.tenantId
-              ?? branch.branchCode
-              ?? branch.code
-              ?? branch.clientId
-              ?? '';
-    } catch {
-      console.warn('Failed to parse userBranchInfoRegData');
-    }
-  }
-
-  if (!tenantId) {
-    console.warn('X-Tenant-ID is missing — check userBranchInfoRegData in DevTools');
-  }*/
   return new HttpHeaders({
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -156,7 +130,7 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
         return null;
       }
       return {
-        id: match?.id?.toString(),
+        id: Number(match.id),
         department: match.department?.name ?? '',
         fullName: `${match.firstName ?? ''} ${match.lastName ?? ''}`.trim()
       }; 
@@ -165,6 +139,7 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
 }
 
 private mapApiRecord(api: any): AttendanceTableRecord {
+  
   const emp = api.employeeId; // nested employee object
 
   const fullName = emp
@@ -196,6 +171,7 @@ private mapApiRecord(api: any): AttendanceTableRecord {
     //id: emp?.id?.toString() ?? '',
     //apiRecordId: api.id,
     id: Number(api.id), //attendancerecordid
+    apiRecordId: Number(api.id),
     employeeId: Number(emp?.id), //employeeid
     employee: fullName,
     department,
@@ -383,15 +359,24 @@ private clockInApi(
       const returnedId = res?.id ?? res?.attendanceId ?? res?.recordId ?? null;
 
       if (returnedId) {
-        this.apiRecordId = returnedId;
 
         // Persist it on the local record so admin can use it later
         const today = new Date().toISOString().split('T')[0];
         const records = [...this.attendanceSubject.value];
-        const record = records.find(r => r.employeeId === employeeId && r.date === today);
+        const record = records.find(
+          r => r.employeeId === employeeId && r.date === today
+        );
 
         if (record) {
+          //to store API recordID directly on this attendance row
           record.apiRecordId = returnedId;
+
+          // keep localRecords synced too
+          this.localRecords.set(
+            this.localKey(employeeId, today),
+            { ...record }
+          );
+
           this.attendanceSubject.next(records);
         }
 
@@ -405,12 +390,14 @@ private clockInApi(
 }
 
 private clockOutApi(
+  apiRecordId: number,
   employeeId: number,
   checkOut: string,
   checkOutLocation: string,
   checkOutDistance: number
 ): void {
   const body = {
+    id: apiRecordId,
     employeeId,
     checkOut,
     checkOutLocation,
@@ -424,7 +411,7 @@ private clockOutApi(
   ).subscribe({
     next: (res) => {
       console.log('Clock-out successful:', res);
-      this.apiRecordId = null; // reset for next session
+      //this.apiRecordId = null; // reset for next session
     },
     error: (err) => console.error('Clock-out failed:', err)
   });
@@ -546,7 +533,7 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
 
   // Update local record
   if (action === 'IN') {
-    record.checkIn = now.toISOString();
+    record.checkIn = now.toLocaleTimeString();
     record.checkInLocation = location
       ? { address: location.address, lat: location.lat, lng: location.lng }
       : null;
@@ -583,7 +570,9 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
 
   // Merge with current API data and publish
   const currentApiData = this.attendanceSubject.value.filter(
-    r => !this.localRecords.has(this.localKey(r.id, r.date ?? ''))
+    r => !this.localRecords.has(
+      this.localKey(r.employeeId, r.date ?? '')
+    )
   );
   this.mergeAndPublish(currentApiData);
 
@@ -594,13 +583,24 @@ if (action === 'IN') {
   this.clockInApi(
     numericEmployeeId, 
     //employeeId, 
-    now.toISOString(), 
+    now.toLocaleTimeString(), 
     location?.address ?? '', 
     distanceFromOffice);
 } else {
+  if (!record.apiRecordId) {
+
+    console.warn(
+      'No API record ID found for clock-out',
+      record
+    );
+
+    return;
+  }
+
   this.clockOutApi(
+    record.apiRecordId,
     numericEmployeeId, 
-    now.toISOString(), 
+    now.toLocaleTimeString(), 
     location?.address ?? '', 
     distanceFromOffice);
 }
@@ -977,7 +977,9 @@ private autoMarkAbsentIfNeeded() {
   if (changed) {
     //this.attendanceSubject.next(data);
     const currentApiData = this.attendanceSubject.value.filter(
-      r => !this.localRecords.has(this.localKey(r.id, r.date ?? ''))
+      r => !this.localRecords.has(
+        this.localKey(r.employeeId, r.date ?? '')
+      )
     );
     this.mergeAndPublish(currentApiData);
   }
