@@ -304,114 +304,99 @@
   </div>
 </div>
 
-<!-- ── Transaction Detail Side Panel ── -->
-<div *ngIf="isTxDetailOpen && selectedTxDetail"
-     class="fixed inset-0 z-50 flex justify-end"
-     (click)="closeTxDetail()">
-  <!-- Backdrop -->
-  <div class="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"></div>
+<!-- Transaction Detail Side Panel -->
+<app-large-side-modal
+  *ngIf="isTxDetailOpen && selectedTxDetail"
+  [title]="'Transaction Detail'"
+  [subtitle]="selectedTxDetail.transactionReference"
+  (onClose)="closeTxDetail()">
 
-  <!-- Panel -->
-  <div class="relative w-full max-w-xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col"
-       (click)="$event.stopPropagation()">
-
-    <!-- Header -->
-    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-6 flex items-center justify-between">
-      <div>
-        <h2 class="text-2xl font-black text-gray-900 leading-none">Transaction Detail</h2>
-        <p class="text-sm text-gray-400 font-mono font-bold uppercase mt-1">{{ selectedTxDetail.transactionReference }}</p>
-      </div>
-      <button (click)="closeTxDetail()" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-        <i class="pi pi-times text-2xl text-gray-400"></i>
-      </button>
-    </div>
-
+  <div class="space-y-8">
     <!-- Amount Hero -->
-    <div class="mx-8 mt-8 rounded-2xl p-8 text-white" style="background: linear-gradient(135deg, #2E6276, #1d4a5c);">
-      <p class="text-xs font-black uppercase tracking-wider opacity-60 mb-2">Transaction Amount</p>
-      <h3 class="text-5xl font-black tracking-tighter leading-none mb-4">₦{{ selectedTxDetail.amount | number:'1.2-2' }}</h3>
-      <div class="flex flex-wrap gap-3">
-        <span class="px-3 py-1 rounded-lg bg-white/15 text-xs font-black uppercase tracking-wider">{{ selectedTxDetail.sourceModule }}</span>
-        <span class="px-3 py-1 rounded-lg bg-white/15 text-xs font-black uppercase tracking-wider" [ngClass]="getStatusBadge(selectedTxDetail.reviewStatus)"
-              style="background: rgba(255,255,255,0.15); color: white;">{{ selectedTxDetail.reviewStatus }}</span>
+    <div class="rounded-[2rem] p-10 text-white shadow-xl relative overflow-hidden" 
+         style="background: linear-gradient(135deg, #2E6276, #1d4a5c);">
+      <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+      <div class="relative z-10">
+        <p class="text-xs font-black uppercase tracking-widest opacity-60 mb-2">Total Transaction Value</p>
+        <h3 class="text-6xl font-black tracking-tighter leading-none mb-6 italic">₦{{ selectedTxDetail.amount | number:'1.2-2' }}</h3>
+        <div class="flex flex-wrap gap-3">
+          <span class="px-4 py-1.5 rounded-xl bg-white/10 text-xs font-black uppercase tracking-widest border border-white/10">
+            <i class="pi pi-tag mr-1"></i> {{ selectedTxDetail.sourceModule }}
+          </span>
+          <span class="px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border border-white/20"
+                [ngClass]="getStatusBadge(selectedTxDetail.reviewStatus)"
+                style="background: rgba(255,255,255,0.1); color: white;">
+            {{ selectedTxDetail.reviewStatus }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="flex-1 px-8 py-8 space-y-8">
-
-      <!-- Description -->
-      <div *ngIf="selectedTxDetail.description" class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</p>
-        <p class="text-base font-semibold text-gray-800">{{ selectedTxDetail.description }}</p>
+    <!-- Core Info -->
+    <div class="grid grid-cols-1 gap-8">
+      <div class="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 space-y-4">
+        <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+          <i class="pi pi-align-left"></i> Description
+        </h3>
+        <p class="text-xl font-bold text-gray-800 leading-relaxed italic">{{ selectedTxDetail.description || 'No description provided' }}</p>
       </div>
 
-      <!-- ── Provenance Section ── -->
-      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(46,98,118,0.1); color: #2E6276;">
-            <i class="pi pi-shield text-sm"></i>
-          </div>
-          <h3 class="font-black text-gray-900 uppercase tracking-wider text-sm">Audit Provenance</h3>
+      <!-- Audit Provenance (High Fidelity) -->
+      <div class="bg-white rounded-[2rem] border border-gray-200 overflow-hidden shadow-sm">
+        <div class="px-8 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+          <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+            <i class="pi pi-shield text-customBlue"></i> Audit Trace
+          </h3>
+          <span class="text-[10px] font-black text-customBlue bg-customBlue/5 px-2 py-1 rounded">SECURE</span>
         </div>
         <div class="divide-y divide-gray-50">
-          <!-- Mapped By -->
-          <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-user text-gray-300"></i>
-              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Mapped By</span>
-            </div>
+          <div class="px-8 py-5 flex items-center justify-between group hover:bg-gray-50 transition-colors">
+            <span class="text-sm font-black text-gray-400 uppercase tracking-wider">Mapped By</span>
             <span class="text-sm font-black text-gray-900">{{ getTxMappedBy(selectedTxDetail) }}</span>
           </div>
-          <!-- Approved By -->
-          <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-verified text-gray-300"></i>
-              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Approved By</span>
-            </div>
+          <div class="px-8 py-5 flex items-center justify-between group hover:bg-gray-50 transition-colors">
+            <span class="text-sm font-black text-gray-400 uppercase tracking-wider">Approved By</span>
             <span class="text-sm font-black text-gray-900">{{ getTxApprovedBy(selectedTxDetail) }}</span>
           </div>
-          <!-- Approval Date -->
-          <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-calendar text-gray-300"></i>
-              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Approval Date</span>
-            </div>
-            <span class="text-sm font-black text-gray-900">{{ getTxApprovalDate(selectedTxDetail) }}</span>
+          <div class="px-8 py-5 flex items-center justify-between group hover:bg-gray-50 transition-colors">
+            <span class="text-sm font-black text-gray-400 uppercase tracking-wider">Approved Date</span>
+            <span class="text-sm font-black text-gray-900 italic">{{ getTxApprovalDate(selectedTxDetail) }}</span>
           </div>
-          <!-- Mapping Rule -->
-          <div class="flex items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-link text-gray-300"></i>
-              <span class="text-sm font-black text-gray-500 uppercase tracking-wider">Mapping Rule</span>
-            </div>
-            <span *ngIf="getTxMappingId(selectedTxDetail)" 
-                  class="text-sm font-black font-mono px-3 py-1 rounded-lg cursor-pointer hover:underline"
-                  style="background: rgba(46,98,118,0.08); color: #2E6276;">
+          <div class="px-8 py-5 flex items-center justify-between group hover:bg-gray-50 transition-colors">
+            <span class="text-sm font-black text-gray-400 uppercase tracking-wider">Logic ID</span>
+            <span *ngIf="getTxMappingId(selectedTxDetail)" class="text-xs font-black font-mono bg-customBlue text-white px-3 py-1 rounded-lg">
               #MAP-{{ getTxMappingId(selectedTxDetail) }}
             </span>
-            <span *ngIf="!getTxMappingId(selectedTxDetail)" class="text-sm text-gray-400">—</span>
+            <span *ngIf="!getTxMappingId(selectedTxDetail)" class="text-sm text-gray-300 italic">—</span>
           </div>
         </div>
       </div>
 
-      <!-- Date info -->
-      <div class="grid grid-cols-2 gap-4">
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Transaction Date</p>
-          <p class="font-black text-gray-900">{{ selectedTxDetail.date | date:'dd MMM yyyy' }}</p>
+      <!-- Time Stamps -->
+      <div class="grid grid-cols-2 gap-6">
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+          <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Effective Date</p>
+          <p class="text-lg font-black text-gray-900">{{ selectedTxDetail.date | date:'dd MMM yyyy' }}</p>
         </div>
-        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <p class="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Created At</p>
-          <p class="font-black text-gray-900">{{ selectedTxDetail.createdAt | date:'dd MMM yyyy' }}</p>
+        <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+          <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">System Created</p>
+          <p class="text-lg font-black text-gray-900">{{ selectedTxDetail.createdAt | date:'dd MMM yyyy' }}</p>
         </div>
       </div>
     </div>
-
-    <!-- Footer -->
-    <div class="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-6">
-      <button (click)="closeTxDetail()" class="w-full py-3 border-2 border-gray-200 rounded-xl font-black uppercase tracking-wider text-gray-500 hover:bg-gray-50 transition-all">
-        Close
-      </button>
-    </div>
   </div>
-</div>
+
+  <!-- Modal Footer Actions -->
+  <div footer class="w-full flex items-center gap-4">
+    <button (click)="closeTxDetail()" 
+            class="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
+      Dismiss
+    </button>
+    <button *ngIf="selectedTxDetail.reviewStatus === 'UNREVIEWED'"
+            (click)="approveTransaction(selectedTxDetail)"
+            class="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-emerald-200 hover:scale-105 active:scale-95 transition-all">
+      Authorize Transaction
+    </button>
+  </div>
+
+</app-large-side-modal>

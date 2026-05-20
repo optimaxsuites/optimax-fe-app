@@ -1,5 +1,5 @@
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-large-side-modal',
@@ -26,10 +26,11 @@ import { Component, EventEmitter, Output } from '@angular/core';
   ],
 })
 export class LargeSideModalComponent {
-  @Output() close = new EventEmitter<void>();
+  @Input() title: string = 'Modal Title';
+  @Input() subtitle: string = '';
+  @Output() onClose = new EventEmitter<void>();
 
   closeModal() {
-    this.close.emit();
+    this.onClose.emit();
   }
-
 }

@@ -4,7 +4,7 @@ import { AccountingService } from '../../../services/accounting.service';
 import { ToastService } from '../../../services/toast.service';
 import { AccountDTO, AccountMappingDTO, AccountingEventDTO, PaginationResult, SourceModule } from '../../domain/accounting.dto';
 
-interface QueueEvent extends Partial<AccountingEventDTO> {
+interface QueueEvent {
   id?: number;
   status: string;
   reference: string;
@@ -15,8 +15,11 @@ interface QueueEvent extends Partial<AccountingEventDTO> {
   description: string;
   transactionDate?: any;
   createdAt?: any;
+  metadata?: any;
   suggestedDebit?: string;
   suggestedCredit?: string;
+  suggestedDebitId?: number;
+  suggestedCreditId?: number;
   matchedMapping?: AccountMappingDTO;
   isTransaction?: boolean;
 }
@@ -110,27 +113,57 @@ export class AccountingQueueComponent implements OnInit {
 
         // 2. Map Events (These are raw inputs)
         const eventList = rawEvents
-          .filter(ev => !txList.some(tx => tx.reference === ev.reference)) // Hide events already in transactions
+          .filter(ev => !txList.some(tx => tx.reference === ev.reference))
           .map(event => {
-            const mapping = this.mappings.find(m => 
+            const ref = event.reference || (event as any).instructionReference || `#EV-${event.id}`;
+
+            // Fall back to global mapping rule (suggestion only)
+            const mapping = this.mappings.find(m =>
               m.eventType === event.eventType && m.sourceModule === event.sourceModule
             );
+            const debitName = mapping?.debitAccount?.accountName
+              || this.accounts.find(a => a.id === mapping?.debitAccountId)?.accountName
+              || mapping?.debitAccountId?.toString() || '—';
+            const creditName = mapping?.creditAccount?.accountName
+              || this.accounts.find(a => a.id === mapping?.creditAccountId)?.accountName
+              || mapping?.creditAccountId?.toString() || '—';
             return {
               ...event,
-              reference: event.reference || (event as any).instructionReference || `#EV-${event.id}`,
+              reference: ref,
               status: (event as any).status || 'UNPROCESSED',
               matchedMapping: mapping,
-              suggestedDebit: mapping?.debitAccount?.accountName || mapping?.debitAccountId?.toString() || '—',
-              suggestedCredit: mapping?.creditAccount?.accountName || mapping?.creditAccountId?.toString() || '—',
+              suggestedDebit: debitName,
+              suggestedCredit: creditName,
               isTransaction: false
             } as QueueEvent;
           });
 
         // 3. Combine and sort (Newest first)
+        // NOTE: backend may return dates as Java arrays [year,month,day,hour,min,sec,nano]
         this.events = [...txList, ...eventList].sort((a, b) => {
-          const dateA = new Date(a['createdAt'] || a['transactionDate'] || 0).getTime();
-          const dateB = new Date(b['createdAt'] || b['transactionDate'] || 0).getTime();
+          const dateA = this.parseEventDate(a['createdAt'] || a['transactionDate']);
+          const dateB = this.parseEventDate(b['createdAt'] || b['transactionDate']);
           return dateB - dateA;
+        });
+
+        this.events.forEach(ev => {
+          if (ev.metadata?.suggestedDebitId && ev.metadata?.suggestedCreditId) {
+            const m = ev.metadata;
+            ev.suggestedDebitId = m.suggestedDebitId;
+            ev.suggestedCreditId = m.suggestedCreditId;
+            ev.suggestedDebit = m.suggestedDebitName;
+            ev.suggestedCredit = m.suggestedCreditName;
+            
+            // Reconstruct a synthetic mapping for the orchestration pipeline
+            ev.matchedMapping = {
+              sourceModule: ev.sourceModule,
+              eventType: ev.eventType,
+              debitAccountId: m.suggestedDebitId,
+              creditAccountId: m.suggestedCreditId,
+              debitAccount: { accountName: m.suggestedDebitName } as any,
+              creditAccount: { accountName: m.suggestedCreditName } as any
+            } as AccountMappingDTO;
+          }
         });
 
         this.totalRecords = res.events.totalSize + res.transactions.totalSize;
@@ -179,10 +212,6 @@ export class AccountingQueueComponent implements OnInit {
     });
   }
 
-  formatLabel(val: string | undefined): string {
-    if (!val) return '';
-    return val.replace(/_/g, ' ');
-  }
 
   onPageChange(event: any): void {
     this.first = event.first;
@@ -266,8 +295,13 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   rejectEvent(event: QueueEvent): void {
-    event.status = 'REJECTED';
-    this.toastService.warn(`Event ${event.reference} rejected`);
+    // Replace the item in the array (immutable update) so Angular detects the change.
+    const idx = this.events.findIndex(e => e.reference === event.reference);
+    if (idx !== -1) {
+      this.events[idx] = { ...this.events[idx], status: 'REJECTED' };
+      this.events = [...this.events]; // new array reference triggers change detection
+    }
+    this.toastService.warn(`Event ${event.reference} has been rejected.`);
   }
 
   openEdit(event: QueueEvent): void {
@@ -281,63 +315,95 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   saveEdit(): void {
-    if (!this.editingEvent) return;
+    if (!this.editingEvent || !this.editingEvent.suggestedDebit || !this.editingEvent.suggestedCredit) {
+      this.toastService.warn('Please ensure both debit and credit accounts are selected.');
+      return;
+    }
 
-    const debitAcc  = this.resolveAccountByName(this.editingEvent.suggestedDebit);
-    const creditAcc = this.resolveAccountByName(this.editingEvent.suggestedCredit);
+    const debitAcc = this.accounts.find(a => a.accountName === this.editingEvent!.suggestedDebit);
+    const creditAcc = this.accounts.find(a => a.accountName === this.editingEvent!.suggestedCredit);
 
-    // Persist mapping rule to backend if we have valid accounts
-    if (debitAcc && creditAcc) {
-      const mappingPayload: Partial<AccountMappingDTO> = {
+    if (!debitAcc || !creditAcc) {
+      this.toastService.warn('Could not resolve selected accounts. Please try again.');
+      return;
+    }
+
+    // 1. Update UI state for this event
+    const syntheticMapping: AccountMappingDTO = {
+      sourceModule: this.editingEvent.sourceModule,
+      eventType: this.editingEvent.eventType,
+      debitAccountId: debitAcc.id,
+      creditAccountId: creditAcc.id,
+      debitAccount: debitAcc,
+      creditAccount: creditAcc
+    } as AccountMappingDTO;
+
+    const targetEvent = this.events.find(e => e.reference === this.editingEvent!.reference);
+    if (targetEvent) {
+      targetEvent.suggestedDebit = debitAcc.accountName;
+      targetEvent.suggestedCredit = creditAcc.accountName;
+      targetEvent.suggestedDebitId = debitAcc.id;
+      targetEvent.suggestedCreditId = creditAcc.id;
+      targetEvent.matchedMapping = syntheticMapping;
+    }
+
+    // 2. Persist to Backend Event Metadata
+    const updatedMetadata = {
+      ...(this.editingEvent.metadata || {}),
+      suggestedDebitId: debitAcc.id,
+      suggestedCreditId: creditAcc.id,
+      suggestedDebitName: debitAcc.accountName,
+      suggestedCreditName: creditAcc.accountName
+    };
+
+    if (this.editingEvent.id) {
+      const fullEvent: Partial<AccountingEventDTO> = {
+        id: this.editingEvent.id,
         sourceModule: this.editingEvent.sourceModule,
-        eventType:    this.editingEvent.eventType,
-        debitAccountId:  debitAcc.id,
-        creditAccountId: creditAcc.id,
-        description: `Auto-mapped: ${this.editingEvent.eventType} via Queue Manager`
+        eventType: this.editingEvent.eventType,
+        amount: this.editingEvent.amount,
+        currency: this.editingEvent.currency,
+        reference: this.editingEvent.reference,
+        description: this.editingEvent.description,
+        transactionDate: this.editingEvent.transactionDate,
+        metadata: updatedMetadata
       };
 
-      const existingMapping = this.editingEvent.matchedMapping;
-
-      if (existingMapping?.id) {
-        // Update existing rule
-        this.accountingService.updateAccountMapping(existingMapping.id, mappingPayload).subscribe({
-          next: (updated) => {
-            this.toastService.success('Account mapping rule updated successfully');
-            this.updateLocalEventMapping(updated);
-          },
-          error: (err) => {
-            this.toastService.error('Failed to update mapping rule.');
-            console.error('[Optimax Queue] Mapping update error:', err);
-          }
-        });
-      } else {
-        // Create new rule
-        this.accountingService.createAccountMapping(mappingPayload).subscribe({
-          next: (created) => {
-            this.toastService.success('New account mapping rule saved successfully');
-            this.updateLocalEventMapping(created);
-          },
-          error: (err) => {
-            this.toastService.error('Failed to save mapping rule.');
-            console.error('[Optimax Queue] Mapping create error:', err);
-          }
-        });
-      }
-    } else {
-      this.toastService.warn('Account mapping not saved — please select valid Debit and Credit accounts.');
-      // Still update local state for the current session if requested, 
-      // but usually we want to wait for backend success for mappings.
-      this.syncLocalState();
+      this.accountingService.updateEvent(this.editingEvent.id, fullEvent).subscribe({
+        next: () => {
+          this.toastService.success('Mapping suggestions saved to backend.');
+        },
+        error: (err) => {
+          console.error('Failed to persist mapping suggestion', err);
+          this.toastService.warn('Suggestions updated locally but failed to save to backend.');
+        }
+      });
     }
+
+    this.isEditOpen = false;
+    this.editingEvent = null;
   }
 
   private updateLocalEventMapping(mapping: AccountMappingDTO): void {
     if (!this.editingEvent) return;
-    
-    this.editingEvent.matchedMapping = mapping;
-    this.editingEvent.suggestedDebit = mapping.debitAccount?.accountName || mapping.debitAccountId?.toString();
-    this.editingEvent.suggestedCredit = mapping.creditAccount?.accountName || mapping.creditAccountId?.toString();
-    
+
+    // Resolve account names from the local accounts cache.
+    // The backend often returns only IDs (not full objects), so we look them up locally.
+    const debitName = mapping.debitAccount?.accountName
+      || this.accounts.find(a => a.id === mapping.debitAccountId)?.accountName
+      || mapping.debitAccountId?.toString();
+    const creditName = mapping.creditAccount?.accountName
+      || this.accounts.find(a => a.id === mapping.creditAccountId)?.accountName
+      || mapping.creditAccountId?.toString();
+
+    this.editingEvent.matchedMapping = {
+      ...mapping,
+      debitAccount:  mapping.debitAccount  || this.accounts.find(a => a.id === mapping.debitAccountId),
+      creditAccount: mapping.creditAccount || this.accounts.find(a => a.id === mapping.creditAccountId),
+    } as AccountMappingDTO;
+    this.editingEvent.suggestedDebit  = debitName;
+    this.editingEvent.suggestedCredit = creditName;
+
     this.syncLocalState();
     this.isEditOpen = false;
   }
@@ -368,9 +434,8 @@ export class AccountingQueueComponent implements OnInit {
     this.toastService.info('Filters cleared');
   }
 
-  formatMetadataKey(key: string): string {
-    if (!key) return '';
-    // camelCase to Title Case
+  formatLabel(key: any): string {
+    if (!key || typeof key !== 'string') return String(key || '');
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
@@ -384,13 +449,15 @@ export class AccountingQueueComponent implements OnInit {
       .filter(item => item.value !== null && item.value !== undefined && item.value !== '');
   }
 
-  isCurrencyField(key: string): boolean {
+  isCurrencyField(key: any): boolean {
+    if (!key || typeof key !== 'string') return false;
     const currencyKeys = ['amount', 'repayable', 'rate', 'interest', 'balance', 'bankBalance', 'approvedAmount', 'totalRepayable'];
     const lowerKey = key.toLowerCase();
     return currencyKeys.some(ck => lowerKey.includes(ck));
   }
 
-  isDateField(key: string): boolean {
+  isDateField(key: any): boolean {
+    if (!key || typeof key !== 'string') return false;
     const dateKeys = ['initiatedat', 'approveddate', 'createdat', 'updatedat', 'expecteddate', 'date'];
     const lowerKey = key.toLowerCase();
     return dateKeys.some(dk => lowerKey.includes(dk));
@@ -421,4 +488,32 @@ export class AccountingQueueComponent implements OnInit {
   get pendingCount(): number  { return this.events.filter(e => e.status === 'UNPROCESSED').length; }
   get approvedCount(): number { return this.events.filter(e => e.status === 'APPROVED').length; }
   get rejectedCount(): number { return this.events.filter(e => e.status === 'REJECTED').length; }
+
+  /**
+   * Parse a date value that may be:
+   *  - A Java date array: [year, month, day, hour, min, sec, nano]  (months are 1-based)
+   *  - An ISO 8601 string: "2026-05-06T10:30:00"
+   *  - A JS Date object
+   *  - null / undefined
+   * Returns a millisecond timestamp (0 if unparseable).
+   */
+  parseEventDate(value: any): number {
+    if (!value) return 0;
+    if (Array.isArray(value) && value.length >= 3) {
+      // Java LocalDateTime array: [year, month(1-based), day, hour?, min?, sec?]
+      return new Date(value[0], value[1] - 1, value[2], value[3] ?? 0, value[4] ?? 0, value[5] ?? 0).getTime();
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
+  /** Format a raw event date for display in the table. */
+  formatEventDate(value: any): string {
+    const ms = this.parseEventDate(value);
+    if (!ms) return '—';
+    const d = new Date(ms);
+    const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${date} · ${time}`;
+  }
 }

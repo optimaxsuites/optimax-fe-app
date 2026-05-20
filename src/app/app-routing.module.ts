@@ -16,8 +16,18 @@ import { ReconciliationKanbanComponent } from './ui/view/reconciliation-kanban/r
 import { DeletedRecordsComponent } from './ui/view/deleted-records/deleted-records.component';
 import { GeneralTransactionsComponent } from './ui/view/general-transactions/general-transactions.component';
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
+import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
+import { PaystackComponent } from './ui/view/paystack/paystack.component';
 
 const routes: Routes = [
+  {
+    path: 'payout',
+    component: PayoutComponent
+  },
+  {
+    path: 'paystack',
+    component: PaystackComponent
+  },
   {
     path: '',
     redirectTo: 'transaction/dhwy7829iokdw',

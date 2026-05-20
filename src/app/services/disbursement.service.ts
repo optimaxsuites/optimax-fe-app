@@ -127,4 +127,12 @@ export class DisbursementService {
       { headers: this.getHeaders() }
     );
   }
+
+  getEmployees(size: number = 200): Observable<any> {
+    const params = new HttpParams().set('size', size.toString());
+    return this.http.get<any>(
+      `${environment.apiBaseUrl}/x/api/v2/hr/employees`,
+      { headers: this.getHeaders(), params }
+    );
+  }
 }

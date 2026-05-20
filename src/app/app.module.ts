@@ -125,6 +125,9 @@ import { ToastComponent } from './ui/sharedComponent/view/toast/toast.component'
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 import { BankConnectionSettingsComponent } from './ui/view/bank-connection-settings/bank-connection-settings.component';
+import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
+import { PaystackComponent } from './ui/view/paystack/paystack.component';
+import { BankTransactionsComponent } from './ui/view/bank-transactions/bank-transactions.component';
 
 @NgModule({
   declarations: [
@@ -175,7 +178,9 @@ import { BankConnectionSettingsComponent } from './ui/view/bank-connection-setti
     GeneralLedgerComponent,
     ToastComponent,
     AccountingQueueComponent,
-    BankConnectionSettingsComponent
+    BankConnectionSettingsComponent,
+    PaystackComponent,
+    BankTransactionsComponent
   ],
   imports: [
     BrowserModule,
@@ -243,7 +248,8 @@ import { BankConnectionSettingsComponent } from './ui/view/bank-connection-setti
     ProgressSpinnerModule,
     PdfViewerWrapperModule,
     SideModalComponent,
-    LargeSideModalComponent
+    LargeSideModalComponent,
+    PayoutComponent
   ],
   providers: [
     MessageService,
