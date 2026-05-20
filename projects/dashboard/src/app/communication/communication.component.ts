@@ -405,6 +405,7 @@ export class CommunicationComponent
   showChannelDetails = false;
   showChatRail = false;
   showFeedRail = false;
+  mobileSidebarOpen = false;
   showSearch = false;
   searchQuery = '';
   searchResults: { msg: Message; channelId: string; channelName: string }[] =
@@ -911,6 +912,9 @@ export class CommunicationComponent
 
   setWorkspaceMode(mode: 'feed' | 'chat'): void {
     this.workspaceMode = mode;
+    if (this.isMobileViewport()) {
+      this.mobileSidebarOpen = false;
+    }
     if (mode === 'chat') {
       this.ensureChatBootstrap();
       this.startConversationSync();
@@ -923,6 +927,43 @@ export class CommunicationComponent
 
   toggleFeedRail(): void {
     this.showFeedRail = !this.showFeedRail;
+  }
+
+  isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 920;
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileSidebarOpen = !this.mobileSidebarOpen;
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileSidebarOpen = false;
+  }
+
+  onSidebarChannelSelected(id: string): void {
+    this.closeMobileSidebar();
+    this.selectChannel(id);
+  }
+
+  onSidebarDmSelected(id: string): void {
+    this.closeMobileSidebar();
+    this.selectDm(id);
+  }
+
+  onSidebarViewSet(v: 'threads'): void {
+    this.closeMobileSidebar();
+    this.setView(v);
+  }
+
+  onSidebarCreateChannel(): void {
+    this.closeMobileSidebar();
+    this.openCreateChannelModal();
+  }
+
+  onSidebarJumpTo(payload: { msg: any; channelId: string; channelName: string }): void {
+    this.closeMobileSidebar();
+    this.jumpTo(payload);
   }
 
   onFeedComposerInput(event: Event): void {
@@ -7010,6 +7051,13 @@ export class CommunicationComponent
           this.resizeStartWidth + (this.resizeStartX - e.clientX),
         ),
       );
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (!this.isMobileViewport()) {
+      this.mobileSidebarOpen = false;
+    }
   }
 
   @HostListener('document:mouseup')
