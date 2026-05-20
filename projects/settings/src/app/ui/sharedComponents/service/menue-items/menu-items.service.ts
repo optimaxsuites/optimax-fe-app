@@ -443,7 +443,7 @@ export class MenuItemsService {
     {
       label: 'Inventory Management',
       code: 'optimaXInventory',
-      route: this.navigationLink.getLink('inventoryLink'),
+      route: this.navigationLink.getLink('inventorysLink'),
       icon: 'fas fa-file-alt',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The Tender module of OptimaXSuites allows organizations to manage procurement notices, bids, and evaluations in a centralized system.',
