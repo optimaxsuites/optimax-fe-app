@@ -30,6 +30,12 @@ interface MentionProfileCard {
   lastSeenLabel: string;
 }
 
+interface ChatReactionOption {
+  code: string;
+  emoji: string;
+  label: string;
+}
+
 // damilola worked on this: thread inbox layout, attachment previews, and delivered/seen receipt labels.
 @Component({
   selector: 'app-message-feed',
@@ -73,10 +79,11 @@ export class MessageFeedComponent {
   @Input() readUserCardsForMessage: (msg: Message) => HoverPersonCard[] = () => [];
   @Input() mentionCandidates: MentionCandidate[] = [];
   @Input() resolveMentionProfileCard: (payload: { userId?: number; handle?: string }) => MentionProfileCard | null = () => null;
+  @Input() reactionOptions: ChatReactionOption[] = [];
 
   // ── Outputs ─────────────────────────────────────────
   @Output() threadOpened = new EventEmitter<{ msg: Message; event: Event }>();
-  @Output() likeToggled = new EventEmitter<{ msg: Message; event: Event }>();
+  @Output() likeToggled = new EventEmitter<{ msg: Message; event: Event; reactionCode?: string }>();
   @Output() pinToggled = new EventEmitter<{ msg: Message; event: Event }>();
   @Output() editStarted = new EventEmitter<{ msg: Message; event?: Event }>();
   @Output() editCancelled = new EventEmitter<void>();
