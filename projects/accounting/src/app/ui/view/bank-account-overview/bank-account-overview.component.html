@@ -1,133 +1,305 @@
 <div class="min-h-screen bg-gray-50 p-6 md:p-8 lg:p-10">
   <div class="w-full space-y-8">
 
-    <!-- Header -->
-    <header class="bg-white rounded-xl shadow-sm p-8">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-lg bg-customBlue flex items-center justify-center">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-              </path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">{{ bankName }}</h1>
-            <p class="text-base md:text-lg text-gray-600 mt-1">{{ accountName }} • {{ accountNumber }}</p>
+    <!-- Account Hub Switcher Segment Bar -->
+    <div class="flex bg-white p-1.5 rounded-xl shadow-sm border border-gray-150 gap-2 max-w-md no-print">
+      <button (click)="setActiveSource('bank')"
+        class="flex-1 py-3 px-4 font-bold text-sm transition-all rounded-lg flex items-center justify-center gap-2"
+        [class.bg-customBlue]="activeSource === 'bank'"
+        [class.text-white]="activeSource === 'bank'"
+        [class.text-gray-500]="activeSource !== 'bank'"
+        [class.hover:text-gray-900]="activeSource !== 'bank'">
+        <i class="pi pi-building"></i> Bank Account
+      </button>
+      <button (click)="setActiveSource('paystack')"
+        class="flex-1 py-3 px-4 font-bold text-sm transition-all rounded-lg flex items-center justify-center gap-2"
+        [class.bg-customBlue]="activeSource === 'paystack'"
+        [class.text-white]="activeSource === 'paystack'"
+        [class.text-gray-500]="activeSource !== 'paystack'"
+        [class.hover:text-gray-900]="activeSource !== 'paystack'">
+        <i class="pi pi-wallet"></i> Paystack Wallet
+      </button>
+    </div>
+
+    <!-- BANK ACCOUNT VIEW -->
+    <ng-container *ngIf="activeSource === 'bank'">
+
+      <!-- Skeleton Loader -->
+      <div *ngIf="isLoading" class="space-y-4 animate-pulse">
+        <div class="bg-white rounded-xl shadow-sm p-8">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-gray-200 rounded-xl"></div>
+            <div class="flex-1 space-y-3">
+              <div class="h-7 bg-gray-200 rounded w-48"></div>
+              <div class="h-4 bg-gray-200 rounded w-72"></div>
+            </div>
           </div>
         </div>
-        <div class="px-4 py-2 bg-customBlue/10 rounded-lg border border-customBlue/20">
-          <span class="text-sm font-semibold text-customBlue">{{ currency }}</span>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="grid grid-cols-3 gap-8">
+            <div class="space-y-2"><div class="h-4 bg-gray-200 rounded w-24"></div><div class="h-10 bg-gray-200 rounded w-36"></div></div>
+            <div class="space-y-2"><div class="h-4 bg-gray-200 rounded w-24"></div><div class="h-10 bg-gray-200 rounded w-36"></div></div>
+            <div class="space-y-2"><div class="h-4 bg-gray-200 rounded w-24"></div><div class="h-10 bg-gray-200 rounded w-36"></div></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="grid grid-cols-5 gap-4">
+            <div *ngFor="let i of [1,2,3,4,5]" class="space-y-2">
+              <div class="h-4 bg-gray-200 rounded w-20"></div>
+              <div class="h-8 bg-gray-200 rounded w-full"></div>
+            </div>
+          </div>
         </div>
       </div>
-    </header>
+
+      <!-- Main Content (hidden during load) -->
+      <ng-container *ngIf="!isLoading">
+
+      <!-- Header -->
+      <header class="bg-white rounded-xl shadow-sm p-8 relative" (click)="showAccountDropdown = false">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
+          <!-- Account Switcher Dropdown -->
+          <div class="flex items-center gap-4">
+            <div class="relative" (click)="$event.stopPropagation()">
+              <!-- Trigger Button -->
+              <button (click)="toggleAccountDropdown()"
+                class="flex items-center gap-4 px-5 py-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-sm cursor-pointer group">
+                <!-- Bank Logo -->
+                <div class="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center overflow-hidden shadow-sm p-1 shrink-0">
+                  <ng-container [ngSwitch]="bankName">
+                    <svg *ngSwitchCase="'Wema Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                      <rect width="500" height="500" fill="white"/><g clip-path="url(#clip_wema_hdr)">
+                      <path d="M403.105 172.276C402.289 170.939 400.816 170.123 399.251 170.123H381.75C380.028 170.123 378.463 171.097 377.693 172.639L280.417 368.029L276.767 361.41L365.338 176.606C366.018 175.201 365.927 173.546 365.088 172.231C364.249 170.916 362.821 170.123 361.257 170.123H344.187C342.441 170.123 340.854 171.12 340.106 172.684L262.598 332.574L255.82 319.176L327.751 176.697C328.454 175.291 328.386 173.614 327.57 172.276C326.754 170.939 325.28 170.123 323.716 170.123H306.215C304.492 170.123 302.928 171.097 302.157 172.639L242.4 292.653L238.183 284.31L289.825 176.606C290.505 175.201 290.414 173.546 289.575 172.231C288.737 170.916 287.308 170.123 285.744 170.123H268.674C266.928 170.123 265.341 171.12 264.593 172.684L224.037 256.358L180.103 169.624C178.97 167.38 176.249 166.496 174.005 167.629C171.761 168.762 170.877 171.483 172.01 173.727L219.027 266.628L187.063 332.597L104.568 169.624C103.457 167.38 100.714 166.496 98.4921 167.629C96.2478 168.762 95.3637 171.483 96.4972 173.704L183.118 344.816C183.889 346.334 185.453 347.309 187.153 347.309H187.199C188.922 347.309 190.486 346.312 191.234 344.748L224.196 276.761L228.072 284.423L192.027 359.596C191.393 360.911 191.438 362.475 192.027 363.745L201.095 379.954C201.911 381.427 203.385 382.334 205.153 382.289C206.831 382.243 208.372 381.291 209.12 379.772L242.445 312.851L245.641 319.176L209.12 391.515C207.987 393.76 208.894 396.48 211.115 397.613C211.773 397.953 212.476 398.112 213.156 398.112C214.811 398.112 216.42 397.205 217.214 395.618L250.719 329.242L258.608 344.838C259.379 346.38 261.011 347.241 262.689 347.332C264.412 347.332 265.976 346.334 266.724 344.77L347.043 179.191H354.071L267.563 359.596C266.928 360.911 266.974 362.475 267.676 363.745L276.631 379.954C277.447 381.427 278.943 382.334 280.689 382.289C282.366 382.243 283.908 381.291 284.656 379.772L384.561 179.191H391.884L284.679 391.515C283.545 393.76 284.452 396.48 286.674 397.613C287.331 397.953 288.034 398.112 288.714 398.112C290.369 398.112 291.978 397.205 292.772 395.618L403.287 176.697C403.989 175.291 403.921 173.614 403.105 172.276ZM229.16 266.514L271.508 179.191H278.535L233.014 274.131L229.16 266.537V266.514ZM204.881 368.029L201.231 361.41L233.241 294.625L237.367 302.763L204.881 368.007V368.029ZM247.5 302.741L309.026 179.191H316.348L250.742 309.133L247.5 302.741Z" fill="#991988"/>
+                      </g><defs><clipPath id="clip_wema_hdr"><rect width="307.764" height="230.959" fill="white" transform="translate(95.998 167.131)"/></clipPath></defs>
+                    </svg>
+                    <svg *ngSwitchCase="'Access Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                      <rect width="500" height="500" fill="white"/><g clip-path="url(#clip_acc_hdr)">
+                      <path d="M249.98 331.376L319.769 261.578L250.031 191.819L180.222 261.618V261.638L249.98 331.376ZM250.031 215.136L296.472 261.578L249.98 308.07L203.538 261.628L250.031 215.136Z" fill="#F4821F"/>
+                      <path d="M226.844 75.508V98.8146L389.658 261.568L249.97 401.195L110.402 261.618L180.191 191.829H156.884L87.0957 261.618L249.97 424.492L412.904 261.568L226.844 75.508Z" fill="#F4821F"/>
+                      <path d="M133.618 261.628L133.638 261.638L249.97 377.97H249.98L366.351 261.568L226.844 122.041V145.337L343.095 261.578H343.085L249.97 354.673L156.925 261.628L226.723 191.829H203.417L133.638 261.608L133.618 261.628Z" fill="#F4821F"/>
+                      </g><defs><clipPath id="clip_acc_hdr"><rect width="325.808" height="348.984" fill="white" transform="translate(87.0957 75.508)"/></clipPath></defs>
+                    </svg>
+                    <svg *ngSwitchCase="'Zenith Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                      <rect width="500" height="500" fill="white"/><g clip-path="url(#clip_zen_hdr)">
+                      <path d="M151.808 123.398H382.105L131.13 327.504L244.905 190.982L159.409 189.81C150.324 189.682 141.753 193.986 136.405 201.33L133.895 204.792" fill="#898989"/>
+                      <path d="M346.939 353.694H116.643L367.636 149.606L253.861 286.129L339.357 287.301C348.441 287.429 357.013 283.125 362.361 275.781L364.87 272.319" fill="#E31E24"/>
+                      </g><defs><clipPath id="clip_zen_hdr"><rect width="265.462" height="230.297" fill="white" transform="translate(116.643 123.398)"/></clipPath></defs>
+                    </svg>
+                    <svg *ngSwitchCase="'GTBank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain">
+                      <rect width="500" height="500" fill="white"/>
+                      <rect x="127.227" y="127.227" width="245.546" height="245.546" fill="#DE4A07"/>
+                      <path d="M212.487 282.676H225.323V325.489H236.581V282.676H249.417V273.267H212.487V282.676Z" fill="white"/>
+                      <path d="M189.138 305.262H196.97V316.394C196.97 316.394 189.774 318.195 185.153 316.932C179.181 315.63 178.016 310.676 178.016 300.416C178.016 287.355 183.283 282.783 193.729 282.783C197.538 282.783 202.306 283.38 207.162 284.35V274.501C202.159 273.531 196.862 272.934 192.32 272.934C173.816 272.934 166.385 282.734 166.385 299.965C166.385 317.197 170.301 326.507 187.16 327.095H187.268C187.777 327.104 188.296 327.124 188.834 327.124C189.079 327.124 189.333 327.124 189.568 327.114C189.803 327.124 190.038 327.114 190.273 327.104C190.734 327.104 191.194 327.075 191.644 327.046C192.672 326.967 193.68 326.86 194.669 326.723C194.699 326.723 194.728 326.713 194.757 326.713C201.973 325.685 207.485 323.169 207.485 323.169V296.47H189.128V305.272L189.138 305.262Z" fill="white"/>
+                      <path d="M337.149 160.266H268.342V228.378H337.149V160.266Z" fill="white"/>
+                    </svg>
+                  </ng-container>
+                </div>
+                <!-- Text -->
+                <div class="text-left">
+                  <p class="text-xl font-bold text-gray-900">{{ bankName }}</p>
+                  <p class="text-base text-gray-500 font-medium">{{ accountName }}</p>
+                  <p class="text-sm text-gray-400 font-mono">{{ accountNumber }}</p>
+                </div>
+                <!-- Chevron -->
+                <svg class="w-5 h-5 text-gray-400 ml-2 transition-transform duration-200" [class.rotate-180]="showAccountDropdown" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+
+              <!-- Dropdown Panel -->
+              <div *ngIf="showAccountDropdown"
+                class="absolute left-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden animate-slideUp">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest px-4 pt-4 pb-2">Switch Account</p>
+                <div *ngFor="let account of bankAccounts; let i = index"
+                  (click)="selectAccount(i)"
+                  class="flex items-center gap-4 px-4 py-3 cursor-pointer transition-all hover:bg-gray-50"
+                  [class.bg-customBlue]="i === selectedAccountIndex"
+                  [class.text-white]="i === selectedAccountIndex">
+                  <div class="w-10 h-10 rounded-lg bg-white border border-gray-100 flex items-center justify-center overflow-hidden p-1 shrink-0">
+                    <ng-container [ngSwitch]="account.bankName">
+                      <svg *ngSwitchCase="'Wema Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain"><rect width="500" height="500" fill="white"/><path d="M403.105 172.276C402.289 170.939 400.816 170.123 399.251 170.123H381.75C380.028 170.123 378.463 171.097 377.693 172.639L280.417 368.029L276.767 361.41L365.338 176.606C366.018 175.201 365.927 173.546 365.088 172.231C364.249 170.916 362.821 170.123 361.257 170.123H344.187C342.441 170.123 340.854 171.12 340.106 172.684L262.598 332.574L255.82 319.176L327.751 176.697C328.454 175.291 328.386 173.614 327.57 172.276C326.754 170.939 325.28 170.123 323.716 170.123H306.215C304.492 170.123 302.928 171.097 302.157 172.639L242.4 292.653L238.183 284.31L289.825 176.606C290.505 175.201 290.414 173.546 289.575 172.231C288.737 170.916 287.308 170.123 285.744 170.123H268.674C266.928 170.123 265.341 171.12 264.593 172.684L224.037 256.358L180.103 169.624C178.97 167.38 176.249 166.496 174.005 167.629C171.761 168.762 170.877 171.483 172.01 173.727L219.027 266.628L187.063 332.597L104.568 169.624C103.457 167.38 100.714 166.496 98.4921 167.629C96.2478 168.762 95.3637 171.483 96.4972 173.704L183.118 344.816C183.889 346.334 185.453 347.309 187.153 347.309H187.199C188.922 347.309 190.486 346.312 191.234 344.748L224.196 276.761L228.072 284.423L192.027 359.596C191.393 360.911 191.438 362.475 192.027 363.745L201.095 379.954C201.911 381.427 203.385 382.334 205.153 382.289C206.831 382.243 208.372 381.291 209.12 379.772L242.445 312.851L245.641 319.176L209.12 391.515C207.987 393.76 208.894 396.48 211.115 397.613C211.773 397.953 212.476 398.112 213.156 398.112C214.811 398.112 216.42 397.205 217.214 395.618L250.719 329.242L258.608 344.838C259.379 346.38 261.011 347.241 262.689 347.332C264.412 347.332 265.976 346.334 266.724 344.77L347.043 179.191H354.071L267.563 359.596C266.928 360.911 266.974 362.475 267.676 363.745L276.631 379.954C277.447 381.427 278.943 382.334 280.689 382.289C282.366 382.243 283.908 381.291 284.656 379.772L384.561 179.191H391.884L284.679 391.515C283.545 393.76 284.452 396.48 286.674 397.613C287.331 397.953 288.034 398.112 288.714 398.112C290.369 398.112 291.978 397.205 292.772 395.618L403.287 176.697C403.989 175.291 403.921 173.614 403.105 172.276Z" fill="#991988"/></svg>
+                      <svg *ngSwitchCase="'Access Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain"><rect width="500" height="500" fill="white"/><path d="M249.98 331.376L319.769 261.578L250.031 191.819L180.222 261.618V261.638L249.98 331.376ZM250.031 215.136L296.472 261.578L249.98 308.07L203.538 261.628L250.031 215.136Z" fill="#F4821F"/><path d="M226.844 75.508V98.8146L389.658 261.568L249.97 401.195L110.402 261.618L180.191 191.829H156.884L87.0957 261.618L249.97 424.492L412.904 261.568L226.844 75.508Z" fill="#F4821F"/><path d="M133.618 261.628L133.638 261.638L249.97 377.97H249.98L366.351 261.568L226.844 122.041V145.337L343.095 261.578H343.085L249.97 354.673L156.925 261.628L226.723 191.829H203.417L133.638 261.608L133.618 261.628Z" fill="#F4821F"/></svg>
+                      <svg *ngSwitchCase="'Zenith Bank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain"><rect width="500" height="500" fill="white"/><path d="M151.808 123.398H382.105L131.13 327.504L244.905 190.982L159.409 189.81C150.324 189.682 141.753 193.986 136.405 201.33L133.895 204.792" fill="#898989"/><path d="M346.939 353.694H116.643L367.636 149.606L253.861 286.129L339.357 287.301C348.441 287.429 357.013 283.125 362.361 275.781L364.87 272.319" fill="#E31E24"/></svg>
+                      <svg *ngSwitchCase="'GTBank'" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full object-contain"><rect width="500" height="500" fill="white"/><rect x="127.227" y="127.227" width="245.546" height="245.546" fill="#DE4A07"/><path d="M337.149 160.266H268.342V228.378H337.149V160.266Z" fill="white"/></svg>
+                    </ng-container>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-base font-bold truncate" [class.text-white]="i === selectedAccountIndex" [class.text-gray-900]="i !== selectedAccountIndex">{{ account.bankName }}</p>
+                    <p class="text-sm font-mono truncate" [class.text-white]="i === selectedAccountIndex" [class.text-gray-400]="i !== selectedAccountIndex">{{ account.accountNumber }}</p>
+                  </div>
+                  <svg *ngIf="i === selectedAccountIndex" class="w-5 h-5 text-white shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Currency + Add Account -->
+          <div class="flex items-center gap-3">
+            <div class="px-4 py-2 bg-customBlue/10 rounded-lg border border-customBlue/20">
+              <span class="text-lg font-bold text-customBlue">{{ currency }}</span>
+            </div>
+            <button class="flex items-center gap-2 px-5 py-2.5 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-semibold text-base transition-all shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add New Account
+            </button>
+          </div>
+
+        </div>
+      </header>
 
     <!-- Account Overview -->
-    <section class="bg-white rounded-xl shadow-sm p-6">
+    <section class="bg-white rounded-xl shadow-sm p-8">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 flex-1">
+
           <!-- Current Balance -->
           <div>
-            <label class="text-sm md:text-base font-medium text-gray-500 uppercase tracking-wide mb-3 block">Current
-              Balance</label>
-            <h2 class="text-4xl md:text-5xl font-bold text-customBlue">{{ formatCurrency(currentBalance) }}</h2>
+            <label class="text-base font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              Current Balance
+              <button (click)="toggleBalanceVisibility()" class="text-gray-400 hover:text-customBlue transition-colors ml-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <ng-container *ngIf="showBalance">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </ng-container>
+                  <ng-container *ngIf="!showBalance">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                  </ng-container>
+                </svg>
+              </button>
+            </label>
+            <h2 class="text-5xl font-bold text-customBlue tracking-tight">
+              <span *ngIf="showBalance">{{ formatCurrency(currentBalance) }}</span>
+              <span *ngIf="!showBalance" class="tracking-widest text-4xl">••••••••</span>
+            </h2>
           </div>
 
           <!-- Available Balance -->
           <div>
-            <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">Available
-              Balance</label>
-            <h2 class="text-3xl font-bold text-customGreen">{{ formatCurrency(availableBalance) }}</h2>
+            <label class="text-base font-semibold text-gray-500 uppercase tracking-widest mb-3 block">Available Balance</label>
+            <h2 class="text-4xl font-bold text-customGreen tracking-tight">
+              <span *ngIf="showBalance">{{ formatCurrency(availableBalance) }}</span>
+              <span *ngIf="!showBalance" class="tracking-widest text-3xl">••••••••</span>
+            </h2>
           </div>
 
           <!-- Last Synced -->
           <div>
-            <label class="text-sm md:text-base font-medium text-gray-500 uppercase tracking-wide mb-3 block">Last
-              Synced</label>
-            <p class="text-lg md:text-xl font-medium text-gray-700 mt-2">{{ lastSyncDate | date: 'short' }}</p>
+            <label class="text-base font-semibold text-gray-500 uppercase tracking-widest mb-3 block">Last Synced</label>
+            <p class="text-xl font-semibold text-gray-700 mt-2">{{ lastSyncDate | date: 'short' }}</p>
           </div>
+
         </div>
 
         <!-- Sync Button -->
-        <div class="lg:border-l lg:border-gray-200 lg:pl-6">
+        <div class="lg:border-l lg:border-gray-200 lg:pl-8">
           <button (click)="syncAccount()"
-            class="group w-full lg:w-auto px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-medium transition-all flex items-center justify-center gap-3 shadow-sm text-base md:text-lg">
-            <svg class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-              </path>
+            class="group w-full lg:w-auto px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-3 shadow-sm text-lg">
+            <svg class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
-            <span>Sync Account</span>
+            Sync Account
           </button>
         </div>
       </div>
     </section>
 
     <!-- Statement Summary -->
-    <section class="bg-white rounded-xl shadow-sm p-6">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h3 class="text-2xl md:text-3xl font-bold text-gray-900">Statement Summary</h3>
+    <section class="bg-white rounded-xl shadow-sm p-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <h3 class="text-2xl font-bold text-gray-900">Statement Summary</h3>
 
         <!-- Date Range Picker -->
         <div class="relative">
           <button (click)="toggleDatePicker()"
             class="px-5 py-3 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 text-base font-medium text-gray-700">
             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
             <span>{{ formatDateRange() }}</span>
           </button>
-
-          <!-- Date Picker Dropdown -->
-          <div *ngIf="showDatePicker"
-            class="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-50">
-            <p class="text-sm font-medium text-gray-700 mb-3">Select Date Range</p>
-            <div class="space-y-2 text-xs text-gray-600">
-              <p>From: {{ dateRange[0] | date: 'mediumDate' }}</p>
-              <p>To: {{ dateRange[1] | date: 'mediumDate' }}</p>
+          <div *ngIf="showDatePicker" class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 p-5 z-50">
+            <p class="text-sm font-bold text-gray-900 mb-3">Filter Transactions Date Range</p>
+            <div class="space-y-3 text-xs text-gray-600">
+              <div class="flex flex-col gap-1">
+                <label class="font-semibold text-gray-700">From Date</label>
+                <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue" [ngModel]="startDateString" (ngModelChange)="onStartDateChange($event)">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="font-semibold text-gray-700">To Date</label>
+                <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customBlue/20 focus:border-customBlue" [ngModel]="endDateString" (ngModelChange)="onEndDateChange($event)">
+              </div>
             </div>
-            <button (click)="toggleDatePicker()"
-              class="mt-4 w-full px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-lg text-sm font-medium transition-colors">
-              Apply
-            </button>
+            <button (click)="applyDateRange()" class="mt-4 w-full px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-lg text-sm font-semibold transition-colors">Apply Range</button>
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+
         <!-- Opening Balance -->
-        <div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
-          <label class="text-sm md:text-base font-medium text-gray-500 uppercase tracking-wide mb-3 block">Opening
-            Balance</label>
-          <p class="text-xl md:text-2xl font-bold text-gray-900">{{ formatCurrency(openingBalance) }}</p>
+        <div class="summary-card summary-card--gray">
+          <div class="summary-card__bg-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          </div>
+          <span class="summary-card__label">Opening Balance</span>
+          <p class="summary-card__value text-gray-800">
+            <ng-container *ngIf="showBalance">{{ formatCurrency(openingBalance) }}</ng-container>
+            <span *ngIf="!showBalance" class="tracking-widest">••••••</span>
+          </p>
         </div>
 
         <!-- Closing Balance -->
-        <div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">Closing Balance</label>
-          <p class="text-lg font-bold text-gray-900">{{ formatCurrency(closingBalance) }}</p>
+        <div class="summary-card summary-card--blue">
+          <div class="summary-card__bg-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="summary-card__label text-blue-600">Closing Balance</span>
+          <p class="summary-card__value text-customBlue">
+            <ng-container *ngIf="showBalance">{{ formatCurrency(closingBalance) }}</ng-container>
+            <span *ngIf="!showBalance" class="tracking-widest">••••••</span>
+          </p>
         </div>
 
         <!-- Total Credits -->
-        <div class="p-4 rounded-lg bg-green-50 border border-green-200">
-          <label class="text-xs font-medium text-green-700 uppercase tracking-wide mb-2 block">Total Credits</label>
-          <p class="text-lg font-bold text-customGreen">{{ formatCurrency(totalCredits) }}</p>
+        <div class="summary-card summary-card--green">
+          <div class="summary-card__bg-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+          </div>
+          <span class="summary-card__label text-green-700">Total Credits</span>
+          <p class="summary-card__value text-customGreen">
+            <ng-container *ngIf="showBalance">{{ formatCurrency(totalCredits) }}</ng-container>
+            <span *ngIf="!showBalance" class="tracking-widest">••••••</span>
+          </p>
         </div>
 
         <!-- Total Debits -->
-        <div class="p-4 rounded-lg bg-red-50 border border-red-200">
-          <label class="text-xs font-medium text-red-700 uppercase tracking-wide mb-2 block">Total Debits</label>
-          <p class="text-lg font-bold text-red-700">{{ formatCurrency(totalDebits) }}</p>
+        <div class="summary-card summary-card--red">
+          <div class="summary-card__bg-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
+          </div>
+          <span class="summary-card__label text-red-600">Total Debits</span>
+          <p class="summary-card__value text-red-600">
+            <ng-container *ngIf="showBalance">{{ formatCurrency(totalDebits) }}</ng-container>
+            <span *ngIf="!showBalance" class="tracking-widest">••••••</span>
+          </p>
         </div>
 
         <!-- Transactions Count -->
-        <div class="p-4 rounded-lg bg-blue-50 border border-blue-200">
-          <label class="text-xs font-medium text-customBlue uppercase tracking-wide mb-2 block">Transactions</label>
-          <p class="text-lg font-bold text-customBlue">{{ transactionCount }}</p>
+        <div class="summary-card summary-card--purple">
+          <div class="summary-card__bg-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <span class="summary-card__label text-purple-700">Transactions</span>
+          <p class="summary-card__value text-purple-700">{{ transactionCount }}</p>
         </div>
+
       </div>
     </section>
 
@@ -138,7 +310,7 @@
         <div class="flex flex-col lg:flex-row gap-4">
           <!-- Search -->
           <div class="flex-1">
-            <label for="search" class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">Search
+            <label for="search" class="text-base font-medium text-gray-700 uppercase tracking-wide mb-2 block">Search
               Transactions</label>
             <div class="relative">
               <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
@@ -147,14 +319,14 @@
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
               <input id="search" type="text" [(ngModel)]="searchText" placeholder="Search by description or category..."
-                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-sm" />
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-customBlue focus:border-customBlue transition-all outline-none text-base" />
             </div>
           </div>
 
           <!-- Category Filter -->
           <div class="w-full lg:w-48">
             <label for="category"
-              class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2 block">Category</label>
+              class="text-base font-medium text-gray-700 uppercase tracking-wide mb-2 block">Category</label>
             <div class="relative">
               <button (click)="toggleCategoryDropdown()"
                 class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:border-customBlue transition-colors flex items-center justify-between text-base md:text-lg font-medium text-gray-700">
@@ -206,22 +378,22 @@
         <table class="w-full">
           <thead class="bg-customBlue text-white">
             <tr>
-              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Date</th>
-              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Description
+              <th class="px-8 py-4 text-left text-base font-semibold uppercase tracking-wide">Date</th>
+              <th class="px-8 py-4 text-left text-base font-semibold uppercase tracking-wide">Description
               </th>
-              <th class="px-8 py-4 text-left text-sm md:text-base font-semibold uppercase tracking-wide">Category</th>
-              <th class="px-8 py-4 text-right text-sm md:text-base font-semibold uppercase tracking-wide">Credit (₦)
+              <th class="px-8 py-4 text-left text-base font-semibold uppercase tracking-wide">Category</th>
+              <th class="px-8 py-4 text-right text-base font-semibold uppercase tracking-wide">Credit (₦)
               </th>
-              <th class="px-8 py-4 text-right text-sm md:text-base font-semibold uppercase tracking-wide">Debit (₦)</th>
-              <th class="px-8 py-4 text-right text-sm md:text-base font-semibold uppercase tracking-wide">Balance (₦)
+              <th class="px-8 py-4 text-right text-base font-semibold uppercase tracking-wide">Debit (₦)</th>
+              <th class="px-8 py-4 text-right text-base font-semibold uppercase tracking-wide">Balance (₦)
               </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
             <tr *ngFor="let transaction of getPaginatedTransactions()" class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{{ transaction.date | date: 'dd MMM yyyy' }}
+              <td class="px-6 py-4 text-base text-gray-700 whitespace-nowrap">{{ transaction.date | date: 'dd MMM yyyy' }}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ transaction.description }}</td>
+              <td class="px-6 py-4 text-base text-gray-900 font-medium">{{ transaction.description }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <!-- View Mode -->
                 <span *ngIf="editedTransaction?.description !== transaction.description"
@@ -277,11 +449,11 @@
                   </button>
                 </div>
               </td>
-              <td class="px-6 py-4 text-right text-sm font-semibold text-customGreen whitespace-nowrap">{{
+              <td class="px-6 py-4 text-right text-base font-semibold text-customGreen whitespace-nowrap">{{
                 formatCurrency(transaction.credit) }}</td>
-              <td class="px-6 py-4 text-right text-sm font-semibold text-red-600 whitespace-nowrap">{{
+              <td class="px-6 py-4 text-right text-base font-semibold text-red-600 whitespace-nowrap">{{
                 formatCurrency(transaction.debit) }}</td>
-              <td class="px-6 py-4 text-right text-sm font-bold text-gray-900 whitespace-nowrap">{{
+              <td class="px-6 py-4 text-right text-base font-bold text-gray-900 whitespace-nowrap">{{
                 formatCurrency(transaction.balance) }}</td>
             </tr>
 
@@ -306,7 +478,7 @@
       <!-- Pagination -->
       <div
         class="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-gray-50 border-t border-gray-200">
-        <div class="text-sm text-gray-600">
+        <div class="text-base text-gray-600">
           Showing <span class="font-semibold text-gray-900">{{ getPageStart() }}</span> to <span
             class="font-semibold text-gray-900">{{ getPageEnd() }}</span> of <span
             class="font-semibold text-gray-900">{{ filterTransactions().length }}</span> transactions
@@ -315,7 +487,7 @@
         <div class="flex items-center gap-3">
           <!-- Rows per page -->
           <select [(ngModel)]="rowsPerPage" (ngModelChange)="onRowsPerPageChange()"
-            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-customBlue focus:border-customBlue outline-none">
+            class="px-3 py-2 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-customBlue focus:border-customBlue outline-none">
             <option [value]="5">5 per page</option>
             <option [value]="10">10 per page</option>
             <option [value]="25">25 per page</option>
@@ -331,7 +503,7 @@
               </svg>
             </button>
 
-            <span class="px-4 py-2 text-sm font-medium text-gray-700">
+            <span class="px-4 py-2 text-base font-medium text-gray-700">
               Page {{ currentPage }} of {{ getTotalPages() }}
             </span>
 
@@ -346,6 +518,288 @@
       </div>
     </section>
 
+      </ng-container>
+      <!-- /end !isLoading -->
+
+    </ng-container>
+    <!-- /end bank view -->
+
+    <!-- PAYSTACK INTEGRATED WALLET VIEW -->
+  <ng-container *ngIf="activeSource === 'paystack'">
+    
+    <!-- Paystack Wallet Overview & Balances -->
+    <section class="bg-white rounded-xl shadow-sm p-6 relative overflow-hidden">
+      <div class="absolute top-0 right-0 p-4 opacity-5">
+        <svg class="w-32 h-32 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 flex-1">
+          <!-- Balance Card -->
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <label class="text-base font-semibold text-gray-500 uppercase tracking-wider">Wallet Balance</label>
+              <button (click)="refreshPaystackBalance()" [disabled]="paystackBalanceLoading"
+                class="p-1.5 hover:bg-gray-150 rounded text-gray-500 hover:text-customBlue transition-all"
+                title="Refresh Wallet Balance">
+                <svg class="w-4 h-4" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Loading / Error States -->
+            <div *ngIf="paystackBalanceLoading" class="py-2 flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full border-2 border-gray-200 border-t-customBlue animate-spin"></div>
+              <span class="text-base text-gray-500 font-medium">Fetching balance...</span>
+            </div>
+            <div *ngIf="paystackBalanceError && !paystackBalanceLoading" class="text-base text-red-600 font-medium">
+              {{ paystackBalanceError }}
+            </div>
+
+            <!-- Balance Value -->
+            <div *ngIf="!paystackBalanceLoading && !paystackBalanceError">
+              <h2 class="text-4xl md:text-5xl font-extrabold text-customBlue tracking-tight">
+                {{ formatNaira(paystackBalanceData?.balance) }}
+              </h2>
+              <p class="text-base text-gray-500 mt-1 font-medium">Active currency: {{ paystackBalanceData?.currency || 'NGN' }}</p>
+            </div>
+          </div>
+
+          <!-- Inflow Status -->
+          <div>
+            <label class="text-base font-semibold text-gray-500 uppercase tracking-wider mb-3 block">Settled Inflow</label>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
+              <p class="text-base font-bold text-gray-900">Multi-channel Active</p>
+            </div>
+          </div>
+
+          <!-- Gateway Integration Connection -->
+          <div>
+            <label class="text-base font-semibold text-gray-500 uppercase tracking-wider mb-3 block">Gateway Status</label>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="px-2.5 py-1 rounded bg-blue-50 border border-blue-200 text-base font-bold text-customBlue">
+                Paystack Live Connection
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sync Action -->
+        <div class="lg:border-l lg:border-gray-200 lg:pl-6">
+          <button (click)="refreshPaystackBalance()" [disabled]="paystackBalanceLoading"
+            class="px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-3 text-base md:text-lg">
+            <svg class="w-5 h-5" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>Sync Wallet</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paystack Dynamic Interface Workspace (Split Grid) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Left 2 Cols: Paystack Ledger Transactions -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 animate-slideUp">
+          <!-- Filters Header -->
+          <div class="p-6 border-b border-gray-200 bg-gray-50/50">
+            <div class="flex flex-col sm:flex-row gap-4 items-end">
+              <div class="flex-1 w-full">
+                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">Start Date</label>
+                <input type="date" [(ngModel)]="paystackTxStartDate" (ngModelChange)="applyPaystackTxFilters()"
+                  class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg outline-none text-base font-medium text-gray-700" />
+              </div>
+              <div class="flex-1 w-full">
+                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">End Date</label>
+                <input type="date" [(ngModel)]="paystackTxEndDate" (ngModelChange)="applyPaystackTxFilters()"
+                  class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg outline-none text-base font-medium text-gray-700" />
+              </div>
+              <div class="w-full sm:w-36">
+                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">Type</label>
+                <select [(ngModel)]="paystackTxTypeFilter" (ngModelChange)="applyPaystackTxFilters()"
+                  class="w-full px-4 py-2.5 bg-white border border-gray-350 rounded-lg outline-none text-base font-medium text-gray-700">
+                  <option value="">ALL</option>
+                  <option value="DEBIT">DEBIT</option>
+                  <option value="CREDIT">CREDIT</option>
+                </select>
+              </div>
+              <div class="flex gap-1">
+                <button (click)="loadPaystackTransactions()" [disabled]="paystackTxLoading"
+                  class="p-2.5 bg-customBlue hover:bg-customBlueHover text-white rounded-lg transition-colors">
+                  <svg class="w-5 h-5" [class.animate-spin]="paystackTxLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
+                <button (click)="clearPaystackTxFilters()"
+                  class="px-4 py-2.5 bg-white hover:bg-gray-150 border border-gray-300 text-gray-700 rounded-lg font-semibold text-base transition-colors">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loader / Errors -->
+          <div *ngIf="paystackTxLoading" class="py-16 text-center">
+            <div class="inline-block w-8 h-8 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin mb-3"></div>
+            <p class="text-gray-500 text-base font-semibold">Retrieving wallet ledger...</p>
+          </div>
+
+          <div *ngIf="paystackTxError && !paystackTxLoading" class="p-8 text-center max-w-sm mx-auto animate-fadeIn">
+            <i class="pi pi-exclamation-triangle text-2xl text-red-500 mb-2 block"></i>
+            <p class="text-base font-semibold text-gray-900">Failed to load transactions</p>
+            <p class="text-base text-gray-500 mt-1 mb-4">{{ paystackTxError }}</p>
+            <button (click)="loadPaystackTransactions()" class="px-4 py-1.5 bg-customBlue text-white rounded text-base font-semibold">
+              Retry Connection
+            </button>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="!paystackTxLoading && !paystackTxError && paystackTransactions.length === 0" class="py-16 text-center max-w-sm mx-auto">
+            <i class="pi pi-folder-open text-3xl text-gray-350 mb-2 block"></i>
+            <p class="text-base font-semibold text-gray-900">No Records Found</p>
+            <p class="text-base text-gray-500 mt-1">Initiate payouts to populate transaction history logs.</p>
+          </div>
+
+          <!-- Paystack Table -->
+          <div *ngIf="!paystackTxLoading && !paystackTxError && paystackTransactions.length > 0" class="animate-fadeIn">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-customBlue text-white">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-base font-semibold uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-base font-semibold uppercase tracking-wider">Reference</th>
+                    <th class="px-6 py-3 text-center text-base font-semibold uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-right text-base font-semibold uppercase tracking-wider">Amount</th>
+                    <th class="px-6 py-3 text-center text-base font-semibold uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <tr *ngFor="let tx of paginatedPaystackTransactions" (click)="viewPaystackTransactionDetail(tx.reference)"
+                    class="hover:bg-gray-50 transition-colors ledger-row cursor-pointer">
+                    <td class="px-6 py-3.5 text-base text-gray-700 whitespace-nowrap">
+                      {{ formatPaystackTxDate(tx.createdAt) }}
+                    </td>
+                    <td class="px-6 py-3.5 text-base text-gray-900 font-bold whitespace-nowrap">
+                      {{ tx.reference }}
+                    </td>
+                    <td class="px-6 py-3.5 text-center whitespace-nowrap">
+                      <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none"
+                        [ngClass]="getPaystackTypeClass(tx.type)">
+                        {{ tx.type }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-3.5 text-right whitespace-nowrap text-base">
+                      <span [ngClass]="getPaystackTypeAmountClass(tx.type)">
+                        {{ formatNaira(tx.amount) }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-3.5 text-center whitespace-nowrap">
+                      <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none"
+                        [ngClass]="getPaystackStatusClass(tx.status)">
+                        {{ tx.status }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Paystack Pagination Footer -->
+            <div class="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200 text-base">
+              <div class="text-gray-600">
+                Showing <span class="font-semibold text-gray-900">{{ getPaystackTxPageStart() }}</span> to <span
+                  class="font-semibold text-gray-900">{{ getPaystackTxPageEnd() }}</span> of <span
+                  class="font-semibold text-gray-900">{{ paystackTransactions.length }}</span> logs
+              </div>
+              <div class="flex items-center gap-1">
+                <button (click)="paystackTxPrevPage()" [disabled]="paystackTxCurrentPage === 1"
+                  class="p-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
+                  <i class="pi pi-angle-left text-gray-600"></i>
+                </button>
+                <span class="px-2 font-semibold text-gray-700">
+                  Page {{ paystackTxCurrentPage }} of {{ paystackTxTotalPages }}
+                </span>
+                <button (click)="paystackTxNextPage()" [disabled]="paystackTxCurrentPage === paystackTxTotalPages"
+                  class="p-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
+                  <i class="pi pi-angle-right text-gray-600"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right 1 Col: Fund Transfer Card Interface -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
+          <div class="p-5 border-b border-gray-200 bg-gray-50/50">
+            <h3 class="text-lg font-bold text-gray-900">Direct Wallet Payout</h3>
+            <p class="text-base text-gray-500 mt-0.5">Authorize instant disbursements utilizing security verified routing.</p>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <!-- Paystack Error / Success Alerts -->
+            <div *ngIf="paystackTransferError" class="bg-red-50 border-l-4 border-red-500 p-3.5 rounded text-red-700 text-base animate-fadeIn">
+              <p class="font-bold">Transfer Authorization Denied</p>
+              <p class="mt-0.5">{{ paystackTransferError }}</p>
+            </div>
+
+            <div *ngIf="paystackLastTransferReference" class="bg-emerald-50 border-l-4 border-emerald-500 p-3.5 rounded text-emerald-800 text-base animate-fadeIn">
+              <p class="font-bold">Transfer Queued Successfully</p>
+              <p class="mt-0.5 font-semibold">Reference: {{ paystackLastTransferReference }}</p>
+              <p class="mt-0.5 text-gray-500">The gateway has initiated the routing block. Balance updates will verify settlement shortly.</p>
+            </div>
+
+            <form (ngSubmit)="openPaystackConfirmDialog()" class="space-y-4">
+              <!-- HR Dropdown Selector -->
+              <div>
+                <label class="text-base font-semibold text-gray-700 uppercase tracking-wide mb-1.5 block">Recipient</label>
+                <div class="relative">
+                  <select [(ngModel)]="paystackSelectedEmployeeId" name="employeeId" required
+                    class="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg text-base font-semibold text-gray-700 outline-none">
+                    <option [value]="null" disabled selected>-- Select an employee --</option>
+                    <option *ngFor="let emp of paystackEmployees" [value]="emp.id">
+                      {{ getPaystackEmployeeDisplayName(emp) }} ({{ emp.bankName || 'No bank' }} • {{ emp.accountNumber || 'No Account' }})
+                    </option>
+                  </select>
+                  <div *ngIf="paystackEmployeesLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div class="w-3.5 h-3.5 border-2 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Naira Amount Input -->
+              <div>
+                <label class="text-base font-semibold text-gray-700 uppercase tracking-wide mb-1.5 block">Settlement Amount (₦)</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">₦</span>
+                  <input type="number" [(ngModel)]="paystackTransferAmount" name="amount" required min="1" step="0.01" placeholder="0.00"
+                    class="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg text-base font-bold text-gray-900 outline-none" />
+                </div>
+              </div>
+
+              <div class="pt-2">
+                <button type="submit" [disabled]="!isPaystackTransferFormValid || paystackIsTransferring"
+                  class="w-full bg-customBlue hover:bg-customBlueHover text-white py-3 px-4 rounded-lg font-bold transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span *ngIf="paystackIsTransferring" class="loading-spinner"></span>
+                  <span>{{ paystackIsTransferring ? 'Processing Wallet Transfer...' : 'Initiate Wallet Payout' }}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </ng-container>
   </div>
 
   <!-- Import/Export Modal -->
@@ -453,4 +907,125 @@
       </div>
     </div>
   </div>
+
+  <!-- PAYSTACK MODAL OVERLAYS -->
+
+  <!-- Paystack Payout Confirmation Modal Overlay -->
+  <div *ngIf="paystackShowConfirmDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-fadeInUp">
+      <div class="p-5 border-b border-gray-200 flex items-center gap-3 bg-customBlue text-white rounded-t-xl">
+        <i class="pi pi-exclamation-circle text-lg"></i>
+        <div>
+          <h3 class="text-base font-bold">Verify Fund Outflow</h3>
+          <p class="text-base text-white/70">Secure validation process</p>
+        </div>
+      </div>
+      <div class="p-5 space-y-3.5">
+        <p class="text-base text-gray-600">Are you sure you want to authorize this direct wallet payout? The ledger balance will be debited instantly.</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3.5 space-y-2.5 text-base text-gray-500">
+          <div class="flex justify-between">
+            <span>Beneficiary</span>
+            <span class="font-semibold text-gray-900">{{ getPaystackEmployeeDisplayName(selectedPaystackEmployee) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Financial Institution</span>
+            <span class="font-semibold text-gray-900">{{ selectedPaystackEmployee?.bankName || '—' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Account Number</span>
+            <span class="font-semibold text-gray-900">{{ selectedPaystackEmployee?.accountNumber || '—' }}</span>
+          </div>
+          <div class="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">
+            <span class="font-bold text-gray-700">Settlement Amount</span>
+            <span class="font-extrabold text-customBlue">{{ formatNaira(paystackTransferAmount) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5 rounded-b-xl">
+        <button (click)="cancelPaystackTransfer()" class="px-4 py-2 text-base font-semibold text-gray-700 rounded hover:bg-gray-250 transition-colors">
+          Cancel
+        </button>
+        <button (click)="confirmPaystackTransfer()" class="px-4 py-2 text-base font-semibold bg-customBlue text-white rounded hover:bg-customBlueHover transition-colors">
+          Confirm & Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paystack Transaction Detail Modal Overlay -->
+  <div *ngIf="paystackShowDetailDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-fadeInUp">
+      <div class="p-5 border-b border-gray-200 flex items-center justify-between bg-customBlue text-white rounded-t-xl">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-info-circle text-lg"></i>
+          <div>
+            <h3 class="text-base font-bold">Ledger Specifications</h3>
+            <p class="text-base text-white/70">Verified core routing logs</p>
+          </div>
+        </div>
+        <button (click)="closePaystackDetailDialog()" class="text-white hover:text-gray-200">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="p-5">
+        <div *ngIf="paystackTxDetailLoading" class="py-8 flex flex-col items-center gap-2">
+          <div class="w-6 h-6 border-2 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
+          <span class="text-base text-gray-500">Retrieving details...</span>
+        </div>
+
+        <div *ngIf="paystackTxDetailError && !paystackTxDetailLoading" class="text-base text-red-600 py-4 text-center">
+          {{ paystackTxDetailError }}
+        </div>
+
+        <div *ngIf="!paystackTxDetailLoading && !paystackTxDetailError && paystackSelectedTxDetail" class="space-y-3.5 text-base text-gray-500">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3.5 space-y-2.5">
+            <div class="flex justify-between">
+              <span>Processor Reference</span>
+              <span class="font-mono font-bold text-gray-900">{{ paystackSelectedTxDetail.reference }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Flow Classification</span>
+              <span class="font-semibold" [ngClass]="getPaystackTypeAmountClass(paystackSelectedTxDetail.type)">{{ paystackSelectedTxDetail.type }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Settlement Amount</span>
+              <span class="font-bold text-gray-900">{{ formatNaira(paystackSelectedTxDetail.amount) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Currency</span>
+              <span class="font-semibold text-gray-900">{{ paystackSelectedTxDetail.currency }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Gateway Status</span>
+              <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none" [ngClass]="getPaystackStatusClass(paystackSelectedTxDetail.status)">
+                {{ paystackSelectedTxDetail.status }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span>Initiated Date</span>
+              <span class="font-semibold text-gray-900">{{ formatPaystackTxDate(paystackSelectedTxDetail.createdAt) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Origin Module</span>
+              <span class="font-semibold text-gray-900">{{ paystackSelectedTxDetail.source }}</span>
+            </div>
+            <div class="border-t border-gray-200 pt-2 flex flex-col gap-1">
+              <span class="font-bold text-gray-600">Audit Description</span>
+              <span class="bg-white p-2 rounded border border-gray-150 text-gray-800 leading-normal">
+                {{ paystackSelectedTxDetail.description || 'No additional log details captured.' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end rounded-b-xl">
+        <button (click)="closePaystackDetailDialog()" class="px-5 py-2 text-base bg-customBlue text-white font-semibold rounded hover:bg-customBlueHover transition-colors">
+          Dismiss Details
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>

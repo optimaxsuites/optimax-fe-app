@@ -3,10 +3,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DisbursementService } from '../../../services/disbursement.service';
+import { Router } from '@angular/router';
 import {
   AccountingTransactionDTO,
   BankConnectionDTO,
-  CreateDisbursementPayload,
   DisbursementDTO
 } from '../../domain/accounting.dto';
 
@@ -24,7 +24,9 @@ export class DisbursementComponent implements OnInit, OnDestroy {
 
   // ── State ──────────────────────────────────────────────
   isLoading = false;
+  isDetailOpen = false;
   isProcessing = false;
+  
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
@@ -39,15 +41,24 @@ export class DisbursementComponent implements OnInit, OnDestroy {
 
   // ── Selection / UI ─────────────────────────────────────
   selectedTransaction: AccountingTransactionDTO | null = null;
-  isDetailOpen = false;
-  isConfirmModalOpen = false;
   selectedBankConnectionId: number | null = null;
+
+  // ── Pagination ─────────────────────────────────────────
+  pageSize = 10;
+  currentPage = 1;
+  totalPages = 1;
+  paginatedTransactions: AccountingTransactionDTO[] = [];
 
   // ── Filters ────────────────────────────────────────────
   activeModuleFilter = '';
   searchQuery = '';
 
-  constructor(private disbursementService: DisbursementService) {}
+  Math = Math;
+
+  constructor(
+    private disbursementService: DisbursementService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -106,12 +117,25 @@ export class DisbursementComponent implements OnInit, OnDestroy {
 
   selectTransaction(trx: AccountingTransactionDTO): void {
     this.selectedTransaction = trx;
-    this.selectedBankConnectionId = null;
-    this.errorMessage = null;
     this.isDetailOpen = true;
-
-    // Resolve HR data if needed
     this.resolveRecipientDetails(trx);
+  }
+
+  openWizard(): void {
+    this.isDetailOpen = false;
+    this.router.navigate(['/payout'], { 
+      state: { transaction: this.selectedTransaction } 
+    });
+  }
+
+  closeDetail(): void {
+    this.isDetailOpen = false;
+    this.selectedTransaction = null;
+  }
+
+  directPayout(trx: AccountingTransactionDTO): void {
+    this.selectedTransaction = trx;
+    this.openWizard();
   }
 
   resolveRecipientDetails(trx: AccountingTransactionDTO): void {
@@ -135,11 +159,6 @@ export class DisbursementComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeDetail(): void {
-    this.isDetailOpen = false;
-    this.selectedTransaction = null;
-    this.isConfirmModalOpen = false;
-  }
 
   // ==========================================================================
   // PROVENANCE HELPERS
@@ -214,67 +233,6 @@ export class DisbursementComponent implements OnInit, OnDestroy {
   }
 
   // ==========================================================================
-  // PAYOUT
-  // ==========================================================================
-
-  openConfirmModal(): void {
-    if (!this.selectedBankConnectionId) {
-      this.errorMessage = 'Please select a funding source before proceeding.';
-      return;
-    }
-    this.errorMessage = null;
-    this.isConfirmModalOpen = true;
-  }
-
-  cancelConfirm(): void {
-    this.isConfirmModalOpen = false;
-  }
-
-  confirmPayout(): void {
-    if (!this.selectedTransaction || !this.selectedBankConnectionId) return;
-
-    const bankConn = this.bankConnections.find(b => b.id === this.selectedBankConnectionId);
-    const disbursedFrom = bankConn?.providerName || 'Unknown';
-
-    let payload: CreateDisbursementPayload;
-
-    if (this.isMultiRecipient) {
-      payload = {
-        transactions: this.recipientList.map(() => ({ id: this.selectedTransaction!.id })),
-        recipients: this.recipientList.map(r => ({ employeeId: r.employeeId, amount: r.amount })),
-        totalDisbursementAmount: this.selectedTransaction.amount,
-        status: 'PENDING',
-        disbursedFrom
-      };
-    } else {
-      payload = {
-        transaction: { id: this.selectedTransaction.id },
-        disbursementAmount: this.selectedTransaction.amount,
-        status: 'PENDING',
-        disbursedFrom
-      };
-    }
-
-    this.isProcessing = true;
-    this.disbursementService.createDisbursement(payload)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.isProcessing = false;
-          this.isConfirmModalOpen = false;
-          this.isDetailOpen = false;
-          this.successMessage = 'Payout dispatched successfully!';
-          setTimeout(() => { this.successMessage = null; }, 5000);
-          this.loadData();
-        },
-        error: (err) => {
-          this.isProcessing = false;
-          this.errorMessage = err?.error?.message || 'Failed to process payout. Please try again.';
-        }
-      });
-  }
-
-  // ==========================================================================
   // FILTERS
   // ==========================================================================
 
@@ -291,6 +249,52 @@ export class DisbursementComponent implements OnInit, OnDestroy {
       );
     }
     this.filteredTransactions = result;
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  updatePagination(): void {
+    this.totalPages = Math.ceil(this.filteredTransactions.length / this.pageSize) || 1;
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    this.paginatedTransactions = this.filteredTransactions.slice(start, end);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
+    }
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePagination();
+    }
+  }
+
+  getPages(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
   }
 
   setModuleFilter(module: string): void {
