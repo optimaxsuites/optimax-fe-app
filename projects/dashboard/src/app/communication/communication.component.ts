@@ -3597,8 +3597,7 @@ export class CommunicationComponent
       );
     });
 
-    const bestChannelByUserId = new Map<number, CollabChannel>();
-    const channelIdsByUserId = new Map<number, Set<number>>();
+    const channelsByUserId = new Map<number, CollabChannel[]>();
     const unreadByUserId = new Map<number, number>();
 
     for (const channel of dmChannels) {
@@ -3615,16 +3614,9 @@ export class CommunicationComponent
         (entry) => Number(entry.userId) === Number(otherUserId),
       );
       if (!contact) continue;
-      const existingBest = bestChannelByUserId.get(Number(otherUserId));
-      if (
-        !existingBest ||
-        this.compareDmChannelPriority(channel, existingBest) < 0
-      ) {
-        bestChannelByUserId.set(Number(otherUserId), channel);
-      }
-      const channelIds = channelIdsByUserId.get(Number(otherUserId)) || new Set<number>();
-      channelIds.add(Number(channel.channelId ?? channel.id));
-      channelIdsByUserId.set(Number(otherUserId), channelIds);
+      const candidates = channelsByUserId.get(Number(otherUserId)) || [];
+      candidates.push(channel);
+      channelsByUserId.set(Number(otherUserId), candidates);
       const unreadCount = Number(channel.unreadCount || 0);
       unreadByUserId.set(
         Number(otherUserId),
@@ -3633,12 +3625,10 @@ export class CommunicationComponent
     }
 
     for (const contact of this.dmContacts) {
-      const selected = bestChannelByUserId.get(Number(contact.userId));
+      const candidates = channelsByUserId.get(Number(contact.userId)) || [];
+      const selected = this.pickPreferredDmChannel(contact, candidates);
       if (!selected) continue;
-      contact.dmChannelId = Number(selected.channelId ?? selected.id);
-      contact.dmChannelIds = Array.from(
-        channelIdsByUserId.get(Number(contact.userId)) || new Set<number>(),
-      );
+      this.assignDmChannels(contact, selected, candidates);
       const unreadCount = Math.max(
         unreadByUserId.get(Number(contact.userId)) || 0,
         existingDmUnread.get(Number(contact.userId)) || 0,
@@ -3691,6 +3681,143 @@ export class CommunicationComponent
     this.channelsRetryTimer = null;
   }
 
+  private isBrokenSnapshotChannel(channelId: number): boolean {
+    if (!channelId) {
+      return false;
+    }
+    const status = this.channelSnapshotLastErrorStatus.get(channelId) || 0;
+    const failures = this.channelSnapshotConsecutiveFailures.get(channelId) || 0;
+    return failures > 0 && (status >= 500 || status === 0);
+  }
+
+  private orderDmChannelCandidates(channels: CollabChannel[]): CollabChannel[] {
+    return [...channels].sort((left, right) => {
+      const leftBroken = this.isBrokenSnapshotChannel(
+        Number(left.channelId ?? left.id),
+      );
+      const rightBroken = this.isBrokenSnapshotChannel(
+        Number(right.channelId ?? right.id),
+      );
+      if (leftBroken !== rightBroken) {
+        return leftBroken ? 1 : -1;
+      }
+
+      const createdDiff =
+        this.channelCreatedAtValue(right) - this.channelCreatedAtValue(left);
+      if (createdDiff !== 0) {
+        return createdDiff;
+      }
+      return Number(right.channelId ?? right.id) - Number(left.channelId ?? left.id);
+    });
+  }
+
+  private matchingDmChannels(
+    contact: DmContact,
+    channels: CollabChannel[],
+  ): CollabChannel[] {
+    return channels.filter((channel) => {
+      const participantIds = this.extractDmParticipantIds(channel);
+      return (
+        channel.channelType === 'PRIVATE' &&
+        participantIds.includes(Number(this.me.userId)) &&
+        participantIds.includes(Number(contact.userId))
+      );
+    });
+  }
+
+  private prioritizeDmChannelIds(
+    contact: DmContact,
+    preferredChannelId?: number | null,
+    channels?: CollabChannel[],
+  ): number[] {
+    const candidateIds = new Set<number>();
+    for (const value of contact.dmChannelIds || []) {
+      const numericValue = Number(value);
+      if (numericValue > 0) {
+        candidateIds.add(numericValue);
+      }
+    }
+    const currentChannelId = Number(contact.dmChannelId || 0);
+    if (currentChannelId > 0) {
+      candidateIds.add(currentChannelId);
+    }
+    for (const channel of channels || []) {
+      const channelId = Number(channel.channelId ?? channel.id);
+      if (channelId > 0) {
+        candidateIds.add(channelId);
+      }
+    }
+
+    return Array.from(candidateIds).sort((left, right) => {
+      if (preferredChannelId && left === preferredChannelId) {
+        return -1;
+      }
+      if (preferredChannelId && right === preferredChannelId) {
+        return 1;
+      }
+      const leftBroken = this.isBrokenSnapshotChannel(left);
+      const rightBroken = this.isBrokenSnapshotChannel(right);
+      if (leftBroken !== rightBroken) {
+        return leftBroken ? 1 : -1;
+      }
+      return right - left;
+    });
+  }
+
+  private assignDmChannels(
+    contact: DmContact,
+    selectedChannel: CollabChannel | null,
+    candidates: CollabChannel[],
+  ): number | null {
+    if (!selectedChannel) {
+      contact.dmChannelId = undefined;
+      contact.dmChannelIds = undefined;
+      return null;
+    }
+
+    const selectedChannelId = Number(
+      selectedChannel.channelId ?? selectedChannel.id,
+    );
+    contact.dmChannelId = selectedChannelId;
+    contact.dmChannelIds = this.prioritizeDmChannelIds(
+      contact,
+      selectedChannelId,
+      candidates,
+    );
+    return selectedChannelId;
+  }
+
+  private pickPreferredDmChannel(
+    contact: DmContact,
+    candidates: CollabChannel[],
+  ): CollabChannel | null {
+    if (!candidates.length) {
+      return null;
+    }
+
+    const currentChannelId = Number(contact.dmChannelId || 0);
+    if (currentChannelId > 0 && !this.isBrokenSnapshotChannel(currentChannelId)) {
+      const current = candidates.find(
+        (channel) =>
+          Number(channel.channelId ?? channel.id) === currentChannelId,
+      );
+      if (current) {
+        return current;
+      }
+    }
+
+    return this.orderDmChannelCandidates(candidates)[0] || null;
+  }
+
+  private resolveExistingDmChannel(
+    contact: DmContact,
+    channels: CollabChannel[],
+  ): number | null {
+    const candidates = this.matchingDmChannels(contact, channels);
+    const selected = this.pickPreferredDmChannel(contact, candidates);
+    return this.assignDmChannels(contact, selected, candidates);
+  }
+
   private compareDmChannelPriority(
     left: CollabChannel,
     right: CollabChannel,
@@ -3732,17 +3859,12 @@ export class CommunicationComponent
     contact: DmContact,
     currentChannelId: number,
   ): number | null {
-    const candidates = (this.cachedCollabChannels || [])
-      .filter((channel) => {
-        const participantIds = this.extractDmParticipantIds(channel);
-        return (
-          channel.channelType === 'PRIVATE' &&
-          participantIds.includes(Number(this.me.userId)) &&
-          participantIds.includes(Number(contact.userId)) &&
-          Number(channel.channelId ?? channel.id) !== Number(currentChannelId)
-        );
-      })
-      .sort((left, right) => this.compareDmChannelPriority(left, right));
+    const candidates = this.orderDmChannelCandidates(
+      this.matchingDmChannels(contact, this.cachedCollabChannels || []).filter(
+        (channel) =>
+          Number(channel.channelId ?? channel.id) !== Number(currentChannelId),
+      ),
+    );
 
     if (!candidates.length) {
       return null;
@@ -3751,16 +3873,9 @@ export class CommunicationComponent
   }
 
   private findBestDmChannelId(contact: DmContact): number | null {
-    const candidates = (this.cachedCollabChannels || [])
-      .filter((channel) => {
-        const participantIds = this.extractDmParticipantIds(channel);
-        return (
-          channel.channelType === 'PRIVATE' &&
-          participantIds.includes(Number(this.me.userId)) &&
-          participantIds.includes(Number(contact.userId))
-        );
-      })
-      .sort((left, right) => this.compareDmChannelPriority(left, right));
+    const candidates = this.orderDmChannelCandidates(
+      this.matchingDmChannels(contact, this.cachedCollabChannels || []),
+    );
 
     if (!candidates.length) {
       return null;
@@ -4320,20 +4435,9 @@ export class CommunicationComponent
     }
     const meId = this.me.userId,
       themId = contact.userId;
-    const dmName = this.expectedDmChannelName(contact);
     const tryExisting = (all: CollabChannel[]): boolean => {
-      const existing = all
-        .filter(
-          (c) =>
-            c.channelType === 'PRIVATE' &&
-            c.name === dmName &&
-            (c.status === 'ACTIVE' || !c.status),
-        )
-        .sort((left, right) => this.compareDmChannelPriority(left, right))[0];
-      if (!existing) return false;
-      const chId = Number(existing.channelId ?? existing.id);
-      contact.dmChannelId = chId;
-      contact.dmChannelIds = [chId];
+      const chId = this.resolveExistingDmChannel(contact, all);
+      if (!chId) return false;
       this.subscribeToDmContactChannels(contact);
       if (
         this.dmMessages[contact.id] !== undefined &&
@@ -4381,7 +4485,22 @@ export class CommunicationComponent
         this.createDirectMessageChannel(contact, meId, themId, onReady);
       },
       error: () => {
-        this.createDirectMessageChannel(contact, meId, themId, onReady);
+        this.collabService.getHomeChannels().subscribe({
+          next: (home) => {
+            this.cachedCollabChannels = home?.channels || [];
+            this.mapDirectMessageChannels(this.cachedCollabChannels);
+            if (tryExisting(this.cachedCollabChannels)) {
+              return;
+            }
+            this.createDirectMessageChannel(contact, meId, themId, onReady);
+          },
+          error: () => {
+            this.messagesLoading = false;
+            this.conversationAccessMessage =
+              'Unable to verify this direct conversation right now. Please retry.';
+            this.cdr.detectChanges();
+          },
+        });
       },
     });
   }
@@ -4441,7 +4560,10 @@ export class CommunicationComponent
             : null;
         if (alternateChannelId) {
           contact.dmChannelId = alternateChannelId;
-          contact.dmChannelIds = [alternateChannelId];
+          contact.dmChannelIds = this.prioritizeDmChannelIds(
+            contact,
+            alternateChannelId,
+          );
           this.channelHistoryLimit.set(
             alternateChannelId,
             this.currentHistoryLimit(channelId),
@@ -5586,6 +5708,40 @@ export class CommunicationComponent
     this.clearThreadPendingAttachments();
   }
 
+  private getThreadSourceRoot(threadId: string): Message | null {
+    for (const ch of this.channels) {
+      const found = this.findMsgInTree(
+        this.channelMessages[ch.id] || [],
+        threadId,
+      );
+      if (found) {
+        return found;
+      }
+    }
+    for (const dm of this.dmContacts) {
+      const found = this.findMsgInTree(
+        this.dmMessages[dm.id] || [],
+        threadId,
+      );
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  private refreshSelectedThreadFromSource(threadId: string): Message | null {
+    const sourceRoot = this.getThreadSourceRoot(threadId);
+    if (sourceRoot) {
+      this.selectedThreadMsg = {
+        ...sourceRoot,
+        replies: [...(sourceRoot.replies || [])],
+      };
+      return sourceRoot;
+    }
+    return null;
+  }
+
   setThreadReplyTarget(payload: { reply: Message; event?: Event }): void {
     payload.event?.stopPropagation();
     this.activeThreadReplyToId = payload.reply.id;
@@ -5635,29 +5791,38 @@ export class CommunicationComponent
       replyToId = replyTarget.backendId ?? rootMsg.backendId;
     const outboundContent =
       text || this.attachmentsPlaceholderText(this.threadPendingAttachments);
+    const sourceRootMsg =
+      (rootMsg ? this.getThreadSourceRoot(rootMsg.id) : null) || rootMsg;
 
-    if (!channelId || !rootMsg.backendId) {
+    if (!channelId || !sourceRootMsg?.backendId) {
       const opt = this.makeLocalMsg(
         outboundContent,
         this.threadPendingAttachments,
       );
       opt.replyToMessageId = replyToId;
       opt.threadRootMessageId = threadRootId;
-      if (replyingToNestedMessage) replyTarget.replies.push(opt);
-      else rootMsg.replies.push(opt);
+      const fallbackReplyTarget = this.activeThreadReplyToId
+        ? (this.findMsgInTree(
+            sourceRootMsg?.replies || [],
+            this.activeThreadReplyToId,
+          ) ?? sourceRootMsg)
+        : sourceRootMsg;
+      if (replyingToNestedMessage && fallbackReplyTarget) {
+        fallbackReplyTarget.replies.push(opt);
+      } else {
+        sourceRootMsg.replies.push(opt);
+      }
       this.threadReplyDraft = '';
       this.threadMentionResults = [];
       this.threadShowMentionMenu = false;
       this.activeThreadReplyToId = null;
       this.clearThreadPendingAttachments();
-      this.selectedThreadMsg = {
-        ...rootMsg,
-        replies: [...rootMsg.replies],
-      };
+      this.refreshSelectedThreadFromSource(sourceRootMsg.id);
       this.scrollThread = true;
       this.cdr.detectChanges();
       return;
     }
+    const stableRootMsg = sourceRootMsg;
 
     this.sendingReply = true;
     const optimistic = this.makeLocalMsg(
@@ -5675,8 +5840,14 @@ export class CommunicationComponent
       replyToMessageId: replyToId,
       threadRootMessageId: threadRootId,
     };
-    if (replyingToNestedMessage) replyTarget.replies.push(optimistic);
-    else rootMsg.replies.push(optimistic);
+    const sourceReplyTarget = this.activeThreadReplyToId
+      ? (this.findMsgInTree(
+          stableRootMsg.replies,
+          this.activeThreadReplyToId,
+        ) ?? stableRootMsg)
+      : stableRootMsg;
+    if (replyingToNestedMessage) sourceReplyTarget.replies.push(optimistic);
+    else stableRootMsg.replies.push(optimistic);
     const capturedFiles = [...this.threadPendingFiles];
     const capturedAttachments = this.threadPendingAttachments.map((item) => ({
       ...item,
@@ -5687,10 +5858,7 @@ export class CommunicationComponent
     this.activeThreadReplyToId = null;
     this.threadPendingFiles = [];
     this.threadPendingAttachments = [];
-    this.selectedThreadMsg = {
-      ...rootMsg,
-      replies: [...rootMsg.replies],
-    };
+    this.refreshSelectedThreadFromSource(stableRootMsg.id);
     this.scrollThread = true;
     this.cdr.detectChanges();
 
@@ -5711,10 +5879,7 @@ export class CommunicationComponent
           optimistic.retryMeta = undefined;
           this.sendingReply = false;
           this.syncActiveConversationState();
-          this.selectedThreadMsg = {
-            ...rootMsg,
-            replies: [...rootMsg.replies],
-          };
+          this.refreshSelectedThreadFromSource(stableRootMsg.id);
           if (capturedFiles.length && capturedAttachments.length) {
             const attachmentChannel: Channel = {
               id: `thread-${channelId}`,
@@ -5734,10 +5899,7 @@ export class CommunicationComponent
         error: () => {
           optimistic.deliveryState = 'FAILED';
           this.sendingReply = false;
-          this.selectedThreadMsg = {
-            ...rootMsg,
-            replies: [...rootMsg.replies],
-          };
+          this.refreshSelectedThreadFromSource(stableRootMsg.id);
           this.cdr.detectChanges();
         },
       });
