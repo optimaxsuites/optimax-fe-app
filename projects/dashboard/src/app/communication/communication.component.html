@@ -1162,6 +1162,7 @@
             [readUserCardsForMessage]="getReadUserCards.bind(this)"
             [mentionCandidates]="getMentionCandidates()"
             [resolveMentionProfileCard]="resolveMentionProfileCard"
+            [reactionOptions]="chatReactionOptions"
             (retryMessage)="retryFailedMessage($event)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"

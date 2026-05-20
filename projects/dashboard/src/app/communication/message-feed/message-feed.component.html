@@ -456,6 +456,17 @@
               </svg>
               {{ msg.likeCount || '' }}
             </button>
+            <div class="flex items-center gap-1 ml-1">
+              <button
+                type="button"
+                *ngFor="let reaction of reactionOptions"
+                (click)="likeToggled.emit({ msg, event: $event, reactionCode: reaction.code })"
+                class="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-[14px]"
+                [title]="reaction.label"
+              >
+                {{ reaction.emoji }}
+              </button>
+            </div>
 
             <!-- Pin -->
             <button

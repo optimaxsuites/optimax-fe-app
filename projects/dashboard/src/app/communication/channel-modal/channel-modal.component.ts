@@ -39,8 +39,9 @@ export class ChannelModalComponent {
   getEmpName(e: EmployeeProfile): string {
     return (
       `${e.firstName || ''} ${e.lastName || ''}`.trim() ||
+      e.fullname ||
       e.user?.fullname ||
-      `Employee ${e.id}`
+      `User ${e.id}`
     );
   }
 

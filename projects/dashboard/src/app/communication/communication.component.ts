@@ -16,6 +16,7 @@ import {
   CollabMember,
   CollaborationService,
   EmployeeProfile,
+  UserPrimaryInfo,
   AiRewriteResponse,
   AiSubjectResponse,
   AiSummaryResponse,
@@ -113,6 +114,7 @@ export interface DmContact {
   id: string;
   employeeId: number;
   userId: number;
+  username?: string;
   shortName: string;
   fullName: string;
   initials: string;
@@ -163,6 +165,14 @@ interface ChatArrivalToast {
   tone: 'dm' | 'channel';
   channelId?: string;
   dmId?: string;
+  messageBackendId?: number;
+  threadRootMessageBackendId?: number;
+}
+
+interface ChatReactionOption {
+  code: string;
+  emoji: string;
+  label: string;
 }
 
 interface HoverPerson {
@@ -535,6 +545,13 @@ export class CommunicationComponent
     { value: 'crystal', label: 'Crystal bell' },
     { value: 'pulse', label: 'Pulse' },
   ];
+  readonly chatReactionOptions: ChatReactionOption[] = [
+    { code: 'LIKE', emoji: '👍', label: 'Like' },
+    { code: 'LOVE', emoji: '❤️', label: 'Love' },
+    { code: 'LAUGH', emoji: '😂', label: 'Laugh' },
+    { code: 'CELEBRATE', emoji: '🎉', label: 'Celebrate' },
+    { code: 'FIRE', emoji: '🔥', label: 'Fire' },
+  ];
 
   presenceMap: Record<number, string> = {};
   private presenceUpdatedAtMap: Record<number, string> = {};
@@ -583,9 +600,12 @@ export class CommunicationComponent
   private channelSnapshotLastErrorMessage = new Map<number, string>();
   private readonly SNAPSHOT_POLL_MAX_FAILURES = 6;
   private attachmentPreviewFailed = new Set<string>();
+  private messageAttachmentHydrationInFlight = new Set<number>();
+  private hydratedMessageAttachmentIds = new Set<number>();
   private channelHistoryLimit = new Map<number, number>();
   private channelHistoryExhausted = new Set<number>();
   private historyLoadInFlight = new Set<number>();
+  private notificationAudioContext: AudioContext | null = null;
   private loadingOlderHistory = false;
   private historyPagingArmed = false;
   private pendingForcedChannelsRefresh = false;
@@ -737,6 +757,31 @@ export class CommunicationComponent
     this.headerStateService.pushNotification(payload);
   }
 
+  private pushChatMessagePreview(payload: {
+    title: string;
+    body: string;
+    avatarUrl?: string;
+    contextLabel?: string;
+    channelBackendId?: number;
+    dmUserId?: number;
+    messageBackendId?: number;
+    threadRootMessageBackendId?: number;
+  }): void {
+    this.headerStateService.pushMessagePreview({
+      title: payload.title,
+      body: payload.body,
+      createdAt: Date.now(),
+      route: `/admin/dashboard/communications/${this.me.userId}`,
+      avatarUrl: payload.avatarUrl,
+      contextLabel: payload.contextLabel,
+      workspaceMode: 'chat',
+      channelBackendId: payload.channelBackendId,
+      dmUserId: payload.dmUserId,
+      messageBackendId: payload.messageBackendId,
+      threadRootMessageBackendId: payload.threadRootMessageBackendId,
+    });
+  }
+
   private pushChatArrivalToast(payload: {
     title: string;
     body: string;
@@ -744,6 +789,8 @@ export class CommunicationComponent
     tone: 'dm' | 'channel';
     channelId?: string;
     dmId?: string;
+    messageBackendId?: number;
+    threadRootMessageBackendId?: number;
   }): void {
     const toastId = Date.now() + Math.floor(Math.random() * 1000);
     const initials = (payload.title || 'M')
@@ -761,6 +808,8 @@ export class CommunicationComponent
       tone: payload.tone,
       channelId: payload.channelId,
       dmId: payload.dmId,
+      messageBackendId: payload.messageBackendId,
+      threadRootMessageBackendId: payload.threadRootMessageBackendId,
     };
     this.chatArrivalToasts = [toast, ...this.chatArrivalToasts].slice(0, 3);
     const timer = setTimeout(() => this.dismissChatArrivalToast(toastId), 4000);
@@ -780,6 +829,8 @@ export class CommunicationComponent
 
   openChatArrivalToast(toast: ChatArrivalToast): void {
     this.dismissChatArrivalToast(toast.id);
+    this.pendingNotificationMessageBackendId =
+      Number(toast.messageBackendId || toast.threadRootMessageBackendId || 0) || null;
     this.setWorkspaceMode('chat');
     if (toast.dmId) {
       this.selectDm(toast.dmId, true);
@@ -1767,12 +1818,12 @@ export class CommunicationComponent
 
   feedMentionLabel(employee: EmployeeProfile): string {
     const fullName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
-    return fullName || employee.user?.fullname || employee.user?.username || `Employee ${employee.id}`;
+    return fullName || employee.fullname || employee.user?.fullname || employee.user?.username || `User ${employee.id}`;
   }
 
   chatMentionLabel(option: ComposerMentionOption): string {
     const fullName = `${option.firstName || ''} ${option.lastName || ''}`.trim();
-    return fullName || option.user?.fullname || option.user?.username || `Employee ${option.id}`;
+    return fullName || option.fullname || option.user?.fullname || option.user?.username || `User ${option.id}`;
   }
 
   private buildFeedCommentTree(comments: CollabFeedComment[]): FeedCommentNode[] {
@@ -1948,7 +1999,7 @@ export class CommunicationComponent
       contextLabel: 'Enterprise feed',
       workspaceMode: 'feed',
     });
-    this.playNotificationSound();
+    this.playNotificationSound(this.shouldUseUrgentNotificationSound());
   }
 
   private restoreSeenFeedNotificationIds(): void {
@@ -2731,25 +2782,57 @@ export class CommunicationComponent
           if (!isOwnMessage) {
             this.loadChannels(true, true);
             const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatMessagePreview({
+              title: incoming.senderName || ch.name,
+              body: incoming.content || `New message in ${ch.name}`,
+              avatarUrl: incoming.avatarUrl,
+              contextLabel: ch.name,
+              channelBackendId: ch.backendId,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            });
+            this.pushWorkspaceNotification({
+              title: incoming.senderName || ch.name,
+              body: incoming.content || `New message in ${ch.name}`,
+              category: 'chat',
+              route: `/admin/dashboard/communications/${this.me.userId}`,
+              avatarUrl: incoming.avatarUrl,
+              contextLabel: ch.name,
+              workspaceMode: 'chat',
+              channelBackendId: ch.backendId,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            });
             this.pushChatArrivalToast({
               title: incoming.senderName || ch.name,
               body: incoming.content || `New message in ${ch.name}`,
               avatarUrl: incoming.avatarUrl,
               tone: 'channel',
               channelId: ch.id,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
             });
             this.showBrowserNotification(
               incoming.senderName || ch.name,
               incoming.content || `New message in ${ch.name}`,
-              { tag: `channel-${ch.id}`, icon: incoming.avatarUrl },
+              {
+                tag: `channel-${ch.id}`,
+                icon: incoming.avatarUrl,
+                target: {
+                  workspaceMode: 'chat',
+                  channelBackendId: ch.backendId,
+                  messageBackendId: incoming.messageBackendId,
+                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                },
+              },
             );
           }
 
-          if (ch.id !== this.activeChannelId) {
+          if (!this.isViewingChannel(ch.id)) {
             if (!isOwnMessage) {
               ch.unreadCount = (ch.unreadCount || 0) + 1;
               ch.hasUnread = true;
-              this.playNotificationSound();
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -2806,24 +2889,56 @@ export class CommunicationComponent
           if (!isOwnMessage) {
             this.loadChannels(true, true);
             const incoming = this.parseIncomingNotification(frame.body);
+            this.pushChatMessagePreview({
+              title: incoming.senderName || contact.fullName,
+              body: incoming.content || `New direct message from ${contact.fullName}`,
+              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+              contextLabel: 'Direct message',
+              dmUserId: contact.userId,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            });
+            this.pushWorkspaceNotification({
+              title: incoming.senderName || contact.fullName,
+              body: incoming.content || `New direct message from ${contact.fullName}`,
+              category: 'chat',
+              route: `/admin/dashboard/communications/${this.me.userId}`,
+              avatarUrl: incoming.avatarUrl || contact.avatarUrl,
+              contextLabel: 'Direct message',
+              workspaceMode: 'chat',
+              dmUserId: contact.userId,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+            });
             this.pushChatArrivalToast({
               title: incoming.senderName || contact.fullName,
               body: incoming.content || `New direct message from ${contact.fullName}`,
               avatarUrl: incoming.avatarUrl || contact.avatarUrl,
               tone: 'dm',
               dmId: contact.id,
+              messageBackendId: incoming.messageBackendId,
+              threadRootMessageBackendId: incoming.threadRootMessageBackendId,
             });
             this.showBrowserNotification(
               incoming.senderName || contact.fullName,
               incoming.content || `New direct message from ${contact.fullName}`,
-              { tag: `dm-${contact.id}`, icon: incoming.avatarUrl || contact.avatarUrl },
+              {
+                tag: `dm-${contact.id}`,
+                icon: incoming.avatarUrl || contact.avatarUrl,
+                target: {
+                  workspaceMode: 'chat',
+                  dmUserId: contact.userId,
+                  messageBackendId: incoming.messageBackendId,
+                  threadRootMessageBackendId: incoming.threadRootMessageBackendId,
+                },
+              },
             );
           }
-          if (contact.id !== this.activeDmId) {
+          if (!this.isViewingDm(contact.id)) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
-              this.playNotificationSound();
+              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -2987,7 +3102,7 @@ export class CommunicationComponent
             } else {
               parent.replies.push(newMsg);
               if (Number(m.senderUserId) !== Number(this.me.userId))
-                this.playNotificationSound();
+                this.playNotificationSound(this.shouldUseUrgentNotificationSound());
             }
           }
           continue;
@@ -3012,7 +3127,7 @@ export class CommunicationComponent
       } else {
         filtered.push(newMsg);
         if (Number(m.senderUserId) !== Number(this.me.userId))
-          this.playNotificationSound();
+          this.playNotificationSound(this.shouldUseUrgentNotificationSound());
       }
     }
 
@@ -3049,6 +3164,7 @@ export class CommunicationComponent
       this.channelMessages[ch.id] = [
         ...this.applyServerMessages(existing, serverMessages),
       ];
+      this.hydrateMessageAttachments(this.channelMessages[ch.id]);
       this.buildReadStateMap(serverMessages, snap.readStates || []);
       this.applyReadStateToMessages(this.channelMessages[ch.id]);
 
@@ -3116,12 +3232,13 @@ export class CommunicationComponent
       this.dmMessages[contact.id] = [
         ...this.applyServerMessages(existing, serverMessages),
       ];
+      this.hydrateMessageAttachments(this.dmMessages[contact.id]);
       this.updateDmConversationMeta(contact, this.dmMessages[contact.id]);
       this.buildReadStateMap(serverMessages, snap.readStates || []);
       this.applyReadStateToMessages(this.dmMessages[contact.id]);
       if (serverMessages.length) {
         this.lastMessageBackendId = serverMessages[serverMessages.length - 1].id;
-        if (contact.id === this.activeDmId && this.lastMessageBackendId) {
+        if (this.isViewingDm(contact.id) && this.lastMessageBackendId) {
           this.collabService
             .markRead(channelId, this.lastMessageBackendId)
             .subscribe({ error: () => {} });
@@ -3211,45 +3328,35 @@ export class CommunicationComponent
     this.me.userId = userId;
     this.applySessionUserFallback(userId);
     this.restoreViewedFeedPostIds();
-    this.collabService.getEmployeeByUserId(userId).subscribe({
-      next: (emp) => {
-        const first = emp.firstName || '',
-          last = emp.lastName || '';
-        const fullName =
-          `${first} ${last}`.trim() || emp.user?.fullname || 'User';
+    this.collabService.getUserPrimaryInfoByUserId(userId).subscribe({
+      next: (profile) => {
+        const userRecord = this.mapUserPrimaryInfoToEmployee(profile);
+        const fullName = this.getEmpName(userRecord) || 'User';
+        const shortName =
+          userRecord.lastName && userRecord.firstName
+            ? `${userRecord.firstName} ${userRecord.lastName[0]}.`
+            : userRecord.firstName || fullName;
+        const avatarUrl = this.getEmpImageUrl(userRecord) || '';
         this.me = {
           name: fullName,
-          shortName: last ? `${first} ${last[0]}.` : first || 'User',
+          shortName,
           initials: initialsFrom(fullName),
           avatarColor: '#2e6276',
           userId,
-          avatarUrl: '',
+          avatarUrl,
         };
         this.headerStateService.setProfile({
           name: fullName,
-          username: emp.user?.username || emp.user?.fullname || fullName,
-          accountId: String(emp.user?.id || userId),
+          username: userRecord.user?.username || userRecord.username || fullName,
+          accountId: String(this.employeeUserId(userRecord) || userId),
           initials: initialsFrom(fullName),
-          imageUrl: '',
+          imageUrl: avatarUrl,
         });
         this.userDirectory[userId] = fullName;
-        if (emp.employeeMedia?.mediaNo) {
-          this.collabService
-            .fetchEmployeeImageBlob(emp.employeeMedia.mediaNo)
-            .then((url) => {
-              this.me = { ...this.me, avatarUrl: url };
-              this.userAvatarCache[userId] = url;
-              this.headerStateService.setProfile({
-                name: fullName,
-                username: emp.user?.username || emp.user?.fullname || fullName,
-                accountId: String(emp.user?.id || userId),
-                initials: initialsFrom(fullName),
-                imageUrl: url,
-              });
-              this.cdr.detectChanges();
-            })
-            .catch(() => {});
+        if (avatarUrl) {
+          this.userAvatarCache[userId] = avatarUrl;
         }
+        this.dmContacts = this.stripSelfFromDmContacts(this.dmContacts);
         this.cdr.detectChanges();
         if (!this.chatRealtimeStarted) {
           this.connectWebSocket();
@@ -3313,13 +3420,133 @@ export class CommunicationComponent
 
   // ── Employees ─────────────────────────────────────────
 
+  private mapUserPrimaryInfoToEmployee(profile: UserPrimaryInfo): EmployeeProfile {
+    const normalizedUserId = Number(
+      profile?.userId || profile?.user?.userId || profile?.user?.id || profile?.id || 0,
+    );
+    const normalizedFullName =
+      (profile?.fullname || profile?.user?.fullname || '').trim();
+    const [firstName = '', ...lastParts] = normalizedFullName.split(/\s+/).filter(Boolean);
+    const lastName = lastParts.join(' ');
+    return {
+      id: normalizedUserId || Number(profile?.id || 0),
+      firstName,
+      lastName,
+      fullname: normalizedFullName,
+      username: profile?.username || profile?.user?.username || '',
+      email: profile?.email || profile?.user?.email || '',
+      profileImage: profile?.profileImage || '',
+      userId: normalizedUserId || undefined,
+      employeeStatus: 'ACTIVE',
+      employeeMedia: null,
+      user: normalizedUserId
+        ? {
+            id: normalizedUserId,
+            userId: normalizedUserId,
+            fullname: normalizedFullName,
+            email: profile?.email || profile?.user?.email || '',
+            username: profile?.username || profile?.user?.username || '',
+          }
+        : undefined,
+    };
+  }
+
+  private isOwnUserId(userId: number | null | undefined): boolean {
+    const normalized = Number(userId || 0);
+    if (!normalized) return false;
+    const sessionUserId = Number(
+      sessionStorage.getItem('userid') ||
+      sessionStorage.getItem('userId') ||
+      this.me.userId ||
+      0,
+    );
+    return normalized === sessionUserId;
+  }
+
+  private normalizeIdentityText(value: string | null | undefined): string {
+    return String(value || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private isOwnDmContact(contact: DmContact | null | undefined): boolean {
+    if (!contact) return false;
+    if (this.isOwnUserId(contact.userId) || this.isOwnUserId(contact.employeeId)) {
+      return true;
+    }
+
+    const sessionUser = (() => {
+      try {
+        const raw =
+          sessionStorage.getItem('userRegData') ||
+          localStorage.getItem('userRegData');
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    })();
+
+    const myNames = new Set(
+      [
+        this.me?.name,
+        this.me?.shortName,
+        sessionStorage.getItem('fullname'),
+        localStorage.getItem('fullname'),
+        sessionUser?.fullname,
+        sessionUser?.name,
+      ]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+    const myEmails = new Set(
+      [sessionUser?.email, sessionStorage.getItem('email'), localStorage.getItem('email')]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+    const myUsernames = new Set(
+      [
+        sessionUser?.username,
+        sessionStorage.getItem('username'),
+        localStorage.getItem('username'),
+      ]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+
+    const contactNames = [
+      contact.fullName,
+      contact.shortName,
+      `${contact.fullName}`.replace(/\s+/g, ' ').trim(),
+    ]
+      .map((value) => this.normalizeIdentityText(value))
+      .filter(Boolean);
+    if (contactNames.some((value) => myNames.has(value))) {
+      return true;
+    }
+
+    const contactEmail = this.normalizeIdentityText(contact.email);
+    if (contactEmail && myEmails.has(contactEmail)) {
+      return true;
+    }
+
+    const contactUsername = this.normalizeIdentityText(contact.username);
+    return Boolean(contactUsername && myUsernames.has(contactUsername));
+  }
+
+  private stripSelfFromDmContacts(contacts: DmContact[]): DmContact[] {
+    return (contacts || []).filter((contact) => !this.isOwnDmContact(contact));
+  }
+
   private loadEmployees(): void {
     this.employeesLoading = true;
-    this.collabService.getAllEmployees().subscribe({
+    this.collabService.getAllUserPrimaryInformation().subscribe({
       next: (res) => {
-        const list: EmployeeProfile[] = Array.isArray(res)
+        const profiles: UserPrimaryInfo[] = Array.isArray(res)
           ? res
-          : (res?.content ?? res?.data ?? []);
+          : (res as any)?.content ?? (res as any)?.data ?? [];
+        const list: EmployeeProfile[] = profiles
+          .map((profile) => this.mapUserPrimaryInfoToEmployee(profile))
+          .filter((profile) => this.employeeUserId(profile) != null);
         const existingContacts = new Map(
           this.dmContacts.map((contact) => [Number(contact.userId), contact]),
         );
@@ -3328,25 +3555,27 @@ export class CommunicationComponent
           .filter(
             (e) =>
               this.employeeUserId(e) != null &&
-              Number(this.employeeUserId(e)) !== Number(this.me.userId),
+              !this.isOwnUserId(this.employeeUserId(e)),
           )
           .map((e) => {
             const first = e.firstName || '',
               last = e.lastName || '';
             const fullName =
               `${first} ${last}`.trim() ||
+              e.fullname ||
               e.user?.fullname ||
-              `Employee ${e.id}`;
+              `User ${e.id}`;
             const employeeUserId = Number(this.employeeUserId(e));
             const contact: DmContact = {
               id: `emp-${e.id}`,
               employeeId: e.id,
               userId: employeeUserId,
+              username: e.user?.username || e.username || '',
               shortName: last ? `${first} ${last[0]}.` : first || fullName,
               fullName,
               initials: initialsFrom(fullName),
               avatarColor: _colorFor(e.id),
-              email: e.user?.email || '',
+              email: e.user?.email || e.email || '',
               jobTitle: e.jobTitle,
               department: e.department?.name,
               online: false,
@@ -3358,31 +3587,17 @@ export class CommunicationComponent
               contact.hasUnread = existing.hasUnread;
               contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
             }
-            if (e.user?.email)
-              this.userEmailCache[contact.userId] = e.user.email;
-            if (e.employeeMedia?.mediaNo) {
-              const mediaNo = e.employeeMedia.mediaNo;
-              if (this.imageCache[mediaNo]) {
-                contact.avatarUrl = this.imageCache[mediaNo];
-                this.userAvatarCache[contact.userId] = this.imageCache[mediaNo];
-              } else {
-                this.collabService
-                  .fetchEmployeeImageBlob(mediaNo)
-                  .then((url) => {
-                    this.imageCache[mediaNo] = url;
-                    this.userAvatarCache[contact.userId] = url;
-                    const c = this.dmContacts.find((d) => d.id === contact.id);
-                    if (c) {
-                      c.avatarUrl = url;
-                      this.cdr.detectChanges();
-                    }
-                    this.refreshAvatarInMessages(contact.userId, url);
-                  })
-                  .catch(() => {});
-              }
+            if (contact.email) {
+              this.userEmailCache[contact.userId] = contact.email;
+            }
+            const avatarUrl = this.getEmpImageUrl(e);
+            if (avatarUrl) {
+              contact.avatarUrl = avatarUrl;
+              this.userAvatarCache[contact.userId] = avatarUrl;
             }
             return contact;
           });
+        this.dmContacts = this.stripSelfFromDmContacts(this.dmContacts);
         if (this.cachedCollabChannels.length) {
           this.mapDirectMessageChannels(this.cachedCollabChannels);
         } else {
@@ -3538,9 +3753,7 @@ export class CommunicationComponent
       })
       .map((c) => {
         const backendId = Number(c.channelId ?? c.id);
-        const isActiveChannel =
-          this.activeView === 'channel' &&
-          String(backendId) === String(this.activeChannelId);
+        const isActiveChannel = this.isViewingChannel(String(backendId));
         const serverUnreadCount = Number(c.unreadCount ?? 0);
         const preservedUnreadCount = existingChannelUnread.get(backendId) || 0;
         const unreadCount = isActiveChannel
@@ -4082,21 +4295,11 @@ export class CommunicationComponent
   private loadMemberAvatars(userIds: number[]): void {
     const missing = userIds.filter((uid) => !this.userAvatarCache[uid]);
     for (const uid of missing) {
-      const emp = this.allEmployees.find((e) => Number(e.user?.userId) === uid);
-      if (emp?.employeeMedia?.mediaNo) {
-        const mediaNo = emp.employeeMedia.mediaNo;
-        if (this.imageCache[mediaNo]) {
-          this.userAvatarCache[uid] = this.imageCache[mediaNo];
-        } else {
-          this.collabService
-            .fetchEmployeeImageBlob(mediaNo)
-            .then((url) => {
-              this.imageCache[mediaNo] = url;
-              this.userAvatarCache[uid] = url;
-              this.cdr.detectChanges();
-            })
-            .catch(() => {});
-        }
+      const emp = this.allEmployees.find((e) => this.employeeUserId(e) === uid);
+      const avatarUrl = emp ? this.getEmpImageUrl(emp) : '';
+      if (avatarUrl) {
+        this.userAvatarCache[uid] = avatarUrl;
+        this.cdr.detectChanges();
       }
     }
   }
@@ -4110,15 +4313,15 @@ export class CommunicationComponent
     (this.presenceMap[userId] || 'OFFLINE') === 'ONLINE';
   getEmpName = (e: EmployeeProfile): string =>
     `${e.firstName || ''} ${e.lastName || ''}`.trim() ||
+    e.fullname ||
     e.user?.fullname ||
-    `Employee ${e.id}`;
+    `User ${e.id}`;
   getEmpInitials = (e: EmployeeProfile): string =>
     initialsFrom(this.getEmpName(e));
   getEmpAvatarColor = (e: EmployeeProfile): string => _colorFor(e.id);
   getEmpImageUrl = (e: EmployeeProfile): string | undefined =>
-    e.employeeMedia?.mediaNo
-      ? this.imageCache[e.employeeMedia.mediaNo]
-      : undefined;
+    e.profileImage ||
+    (e.employeeMedia?.mediaNo ? this.imageCache[e.employeeMedia.mediaNo] : undefined);
 
   addMemberToActiveChannel(userId: number): void {
     const ch = this.activeChannel;
@@ -4265,6 +4468,17 @@ export class CommunicationComponent
       this.showChannelDetails = false;
       this.showPinnedPanel = false;
       this.showSearch = false;
+      const activeChannel = this.channels.find((channel) => channel.id === id);
+      if (activeChannel?.unreadCount) {
+        activeChannel.hasUnread = false;
+        activeChannel.unreadCount = undefined;
+        this.syncHeaderState();
+        if (this.lastMessageBackendId) {
+          this.collabService
+            .markRead(activeChannel.backendId, this.lastMessageBackendId)
+            .subscribe({ error: () => {} });
+        }
+      }
       this.scrollToLatestMessageSoon();
       this.cdr.detectChanges();
       return;
@@ -4284,19 +4498,24 @@ export class CommunicationComponent
     this.showSearch = false;
     const ch = this.channels.find((c) => c.id === id);
     if (ch) {
-      ch.hasUnread = false;
-      ch.unreadCount = undefined;
-      this.syncHeaderState();
       this.presenceChannelId = ch.backendId;
-    if (
-      this.channelMessages[id] !== undefined &&
-      !this.hasRecoverableSnapshotFailure(ch.backendId)
-    ) {
-      this.messagesLoading = false;
-      this.conversationAccessMessage = '';
-      this.subscribeToChannel(ch.backendId);
-      this.collabService
-        .setPresenceOnline(ch.backendId)
+      if (
+        this.channelMessages[id] !== undefined &&
+        !this.hasRecoverableSnapshotFailure(ch.backendId)
+      ) {
+        this.messagesLoading = false;
+        this.conversationAccessMessage = '';
+        this.subscribeToChannel(ch.backendId);
+        if (this.isViewingChannel(ch.id) && this.lastMessageBackendId) {
+          ch.hasUnread = false;
+          ch.unreadCount = undefined;
+          this.syncHeaderState();
+          this.collabService
+            .markRead(ch.backendId, this.lastMessageBackendId)
+            .subscribe({ error: () => {} });
+        }
+        this.collabService
+          .setPresenceOnline(ch.backendId)
           .subscribe({ error: () => {} });
         this.startConversationSync();
         this.scrollToLatestMessageSoon();
@@ -4321,6 +4540,17 @@ export class CommunicationComponent
       this.showChannelDetails = false;
       this.showPinnedPanel = false;
       this.showSearch = false;
+      const activeContact = this.dmContacts.find((contact) => contact.id === contactId);
+      if (activeContact?.unreadCount) {
+        activeContact.hasUnread = false;
+        activeContact.unreadCount = undefined;
+        this.syncHeaderState();
+        if (activeContact.dmChannelId && this.lastMessageBackendId) {
+          this.collabService
+            .markRead(activeContact.dmChannelId, this.lastMessageBackendId)
+            .subscribe({ error: () => {} });
+        }
+      }
       this.scrollToLatestMessageSoon();
       this.cdr.detectChanges();
       return;
@@ -4340,9 +4570,6 @@ export class CommunicationComponent
     this.preserveFeedScrollOffset = null;
     const contact = this.dmContacts.find((d) => d.id === contactId);
     if (!contact) return;
-    contact.hasUnread = false;
-    contact.unreadCount = undefined;
-    this.syncHeaderState();
     if (
       contact.dmChannelId &&
       this.dmMessages[contact.id] !== undefined &&
@@ -4351,7 +4578,10 @@ export class CommunicationComponent
       this.messagesLoading = false;
       this.conversationAccessMessage = '';
       this.subscribeToDmContactChannels(contact);
-      if (this.lastMessageBackendId) {
+      if (this.isViewingDm(contact.id) && this.lastMessageBackendId) {
+        contact.hasUnread = false;
+        contact.unreadCount = undefined;
+        this.syncHeaderState();
         this.collabService
           .markRead(contact.dmChannelId, this.lastMessageBackendId)
           .subscribe({ error: () => {} });
@@ -4614,15 +4844,16 @@ export class CommunicationComponent
             renderedMessages,
             existingMessages,
           );
+          this.hydrateMessageAttachments(this.dmMessages[contact.id]);
           this.updateDmConversationMeta(contact, this.dmMessages[contact.id]);
           this.buildReadStateMap(snap.messages, snap.readStates || []);
           this.lastMessageBackendId = snap.messages[snap.messages.length - 1].id;
-          if (this.lastMessageBackendId) {
+          if (this.lastMessageBackendId && this.isViewingDm(contact.id)) {
             this.collabService
               .markRead(channelId, this.lastMessageBackendId)
               .subscribe({ error: () => {} });
           }
-          if (contact.id === this.activeDmId && this.activeView === 'dm') {
+          if (this.isViewingDm(contact.id)) {
             contact.hasUnread = false;
             contact.unreadCount = undefined;
             this.syncHeaderState();
@@ -4684,10 +4915,11 @@ export class CommunicationComponent
             renderedMessages,
             existingMessages,
           );
+          this.hydrateMessageAttachments(this.channelMessages[channel.id]);
           this.lastMessageBackendId = snap.messages[snap.messages.length - 1].id;
           this.buildReadStateMap(snap.messages, snap.readStates || []);
           this.applyReadStateToMessages(this.channelMessages[channel.id]);
-          if (this.lastMessageBackendId)
+          if (this.lastMessageBackendId && this.isViewingChannel(channel.id))
             this.collabService
               .markRead(channel.backendId, this.lastMessageBackendId)
               .subscribe({ error: () => {} });
@@ -4696,7 +4928,7 @@ export class CommunicationComponent
             .subscribe({ error: () => {} });
           this.presenceChannelId = channel.backendId;
           this.pollChannelPresence(channel.backendId);
-          if (channel.id === this.activeChannelId && this.activeView === 'channel') {
+          if (this.isViewingChannel(channel.id)) {
             channel.hasUnread = false;
             channel.unreadCount = undefined;
             this.syncHeaderState();
@@ -4736,7 +4968,7 @@ export class CommunicationComponent
     reactions: any[],
     attachments: any[],
   ): Message[] {
-    const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH'];
+    const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH', 'CELEBRATE', 'FIRE'];
     const reactionCount = new Map<string, number>();
     const likedByMe = new Set<number>();
     const likeRxId = new Map<number, number>();
@@ -4827,6 +5059,68 @@ export class CommunicationComponent
     return roots.map((r) => toLocal(r));
   }
 
+  private hydrateMessageAttachments(messages: Message[], attempt = 0): void {
+    const queue: Message[] = [];
+    const collect = (items: Message[]) => {
+      for (const item of items || []) {
+        if (item.backendId && !item.attachments?.length && !item.attachment) {
+          queue.push(item);
+        }
+        if (item.replies?.length) {
+          collect(item.replies);
+        }
+      }
+    };
+    collect(messages);
+
+    for (const message of queue) {
+      const backendId = Number(message.backendId || 0);
+      if (
+        !backendId ||
+        this.hydratedMessageAttachmentIds.has(backendId) ||
+        this.messageAttachmentHydrationInFlight.has(backendId)
+      ) {
+        continue;
+      }
+      this.messageAttachmentHydrationInFlight.add(backendId);
+      this.collabService.getAttachmentsForMessage(backendId).subscribe({
+        next: (attachments) => {
+          this.messageAttachmentHydrationInFlight.delete(backendId);
+          if (!attachments?.length) {
+            if (attempt < 2) {
+              setTimeout(() => this.hydrateMessageAttachments(messages, attempt + 1), 900);
+            }
+            return;
+          }
+          this.hydratedMessageAttachmentIds.add(backendId);
+          const mappedAttachments = attachments.map((att) => ({
+            name: att.fileName || 'Attachment',
+            size: att.fileSize ? formatFileSize(att.fileSize) : '',
+            type: this.normalizeAttachmentType(
+              att.contentType,
+              att.fileName || att.downloadUrl,
+            ),
+            downloadUrl: att.downloadUrl,
+            previewUrl: this.resolveAttachmentPreviewUrl(att),
+          }));
+          message.attachments = mappedAttachments;
+          message.attachment = mappedAttachments[0];
+          if (this.selectedThreadMsg?.backendId === backendId) {
+            this.selectedThreadMsg = {
+              ...this.selectedThreadMsg,
+              attachments: mappedAttachments,
+              attachment: mappedAttachments[0],
+            };
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.messageAttachmentHydrationInFlight.delete(backendId);
+        },
+      });
+    }
+  }
+
   private mergeRenderedMessagesWithPending(
     rendered: Message[],
     existing: Message[],
@@ -4883,11 +5177,12 @@ export class CommunicationComponent
       reactions,
       attachments,
     );
+    this.hydrateMessageAttachments(this.channelMessages[channel.id]);
 
     this.buildReadStateMap(messages, readStates);
     this.applyReadStateToMessages(this.channelMessages[channel.id]);
 
-    if (this.lastMessageBackendId)
+    if (this.lastMessageBackendId && this.isViewingChannel(channel.id))
       this.collabService
         .markRead(channel.backendId, this.lastMessageBackendId)
         .subscribe({ error: () => {} });
@@ -4896,7 +5191,7 @@ export class CommunicationComponent
       .subscribe({ error: () => {} });
     this.presenceChannelId = channel.backendId;
     this.pollChannelPresence(channel.backendId);
-    if (channel.id === this.activeChannelId && this.activeView === 'channel') {
+    if (this.isViewingChannel(channel.id)) {
       channel.hasUnread = false;
       channel.unreadCount = undefined;
       this.syncHeaderState();
@@ -5152,20 +5447,32 @@ export class CommunicationComponent
     }, 2000);
   }
 
-  playNotificationSound(): void {
+  playNotificationSound(urgent = false): void {
     if (!this.soundEnabled) return;
     try {
-      const AudioCtx =
+      const AudioCtxCtor =
         (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      if (!AudioCtxCtor) return;
+      const ctx = this.notificationAudioContext || new AudioCtxCtor();
+      this.notificationAudioContext = ctx;
+      if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
+        void ctx.resume().catch(() => {});
+      }
       const master = ctx.createGain();
       master.gain.setValueAtTime(0.0001, ctx.currentTime);
-      master.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
-      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.48);
+      const peakGain = urgent ? 0.42 : 0.24;
+      const decayAt = urgent ? 1.05 : 0.68;
+      master.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + 0.02);
+      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + decayAt);
       master.connect(ctx.destination);
       const tones =
-        this.selectedRingtone === 'crystal'
+        urgent
+          ? [
+              { type: 'triangle' as OscillatorType, frequency: 880, start: 0, stop: 0.16 },
+              { type: 'sine' as OscillatorType, frequency: 1174, start: 0.2, stop: 0.38 },
+              { type: 'triangle' as OscillatorType, frequency: 988, start: 0.46, stop: 0.78 },
+            ]
+          : this.selectedRingtone === 'crystal'
           ? [
               { type: 'sine' as OscillatorType, frequency: 1046, start: 0, stop: 0.18 },
               { type: 'triangle' as OscillatorType, frequency: 1318, start: 0.05, stop: 0.32 },
@@ -5192,11 +5499,40 @@ export class CommunicationComponent
         oscillator.connect(master);
         oscillator.start(ctx.currentTime + tone.start);
         oscillator.stop(ctx.currentTime + tone.stop);
-        if (index === tones.length - 1) {
-          oscillator.onended = () => ctx.close();
-        }
       });
     } catch (_) {}
+  }
+
+  private shouldUseUrgentNotificationSound(): boolean {
+    return (
+      typeof document !== 'undefined' &&
+      (document.visibilityState !== 'visible' || !document.hasFocus())
+    );
+  }
+
+  private isChatSurfaceVisible(): boolean {
+    return (
+      this.workspaceMode === 'chat' &&
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible' &&
+      document.hasFocus()
+    );
+  }
+
+  private isViewingChannel(channelId: string): boolean {
+    return (
+      this.isChatSurfaceVisible() &&
+      this.activeView === 'channel' &&
+      this.activeChannelId === channelId
+    );
+  }
+
+  private isViewingDm(contactId: string): boolean {
+    return (
+      this.isChatSurfaceVisible() &&
+      this.activeView === 'dm' &&
+      this.activeDmId === contactId
+    );
   }
 
   private requestBrowserNotificationPermission(): void {
@@ -5209,20 +5545,31 @@ export class CommunicationComponent
   private showBrowserNotification(
     title: string,
     body: string,
-    options: { tag?: string; icon?: string } = {},
+    options: { tag?: string; icon?: string; target?: any } = {},
   ): void {
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
-    if (document.visibilityState === 'visible') return;
+    if (document.visibilityState === 'visible' && document.hasFocus()) return;
     try {
       const notif = new Notification(title, {
         body,
         tag: options.tag,
         icon: options.icon || undefined,
-        silent: true,
+        silent: false,
       });
       notif.onclick = () => {
         window.focus();
+        if (options.target) {
+          sessionStorage.setItem(
+            'optimax_notification_target',
+            JSON.stringify(options.target),
+          );
+          window.dispatchEvent(
+            new CustomEvent('optimax-open-collab-target', {
+              detail: options.target,
+            }),
+          );
+        }
         notif.close();
       };
     } catch (_) {}
@@ -5283,7 +5630,6 @@ export class CommunicationComponent
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
           this.sendingMessage = false;
-          this.playNotificationSound();
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
             this.uploadAttachmentsForMessage(
@@ -5359,7 +5705,6 @@ export class CommunicationComponent
           optimistic.deliveryState = 'DELIVERED';
           optimistic.retryMeta = undefined;
           this.sendingMessage = false;
-          this.playNotificationSound();
           this.syncActiveConversationState();
           if (capturedFiles.length && capturedAttachments.length) {
             const fakeCh: Channel = {
@@ -5907,8 +6252,9 @@ export class CommunicationComponent
 
   // ── Reactions ─────────────────────────────────────────
 
-  toggleLike(payload: { msg: Message; event?: Event }): void {
+  toggleLike(payload: { msg: Message; event?: Event; reactionCode?: string }): void {
     const { msg } = payload;
+    const reactionCode = (payload.reactionCode || 'LIKE').toUpperCase();
     payload.event?.stopPropagation();
     if (this.reactingIds.has(msg.id)) return;
     const wasLiked = msg.liked,
@@ -5922,11 +6268,32 @@ export class CommunicationComponent
     this.reactingIds.add(msg.id);
     const refresh = () => {
       this.reactingIds.delete(msg.id);
-      const ch = this.activeChannel;
-      if (ch?.backendId) {
-        this.getChannelSnapshotWithFallback(ch.backendId).then((snap) => {
-          if (snap) this.refreshReactionCounts(ch, snap.reactions || []);
-        });
+      const source = this.resolveThreadMessageSource(msg);
+      if (source?.type === 'channel' && source.channelBackendId) {
+        const ch = this.channels.find((entry) => entry.backendId === source.channelBackendId);
+        if (ch) {
+          this.getChannelSnapshotWithFallback(ch.backendId).then((snap) => {
+            if (snap) this.refreshReactionCounts(ch, snap.reactions || []);
+          });
+        }
+      } else if (source?.type === 'dm' && source.dmChannelId) {
+        const contact = this.dmContacts.find((entry) => entry.dmChannelId === source.dmChannelId);
+        if (contact) {
+          this.getChannelSnapshotWithFallback(source.dmChannelId).then((snap) => {
+            if (!snap) return;
+            const renderedMessages = this.buildMessageList(
+              snap.messages || [],
+              snap.reactions || [],
+              snap.attachments || [],
+            );
+            this.dmMessages[contact.id] = this.mergeRenderedMessagesWithPending(
+              renderedMessages,
+              this.dmMessages[contact.id] || [],
+            );
+            this.hydrateMessageAttachments(this.dmMessages[contact.id]);
+            this.cdr.detectChanges();
+          });
+        }
       }
     };
     const rollback = () => {
@@ -5945,13 +6312,13 @@ export class CommunicationComponent
         .addReaction({
           messageId: msg.backendId,
           userId: this.me.userId,
-          reactionCode: 'LIKE',
+          reactionCode,
         })
         .subscribe({ next: refresh, error: rollback });
   }
 
   private refreshReactionCounts(channel: Channel, reactions: any[]): void {
-    const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH'];
+    const LIKE_CODES = ['LIKE', 'LOVE', 'THUMBS_UP', 'LAUGH', 'CELEBRATE', 'FIRE'];
     const rc = new Map<string, number>(),
       lbm = new Set<number>(),
       lrm = new Map<number, number>();
@@ -6061,27 +6428,30 @@ export class CommunicationComponent
       }
       const fullName =
         `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
+        employee.fullname ||
         employee.user?.fullname ||
-        `Employee ${employee.id}`;
+        `User ${employee.id}`;
       contact = {
         id: `emp-${employee.id}`,
         employeeId: employee.id,
         userId: Number(employee.user?.userId || employee.user?.id || userId),
+        username: employee.user?.username || employee.username || '',
         shortName: employee.lastName
           ? `${employee.firstName || fullName} ${employee.lastName[0]}.`
           : employee.firstName || fullName,
         fullName,
         initials: initialsFrom(fullName),
         avatarColor: _colorFor(employee.id),
-        avatarUrl: employee.employeeMedia?.mediaNo
-          ? this.imageCache[employee.employeeMedia.mediaNo] || this.userAvatarCache[userId]
-          : this.userAvatarCache[userId],
-        email: employee.user?.email || '',
+        avatarUrl: this.getEmpImageUrl(employee) || this.userAvatarCache[userId],
+        email: employee.user?.email || employee.email || '',
         jobTitle: employee.jobTitle,
         department: employee.department?.name,
         online: this.isUserOnline(userId),
       };
-      this.dmContacts = [contact, ...this.dmContacts.filter((dm) => dm.id !== contact!.id)];
+      this.dmContacts = this.stripSelfFromDmContacts([
+        contact,
+        ...this.dmContacts.filter((dm) => dm.id !== contact!.id),
+      ]);
       this.cdr.detectChanges();
     }
     this.selectDm(contact.id, true);
@@ -7134,7 +7504,7 @@ export class CommunicationComponent
   }
 
   private employeeUserId(employee: EmployeeProfile): number | null {
-    const userId = employee.user?.userId ?? employee.user?.id ?? null;
+    const userId = employee.userId ?? employee.user?.userId ?? employee.user?.id ?? null;
     return userId == null ? null : Number(userId);
   }
 
@@ -7240,12 +7610,10 @@ export class CommunicationComponent
     return {
       userId,
       name,
-      email: employee?.user?.email || this.userEmailCache[userId] || '',
+      email: employee?.user?.email || employee?.email || this.userEmailCache[userId] || '',
       jobTitle: employee?.jobTitle || '',
       department: employee?.department?.name || '',
-      avatarUrl: employee?.employeeMedia?.mediaNo
-        ? this.imageCache[employee.employeeMedia.mediaNo] || this.userAvatarCache[userId]
-        : this.userAvatarCache[userId],
+      avatarUrl: (employee ? this.getEmpImageUrl(employee) : undefined) || this.userAvatarCache[userId],
       initials: initialsFrom(name),
       online: this.isUserOnline(userId),
       lastSeenLabel,

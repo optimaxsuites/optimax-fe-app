@@ -36,6 +36,11 @@ export interface ComposerMentionOption {
   id: number;
   firstName?: string;
   lastName?: string;
+  fullname?: string;
+  username?: string;
+  email?: string;
+  profileImage?: string;
+  userId?: number;
   user?: {
     id?: number;
     fullname?: string;
@@ -52,10 +57,29 @@ export interface ComposerMentionOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MessageComposerComponent {
+  readonly emojiChoices = [
+    '😀',
+    '😄',
+    '😂',
+    '😊',
+    '😍',
+    '😎',
+    '🤔',
+    '👏',
+    '👍',
+    '🙌',
+    '🙏',
+    '🔥',
+    '💯',
+    '🎉',
+    '❤️',
+    '🚀',
+  ];
   @ViewChild('composerEl') composerEl!: ElementRef<HTMLTextAreaElement>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   aiOutputExpanded = false;
   editableAiContent = '';
+  emojiMenuOpen = false;
   // ── Inputs ──────────────────────────────────────────
   @Input() draft = '';
   @Input() placeholder = 'Message…';
@@ -124,6 +148,17 @@ export class MessageComposerComponent {
     this.composerTyping.emit();
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }
+
+  toggleEmojiMenu(): void {
+    this.emojiMenuOpen = !this.emojiMenuOpen;
+  }
+
+  appendEmoji(emoji: string): void {
+    const next = `${this.draft || ''}${emoji}`;
+    this.draftChange.emit(next);
+    this.emojiMenuOpen = false;
+    setTimeout(() => this.focusComposer(), 0);
   }
 
   // When AI output changes, sync editable copy
