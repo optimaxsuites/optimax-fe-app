@@ -1,0 +1,170 @@
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+import { AppRoutingModule } from './app-routing-module';
+import { App } from './app';
+import { DialogModule } from '@angular/cdk/dialog';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { RouterModule } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
+import { MatRippleModule } from '@angular/material/core';
+import { CalendarModule } from 'primeng/calendar';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { AngularEditorModule } from '@kolkov/angular-editor';
+
+////primeng
+import { ButtonModule } from 'primeng/button';
+import { EditorModule } from 'primeng/editor';
+import { PasswordModule } from 'primeng/password';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { SidebarModule } from 'primeng/sidebar';
+import { TabViewModule } from 'primeng/tabview';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { PanelModule } from 'primeng/panel';
+import { DividerModule } from 'primeng/divider';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { StepperModule } from 'primeng/stepper';
+import { InputTextModule } from 'primeng/inputtext';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { MessagesModule } from 'primeng/messages';
+import { MessageModule } from 'primeng/message';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { RippleModule } from 'primeng/ripple';
+import { DropdownModule } from 'primeng/dropdown';
+import { TagModule } from 'primeng/tag';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { ButtonComponent } from './ui/shared-component/view/button/button.component';
+import { ProfileCardComponent } from './ui/shared-component/view/profile-card/profile-card.component';
+import { ProfileInfoComponent } from './ui/shared-component/view/profile-info/profile-info.component';
+import { UserInterfaceComponent } from './ui/shared-component/view/user-interface/user-interface.component';
+import { SideModalComponent } from './ui/shared-component/view/side-modal/side-modal.component';
+import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
+import { TableComponent } from './ui/shared-component/view/table/table.component';
+import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
+import { ModalComponent } from './ui/shared-component/view/modal/modal.component';
+
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
+import { ErrorToastInterceptor } from './ui/shared-component/service/error-message/error-toast.interceptor';
+
+import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.component';
+
+
+@NgModule({
+  declarations: [
+    App,
+    TableComponent,
+    ModalComponent,
+    SideModalComponent,
+    SidebarComponent,
+    NavTabComponent,
+  ],
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    AppRoutingModule,
+    CommonModule,
+    TableModule,
+    RouterModule,
+    RippleModule,
+    AngularEditorModule,
+    DialogModule,
+    CalendarModule,
+    ToastModule,
+    FormsModule,
+    ReactiveFormsModule,
+    SidebarModule,
+    TabViewModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    TagModule,
+    DropdownModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    RadioButtonModule,
+    MultiSelectModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    MatExpansionModule,
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatRadioModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatTabsModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatButtonModule,
+    MatDividerModule,
+    MatMenuModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
+    ButtonComponent,
+    ProfileCardComponent,
+    ProfileInfoComponent,
+    UserInterfaceComponent,
+    BackButtonComponent,
+
+    // TableComponent
+  ],
+  exports: [TableComponent],
+  providers: [
+    // provideBrowserGlobalErrorListeners()
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ErrorToastInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS,
+    },
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi()),
+    ConfirmationService,
+    MessageService,
+    DecimalPipe,
+  ],
+  bootstrap: [App],
+})
+export class AppModule {}
