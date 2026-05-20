@@ -1,0 +1,341 @@
+<div class="procurement-request-detail">
+  
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!isLoading && request">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <a routerLink="/commerce/requests" class="text-decoration-none me-3">
+          <i class="bi bi-arrow-left"></i> Back to Requests
+        </a>
+        <h2 class="mt-2 mb-1">{{ request.productName }}</h2>
+        <div class="text-muted">
+          Request ID: {{ request.id }} • Created {{ formatDate(request.createdAt) }}
+        </div>
+      </div>
+      <div class="text-end">
+        <span class="badge fs-6 p-2" [class]="getStatusClass(request.status)">
+          {{ getStatusLabel(request.status) }}
+        </span>
+        <div class="mt-2">
+          <button *ngIf="canEdit()" class="btn btn-sm btn-outline-primary me-2" (click)="editRequest()">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button *ngIf="canCancel()" class="btn btn-sm btn-outline-danger" (click)="openCancelModal()">
+            <i class="bi bi-x-circle"></i> Cancel Request
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <small class="text-muted">Request Progress</small>
+          <small class="text-muted">{{ getProgressPercentage() | number:'1.0-0' }}%</small>
+        </div>
+        <div class="progress" style="height: 8px;">
+          <div class="progress-bar" 
+               role="progressbar" 
+               [style.width]="getProgressPercentage() + '%'" 
+               [attr.aria-valuenow]="getProgressPercentage()" 
+               aria-valuemin="0" 
+               aria-valuemax="100">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="row">
+      
+      <!-- Left Column -->
+      <div class="col-lg-8">
+        
+        <!-- Timeline -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Request Timeline</h5>
+          </div>
+          <div class="card-body">
+            <div class="timeline">
+              <div *ngFor="let event of timelineEvents; let i = index" class="timeline-item">
+                <div class="timeline-marker" [class.completed]="event.completed">
+                  <i *ngIf="event.completed" class="bi bi-check-circle-fill"></i>
+                  <i *ngIf="!event.completed" class="bi bi-circle"></i>
+                </div>
+                <div class="timeline-content">
+                  <h6 class="mb-1">{{ event.label }}</h6>
+                  <p class="text-muted small mb-1">{{ event.description }}</p>
+                  <small class="text-muted" *ngIf="event.date">{{ formatDate(event.date) }}</small>
+                  <small class="text-muted" *ngIf="!event.date">Pending</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quotations Section (if in quoting phase) -->
+        <div class="card mb-4" *ngIf="request.status === 'PENDING' || request.status === 'VENDORS_QUOTING'">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Vendor Quotations</h5>
+            <span class="badge bg-info">{{ quotations.length }} quotations received</span>
+          </div>
+          <div class="card-body">
+            <div *ngIf="isLoadingQuotations" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm"></div>
+            </div>
+            <div *ngFor="let quote of quotations" class="quotation-card mb-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1">{{ quote.vendorName }}</h6>
+                  <div class="mb-2">
+                    <span class="text-warning">★</span> {{ quote.vendorRating }}
+                    <span class="text-muted mx-2">•</span>
+                    <small class="text-muted">Submitted {{ quote.submittedAt | date }}</small>
+                  </div>
+                  <div class="mb-2">
+                    <span class="fw-bold fs-4">{{ formatCurrency(quote.amount, quote.currency) }}</span>
+                    <span class="text-muted ms-2">delivery in {{ quote.deliveryTimeline }}</span>
+                  </div>
+                  <p class="small text-muted mb-2">{{ quote.terms }}</p>
+                </div>
+                <button class="btn btn-primary btn-sm" (click)="selectVendor(quote)">
+                  Select Vendor
+                </button>
+              </div>
+            </div>
+            <div *ngIf="quotations.length === 0 && !isLoadingQuotations" class="text-center py-3 text-muted">
+              <i class="bi bi-inbox fs-1"></i>
+              <p class="mt-2">No quotations received yet. Vendors are reviewing your request.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Vendor Section -->
+        <div class="card mb-4" *ngIf="request.selectedVendorId && request.status !== 'PENDING' && request.status !== 'VENDORS_QUOTING'">
+          <div class="card-header">
+            <h5 class="mb-0">Selected Vendor</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center mb-3">
+                  <div class="vendor-avatar me-3">
+                    <i class="bi bi-building fs-1"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-1">{{ selectedVendor?.name }}</h6>
+                    <div class="text-warning small">
+                      ★ {{ selectedVendor?.rating }} ({{ selectedVendor?.totalOrders }} orders)
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="vendor-stats">
+                  <div class="d-flex justify-content-between mb-1">
+                    <small>On-time delivery</small>
+                    <strong>{{ selectedVendor?.onTimeDelivery }}%</strong>
+                  </div>
+                  <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" [style.width]="selectedVendor?.onTimeDelivery + '%'"></div>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <small>Response time</small>
+                    <strong>&lt; 2 hours</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3">
+              <i class="bi bi-envelope"></i> {{ selectedVendor?.email }}<br>
+              <i class="bi bi-telephone"></i> {{ selectedVendor?.phone }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Tracking -->
+        <div class="card mb-4" *ngIf="request.status === 'DELIVERY_IN_PROGRESS' || request.status === 'DELIVERED'">
+          <div class="card-header">
+            <h5 class="mb-0">Delivery Tracking</h5>
+          </div>
+          <div class="card-body">
+            <div class="delivery-status mb-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge" [class.bg-warning]="deliveryStatus.status === 'in_transit'" 
+                                      [class.bg-success]="deliveryStatus.status === 'delivered'">
+                    {{ deliveryStatus.status | uppercase }}
+                  </span>
+                  <div class="mt-2" *ngIf="deliveryStatus.trackingNumber">
+                    <small class="text-muted">Tracking #:</small>
+                    <strong>{{ deliveryStatus.trackingNumber }}</strong>
+                  </div>
+                </div>
+                <div *ngIf="deliveryStatus.estimatedArrival" class="text-end">
+                  <small class="text-muted">Estimated delivery</small>
+                  <div><strong>{{ deliveryStatus.estimatedArrival | date }}</strong></div>
+                </div>
+              </div>
+              <div class="mt-3" *ngIf="deliveryStatus.currentLocation">
+                <i class="bi bi-geo-alt"></i> Current location: {{ deliveryStatus.currentLocation }}
+              </div>
+            </div>
+            
+            <h6>Tracking History</h6>
+            <div class="tracking-history">
+              <div *ngFor="let event of deliveryStatus.history" class="tracking-event">
+                <div class="tracking-dot"></div>
+                <div class="tracking-details">
+                  <div class="fw-bold">{{ event.status }}</div>
+                  <div class="small text-muted">{{ event.timestamp | date:'medium' }} • {{ event.location }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4" *ngIf="canConfirmDelivery()">
+              <button class="btn btn-success" (click)="confirmDelivery()">
+                <i class="bi bi-check-circle"></i> Confirm Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-lg-4">
+        
+        <!-- Request Details Card -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Request Details</h5>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm details-table">
+              <tr>
+                <td class="text-muted">Product/Service</td>
+                <td class="fw-bold">{{ request.productName }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Description</td>
+                <td>{{ request.description }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Quantity</td>
+                <td>{{ request.quantity }} units</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Budget</td>
+                <td class="fw-bold">{{ formatCurrency(request.budget, request.currency) }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Delivery Location</td>
+                <td>{{ request.deliveryLocation }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Delivery Deadline</td>
+                <td [class.text-danger]="getDaysRemaining() !== null && getDaysRemaining()! < 3">
+                  {{ formatDate(request.deliveryDeadline) }}
+                  <span *ngIf="getDaysRemaining() !== null" class="small d-block">
+                    {{ getDaysRemaining() }} days remaining
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Attachments Card -->
+        <div class="card mb-4" *ngIf="request.attachments.length > 0">
+          <div class="card-header">
+            <h5 class="mb-0">Attachments</h5>
+          </div>
+          <div class="card-body">
+            <div *ngFor="let attachment of request.attachments" class="attachment-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <i class="bi bi-file-earmark-text"></i>
+                  <span class="ms-2">{{ attachment.fileName }}</span>
+                </div>
+                <button class="btn btn-sm btn-link" (click)="downloadAttachment(attachment)">
+                  <i class="bi bi-download"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Action Card -->
+        <div class="card mb-4" *ngIf="canMakePayment()">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Payment Required</h5>
+          </div>
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <div class="fs-1 fw-bold text-primary">
+                {{ formatCurrency(request.budget, request.currency) }}
+              </div>
+              <small class="text-muted">Amount due</small>
+            </div>
+            <button class="btn btn-primary btn-lg w-100" (click)="makePayment()">
+              <i class="bi bi-credit-card"></i> Make Payment
+            </button>
+            <p class="small text-muted mt-3 mb-0">
+              <i class="bi bi-shield-check"></i> Secure payment via Optimax
+            </p>
+          </div>
+        </div>
+
+        <!-- Info Card for Cancelled Status -->
+        <div class="card mb-4" *ngIf="request.status === 'CANCELLED'">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Request Cancelled</h5>
+          </div>
+          <div class="card-body">
+            <p><strong>Reason:</strong> {{ request.cancellationReason }}</p>
+            <p><strong>Cancelled on:</strong> {{ formatDate(request.cancelledAt) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Cancel Modal -->
+  <div class="modal" [class.show]="showCancelModal" [style.display]="showCancelModal ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancel Request</h5>
+          <button type="button" class="btn-close" (click)="closeCancelModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to cancel request <strong>{{ request?.id }}</strong>?</p>
+          <p class="text-muted">{{ request?.productName }}</p>
+          <div class="mb-3">
+            <label class="form-label">Reason for cancellation</label>
+            <textarea class="form-control" [(ngModel)]="cancellationReason" rows="3" 
+                      placeholder="Please provide a reason..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCancelModal()">Close</button>
+          <button type="button" class="btn btn-danger" (click)="confirmCancel()" [disabled]="!cancellationReason.trim() || isSubmittingCancel">
+            <span *ngIf="isSubmittingCancel" class="spinner-border spinner-border-sm me-2"></span>
+            Confirm Cancellation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" *ngIf="showCancelModal" [class.show]="showCancelModal"></div>
+</div>
