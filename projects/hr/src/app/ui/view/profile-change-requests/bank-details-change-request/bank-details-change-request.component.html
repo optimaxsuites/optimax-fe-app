@@ -1,12 +1,4 @@
 <div class="bank-details-change-container">
-  <div class="header">
-    <h3>
-      <i class="fa-solid fa-university"></i>
-      Request Bank Details Change
-    </h3>
-    <p class="subtitle">Submit a request to change your bank account details</p>
-  </div>
-
   <form [formGroup]="bankDetailsForm" (ngSubmit)="submitRequest()" class="change-request-form">
     <!-- Current Bank Details Section -->
     <div class="form-section">
@@ -19,7 +11,7 @@
             id="currentBankName"
             formControlName="currentBankName"
             class="form-control"
-            [disabled]="true"
+            readonly
             placeholder="Your current bank"
           />
           <small class="form-text" *ngIf="currentBankDetails?.bankName">
@@ -34,9 +26,8 @@
             id="currentAccountNumber"
             formControlName="currentAccountNumber"
             class="form-control"
-            [disabled]="true"
+            readonly
             placeholder="Your current account number"
-            maxlength="10"
           />
           <small class="form-text" *ngIf="currentBankDetails?.accountNumber">
             Currently registered: <strong>****{{ currentBankDetails.accountNumber?.slice(-4) }}</strong>

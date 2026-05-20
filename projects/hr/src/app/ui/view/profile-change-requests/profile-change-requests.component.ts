@@ -66,7 +66,8 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
 
     this.profileChangeRequestService.requests$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
+      .subscribe((requests) => {
+        this.requests = requests;
         this.applyFilters();
       });
   }
@@ -139,7 +140,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'success',
             summary: 'Approved',
             detail: `Request from ${request.employeeName} has been approved.`,
-            key: 'global',
+            key: 'tl',
           });
           this.isDetailModalOpen = false;
           this.isProcessingRequest = false;
@@ -151,7 +152,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'error',
             summary: 'Approval Failed',
             detail: 'Unable to approve the request',
-            key: 'global',
+            key: 'tl',
           });
           this.isProcessingRequest = false;
         },
@@ -203,9 +204,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
    * Get employee email from request (placeholder for now)
    */
   private getEmployeeEmail(request: ProfileChangeRequestDTO): string | null {
-    // TODO: When backend is integrated, get email from employee record
-    // For now, we can derive from employeeId or store it in request metadata
-    return null;
+    return request.employeeEmail || null;
   }
 
   openRejectionDialog(request: ProfileChangeRequestDTO): void {
@@ -242,7 +241,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'info',
             summary: 'Rejected',
             detail: `Request from ${this.selectedRequest?.employeeName} has been rejected.`,
-            key: 'global',
+            key: 'tl',
           });
           this.closeRejectionDialog();
           this.isProcessingRequest = false;
@@ -254,7 +253,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
             severity: 'error',
             summary: 'Rejection Failed',
             detail: 'Unable to reject the request',
-            key: 'global',
+            key: 'tl',
           });
           this.isProcessingRequest = false;
         },
@@ -301,13 +300,41 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
         console.error('Error sending rejection notification email:', err);
       }
     });
+
+    const hrEmail = currentUser.email || sessionStorage.getItem('useremail') || 'hr@optimaxsuites.com';
+    const hrEmailBody = {
+      name: currentUser.name || 'HR Department',
+      recieverEmail: hrEmail,
+      subject: `${fieldLabel} Change Request Rejected - ${request.employeeName || request.employeeId}`,
+      body: `
+        <h2>${fieldLabel} Change Request Rejected</h2>
+        <p><strong>Employee:</strong> ${request.employeeName || request.employeeId}</p>
+        <p><strong>Employee Email:</strong> ${employeeEmail}</p>
+        <h3>Request Details:</h3>
+        <ul>
+          ${request.request.map(item => `<li><strong>${item.fieldName}:</strong> ${item.oldValue} → ${item.value}</li>`).join('')}
+        </ul>
+        <p><strong>Rejection Reason:</strong> ${reason}</p>
+        <p><strong>Rejected By:</strong> ${currentUser.name || 'HR Department'}</p>
+        <p><strong>Review Date:</strong> ${new Date().toLocaleString()}</p>
+      `
+    };
+
+    this.mailNotificationService.sendMail(hrEmailBody).subscribe({
+      next: () => {
+        console.log('Rejection notification email sent to HR');
+      },
+      error: (err) => {
+        console.error('Error sending HR rejection notification email:', err);
+      }
+    });
   }
 
   private getCurrentUser(): any {
     return {
-      id: sessionStorage.getItem('userid') || 'unknown',
-      name: sessionStorage.getItem('username') || 'HR Officer',
-      email: sessionStorage.getItem('useremail') || 'hr@company.com',
+      id: localStorage.getItem('userid') || 'unknown',
+      name: localStorage.getItem('username') || 'HR Officer',
+      email: localStorage.getItem('useremail') || 'hr@company.com',
     };
   }
 

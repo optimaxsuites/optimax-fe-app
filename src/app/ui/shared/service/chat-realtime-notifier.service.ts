@@ -31,6 +31,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private refreshChannelsCooldownUntil = 0;
   private refreshChannelsInFlight = false;
   private lastChannelsRefreshAt = 0;
+  private refreshChannelsFailureCount = 0;
   private readonly refreshChannelsTtlMs = 10_000;
 
   constructor(
@@ -133,17 +134,24 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       next: (channels) => {
         this.lastChannelsRefreshAt = Date.now();
         this.refreshChannelsInFlight = false;
+        this.refreshChannelsFailureCount = 0;
         this.applyChannelTargets(channels || []);
       },
       error: () => {
         this.refreshChannelsInFlight = false;
-        this.refreshChannelsCooldownUntil = Date.now() + 30_000;
+        this.refreshChannelsFailureCount++;
+        const backoffMs = Math.min(
+          5_000 * Math.pow(2, this.refreshChannelsFailureCount - 1),
+          120_000,
+        );
+        this.refreshChannelsCooldownUntil = Date.now() + backoffMs;
       },
     });
   }
 
   private applyChannelTargets(channels: CollabChannel[]): void {
     this.refreshChannelsCooldownUntil = 0;
+    this.refreshChannelsFailureCount = 0;
     const nextTargets = new Map<number, GlobalChatChannelTarget>();
     let unreadChannels = 0;
     let unreadDirectMessages = 0;
@@ -274,22 +282,20 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   } {
     try {
       const payload = JSON.parse(frameBody || '{}');
+      const msg = (payload.message && typeof payload.message === 'object') ? payload.message : payload;
       return {
         senderName: this.notificationText(
-          payload.senderName ?? payload.authorName,
+          msg.senderName ?? msg.authorName,
           'New message',
         ),
-        content: this.notificationText(
-          payload.content ?? payload.message,
-          '',
-        )
+        content: this.notificationText(msg.content, '')
           .replace(/\s+/g, ' ')
           .trim()
           .slice(0, 160),
-        senderUserId: Number(payload.senderUserId ?? payload.userId ?? 0) || undefined,
-        messageBackendId: Number(payload.id ?? payload.messageId ?? 0) || undefined,
+        senderUserId: Number(msg.senderUserId ?? msg.userId ?? 0) || undefined,
+        messageBackendId: Number(msg.id ?? msg.messageId ?? 0) || undefined,
         threadRootMessageBackendId:
-          Number(payload.threadRootMessageId ?? 0) || undefined,
+          Number(msg.threadRootMessageId ?? 0) || undefined,
       };
     } catch (_) {
       return { senderName: 'New message', content: '' };

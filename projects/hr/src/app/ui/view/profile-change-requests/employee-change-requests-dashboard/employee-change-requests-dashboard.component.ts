@@ -4,8 +4,8 @@
  */
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { ProfileChangeRequestDTO } from '../../../service/models/profile-change-request.model';
-import { BankDetailsChangeRequestComponent } from '../bank-details-change-request/bank-details-change-request.component';
+import { ProfileChangeRequestDTO } from '../../../model/profile-change-request.model';
+import { ProfileChangeRequestService } from '../../../service/profile-change-request.service';
 
 @Component({
   selector: 'app-employee-change-requests-dashboard',
@@ -32,7 +32,10 @@ export class EmployeeChangeRequestsDashboardComponent implements OnInit {
     rejected: 0
   };
 
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    private profileChangeRequestService: ProfileChangeRequestService
+  ) {}
 
   ngOnInit(): void {
     this.loadMyRequests();
@@ -43,46 +46,31 @@ export class EmployeeChangeRequestsDashboardComponent implements OnInit {
    */
   private loadMyRequests(): void {
     this.loading = true;
-    try {
-      setTimeout(() => {
-        const allRequests = this.getRequestsFromLocalStorage();
-        const employeeId = this.getCurrentEmployeeId();
-
-        // Filter requests for current employee
-        this.myRequests = allRequests.filter(req => req.employeeId === employeeId);
+    const employeeId = this.getCurrentEmployeeId();
+    this.profileChangeRequestService.getEmployeeRequests(employeeId).subscribe({
+      next: (requests) => {
+        this.myRequests = requests;
         this.calculateStatistics();
         this.loading = false;
-      }, 500);
-    } catch (error) {
-      console.error('Error loading my requests:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load your change requests',
-        life: 5000
-      });
-      this.loading = false;
-    }
-  }
-
-  /**
-   * Get requests from local storage
-   */
-  private getRequestsFromLocalStorage(): ProfileChangeRequestDTO[] {
-    try {
-      const data = localStorage.getItem('profileChangeRequests');
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error('Error retrieving requests:', error);
-      return [];
-    }
+      },
+      error: (error) => {
+        console.error('Error loading my requests:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load your change requests',
+          life: 5000
+        });
+        this.loading = false;
+      }
+    });
   }
 
   /**
    * Get current employee ID
    */
-  private getCurrentEmployeeId(): number {
-    return parseInt(localStorage.getItem('employeeId') || '0', 10);
+  private getCurrentEmployeeId(): string | number {
+    return localStorage.getItem('employeeId') || sessionStorage.getItem('userid') || localStorage.getItem('userid') || '0';
   }
 
   /**
