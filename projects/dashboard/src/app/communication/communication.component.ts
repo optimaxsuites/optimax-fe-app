@@ -607,6 +607,7 @@ export class CommunicationComponent
   private channelHistoryExhausted = new Set<number>();
   private historyLoadInFlight = new Set<number>();
   private notificationAudioContext: AudioContext | null = null;
+  private audioPrimed = false;
   private loadingOlderHistory = false;
   private historyPagingArmed = false;
   private pendingForcedChannelsRefresh = false;
@@ -639,6 +640,12 @@ export class CommunicationComponent
         this.handleNotificationTarget as EventListener,
       );
       window.addEventListener('hashchange', this.handleMentionHashChange);
+      window.addEventListener('touchstart', this.primeNotificationAudio, {
+        passive: true,
+      });
+      window.addEventListener('mousedown', this.primeNotificationAudio, {
+        passive: true,
+      });
     }
     this.checkVoiceSupport();
     this.requestBrowserNotificationPermission();
@@ -689,6 +696,8 @@ export class CommunicationComponent
         this.handleNotificationTarget as EventListener,
       );
       window.removeEventListener('hashchange', this.handleMentionHashChange);
+      window.removeEventListener('touchstart', this.primeNotificationAudio as EventListener);
+      window.removeEventListener('mousedown', this.primeNotificationAudio as EventListener);
     }
   }
 
@@ -5491,11 +5500,8 @@ export class CommunicationComponent
   playNotificationSound(urgent = false): void {
     if (!this.soundEnabled) return;
     try {
-      const AudioCtxCtor =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtxCtor) return;
-      const ctx = this.notificationAudioContext || new AudioCtxCtor();
-      this.notificationAudioContext = ctx;
+      const ctx = this.ensureNotificationAudioContext();
+      if (!ctx) return;
       if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
         void ctx.resume().catch(() => {});
       }
@@ -5543,6 +5549,40 @@ export class CommunicationComponent
       });
     } catch (_) {}
   }
+
+  private ensureNotificationAudioContext(): AudioContext | null {
+    try {
+      if (this.notificationAudioContext) {
+        return this.notificationAudioContext;
+      }
+      const AudioCtxCtor =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtxCtor) return null;
+      this.notificationAudioContext = new AudioCtxCtor();
+      return this.notificationAudioContext;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  private primeNotificationAudio = (): void => {
+    if (this.audioPrimed) return;
+    const ctx = this.ensureNotificationAudioContext();
+    if (!ctx) return;
+    this.audioPrimed = true;
+    try {
+      if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
+        void ctx.resume().catch(() => {});
+      }
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.00001, ctx.currentTime);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.01);
+    } catch (_) {}
+  };
 
   private shouldUseUrgentNotificationSound(): boolean {
     return (
