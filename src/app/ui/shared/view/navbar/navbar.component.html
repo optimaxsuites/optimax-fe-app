@@ -17,7 +17,7 @@
         type="button"
         class="header-chip"  
         (click)="openMessages(); messagesPanel.toggle($event)"
-      >
+      > 
         <i class="fas fa-message"></i>
         <span>Messages</span>
         <strong *ngIf="unreadMessages">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</strong>
