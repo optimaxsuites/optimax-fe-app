@@ -29,6 +29,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   notifications: HeaderNotificationItem[] = [];
   messagePreviews: HeaderMessagePreviewItem[] = [];
   unreadMessages = 0;
+  unreadChannels = 0;
+  unreadDirectMessages = 0;
   unreadNotifications = 0;
   showUnreadNotificationsDialog = false;
   currentUserId = '';
@@ -52,7 +54,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
       this.messagePreviews = state.messagePreviews;
-      this.unreadMessages = state.messagePreviews.filter((entry) => !entry.read).length;
+      const unreadPreviewCount = state.messagePreviews.filter((entry) => !entry.read).length;
+      this.unreadMessages = Math.max(state.unreadMessages, unreadPreviewCount);
+      this.unreadChannels = state.unreadChannels;
+      this.unreadDirectMessages = state.unreadDirectMessages;
       this.unreadNotifications = state.unreadNotifications;
       if (state.profile) {
         this.headerProfile = state.profile;
