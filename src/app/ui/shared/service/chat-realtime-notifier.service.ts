@@ -86,14 +86,13 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const baseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
-    const wsUrl = baseUrl.startsWith('https://')
-      ? `wss://${baseUrl.replace('https://', '')}/x/ws/collab`
-      : `ws://${baseUrl.replace('http://', '')}/x/ws/collab`;
+    const wsUrl = this.resolveCollabWebSocketUrl();
 
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
+      heartbeatIncoming: 20000,
+      heartbeatOutgoing: 20000,
       connectHeaders: {
         Authorization: `Bearer ${token}`,
         'X-Tenant-ID': tenantId,
@@ -113,11 +112,33 @@ export class ChatRealtimeNotifierService implements OnDestroy {
 
     client.onStompError = (frame) =>
       console.error('Global chat STOMP error:', frame);
+    client.onWebSocketClose = () => {
+      this.wsConnected = false;
+    };
     client.onWebSocketError = (error) =>
       console.error('Global chat websocket error:', error);
 
     this.stompClient = client;
     client.activate();
+  }
+
+  private resolveCollabWebSocketUrl(): string {
+    const configuredBaseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.host;
+      const currentProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const currentHostname = window.location.hostname || '';
+      const shouldPreferCurrentOrigin =
+        !!currentHost &&
+        !/^(localhost|127\.0\.0\.1)$/i.test(currentHostname);
+      if (shouldPreferCurrentOrigin) {
+        return `${currentProtocol}//${currentHost}/x/ws/collab`;
+      }
+    }
+    if (configuredBaseUrl.startsWith('https://')) {
+      return `wss://${configuredBaseUrl.replace('https://', '')}/x/ws/collab`;
+    }
+    return `ws://${configuredBaseUrl.replace('http://', '')}/x/ws/collab`;
   }
 
   private refreshChannels(force = false): void {

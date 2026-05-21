@@ -2730,20 +2730,19 @@ export class CommunicationComponent
     if (this.chatRealtimeStarted && this.stompClient) {
       return;
     }
-    const token = sessionStorage.getItem('token') || '';
+    const token = this.normalizedRealtimeToken();
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
     const userId =
       sessionStorage.getItem('userid') ||
       sessionStorage.getItem('userId') ||
       '';
-    const baseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
-    const wsUrl = baseUrl.startsWith('https://')
-      ? `wss://${baseUrl.replace('https://', '')}/x/ws/collab`
-      : `ws://${baseUrl.replace('http://', '')}/x/ws/collab`;
+    const wsUrl = this.resolveCollabWebSocketUrl();
 
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
+      heartbeatIncoming: 20000,
+      heartbeatOutgoing: 20000,
       connectHeaders: {
         Authorization: token ? `Bearer ${token}` : '',
         'X-Tenant-ID': tenantId,
@@ -2771,6 +2770,9 @@ export class CommunicationComponent
       }
     };
     client.onStompError = (frame) => console.error('STOMP ERROR:', frame);
+    client.onWebSocketClose = () => {
+      this.wsConnected = false;
+    };
     client.onWebSocketError = (err) => console.error('WS ERROR:', err);
     client.activate();
   }
@@ -2785,6 +2787,59 @@ export class CommunicationComponent
       this.wsConnected = false;
       this.chatRealtimeStarted = false;
     } catch (_) {}
+  }
+
+  private normalizedRealtimeToken(): string {
+    const candidates = [
+      sessionStorage.getItem('Token'),
+      sessionStorage.getItem('token'),
+      sessionStorage.getItem('accessToken'),
+      localStorage.getItem('Token2'),
+      localStorage.getItem('token'),
+    ];
+    for (const raw of candidates) {
+      const token = this.normalizeRealtimeTokenValue(raw);
+      if (token) {
+        return token;
+      }
+    }
+    return '';
+  }
+
+  private normalizeRealtimeTokenValue(raw: string | null): string {
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (trimmed.includes('=') && trimmed.includes(';')) {
+      const tokenStartIndex = trimmed.indexOf('=') + 1;
+      const tokenEndIndex = trimmed.indexOf(';', tokenStartIndex);
+      return trimmed
+        .substring(
+          tokenStartIndex,
+          tokenEndIndex > -1 ? tokenEndIndex : undefined,
+        )
+        .trim();
+    }
+    return trimmed.replace(/^Bearer\s+/i, '').trim();
+  }
+
+  private resolveCollabWebSocketUrl(): string {
+    const configuredBaseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.host;
+      const currentProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const currentHostname = window.location.hostname || '';
+      const shouldPreferCurrentOrigin =
+        !!currentHost &&
+        !/^(localhost|127\.0\.0\.1)$/i.test(currentHostname);
+      if (shouldPreferCurrentOrigin) {
+        return `${currentProtocol}//${currentHost}/x/ws/collab`;
+      }
+    }
+    if (configuredBaseUrl.startsWith('https://')) {
+      return `wss://${configuredBaseUrl.replace('https://', '')}/x/ws/collab`;
+    }
+    return `ws://${configuredBaseUrl.replace('http://', '')}/x/ws/collab`;
   }
 
   private unsubscribeChatStreams(): void {
