@@ -11,63 +11,6 @@
     </div>
   </div>
   <div class="app-header__right">
-    <div class="header-messages-wrap">
-      <button
-        type="button"
-        class="header-chip"  
-        (click)="openMessages(); messagesPanel.toggle($event)"
-      >  
-        <i class="fas fa-message"></i>
-        <span>Messages</span>
-        <strong *ngIf="unreadMessages">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</strong>
-      </button>
-
-      <p-overlayPanel #messagesPanel styleClass="header-overlay-panel">
-        <div class="notification-panel">
-          <div class="notification-panel__header">
-            <div>
-              <p>Messages</p>
-              <span>Recent direct and channel conversations</span>
-            </div> 
-          </div>
-
-          <div *ngIf="!messagePreviews.length" class="notification-empty">
-            No new messages yet.
-          </div>
-
-          <button
-            type="button"
-            *ngFor="let item of latestMessagePreviews"
-            class="notification-item"
-            [class.notification-item--unread]="!item.read"
-            (click)="openMessagePreview(item); messagesPanel.hide()"
-          >
-            <div class="notification-item__avatar">
-              <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
-              <span *ngIf="!item.avatarUrl">{{ (item.title || 'M').charAt(0) }}</span>
-            </div>
-            <div class="notification-item__body">
-              <div class="notification-item__meta">
-                <strong>{{ displayNotificationText(item.title, 'New message') }}</strong>
-                <span>{{ item.createdAt | date: 'shortTime' }}</span>
-              </div>
-              <p>{{ displayNotificationText(item.body, 'A new message arrived.') }}</p>
-              <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
-            </div>
-          </button>
-
-          <button
-            *ngIf="messagePreviews.length > 5"
-            type="button"
-            class="notification-view-all"
-            (click)="viewAllMessages(); messagesPanel.hide()"
-          >
-            Open chat workspace
-          </button>
-        </div>
-      </p-overlayPanel>
-    </div>
-
     <div class="header-bell-wrap">
       <button
         type="button"
@@ -75,8 +18,8 @@
         (click)="openNotifications(); notificationsPanel.toggle($event)"
       >
         <i class="fas fa-bell"></i>
-        <span *ngIf="unreadNotifications" class="header-badge">
-          {{ unreadNotifications > 99 ? '99+' : unreadNotifications }}
+        <span *ngIf="unreadBellCount" class="header-badge">
+          {{ unreadBellCount > 99 ? '99+' : unreadBellCount }}
         </span>
       </button>
 
@@ -85,7 +28,7 @@
           <div class="notification-panel__header">
             <div>
               <p>Notifications</p>
-              <span>Live updates across collaboration and modules</span>
+              <span>Messages, channels, routines, and module updates</span>
             </div>
             <div class="notification-panel__actions" *ngIf="notifications.length">
               <button type="button" class="notification-header-action" *ngIf="unreadNotificationItems.length"

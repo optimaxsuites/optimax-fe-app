@@ -18,6 +18,8 @@ interface GlobalChatChannelTarget {
   unreadCount: number;
 }
 
+const COLLAB_UNREAD_SNAPSHOT_KEY = 'optimax_collab_unread_snapshot';
+
 @Injectable({ providedIn: 'root' })
 export class ChatRealtimeNotifierService implements OnDestroy {
   private stompClient: Client | null = null;
@@ -224,6 +226,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       unreadChannels,
       unreadDirectMessages,
     });
+    this.persistUnreadSnapshot(nextTargets);
 
     this.channelSubs.forEach((sub, backendId) => {
       if (nextTargets.has(backendId)) {
@@ -241,6 +244,109 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
   }
 
+  private persistUnreadSnapshot(
+    targets: Map<number, GlobalChatChannelTarget>,
+  ): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        COLLAB_UNREAD_SNAPSHOT_KEY,
+        JSON.stringify(
+          Array.from(targets.values()).map((target) => ({
+            backendId: target.backendId,
+            type: target.type,
+            dmUserId: target.dmUserId,
+            unreadCount: Number(target.unreadCount || 0),
+            label: target.label,
+          })),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  private bumpUnreadSnapshot(target: GlobalChatChannelTarget): void {
+    const snapshot = this.readUnreadSnapshot();
+    const key =
+      target.type === 'dm'
+        ? `dm:${Number(target.dmUserId || 0)}`
+        : `channel:${Number(target.backendId || 0)}`;
+    if (!key.endsWith(':0')) {
+      snapshot.set(key, (snapshot.get(key) || 0) + 1);
+    }
+    this.writeUnreadSnapshot(snapshot);
+
+    const current = this.headerStateService.snapshot;
+    this.headerStateService.updateUnreadCounts({
+      unreadChannels:
+        target.type === 'channel'
+          ? Number(current.unreadChannels || 0) + 1
+          : Number(current.unreadChannels || 0),
+      unreadDirectMessages:
+        target.type === 'dm'
+          ? Number(current.unreadDirectMessages || 0) + 1
+          : Number(current.unreadDirectMessages || 0),
+    });
+  }
+
+  private readUnreadSnapshot(): Map<string, number> {
+    const snapshot = new Map<string, number>();
+    if (typeof sessionStorage === 'undefined') {
+      return snapshot;
+    }
+    try {
+      const raw = sessionStorage.getItem(COLLAB_UNREAD_SNAPSHOT_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      if (!Array.isArray(parsed)) {
+        return snapshot;
+      }
+      for (const entry of parsed) {
+        const unreadCount = Number(entry?.unreadCount || 0);
+        if (unreadCount <= 0) {
+          continue;
+        }
+        if (entry?.type === 'dm' && Number(entry?.dmUserId || 0) > 0) {
+          snapshot.set(`dm:${Number(entry.dmUserId)}`, unreadCount);
+        } else if (Number(entry?.backendId || 0) > 0) {
+          snapshot.set(`channel:${Number(entry.backendId)}`, unreadCount);
+        }
+      }
+    } catch (_) {}
+    return snapshot;
+  }
+
+  private writeUnreadSnapshot(snapshot: Map<string, number>): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+    try {
+      const payload = Array.from(snapshot.entries())
+        .map(([key, unreadCount]) => {
+          const [type, rawId] = key.split(':');
+          const id = Number(rawId || 0);
+          if (type === 'dm') {
+            return {
+              backendId: 0,
+              type: 'dm',
+              dmUserId: id,
+              unreadCount,
+            };
+          }
+          return {
+            backendId: id,
+            type: 'channel',
+            unreadCount,
+          };
+        })
+        .filter((entry) => Number(entry.unreadCount || 0) > 0);
+      sessionStorage.setItem(
+        COLLAB_UNREAD_SNAPSHOT_KEY,
+        JSON.stringify(payload),
+      );
+    } catch (_) {}
+  }
+
   private subscribeToChannel(target: GlobalChatChannelTarget): void {
     if (!this.stompClient || !this.wsConnected || this.channelSubs.has(target.backendId)) {
       return;
@@ -256,6 +362,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
           return;
         }
 
+        this.bumpUnreadSnapshot(target);
         this.refreshChannels(true);
 
         const routeUserId =
@@ -415,10 +522,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     },
   ): void {
     this.ngZone.run(() => {
-      this.headerStateService.pushMessagePreview({
+      this.headerStateService.pushNotification({
         title: resolved.title,
         body: resolved.detail,
-        createdAt: resolved.createdAt,
+        category: 'chat',
         route: notificationTarget.route,
         avatarUrl: resolved.avatarUrl,
         contextLabel: target.type === 'dm' ? 'Direct message' : target.label,
