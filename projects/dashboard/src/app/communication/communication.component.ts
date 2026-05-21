@@ -3794,35 +3794,24 @@ export class CommunicationComponent
     if (!silent) this.channelsLoading = true;
     this.channelsError = null;
     this.channelsRequestInFlight = true;
-    this.collabService.getChannels().subscribe({
-      next: (list) => {
+    this.collabService.getHomeChannels().subscribe({
+      next: (home) => {
         this.clearChannelsRetryTimer();
         this.lastChannelsLoadedAt = Date.now();
-        this.mapAndSetChannels(list || []);
+        this.mapAndSetChannels(home?.channels || []);
         this.channelsRequestInFlight = false;
         this.flushPendingForcedChannelsRefresh();
       },
       error: () => {
-        this.collabService.getHomeChannels().subscribe({
-          next: (home) => {
-            this.clearChannelsRetryTimer();
-            this.lastChannelsLoadedAt = Date.now();
-            this.mapAndSetChannels(home?.channels || []);
-            this.channelsRequestInFlight = false;
-            this.flushPendingForcedChannelsRefresh();
-          },
-          error: () => {
-            this.channelsRequestInFlight = false;
-            this.flushPendingForcedChannelsRefresh();
-            if (!this.channels.length) {
-              this.channelsError = 'Could not load channels.';
-              this.channels = [];
-              this.scheduleChannelsRetry();
-            }
-            this.channelsLoading = false;
-            this.cdr.detectChanges();
-          },
-        });
+        this.channelsRequestInFlight = false;
+        this.flushPendingForcedChannelsRefresh();
+        if (!this.channels.length) {
+          this.channelsError = 'Could not load channels.';
+          this.channels = [];
+          this.scheduleChannelsRetry();
+        }
+        this.channelsLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -5613,6 +5602,11 @@ export class CommunicationComponent
     return 'Several people are typing…';
   }
 
+  private shouldDisableTypingEndpoint(err: any): boolean {
+    const status = Number(err?.status || 0);
+    return status === 0 || status === 502 || status === 503 || status === 504;
+  }
+
   onComposerTyping(): void {
     if (this.typingEndpointBlocked) return;
     const chId =
@@ -5623,7 +5617,7 @@ export class CommunicationComponent
     clearTimeout(this.typingTimer);
     this.collabService.setTyping(chId, true).subscribe({
       error: (err) => {
-        if (err?.status === 0) {
+        if (this.shouldDisableTypingEndpoint(err)) {
           this.typingEndpointBlocked = true;
         }
       },
@@ -5632,7 +5626,7 @@ export class CommunicationComponent
       if (this.typingEndpointBlocked) return;
       this.collabService.setTyping(chId, false).subscribe({
         error: (err) => {
-          if (err?.status === 0) {
+          if (this.shouldDisableTypingEndpoint(err)) {
             this.typingEndpointBlocked = true;
           }
         },
