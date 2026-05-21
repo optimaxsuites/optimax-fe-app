@@ -206,6 +206,8 @@ interface FeedThreadState {
   showMentionMenu: boolean;
 }
 
+const COLLAB_UNREAD_SNAPSHOT_KEY = 'optimax_collab_unread_snapshot';
+
 interface FeedCommentNode extends CollabFeedComment {
   replies: FeedCommentNode[];
   depth: number;
@@ -749,6 +751,7 @@ export class CommunicationComponent
       unreadChannels,
       unreadDirectMessages,
     });
+    this.writeCurrentUnreadSnapshot();
   }
 
   private pushWorkspaceNotification(payload: {
@@ -3826,6 +3829,7 @@ export class CommunicationComponent
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.channelsError = null;
+    const storedUnreadSnapshot = this.readStoredUnreadSnapshot();
     const existingChannelUnread = new Map(
       this.channels.map((channel) => [
         Number(channel.backendId),
@@ -3871,9 +3875,10 @@ export class CommunicationComponent
         const isActiveChannel = this.isViewingChannel(String(backendId));
         const serverUnreadCount = Number(c.unreadCount ?? 0);
         const preservedUnreadCount = existingChannelUnread.get(backendId) || 0;
+        const storedUnreadCount = storedUnreadSnapshot.channels.get(backendId) || 0;
         const unreadCount = isActiveChannel
           ? 0
-          : Math.max(serverUnreadCount, preservedUnreadCount);
+          : Math.max(serverUnreadCount, preservedUnreadCount, storedUnreadCount);
         return {
           id: String(backendId),
           backendId,
@@ -3903,6 +3908,7 @@ export class CommunicationComponent
   }
 
   private mapDirectMessageChannels(list: CollabChannel[]): void {
+    const storedUnreadSnapshot = this.readStoredUnreadSnapshot();
     const existingDmUnread = new Map(
       this.dmContacts.map((contact) => [
         Number(contact.userId),
@@ -3960,6 +3966,7 @@ export class CommunicationComponent
       const unreadCount = Math.max(
         unreadByUserId.get(Number(contact.userId)) || 0,
         existingDmUnread.get(Number(contact.userId)) || 0,
+        storedUnreadSnapshot.dms.get(Number(contact.userId)) || 0,
       );
       contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
       contact.hasUnread = unreadCount > 0;
@@ -3972,6 +3979,69 @@ export class CommunicationComponent
         this.subscribeToDmContactChannels(contact);
       }
     }
+  }
+
+  private readStoredUnreadSnapshot(): {
+    channels: Map<number, number>;
+    dms: Map<number, number>;
+  } {
+    const channels = new Map<number, number>();
+    const dms = new Map<number, number>();
+    if (typeof sessionStorage === 'undefined') {
+      return { channels, dms };
+    }
+    try {
+      const raw = sessionStorage.getItem(COLLAB_UNREAD_SNAPSHOT_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      if (!Array.isArray(parsed)) {
+        return { channels, dms };
+      }
+      for (const entry of parsed) {
+        const unreadCount = Number(entry?.unreadCount || 0);
+        if (unreadCount <= 0) {
+          continue;
+        }
+        const backendId = Number(entry?.backendId || 0);
+        const dmUserId = Number(entry?.dmUserId || 0);
+        if (entry?.type === 'dm' && dmUserId > 0) {
+          dms.set(dmUserId, Math.max(dms.get(dmUserId) || 0, unreadCount));
+          continue;
+        }
+        if (backendId > 0) {
+          channels.set(backendId, Math.max(channels.get(backendId) || 0, unreadCount));
+        }
+      }
+    } catch (_) {}
+    return { channels, dms };
+  }
+
+  private writeCurrentUnreadSnapshot(): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+    try {
+      const snapshot = [
+        ...this.channels
+          .filter((channel) => Number(channel.unreadCount || 0) > 0)
+          .map((channel) => ({
+            backendId: Number(channel.backendId),
+            type: 'channel',
+            unreadCount: Number(channel.unreadCount || 0),
+          })),
+        ...this.dmContacts
+          .filter((contact) => Number(contact.unreadCount || 0) > 0)
+          .map((contact) => ({
+            backendId: Number(contact.dmChannelId || 0),
+            type: 'dm',
+            dmUserId: Number(contact.userId),
+            unreadCount: Number(contact.unreadCount || 0),
+          })),
+      ];
+      sessionStorage.setItem(
+        COLLAB_UNREAD_SNAPSHOT_KEY,
+        JSON.stringify(snapshot),
+      );
+    } catch (_) {}
   }
 
   private dmChannelIdsFor(contact: DmContact): number[] {

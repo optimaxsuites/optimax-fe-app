@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OptimaX HR Manual — Print / PDF Version</title>
+  <style>
+    /* PDF/Print optimised — open in browser and File → Print → Save as PDF */
+    @page {
+      size: A4;
+      margin: 18mm 18mm 20mm 18mm;
+    }
+    @page :first { margin-top: 0; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:      #1A56DB;
+      --accent:     #2EB270;
+      --amber:      #F59E0B;
+      --red:        #EF4444;
+      --slate-50:   #F8FAFC;
+      --slate-100:  #F1F5F9;
+      --slate-200:  #E2E8F0;
+      --slate-500:  #64748B;
+      --slate-700:  #334155;
+      --slate-900:  #0F172A;
+      --white:      #FFFFFF;
+    }
+
+    html, body { font-size: 10pt; line-height: 1.55; color: var(--slate-700); font-family: 'Segoe UI', Arial, sans-serif; background: white; }
+
+    /* ── COVER ── */
+    .cover {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1240a4 100%);
+      color: white;
+      padding: 48pt 48pt 56pt;
+      page-break-after: always;
+      min-height: 297mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .cover .eyebrow {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 999pt;
+      display: inline-block;
+      padding: 3pt 12pt;
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.8);
+      margin-bottom: 18pt;
+    }
+    .cover h1 { font-size: 34pt; font-weight: 800; line-height: 1.1; }
+    .cover h1 span { color: #93c5fd; }
+    .cover .sub { margin-top: 12pt; font-size: 11pt; color: rgba(255,255,255,.7); max-width: 420pt; }
+    .cover .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12pt; margin-top: 40pt; }
+    .cover .meta-cell { background: rgba(255,255,255,.08); padding: 10pt 12pt; border-radius: 6pt; }
+    .cover .meta-cell .lbl { font-size: 6.5pt; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .cover .meta-cell .val { font-size: 9pt; color: white; font-weight: 700; margin-top: 2pt; }
+
+    /* ── TOC ── */
+    .toc-page { page-break-after: always; padding: 32pt 0; }
+    .toc-page h2 { font-size: 20pt; color: var(--slate-900); margin-bottom: 6pt; }
+    .toc-page .toc-sub { font-size: 9pt; color: var(--slate-500); margin-bottom: 20pt; }
+    .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+    .toc-item { display: flex; gap: 0; border: 1pt solid var(--slate-200); border-radius: 5pt; overflow: hidden; }
+    .toc-item .num { background: var(--brand); color: white; font-size: 9pt; font-weight: 700; padding: 8pt 10pt; display: flex; align-items: center; min-width: 28pt; justify-content: center; }
+    .toc-item .toc-body { padding: 8pt 10pt; }
+    .toc-item .toc-title { font-size: 9pt; font-weight: 700; color: var(--slate-700); }
+    .toc-item .toc-desc  { font-size: 7.5pt; color: var(--slate-500); margin-top: 1pt; }
+
+    /* ── SECTIONS ── */
+    .section { page-break-before: always; padding-top: 8pt; }
+    .chapter-badge {
+      display: inline-block;
+      background: #EFF6FF;
+      color: var(--brand);
+      font-size: 6.5pt;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 2pt 9pt;
+      border-radius: 999pt;
+      margin-bottom: 6pt;
+    }
+    h2 { font-size: 17pt; font-weight: 800; color: var(--slate-900); margin-bottom: 5pt; }
+    .chapter-desc { font-size: 9pt; color: var(--slate-500); margin-bottom: 14pt; }
+
+    h3 {
+      font-size: 11pt; font-weight: 700; color: var(--slate-900);
+      border-left: 3pt solid var(--brand);
+      padding-left: 8pt;
+      margin: 16pt 0 7pt;
+    }
+    h4 { font-size: 9.5pt; font-weight: 700; color: var(--slate-800); margin: 10pt 0 4pt; }
+
+    p  { font-size: 9pt; margin-bottom: 6pt; }
+    ul, ol { padding-left: 16pt; margin-bottom: 8pt; }
+    li { font-size: 9pt; margin-bottom: 3pt; }
+
+    /* ── SCREENSHOT PLACEHOLDER ── */
+    .ss {
+      border: 1.5pt dashed var(--slate-200);
+      border-radius: 6pt;
+      margin: 10pt 0;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .ss-header {
+      background: var(--slate-100);
+      border-bottom: 1pt solid var(--slate-200);
+      padding: 5pt 10pt;
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: var(--slate-500);
+      display: flex;
+      gap: 5pt;
+      align-items: center;
+    }
+    .dot { width: 8pt; height: 8pt; border-radius: 50%; display: inline-block; }
+    .dr { background: #ef4444; }
+    .dy { background: #f59e0b; }
+    .dg { background: #22c55e; }
+    .ss-body {
+      padding: 20pt;
+      min-height: 80pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-direction: column;
+      gap: 4pt;
+      background: var(--slate-50);
+    }
+    .ss-body .icon { font-size: 20pt; opacity: .25; }
+    .ss-body .caption { font-size: 8pt; color: var(--slate-500); max-width: 360pt; }
+    .ss-body .caption strong { display: block; font-size: 8.5pt; color: var(--slate-700); margin-bottom: 2pt; }
+
+    /* ── CALLOUT ── */
+    .callout {
+      display: flex; gap: 8pt; padding: 9pt 12pt;
+      border-radius: 6pt; margin: 8pt 0; font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    .callout.tip    { background: #eff6ff; border-left: 3pt solid var(--brand); color: #1e40af; }
+    .callout.warn   { background: #fffbeb; border-left: 3pt solid var(--amber); color: #92400e; }
+    .callout.success{ background: #f0fdf4; border-left: 3pt solid var(--accent); color: #14532d; }
+    .callout .ci { font-size: 10pt; }
+    .callout strong { display: block; font-weight: 700; margin-bottom: 2pt; }
+
+    /* ── CARDS ── */
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; margin: 8pt 0; page-break-inside: avoid; }
+    .card { background: white; border: 1pt solid var(--slate-200); border-radius: 6pt; padding: 10pt; }
+    .card-icon { font-size: 14pt; margin-bottom: 5pt; }
+    .card h4 { font-size: 8.5pt; margin: 0 0 3pt; }
+    .card p  { font-size: 7.5pt; color: var(--slate-500); margin: 0; }
+
+    /* ── STEPS ── */
+    .steps { list-style: none; padding: 0; margin: 8pt 0; counter-reset: s; }
+    .steps li { counter-increment: s; display: flex; gap: 8pt; margin-bottom: 7pt; align-items: flex-start; }
+    .steps li::before {
+      content: counter(s);
+      min-width: 18pt; height: 18pt;
+      background: var(--brand); color: white;
+      border-radius: 50%; font-size: 7pt; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1pt;
+    }
+    .steps li .sc { flex: 1; font-size: 8.5pt; padding-top: 1pt; }
+    .steps li .sc strong { display: block; font-size: 9pt; color: var(--slate-800); margin-bottom: 1pt; }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; font-size: 8pt; margin: 8pt 0; page-break-inside: avoid; }
+    th { background: var(--slate-900); color: white; padding: 6pt 8pt; text-align: left; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    td { padding: 6pt 8pt; border-bottom: 1pt solid var(--slate-200); }
+    tr:nth-child(even) td { background: var(--slate-50); }
+
+    /* ── TABS MOCK ── */
+    .tabs { display: flex; gap: 0; border-bottom: 1.5pt solid var(--slate-200); margin: 8pt 0 12pt; flex-wrap: wrap; }
+    .tab { padding: 5pt 12pt; font-size: 8pt; font-weight: 600; color: var(--slate-500); border-bottom: 2pt solid transparent; margin-bottom: -1.5pt; }
+    .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+    /* ── BADGE ── */
+    .badge { display: inline-block; padding: 1pt 6pt; border-radius: 999pt; font-size: 7pt; font-weight: 700; }
+    .b-blue   { background: #dbeafe; color: #1d4ed8; }
+    .b-green  { background: #dcfce7; color: #15803d; }
+    .b-amber  { background: #fef3c7; color: #b45309; }
+    .b-red    { background: #fee2e2; color: #b91c1c; }
+    .b-purple { background: #ede9fe; color: #6d28d9; }
+
+    /* ── STAT BAR ── */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin: 8pt 0; }
+    .stat { background: white; border: 1pt solid var(--slate-200); border-radius: 6pt; padding: 8pt 10pt; }
+    .stat .sl { font-size: 6.5pt; color: var(--slate-500); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .stat .sv { font-size: 20pt; font-weight: 800; color: var(--slate-900); line-height: 1.1; }
+    .stat .sm { font-size: 7pt; color: var(--slate-500); }
+
+    /* ── HR DIVIDER ── */
+    hr { border: none; border-top: 1pt solid var(--slate-200); margin: 14pt 0; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 6pt 18mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7pt;
+      color: var(--slate-500);
+      border-top: 1pt solid var(--slate-200);
+      background: white;
+    }
+
+    @media screen {
+      body { max-width: 800px; margin: 0 auto; padding: 20px; }
+      .cover { border-radius: 12px; margin-bottom: 32px; min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="eyebrow">📘 Official User Manual</div>
+    <h1>OptimaX ERP<br><span>Human Resource Module</span></h1>
+    <p class="sub">
+      A comprehensive guide for Sales &amp; Marketing teams to understand, demonstrate,
+      and present OptimaX HR capabilities to prospects and clients.
+    </p>
+    <div class="meta-grid">
+      <div class="meta-cell"><div class="lbl">Module</div><div class="val">Human Resources</div></div>
+      <div class="meta-cell"><div class="lbl">Audience</div><div class="val">Sales &amp; Marketing</div></div>
+      <div class="meta-cell"><div class="lbl">Version</div><div class="val">2025 Edition</div></div>
+      <div class="meta-cell"><div class="lbl">Last Updated</div><div class="val">May 2025</div></div>
+    </div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc-page">
+    <h2>Table of Contents</h2>
+    <p class="toc-sub">HR Module User Manual — Sales &amp; Marketing Edition</p>
+    <div class="toc-grid">
+      <div class="toc-item"><div class="num">01</div><div class="toc-body"><div class="toc-title">Platform Overview</div><div class="toc-desc">What is OptimaX? Modules &amp; value proposition</div></div></div>
+      <div class="toc-item"><div class="num">02</div><div class="toc-body"><div class="toc-title">Application Navigation</div><div class="toc-desc">Layout, sidebar, and HR sub-navigation</div></div></div>
+      <div class="toc-item"><div class="num">03</div><div class="toc-body"><div class="toc-title">Employee Management</div><div class="toc-desc">Directory, adding employees, staff ID cards</div></div></div>
+      <div class="toc-item"><div class="num">04</div><div class="toc-body"><div class="toc-title">Recruitment</div><div class="toc-desc">Vacancies, candidates, interviews, offer letters</div></div></div>
+      <div class="toc-item"><div class="num">05</div><div class="toc-body"><div class="toc-title">Attendance Tracking</div><div class="toc-desc">Clock-in/out, sheets, timesheets, notifications</div></div></div>
+      <div class="toc-item"><div class="num">06</div><div class="toc-body"><div class="toc-title">Leave Management</div><div class="toc-desc">Requests, approvals, planning, policies</div></div></div>
+      <div class="toc-item"><div class="num">07</div><div class="toc-body"><div class="toc-title">Payroll</div><div class="toc-desc">Processing, approvals, payslips, deductions</div></div></div>
+      <div class="toc-item"><div class="num">08</div><div class="toc-body"><div class="toc-title">Loans &amp; Contributions</div><div class="toc-desc">Employee loans, cooperative module</div></div></div>
+      <div class="toc-item"><div class="num">09</div><div class="toc-body"><div class="toc-title">Performance &amp; Schedules</div><div class="toc-desc">Goals, appraisals, shift planning</div></div></div>
+      <div class="toc-item"><div class="num">10</div><div class="toc-body"><div class="toc-title">Sales Playbook</div><div class="toc-desc">Demo flow, talking points, objection handling</div></div></div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 1: OVERVIEW -->
+  <div class="section">
+    <div class="chapter-badge">📘 Chapter 1</div>
+    <h2>What is OptimaX?</h2>
+    <p class="chapter-desc">A full-suite cloud-based ERP that unifies every business operation in one platform.</p>
+
+    <p>
+      <strong>OptimaX</strong> is a comprehensive ERP system that unifies Human Resources, Payroll,
+      Sales, CRM, Inventory, Accounting, Procurement, and more — into a single, seamless platform.
+      Built for growing businesses that need professional-grade tools without legacy system complexity.
+    </p>
+
+    <h3>Platform Modules</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">👥</div><h4>Human Resources</h4><p>Full employee lifecycle — onboarding to payroll and performance.</p></div>
+      <div class="card"><div class="card-icon">💳</div><h4>Point of Sale</h4><p>Real-time sales, inventory sync, receipts.</p></div>
+      <div class="card"><div class="card-icon">📊</div><h4>Accounting</h4><p>Ledgers, invoicing, financial statements, tax.</p></div>
+      <div class="card"><div class="card-icon">🤝</div><h4>CRM</h4><p>Customer pipeline, deals, contact management.</p></div>
+      <div class="card"><div class="card-icon">📦</div><h4>Inventory</h4><p>Stock tracking, warehouse, reorder automation.</p></div>
+      <div class="card"><div class="card-icon">🛒</div><h4>Procurement</h4><p>Vendor management, purchase orders, supply chain.</p></div>
+    </div>
+
+    <div class="callout tip">
+      <span class="ci">💡</span>
+      <div><strong>Sales Talking Point</strong>OptimaX replaces 6–10 disconnected tools with one integrated platform, reducing IT overhead and giving management real-time visibility across every department.</div>
+    </div>
+
+    <h3>Why OptimaX HR Stands Out</h3>
+    <ul>
+      <li><strong>End-to-end coverage</strong> — from job posting to retirement in one system</li>
+      <li><strong>Role-based access</strong> — employees see only what they need; managers have full control</li>
+      <li><strong>Real-time data</strong> — attendance, leave balances, and payroll figures update live</li>
+      <li><strong>Integrated payroll</strong> — salary, deductions, loans, bonuses, and taxes automated</li>
+      <li><strong>Mobile-responsive</strong> — works on desktops, tablets, and smartphones</li>
+      <li><strong>Digital ID cards</strong> — QR-coded staff identity cards generated in one click</li>
+    </ul>
+  </div>
+
+  <!-- CHAPTER 2: NAVIGATION -->
+  <div class="section">
+    <div class="chapter-badge">🗺️ Chapter 2</div>
+    <h2>Navigating OptimaX</h2>
+    <p class="chapter-desc">Understanding the layout and navigation structure of the platform.</p>
+
+    <table>
+      <thead><tr><th>Zone</th><th>Location</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Left Sidebar</strong></td><td>Far left</td><td>Module navigation — switch between HR, Sales, CRM, etc.</td></tr>
+        <tr><td><strong>Top Navbar</strong></td><td>Top of screen</td><td>User profile, notifications, workspace toggle, sidebar collapse</td></tr>
+        <tr><td><strong>Main Workspace</strong></td><td>Center &amp; right</td><td>Active module content — lists, forms, dashboards, reports</td></tr>
+      </tbody>
+    </table>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Full Application Layout</div>
+      <div class="ss-body">
+        <div class="icon">🖥️</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: Full browser window</strong>Log in as Administrator. Capture the full window showing left sidebar with module icons, top navbar with user profile, and HR workspace area.</div>
+      </div>
+    </div>
+
+    <h3>HR Sub-Navigation Menu</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">👤</div><h4>My Dashboard</h4><p>Personal employee dashboard and self-service portal.</p></div>
+      <div class="card"><div class="card-icon">👥</div><h4>Employee Management</h4><p>Full employee directory, add/edit, staff ID cards.</p></div>
+      <div class="card"><div class="card-icon">📋</div><h4>Recruitment</h4><p>Full hiring pipeline from vacancy to appointment letter.</p></div>
+      <div class="card"><div class="card-icon">🎯</div><h4>Performance</h4><p>Goal setting, tracking, and performance appraisals.</p></div>
+      <div class="card"><div class="card-icon">📅</div><h4>Work Schedule</h4><p>Shift creation, assignment, and visual calendar.</p></div>
+      <div class="card"><div class="card-icon">💰</div><h4>Payroll</h4><p>Monthly payroll processing with multi-stage approvals.</p></div>
+      <div class="card"><div class="card-icon">💳</div><h4>Payroll Operations</h4><p>Employee payroll queries and support tickets.</p></div>
+      <div class="card"><div class="card-icon">🏦</div><h4>Contributions &amp; Loans</h4><p>Employee loans and cooperative programs.</p></div>
+      <div class="card"><div class="card-icon">🕐</div><h4>Attendance</h4><p>Clock-in/out, attendance sheets, time sheets.</p></div>
+      <div class="card"><div class="card-icon">🌴</div><h4>Leave</h4><p>Leave requests, approvals, planning, and policies.</p></div>
+      <div class="card"><div class="card-icon">📊</div><h4>Work Productivity</h4><p>Task execution, reviews, team output tracking.</p></div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 3: EMPLOYEE MANAGEMENT -->
+  <div class="section">
+    <div class="chapter-badge">👥 Chapter 3</div>
+    <h2>Employee Management</h2>
+    <p class="chapter-desc">Navigate to HR → Employee Management — the central hub for all staff records.</p>
+
+    <h3>Employee Directory Overview</h3>
+    <p>The Employee Directory shows all staff as a visual card grid. Four summary stats appear at the top of the page:</p>
+    <div class="stats">
+      <div class="stat"><div class="sl">Headcount</div><div class="sv">48</div><div class="sm">Employees in workspace</div></div>
+      <div class="stat"><div class="sl">Visible</div><div class="sv">12</div><div class="sm">Current page</div></div>
+      <div class="stat"><div class="sl">Levels</div><div class="sv">5</div><div class="sm">Level groupings</div></div>
+      <div class="stat"><div class="sl">Positions</div><div class="sv">14</div><div class="sm">Active titles</div></div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Employee Directory</div>
+      <div class="ss-body">
+        <div class="icon">🗂️</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: HR → Employee Management main page</strong>Capture the 4 stat cards at top, the toolbar with "Add new employee" button and filters, and the employee card grid below.</div>
+      </div>
+    </div>
+
+    <h3>What Each Employee Card Shows</h3>
+    <ul>
+      <li><strong>Department badge</strong> — color-coded label at the top of the card</li>
+      <li><strong>Status indicator</strong> — pulsing green (Active) or amber dot (Away)</li>
+      <li><strong>Profile photo</strong> — employee avatar or default placeholder</li>
+      <li><strong>Full name</strong> — Last name + First name</li>
+      <li><strong>Job title</strong> — e.g., "Senior Developer", "Marketing Lead"</li>
+      <li><strong>Work email</strong> — official email address</li>
+      <li><strong>Department &amp; Employment type chips</strong></li>
+      <li><strong>Organizational level &amp; contract type</strong></li>
+      <li><strong>Date joined</strong> — hire date</li>
+      <li><strong>Employee ID</strong> — system identifier</li>
+      <li><strong>Staff ID button</strong> — opens printable QR-coded identity card</li>
+      <li><strong>View Profile button</strong> — opens full editable employee record</li>
+    </ul>
+
+    <h3>Filtering &amp; Searching</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Filter by Level Type</strong> — Multi-select dropdown to show employees of specific organizational levels.</div></li>
+      <li><div class="sc"><strong>Filter by Position</strong> — Multi-select to narrow by specific job titles.</div></li>
+      <li><div class="sc"><strong>Search by Name or Title</strong> — Live search field — grid filters instantly as you type.</div></li>
+    </ol>
+
+    <h3>Adding a New Employee</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Click "Add new employee"</strong> in the toolbar. A side panel slides in from the right.</div></li>
+      <li><div class="sc"><strong>Personal Information</strong> — Name, DOB, gender, phone, email, address.</div></li>
+      <li><div class="sc"><strong>Employment Details</strong> — Job title, department, level, employment type, hire date.</div></li>
+      <li><div class="sc"><strong>Salary Structure</strong> — Base salary, allowances, bonuses, deductions, overtime.</div></li>
+      <li><div class="sc"><strong>Financial Information</strong> — Bank name, account number, BVN, NIN.</div></li>
+      <li><div class="sc"><strong>Next of Kin</strong> — Emergency contact details.</div></li>
+      <li><div class="sc"><strong>Save</strong> — Employee is immediately available for payroll, leave, and attendance.</div></li>
+    </ol>
+
+    <h3>Digital Staff ID Card</h3>
+    <p>Click <strong>Staff ID</strong> on any employee card to generate a printable identity card with:</p>
+    <ul>
+      <li>Company logo and name</li>
+      <li>Employee photo, name, job title, department, and level</li>
+      <li>Staff ID, work email, phone, and date joined</li>
+      <li>QR code and barcode for HR scanning</li>
+      <li>Reverse side with emergency contact and verification policy</li>
+      <li><strong>Download PDF</strong> button</li>
+    </ul>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Staff ID Card Preview</div>
+      <div class="ss-body">
+        <div class="icon">🪪</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: Staff ID card modal</strong>Click "Staff ID" on any employee card. Capture the modal showing front of card with photo, QR code, barcode, and "Download PDF" button.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 4: RECRUITMENT -->
+  <div class="section">
+    <div class="chapter-badge">📋 Chapter 4</div>
+    <h2>Recruitment</h2>
+    <p class="chapter-desc">Navigate to HR → Recruitment — full hiring pipeline from vacancy to appointment letter.</p>
+
+    <div class="tabs">
+      <div class="tab active">Vacancies</div><div class="tab">Job Openings</div>
+      <div class="tab">Candidates</div><div class="tab">Interviews</div><div class="tab">Offers</div>
+    </div>
+
+    <h3>Hiring Workflow</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Create a Vacancy</strong> — Position title, department, salary range, description, requirements, deadline.</div></li>
+      <li><div class="sc"><strong>Post as Job Opening</strong> — Publish to external job board for candidates to find and apply.</div></li>
+      <li><div class="sc"><strong>Receive Applications</strong> — All applications appear in the Candidates tab automatically.</div></li>
+      <li><div class="sc"><strong>Screen Candidates</strong> — Review, shortlist, and move candidates to interview stage.</div></li>
+      <li><div class="sc"><strong>Schedule Interviews</strong> — Assign date, time, and interviewer. Auto-sends email invitation to candidate.</div></li>
+      <li><div class="sc"><strong>Score the Interview</strong> — Digital score sheet rates candidates across defined criteria.</div></li>
+      <li><div class="sc"><strong>Send Offer Letter</strong> — Generate branded offer letter with salary details directly from system.</div></li>
+      <li><div class="sc"><strong>Send Appointment Letter</strong> — Once offer accepted, generate formal appointment letter.</div></li>
+      <li><div class="sc"><strong>Onboard Employee</strong> — New hire moves into the Employee Management module automatically.</div></li>
+    </ol>
+
+    <div class="callout success">
+      <span class="ci">✅</span>
+      <div><strong>Key Feature for Sales</strong>Offer letters and appointment letters are auto-generated with company branding. Eliminates manual document creation and ensures consistency across all hires.</div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Candidate List</div>
+      <div class="ss-body">
+        <div class="icon">👤</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: HR → Recruitment → Candidates tab</strong>Capture the table showing candidate names, positions, application dates, status badges (Screening/Interview/Offer/Hired), and action buttons.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 5: ATTENDANCE -->
+  <div class="section">
+    <div class="chapter-badge">🕐 Chapter 5</div>
+    <h2>Attendance Tracking</h2>
+    <p class="chapter-desc">Navigate to HR → Attendance — real-time presence monitoring for every employee.</p>
+
+    <div class="tabs">
+      <div class="tab active">Attendance Sheet</div><div class="tab">My Attendance</div>
+      <div class="tab">Time Sheet</div><div class="tab">Notifications</div><div class="tab">Admin View</div>
+    </div>
+
+    <h3>Attendance Sheet (Admin)</h3>
+    <p>Date-filtered table showing for each employee:</p>
+    <ul>
+      <li>Clock-in and clock-out times</li>
+      <li>Total working hours</li>
+      <li>Late arrival flag with timestamp</li>
+      <li>Status: Present / Absent / Late</li>
+    </ul>
+
+    <h3>My Attendance (Employee Self-Service)</h3>
+    <p>Personal calendar showing attendance history with counts of days present, absent, and late. Reduces HR support queries significantly.</p>
+
+    <h3>Time Sheet</h3>
+    <p>Detailed breakdown of working hours across date ranges — for project billing, overtime calculation, and performance monitoring.</p>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Attendance Sheet</div>
+      <div class="ss-body">
+        <div class="icon">📋</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: HR → Attendance → Attendance Sheet</strong>Capture the date picker and table showing employee rows with clock-in, clock-out, hours, and status columns.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 6: LEAVE -->
+  <div class="section">
+    <div class="chapter-badge">🌴 Chapter 6</div>
+    <h2>Leave Management</h2>
+    <p class="chapter-desc">Navigate to HR → Leave — requests, approvals, planning, and policies.</p>
+
+    <div class="tabs">
+      <div class="tab active">Leave Plan</div><div class="tab">My Leave</div>
+      <div class="tab">Plan Dashboard</div><div class="tab">Plan Requests</div>
+      <div class="tab">Leave Requests</div><div class="tab">Leave Policy</div>
+    </div>
+
+    <h3>Leave Plan</h3>
+    <p>Employees submit upcoming leave requests: leave type, start date, end date, reason. System auto-calculates working days.</p>
+
+    <h3>My Leave</h3>
+    <p>Personal leave dashboard showing: days allocated, days used, days remaining, and a visual calendar of leave periods.</p>
+
+    <h3>Plan Dashboard (Timeline)</h3>
+    <p>Organization-wide leave timeline — managers see which employees are on leave on any date, enabling resource planning and preventing understaffing.</p>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Leave Plan Dashboard</div>
+      <div class="ss-body">
+        <div class="icon">📅</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: HR → Leave → Plan Dashboard</strong>Capture the calendar/timeline view showing employee leave periods, color-coded by status or department.</div>
+      </div>
+    </div>
+
+    <h3>Leave Requests (Approval Workflow)</h3>
+    <p>HR admins and line managers review pending requests. For each request they can:</p>
+    <ul>
+      <li>View requester name, leave type, date range, and reason</li>
+      <li>Check employee's current leave balance</li>
+      <li><strong>Approve</strong> — marks approved and deducts from balance</li>
+      <li><strong>Reject</strong> — declines with optional reason</li>
+    </ul>
+
+    <h3>Leave Policy</h3>
+    <p>Admins define: leave types (Annual, Medical, Maternity, Paternity, etc.), days allocated per type per year, carry-over rules, and notice period requirements.</p>
+  </div>
+
+  <!-- CHAPTER 7: PAYROLL -->
+  <div class="section">
+    <div class="chapter-badge">💰 Chapter 7</div>
+    <h2>Payroll Management</h2>
+    <p class="chapter-desc">Navigate to HR → Payroll — automated salary processing with multi-stage approval.</p>
+
+    <h3>Payroll Components</h3>
+    <table>
+      <thead><tr><th>Component</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>Base Salary</td><td><span class="badge b-blue">Earnings</span></td><td>Fixed monthly salary from salary structure</td></tr>
+        <tr><td>Transportation Allowance</td><td><span class="badge b-blue">Earnings</span></td><td>Monthly travel allowance</td></tr>
+        <tr><td>Meal Allowance</td><td><span class="badge b-blue">Earnings</span></td><td>Daily meal subsidy calculated monthly</td></tr>
+        <tr><td>Housing Allowance</td><td><span class="badge b-blue">Earnings</span></td><td>Monthly housing benefit</td></tr>
+        <tr><td>Bonus / Overtime</td><td><span class="badge b-green">Earnings</span></td><td>Performance bonuses and overtime pay</td></tr>
+        <tr><td>Income Tax (PAYE)</td><td><span class="badge b-red">Deduction</span></td><td>Statutory tax deducted at source</td></tr>
+        <tr><td>Pension Contribution</td><td><span class="badge b-red">Deduction</span></td><td>Employer and employee pension</td></tr>
+        <tr><td>Loan Repayment</td><td><span class="badge b-red">Deduction</span></td><td>Auto-deducted for active employee loans</td></tr>
+        <tr><td><strong>Net Pay</strong></td><td><span class="badge b-green">Result</span></td><td><strong>Gross Earnings minus Total Deductions</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Multi-Stage Approval Workflow</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>HR Prepares Payroll</strong> — Reviews entries, confirms attendance &amp; loan deductions.</div></li>
+      <li><div class="sc"><strong>Stage 1 Approval</strong> — HR Manager reviews and approves or rejects.</div></li>
+      <li><div class="sc"><strong>Stage 2 Approval</strong> — Finance Director gives final sign-off.</div></li>
+      <li><div class="sc"><strong>Payroll Locked</strong> — Locked after approval; payslips become available to employees.</div></li>
+    </ol>
+
+    <div class="callout success">
+      <span class="ci">✅</span>
+      <div><strong>Key Selling Point</strong>Multi-stage approval prevents unauthorized payroll changes — critical compliance and audit requirement for regulated industries.</div>
+    </div>
+
+    <div class="ss">
+      <div class="ss-header"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span>&nbsp;Screenshot: Payroll Dashboard</div>
+      <div class="ss-body">
+        <div class="icon">💰</div>
+        <div class="caption"><strong>SCREENSHOT NEEDED: HR → Payroll main page</strong>Capture the header showing month/year, the approval progress tracker with stages in different states (completed/current/pending), and the employee table below.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 8: LOANS -->
+  <div class="section">
+    <div class="chapter-badge">🏦 Chapter 8</div>
+    <h2>Loans &amp; Contributions</h2>
+    <p class="chapter-desc">Navigate to HR → Contributions and Loans — employee loans plus full cooperative management.</p>
+
+    <h3>Employee Loan Workflow</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Employee Submits Request</strong> — Selects loan purpose, amount, and repayment period.</div></li>
+      <li><div class="sc"><strong>HR Reviews Eligibility</strong> — Checks salary, existing loans, and tenure.</div></li>
+      <li><div class="sc"><strong>Loan Approval/Rejection</strong> — Authorized approver signs off with optional note.</div></li>
+      <li><div class="sc"><strong>Disbursement to Bank</strong> — Approved loan transferred to employee account.</div></li>
+      <li><div class="sc"><strong>Auto Payroll Deduction</strong> — Monthly repayments automatically deducted until settled.</div></li>
+    </ol>
+
+    <h3>Cooperative Module</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">🤝</div><h4>Cooperative Dashboard</h4><p>Funds overview, active loans, member counts.</p></div>
+      <div class="card"><div class="card-icon">👥</div><h4>Member Management</h4><p>Enrollment, contributions, withdrawal tracking.</p></div>
+      <div class="card"><div class="card-icon">💰</div><h4>Cooperative Loans</h4><p>Group loan requests with approval workflows.</p></div>
+      <div class="card"><div class="card-icon">📊</div><h4>Patronage Distribution</h4><p>Distribute dividends and patronage refunds.</p></div>
+      <div class="card"><div class="card-icon">⏱️</div><h4>Grace Period Mgmt</h4><p>Handle grace period requests from members.</p></div>
+      <div class="card"><div class="card-icon">📋</div><h4>Loan Reports</h4><p>Detailed reports on all loan activity.</p></div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 9: PERFORMANCE & SCHEDULE -->
+  <div class="section">
+    <div class="chapter-badge">🎯 Chapter 9</div>
+    <h2>Performance &amp; Work Schedules</h2>
+    <p class="chapter-desc">Goal tracking, appraisals, shift planning, and productivity measurement.</p>
+
+    <h3>Performance Management  —  HR → Performance</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">🎯</div><h4>Goal Setting</h4><p>Set measurable goals with deadlines and success criteria.</p></div>
+      <div class="card"><div class="card-icon">📈</div><h4>Goal Tracking</h4><p>Monitor progress with completion % and real-time status updates.</p></div>
+      <div class="card"><div class="card-icon">📋</div><h4>Appraisals</h4><p>Structured performance review forms for manager-employee evaluations.</p></div>
+    </div>
+
+    <h3>Work Schedule &amp; Shifts  —  HR → Work Schedule</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Create Shift Patterns</strong> — Define name, start/end times, working days, break duration.</div></li>
+      <li><div class="sc"><strong>Assign to Employees</strong> — Select employees and assign them to a shift for a date range.</div></li>
+      <li><div class="sc"><strong>View Shift Calendar</strong> — Monthly calendar showing all shifts visually by employee and team.</div></li>
+      <li><div class="sc"><strong>My Schedule</strong> — Employee self-service view of upcoming shifts.</div></li>
+    </ol>
+
+    <h3>Work Productivity  —  HR → Work Productivity</h3>
+    <p>Connects HR data with operational output — managers can see task execution rates, review scores, and team output trends. Bridges HR and Operations in one view.</p>
+
+    <div class="callout tip">
+      <span class="ci">💡</span>
+      <div><strong>Sales Insight</strong>The Productivity module is a key differentiator — managers can correlate attendance, leave, and actual work output in one place.</div>
+    </div>
+  </div>
+
+  <!-- CHAPTER 10: SALES PLAYBOOK -->
+  <div class="section">
+    <div class="chapter-badge">💡 Chapter 10</div>
+    <h2>Sales &amp; Marketing Playbook</h2>
+    <p class="chapter-desc">Key talking points, demo strategies, and objection responses for presenting OptimaX HR.</p>
+
+    <h3>Top 10 HR Talking Points</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>All-in-One Platform</strong> — "One system replaces your HR software, attendance tracker, payroll tool, and recruitment platform."</div></li>
+      <li><div class="sc"><strong>Digital Staff ID Cards</strong> — "Generate QR-coded ID cards with one click. No design software needed."</div></li>
+      <li><div class="sc"><strong>Multi-Stage Payroll Approvals</strong> — "Built-in approval workflow — payroll can't be processed without proper sign-off. Ideal for audits."</div></li>
+      <li><div class="sc"><strong>Self-Service Employee Portal</strong> — "Employees check own attendance, leave, and payslips — reducing HR support tickets by up to 60%."</div></li>
+      <li><div class="sc"><strong>Real-Time Attendance</strong> — "Clock-in/out updates instantly. No manual entry ever. Managers know who's in right now."</div></li>
+      <li><div class="sc"><strong>Integrated Loan Management</strong> — "Employee loans auto-deducted from payroll — no manual tracking, no errors."</div></li>
+      <li><div class="sc"><strong>End-to-End Recruitment</strong> — "Job posting to appointment letter in one system. No switching tools."</div></li>
+      <li><div class="sc"><strong>Cooperative Management</strong> — "Rare in ERP systems — handles member loans, contributions, and patronage distributions."</div></li>
+      <li><div class="sc"><strong>Leave Planning Calendar</strong> — "Managers see org-wide leave timeline — prevents understaffing during critical periods."</div></li>
+      <li><div class="sc"><strong>Performance + Productivity Link</strong> — "Connect HR data with output — see if attendance issues correlate with performance dips."</div></li>
+    </ol>
+
+    <h3>Common Objections &amp; Responses</h3>
+    <table>
+      <thead><tr><th>Objection</th><th>Response</th></tr></thead>
+      <tbody>
+        <tr><td>"We already have a payroll system"</td><td>OptimaX integrates payroll with attendance, leave, and loans — one source of truth. No more import/export between tools.</td></tr>
+        <tr><td>"Our HR needs are simple"</td><td>Start with what you need today and activate more features as you grow — no system migration required.</td></tr>
+        <tr><td>"Is it hard to learn?"</td><td>Most features work in under 3 clicks. Designed for non-technical HR staff. Full training and documentation included.</td></tr>
+        <tr><td>"How secure is our data?"</td><td>Role-based access — employees only see their own data. Salary and BVN protected. All data encrypted at rest and in transit.</td></tr>
+        <tr><td>"Does it work for multiple branches?"</td><td>Yes — multi-workspace support. Each branch operates independently; HQ gets consolidated reporting.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Recommended Demo Flow</h3>
+    <ol class="steps">
+      <li><div class="sc"><strong>Employee Directory</strong> — Show the card grid, filter by department, click Staff ID to show the QR-coded ID card. Visual impact is immediate.</div></li>
+      <li><div class="sc"><strong>Payroll Processing</strong> — Display approval tracker and a payslip. Emphasize multi-stage approval and auto deductions.</div></li>
+      <li><div class="sc"><strong>Leave Management</strong> — Submit a leave request as employee, switch to admin and approve. Show balance update in real time.</div></li>
+      <li><div class="sc"><strong>Recruitment Pipeline</strong> — Create a vacancy, show candidate pipeline, open offer letter template.</div></li>
+      <li><div class="sc"><strong>Attendance &amp; Shifts</strong> — Show attendance sheet with clock-in/out times. If prospect has shift workers, demo the Shift Calendar.</div></li>
+    </ol>
+
+    <div class="callout success">
+      <span class="ci">🌟</span>
+      <div><strong>Closing Statement</strong>"OptimaX HR isn't just a tool — it's a fully integrated people-management system that grows with your business. From day one, you have the same infrastructure as enterprise companies, without the enterprise price tag."</div>
+    </div>
+  </div>
+
+  <!-- PRINT FOOTER -->
+  <div class="page-footer">
+    <span>OptimaX ERP — HR Module User Manual 2025</span>
+    <span>Sales &amp; Marketing Edition — Confidential</span>
+  </div>
+
+</body>
+</html>
