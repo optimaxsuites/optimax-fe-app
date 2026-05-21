@@ -9,7 +9,6 @@ import {
   RequestStatus,
   FieldChangeType,
 } from '../../model/profile-change-request.model';
-import { MailNotificationService } from '../../service/mailNotification.service';
 
 @Component({
   selector: 'app-profile-change-requests',
@@ -53,8 +52,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   constructor(
     private profileChangeRequestService: ProfileChangeRequestService,
     private messageService: MessageService,
-    private fb: FormBuilder,
-    private mailNotificationService: MailNotificationService
+    private fb: FormBuilder
   ) {
     this.rejectionForm = this.fb.group({
       rejectionReason: ['', [Validators.required, Validators.minLength(5)]],
@@ -133,9 +131,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          // Send notification email to employee
-          this.sendApprovalNotification(request, currentUser);
-
           this.messageService.add({
             severity: 'success',
             summary: 'Approved',
@@ -157,54 +152,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
           this.isProcessingRequest = false;
         },
       });
-  }
-
-  /**
-   * Send approval notification to employee
-   */
-  private sendApprovalNotification(request: ProfileChangeRequestDTO, currentUser: any): void {
-    const employeeEmail = this.getEmployeeEmail(request) || 'employee@optimaxsuites.com';
-    const fieldLabel = this.getFieldTypeLabel(request.fieldChangeType);
-
-    const emailBody = {
-      name: request.employeeName || 'Employee',
-      recieverEmail: employeeEmail,
-      subject: `${fieldLabel} Change Request - APPROVED`,
-      body: `
-        <h2>Your ${fieldLabel} Change Request Has Been Approved</h2>
-        <p>Dear ${request.employeeName},</p>
-        <p>We are pleased to inform you that your request to change your ${fieldLabel.toLowerCase()} has been <strong>approved</strong>.</p>
-        
-        <h3>Request Details:</h3>
-        <ul>
-          ${request.request.map(item => `<li><strong>${item.fieldName}:</strong> ${item.oldValue} → ${item.value}</li>`).join('')}
-        </ul>
-        
-        ${request.reason ? `<p><strong>Your Reason:</strong> ${request.reason}</p>` : ''}
-        
-        <p><strong>Approved By:</strong> ${currentUser.name || 'HR Department'}</p>
-        <p><strong>Approval Date:</strong> ${new Date().toLocaleString()}</p>
-        
-        <p>If you have any questions, please contact the HR department.</p>
-        <p>Best regards,<br>OptimAX HR Department</p>
-      `
-    };
-
-    this.mailNotificationService.sendMail(emailBody).subscribe({
-      next: () => {
-        console.log('Approval notification email sent to employee');
-      },
-      error: (err) => {
-        console.error('Error sending approval notification email:', err);
-      }
-    });
-  }
-
-  /**
-   * Get employee email from request (placeholder for now)
-   */
-  private getEmployeeEmail(request: ProfileChangeRequestDTO): string | null {
-    return request.employeeEmail || null;
   }
 
   openRejectionDialog(request: ProfileChangeRequestDTO): void {
@@ -234,9 +181,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
-          // Send rejection notification to employee
-          this.sendRejectionNotification(this.selectedRequest!, reason, currentUser);
-
           this.messageService.add({
             severity: 'info',
             summary: 'Rejected',
@@ -258,76 +202,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
           this.isProcessingRequest = false;
         },
       });
-  }
-
-  /**
-   * Send rejection notification to employee
-   */
-  private sendRejectionNotification(request: ProfileChangeRequestDTO, reason: string, currentUser: any): void {
-    const employeeEmail = this.getEmployeeEmail(request) || 'employee@optimaxsuites.com';
-    const fieldLabel = this.getFieldTypeLabel(request.fieldChangeType);
-
-    const emailBody = {
-      name: request.employeeName || 'Employee',
-      recieverEmail: employeeEmail,
-      subject: `${fieldLabel} Change Request - NOT APPROVED`,
-      body: `
-        <h2>Your ${fieldLabel} Change Request Has Been Reviewed</h2>
-        <p>Dear ${request.employeeName},</p>
-        <p>Thank you for submitting your request to change your ${fieldLabel.toLowerCase()}. After careful review, we regret to inform you that your request has been <strong>not approved</strong> at this time.</p>
-        
-        <h3>Request Details:</h3>
-        <ul>
-          ${request.request.map(item => `<li><strong>${item.fieldName}:</strong> ${item.oldValue} → ${item.value}</li>`).join('')}
-        </ul>
-        
-        <h3>Reason for Decision:</h3>
-        <p>${reason}</p>
-        
-        <p><strong>Reviewed By:</strong> ${currentUser.name || 'HR Department'}</p>
-        <p><strong>Review Date:</strong> ${new Date().toLocaleString()}</p>
-        
-        <p>If you would like to discuss this decision or have any questions, please contact the HR department.</p>
-        <p>Best regards,<br>OptimAX HR Department</p>
-      `
-    };
-
-    this.mailNotificationService.sendMail(emailBody).subscribe({
-      next: () => {
-        console.log('Rejection notification email sent to employee');
-      },
-      error: (err) => {
-        console.error('Error sending rejection notification email:', err);
-      }
-    });
-
-    const hrEmail = currentUser.email || sessionStorage.getItem('useremail') || 'hr@optimaxsuites.com';
-    const hrEmailBody = {
-      name: currentUser.name || 'HR Department',
-      recieverEmail: hrEmail,
-      subject: `${fieldLabel} Change Request Rejected - ${request.employeeName || request.employeeId}`,
-      body: `
-        <h2>${fieldLabel} Change Request Rejected</h2>
-        <p><strong>Employee:</strong> ${request.employeeName || request.employeeId}</p>
-        <p><strong>Employee Email:</strong> ${employeeEmail}</p>
-        <h3>Request Details:</h3>
-        <ul>
-          ${request.request.map(item => `<li><strong>${item.fieldName}:</strong> ${item.oldValue} → ${item.value}</li>`).join('')}
-        </ul>
-        <p><strong>Rejection Reason:</strong> ${reason}</p>
-        <p><strong>Rejected By:</strong> ${currentUser.name || 'HR Department'}</p>
-        <p><strong>Review Date:</strong> ${new Date().toLocaleString()}</p>
-      `
-    };
-
-    this.mailNotificationService.sendMail(hrEmailBody).subscribe({
-      next: () => {
-        console.log('Rejection notification email sent to HR');
-      },
-      error: (err) => {
-        console.error('Error sending HR rejection notification email:', err);
-      }
-    });
   }
 
   private getCurrentUser(): any {
