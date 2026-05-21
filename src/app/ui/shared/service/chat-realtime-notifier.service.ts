@@ -35,6 +35,8 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private lastChannelsRefreshAt = 0;
   private refreshChannelsFailureCount = 0;
   private readonly refreshChannelsTtlMs = 10_000;
+  private readonly fallbackRefreshIntervalMs = 15_000;
+  private fallbackRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private notificationAudioContext: AudioContext | null = null;
   private audioPrimed = false;
 
@@ -54,6 +56,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
     this.started = true;
     this.refreshChannels(true);
+    this.startFallbackRefresh();
     this.connectSocket();
     this.ensureNotificationPermission();
     this.bindAudioPriming();
@@ -75,6 +78,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
     this.wsConnected = false;
     this.started = false;
+    this.stopFallbackRefresh();
     this.unbindAudioPriming();
   }
 
@@ -158,31 +162,21 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
     this.refreshChannelsInFlight = true;
-    this.collabService.getChannels().subscribe({
-      next: (channels) => {
+    this.collabService.getHomeChannels().subscribe({
+      next: (home) => {
         this.lastChannelsRefreshAt = Date.now();
         this.refreshChannelsInFlight = false;
         this.refreshChannelsFailureCount = 0;
-        this.applyChannelTargets(channels || []);
+        this.applyChannelTargets(home?.channels || []);
       },
       error: () => {
-        this.collabService.getHomeChannels().subscribe({
-          next: (home) => {
-            this.lastChannelsRefreshAt = Date.now();
-            this.refreshChannelsInFlight = false;
-            this.refreshChannelsFailureCount = 0;
-            this.applyChannelTargets(home?.channels || []);
-          },
-          error: () => {
-            this.refreshChannelsInFlight = false;
-            this.refreshChannelsFailureCount++;
-            const backoffMs = Math.min(
-              5_000 * Math.pow(2, this.refreshChannelsFailureCount - 1),
-              120_000,
-            );
-            this.refreshChannelsCooldownUntil = Date.now() + backoffMs;
-          },
-        });
+        this.refreshChannelsInFlight = false;
+        this.refreshChannelsFailureCount++;
+        const backoffMs = Math.min(
+          5_000 * Math.pow(2, this.refreshChannelsFailureCount - 1),
+          120_000,
+        );
+        this.refreshChannelsCooldownUntil = Date.now() + backoffMs;
       },
     });
   }
@@ -190,6 +184,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private applyChannelTargets(channels: CollabChannel[]): void {
     this.refreshChannelsCooldownUntil = 0;
     this.refreshChannelsFailureCount = 0;
+    const previousTargets = new Map(this.channelTargets);
     const nextTargets = new Map<number, GlobalChatChannelTarget>();
     let unreadChannels = 0;
     let unreadDirectMessages = 0;
@@ -227,6 +222,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       unreadDirectMessages,
     });
     this.persistUnreadSnapshot(nextTargets);
+    this.publishFallbackUnreadNotifications(previousTargets, nextTargets);
 
     this.channelSubs.forEach((sub, backendId) => {
       if (nextTargets.has(backendId)) {
@@ -242,6 +238,64 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (this.wsConnected) {
       nextTargets.forEach((target) => this.subscribeToChannel(target));
     }
+  }
+
+  private startFallbackRefresh(): void {
+    if (this.fallbackRefreshTimer != null || typeof window === 'undefined') {
+      return;
+    }
+    this.fallbackRefreshTimer = window.setInterval(() => {
+      this.refreshChannels();
+    }, this.fallbackRefreshIntervalMs);
+  }
+
+  private stopFallbackRefresh(): void {
+    if (this.fallbackRefreshTimer == null || typeof window === 'undefined') {
+      return;
+    }
+    window.clearInterval(this.fallbackRefreshTimer);
+    this.fallbackRefreshTimer = null;
+  }
+
+  private publishFallbackUnreadNotifications(
+    previousTargets: Map<number, GlobalChatChannelTarget>,
+    nextTargets: Map<number, GlobalChatChannelTarget>,
+  ): void {
+    if (this.wsConnected || previousTargets.size === 0) {
+      return;
+    }
+
+    const routeUserId = this.currentRouteUserId || String(this.currentUserId);
+    nextTargets.forEach((target, backendId) => {
+      const previousUnread = Number(previousTargets.get(backendId)?.unreadCount || 0);
+      const nextUnread = Number(target.unreadCount || 0);
+      if (nextUnread <= previousUnread) {
+        return;
+      }
+      const increase = nextUnread - previousUnread;
+      const notificationTarget = {
+        workspaceMode: 'chat' as const,
+        route: `/admin/dashboard/communications/${routeUserId}`,
+        channelBackendId:
+          target.type === 'channel' ? target.backendId : undefined,
+        dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
+      };
+      const title =
+        target.type === 'dm' ? 'New direct message' : `New message in ${target.label}`;
+      const detail =
+        increase === 1
+          ? 'You have 1 new unread message.'
+          : `You have ${increase} new unread messages.`;
+      this.publishIncomingNotification(
+        target,
+        {
+          title,
+          detail,
+          createdAt: Date.now(),
+        },
+        notificationTarget,
+      );
+    });
   }
 
   private persistUnreadSnapshot(
