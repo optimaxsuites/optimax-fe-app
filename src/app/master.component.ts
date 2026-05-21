@@ -24,6 +24,9 @@ export class MasterComponent {
           }
           if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
             this.isLoading = false;
+            if (this.isMobileViewport()) {
+              this.sidebarHidden = true;
+            }
           }
         });
   }
