@@ -93,7 +93,7 @@ export class HeaderStateService {
       unreadDirectMessages:
         payload.unreadDirectMessages ?? this.state$.value.unreadDirectMessages,
     };
-    next.unreadMessages = next.unreadChannels + next.unreadDirectMessages;
+    next.unreadMessages = this.computeUnreadMessages(next);
     this.commit(next);
   }
 
@@ -156,6 +156,10 @@ export class HeaderStateService {
     this.commit({
       ...this.state$.value,
       messagePreviews,
+      unreadMessages: this.computeUnreadMessages({
+        ...this.state$.value,
+        messagePreviews,
+      }),
     });
   }
 
@@ -166,16 +170,25 @@ export class HeaderStateService {
     this.commit({
       ...this.state$.value,
       messagePreviews,
+      unreadMessages: this.computeUnreadMessages({
+        ...this.state$.value,
+        messagePreviews,
+      }),
     });
   }
 
   markAllMessagePreviewsRead(): void {
+    const messagePreviews = this.state$.value.messagePreviews.map((entry) => ({
+      ...entry,
+      read: true,
+    }));
     this.commit({
       ...this.state$.value,
-      messagePreviews: this.state$.value.messagePreviews.map((entry) => ({
-        ...entry,
-        read: true,
-      })),
+      messagePreviews,
+      unreadMessages: this.computeUnreadMessages({
+        ...this.state$.value,
+        messagePreviews,
+      }),
     });
   }
 
@@ -259,6 +272,15 @@ export class HeaderStateService {
       messagePreviews: [],
       profile: null,
     };
+  }
+
+  private computeUnreadMessages(state: HeaderState): number {
+    const aggregateUnread =
+      Number(state.unreadChannels || 0) + Number(state.unreadDirectMessages || 0);
+    const previewUnread = (state.messagePreviews || []).filter(
+      (entry) => !entry.read,
+    ).length;
+    return Math.max(aggregateUnread, previewUnread);
   }
 
   private refreshTitle(state: HeaderState): void {

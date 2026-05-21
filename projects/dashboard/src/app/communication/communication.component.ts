@@ -2884,13 +2884,14 @@ export class CommunicationComponent
                 },
               },
             );
+            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
           }
 
           if (!this.isViewingChannel(ch.id)) {
             if (!isOwnMessage) {
               ch.unreadCount = (ch.unreadCount || 0) + 1;
               ch.hasUnread = true;
-              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              this.channels = [...this.channels];
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -2991,12 +2992,13 @@ export class CommunicationComponent
                 },
               },
             );
+            this.playNotificationSound(this.shouldUseUrgentNotificationSound());
           }
           if (!this.isViewingDm(contact.id)) {
             if (!isOwnMessage) {
               contact.unreadCount = (contact.unreadCount || 0) + 1;
               contact.hasUnread = true;
-              this.playNotificationSound(this.shouldUseUrgentNotificationSound());
+              this.dmContacts = [...this.dmContacts];
             }
             this.syncHeaderState();
             this.cdr.detectChanges();
@@ -3908,6 +3910,8 @@ export class CommunicationComponent
       contact.hasUnread = unreadCount > 0;
     }
 
+    this.dmContacts = [...this.dmContacts];
+
     if (this.wsConnected) {
       for (const contact of this.dmContacts) {
         this.subscribeToDmContactChannels(contact);
@@ -4530,6 +4534,7 @@ export class CommunicationComponent
       if (activeChannel?.unreadCount) {
         activeChannel.hasUnread = false;
         activeChannel.unreadCount = undefined;
+        this.channels = [...this.channels];
         this.syncHeaderState();
         if (this.lastMessageBackendId) {
           this.collabService
@@ -4567,6 +4572,7 @@ export class CommunicationComponent
         if (this.isViewingChannel(ch.id) && this.lastMessageBackendId) {
           ch.hasUnread = false;
           ch.unreadCount = undefined;
+          this.channels = [...this.channels];
           this.syncHeaderState();
           this.collabService
             .markRead(ch.backendId, this.lastMessageBackendId)
@@ -4602,6 +4608,7 @@ export class CommunicationComponent
       if (activeContact?.unreadCount) {
         activeContact.hasUnread = false;
         activeContact.unreadCount = undefined;
+        this.dmContacts = [...this.dmContacts];
         this.syncHeaderState();
         if (activeContact.dmChannelId && this.lastMessageBackendId) {
           this.collabService
@@ -4639,6 +4646,7 @@ export class CommunicationComponent
       if (this.isViewingDm(contact.id) && this.lastMessageBackendId) {
         contact.hasUnread = false;
         contact.unreadCount = undefined;
+        this.dmContacts = [...this.dmContacts];
         this.syncHeaderState();
         this.collabService
           .markRead(contact.dmChannelId, this.lastMessageBackendId)
@@ -4914,6 +4922,7 @@ export class CommunicationComponent
           if (this.isViewingDm(contact.id)) {
             contact.hasUnread = false;
             contact.unreadCount = undefined;
+            this.dmContacts = [...this.dmContacts];
             this.syncHeaderState();
           }
           if (!hadExistingMessages) {
@@ -4989,6 +4998,7 @@ export class CommunicationComponent
           if (this.isViewingChannel(channel.id)) {
             channel.hasUnread = false;
             channel.unreadCount = undefined;
+            this.channels = [...this.channels];
             this.syncHeaderState();
           }
           this.subscribeToChannel(channel.backendId);

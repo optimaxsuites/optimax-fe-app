@@ -17,6 +17,7 @@
       <div class="menu-item w-full" (click)="toggleSubMenu(item, menuItems)">
         <a *ngIf="!item.submenu"
            [routerLink]="item.route"
+           (click)="onNavigate()"
            routerLinkActive="active"
            class="menu-link flex gap-6 items-center w-full cursor-pointer"
            [pTooltip]="item.label"
@@ -47,6 +48,7 @@
           <li *ngIf="!subItem.isNotSidebarItem">
       
             <a [routerLink]="subItem.route"
+               (click)="onNavigate()"
                routerLinkActive="active"
                [routerLinkActiveOptions]="{ exact: true }"
                [pTooltip]="subItem.label"
@@ -65,6 +67,7 @@
       <div class="menu-item">
         <a 
           [routerLink]="marketplace.route"
+          (click)="onNavigate()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
           [pTooltip]="marketplace.label"
@@ -82,6 +85,7 @@
       <div class="menu-item">
         <a 
           [routerLink]="tenant.route"
+          (click)="onNavigate()"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
           [pTooltip]="tenant.label"

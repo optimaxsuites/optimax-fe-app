@@ -1,7 +1,7 @@
 <!-- dami just modified this to fix collaboration feed/chat flow, improve thread discovery, and sharpen the workspace layout. -->
 <div
   class="comm-shell flex overflow-hidden font-sans"
-  style="height: calc(100vh - 57px)"
+  style="height: calc(100dvh - 57px); min-height: calc(100dvh - 57px); max-width: 100vw;"
   (click)="closeSearch(); dismissDelete()"
   [ngClass]="{
     resizing: isResizingSidebar || isResizingThread,
