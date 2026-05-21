@@ -10,7 +10,8 @@ import { Router, NavigationStart, NavigationEnd, NavigationCancel, NavigationErr
 export class MasterComponent {
   sidebarHidden: boolean = true;
   currentYear?: number;
-isLoading = false
+  isLoading = false;
+
   ngOnInit(): void {
     this.currentYear = new Date().getFullYear();
   }
@@ -23,6 +24,9 @@ isLoading = false
           }
           if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
             this.isLoading = false;
+            if (this.isMobileViewport()) {
+              this.sidebarHidden = true;
+            }
           }
         });
   }
@@ -40,6 +44,10 @@ isLoading = false
     } else {
       this.sidebarHidden = false;  // Show sidebar on large screens
     }
+  }
+
+  isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 992;
   }
 
   toggleSidebar() {

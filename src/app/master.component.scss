@@ -1,4 +1,7 @@
 
+.mobile-sidebar-backdrop {
+  display: none;
+}
 
 .navbar-container{
   background-color: #fff;
@@ -34,6 +37,43 @@
   box-sizing: border-box;
 }
 
+@media screen and (max-width: 992px) {
+  .master-container {
+    position: relative;
+  }
 
+  .mobile-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(15, 23, 42, 0.38);
+    z-index: 39;
+  }
+
+  .sidebar-container {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(84vw, 320px);
+    max-width: 320px;
+    z-index: 40;
+    transform: translateX(-100%);
+    min-width: 0 !important;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
+
+  .main-container {
+    width: 100%;
+    min-width: 0;
+  }
+}
 
 

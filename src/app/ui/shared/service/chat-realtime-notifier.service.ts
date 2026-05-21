@@ -33,6 +33,8 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private lastChannelsRefreshAt = 0;
   private refreshChannelsFailureCount = 0;
   private readonly refreshChannelsTtlMs = 10_000;
+  private notificationAudioContext: AudioContext | null = null;
+  private audioPrimed = false;
 
   constructor(
     private readonly collabService: CollaborationService,
@@ -52,6 +54,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     this.refreshChannels(true);
     this.connectSocket();
     this.ensureNotificationPermission();
+    this.bindAudioPriming();
   }
 
   stop(): void {
@@ -70,6 +73,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     }
     this.wsConnected = false;
     this.started = false;
+    this.unbindAudioPriming();
   }
 
   ngOnDestroy(): void {
@@ -82,14 +86,13 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const baseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
-    const wsUrl = baseUrl.startsWith('https://')
-      ? `wss://${baseUrl.replace('https://', '')}/x/ws/collab`
-      : `ws://${baseUrl.replace('http://', '')}/x/ws/collab`;
+    const wsUrl = this.resolveCollabWebSocketUrl();
 
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
+      heartbeatIncoming: 20000,
+      heartbeatOutgoing: 20000,
       connectHeaders: {
         Authorization: `Bearer ${token}`,
         'X-Tenant-ID': tenantId,
@@ -109,11 +112,33 @@ export class ChatRealtimeNotifierService implements OnDestroy {
 
     client.onStompError = (frame) =>
       console.error('Global chat STOMP error:', frame);
+    client.onWebSocketClose = () => {
+      this.wsConnected = false;
+    };
     client.onWebSocketError = (error) =>
       console.error('Global chat websocket error:', error);
 
     this.stompClient = client;
     client.activate();
+  }
+
+  private resolveCollabWebSocketUrl(): string {
+    const configuredBaseUrl = (this.collabService.apiBaseUrl || '').replace(/\/+$/, '');
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.host;
+      const currentProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const currentHostname = window.location.hostname || '';
+      const shouldPreferCurrentOrigin =
+        !!currentHost &&
+        !/^(localhost|127\.0\.0\.1)$/i.test(currentHostname);
+      if (shouldPreferCurrentOrigin) {
+        return `${currentProtocol}//${currentHost}/x/ws/collab`;
+      }
+    }
+    if (configuredBaseUrl.startsWith('https://')) {
+      return `wss://${configuredBaseUrl.replace('https://', '')}/x/ws/collab`;
+    }
+    return `ws://${configuredBaseUrl.replace('http://', '')}/x/ws/collab`;
   }
 
   private refreshChannels(force = false): void {
@@ -243,9 +268,6 @@ export class ChatRealtimeNotifierService implements OnDestroy {
           dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
         };
         this.loadVerifiedIncomingMessage(target.backendId, incoming, 0, (latestMessage) => {
-          if (!latestMessage) {
-            return;
-          }
           const latestSenderUserId = Number(
             latestMessage?.senderUserId || incoming.senderUserId || 0,
           );
@@ -348,7 +370,11 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (typeof window === 'undefined' || typeof Notification === 'undefined') {
       return;
     }
-    if (document.visibilityState === 'visible') {
+    if (
+      document.visibilityState === 'visible' &&
+      typeof document.hasFocus === 'function' &&
+      document.hasFocus()
+    ) {
       return;
     }
     if (Notification.permission !== 'granted') {
@@ -402,6 +428,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         messageBackendId: notificationTarget.messageBackendId,
         threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
       });
+      this.playNotificationCue();
       if (
         typeof document !== 'undefined' &&
         document.visibilityState === 'visible' &&
@@ -422,6 +449,114 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         notificationTarget,
       );
     });
+  }
+
+  private bindAudioPriming(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.addEventListener('touchstart', this.primeNotificationAudio, {
+      passive: true,
+    });
+    window.addEventListener('mousedown', this.primeNotificationAudio, {
+      passive: true,
+    });
+  }
+
+  private unbindAudioPriming(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.removeEventListener('touchstart', this.primeNotificationAudio as EventListener);
+    window.removeEventListener('mousedown', this.primeNotificationAudio as EventListener);
+  }
+
+  private playNotificationCue(): void {
+    this.triggerMobileHaptics();
+    if (
+      typeof document !== 'undefined' &&
+      this.router.url.includes('/admin/dashboard/communications/') &&
+      document.visibilityState === 'visible' &&
+      typeof document.hasFocus === 'function' &&
+      document.hasFocus()
+    ) {
+      return;
+    }
+    try {
+      const ctx = this.ensureNotificationAudioContext();
+      if (!ctx) {
+        return;
+      }
+      if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
+        void ctx.resume().catch(() => {});
+      }
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.62);
+      gain.connect(ctx.destination);
+
+      [
+        { type: 'triangle' as OscillatorType, frequency: 740, start: 0, stop: 0.24 },
+        { type: 'sine' as OscillatorType, frequency: 988, start: 0.04, stop: 0.2 },
+      ].forEach((tone) => {
+        const oscillator = ctx.createOscillator();
+        oscillator.type = tone.type;
+        oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + tone.start);
+        oscillator.connect(gain);
+        oscillator.start(ctx.currentTime + tone.start);
+        oscillator.stop(ctx.currentTime + tone.stop);
+      });
+    } catch (_) {}
+  }
+
+  private ensureNotificationAudioContext(): AudioContext | null {
+    try {
+      if (this.notificationAudioContext) {
+        return this.notificationAudioContext;
+      }
+      const AudioCtxCtor =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtxCtor) {
+        return null;
+      }
+      this.notificationAudioContext = new AudioCtxCtor();
+      return this.notificationAudioContext;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  private primeNotificationAudio = (): void => {
+    if (this.audioPrimed) {
+      return;
+    }
+    const ctx = this.ensureNotificationAudioContext();
+    if (!ctx) {
+      return;
+    }
+    this.audioPrimed = true;
+    try {
+      if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
+        void ctx.resume().catch(() => {});
+      }
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.00001, ctx.currentTime);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.01);
+    } catch (_) {}
+  };
+
+  private triggerMobileHaptics(): void {
+    try {
+      if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') {
+        return;
+      }
+      navigator.vibrate([140, 70, 140]);
+    } catch (_) {}
   }
 
   private loadVerifiedIncomingMessage(

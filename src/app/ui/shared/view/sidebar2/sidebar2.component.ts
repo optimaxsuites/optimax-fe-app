@@ -88,6 +88,16 @@ tenant: any = {
     this.toggleSidebar.emit();
   }
 
+  onNavigate(): void {
+    if (
+      !this.sidebarHidden &&
+      typeof window !== 'undefined' &&
+      window.innerWidth <= 992
+    ) {
+      this.toggleSidebar.emit();
+    }
+  }
+
   get sidebarClass() {
     return this.sidebarHidden ? 'collapsed' : 'expanded';
   }

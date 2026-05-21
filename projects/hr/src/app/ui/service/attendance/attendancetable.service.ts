@@ -120,10 +120,14 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
       });
       
       const match = employees.find(
-        (e: any) => Number(e.user?.id) === sessionUserId
+        (e: any) => Number(e.user?.userId) === sessionUserId
       );
 
       console.log('MATCHED EMPLOYEE:', match);
+
+      //employee.id           // HR employee ID
+      //employee.user.id      // internal user object ID
+      //employee.user.userId  // actual auth/session user ID
 
       if (!match){
         console.log('HR employee not found');

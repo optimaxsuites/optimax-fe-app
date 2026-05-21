@@ -251,6 +251,29 @@
         ></textarea>
       </div>
       <input #fileInput type="file" class="hidden" multiple (change)="onFileSelected($event)" />
+      <div class="relative flex-shrink-0">
+        <button
+          type="button"
+          (click)="toggleEmojiMenu(); $event.stopPropagation()"
+          class="toolbar-btn flex-shrink-0 mb-0.5"
+          title="Insert emoji"
+        >
+          <span class="text-[16px] leading-none">😊</span>
+        </button>
+        <div
+          *ngIf="emojiMenuOpen"
+          class="absolute bottom-full right-0 mb-2 z-20 flex gap-1 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
+        >
+          <button
+            type="button"
+            *ngFor="let emoji of emojiChoices"
+            (click)="appendEmoji(emoji)"
+            class="h-8 w-8 rounded-lg text-[18px] hover:bg-gray-100"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+      </div>
       <!-- AI toggle -->
       <button
         (click)="aiToolbarToggled.emit(); $event.stopPropagation()"
