@@ -440,6 +440,7 @@ export class MessageFeedComponent {
     const content = this.normalizedMessageContent(msg);
     if (!content) return 'plain';
     if (this.codeFenceMatch(content)) return 'code';
+    if (this.extractStructuredJson(content)) return 'json';
     if (this.looksLikeJson(content)) return 'json';
     if (this.looksLikeHtml(content)) return 'html';
     if (this.looksLikeCode(content)) return 'code';
@@ -458,6 +459,10 @@ export class MessageFeedComponent {
     const content = this.normalizedMessageContent(msg);
     const kind = this.structuredMessageKind(msg);
     if (kind === 'json') {
+      const extracted = this.extractStructuredJson(content);
+      if (extracted) {
+        return extracted;
+      }
       try {
         return JSON.stringify(JSON.parse(content), null, 2);
       } catch {
@@ -518,7 +523,11 @@ export class MessageFeedComponent {
   }
 
   messageHtml(content: string): string {
-    const escaped = this.escapeHtml(this.decodeHtmlEntities(content || ''));
+    const escaped = this.escapeHtml(
+      this.cleanStructuredPasteArtifacts(
+        this.decodeHtmlEntities(content || ''),
+      ),
+    );
     return this.mentionifyHtml(escaped
       .replace(this.urlRegex, (rawUrl) => {
         const normalized = this.normalizePreviewUrl(rawUrl);
@@ -641,7 +650,9 @@ export class MessageFeedComponent {
   }
 
   private normalizedMessageContent(msg: Message): string {
-    return this.decodeHtmlEntities(msg.content || '').trim();
+    return this.cleanStructuredPasteArtifacts(
+      this.decodeHtmlEntities(msg.content || '').trim(),
+    );
   }
 
   private decodeHtmlEntities(value: string): string {
@@ -649,6 +660,63 @@ export class MessageFeedComponent {
     const textarea = document.createElement('textarea');
     textarea.innerHTML = value;
     return textarea.value;
+  }
+
+  private cleanStructuredPasteArtifacts(value: string): string {
+    let cleaned = value || '';
+    cleaned = cleaned.replace(/https:\s*class="token[^"]*">\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*class="token[^"]*">\s*\/\//gi, 'http://');
+    cleaned = cleaned.replace(/(?:<span\s+)?class="token[^"]*">/gi, '');
+    cleaned = cleaned.replace(/<\/span>/gi, '');
+    cleaned = cleaned.replace(/\u00a0/g, ' ');
+    cleaned = cleaned.replace(/\s+(?=")/g, ' ');
+    cleaned = cleaned.replace(/:\s+(?=")/g, ': ');
+    cleaned = cleaned.replace(/,\s+(?=")/g, ', ');
+    cleaned = cleaned.replace(/([{[])\s+(?=")/g, '$1 ');
+    cleaned = cleaned.replace(/[ \t]+\n/g, '\n');
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    return cleaned.trim();
+  }
+
+  private extractStructuredJson(content: string): string | null {
+    const cleaned = this.cleanStructuredPasteArtifacts(content);
+    const parsedDirect = this.tryFormatJson(cleaned);
+    if (parsedDirect) {
+      return parsedDirect;
+    }
+
+    const urlMatch = cleaned.match(/https?:\/\/\S+/i);
+    const jsonSlice = this.findJsonSlice(cleaned);
+    if (!jsonSlice) {
+      return null;
+    }
+    const formattedJson = this.tryFormatJson(jsonSlice);
+    if (!formattedJson) {
+      return null;
+    }
+    return urlMatch ? `${urlMatch[0]}\n${formattedJson}` : formattedJson;
+  }
+
+  private tryFormatJson(value: string): string | null {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return null;
+    }
+  }
+
+  private findJsonSlice(value: string): string | null {
+    const objectStart = value.indexOf('{');
+    const objectEnd = value.lastIndexOf('}');
+    if (objectStart >= 0 && objectEnd > objectStart) {
+      return value.slice(objectStart, objectEnd + 1).trim();
+    }
+    const arrayStart = value.indexOf('[');
+    const arrayEnd = value.lastIndexOf(']');
+    if (arrayStart >= 0 && arrayEnd > arrayStart) {
+      return value.slice(arrayStart, arrayEnd + 1).trim();
+    }
+    return null;
   }
 
   private highlightStructuredLine(
@@ -782,7 +850,10 @@ export class MessageFeedComponent {
   }
 
   private looksLikeHtml(content: string): boolean {
-    return /<\/?[a-z][\s\S]*>/i.test(content);
+    if (/(?:^|\s)class="token[^"]*">/i.test(content)) {
+      return false;
+    }
+    return /^\s*<\/?[a-z][\s\S]*>\s*$/i.test(content);
   }
 
   private looksLikeCode(content: string): boolean {
