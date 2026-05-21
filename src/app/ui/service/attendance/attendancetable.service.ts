@@ -153,14 +153,14 @@ private mapApiRecord(api: any): AttendanceTableRecord {
   const department = emp?.department?.name ?? '';
 
   // Extract HH:mm:ss time from ISO string for display
-  const toTimeStr = (iso: string | null): string | null => {
+  const toTimeStr = (iso: string | null): string | null => iso;/*{
     if (!iso) return null;
     try {
       return new Date(iso).toLocaleTimeString();
     } catch {
       return null;
     }
-  };
+  };*/
 
   // API stores location as plain string — wrap it for our DTO
   const toLocation = (locStr: string | null) => {
@@ -537,7 +537,7 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
 
   // Update local record
   if (action === 'IN') {
-    record.checkIn = now.toLocaleTimeString();
+    record.checkIn = now.toISOString();
     record.checkInLocation = location
       ? { address: location.address, lat: location.lat, lng: location.lng }
       : null;
@@ -552,7 +552,7 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
   }
 
   if (action === 'OUT') {
-    record.checkOut = now.toLocaleTimeString();
+    record.checkOut = now.toISOString();
     record.checkOutLocation = location
       ? { address: location.address, lat: location.lat, lng: location.lng }
       : null;
@@ -587,7 +587,7 @@ if (action === 'IN') {
   this.clockInApi(
     numericEmployeeId, 
     //employeeId, 
-    now.toLocaleTimeString(), 
+    now.toISOString(), 
     location?.address ?? '', 
     distanceFromOffice);
 } else {
@@ -604,100 +604,11 @@ if (action === 'IN') {
   this.clockOutApi(
     record.apiRecordId,
     numericEmployeeId, 
-    now.toLocaleTimeString(), 
+    now.toISOString(), 
     location?.address ?? '', 
     distanceFromOffice);
 }
 
-  // --- API calls (after local record is fully updated) ---
-  /*const numericEmployeeId = parseInt(employeeid);
-
-  if (action === 'IN') {
-
-    const body = {
-      id: 0,
-      employeeId: numericEmployeeId,
-      attendanceDate: today,
-      checkIn: now.toISOString(),
-      checkOut: null,
-      checkInLocation: location?.address ?? '',
-      checkOutLocation: '',
-      checkInDistance: distanceFromOffice,
-      checkOutDistance: 0,
-      status: record.status,
-      hours: 0,
-      overrideOpen: record.overrideOpen ?? false,
-      overrideBy: 0,
-      overrideReason: '',
-      statusBeforeOverride: record.status,
-      appliedScheduleType: 'OFFICE_HOURS',
-      appliedScheduleId: 0,
-      appliedExpectedStart: null,
-      appliedExpectedEnd: null,
-      appliedShiftName: ''
-    };
-
-    this.http.post<any>(
-      `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
-      body,
-      { headers: this.getAuthHeaders() }
-    ).subscribe({
-      next: (res) => {
-        if (res?.id) {
-          this.apiRecordId = res.id;
-          console.log('Clock-in posted, API record ID:', this.apiRecordId);
-        } else {
-          console.warn('POST succeeded but no ID returned — PUT may fail on clock-out');
-        }
-      },
-      error: (err) => console.error('Clock-in POST failed:', err)
-    });
-
-  } else {
-
-    if (!this.apiRecordId) {
-      console.warn('No API record ID stored — skipping PUT for clock-out');
-      return;
-    }
-
-    const body = {
-      id: this.apiRecordId,
-      employeeId: numericEmployeeId,
-      attendanceDate: today,
-      checkIn: record.checkIn
-        ? new Date(`${today}T${this.toIsoTime(record.checkIn)}`).toISOString()
-        : null,
-      checkOut: now.toISOString(),
-      checkInLocation: record.checkInLocation?.address ?? '',
-      checkOutLocation: location?.address ?? '',
-      checkInDistance: record.checkInLocation
-        ? this.calculateDistance(
-            record.checkInLocation.lat, record.checkInLocation.lng,
-            officeHours.companyLatitude ?? 0, officeHours.companyLongitude ?? 0
-          )
-        : 0,
-      checkOutDistance: distanceFromOffice,
-      status: record.status,
-      hours: record.hours ?? 0,
-      overrideOpen: record.overrideOpen ?? false,
-      overrideBy: 0,
-      overrideReason: record.overrideReason ?? '',
-      statusBeforeOverride: record.status,
-      appliedScheduleType: 'OFFICE_HOURS',
-      appliedScheduleId: 0,
-      appliedExpectedStart: null,
-      appliedExpectedEnd: null,
-      appliedShiftName: ''
-    };
-
-    this.putAttendanceRecord(this.apiRecordId, body).subscribe({
-      next: (res) => {
-        console.log('Clock-out PUT succeeded:', res);
-        this.apiRecordId = null; // reset for next session
-      },
-      error: (err) => console.error('Clock-out PUT failed:', err)
-    });
-  }*/
 }
 
 /*async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
@@ -843,8 +754,8 @@ private convertToDateTime(time: string): Date {
 }
 
   private calculateHours(inTime: string, outTime: string): number {
-    const start = new Date(`1970-01-01T${inTime}`);
-    const end = new Date(`1970-01-01T${outTime}`);
+    const start = new Date(inTime);
+    const end = new Date(outTime);
     return +((end.getTime() - start.getTime()) / 3600000).toFixed(2);
   }
 
