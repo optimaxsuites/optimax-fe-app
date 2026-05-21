@@ -356,6 +356,16 @@ saveModification() {
 
   const currentUser = this.userSession.getCurrentUser();
 
+  console.log('getCurrentUser resolved:', currentUser);
+
+  if (!currentUser) {
+    console.error('No logged in user');
+    return;
+  }
+
+  this.attendancetableService
+    .resolveHrEmployeeId(currentUser.userId)
+
 if (!currentUser) {
   alert('No logged in user found');
   return;
