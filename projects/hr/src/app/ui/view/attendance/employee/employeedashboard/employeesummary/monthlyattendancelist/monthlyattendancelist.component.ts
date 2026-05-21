@@ -16,7 +16,7 @@ export class MonthlyattendancelistComponent implements OnInit {
 
   @Output() filteredDataChange = new EventEmitter<AttendanceTableRecord[]>();
 
-  constructor(private attendanceService: AttendancetableService,
+  constructor(private attendancetableService: AttendancetableService,
     private userSession: UserSessionService
   ) {}
 
@@ -41,7 +41,7 @@ export class MonthlyattendancelistComponent implements OnInit {
       return;
     }
 
-    this.attendanceService
+    this.attendancetableService
       .resolveHrEmployeeId(Number(currentUser.userId))
 
     /*const username = sessionStorage.getItem('userid');
@@ -59,11 +59,11 @@ export class MonthlyattendancelistComponent implements OnInit {
 
         const hrEmployeeId = result.id;
 
-        this.attendanceService.fetchByEmployee(
+        this.attendancetableService.fetchByEmployee(
           Number(hrEmployeeId)
         );
 
-        this.attendanceService.attendance$
+        this.attendancetableService.attendance$
           .subscribe(data => {
 
             this.attendanceData = data.filter(

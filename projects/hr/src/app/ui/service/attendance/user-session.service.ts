@@ -18,7 +18,39 @@ export class UserSessionService {
       return null;
     }
 
-    const primaryRaw = sessionStorage.getItem('userPrimaryInfoRegData');
+     const raw = sessionStorage.getItem('userRegData');
+
+  if (!raw) {
+    console.warn('userRegData not found');
+    return null;
+  }
+
+  try {
+
+    const data = JSON.parse(raw);
+
+    console.log('Parsed userRegData:', data);
+
+    return {
+      id: Number(data.id ?? 0), // temporary fallback
+      userId: userId,
+      name:
+        data.fullname ??
+        data.fullName ??
+        sessionStorage.getItem('fullname') ??
+        '',
+      department:
+        data.department?.name ??
+        data.department ??
+        ''
+    };
+
+  } catch (err) {
+    console.error('Failed to parse userRegData', err);
+    return null;
+  }
+
+    /*const primaryRaw = sessionStorage.getItem('userPrimaryInfoRegData');
 
     if (!primaryRaw) {
       console.warn('userPrimaryInfoRegData not found');
@@ -69,6 +101,6 @@ export class UserSessionService {
     } catch (err) {
       console.error('Failed to parse userPrimaryInfoRegData', err);
       return null;
-    }
+    }*/
   }
 }
