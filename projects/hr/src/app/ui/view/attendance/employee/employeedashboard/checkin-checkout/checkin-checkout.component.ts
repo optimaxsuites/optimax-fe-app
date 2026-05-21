@@ -12,7 +12,7 @@ type ClockStatus = 'CLOCKED_IN' | 'CLOCKED_OUT';
 })
 export class CheckinCheckoutComponent implements OnInit {
 
-  private attendanceService = inject(AttendancetableService);
+  private attendancetableService = inject(AttendancetableService);
   private officeHoursService = inject(OfficeHoursService);
   private userSession = inject(UserSessionService);
 
@@ -48,12 +48,20 @@ export class CheckinCheckoutComponent implements OnInit {
 
     console.log('getCurrentUser resolved:', currentUser);
 
+    if (!currentUser) {
+      console.error('No logged in user');
+      return;
+    }
+
+    this.attendancetableService
+      .resolveHrEmployeeId(currentUser.userId)
+
     if (currentUser?.userId) {
 
       console.log('SESSION USER:', currentUser);
     console.log('SESSION USER ID:', currentUser.userId);
 
-      this.attendanceService
+      this.attendancetableService
         .resolveHrEmployeeId(Number(currentUser.userId))
         .subscribe(result => {
 
@@ -89,14 +97,14 @@ export class CheckinCheckoutComponent implements OnInit {
   setInterval(() => { this.currentTime = new Date(); }, 1000);
 
   // React to attendance changes
-  this.attendanceService.attendance$.subscribe(() => {
+  this.attendancetableService.attendance$.subscribe(() => {
     //const userId = this.currentUser?.id!;
 
     if (!this.hrEmployeeId) return;
     const employeeId = Number(this.hrEmployeeId);
 
-    this.hasCompletedToday = this.attendanceService.hasCompletedToday(employeeId);
-    this.isAbsentToday = this.attendanceService.isEmployeeBlockedToday(employeeId);
+    this.hasCompletedToday = this.attendancetableService.hasCompletedToday(employeeId);
+    this.isAbsentToday = this.attendancetableService.isEmployeeBlockedToday(employeeId);
 
     // Restore clock status from today's record after refresh
     this.restoreClockStatus();
@@ -119,16 +127,16 @@ if (!this.hrEmployeeId) return;
 const employeeId = Number(this.hrEmployeeId);
 
 const restored =
-this.attendanceService.getTodayStatusForEmployee(employeeId);
+this.attendancetableService.getTodayStatusForEmployee(employeeId);
 
 if (restored === 'CLOCKED_IN') {
 this.status = 'CLOCKED_IN';
-this.attendanceService.setClockStatus('CLOCKED_IN');
+this.attendancetableService.setClockStatus('CLOCKED_IN');
 
 } else if (restored === 'CLOCKED_OUT') {
 
 this.status = 'CLOCKED_OUT';
-this.attendanceService.setClockStatus('CLOCKED_OUT');
+this.attendancetableService.setClockStatus('CLOCKED_OUT');
 }
 }
 
@@ -195,9 +203,9 @@ this.attendanceService.setClockStatus('CLOCKED_OUT');
         });
     
         this.status = 'CLOCKED_IN';
-        this.attendanceService.setClockStatus('CLOCKED_IN');
+        this.attendancetableService.setClockStatus('CLOCKED_IN');
 
-        await this.attendanceService.clockAction(
+        await this.attendancetableService.clockAction(
           //this.currentUser!.id,
           this.hrEmployeeId, //HR employee ID for API
           //this.currentUser!.name,
@@ -217,9 +225,9 @@ this.attendanceService.setClockStatus('CLOCKED_OUT');
       });
 
     this.status = 'CLOCKED_OUT';
-    this.attendanceService.setClockStatus('CLOCKED_OUT');
+    this.attendancetableService.setClockStatus('CLOCKED_OUT');
 
-    await this.attendanceService.clockAction(
+    await this.attendancetableService.clockAction(
       //this.currentUser!.id,
       this.hrEmployeeId, //HR employee ID for API
       //this.currentUser!.name,
