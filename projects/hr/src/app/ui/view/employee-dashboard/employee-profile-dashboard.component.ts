@@ -379,28 +379,19 @@ export class EmployeeProfileDashboardComponent {
 
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     if (storedUserId) {
+      this.applySessionEmployeeFallback(storedUserId);
       const startedAt = this.startLoading();
       this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
         next: (data) => {
           const employee = data?.data ?? data ?? null;
           if (!employee) {
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'No employee',
-              detail: 'No employee record linked to this user.',
-              key: 'global',
-            });
+            this.fetchEmployeeFromListFallback(storedUserId);
             return;
           }
           this.applyEmployeeView(employee);
         },
         error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Load failed',
-            detail: 'Unable to fetch employee record for this user.',
-            key: 'global',
-          });
+          this.fetchEmployeeFromListFallback(storedUserId);
         },
         complete: () => {
           this.finishLoading(startedAt);
@@ -410,6 +401,39 @@ export class EmployeeProfileDashboardComponent {
     }
 
     this.fetchFirstEmployee();
+  }
+
+  private fetchEmployeeFromListFallback(userId: string): void {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (employees) => {
+        const employee =
+          employees.find((entry: any) =>
+            String(entry?.userId ?? '') === String(userId) ||
+            String(entry?.user?.userId ?? '') === String(userId) ||
+            String(entry?.user?.id ?? '') === String(userId)
+          ) ?? null;
+
+        if (employee) {
+          this.applyEmployeeView(employee);
+          return;
+        }
+
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No employee',
+          detail: 'No employee record linked to this user.',
+          key: 'global',
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Load failed',
+          detail: 'Unable to fetch employee record for this user.',
+          key: 'global',
+        });
+      },
+    });
   }
 
   private isEmployeeManagementContext(): boolean {
@@ -491,6 +515,54 @@ export class EmployeeProfileDashboardComponent {
         dateClick: (arg) => this.handleDateClick(arg),
         events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
       };
+    }
+  }
+
+  private applySessionEmployeeFallback(userId: string): void {
+    try {
+      const raw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const fullName =
+        parsed?.fullname ||
+        parsed?.name ||
+        parsed?.username ||
+        sessionStorage.getItem('fullname') ||
+        localStorage.getItem('fullname') ||
+        `User ${userId}`;
+      const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean);
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.slice(1).join(' ');
+      const fallbackImage =
+        parsed?.profileImage ||
+        parsed?.imageUrl ||
+        parsed?.avatarUrl ||
+        parsed?.profilePicture ||
+        parsed?.photoUrl ||
+        '';
+
+      this.employeeInView = {
+        ...(this.employeeInView || {}),
+        firstName,
+        lastName,
+        userId: Number(userId),
+        user: {
+          id: parsed?.id ?? Number(userId),
+          userId: parsed?.userId ?? Number(userId),
+          fullname: fullName,
+          username: parsed?.username || fullName,
+          email: parsed?.email || '',
+        },
+        imageUrl: fallbackImage || this.employeeInView?.imageUrl || '',
+      };
+
+      if (fallbackImage) {
+        this.employeeProfilePhotoUrl = fallbackImage;
+      }
+      this.patchEditForm();
+    } catch {
+      // Keep the default placeholder state when no cached user payload is available.
     }
   }
 

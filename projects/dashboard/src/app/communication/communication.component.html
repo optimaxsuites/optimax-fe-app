@@ -3,7 +3,10 @@
   class="comm-shell flex overflow-hidden font-sans"
   style="height: calc(100vh - 57px)"
   (click)="closeSearch(); dismissDelete()"
-  [ngClass]="{ resizing: isResizingSidebar || isResizingThread }"
+  [ngClass]="{
+    resizing: isResizingSidebar || isResizingThread,
+    'mobile-sidebar-open': mobileSidebarOpen
+  }"
 >
   <div class="chat-arrival-stack" *ngIf="chatArrivalToasts.length">
     <button
@@ -26,9 +29,18 @@
     </button>
   </div>
 
+  <button
+    *ngIf="mobileSidebarOpen && isMobileViewport()"
+    type="button"
+    class="mobile-sidebar-backdrop"
+    (click)="closeMobileSidebar(); $event.stopPropagation()"
+    aria-label="Close navigation"
+  ></button>
+
   <div
     class="workspace-sidebar-shell flex-shrink-0 relative overflow-hidden"
     [style.width.px]="sidebarWidth"
+    [class.mobile-open]="mobileSidebarOpen && isMobileViewport()"
   >
     <app-channel-sidebar
       [me]="me"
@@ -48,10 +60,10 @@
       [searchQuery]="searchQuery"
       [showSearch]="showSearch"
       [searchResults]="searchResults"
-      (channelSelected)="selectChannel($event)"
-      (dmSelected)="selectDm($event)"
-      (viewSet)="setView($event)"
-      (createChannel)="openCreateChannelModal()"
+      (channelSelected)="onSidebarChannelSelected($event)"
+      (dmSelected)="onSidebarDmSelected($event)"
+      (viewSet)="onSidebarViewSet($event)"
+      (createChannel)="onSidebarCreateChannel()"
       (channelsRetried)="loadChannels(false, true)"
       (soundToggled)="soundEnabled = !soundEnabled"
       (ringtoneChanged)="setRingtone($event)"
@@ -59,7 +71,7 @@
       (searchQueryChange)="searchQuery = $event; onSearch()"
       (searchExecuted)="onSearch()"
       (searchClosed)="closeSearch()"
-      (jumpTo)="jumpTo($event)"
+      (jumpTo)="onSidebarJumpTo($event)"
     ></app-channel-sidebar>
     <div
       class="absolute right-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-gray-200 transition-colors z-10"
@@ -94,7 +106,8 @@
     </section>
 
     <section class="workspace-toolbar">
-      <div class="workspace-segment">
+      <div class="workspace-toolbar-leading">
+        <div class="workspace-segment">
         <button
           type="button"
           [class.active]="workspaceMode === 'feed'"
@@ -111,6 +124,7 @@
           <i class="pi pi-comments"></i>
           <span>Chat workspace</span>
         </button>
+        </div>
       </div>
 
       <div class="workspace-toolbar-actions" *ngIf="workspaceMode === 'feed'">
@@ -121,33 +135,58 @@
           [(ngModel)]="feedQuery"
           (keydown.enter)="onFeedSearchEnter($event)"
         />
-        <button type="button" class="toolbar-action icon-action" [class.active]="showFeedRail" (click)="toggleFeedRail()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" [class.active]="showFeedRail" (click)="toggleFeedRail()">
           <i class="pi" [ngClass]="showFeedRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
           <span>{{ showFeedRail ? 'Hide side panel' : 'Show side panel' }}</span>
         </button>
-        <button type="button" class="toolbar-action primary icon-action" (click)="refreshFeed()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action primary icon-action" (click)="refreshFeed()">
           <i class="pi pi-refresh"></i>
           <span>Refresh feed</span>
+        </button>
+        <button
+          *ngIf="isMobileViewport()"
+          type="button"
+          class="toolbar-action icon-action mobile-nav-trigger icon-only-mobile"
+          (click)="toggleMobileSidebar()"
+          title="Open collaboration menu"
+          aria-label="Open collaboration menu"
+        >
+          <i class="pi pi-bars"></i>
+          <span>Menu</span>
         </button>
       </div>
 
       <div class="workspace-toolbar-actions" *ngIf="workspaceMode === 'chat'">
-        <button type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()" title="New channel" aria-label="New channel">
           <i class="pi pi-plus-circle"></i>
           <span>New channel</span>
         </button>
         <button
+          *ngIf="!isMobileViewport()"
           type="button"
           class="toolbar-action icon-action"
           [class.active]="showChatRail"
           (click)="toggleChatRail()"
+          [title]="showChatRail ? 'Hide side panel' : 'Show side panel'"
+          [attr.aria-label]="showChatRail ? 'Hide side panel' : 'Show side panel'"
         >
           <i class="pi" [ngClass]="showChatRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
           <span>{{ showChatRail ? 'Hide side panel' : 'Show side panel' }}</span>
         </button>
-        <button type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')">
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')" title="Back to feed" aria-label="Back to feed">
           <i class="pi pi-arrow-left"></i>
           <span>Back to feed</span>
+        </button>
+        <button
+          *ngIf="isMobileViewport()"
+          type="button"
+          class="toolbar-action icon-action mobile-nav-trigger icon-only-mobile"
+          (click)="toggleMobileSidebar()"
+          title="Open collaboration menu"
+          aria-label="Open collaboration menu"
+        >
+          <i class="pi pi-bars"></i>
+          <span>Menu</span>
         </button>
       </div>
     </section>
@@ -1093,7 +1132,8 @@
     >
       <div class="chat-panel">
         <div class="chat-topbar">
-          <div>
+          <div class="chat-topbar-title">
+            <div>
             <p class="feed-section-kicker">Messaging</p>
             <h2>
               <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.name || 'Select a channel' }}</ng-container>
@@ -1105,6 +1145,7 @@
               <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}</ng-container>
               <ng-container *ngIf="activeView === 'threads'">Grouped replies from channels and direct conversations in one searchable inbox.</ng-container>
             </span>
+            </div>
           </div>
           <div class="workspace-toolbar-actions">
             <span *ngIf="historyLoading" class="chat-loading-chip">
@@ -1162,6 +1203,7 @@
             [readUserCardsForMessage]="getReadUserCards.bind(this)"
             [mentionCandidates]="getMentionCandidates()"
             [resolveMentionProfileCard]="resolveMentionProfileCard"
+            [reactionOptions]="chatReactionOptions"
             (retryMessage)="retryFailedMessage($event)"
             (threadOpened)="openThread($event)"
             (likeToggled)="toggleLike($event)"
@@ -1270,6 +1312,7 @@
           (replyDeleteRequested)="requestReplyDelete($event)"
           (replyDeleteConfirmed)="confirmReplyDelete($event)"
           (replyDeleteDismissed)="dismissReplyDelete()"
+          (replyRetryRequested)="retryFailedMessage($event)"
           (replyLikeToggled)="toggleLike($event)"
           (pinnedPanelClosed)="closePinnedPanel()"
           (pinnedJumpTo)="openThread({ msg: $event })"

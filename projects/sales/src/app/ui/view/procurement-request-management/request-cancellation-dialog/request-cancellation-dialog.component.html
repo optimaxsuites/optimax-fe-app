@@ -1,0 +1,121 @@
+<div class="cancellation-dialog">
+  <!-- Header -->
+  <div class="dialog-header" [class.warning]="showPenaltyWarning">
+    <div class="header-icon">
+      <i class="bi bi-exclamation-triangle-fill" *ngIf="showPenaltyWarning"></i>
+      <i class="bi bi-x-circle-fill" *ngIf="!showPenaltyWarning"></i>
+    </div>
+    <div class="header-text">
+      <h2>Cancel Request</h2>
+      <p class="text-muted mb-0">{{ data.requestTitle }}</p>
+      <small class="text-muted">Request ID: {{ data.requestId }}</small>
+    </div>
+  </div>
+
+  <!-- Warning Alert (if penalty applies) -->
+  <div class="alert alert-warning" role="alert" *ngIf="showPenaltyWarning">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Cancellation Notice:</strong> Your request has already been quoted on by vendors. 
+    Cancelling at this stage may incur a service fee or affect your vendor rating.
+    <div class="mt-2 small" *ngIf="data.cancellationPolicy">
+      <i class="bi bi-info-circle"></i> {{ data.cancellationPolicy }}
+    </div>
+  </div>
+
+  <!-- Info Alert (if no penalty) -->
+  <div class="alert alert-info" role="alert" *ngIf="!showPenaltyWarning">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    Your request is still in early stages. Cancellation is free and will not affect your account.
+  </div>
+
+  <!-- Form -->
+  <form [formGroup]="cancellationForm" (ngSubmit)="onSubmit()">
+    
+    <!-- Reason Selection -->
+    <div class="form-group mb-4">
+      <label class="form-label required">Why are you cancelling?</label>
+      <div class="reason-options">
+        <div *ngFor="let reason of cancellationReasons" class="reason-option">
+          <label class="reason-label">
+            <input type="radio" 
+                   [value]="reason.value" 
+                   formControlName="reason"
+                   class="reason-radio">
+            <div class="reason-content">
+              <span class="reason-text">{{ reason.label }}</span>
+              <i class="bi bi-check-circle-fill" *ngIf="cancellationForm.get('reason')?.value === reason.value"></i>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="invalid-feedback d-block" *ngIf="getReasonErrorMessage()">
+        {{ getReasonErrorMessage() }}
+      </div>
+    </div>
+
+    <!-- Additional Notes (conditional) -->
+    <div class="form-group mb-4" *ngIf="selectedReason?.requiresNote">
+      <label class="form-label" [class.required]="selectedReason?.requiresNote">
+        Additional Details
+      </label>
+      <textarea formControlName="additionalNotes" 
+                rows="4" 
+                class="form-control" 
+                [class.is-invalid]="cancellationForm.get('additionalNotes')?.invalid && cancellationForm.get('additionalNotes')?.touched"
+                [placeholder]="selectedReason?.notePlaceholder || 'Please provide more details...'"></textarea>
+      <div class="invalid-feedback" *ngIf="getNotesErrorMessage()">
+        {{ getNotesErrorMessage() }}
+      </div>
+      <small class="text-muted" *ngIf="!selectedReason?.requiresNote">
+        Optional: Add any additional comments (max 500 characters)
+      </small>
+      <small class="text-muted float-end" *ngIf="cancellationForm.get('additionalNotes')?.value">
+        {{ cancellationForm.get('additionalNotes')?.value?.length || 0 }}/500
+      </small>
+    </div>
+
+    <!-- Optional Notes (always available) -->
+    <div class="form-group mb-4" *ngIf="!selectedReason?.requiresNote">
+      <label class="form-label">Additional Comments (Optional)</label>
+      <textarea formControlName="additionalNotes" 
+                rows="3" 
+                class="form-control" 
+                placeholder="Any additional information you'd like to share..."></textarea>
+      <small class="text-muted">Max 500 characters</small>
+      <small class="text-muted float-end" *ngIf="cancellationForm.get('additionalNotes')?.value">
+        {{ cancellationForm.get('additionalNotes')?.value?.length || 0 }}/500
+      </small>
+    </div>
+
+    <!-- Acknowledgement Checkbox -->
+    <div class="form-group mb-4">
+      <div class="form-check">
+        <input type="checkbox" 
+               formControlName="confirmAcknowledgement" 
+               class="form-check-input" 
+               [class.is-invalid]="cancellationForm.get('confirmAcknowledgement')?.invalid && cancellationForm.get('confirmAcknowledgement')?.touched"
+               id="acknowledgement">
+        <label class="form-check-label" for="acknowledgement">
+          I understand that cancelling this request is permanent and cannot be undone.
+          <span *ngIf="showPenaltyWarning">I also acknowledge that fees may apply as per the cancellation policy.</span>
+        </label>
+        <div class="invalid-feedback" *ngIf="getAcknowledgementErrorMessage()">
+          {{ getAcknowledgementErrorMessage() }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-secondary" (click)="onClose()">
+        <i class="bi bi-arrow-left"></i> Go Back
+      </button>
+      <button type="submit" class="btn btn-danger" [disabled]="cancellationForm.invalid || isSubmitting">
+        <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="bi bi-check-circle" *ngIf="!isSubmitting"></i>
+        Confirm Cancellation
+      </button>
+    </div>
+
+  </form>
+</div>

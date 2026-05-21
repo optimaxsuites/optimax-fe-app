@@ -25,6 +25,12 @@ interface MentionCandidate {
   label: string;
 }
 
+interface ChatReactionOption {
+  code: string;
+  emoji: string;
+  label: string;
+}
+
 interface MentionProfileCard {
   userId: number;
   name: string;
@@ -46,6 +52,32 @@ interface MentionProfileCard {
 export class ThreadPanelComponent {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
+  readonly emojiChoices = [
+    '😀',
+    '😄',
+    '😂',
+    '😊',
+    '😍',
+    '😎',
+    '🤔',
+    '👏',
+    '👍',
+    '🙌',
+    '🙏',
+    '🔥',
+    '💯',
+    '🎉',
+    '❤️',
+    '🚀',
+  ];
+  readonly reactionOptions: ChatReactionOption[] = [
+    { code: 'LIKE', emoji: '👍', label: 'Like' },
+    { code: 'LOVE', emoji: '❤️', label: 'Love' },
+    { code: 'LAUGH', emoji: '😂', label: 'Laugh' },
+    { code: 'CELEBRATE', emoji: '🎉', label: 'Celebrate' },
+    { code: 'FIRE', emoji: '🔥', label: 'Fire' },
+  ];
+  emojiMenuOpen = false;
   // ── Inputs ──────────────────────────────────────────
   @Input() mode: RightPanelMode = null;
   @Input() activeThread: Message | null = null;
@@ -112,9 +144,10 @@ export class ThreadPanelComponent {
   @Output() replyDeleteRequested = new EventEmitter<{ reply: Message; event?: Event }>();
   @Output() replyDeleteConfirmed = new EventEmitter<{ reply: Message; rootMsg: Message; event?: Event }>();
   @Output() replyDeleteDismissed = new EventEmitter<void>();
+  @Output() replyRetryRequested = new EventEmitter<Message>();
 
   // Reply like
-  @Output() replyLikeToggled = new EventEmitter<{ msg: Message; event?: Event }>();
+  @Output() replyLikeToggled = new EventEmitter<{ msg: Message; event?: Event; reactionCode?: string }>();
 
   // Pinned
   @Output() pinnedPanelClosed = new EventEmitter<void>();
@@ -165,6 +198,15 @@ export class ThreadPanelComponent {
     this.threadReplyDraftChange.emit(value);
   }
 
+  toggleEmojiMenu(): void {
+    this.emojiMenuOpen = !this.emojiMenuOpen;
+  }
+
+  appendEmoji(emoji: string): void {
+    this.threadReplyDraftChange.emit(`${this.threadReplyDraft || ''}${emoji}`);
+    this.emojiMenuOpen = false;
+  }
+
   trackById(_: number, m: { id: string }): string {
     return m.id;
   }
@@ -172,6 +214,16 @@ export class ThreadPanelComponent {
   messageAttachments(msg: Message): NonNullable<Message['attachments']> {
     if (msg.attachments?.length) return msg.attachments;
     return msg.attachment ? [msg.attachment] : [];
+  }
+
+  totalReplies(msg: Message | null | undefined): number {
+    if (!msg?.replies?.length) {
+      return 0;
+    }
+    return msg.replies.reduce(
+      (total, reply) => total + 1 + this.totalReplies(reply),
+      0,
+    );
   }
 
   imageAttachments(msg: Message): NonNullable<Message['attachments']> {

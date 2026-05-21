@@ -1,0 +1,187 @@
+.procurement-request-detail {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// Timeline styles
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 1.5rem;
+  
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: white;
+  text-align: center;
+  line-height: 1.5rem;
+  color: #6c757d;
+  
+  &.completed {
+    color: #198754;
+  }
+  
+  i {
+    font-size: 1.25rem;
+  }
+}
+
+.timeline-content {
+  h6 {
+    margin-bottom: 0.25rem;
+  }
+}
+
+// Timeline connector line
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: -1.25rem;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 2px;
+  background: #dee2e6;
+}
+
+// Quotation cards
+.quotation-card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+}
+
+// Vendor section
+.vendor-avatar {
+  width: 50px;
+  height: 50px;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vendor-stats {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+// Delivery tracking
+.tracking-history {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.tracking-event {
+  position: relative;
+  padding-bottom: 1rem;
+  
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.tracking-dot {
+  position: absolute;
+  left: -1.5rem;
+  top: 0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #0d6efd;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.tracking-details {
+  padding-bottom: 0.5rem;
+}
+
+// Attachment styles
+.attachment-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// Details table
+.details-table td {
+  padding: 0.5rem 0;
+  border: none;
+}
+
+.details-table tr:first-child td {
+  padding-top: 0;
+}
+
+// Modal
+.modal.show {
+  display: block;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+// Badge colors
+.badge-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.badge-info {
+  background-color: #0dcaf0;
+  color: #000;
+}
+
+.badge-primary {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.badge-success {
+  background-color: #198754;
+  color: white;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+// Responsive
+@media (max-width: 992px) {
+  .procurement-request-detail {
+    padding: 1rem;
+  }
+}

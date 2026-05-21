@@ -49,7 +49,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
     this.started = true;
-    this.refreshChannels();
+    this.refreshChannels(true);
     this.connectSocket();
     this.ensureNotificationPermission();
   }
@@ -102,9 +102,9 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       this.wsConnected = true;
       client.subscribe(
         `/topic/collab/chat/user/${this.currentUserId}/unread`,
-        () => this.refreshChannels(),
+        () => this.refreshChannels(true),
       );
-      this.refreshChannels();
+      this.refreshChannels(true);
     };
 
     client.onStompError = (frame) =>
@@ -116,7 +116,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     client.activate();
   }
 
-  private refreshChannels(): void {
+  private refreshChannels(force = false): void {
     if (Date.now() < this.refreshChannelsCooldownUntil) {
       return;
     }
@@ -124,6 +124,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
     if (
+      !force &&
       this.channelTargets.size &&
       Date.now() - this.lastChannelsRefreshAt < this.refreshChannelsTtlMs
     ) {
@@ -138,13 +139,23 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         this.applyChannelTargets(channels || []);
       },
       error: () => {
-        this.refreshChannelsInFlight = false;
-        this.refreshChannelsFailureCount++;
-        const backoffMs = Math.min(
-          5_000 * Math.pow(2, this.refreshChannelsFailureCount - 1),
-          120_000,
-        );
-        this.refreshChannelsCooldownUntil = Date.now() + backoffMs;
+        this.collabService.getHomeChannels().subscribe({
+          next: (home) => {
+            this.lastChannelsRefreshAt = Date.now();
+            this.refreshChannelsInFlight = false;
+            this.refreshChannelsFailureCount = 0;
+            this.applyChannelTargets(home?.channels || []);
+          },
+          error: () => {
+            this.refreshChannelsInFlight = false;
+            this.refreshChannelsFailureCount++;
+            const backoffMs = Math.min(
+              5_000 * Math.pow(2, this.refreshChannelsFailureCount - 1),
+              120_000,
+            );
+            this.refreshChannelsCooldownUntil = Date.now() + backoffMs;
+          },
+        });
       },
     });
   }
@@ -220,7 +231,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
           return;
         }
 
-        this.refreshChannels();
+        this.refreshChannels(true);
 
         const routeUserId =
           this.currentRouteUserId || String(this.currentUserId);

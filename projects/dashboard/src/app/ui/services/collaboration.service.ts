@@ -78,6 +78,36 @@ export interface CollabUserInfo {
   email?: string;
 }
 
+export interface UserPrimaryInfo {
+  id?: number;
+  fullname?: string;
+  email?: string;
+  phoneNumber?: string;
+  username?: string;
+  userId?: number;
+  profileImage?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  domain?: string;
+  companyName?: string;
+  industry?: string;
+  bio?: string;
+  user?: {
+    id?: number;
+    username?: string;
+    email?: string;
+    fullname?: string;
+    userId?: number;
+  };
+  profilePic?: {
+    id?: number;
+    name?: string;
+    mediaNo?: string;
+  } | null;
+}
+
 export interface EmployeeMedia {
   id: number;
   name: string;
@@ -88,6 +118,11 @@ export interface EmployeeProfile {
   id: number;
   firstName: string;
   lastName: string;
+  fullname?: string;
+  username?: string;
+  email?: string;
+  profileImage?: string;
+  userId?: number;
   jobTitle?: string;
   department?: { id: number; name: string; code: string };
   employeeMedia?: EmployeeMedia | null;
@@ -523,6 +558,22 @@ export class CollaborationService {
     });
   }
 
+  /** GET /x/api/v2/us/ur/findAllUserPrimaryInformation */
+  getAllUserPrimaryInformation(): Observable<UserPrimaryInfo[]> {
+    return this.http.get<UserPrimaryInfo[]>(
+      `${this.baseUrl}/x/api/v2/us/ur/findAllUserPrimaryInformation`,
+      { headers: this.headers },
+    );
+  }
+
+  /** GET /x/api/v2/us/ur/get/user/primary/info/{userid} */
+  getUserPrimaryInfoByUserId(userId: number): Observable<UserPrimaryInfo> {
+    return this.http.get<UserPrimaryInfo>(
+      `${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info/${userId}`,
+      { headers: this.headers },
+    );
+  }
+
   getEmployeeById(id: number): Observable<EmployeeProfile> {
     return this.http.get<EmployeeProfile>(
       `${this.baseUrl}/x/api/v2/hr/employees/${id}`,
@@ -789,13 +840,28 @@ export class CollaborationService {
   }
 
   fetchChatAttachmentBlob(downloadUrl: string): Observable<Blob> {
-    const url = downloadUrl.startsWith('http')
-      ? downloadUrl
-      : `${this.baseUrl}${downloadUrl}`;
+    const url = this.normalizeProtectedApiUrl(downloadUrl);
     return this.http.get(url, {
       headers: this.multipartHeaders,
       responseType: 'blob',
     });
+  }
+
+  private normalizeProtectedApiUrl(downloadUrl: string): string {
+    const base = (this.baseUrl || '').replace(/\/+$/, '');
+    if (!downloadUrl) return base;
+    if (!downloadUrl.startsWith('http')) {
+      return `${base}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`;
+    }
+    try {
+      const parsed = new URL(downloadUrl);
+      if (parsed.pathname.startsWith('/x/api/v2/ai/')) {
+        return `${base}${parsed.pathname}${parsed.search}`;
+      }
+      return downloadUrl;
+    } catch (_) {
+      return downloadUrl;
+    }
   }
 
   // ── Reactions ─────────────────────────────────────────

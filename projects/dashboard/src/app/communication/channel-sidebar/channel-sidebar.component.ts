@@ -64,6 +64,78 @@ export class ChannelSidebarComponent {
     return false;
   }
 
+  private normalizeIdentityText(value: string | null | undefined): string {
+    return String(value || '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private isOwnContact(contact: DmContact): boolean {
+    const myUserId = Number(
+      this.me?.userId ||
+        sessionStorage.getItem('userid') ||
+        sessionStorage.getItem('userId') ||
+        0,
+    );
+    const contactUserId = Number(contact?.userId || 0);
+    const contactEmployeeId = Number(contact?.employeeId || 0);
+    if (myUserId && (contactUserId === myUserId || contactEmployeeId === myUserId)) {
+      return true;
+    }
+
+    let sessionUser: any = null;
+    try {
+      const raw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      sessionUser = raw ? JSON.parse(raw) : null;
+    } catch (_) {}
+
+    const myNames = new Set(
+      [
+        this.me?.name,
+        this.me?.shortName,
+        sessionStorage.getItem('fullname'),
+        localStorage.getItem('fullname'),
+        sessionUser?.fullname,
+        sessionUser?.name,
+      ]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+    const myEmails = new Set(
+      [sessionUser?.email, sessionStorage.getItem('email'), localStorage.getItem('email')]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+    const myUsernames = new Set(
+      [
+        sessionUser?.username,
+        sessionStorage.getItem('username'),
+        localStorage.getItem('username'),
+      ]
+        .map((value) => this.normalizeIdentityText(value))
+        .filter(Boolean),
+    );
+
+    const contactName = this.normalizeIdentityText(contact?.fullName);
+    if (contactName && myNames.has(contactName)) {
+      return true;
+    }
+
+    const contactEmail = this.normalizeIdentityText(contact?.email);
+    if (contactEmail && myEmails.has(contactEmail)) {
+      return true;
+    }
+
+    const contactUsername = this.normalizeIdentityText((contact as any)?.username);
+    return Boolean(contactUsername && myUsernames.has(contactUsername));
+  }
+
+  get visibleDmContacts(): DmContact[] {
+    return (this.dmContacts || []).filter((contact) => !this.isOwnContact(contact));
+  }
+
   /**
    * Returns an SVG path string for a channel icon based on the channel name.
    */

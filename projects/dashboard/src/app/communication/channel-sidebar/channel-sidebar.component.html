@@ -204,13 +204,11 @@
         <button
           *ngFor="let ch of channels"
           (click)="channelSelected.emit(ch.id)"
-          class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
-          [ngClass]="{
-            active: activeChannelId === ch.id && activeView === 'channel',
-            unread:
-              ch.hasUnread &&
-              !(activeChannelId === ch.id && activeView === 'channel'),
-          }"
+        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors text-left group"
+        [ngClass]="{
+          active: activeChannelId === ch.id && activeView === 'channel',
+          unread: ch.hasUnread,
+        }"
         >
           <svg
             class="flex-shrink-0 text-gray-400"
@@ -234,12 +232,9 @@
             title="Private channel"
           ></span>
           <span
-            *ngIf="
-              ch.unreadCount &&
-              !(activeChannelId === ch.id && activeView === 'channel')
-            "
-            class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
-          >
+          *ngIf="ch.unreadCount"
+          class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
+        >
             {{ ch.unreadCount! > 99 ? "99+" : ch.unreadCount }}
           </span>
         </button>
@@ -267,13 +262,12 @@
         {{ employeesError }}
       </div>
       <button
-        *ngFor="let dm of dmContacts"
+        *ngFor="let dm of visibleDmContacts"
         (click)="dmSelected.emit(dm.id)"
         class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
         [ngClass]="{
           active: activeDmId === dm.id && activeView === 'dm',
-          unread:
-            dm.hasUnread && !(activeDmId === dm.id && activeView === 'dm'),
+          unread: dm.hasUnread,
         }"
       >
         <div class="relative flex-shrink-0">
@@ -312,9 +306,7 @@
           </span>
         </div>
         <span
-          *ngIf="
-            dm.unreadCount && !(activeDmId === dm.id && activeView === 'dm')
-          "
+          *ngIf="dm.unreadCount"
           class="flex-shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[#2e6276] text-white text-[10px] font-bold leading-none"
         >
           {{ dm.unreadCount! > 99 ? "99+" : dm.unreadCount }}

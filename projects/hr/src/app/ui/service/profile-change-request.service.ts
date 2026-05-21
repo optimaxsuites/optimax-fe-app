@@ -96,7 +96,7 @@ export class ProfileChangeRequestService {
       return throwError(() => new Error(`Profile change request ${id} was not found`));
     }
 
-    const approvedRequest = this.withStatus(request, 'approved', processedBy);
+    const approvedRequest = this.withStatus(id, request, 'approved', processedBy);
     return this.applyApprovedChangesToEmployee(approvedRequest).pipe(
       switchMap(() => this.saveRequestStatus(approvedRequest))
     );
@@ -111,7 +111,7 @@ export class ProfileChangeRequestService {
       return throwError(() => new Error(`Profile change request ${id} was not found`));
     }
 
-    const rejectedRequest = this.withStatus(request, 'rejected', processedBy, rejectionReason);
+    const rejectedRequest = this.withStatus(id, request, 'rejected', processedBy, rejectionReason);
     return this.saveRequestStatus(rejectedRequest);
   }
 
@@ -215,7 +215,7 @@ export class ProfileChangeRequestService {
 
   private toApiPayload(request: ProfileChangeRequestDTO): any {
     return {
-      id: typeof request.id === 'number' ? request.id : 0,
+      id: typeof request.id === 'number' ? request.id : parseInt(String(request.id).replace(/\D/g, '')) || 0,
       employeeId: Number(request.employeeId) || 0,
       requestType: request.requestType,
       fieldChangeType: request.fieldChangeType,
@@ -325,6 +325,7 @@ export class ProfileChangeRequestService {
   }
 
   private withStatus(
+    id: string | number,
     request: ProfileChangeRequestDTO,
     status: RequestStatus,
     processedBy: any,
@@ -332,6 +333,7 @@ export class ProfileChangeRequestService {
   ): ProfileChangeRequestDTO {
     return {
       ...request,
+      id,
       status,
       processedDate: new Date(),
       processedBy,
@@ -364,6 +366,8 @@ export class ProfileChangeRequestService {
       ...employee,
       id: Number(request.employeeId) || employee?.id,
     };
+
+    console.log(updatedEmployee)
 
     request.request.forEach((change) => {
       updatedEmployee[change.fieldName] = change.value;
