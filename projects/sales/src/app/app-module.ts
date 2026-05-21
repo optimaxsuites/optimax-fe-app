@@ -88,8 +88,8 @@ import { ProcurementRequestDetailComponent } from './ui/view/procurement-request
 
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     TableModule,

@@ -8,25 +8,25 @@ import { ProcurementRequestManagementComponent } from './ui/view/procurement-req
 const routes: Routes = [
   {
     path: "",
-    redirectTo: 'commerce/requests',
+    redirectTo: 'procurement-management/requests/:uuid',
     pathMatch: 'full'
   },
   {
-    path: 'commerce/requests',
+    path: 'procurement-management/requests/:uuid',
     component: ProcurementRequestManagementComponent
   },
   {
-    path: 'commerce/requests/new',
+    path: 'procurement-management/requests/new/:uuid',
     component: ProcurementRequestFormComponent  
   },
   {
-    path: 'commerce/requests/:id',
+    path: 'procurement-management/requests/:id/:uuid',
     component: ProcurementRequestDetailComponent  
   }
 ]
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

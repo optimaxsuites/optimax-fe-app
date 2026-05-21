@@ -219,6 +219,12 @@ const routes: Routes = [
         canActivate: [UuidGuard]
 
       },
+       {
+        path: 'sales',
+        loadChildren: () => import('../../projects/sales/src/app/app-module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
       {
         path: 'admin/sales/:uuid',
         component: SalesPageComponent,

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../shared-component/environments/environment';
+import { MailNotificationService } from './mailNotification.service';
 import {
   ProfileChangeRequestDTO,
   ProfileChangeRequestFilter,
@@ -22,7 +23,10 @@ export class ProfileChangeRequestService {
   private requestsSubject = new BehaviorSubject<ProfileChangeRequestDTO[]>([]);
   public requests$ = this.requestsSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private mailNotificationService: MailNotificationService
+  ) {
     this.loadRequestsFromStorage();
   }
 
@@ -48,7 +52,7 @@ export class ProfileChangeRequestService {
    * Get all profile change requests with optional filtering
    */
   getProfileChangeRequests(filter?: ProfileChangeRequestFilter): Observable<ProfileChangeRequestDTO[]> {
-    return this.http.get<any>(this.baseUrl).pipe(
+    return this.http.get<any>(`${this.baseUrl}?page=1&size=100`).pipe(
       map((response) => this.normalizeRequestListResponse(response)),
       map((requests) => this.applyFilter(requests, filter)),
       tap((requests) => this.replaceOrMergeRequests(requests, filter)),
@@ -342,9 +346,12 @@ export class ProfileChangeRequestService {
   }
 
   private saveRequestStatus(request: ProfileChangeRequestDTO): Observable<ProfileChangeRequestDTO> {
-    return this.http.post<any>(this.baseUrl, this.toApiPayload(request)).pipe(
+    return this.http.put<any>(`${this.baseUrl}/${request.id}`, this.toApiPayload(request)).pipe(
       map((response) => this.normalizeRequestResponse(response, request)),
-      tap((updatedRequest) => this.upsertRequest(updatedRequest))
+      tap((updatedRequest) => {
+        this.upsertRequest(updatedRequest);
+        this.sendDecisionNotification(updatedRequest);
+      })
     );
   }
 
@@ -366,8 +373,6 @@ export class ProfileChangeRequestService {
       ...employee,
       id: Number(request.employeeId) || employee?.id,
     };
-
-    console.log(updatedEmployee)
 
     request.request.forEach((change) => {
       updatedEmployee[change.fieldName] = change.value;
@@ -413,8 +418,87 @@ export class ProfileChangeRequestService {
       employeeMediaId: this.getRelationId(employee, 'employeeMedia'),
       jobTypeId: this.getRelationId(employee, 'jobType'),
       levelId: this.getRelationId(employee, 'level'),
-      userId: Number(employee?.userId ?? employee?.user?.id ?? 0) || 0,
+      userId: Number(employee?.userId ?? employee?.user?.userId ?? employee?.user?.id ?? 0) || 0,
     };
+  }
+
+  private sendDecisionNotification(request: ProfileChangeRequestDTO): void {
+    if (request.status !== 'approved' && request.status !== 'rejected') {
+      return;
+    }
+
+    const employeeEmail = request.employeeEmail;
+    if (!employeeEmail) {
+      console.warn('Decision notification skipped because employee email is missing', request);
+      return;
+    }
+
+    const fieldLabel = this.getFieldTypeLabel(request.fieldChangeType);
+    const isApproved = request.status === 'approved';
+    const reviewedBy = this.getProcessedByName(request.processedBy);
+    const decisionDate = request.processedDate || new Date();
+    const subjectStatus = isApproved ? 'APPROVED' : 'NOT APPROVED';
+
+    const emailBody = {
+      name: request.employeeName || 'Employee',
+      recieverEmail: employeeEmail,
+      subject: `${fieldLabel} Change Request - ${subjectStatus}`,
+      body: `
+        <h2>Your ${fieldLabel} Change Request Has Been ${isApproved ? 'Approved' : 'Reviewed'}</h2>
+        <p>Dear ${request.employeeName || 'Employee'},</p>
+        <p>Your request to change your ${fieldLabel.toLowerCase()} has been <strong>${isApproved ? 'approved' : 'not approved'}</strong>.</p>
+
+        <h3>Request Details:</h3>
+        <ul>
+          ${this.buildRequestChangesList(request)}
+        </ul>
+
+        ${request.reason ? `<p><strong>Your Reason:</strong> ${request.reason}</p>` : ''}
+        ${!isApproved && request.rejectionReason ? `<p><strong>Reason for Decision:</strong> ${request.rejectionReason}</p>` : ''}
+
+        <p><strong>Reviewed By:</strong> ${reviewedBy}</p>
+        <p><strong>Review Date:</strong> ${new Date(decisionDate).toLocaleString()}</p>
+
+        <p>If you have any questions, please contact the HR department.</p>
+        <p>Best regards,<br>OptimAX HR Department</p>
+      `,
+    };
+
+    this.mailNotificationService.sendMail(emailBody).subscribe({
+      next: () => console.log('Profile change decision notification email sent to employee'),
+      error: (error) => console.error('Error sending profile change decision notification email:', error),
+    });
+  }
+
+  private buildRequestChangesList(request: ProfileChangeRequestDTO): string {
+    return request.request
+      .map((item) => `<li><strong>${item.fieldName}:</strong> ${item.oldValue || 'N/A'} &rarr; ${item.value || 'N/A'}</li>`)
+      .join('');
+  }
+
+  private getFieldTypeLabel(fieldType: FieldChangeType): string {
+    const map: Record<FieldChangeType, string> = {
+      bank: 'Bank Details',
+      emergency_contact: 'Emergency Contact',
+      address: 'Address',
+      phone: 'Phone',
+      email: 'Email',
+      NOK: 'Next of Kin',
+      guarantor: 'Guarantor',
+    };
+    return map[fieldType] || fieldType;
+  }
+
+  private getProcessedByName(processedBy: any): string {
+    if (!processedBy) {
+      return 'HR Department';
+    }
+
+    if (typeof processedBy === 'string' || typeof processedBy === 'number') {
+      return String(processedBy);
+    }
+
+    return processedBy.name || processedBy.fullname || processedBy.username || 'HR Department';
   }
 
   private replaceEmployeeRequests(employeeId: string | number, employeeRequests: ProfileChangeRequestDTO[]): void {
