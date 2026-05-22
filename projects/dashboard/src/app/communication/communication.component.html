@@ -1246,9 +1246,9 @@
         </div>
 
         <ng-template #documentLibraryView>
-          <section class="flex-1 min-h-0 overflow-hidden bg-white">
-            <div class="h-full grid grid-cols-[280px_minmax(0,1fr)]">
-              <aside class="border-r border-gray-200 p-4 overflow-y-auto">
+          <section class="document-library-shell flex-1 min-h-0 overflow-hidden bg-white">
+            <div class="document-library-layout h-full">
+              <aside class="document-library-sidebar border-r border-gray-200 p-4 overflow-y-auto">
                 <div class="flex items-center justify-between mb-3">
                   <div>
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Folders</p>
@@ -1257,7 +1257,7 @@
                   <button
                     *ngIf="activeChannel?.allowFolders"
                     type="button"
-                    class="px-3 py-1.5 rounded-lg bg-[#2e6276] text-white text-[12px] font-semibold"
+                    class="document-library-primary-btn px-3 py-1.5 rounded-lg bg-[#2e6276] text-white text-[12px] font-semibold"
                     (click)="openCreateDocumentFolderModal()"
                   >Create Folder</button>
                 </div>
@@ -1305,12 +1305,12 @@
                 <p *ngIf="!activeDocumentFolders().length" class="text-[13px] text-gray-400 mt-4">No folders here yet.</p>
               </aside>
 
-              <section class="p-5 overflow-y-auto">
-                <div class="flex items-center justify-between gap-4 mb-5">
-                  <div>
+              <section class="document-library-content p-5 overflow-y-auto">
+                <div class="document-library-header flex items-center justify-between gap-4 mb-5">
+                  <div class="document-library-heading">
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Document Library</p>
                     <h3 class="text-[18px] font-semibold text-gray-900">{{ activeDocumentFolderName() }}</h3>
-                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                    <div class="document-library-breadcrumbs flex flex-wrap items-center gap-2 mt-2">
                       <button
                         type="button"
                         class="text-[12px] font-semibold rounded-full px-3 py-1 border"
@@ -1331,7 +1331,7 @@
                       </ng-container>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="document-library-actions flex items-center gap-2">
                     <button
                       *ngIf="activeChannel?.allowFolders"
                       type="button"
@@ -1353,12 +1353,12 @@
                   {{ documentLibraryError }}
                 </div>
 
-                <div *ngIf="documentLibraryLoading" class="grid gap-3">
+                <div *ngIf="documentLibraryLoading" class="document-library-files grid gap-3">
                   <div class="h-14 rounded-xl bg-gray-100 animate-pulse"></div>
                   <div class="h-14 rounded-xl bg-gray-100 animate-pulse"></div>
                 </div>
 
-                <div *ngIf="!documentLibraryLoading && documentFiles.length" class="grid gap-3">
+                <div *ngIf="!documentLibraryLoading && documentFiles.length" class="document-library-files grid gap-3">
                   <button
                     *ngFor="let file of documentFiles"
                     type="button"
