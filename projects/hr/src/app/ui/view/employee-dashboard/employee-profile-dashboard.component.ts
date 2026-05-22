@@ -9,10 +9,32 @@ import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
+export interface NextOfKin {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  DOB?: string;
+  emergencyContact?: boolean;
+}
+
+export interface Guarantor {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  yearsKnown?: number;
+}
 
 @Component({
   selector: 'app-employee-profile-dashboard',
@@ -32,6 +54,8 @@ export class EmployeeProfileDashboardComponent {
   bankChangeRequestForm: FormGroup;
   submittingBankChangeRequest = false;
   editForm: FormGroup;
+  nextOfKinList: NextOfKin[] = [];
+  guarantorList: Guarantor[] = [];
   nigerianBanks = [
     'Access Bank',
     'Zenith Bank',
@@ -77,7 +101,8 @@ export class EmployeeProfileDashboardComponent {
     private messageService: MessageService,
     private fb: FormBuilder,
     private router: Router,
-    private profileChangeRequestService: ProfileChangeRequestService
+    private profileChangeRequestService: ProfileChangeRequestService,
+    // private http: HttpClient
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -489,6 +514,9 @@ export class EmployeeProfileDashboardComponent {
   private applyEmployeeView(employee: any): void {
     this.employeeInView = employee;
     this.patchEditForm();
+
+    // Load employee relatives
+    this.loadEmployeeRelatives();
 
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
@@ -928,5 +956,31 @@ export class EmployeeProfileDashboardComponent {
         });
       },
     });
+  }
+
+  loadEmployeeRelatives(): void {
+    if (!this.employeeInView?.id) return;
+          // this.nextOfKinList = this.employeeInView.nextOfKin || [];
+
+
+    this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.nextOfKinList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.nextOfKinList = [];
+        },
+      })
+
+    this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.guarantorList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.guarantorList = [];
+        },
+      })
   }
 }

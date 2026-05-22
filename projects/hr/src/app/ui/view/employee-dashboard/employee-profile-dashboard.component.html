@@ -519,6 +519,15 @@
         </div>
       </div>
     </section>
+
+    <!-- Employee Relatives Widget -->
+    <section class="mt-6">
+      <app-employee-relatives-widget 
+        [nextOfKinList]="nextOfKinList"
+        [guarantorList]="guarantorList"
+        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName">
+      </app-employee-relatives-widget>
+    </section>
   </div>
 </div>
 

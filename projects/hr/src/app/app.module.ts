@@ -1,6 +1,7 @@
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -457,6 +458,7 @@ import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashb
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
     AppHrRoutingModule,
+    EmployeeRelativesWidgetComponent,
   ],
   providers: [
     {

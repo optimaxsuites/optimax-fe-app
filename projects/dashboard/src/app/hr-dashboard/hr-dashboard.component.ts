@@ -1,27 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../shared-component/environments/environment';
-
-export interface NextOfKin {
-  id?: number;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relationship?: string;
-  DOB?: string;
-  emergencyContact?: boolean;
-}
-
-export interface Guarantor {
-  id?: number;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relationship?: string;
-  yearsKnown?: number;
-}
 
 @Component({
   selector: 'app-hr-dashboard',
@@ -29,14 +6,6 @@ export interface Guarantor {
   styleUrls: ['./hr-dashboard.component.scss']
 })
 export class HrDashboardComponent implements OnInit {
-
-  /* --------------------------------------------------
-     EMPLOYEE RELATIVES DATA
-  -------------------------------------------------- */
-  nextOfKinList: NextOfKin[] = [];
-  guarantorList: Guarantor[] = [];
-  loadingRelatives = false;
-  relativesError: string | null = null;
 
   /* --------------------------------------------------
      NOTIFICATIONS
@@ -224,10 +193,7 @@ export class HrDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.initBarChart();
     this.initPieChart();
-    this.loadEmployeeRelatives();
   }
-
-  constructor(private http: HttpClient) {}
 
   initBarChart() {
     this.barChartOptions = {

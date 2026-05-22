@@ -318,6 +318,15 @@
         </div>
       </div>
     </section>
+
+    <!-- Employee Relatives Widget -->
+    <div class="mt-6">
+      <app-employee-relatives-widget 
+        [nextOfKinList]="nextOfKinList"
+        [guarantorList]="guarantorList"
+        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName">
+      </app-employee-relatives-widget>
+    </div>
   </div>
 </ng-container>
 

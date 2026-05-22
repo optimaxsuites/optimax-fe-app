@@ -332,6 +332,13 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+  getGuarantor(id: any) {
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/guarantors/getGuarantorByEmployeeId/${id}`)
+    .pipe(catchError(this.handleError));
+  }
   sendOnboardingVetting(payload: any, data: any): Observable<any> {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
