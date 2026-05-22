@@ -4,7 +4,6 @@ import { Subscription } from 'rxjs';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
-  HeaderMessagePreviewItem,
   HeaderNotificationItem,
   HeaderProfileState,
   HeaderStateService,
@@ -27,7 +26,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     initials: 'OU',
   };
   notifications: HeaderNotificationItem[] = [];
-  messagePreviews: HeaderMessagePreviewItem[] = [];
   unreadMessages = 0;
   unreadChannels = 0;
   unreadDirectMessages = 0;
@@ -51,11 +49,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     this.syncProfileFromSession();
     this.chatRealtimeNotifierService.start(this.currentUserId);
+    this.headerStateService.markAllMessagePreviewsRead();
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
-      this.messagePreviews = state.messagePreviews;
-      const unreadPreviewCount = state.messagePreviews.filter((entry) => !entry.read).length;
-      this.unreadMessages = Math.max(state.unreadMessages, unreadPreviewCount);
+      this.unreadMessages = state.unreadMessages;
       this.unreadChannels = state.unreadChannels;
       this.unreadDirectMessages = state.unreadDirectMessages;
       this.unreadNotifications = state.unreadNotifications;
@@ -74,15 +71,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.toggleSidebar.emit();
   }
 
-  openMessages(): void {
-    sessionStorage.setItem('optimax_workspace_mode', 'chat');
-  }
-
   openNotifications(): void {
   }
 
   clearAllNotifications(): void {
     this.headerStateService.clearAllNotifications();
+    this.headerStateService.markAllMessagePreviewsRead();
     this.showUnreadNotificationsDialog = false;
   }
 
@@ -96,15 +90,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openNotification(item: HeaderNotificationItem): void {
     this.headerStateService.markNotificationRead(item.id);
-    const route =
-      item.route || `/admin/dashboard/communications/${this.currentUserId}`;
-    this.dispatchCollabTarget(item, route);
-  }
-
-  openMessagePreview(item: HeaderMessagePreviewItem): void {
-    this.headerStateService.markMessagePreviewRead(item.id);
-    const route =
-      item.route || `/admin/dashboard/communications/${this.currentUserId}`;
+    const route = item.route || this.resolveCollaborationRoute();
     this.dispatchCollabTarget(item, route);
   }
 
@@ -116,24 +102,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return this.notifications.filter((entry) => !entry.read);
   }
 
-  get latestMessagePreviews(): HeaderMessagePreviewItem[] {
-    return this.messagePreviews.slice(0, 5);
-  }
-
-  viewAllMessages(): void {
-    sessionStorage.setItem('optimax_workspace_mode', 'chat');
-    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
+  get unreadBellCount(): number {
+    return Math.max(
+      Number(this.unreadNotifications || 0),
+      Number(this.unreadMessages || 0),
+    );
   }
 
   viewAllNotifications(): void {
+    const route = this.resolveCollaborationRoute();
     if (typeof window !== 'undefined') {
-      const target = { workspaceMode: 'feed', route: `/admin/dashboard/communications/${this.currentUserId}` };
+      const target = { workspaceMode: 'chat', route };
       sessionStorage.setItem('optimax_notification_target', JSON.stringify(target));
       window.dispatchEvent(
         new CustomEvent('optimax-open-collab-target', { detail: target }),
       );
     }
-    this.router.navigateByUrl(`/admin/dashboard/communications/${this.currentUserId}`).catch(() => {});
+    this.router.navigateByUrl(route).catch(() => {});
   }
 
   logout(): void {
@@ -175,6 +160,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (!this.currentUserId) {
       this.currentUserId = String(
         sessionStorage.getItem('userid') ||
+          sessionStorage.getItem('uuid') ||
           sessionStorage.getItem('userId') ||
           '',
       );
@@ -238,5 +224,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
         }, 700);
       }
     }).catch(() => {});
+  }
+
+  private resolveCollaborationRoute(): string {
+    const resolvedId =
+      String(this.currentUserId || '').trim() ||
+      this.extractRouteUserId(this.router.url) ||
+      String(sessionStorage.getItem('userid') || '').trim() ||
+      String(sessionStorage.getItem('userId') || '').trim() ||
+      String(sessionStorage.getItem('uuid') || '').trim() ||
+      'uu';
+    return `/admin/dashboard/communications/${resolvedId}`;
+  }
+
+  private extractRouteUserId(url: string): string {
+    const match = String(url || '').match(/\/admin\/dashboard\/communications\/([^/?#]+)/);
+    return match?.[1] || '';
   }
 }

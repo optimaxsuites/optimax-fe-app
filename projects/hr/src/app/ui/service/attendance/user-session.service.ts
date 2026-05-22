@@ -29,6 +29,14 @@ export class UserSessionService {
 
     const data = JSON.parse(raw);
 
+    // IMPORTANT:
+    // This MUST be the HR employee record ID
+    //const employeeId = Number(
+      //data.employeeId
+      //?? data.id
+      //?? 0
+    //);
+
     console.log('Parsed userRegData:', data);
 
     return {
