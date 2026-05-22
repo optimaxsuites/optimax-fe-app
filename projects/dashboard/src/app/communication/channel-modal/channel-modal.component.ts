@@ -13,6 +13,9 @@ export interface ChannelModalState {
   name: string;
   description: string;
   channelType: 'PUBLIC' | 'PRIVATE';
+  workspaceMode: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID';
+  allowFolders: boolean;
+  allowSubfolders: boolean;
   selectedUserIds: number[];
   saving: boolean;
   error: string;
@@ -34,6 +37,9 @@ export class ChannelModalComponent {
   @Output() nameChange = new EventEmitter<string>();
   @Output() descriptionChange = new EventEmitter<string>();
   @Output() channelTypeChange = new EventEmitter<'PUBLIC' | 'PRIVATE'>();
+  @Output() workspaceModeChange = new EventEmitter<'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID'>();
+  @Output() allowFoldersChange = new EventEmitter<boolean>();
+  @Output() allowSubfoldersChange = new EventEmitter<boolean>();
   @Output() memberToggled = new EventEmitter<number>();
 
   getEmpName(e: EmployeeProfile): string {
@@ -74,5 +80,9 @@ export class ChannelModalComponent {
 
   isMemberSelected(userId: number): boolean {
     return this.state.selectedUserIds.includes(userId);
+  }
+
+  isDocumentLibraryMode(): boolean {
+    return this.state.workspaceMode === 'DOCUMENT_LIBRARY' || this.state.workspaceMode === 'HYBRID';
   }
 }
