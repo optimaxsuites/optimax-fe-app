@@ -36,7 +36,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private refreshChannelsFailureCount = 0;
   private readonly refreshChannelsTtlMs = 10_000;
   private readonly fallbackRefreshIntervalMs = 15_000;
-  private fallbackRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private fallbackRefreshTimer: number | null = null;
   private notificationAudioContext: AudioContext | null = null;
   private audioPrimed = false;
 

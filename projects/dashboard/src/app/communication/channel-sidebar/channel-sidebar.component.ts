@@ -136,11 +136,20 @@ export class ChannelSidebarComponent {
     return (this.dmContacts || []).filter((contact) => !this.isOwnContact(contact));
   }
 
+  isDocumentLibraryChannel(channel: Channel | null | undefined): boolean {
+    return (
+      channel?.workspaceMode === 'DOCUMENT_LIBRARY' ||
+      channel?.workspaceMode === 'HYBRID'
+    );
+  }
+
   /**
    * Returns an SVG path string for a channel icon based on the channel name.
    */
   getChannelIconPath(name: string): string {
     const n = (name || '').toLowerCase();
+    if (/document|directory|library|folder|file|archive|repository|erp/.test(n))
+      return 'M3 7.5A1.5 1.5 0 014.5 6H9l1.5 1.5H19.5A1.5 1.5 0 0121 9v8.5a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 17.5v-10z';
     if (/announce|broadcast|news|alert|update/.test(n))
       return 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z';
     if (/general|team|lounge|water|social|random|fun/.test(n))
