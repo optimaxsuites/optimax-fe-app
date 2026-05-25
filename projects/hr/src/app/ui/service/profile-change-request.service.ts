@@ -314,6 +314,7 @@ applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): 
     return {
       id: raw?.id,
       employeeId: raw?.employeeId ?? employee?.id,
+      employeeUserId: employee?.userId ?? employee?.user?.userId ?? employee?.user?.id,
       employeeName,
       employeeEmail: raw?.employeeEmail || employee?.workEmail || employee?.email,
       requestType: raw?.requestType,

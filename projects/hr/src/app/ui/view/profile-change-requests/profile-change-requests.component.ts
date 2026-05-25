@@ -24,7 +24,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   showRejectionDialog = false;
   rejectionForm: FormGroup;
   isDetailModalOpen = false;
-
   private destroy$ = new Subject<void>();
 
   // Filter options
@@ -48,6 +47,8 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     { label: 'NOK', value: 'NOK' },
     { label: 'Guarantor', value: 'guarantor' },
   ];
+
+  currentUserId: string = localStorage.getItem('userid') || '';
 
   constructor(
     private profileChangeRequestService: ProfileChangeRequestService,
@@ -100,19 +101,28 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
       });
   }
 
-  applyFilters(): void {
-    let filtered = [...this.requests];
+ applyFilters(): void {
+  let filtered = [...(this.requests || [])];
 
-    if (this.statusFilter) {
-      filtered = filtered.filter((r) => r.status === this.statusFilter);
-    }
-
-    if (this.fieldTypeFilter) {
-      filtered = filtered.filter((r) => r.fieldChangeType === this.fieldTypeFilter);
-    }
-
-    this.filteredRequests = filtered;
+  if (this.statusFilter) {
+    filtered = filtered.filter((r) => r?.status === this.statusFilter);
   }
+
+  if (this.fieldTypeFilter) {
+    filtered = filtered.filter((r) => r?.fieldChangeType === this.fieldTypeFilter);
+  }
+
+  if (this.currentUserId) {
+    console.log(this.currentUserId)
+    filtered = filtered.filter((r) => {
+      console.log(r)
+      if (!r?.employeeId) return false;
+      return String(r.employeeUserId) === String(this.currentUserId);
+    });
+  }
+
+  this.filteredRequests = filtered;
+}
 
   viewDetails(request: ProfileChangeRequestDTO): void {
     this.selectedRequest = request;
