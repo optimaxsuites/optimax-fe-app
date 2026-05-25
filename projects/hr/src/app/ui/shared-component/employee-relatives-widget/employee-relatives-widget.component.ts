@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface NextOfKin {
@@ -22,6 +22,15 @@ export interface Guarantor {
   yearsKnown?: number;
 }
 
+export interface NokEventPayload {
+  type: 'add' | 'edit' | 'delete';
+  contact: NextOfKin;
+}
+
+export interface GuarantorEventPayload {
+  type: 'add' | 'edit' | 'delete';
+  contact: Guarantor;
+}
 @Component({
   selector: 'app-employee-relatives-widget',
   templateUrl: './employee-relatives-widget.component.html',
@@ -30,9 +39,23 @@ export interface Guarantor {
   imports: [CommonModule]
 })
 export class EmployeeRelativesWidgetComponent implements OnInit {
+// editNextOfKin(_t20: NextOfKin,_t21: number) {
+// throw new Error('Method not implemented.');
+// }
+// deleteNextOfKin(_t20: NextOfKin,_t21: number) {
+// throw new Error('Method not implemented.');
+// }
+// editGuarantor(_t71: Guarantor,_t72: number) {
+// throw new Error('Method not implemented.');
+// }
+// deleteGuarantor(_t71: Guarantor,_t72: number) {
+// throw new Error('Method not implemented.');
+// }
   @Input() nextOfKinList: NextOfKin[] = [];
   @Input() guarantorList: Guarantor[] = [];
   @Input() employeeName: string = 'Employee';
+  @Output() openNokChangeRequest = new EventEmitter<NokEventPayload>();
+  @Output() openGuarantorChangeRequest = new EventEmitter<GuarantorEventPayload>();
 
   selectedTab: 'nok' | 'guarantor' = 'nok';
 
@@ -58,5 +81,21 @@ export class EmployeeRelativesWidgetComponent implements OnInit {
 
   isEmergencyContact(contact: NextOfKin): boolean {
     return contact.emergencyContact === true;
+  }
+
+  editNextOfKin(contact: NextOfKin, index: number): void {
+    this.openNokChangeRequest.emit({ type: 'edit', contact });
+  }
+
+  deleteNextOfKin(contact: NextOfKin, index: number): void {
+    this.openNokChangeRequest.emit({ type: 'delete', contact });
+  }
+
+  editGuarantor(guarantor: Guarantor, index: number): void {
+    this.openGuarantorChangeRequest.emit({ type: 'edit', contact: guarantor });
+  }
+
+  deleteGuarantor(guarantor: Guarantor, index: number): void {
+    this.openGuarantorChangeRequest.emit({ type: 'delete', contact: guarantor });
   }
 }

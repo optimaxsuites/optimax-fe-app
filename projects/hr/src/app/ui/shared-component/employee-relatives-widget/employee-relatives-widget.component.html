@@ -1,4 +1,5 @@
 <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+
   <!-- Header -->
   <div class="bg-[#c2d4ec] to-indigo-50 px-6 py-4 border-b border-gray-200">
     <h3 class="text-lg font-semibold text-gray-800">Employee Relatives & Contacts</h3>
@@ -44,26 +45,35 @@
                   <span *ngIf="contact.relationship" class="text-xs text-gray-500">{{ contact.relationship }}</span>
                 </div>
               </div>
-              <span *ngIf="isEmergencyContact(contact)" class="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
-                Emergency Contact
-              </span>
+              <div class="flex items-center gap-2">
+                <span *ngIf="isEmergencyContact(contact)" class="px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
+                  Emergency Contact
+                </span>
+                <!-- Action Buttons -->
+                <button (click)="editNextOfKin(contact, i)" class="p-1 text-gray-500 hover:text-blue-600 transition-colors" title="Edit">
+                  <i class="fa-solid fa-pen-to-square text-sm"></i>
+                </button>
+                <button (click)="deleteNextOfKin(contact, i)" class="p-1 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div *ngIf="contact.email" class="flex items-center gap-2">
-                <i class="fa-solid fa-envelope text-customBlueHover0 w-4"></i>
+                <!-- <i class="fa-solid fa-envelope text-customBlueHover0 w-4"></i> -->
                 <span class="text-gray-700">{{ contact.email }}</span>
               </div>
               <div *ngIf="contact.phone" class="flex items-center gap-2">
-                <i class="fa-solid fa-phone text-green-500 w-4"></i>
+                <!-- <i class="fa-solid fa-phone text-green-500 w-4"></i> -->
                 <span class="text-gray-700">{{ contact.phone }}</span>
               </div>
               <div *ngIf="contact.address" class="col-span-2 flex items-start gap-2">
-                <i class="fa-solid fa-map-pin text-purple-500 w-4 mt-0.5"></i>
+                <!-- <i class="fa-solid fa-map-pin text-purple-500 w-4 mt-0.5"></i> -->
                 <span class="text-gray-700">{{ contact.address }}</span>
               </div>
               <div *ngIf="contact.DOB" class="flex items-center gap-2">
-                <i class="fa-solid fa-calendar text-orange-500 w-4"></i>
+                <!-- <i class="fa-solid fa-calendar text-orange-500 w-4"></i> -->
                 <span class="text-gray-700">{{ contact.DOB | date: 'MMM d, yyyy' }}</span>
               </div>
             </div>
@@ -94,26 +104,35 @@
                   <span *ngIf="guarantor.relationship" class="text-xs text-gray-500">{{ guarantor.relationship }}</span>
                 </div>
               </div>
-              <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                Verified
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  Verified
+                </span>
+                <!-- Action Buttons -->
+                <button (click)="editGuarantor(guarantor, i)" class="p-1 text-gray-500 hover:text-blue-600 transition-colors" title="Edit">
+                  <i class="fa-solid fa-pen-to-square text-sm"></i>
+                </button>
+                <button (click)="deleteGuarantor(guarantor, i)" class="p-1 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div *ngIf="guarantor.email" class="flex items-center gap-2">
-                <i class="fa-solid fa-envelope text-customBlueHover0 w-4"></i>
+                <!-- <i class="fa-solid fa-envelope text-customBlueHover0 w-4"></i> -->
                 <span class="text-gray-700">{{ guarantor.email }}</span>
               </div>
               <div *ngIf="guarantor.phone" class="flex items-center gap-2">
-                <i class="fa-solid fa-phone text-green-500 w-4"></i>
+                <!-- <i class="fa-solid fa-phone text-green-500 w-4"></i> -->
                 <span class="text-gray-700">{{ guarantor.phone }}</span>
               </div>
               <div *ngIf="guarantor.address" class="col-span-2 flex items-start gap-2">
-                <i class="fa-solid fa-map-pin text-purple-500 w-4 mt-0.5"></i>
+                <!-- <i class="fa-solid fa-map-pin text-purple-500 w-4 mt-0.5"></i> -->
                 <span class="text-gray-700">{{ guarantor.address }}</span>
               </div>
               <div *ngIf="guarantor.yearsKnown" class="flex items-center gap-2">
-                <i class="fa-solid fa-hourglass-end text-orange-500 w-4"></i>
+                <!-- <i class="fa-solid fa-hourglass-end text-orange-500 w-4"></i> -->
                 <span class="text-gray-700">{{ guarantor.yearsKnown }} years</span>
               </div>
             </div>

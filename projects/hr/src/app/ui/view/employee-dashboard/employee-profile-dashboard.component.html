@@ -525,7 +525,9 @@
       <app-employee-relatives-widget 
         [nextOfKinList]="nextOfKinList"
         [guarantorList]="guarantorList"
-        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName">
+        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName"
+        (openNokChangeRequest)="openNokChangeRequest($event.type, $event.contact)"
+        (openGuarantorChangeRequest)="openGuarantorChangeRequest($event.type, $event.contact)">
       </app-employee-relatives-widget>
     </section>
   </div>
@@ -543,6 +545,25 @@
     (requestSubmitted)="onBankChangeRequestSubmitted($event)"
   ></app-bank-details-change-request>
 </app-modal>
+
+<app-modal *ngIf="isNokChangeRequestOpen" [header]="nokChangeHeader" (close)="closeNokChangeRequest()">
+  <app-nok-change-request
+    [employee]="employeeInView"
+    [nokRecord]="selectedNokRecord"
+    [changeType]="nokChangeType"
+    (requestSubmitted)="onNokChangeRequestSubmitted($event)"
+  ></app-nok-change-request>
+</app-modal>
+
+<app-modal *ngIf="isGuarantorChangeRequestOpen" [header]="guarantorChangeHeader" (close)="closeGuarantorChangeRequest()">
+  <app-guarantor-change-request
+    [employee]="employeeInView"
+    [guarantorRecord]="selectedGuarantorRecord"
+    [changeType]="guarantorChangeType"
+    (requestSubmitted)="onGuarantorChangeRequestSubmitted($event)"
+  ></app-guarantor-change-request>
+</app-modal>
+
 <app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
   <div class="staff-id-modal">
     <div class="staff-id-toolbar">

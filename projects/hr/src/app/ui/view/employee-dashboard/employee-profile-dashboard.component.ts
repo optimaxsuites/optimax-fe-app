@@ -53,6 +53,14 @@ export class EmployeeProfileDashboardComponent {
   isBankChangeRequestOpen = false;
   bankChangeRequestForm: FormGroup;
   submittingBankChangeRequest = false;
+  isNokChangeRequestOpen = false;
+  nokChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedNokRecord: NextOfKin | null = null;
+  nokChangeHeader = 'Add Next of Kin';
+  isGuarantorChangeRequestOpen = false;
+  guarantorChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedGuarantorRecord: Guarantor | null = null;
+  guarantorChangeHeader = 'Add Guarantor';
   editForm: FormGroup;
   nextOfKinList: NextOfKin[] = [];
   guarantorList: Guarantor[] = [];
@@ -982,5 +990,73 @@ export class EmployeeProfileDashboardComponent {
           this.guarantorList = [];
         },
       })
+  }
+
+  // NOK Change Request Methods
+  openNokChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: NextOfKin): void {
+    this.nokChangeType = changeType;
+    this.selectedNokRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.nokChangeHeader = 'Add Next of Kin';
+    } else if (changeType === 'edit') {
+      this.nokChangeHeader = `Edit: ${record?.fullName || 'Next of Kin'}`;
+    } else if (changeType === 'delete') {
+      this.nokChangeHeader = `Delete: ${record?.fullName || 'Next of Kin'}`;
+    }
+    
+    this.isNokChangeRequestOpen = true;
+  }
+
+  closeNokChangeRequest(): void {
+    this.isNokChangeRequestOpen = false;
+    this.nokChangeType = 'add';
+    this.selectedNokRecord = null;
+    this.nokChangeHeader = 'Add Next of Kin';
+  }
+
+  onNokChangeRequestSubmitted(event: any): void {
+    this.closeNokChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your next of kin request has been submitted for review.',
+      key: 'tl',
+    });
+  }
+
+  // Guarantor Change Request Methods
+  openGuarantorChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: Guarantor): void {
+    this.guarantorChangeType = changeType;
+    this.selectedGuarantorRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.guarantorChangeHeader = 'Add Guarantor';
+    } else if (changeType === 'edit') {
+      this.guarantorChangeHeader = `Edit: ${record?.fullName || 'Guarantor'}`;
+    } else if (changeType === 'delete') {
+      this.guarantorChangeHeader = `Delete: ${record?.fullName || 'Guarantor'}`;
+    }
+    
+    this.isGuarantorChangeRequestOpen = true;
+  }
+
+  closeGuarantorChangeRequest(): void {
+    this.isGuarantorChangeRequestOpen = false;
+    this.guarantorChangeType = 'add';
+    this.selectedGuarantorRecord = null;
+    this.guarantorChangeHeader = 'Add Guarantor';
+  }
+
+  onGuarantorChangeRequestSubmitted(event: any): void {
+    this.closeGuarantorChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your guarantor request has been submitted for review.',
+      key: 'tl',
+    });
   }
 }
