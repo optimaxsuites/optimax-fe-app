@@ -368,3 +368,48 @@ td.empty-state {
     transform: translate(-50%, -50%);
   }
 }
+
+@media (max-width: 768px) {
+  .attendance-wrapper {
+    margin: 8px 0;
+  }
+
+  .attendance-card {
+    padding: 12px 10px;
+    border-radius: 10px;
+    // Makes the table scroll horizontally
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .attendance-table {
+    min-width: 900px; // forces scroll instead of squishing
+  }
+
+  th {
+    font-size: 1.2rem;
+    padding: 10px 10px;
+    white-space: nowrap;
+  }
+
+  td {
+    font-size: 1.1rem;
+    padding: 0.6rem 0.8rem;
+    white-space: nowrap;
+  }
+
+  // Modal goes full screen on mobile
+  .modal-card {
+    width: 95%;
+    padding: 1.2rem;
+    border-radius: 16px;
+  }
+
+  .map-modal-card {
+    width: 95%;
+
+    .leaflet-map {
+      height: 280px;
+    }
+  }
+}

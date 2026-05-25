@@ -64,3 +64,15 @@ button {
     //grid-template-columns: 2fr 1fr; // stack on smaller screens
   //}
 }
+
+@media (max-width: 768px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

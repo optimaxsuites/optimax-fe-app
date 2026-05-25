@@ -211,3 +211,31 @@
 .import-btn:hover {
   background: #059669;
 }
+
+@media (max-width: 768px) {
+  .export-card {
+    justify-content: stretch;
+
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+  }
+
+  .import-modal {
+    width: 92%;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-card {
+    flex-direction: column;
+
+    .action-btn {
+      width: 100%;
+    }
+  }
+}
