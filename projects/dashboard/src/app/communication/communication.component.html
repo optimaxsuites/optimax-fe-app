@@ -1160,7 +1160,27 @@
               [(ngModel)]="threadInboxQuery"
             />
             <button
-              *ngIf="activeView === 'channel'"
+              *ngIf="activeView === 'channel' && isHybridWorkspaceChannel(activeChannel)"
+              type="button"
+              class="toolbar-action icon-action"
+              [class.active]="channelWorkspacePane === 'chat'"
+              (click)="switchHybridWorkspacePane('chat')"
+            >
+              <i class="pi pi-comments"></i>
+              <span>Chat</span>
+            </button>
+            <button
+              *ngIf="activeView === 'channel' && isHybridWorkspaceChannel(activeChannel)"
+              type="button"
+              class="toolbar-action icon-action"
+              [class.active]="channelWorkspacePane === 'files'"
+              (click)="switchHybridWorkspacePane('files')"
+            >
+              <i class="pi pi-folder-open"></i>
+              <span>Files</span>
+            </button>
+            <button
+              *ngIf="activeView === 'channel' && !isShowingDocumentLibrary()"
               type="button"
               class="toolbar-action icon-action"
               (click)="togglePinnedPanel()"
@@ -1181,7 +1201,12 @@
           </div>
         </div>
 
-        <div #feedEl class="chat-feed" (scroll)="onChatFeedScroll()">
+        <div
+          *ngIf="!isShowingDocumentLibrary(); else documentLibraryView"
+          #feedEl
+          class="chat-feed"
+          (scroll)="onChatFeedScroll()"
+        >
           <app-message-feed
             [messages]="rawMessages"
             [loading]="messagesLoading"
@@ -1220,8 +1245,148 @@
           ></app-message-feed>
         </div>
 
+        <ng-template #documentLibraryView>
+          <section class="document-library-shell flex-1 min-h-0 overflow-hidden bg-white">
+            <div class="document-library-layout h-full">
+              <aside class="document-library-sidebar border-r border-gray-200 p-4 overflow-y-auto">
+                <div class="flex items-center justify-between mb-3">
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Folders</p>
+                    <h3 class="text-[15px] font-semibold text-gray-800">{{ activeChannel?.name }}</h3>
+                  </div>
+                  <button
+                    *ngIf="activeChannel?.allowFolders"
+                    type="button"
+                    class="document-library-primary-btn px-3 py-1.5 rounded-lg bg-[#2e6276] text-white text-[12px] font-semibold"
+                    (click)="openCreateDocumentFolderModal()"
+                  >Create Folder</button>
+                </div>
+                <button
+                  type="button"
+                  class="w-full text-left px-3 py-2 rounded-xl border mb-2"
+                  [ngClass]="activeDocumentFolderId == null ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]' : 'border-gray-200 text-gray-700'"
+                  (click)="openDocumentFolder(null)"
+                >Root</button>
+                <button
+                  *ngIf="activeDocumentFolderId != null"
+                  type="button"
+                  class="w-full text-left px-3 py-2 rounded-xl border mb-2 border-gray-200 text-gray-700"
+                  (click)="openDocumentFolder(currentDocumentParentFolderId())"
+                >← Back</button>
+                <div
+                  *ngFor="let folder of activeDocumentFolders()"
+                  class="w-full px-3 py-2 rounded-xl border mb-2 flex items-center gap-2"
+                  [ngClass]="activeDocumentFolderId === folder.id ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]' : 'border-gray-200 text-gray-700'"
+                >
+                  <button
+                    type="button"
+                    class="block text-[13px] font-semibold truncate flex-1 text-left"
+                    (click)="openDocumentFolder(folder.id)"
+                  >
+                    {{ folder.name }}
+                  </button>
+                  <button
+                    type="button"
+                    class="text-[11px] text-gray-400 hover:text-[#2e6276]"
+                    title="Rename folder"
+                    (click)="openEditDocumentFolderModal(folder, $event)"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    class="text-[11px] text-red-400 hover:text-red-600"
+                    title="Delete folder"
+                    (click)="deleteDocumentFolder(folder, $event)"
+                  >
+                    Delete
+                  </button>
+                </div>
+                <p *ngIf="!activeDocumentFolders().length" class="text-[13px] text-gray-400 mt-4">No folders here yet.</p>
+              </aside>
+
+              <section class="document-library-content p-5 overflow-y-auto">
+                <div class="document-library-header flex items-center justify-between gap-4 mb-5">
+                  <div class="document-library-heading">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Document Library</p>
+                    <h3 class="text-[18px] font-semibold text-gray-900">{{ activeDocumentFolderName() }}</h3>
+                    <div class="document-library-breadcrumbs flex flex-wrap items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        class="text-[12px] font-semibold rounded-full px-3 py-1 border"
+                        [ngClass]="activeDocumentFolderId == null ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]' : 'border-gray-200 text-gray-500'"
+                        (click)="openDocumentFolder(null)"
+                      >
+                        Root
+                      </button>
+                      <ng-container *ngFor="let crumb of documentBreadcrumbs()">
+                        <span class="text-[12px] text-gray-300">/</span>
+                        <button
+                          type="button"
+                          class="text-[12px] font-semibold rounded-full px-3 py-1 border border-gray-200 text-gray-600 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
+                          (click)="openDocumentFolder(crumb.id)"
+                        >
+                          {{ crumb.name }}
+                        </button>
+                      </ng-container>
+                    </div>
+                  </div>
+                  <div class="document-library-actions flex items-center gap-2">
+                    <button
+                      *ngIf="activeChannel?.allowFolders"
+                      type="button"
+                      class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-[13px] font-semibold"
+                      (click)="openCreateDocumentFolderModal()"
+                    >
+                      <i class="pi pi-folder-plus"></i>
+                      <span>Create Folder</span>
+                    </button>
+                    <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2e6276] text-white text-[13px] font-semibold cursor-pointer">
+                      <i class="pi pi-upload"></i>
+                      <span>Upload Files</span>
+                      <input type="file" multiple class="hidden" (change)="uploadDocumentFiles($event)" />
+                    </label>
+                  </div>
+                </div>
+
+                <div *ngIf="documentLibraryError" class="mb-4 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-[13px] text-red-600">
+                  {{ documentLibraryError }}
+                </div>
+
+                <div *ngIf="documentLibraryLoading" class="document-library-files grid gap-3">
+                  <div class="h-14 rounded-xl bg-gray-100 animate-pulse"></div>
+                  <div class="h-14 rounded-xl bg-gray-100 animate-pulse"></div>
+                </div>
+
+                <div *ngIf="!documentLibraryLoading && documentFiles.length" class="document-library-files grid gap-3">
+                  <button
+                    *ngFor="let file of documentFiles"
+                    type="button"
+                    class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 hover:border-[#2e6276]/30 text-left"
+                    (click)="downloadDocumentFile(file, $event)"
+                  >
+                    <div class="w-11 h-11 rounded-xl bg-[#2e6276]/10 text-[#2e6276] flex items-center justify-center flex-shrink-0">
+                      <i class="pi pi-file"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <strong class="block text-[14px] text-gray-800 truncate">{{ file.name }}</strong>
+                      <small class="block text-[12px] text-gray-400 truncate">{{ file.contentType || 'Document' }}</small>
+                    </div>
+                    <i class="pi pi-download text-gray-400"></i>
+                  </button>
+                </div>
+
+                <div *ngIf="!documentLibraryLoading && !documentFiles.length" class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center">
+                  <p class="text-[15px] font-semibold text-gray-700 mb-1">No documents in this location</p>
+                  <p class="text-[13px] text-gray-400">Create a folder or upload files into {{ activeDocumentFolderName().toLowerCase() }}.</p>
+                </div>
+              </section>
+            </div>
+          </section>
+        </ng-template>
+
         <app-message-composer
-          *ngIf="activeView !== 'threads'"
+          *ngIf="activeView !== 'threads' && !isShowingDocumentLibrary()"
           [draft]="draft"
           [placeholder]="composerPlaceholder()"
           [sendingMessage]="sendingMessage"
@@ -1394,8 +1559,88 @@
     (nameChange)="onChannelModalNameChange($event)"
     (descriptionChange)="onChannelModalDescChange($event)"
     (channelTypeChange)="onChannelModalTypeChange($event)"
+    (workspaceModeChange)="onChannelModalWorkspaceModeChange($event)"
+    (allowFoldersChange)="onChannelModalAllowFoldersChange($event)"
+    (allowSubfoldersChange)="onChannelModalAllowSubfoldersChange($event)"
     (memberToggled)="onChannelModalMemberToggle($event)"
   ></app-channel-modal>
+
+  <div
+    *ngIf="documentFolderModal.open"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    (click)="closeDocumentFolderModal()"
+  >
+    <div class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+    <div
+      class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between px-8 py-5 border-b border-gray-200">
+        <h2 class="text-[18px] font-bold text-gray-900">
+          {{ documentFolderModal.mode === 'create' ? 'Create Folder' : 'Edit Folder' }}
+        </h2>
+        <button (click)="closeDocumentFolderModal()" class="panel-close-btn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-8 py-6 grid md:grid-cols-2 gap-5">
+        <div class="md:col-span-2">
+          <label class="block text-[13px] font-semibold text-gray-700 mb-1.5">Folder Name</label>
+          <input
+            type="text"
+            [(ngModel)]="documentFolderModal.name"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
+          />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-[13px] font-semibold text-gray-700 mb-1.5">Description</label>
+          <textarea
+            rows="4"
+            [(ngModel)]="documentFolderModal.description"
+            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-[14px] text-gray-800 outline-none focus:border-[#2e6276]/50 focus:ring-2 focus:ring-[#2e6276]/10"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-[13px] font-semibold text-gray-700 mb-1.5">Created By</label>
+          <input
+            type="text"
+            [value]="documentFolderModal.createdByLabel"
+            readonly
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-500 bg-gray-50"
+          />
+        </div>
+        <div>
+          <label class="block text-[13px] font-semibold text-gray-700 mb-1.5">Date Created</label>
+          <input
+            type="text"
+            [value]="documentFolderModal.createdAtLabel"
+            readonly
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-500 bg-gray-50"
+          />
+        </div>
+        <p *ngIf="documentFolderModal.error" class="md:col-span-2 text-[13px] text-red-500">
+          {{ documentFolderModal.error }}
+        </p>
+      </div>
+
+      <div class="px-8 pb-6 flex gap-3">
+        <button
+          (click)="closeDocumentFolderModal()"
+          class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-[14px] font-medium rounded-xl hover:bg-gray-50"
+        >Cancel</button>
+        <button
+          (click)="saveDocumentFolderModal()"
+          [disabled]="documentFolderModal.saving || !documentFolderModal.name.trim()"
+          class="flex-1 py-2.5 bg-[#2e6276] text-white text-[14px] font-semibold rounded-xl hover:bg-[#255264] disabled:opacity-50"
+        >
+          {{ documentFolderModal.saving ? 'Saving…' : documentFolderModal.mode === 'create' ? 'Create Folder' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
 
   <app-email-modal
     [state]="emailModal"
