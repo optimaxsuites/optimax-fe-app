@@ -62,6 +62,8 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadRequests();
 
+    console.log(this.requests);
+
     this.profileChangeRequestService.requests$
       .pipe(takeUntil(this.destroy$))
       .subscribe((requests) => {
@@ -126,8 +128,16 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     this.isProcessingRequest = true;
     const currentUser = this.getCurrentUser();
 
+    const idField = request.request.find(change => change.fieldName.toLowerCase() === 'id')?.value || request.request.find(change => change.fieldName.toLowerCase() === 'id')?.oldValue || null;
+
+    const requestData = {
+      id: idField,
+      type: request.requestType,
+      fieldType: request.fieldChangeType,
+    }
+
     this.profileChangeRequestService
-      .approveProfileChangeRequest(request.id!, currentUser)
+      .approveProfileChangeRequest(request.id!, currentUser, requestData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -250,4 +260,17 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     }
     return `${request.request.length} fields changed`;
   }
+
+  get filteredChanges() {
+  return this.selectedRequest?.request?.filter(change => {
+    const isNotId = change.fieldName.toLowerCase() !== 'id';
+    
+    // Checks that value exists, is not null/undefined, and is not just whitespace
+    const hasNewValue = change.value !== null && 
+                        change.value !== undefined && 
+                        change.value.toString().trim() !== '';
+
+    return isNotId && hasNewValue;
+  }) || [];
+}
 }
