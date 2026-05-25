@@ -137,7 +137,7 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
           severity: 'success',
           summary: 'Request submitted',
           detail: 'Your next of kin addition request has been submitted for HR review.',
-          key: 'global'
+          key: 'tl'
         });
         this.requestSubmitted.emit(request);
       },
@@ -245,7 +245,7 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
           severity: 'success',
           summary: 'Request submitted',
           detail: 'Your next of kin deletion request has been submitted for HR review.',
-          key: 'global'
+          key: 'tl'
         });
         this.requestSubmitted.emit(request);
       },

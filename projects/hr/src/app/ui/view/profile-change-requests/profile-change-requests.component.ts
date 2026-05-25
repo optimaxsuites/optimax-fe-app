@@ -49,6 +49,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   ];
 
   currentUserId: string = localStorage.getItem('userid') || '';
+  userIsAdmin: boolean = false
 
   constructor(
     private profileChangeRequestService: ProfileChangeRequestService,
@@ -65,12 +66,18 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
 
     console.log(this.requests);
 
+
     this.profileChangeRequestService.requests$
       .pipe(takeUntil(this.destroy$))
       .subscribe((requests) => {
         this.requests = requests;
         this.applyFilters();
       });
+
+      const userRegData = JSON.parse(localStorage.getItem('userRegData') || '{}');
+      console.log("userReg", userRegData)
+      this.userIsAdmin = userRegData && userRegData.roles[0] ? userRegData.roles[0] === 'ROLE_ADMIN': false;
+      console.log(this.userIsAdmin)
   }
 
   ngOnDestroy(): void {
@@ -112,7 +119,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     filtered = filtered.filter((r) => r?.fieldChangeType === this.fieldTypeFilter);
   }
 
-  if (this.currentUserId) {
+  if (this.currentUserId && !this.userIsAdmin) {
     console.log(this.currentUserId)
     filtered = filtered.filter((r) => {
       console.log(r)
