@@ -90,6 +90,7 @@ export class ScheduledInterviewComponent {
   private currentUserId: string = '';
   private currentUserEmail: string = '';
   private currentUsername: string = '';
+  private currentUserRole: string = '';
 
   onActionSelected(action: string) {
     switch (action) {
@@ -260,9 +261,15 @@ export class ScheduledInterviewComponent {
     const index = interviews.findIndex(c => c['id'] === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
       const currentStage = Number(interviews[index]['interviewStage'] || 1);
+      const latestSummary = this.getLatestSummary(interviews[index]);
+      const offeredAt = new Date().toISOString();
       const updatedOfferLetterSent: ApplicantDTO = {
         ...interviews[index],
         stage:  ApplicationStage.OfferSent,
+        offerStatus: 'Sent',
+        offeredAt,
+        offeredInterviewStage: currentStage,
+        latestDecision: 'Offered',
         offerSubject: offerDetails.offerSubject,
         offerLetter: offerDetails.offerLetter,
         offerAttachments: offerDetails.offerAttachments,
@@ -270,11 +277,11 @@ export class ScheduledInterviewComponent {
           ...(interviews[index].interviewHistory || []),
           this.createInterviewHistoryEntry(
             currentStage,
-            'Offer Letter Sent',
-            `Offer letter sent after interview ${currentStage}.`,
+            'Job Offered',
+            `Job offer sent after interview ${currentStage}.`,
             offerDetails.offerAttachments || [],
-            this.getLatestSummary(interviews[index])?.averageScore,
-            this.getLatestSummary(interviews[index])?.outcome
+            latestSummary?.averageScore,
+            latestSummary?.outcome
           )
         ]
       };
@@ -284,14 +291,14 @@ export class ScheduledInterviewComponent {
       this.persistInterviews(interviews);
       this.syncCandidateLifecycle(interviews[index]['id'], {
         status: 'Offered',
-        interviewStatus: 'Completed'
-      }, 'Offer Letter Sent', `Offer letter sent after interview ${currentStage}.`);
+        interviewStatus: 'Offered'
+      }, 'Job Offered', `Job offer sent after interview ${currentStage}.`);
 
       // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
-        summary: 'Offer Letter Sent',
-        detail: `${this.getCandidateName(this.activeItem)} has successfully been sent an offer letter.`
+        summary: 'Job Offered',
+        detail: `${this.getCandidateName(this.activeItem)} has successfully been offered the job.`
       });
       
     }
@@ -387,7 +394,7 @@ export class ScheduledInterviewComponent {
     // Find the candidate to update
     const index = interviews.findIndex(c => c['id'] === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
-      const currentStage = this.activeItem['interviewStage'] || interviews[index]['interviewStage'] || 0;
+      const currentStage = Number(this.activeItem['interviewStage'] || interviews[index]['interviewStage'] || 0);
       const nextStage = currentStage + 1;
       const meetingDetails: InterviewMeetingDetailsDTO = {
         date: interviewDetails['scheduledDate'] || interviews[index]['scheduledDate'],
@@ -833,6 +840,7 @@ export class ScheduledInterviewComponent {
       const { criteria, requestDate, totalScore } = entry;
       const criteriaTitle = criteria?.title || 'Untitled Criteria';
       const questions = Array.isArray(criteria?.questions) ? criteria.questions : [];
+      const outcome = this.getOutcomeForScore(Number(totalScore || 0));
   
       if (index > 0) {
         pdf.addPage(); // Start a new page for each subsequent iteration
@@ -851,6 +859,8 @@ export class ScheduledInterviewComponent {
       pdf.text(`Stage: Interview ${entry.interviewStage || 1}`, currentX, currentY);
       currentY += 15;
       pdf.text(`Interviewer: ${entry.interviewerName || entry.interviewerEmail || 'Interviewer'}`, currentX, currentY);
+      currentY += 15;
+      pdf.text(`Outcome: ${outcome}`, currentX, currentY);
       currentY += 15;
   
       // Add table if questions exist
@@ -871,7 +881,7 @@ export class ScheduledInterviewComponent {
         currentY = (pdf as any).lastAutoTable.finalY + 10;
       }
   
-      pdf.text(`Total Score: ${totalScore}`, currentX, currentY);
+      pdf.text(`Total Score: ${totalScore || 0}`, currentX, currentY);
       currentY += 20;
     });
   
@@ -934,7 +944,9 @@ export class ScheduledInterviewComponent {
   }
 
   canSendOffer(interview: InterviewRecord): boolean {
-    return this.getDisplayStage(interview) === ApplicationStage.Completed && this.getLatestSummary(interview)?.outcome === 'Pass';
+    return this.getDisplayStage(interview) === ApplicationStage.Completed
+      && this.getLatestSummary(interview)?.outcome === 'Pass'
+      && interview['offerStatus'] !== 'Sent';
   }
 
   canSendAppointmentLetter(interview: InterviewRecord): boolean {
@@ -942,11 +954,11 @@ export class ScheduledInterviewComponent {
   }
 
   canDownloadScoreSheet(interview: InterviewRecord): boolean {
-    return this.hasSubmittedScoreSheets(interview['id']);
+    return this.hasSubmittedScoreSheets(interview['id']) && this.canViewInterviewOutcome(interview);
   }
 
   canViewScoreSheet(interview: InterviewRecord): boolean {
-    return this.hasSubmittedScoreSheets(interview['id']);
+    return this.hasSubmittedScoreSheets(interview['id']) && this.canViewInterviewOutcome(interview);
   }
 
   getInterviewHistory(): InterviewHistoryItemDTO[] {
@@ -973,6 +985,10 @@ export class ScheduledInterviewComponent {
       default:
         return 'badge badge-lightgrey';
     }
+  }
+
+  getScoreSheetOutcome(scoreSheet: ScoreSheetDTO): InterviewOutcomeDTO {
+    return this.getOutcomeForScore(Number(scoreSheet?.totalScore || 0));
   }
 
   getHistoryIcon(action: string): string {
@@ -1395,10 +1411,19 @@ export class ScheduledInterviewComponent {
     return this.isCurrentUserOnInterviewPanel(interview);
   }
 
+  canViewInterviewOutcome(interview?: InterviewRecord): boolean {
+    if (!interview) {
+      return false;
+    }
+
+    return this.isCurrentUserOnInterviewPanel(interview) || this.isInternalInterviewUser();
+  }
+
   private loadCurrentUserContext(): void {
     this.currentUserId = String(sessionStorage.getItem('userid') || localStorage.getItem('userid') || '').trim();
     this.currentUserEmail = String(sessionStorage.getItem('email') || localStorage.getItem('email') || '').trim().toLowerCase();
     this.currentUsername = String(sessionStorage.getItem('username') || localStorage.getItem('username') || '').trim().toLowerCase();
+    this.currentUserRole = String(sessionStorage.getItem('role') || localStorage.getItem('role') || '').trim().toLowerCase();
 
     const primaryInfoRaw =
       sessionStorage.getItem('userPrimaryInfoRegData') ||
@@ -1413,6 +1438,7 @@ export class ScheduledInterviewComponent {
       this.currentUserId = this.currentUserId || String(primaryInfo?.id || primaryInfo?.userId || '').trim();
       this.currentUserEmail = this.currentUserEmail || String(primaryInfo?.email || '').trim().toLowerCase();
       this.currentUsername = this.currentUsername || String(primaryInfo?.username || primaryInfo?.fullname || primaryInfo?.fullName || '').trim().toLowerCase();
+      this.currentUserRole = this.currentUserRole || this.extractRoleText(primaryInfo);
     } catch {
       // Ignore malformed storage and rely on the directly stored session values.
     }
@@ -1444,6 +1470,43 @@ export class ScheduledInterviewComponent {
       summary: 'Panel Access Required',
       detail: `Only interview panel members can ${action}.`
     });
+  }
+
+  private isInternalInterviewUser(): boolean {
+    const hasUserIdentity = Boolean(this.currentUserId || this.currentUserEmail || this.currentUsername);
+
+    if (!hasUserIdentity) {
+      return false;
+    }
+
+    if (!this.currentUserRole) {
+      return true;
+    }
+
+    const internalRoleKeywords = ['role_user', 'role_admin', 'admin', 'hr', 'recruit', 'hiring', 'interview'];
+    return internalRoleKeywords.some(keyword => this.currentUserRole.includes(keyword));
+  }
+
+  private extractRoleText(userInfo: any): string {
+    const roleParts = [
+      userInfo?.role,
+      userInfo?.role?.name,
+      userInfo?.appRole,
+      userInfo?.appRole?.name,
+      userInfo?.roles,
+      ...(Array.isArray(userInfo?.roles) ? userInfo.roles : []),
+    ];
+
+    return roleParts
+      .flatMap(role => Array.isArray(role) ? role : [role])
+      .map(role => {
+        if (typeof role === 'string') return role;
+        if (typeof role?.name === 'string') return role.name;
+        return '';
+      })
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
   }
   
     downloadDocument(doc: CandidateDocument): void {
