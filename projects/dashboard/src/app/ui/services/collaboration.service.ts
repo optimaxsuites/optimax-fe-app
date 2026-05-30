@@ -602,6 +602,14 @@ export class CollaborationService {
     );
   }
 
+  deactivateDmUser(userId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/${userId}/deactivate-dm`,
+      {},
+      { headers: this.headers },
+    );
+  }
+
   getEmployeeById(id: number): Observable<EmployeeProfile> {
     return this.http.get<EmployeeProfile>(
       `${this.baseUrl}/x/api/v2/hr/employees/${id}`,
