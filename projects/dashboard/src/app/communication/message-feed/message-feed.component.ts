@@ -45,8 +45,6 @@ interface ChatReactionOption {
 })
 export class MessageFeedComponent {
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
-  private readonly codeKeywordRegex =
-    /\b(const|let|var|function|class|interface|type|return|import|export|public|private|protected|if|else|for|while|switch|case|try|catch)\b/;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   imageViewerOpen = false;
   imageViewerItems: Array<{ url: string; label: string }> = [];
@@ -440,7 +438,6 @@ export class MessageFeedComponent {
     const content = this.normalizedMessageContent(msg);
     if (!content) return 'plain';
     if (this.codeFenceMatch(content)) return 'code';
-    if (this.extractStructuredJson(content)) return 'json';
     if (this.looksLikeJson(content)) return 'json';
     if (this.looksLikeHtml(content)) return 'html';
     if (this.looksLikeCode(content)) return 'code';
@@ -459,10 +456,6 @@ export class MessageFeedComponent {
     const content = this.normalizedMessageContent(msg);
     const kind = this.structuredMessageKind(msg);
     if (kind === 'json') {
-      const extracted = this.extractStructuredJson(content);
-      if (extracted) {
-        return extracted;
-      }
       try {
         return JSON.stringify(JSON.parse(content), null, 2);
       } catch {
@@ -524,16 +517,14 @@ export class MessageFeedComponent {
 
   messageHtml(content: string): string {
     const decoded = this.decodeHtmlEntities(content || '');
-    const extractedJson = this.extractStructuredJson(decoded);
-    if (extractedJson) {
-      return extractedJson
+    const cleaned = this.cleanStructuredPasteArtifacts(decoded);
+    if (this.looksLikeJson(cleaned)) {
+      return JSON.stringify(JSON.parse(cleaned), null, 2)
         .split('\n')
         .map((line) => this.highlightStructuredLine(line || ' ', 'json'))
         .join('<br>');
     }
-    const escaped = this.escapeHtml(
-      this.cleanStructuredPasteArtifacts(decoded),
-    );
+    const escaped = this.escapeHtml(cleaned);
     return this.mentionifyHtml(escaped
       .replace(this.urlRegex, (rawUrl) => {
         const normalized = this.normalizePreviewUrl(rawUrl);
@@ -688,109 +679,6 @@ export class MessageFeedComponent {
     return cleaned.trim();
   }
 
-  private extractStructuredJson(content: string): string | null {
-    const cleaned = this.cleanStructuredPasteArtifacts(content);
-    const parsedDirect = this.tryFormatJson(cleaned);
-    if (parsedDirect) {
-      return parsedDirect;
-    }
-    const jsonBlocks = this.findJsonBlocks(cleaned);
-    if (!jsonBlocks.length) {
-      return null;
-    }
-    const formattedBlocks = jsonBlocks
-      .map((block) => {
-        const formattedJson = this.tryFormatJson(block.json);
-        if (!formattedJson) {
-          return null;
-        }
-        const prefix = this.normalizeStructuredPrefix(block.prefix);
-        return prefix ? `${prefix}\n${formattedJson}` : formattedJson;
-      })
-      .filter((value): value is string => !!value);
-    return formattedBlocks.length ? formattedBlocks.join('\n\n') : null;
-  }
-
-  private tryFormatJson(value: string): string | null {
-    try {
-      return JSON.stringify(JSON.parse(value), null, 2);
-    } catch {
-      return null;
-    }
-  }
-
-  private findJsonBlocks(value: string): Array<{ prefix: string; json: string }> {
-    const blocks: Array<{ prefix: string; json: string }> = [];
-    let depth = 0;
-    let start = -1;
-    let cursor = 0;
-    let inString = false;
-    let escaping = false;
-
-    for (let index = 0; index < value.length; index++) {
-      const char = value[index];
-      if (inString) {
-        if (escaping) {
-          escaping = false;
-          continue;
-        }
-        if (char === '\\') {
-          escaping = true;
-          continue;
-        }
-        if (char === '"') {
-          inString = false;
-        }
-        continue;
-      }
-
-      if (char === '"') {
-        inString = true;
-        continue;
-      }
-
-      if (char === '{' || char === '[') {
-        if (depth === 0) {
-          start = index;
-        }
-        depth++;
-        continue;
-      }
-
-      if (char === '}' || char === ']') {
-        if (depth <= 0) {
-          continue;
-        }
-        depth--;
-        if (depth === 0 && start >= 0) {
-          blocks.push({
-            prefix: value.slice(cursor, start).trim(),
-            json: value.slice(start, index + 1).trim(),
-          });
-          cursor = index + 1;
-          start = -1;
-        }
-      }
-    }
-
-    return blocks;
-  }
-
-  private normalizeStructuredPrefix(value: string): string {
-    const cleaned = (value || '')
-      .replace(/\s+/g, ' ')
-      .replace(/\s*:\s*$/g, '')
-      .trim();
-    if (!cleaned) {
-      return '';
-    }
-    const lines = cleaned
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter((line) => !!line);
-    return lines.join('\n');
-  }
-
   private highlightStructuredLine(
     line: string,
     kind: 'plain' | 'json' | 'html' | 'code',
@@ -925,15 +813,25 @@ export class MessageFeedComponent {
     if (/(?:^|\s)class="token[^"]*">/i.test(content)) {
       return false;
     }
-    return /^\s*<\/?[a-z][\s\S]*>\s*$/i.test(content);
+    if (!/^\s*<\/?[a-z][\s\S]*>\s*$/i.test(content)) {
+      return false;
+    }
+    return /<\/[a-z][^>]*>/i.test(content) || /\/>\s*$/i.test(content);
   }
 
   private looksLikeCode(content: string): boolean {
     const lines = content.split('\n');
+    const keywordMatches =
+      content.match(
+        /\b(const|let|var|function|class|interface|type|return|import|export|public|private|protected|if|else|for|while|switch|case|try|catch|async|await|new)\b/g,
+      ) || [];
     return (
-      lines.length > 1 &&
-      (this.codeKeywordRegex.test(content) ||
-        /[{}();=<>\[\]]/.test(content))
+      lines.length > 1 && (
+        keywordMatches.length >= 2 ||
+        (keywordMatches.length >= 1 &&
+          /[{}();=<>\[\]]/.test(content) &&
+          /(?:^|\n)\s{2,}\S/.test(content))
+      )
     );
   }
 

@@ -3,7 +3,6 @@ import {
   Input,
   Output,
   EventEmitter,
-  OnChanges,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Channel, DmContact } from '../communication.component';
@@ -28,6 +27,20 @@ export class ChannelSidebarComponent {
   @Input() me!: MeInfo;
   @Input() channels: Channel[] = [];
   @Input() dmContacts: DmContact[] = [];
+  @Input() upcomingBirthdays: Array<{
+    id: string;
+    fullName: string;
+    shortName: string;
+    birthdayMonthDayLabel: string;
+    birthdayCountdownLabel: string;
+    birthdayIsToday: boolean;
+    daysUntilBirthday: number;
+    avatarUrl?: string;
+    initials?: string;
+    avatarColor?: string;
+    jobTitle?: string;
+    department?: string;
+  }> = [];
   @Input() activeChannelId = '';
   @Input() activeDmId = '';
   @Input() activeView: 'channel' | 'dm' | 'threads' = 'channel';

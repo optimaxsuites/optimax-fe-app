@@ -16,21 +16,6 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
-        const accessToken = sessionStorage.getItem("Token");
-        
-        if (!accessToken) {
-            console.warn('No token found in sessionStorage for request:', request.url);
-        } else {
-            console.log('Token found, adding to request:', request.url);
-        }
-
-        const _request = request.clone({
-            headers: request.headers.set(
-                "Authorization",
-                `Bearer ${accessToken}`
-            ),
-        });
-
-        return next.handle(_request);
+        return next.handle(request.clone({ withCredentials: true }));
     }
 }

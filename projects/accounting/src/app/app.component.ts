@@ -13,10 +13,7 @@ export class AppComponent implements OnInit {
   private hasLoggedIn = false;
 
   constructor(private authenticationService: AuthenticationService) {
-    console.warn('[Optimax Heartbeat] AppComponent constructor initialized');
-    // Check token presence AND expiry — re-login if missing or expired
-    const existingToken = sessionStorage.getItem('Token') || localStorage.getItem('Token2');
-    const isExpiredOrMissing = !existingToken || this.authenticationService.isAuthenticated() === false;
+    const isExpiredOrMissing = this.authenticationService.isAuthenticated() === false;
     if (isExpiredOrMissing) {
       // Clear stale expired tokens before re-logging in
       sessionStorage.removeItem('Token');
@@ -28,14 +25,11 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.warn('[Optimax Heartbeat] AppComponent ngOnInit triggered');
-    const existingToken = sessionStorage.getItem('Token') || localStorage.getItem('Token2');
     const existingUser = sessionStorage.getItem('userPrimaryInfoRegData');
 
-    console.log('[Optimax Diagnostic] Active Bearer Token:', existingToken);
     console.log('[Optimax Diagnostic] Logged-in User:', existingUser ? JSON.parse(existingUser) : 'No profile loaded yet');
 
-    if (existingToken && !existingUser) {
+    if (!existingUser) {
       const userId = sessionStorage.getItem('userid');
       if (userId) {
         this.fetchUserPrimaryInfo(userId);
@@ -54,7 +48,8 @@ export class AppComponent implements OnInit {
       username: 'developer',
       password: '123456',
       project: 'ERP',
-      apiKey: environment.apiKey,
+      clientId: environment.clientId,
+      appVersion: environment.appVersion,
     };
 
     try {
@@ -109,8 +104,7 @@ export class AppComponent implements OnInit {
   }
 
   loadInitParam(data: any): void {
-    if (!data || !data.accessToken) {
-      console.error('[Optimax Accounting] No accessToken in response:', data);
+    if (!data) {
       return;
     }
 
@@ -119,31 +113,6 @@ export class AppComponent implements OnInit {
     if (data.fullname) sessionStorage.setItem('fullname', data.fullname);
     if (data.email)    sessionStorage.setItem('email', data.email);
     if (data.id)       sessionStorage.setItem('userid', String(data.id));
-
-    let token = data.accessToken;
-    try {
-      if (token.includes('=') && token.includes(';')) {
-        const tokenStartIndex = token.indexOf('=') + 1;
-        token = token.substring(
-          tokenStartIndex,
-          token.indexOf(';') !== -1 ? token.indexOf(';') : token.length
-        );
-      } else if (token.includes('=')) {
-        const tokenStartIndex = token.indexOf('=') + 1;
-        token = token.substring(tokenStartIndex).split(';')[0].trim();
-      }
-
-      console.log('[Optimax Accounting] Token extracted:', token.substring(0, 20) + '...');
-      sessionStorage.setItem('Token', token);
-      localStorage.setItem('Token2', token);
-      sessionStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('accessToken2', data.accessToken);
-    } catch (e) {
-      console.error('[Optimax Accounting] Token extraction error:', e);
-      // ✅ Mirrors Hospitality fallback
-      sessionStorage.setItem('Token', data.accessToken);
-      localStorage.setItem('Token2', data.accessToken);
-    }
 
     const entityId = this.extractEntityId(data);
     if (entityId) {
@@ -156,7 +125,8 @@ export class AppComponent implements OnInit {
       localStorage.setItem('tenantId', data.ecode);
     }
 
-    sessionStorage.setItem('userRegData', JSON.stringify(data));
+    const safeUserData = { ...data, accessToken: undefined, token: undefined };
+    sessionStorage.setItem('userRegData', JSON.stringify(safeUserData));
 
     const userId = sessionStorage.getItem('userid');
     if (userId) {

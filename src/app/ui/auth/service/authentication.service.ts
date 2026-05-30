@@ -21,48 +21,8 @@ export class AuthenticationService {
     private jwtHelper: JwtHelperService
   ) {  }
 
-  private normalizeToken(raw: string | null): string | null {
-    if (!raw) return null;
-
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-
-    if (trimmed.includes('=') && trimmed.includes(';')) {
-      const tokenStartIndex = trimmed.indexOf('=') + 1;
-      const tokenEndIndex = trimmed.indexOf(';', tokenStartIndex);
-      const extracted = trimmed.substring(tokenStartIndex, tokenEndIndex > -1 ? tokenEndIndex : undefined).trim();
-      return extracted || null;
-    }
-
-    if (trimmed.toLowerCase().startsWith('bearer ')) {
-      return trimmed.slice(7).trim() || null;
-    }
-
-    return trimmed;
-  }
-
-  private getStoredToken(): string | null {
-    return (
-      this.normalizeToken(sessionStorage.getItem('Token')) ||
-      this.normalizeToken(sessionStorage.getItem('token')) ||
-      this.normalizeToken(sessionStorage.getItem('accessToken')) ||
-      this.normalizeToken(localStorage.getItem('Token')) ||
-      this.normalizeToken(localStorage.getItem('Token2')) ||
-      this.normalizeToken(localStorage.getItem('token')) ||
-      this.normalizeToken(localStorage.getItem('authToken')) ||
-      this.normalizeToken(localStorage.getItem('accessToken')) ||
-      this.normalizeToken(localStorage.getItem('accessToken2'))
-    );
-  }
-
   isAuthenticated(): boolean {
-    const token = this.getStoredToken();
-
-    if (!token || this.jwtHelper.isTokenExpired(token)) {
-      return false;
-    }
-
-    return true;
+    return !!sessionStorage.getItem('userid') || !!localStorage.getItem('userid');
   }
   
   logout(): void {
@@ -99,9 +59,7 @@ export class AuthenticationService {
   }
 
   isLoggedIn(): boolean {
-   const token = this.getStoredToken();
-   console.log(token)
-  return token !== null && !this.jwtHelper.isTokenExpired(token);
+  return this.isAuthenticated();
   }
 
 
@@ -109,7 +67,7 @@ export class AuthenticationService {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data, { withCredentials: true })
         .pipe(catchError(this.handleError));
   }
 
@@ -117,7 +75,7 @@ export class AuthenticationService {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
-        .post<any>(this.getBaseApiUrl() + `/x/api/v2/auth/esignin/${data.eCode}/${data.apiKey}`, {})
+        .post<any>(this.getBaseApiUrl() + `/x/api/v2/auth/esignin`, { eCode: data.eCode }, { withCredentials: true })
         .pipe(catchError(this.handleError));
   }
 
@@ -178,7 +136,6 @@ export class AuthenticationService {
     const payload = {
       email,
       project: environment.project || 'ERP',
-      apiKey: environment.apiKey || 'default-api-key',
     };
 
     return this.http

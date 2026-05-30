@@ -370,25 +370,10 @@ export class ThreadPanelComponent {
 
   private extractStructuredJson(content: string): string | null {
     const cleaned = this.cleanStructuredPasteArtifacts(content);
-    const parsedDirect = this.tryFormatJson(cleaned);
-    if (parsedDirect) {
-      return parsedDirect;
-    }
-    const jsonBlocks = this.findJsonBlocks(cleaned);
-    if (!jsonBlocks.length) {
+    if (!/^[\[{]/.test(cleaned)) {
       return null;
     }
-    const formattedBlocks = jsonBlocks
-      .map((block) => {
-        const formattedJson = this.tryFormatJson(block.json);
-        if (!formattedJson) {
-          return null;
-        }
-        const prefix = this.normalizeStructuredPrefix(block.prefix);
-        return prefix ? `${prefix}\n${formattedJson}` : formattedJson;
-      })
-      .filter((value): value is string => !!value);
-    return formattedBlocks.length ? formattedBlocks.join('\n\n') : null;
+    return this.tryFormatJson(cleaned);
   }
 
   private tryFormatJson(value: string): string | null {
@@ -397,78 +382,6 @@ export class ThreadPanelComponent {
     } catch {
       return null;
     }
-  }
-
-  private findJsonBlocks(value: string): Array<{ prefix: string; json: string }> {
-    const blocks: Array<{ prefix: string; json: string }> = [];
-    let depth = 0;
-    let start = -1;
-    let cursor = 0;
-    let inString = false;
-    let escaping = false;
-
-    for (let index = 0; index < value.length; index++) {
-      const char = value[index];
-      if (inString) {
-        if (escaping) {
-          escaping = false;
-          continue;
-        }
-        if (char === '\\') {
-          escaping = true;
-          continue;
-        }
-        if (char === '"') {
-          inString = false;
-        }
-        continue;
-      }
-
-      if (char === '"') {
-        inString = true;
-        continue;
-      }
-
-      if (char === '{' || char === '[') {
-        if (depth === 0) {
-          start = index;
-        }
-        depth++;
-        continue;
-      }
-
-      if (char === '}' || char === ']') {
-        if (depth <= 0) {
-          continue;
-        }
-        depth--;
-        if (depth === 0 && start >= 0) {
-          blocks.push({
-            prefix: value.slice(cursor, start).trim(),
-            json: value.slice(start, index + 1).trim(),
-          });
-          cursor = index + 1;
-          start = -1;
-        }
-      }
-    }
-
-    return blocks;
-  }
-
-  private normalizeStructuredPrefix(value: string): string {
-    const cleaned = (value || '')
-      .replace(/\s+/g, ' ')
-      .replace(/\s*:\s*$/g, '')
-      .trim();
-    if (!cleaned) {
-      return '';
-    }
-    const lines = cleaned
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter((line) => !!line);
-    return lines.join('\n');
   }
 
   onRenderedContentHover(event: MouseEvent): void {

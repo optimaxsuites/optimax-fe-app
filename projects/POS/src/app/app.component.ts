@@ -6,6 +6,7 @@ import { RegisterService } from './ui/service/register.service';
 import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 import { CheckoutService } from './ui/service/checkout.service';
 import { OfflineService } from './ui/service/offline.service';
+import { environment } from './ui/sharedComponent/service/environments/environment';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -107,7 +108,8 @@ export class AppComponent implements OnInit{
       username: 'damilola',
       password: '123456',
       project: 'ERP',
-      apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',
+      clientId: environment.clientId,
+      appVersion: environment.appVersion,
     };
 
     // if (!loginDetails.username || !loginDetails.password) {
@@ -120,8 +122,6 @@ export class AppComponent implements OnInit{
         .userLogin(loginDetails)
         .toPromise();
       this.loadInitParam(data);
-
-      console.log(data)
 
       if (data) {
         this.authenticationService.getUserPrimaryInfoById(data.id).subscribe(
@@ -149,16 +149,12 @@ export class AppComponent implements OnInit{
     sessionStorage.setItem('fullname', data.fullname);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(
-      tokenStartIndex,
-      data.accessToken.indexOf(';')
-    );
-    sessionStorage.setItem('Token', token);
-    localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
-    sessionStorage['userRegData'] = JSON.stringify(data);
+    sessionStorage.removeItem('Token');
+    localStorage.removeItem('Token2');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('accessToken2');
+    const safeUserData = { ...data, accessToken: undefined, token: undefined };
+    sessionStorage['userRegData'] = JSON.stringify(safeUserData);
 
     this.getUserBranchInfo(data);
 

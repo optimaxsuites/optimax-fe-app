@@ -16,34 +16,6 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
-        const accessToken = sessionStorage.getItem("Token");
-
-        // if (!accessToken) {
-        //     const loginLink = this.navigationLink.getLink('signinLink')
-        //     this.router.navigate([loginLink]);
-        //     return next.handle(request);
-        // }
-
-
-        if (!accessToken) {
-
-        const _request = request.clone({
-            headers: request.headers.set(
-                "Authorization",
-                `Bearer ${accessToken}`
-            ),
-
-        });
-        console.log("na request", _request)
-
-
-
-
-        return next.handle(_request);
-    }else {
-        return next.handle(request);    
+        return next.handle(request.clone({ withCredentials: true }));
     }
-
 }
-}
-

@@ -41,7 +41,7 @@ export class App {
       username: 'developer',
       password: '123456',
       project: 'ERP',
-      apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
+      apiKey: '',
     };
 
     // if (!loginDetails.username || !loginDetails.password) {

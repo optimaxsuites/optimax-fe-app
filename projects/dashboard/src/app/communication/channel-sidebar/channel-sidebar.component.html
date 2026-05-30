@@ -247,6 +247,55 @@
     </div>
     <div class="mx-3 my-2 h-px bg-gray-100"></div>
 
+    <div class="px-2" *ngIf="upcomingBirthdays.length">
+      <div class="pl-2 mb-1 mt-1">
+        <span
+          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
+          >Birthdays</span
+        >
+      </div>
+      <button
+        *ngFor="let birthday of upcomingBirthdays"
+        (click)="dmSelected.emit(birthday.id)"
+        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
+      >
+        <div class="relative flex-shrink-0">
+          <img
+            *ngIf="birthday.avatarUrl"
+            [src]="birthday.avatarUrl"
+            alt=""
+            class="w-8 h-8 rounded-full object-cover"
+          />
+          <div
+            *ngIf="!birthday.avatarUrl"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+            [style.background]="birthday.avatarColor || '#2e6276'"
+          >
+            {{ birthday.initials || (birthday.fullName || 'U').slice(0, 2).toUpperCase() }}
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">
+              {{ birthday.shortName || birthday.fullName }}
+            </span>
+            <span
+              class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap"
+            >
+              {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+            </span>
+          </div>
+          <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
+            Birthday {{ birthday.birthdayMonthDayLabel }}
+            <ng-container *ngIf="birthday.jobTitle || birthday.department">
+              · {{ birthday.jobTitle || birthday.department }}
+            </ng-container>
+          </span>
+        </div>
+      </button>
+      <div class="mx-1 my-2 h-px bg-gray-100"></div>
+    </div>
+
     <!-- Direct Messages -->
     <div class="px-2">
       <div class="pl-2 mb-1 mt-1">
@@ -302,12 +351,26 @@
             <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">{{
               dm.shortName
             }}</span>
-            <span class="text-[11px] text-gray-400 whitespace-nowrap" *ngIf="dm.lastMessageTime">{{
-              dm.lastMessageTime
-            }}</span>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span
+                *ngIf="dm.birthdayCountdownLabel"
+                class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap"
+                [title]="dm.birthdayIsToday ? 'Birthday is today' : 'Birthday in ' + dm.birthdayCountdownLabel.toLowerCase()"
+              >
+                {{ dm.birthdayIsToday ? 'Today' : dm.birthdayCountdownLabel }}
+              </span>
+              <span class="text-[11px] text-gray-400 whitespace-nowrap" *ngIf="dm.lastMessageTime">{{
+                dm.lastMessageTime
+              }}</span>
+            </div>
           </div>
           <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
-            {{ dm.lastMessagePreview || dm.jobTitle || dm.department || 'Start a direct conversation' }}
+            {{
+              dm.lastMessagePreview ||
+                (dm.birthdayMonthDayLabel
+                  ? 'Birthday ' + dm.birthdayMonthDayLabel
+                  : dm.jobTitle || dm.department || 'Start a direct conversation')
+            }}
           </span>
         </div>
         <span
