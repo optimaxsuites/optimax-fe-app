@@ -169,9 +169,7 @@ export class AuthModalComponent implements OnInit, OnDestroy {
         next: (response) => {
           this.isLoading = false;
           
-          console.log('Login response:', response);
-          
-          // Get user data from localStorage (stored by AuthService)
+	          // Get user data from localStorage (stored by AuthService)
           const storedUserData = this.authService.getCurrentUser();
           
           // Check if user needs verification (from stored data or response)

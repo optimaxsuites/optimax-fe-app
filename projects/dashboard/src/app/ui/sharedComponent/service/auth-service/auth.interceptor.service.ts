@@ -17,8 +17,6 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const accessToken = sessionStorage.getItem('Token');
-
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
     let tenantId = 'optimax'; 
@@ -35,22 +33,11 @@ export class AuthInterceptor implements HttpInterceptor {
     );
 
     let updatedRequest = request.clone({
+      withCredentials: true,
       setHeaders: {
         'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
       },
     });
-
-    if (accessToken) {
-      updatedRequest = updatedRequest.clone({
-        setHeaders: {
-          ...updatedRequest.headers.keys().reduce((acc, key) => {
-            acc[key] = updatedRequest.headers.get(key)!;
-            return acc;
-          }, {} as Record<string, string>),
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-    }
 
     return next.handle(updatedRequest);
   }

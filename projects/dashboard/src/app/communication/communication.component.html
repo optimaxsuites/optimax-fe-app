@@ -46,6 +46,7 @@
       [me]="me"
       [channels]="channels"
       [dmContacts]="dmContacts"
+      [upcomingBirthdays]="upcomingBirthdays"
       [activeChannelId]="activeChannelId"
       [activeDmId]="activeDmId"
       [activeView]="activeView"
@@ -1125,8 +1126,9 @@
     <section
       *ngIf="workspaceMode === 'chat'"
       class="chat-workspace"
-      [class.rail-open]="showChatRail && !rightPanelOpen"
+      [class.rail-open]="showChatRail && !rightPanelOpen && !birthdayPanelOpen"
       [class.right-panel-open]="rightPanelOpen"
+      [class.birthday-panel-open]="birthdayPanelOpen"
       [style.--chat-rail-width.px]="chatRailWidth"
       [style.--thread-panel-width.px]="threadPanelWidth"
     >
@@ -1421,12 +1423,42 @@
         </div>
       </div>
 
-      <aside class="chat-thread-shell" *ngIf="rightPanelOpen">
+      <aside class="chat-thread-shell" *ngIf="rightPanelOpen || birthdayPanelOpen">
         <div
+          *ngIf="rightPanelOpen"
           class="chat-thread-resizer"
           (mousedown)="startResizeThread($event)"
         ></div>
+        <section class="right-panel-birthday-card">
+          <div class="rail-card-header">
+            <div>
+              <p class="rail-label">Birthday Calendar</p>
+              <h3>Upcoming celebrations</h3>
+            </div>
+          </div>
+          <div class="right-panel-birthday-empty" *ngIf="!upcomingBirthdays.length">
+            No HR birthdays are available yet for this workspace.
+          </div>
+          <button
+            type="button"
+            *ngFor="let birthday of upcomingBirthdays | slice:0:5"
+            class="right-panel-birthday-item"
+            (click)="selectDm(birthday.id, true)"
+          >
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">
+                {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+              </span>
+              <time>{{ birthday.birthdayMonthDayLabel }}</time>
+            </div>
+            <div class="rail-highlight-meta">
+              <strong>{{ birthday.fullName }}</strong>
+              <span>{{ birthday.jobTitle || birthday.department || 'Team member' }}</span>
+            </div>
+          </button>
+        </section>
         <app-thread-panel
+          *ngIf="rightPanelOpen"
           [mode]="rightPanelMode"
           [activeThread]="activeThread"
           [activeThreadReplyToId]="activeThreadReplyToId"
@@ -1503,6 +1535,39 @@
           class="chat-rail-resizer"
           (mousedown)="startResizeChatRail($event)"
         ></div>
+        <section class="rail-card" *ngIf="upcomingBirthdays.length">
+          <div class="rail-card-header">
+            <div>
+              <p class="rail-label">Birthday Calendar</p>
+              <h3>Upcoming celebrations</h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            *ngFor="let birthday of upcomingBirthdays"
+            class="rail-highlight tone-info text-left"
+            (click)="selectDm(birthday.id, true)"
+          >
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">
+                {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+              </span>
+              <time>{{ birthday.birthdayMonthDayLabel }}</time>
+            </div>
+            <div class="rail-highlight-meta">
+              <strong>{{ birthday.fullName }}</strong>
+              <span>{{ birthday.jobTitle || birthday.department || 'Team member' }}</span>
+            </div>
+            <p>
+              {{
+                birthday.birthdayIsToday
+                  ? 'Send a birthday wish in direct message.'
+                  : 'Birthday comes up in ' + birthday.birthdayCountdownLabel.toLowerCase() + '.'
+              }}
+            </p>
+          </button>
+        </section>
+
         <section class="rail-card" *ngIf="taskRoutineTodos.length">
           <div class="rail-card-header">
             <div>

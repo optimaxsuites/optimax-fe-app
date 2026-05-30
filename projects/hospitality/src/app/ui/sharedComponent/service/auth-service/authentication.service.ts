@@ -69,7 +69,7 @@ export class AuthenticationService {
     const clientType = 'Group';
     const currentDate = new Date().toISOString();
 
-    const apiKey = environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071';
+    const apiKey = environment.apiKey || '';
     const project = environment.project || 'ERP';
 
     let domain = 'optimax';
@@ -116,28 +116,17 @@ export class AuthenticationService {
       username: data.username,
       password: data.password,
       project: environment.project || 'ERP',
-      apiKey: environment.apiKey || 'ApiKey b784e00442334be0497f434d2a4cbefd'
+      clientId: environment.clientId,
+      appVersion: environment.appVersion
     };
 
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", loginPayload)
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", loginPayload, { withCredentials: true })
         .pipe(
           tap((response: any) => {
-            console.log('Login response:', response);
-            
-            if (response.accessToken) {
-              let token = response.accessToken;
-              if (token.includes('=')) {
-                const start = token.indexOf('=') + 1;
-                const end = token.indexOf(';', start);
-                token = end > -1 ? token.substring(start, end) : token.substring(start);
-              }
-              token = token.trim();
-
-              localStorage.setItem('auth_token', token);
-              localStorage.setItem('token', token);
-              sessionStorage.setItem('Token', token);
-            }
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('Token');
 
             if (response.ecode && response.ecode !== 'null') {
               localStorage.setItem('tenantId', response.ecode);

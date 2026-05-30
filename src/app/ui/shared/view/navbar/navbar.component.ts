@@ -48,8 +48,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.syncProfileFromSession();
-    this.chatRealtimeNotifierService.start(this.currentUserId);
-    this.headerStateService.markAllMessagePreviewsRead();
+    this.chatRealtimeNotifierService.start(this.resolveCollaborationRouteUuid());
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
       this.unreadMessages = state.unreadMessages;
@@ -90,7 +89,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   openNotification(item: HeaderNotificationItem): void {
     this.headerStateService.markNotificationRead(item.id);
-    const route = item.route || this.resolveCollaborationRoute();
+    const route =
+      item.workspaceMode === 'chat'
+        ? this.resolveCollaborationRoute()
+        : item.route || this.resolveCollaborationRoute();
     this.dispatchCollabTarget(item, route);
   }
 
@@ -227,14 +229,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   private resolveCollaborationRoute(): string {
-    const resolvedId =
-      String(this.currentUserId || '').trim() ||
+    return `/admin/dashboard/communications/${this.resolveCollaborationRouteUuid()}`;
+  }
+
+  private resolveCollaborationRouteUuid(): string {
+    return (
       this.extractRouteUserId(this.router.url) ||
-      String(sessionStorage.getItem('userid') || '').trim() ||
-      String(sessionStorage.getItem('userId') || '').trim() ||
       String(sessionStorage.getItem('uuid') || '').trim() ||
-      'uu';
-    return `/admin/dashboard/communications/${resolvedId}`;
+      String(localStorage.getItem('uuid') || '').trim() ||
+      'uu'
+    );
   }
 
   private extractRouteUserId(url: string): string {

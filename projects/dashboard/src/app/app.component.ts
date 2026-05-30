@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 import { DashboardOverviewComponent } from './dashboard-overview/dashboard-overview.component';
 import { CommonModule } from '@angular/common';
+import { environment } from './ui/sharedComponent/service/environments/environment';
 // import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 // import { loadSalesData } from '../app/dashboard-overview/dashboard-overview.component'
 @Component({
@@ -24,7 +25,8 @@ export class AppComponent {
       username: 'developer',
       password: '123456',
       project: 'ERP',
-      apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
+      clientId: environment.clientId,
+      appVersion: environment.appVersion,
     };
 
     // if (!loginDetails.username || !loginDetails.password) {
@@ -37,8 +39,6 @@ export class AppComponent {
         .userLogin(loginDetails)
         .toPromise();
       this.loadInitParam(data);
-
-      console.log(data)
 
       if (data) {
         this.authenticationService.getUserPrimaryInfoById(data.id).subscribe(
@@ -66,16 +66,24 @@ export class AppComponent {
     sessionStorage.setItem('fullname', data.fullname);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(
-      tokenStartIndex,
-      data.accessToken.indexOf(';')
-    );
-    sessionStorage.setItem('Token', token);
-    localStorage.setItem('Token2', token);
-    sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
-    sessionStorage['userRegData'] = JSON.stringify(data);
+    const accessToken = data.accessToken || data.token || '';
+    if (accessToken) {
+      sessionStorage.setItem('Token', accessToken);
+      sessionStorage.setItem('token', accessToken);
+      sessionStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('Token2', accessToken);
+      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+    } else {
+      sessionStorage.removeItem('Token');
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('Token2');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('accessToken');
+      localStorage.removeItem('accessToken2');
+    }
+    const safeUserData = { ...data, accessToken: undefined, token: undefined };
+    sessionStorage['userRegData'] = JSON.stringify(safeUserData);
 
     this.getUserBranchInfo(data);
     this.dashboardOverview.loadUserFromSessionStorage()

@@ -73,7 +73,7 @@ export class AuthService {
     const clientType = 'Group';
     const currentDate = new Date().toISOString();
 
-    const apiKey = environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071';
+    const apiKey = environment.apiKey || '';
     const project = environment.project || 'ERP';
 
     // Dynamic domain extraction
@@ -206,41 +206,23 @@ export class AuthService {
 
  // Update the login method
 login(loginData: LoginData): Observable<AuthResponse> {
-  const loginPayload = {
-    username: loginData.username,
-    password: loginData.password,
-    project: environment.project || 'ERP',
-    apiKey: environment.apiKey || 'ApiKey b784e00442334be0497f434d2a4cbefd'
-  };
-
-   console.log('Login payload:', loginPayload);
-
-  return this.http.post<AuthResponse>(
-    this.getBaseApiUrl() + '/x/api/v2/auth/signin', 
-    loginPayload
-  ).pipe(
-    tap(response => {
-      console.log('Login response:', response);
-      
-      // Store the accessToken
-      if (response.accessToken) {
-        let token = response.accessToken;
-        
-        // Robust Extraction: Handle various prefixes (optimaxcookie, Token, etc.)
-        if (token.includes('=')) {
-          // Extract everything after the first '=' up to the first ';' (if present)
-          const start = token.indexOf('=') + 1;
-          const end = token.indexOf(';', start);
-          token = end > -1 ? token.substring(start, end) : token.substring(start);
-        }
-
-        // Final trim to be safe
-        token = token.trim();
-
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('token', token); // Store as 'token' for compatibility
-        sessionStorage.setItem('Token', token); // Store for interceptor compatibility
-      }
+	  const loginPayload = {
+	    username: loginData.username,
+	    password: loginData.password,
+	    project: environment.project || 'ERP',
+	    clientId: environment.clientId,
+	    appVersion: environment.appVersion
+	  };
+	
+	  return this.http.post<AuthResponse>(
+	    this.getBaseApiUrl() + '/x/api/v2/auth/signin', 
+	    loginPayload,
+	    { withCredentials: true }
+	  ).pipe(
+	    tap(response => {
+	      localStorage.removeItem('auth_token');
+	      localStorage.removeItem('token');
+	      sessionStorage.removeItem('Token');
 
       if (response.ecode && response.ecode !== 'null') {
         localStorage.setItem('tenantId', response.ecode);
@@ -282,7 +264,7 @@ login(loginData: LoginData): Observable<AuthResponse> {
     const payload = {
       username: username,
       project: environment.project || 'ERP',
-      apiKey: environment.apiKey || 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
+      apiKey: environment.apiKey || '',
     };
 
     return this.http
@@ -311,7 +293,6 @@ login(loginData: LoginData): Observable<AuthResponse> {
     const payload = {
       email: email,
       project: environment.project || 'store',
-      apiKey: environment.apiKey || 'default-store-api-key',
     };
 
     return this.http

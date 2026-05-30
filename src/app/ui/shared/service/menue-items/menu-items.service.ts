@@ -347,7 +347,11 @@ export class MenuItemsService {
   private unlockedModules$ = new BehaviorSubject<MenuItem[]>([]);
 
   constructor(public navigationLink: NavigationLinksService, private marketPlaceService: MarketplaceService) {
-    const token = sessionStorage.getItem('Token');
+    this.refreshRegisteredApps();
+  }
+
+  refreshRegisteredApps(): void {
+    const token = this.currentToken();
   if (token) {
     this.marketPlaceService.getRegisteredApp().subscribe({
       next: (app: any) => {
@@ -362,11 +366,17 @@ export class MenuItemsService {
   } else {
     console.log('No token yet — skipping app registration fetch');
   }
-      
-    
-    
-  
-   
+  }
+
+  private currentToken(): string {
+    return (
+      sessionStorage.getItem('Token') ||
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('accessToken') ||
+      localStorage.getItem('Token2') ||
+      localStorage.getItem('token') ||
+      ''
+    );
   }
   
 

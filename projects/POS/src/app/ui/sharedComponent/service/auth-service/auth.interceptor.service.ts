@@ -23,10 +23,7 @@ export class AuthInterceptor implements HttpInterceptor {
         ) {
             return next.handle(request);
         }
-        const accessToken = sessionStorage.getItem("Token");
-//  
-
-const host = window.location.hostname;
+	const host = window.location.hostname;
 const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 let tenantId = 'optimax'; 
 
@@ -40,25 +37,13 @@ const isDefaultTenantEndpoint = defaultTenantEndpoints.some((url) =>
   request.url.includes(url)
 );
 
-let updatedRequest = request.clone({
-  setHeaders: {
-    'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
-  },
-});
-
-if (accessToken) {
-  updatedRequest = updatedRequest.clone({
-    setHeaders: {
-      ...updatedRequest.headers.keys().reduce((acc, key) => {
-        acc[key] = updatedRequest.headers.get(key)!;
-        return acc;
-      }, {} as Record<string, string>),
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
-
-return next.handle(updatedRequest);
+	let updatedRequest = request.clone({
+	  withCredentials: true,
+	  setHeaders: {
+	    'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
+	  },
+	});
+	
+	return next.handle(updatedRequest);
   }
 }
-
