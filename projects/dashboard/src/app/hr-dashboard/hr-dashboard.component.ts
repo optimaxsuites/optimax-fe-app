@@ -1,27 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../ui/sharedComponent/service/environments/environment';
-
-export interface NextOfKin {
-  id?: number;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relationship?: string;
-  DOB?: string;
-  emergencyContact?: boolean;
-}
-
-export interface Guarantor {
-  id?: number;
-  fullName: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  relationship?: string;
-  yearsKnown?: number;
-}
 
 @Component({
   selector: 'app-hr-dashboard',
@@ -29,14 +6,6 @@ export interface Guarantor {
   styleUrls: ['./hr-dashboard.component.scss']
 })
 export class HrDashboardComponent implements OnInit {
-
-  /* --------------------------------------------------
-     EMPLOYEE RELATIVES DATA
-  -------------------------------------------------- */
-  nextOfKinList: NextOfKin[] = [];
-  guarantorList: Guarantor[] = [];
-  loadingRelatives = false;
-  relativesError: string | null = null;
 
   /* --------------------------------------------------
      NOTIFICATIONS
@@ -224,10 +193,7 @@ export class HrDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.initBarChart();
     this.initPieChart();
-    this.loadEmployeeRelatives();
   }
-
-  constructor(private http: HttpClient) {}
 
   initBarChart() {
     this.barChartOptions = {
@@ -270,89 +236,6 @@ export class HrDashboardComponent implements OnInit {
     };
   }
 
-  private loadEmployeeRelatives(): void {
-    this.loadingRelatives = true;
-    this.relativesError = null;
-
-    const fallbackNextOfKin: NextOfKin[] = [
-      {
-        fullName: 'Ngozi Okafor',
-        phone: '+2348012345679',
-        relationship: 'Wife',
-        emergencyContact: true,
-      },
-    ];
-    const fallbackGuarantors: Guarantor[] = [
-      {
-        fullName: 'Ifeanyi Nwankwo',
-        phone: '+2348012345670',
-        relationship: 'Friend',
-        yearsKnown: 8,
-      },
-    ];
-
-    const employeeId = this.userInfo.employeeId?.trim();
-    if (!employeeId) {
-      this.nextOfKinList = fallbackNextOfKin;
-      this.guarantorList = fallbackGuarantors;
-      this.loadingRelatives = false;
-      return;
-    }
-
-    this.http
-      .get<any>(`${environment.apiBaseUrl}/x/api/v2/hr/employees/${employeeId}`)
-      .subscribe({
-        next: (response) => {
-          const payload = response?.data || response || {};
-          const nextOfKin = Array.isArray(payload?.nextOfKin)
-            ? payload.nextOfKin
-            : Array.isArray(payload?.nextOfKinList)
-              ? payload.nextOfKinList
-              : [];
-          const guarantors = Array.isArray(payload?.guarantor)
-            ? payload.guarantor
-            : Array.isArray(payload?.guarantors)
-              ? payload.guarantors
-              : Array.isArray(payload?.guarantorList)
-                ? payload.guarantorList
-                : [];
-
-          this.nextOfKinList = nextOfKin.length
-            ? nextOfKin.map((entry: any) => ({
-                id: entry?.id,
-                fullName: entry?.fullName || entry?.name || 'Unnamed contact',
-                email: entry?.email,
-                phone: entry?.phone,
-                address: entry?.address,
-                relationship: entry?.relationship,
-                DOB: entry?.DOB || entry?.dob,
-                emergencyContact: !!entry?.emergencyContact,
-              }))
-            : fallbackNextOfKin;
-
-          this.guarantorList = guarantors.length
-            ? guarantors.map((entry: any) => ({
-                id: entry?.id,
-                fullName: entry?.fullName || entry?.name || 'Unnamed guarantor',
-                email: entry?.email,
-                phone: entry?.phone,
-                address: entry?.address,
-                relationship: entry?.relationship,
-                yearsKnown: Number(entry?.yearsKnown || 0) || undefined,
-              }))
-            : fallbackGuarantors;
-
-          this.loadingRelatives = false;
-        },
-        error: () => {
-          this.nextOfKinList = fallbackNextOfKin;
-          this.guarantorList = fallbackGuarantors;
-          this.relativesError = 'Could not load employee relatives.';
-          this.loadingRelatives = false;
-        },
-      });
-  }
-
   generateReport() {
   let report = '--- HR DASHBOARD REPORT ---\n\n';
 
@@ -383,3 +266,4 @@ export class HrDashboardComponent implements OnInit {
 }
 
 }
+

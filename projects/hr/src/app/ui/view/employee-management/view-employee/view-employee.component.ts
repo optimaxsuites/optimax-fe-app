@@ -7,6 +7,28 @@ import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
+
+export interface NextOfKin {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  DOB?: string;
+  emergencyContact?: boolean;
+}
+
+export interface Guarantor {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  yearsKnown?: number;
+}
+
 @Component({
   selector: 'app-view-employee',
   templateUrl: './view-employee.component.html',
@@ -16,6 +38,8 @@ export class ViewEmployeeComponent {
    employeeInView: any; 
   calendarOptions: CalendarOptions = {}
   loading = false;
+  nextOfKinList: NextOfKin[] = [];
+  guarantorList: Guarantor[] = [];
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
   private readonly bonusNameCache = new Map<string, Observable<string>>();
   private readonly deductionNameCache = new Map<string, Observable<string>>();
@@ -36,6 +60,9 @@ export class ViewEmployeeComponent {
       this.employeeInView = JSON.parse(employee);
 
       console.log(this.employeeInView)
+
+      // Load next of kin and guarantors
+      this.loadEmployeeRelatives();
 
       if(this.employeeInView?.level){
         this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
@@ -66,7 +93,6 @@ export class ViewEmployeeComponent {
       }    
 
     this.loading = false;
-
 
   }
  getAllowanceName(id: number | string): Observable<string> {
@@ -285,5 +311,42 @@ export class ViewEmployeeComponent {
   private toNumber(value: any): number {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  loadEmployeeRelatives(): void {
+    if (!this.employeeInView?.id) return;
+    
+    const baseUrl = 'http://localhost:3000/x/api/v2';
+    const employeeId = this.employeeInView.id;
+
+    // Load next of kin
+    this.http.get<any>(`${baseUrl}/hr/employees/${employeeId}/nextOfKin`).subscribe({
+      next: (data) => {
+        if (Array.isArray(data)) {
+          this.nextOfKinList = data;
+        } else if (data?.data && Array.isArray(data.data)) {
+          this.nextOfKinList = data.data;
+        }
+      },
+      error: (err) => {
+        console.warn('Could not fetch next of kin:', err);
+        this.nextOfKinList = [];
+      }
+    });
+
+    // Load guarantors
+    this.http.get<any>(`${baseUrl}/hr/guarantors/getGuarantorByEmployeeId/${employeeId}`).subscribe({
+      next: (data) => {
+        if (Array.isArray(data)) {
+          this.guarantorList = data;
+        } else if (data?.data && Array.isArray(data.data)) {
+          this.guarantorList = data.data;
+        }
+      },
+      error: (err) => {
+        console.warn('Could not fetch guarantors:', err);
+        this.guarantorList = [];
+      }
+    });
   }
 }

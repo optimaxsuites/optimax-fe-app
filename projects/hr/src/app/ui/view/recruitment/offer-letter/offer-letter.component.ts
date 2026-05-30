@@ -49,15 +49,9 @@ export class OfferLetterComponent {
 
   templates: string[] = [
     `<p>Dear <b>[Candidate Name]</b>,</p>
-    <p>We are pleased to inform you that you have been shortlisted for an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
-    <p><b>Interview Details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Type: <b>[In-person/Virtual]</b></p>
-    <p>Please let us know if the scheduled time works for you or if you need to reschedule.</p>
-    <p>If the interview is virtual, kindly ensure you have a stable internet connection and the necessary software installed. Attached are instructions for joining the online meeting.</p>
-    <p>We look forward to speaking with you and learning more about your qualifications.</p>
+    <p>We are pleased to offer you the position of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
+    <p>This offer follows the successful completion of your interview process. The detailed offer terms, compensation, start date, and reporting requirements are included in this letter or attached documents.</p>
+    <p>Please review the offer and confirm your acceptance by replying to this message or signing the attached offer document.</p>
     <p>Best regards,<br />
     [Your Name]<br />
     [Your Job Title]<br />
@@ -65,16 +59,9 @@ export class OfferLetterComponent {
     [Contact Information]</p>`,
   
     `<p>Dear <b>[Candidate Name]</b>,</p>
-    <p>We are excited to invite you to an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>. Your application has impressed us, and we are eager to learn more about you.</p>
-    <p><b>Interview Details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Format: <b>[In-person/Virtual]</b><br />
-    Duration: <b>[Estimated Interview Duration]</b></p>
-    <p>Please confirm your availability for this date and time. If you are unable to attend, let us know as soon as possible, and we will do our best to accommodate a rescheduled interview.</p>
-    <p>If this is a virtual interview, please ensure your setup includes a quiet environment and a reliable internet connection. Further instructions will be provided in a follow-up email.</p>
-    <p>We look forward to speaking with you soon!</p>
+    <p>Congratulations. We are excited to offer you the role of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
+    <p>Your interview performance and experience stood out to the panel, and we believe you will make a strong contribution to the team.</p>
+    <p>Kindly review the attached offer details and confirm your decision within the stated acceptance period.</p>
     <p>Best regards,<br />
     [Your Name]<br />
     [Your Job Title]<br />
@@ -82,15 +69,9 @@ export class OfferLetterComponent {
     [Contact Information]</p>`,
   
     `<p>Hi <b>[Candidate Name]</b>,</p>
-    <p>Great news! We’d love to get to know you better and chat about the <b>[Job Title]</b> role at <b>[Company Name]</b>. Your application stood out, and we think you could be a great fit for the team.</p>
-    <p><b>Here are the interview details:</b><br />
-    Date: <b>[Interview Date]</b><br />
-    Time: <b>[Interview Time]</b><br />
-    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
-    Interview Style: <b>[In-person/Virtual]</b></p>
-    <p>We’re excited to hear more about your experience and what you’d bring to the team. If the time doesn’t work for you, no worries! Just let us know, and we’ll find another time that suits you.</p>
-    <p>For virtual interviews, make sure you’re in a quiet space with a good internet connection. We’ll send any necessary links and instructions ahead of time.</p>
-    <p>Looking forward to our chat!</p>
+    <p>Great news. We would like to offer you the <b>[Job Title]</b> role at <b>[Company Name]</b>.</p>
+    <p>The panel completed its review and agreed to move forward with an offer. Please go through the offer details and let us know if you accept.</p>
+    <p>We look forward to welcoming you to the team.</p>
     <p>Best,<br />
     [Your Name]<br />
     [Your Job Title]<br />

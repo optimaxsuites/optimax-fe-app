@@ -54,7 +54,7 @@ describe('ScheduledInterviewComponent', () => {
       decisionHistory: []
     }]));
 
-    component.activeItem = { id: 'candidate-1', interviewStage: 1, fullName: 'Jane Doe' };
+    component.activeItem = { id: 'candidate-1', interviewStage: '1', fullName: 'Jane Doe' };
     component.showInterviewList = false;
     component.showInterviewInvite = true;
 
@@ -82,6 +82,54 @@ describe('ScheduledInterviewComponent', () => {
     expect(updatedInterview.interviewHistory.length).toBe(1);
     expect(component.showInterviewList).toBeTrue();
     expect(component.showInterviewInvite).toBeFalse();
+  });
+
+  it('should record a job offer after a passed completed interview', () => {
+    localStorage.setItem('upcomingInvite', JSON.stringify([{
+      id: 'candidate-1',
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      interviewStage: 2,
+      stage: ApplicationStage.Completed,
+      interviewHistory: [],
+      interviewStageSummaries: [{
+        stageNumber: 2,
+        sessionId: 'session-2',
+        averageScore: 88,
+        totalSubmissions: 2,
+        panelSize: 2,
+        submittedBy: ['Panel A', 'Panel B'],
+        outcome: 'Pass'
+      }]
+    }]));
+    localStorage.setItem('candidateData', JSON.stringify([{
+      id: 'candidate-1',
+      status: 'Interview Completed',
+      interviewStatus: 'Completed',
+      decisionHistory: []
+    }]));
+
+    component.activeItem = { id: 'candidate-1', fullName: 'Jane Doe' };
+    component.sendOffer({
+      offerSubject: 'Offer Letter',
+      offerLetter: '<p>Offer</p>',
+      offerAttachments: []
+    });
+
+    const [updatedInterview] = JSON.parse(localStorage.getItem('upcomingInvite') || '[]');
+    const [updatedCandidate] = JSON.parse(localStorage.getItem('candidateData') || '[]');
+
+    expect(updatedInterview.stage).toBe(ApplicationStage.OfferSent);
+    expect(updatedInterview.offerStatus).toBe('Sent');
+    expect(updatedInterview.offeredInterviewStage).toBe(2);
+    expect(updatedInterview.interviewHistory[0]).toEqual(jasmine.objectContaining({
+      action: 'Job Offered',
+      outcome: 'Pass',
+      averageScore: 88
+    }));
+    expect(updatedCandidate.status).toBe('Offered');
+    expect(updatedCandidate.interviewStatus).toBe('Offered');
+    expect(updatedCandidate.decisionHistory[0].action).toBe('Job Offered');
   });
 
   it('should update stage summaries when a score sheet submission is emitted', () => {
@@ -198,5 +246,37 @@ describe('ScheduledInterviewComponent', () => {
 
     expect(component.canManageInterview(interview)).toBeTrue();
     expect(component.canStartInterview(interview)).toBeTrue();
+  });
+
+  it('should allow internal HR users to view and download submitted score sheets without managing the interview', () => {
+    const interview: any = {
+      id: 'candidate-1',
+      stage: ApplicationStage.Completed,
+      interviewPanel: [
+        { id: 'user-2', userId: 'user-2', username: 'paneluser', name: 'Panel User', role: 'Lead', email: 'panel@example.com', panelId: 'panel-1' }
+      ]
+    };
+
+    localStorage.setItem('submittedCriteria', JSON.stringify({
+      'candidate-1': [{
+        applicantid: 'candidate-1',
+        requestDate: '2026-05-11T10:00:00.000Z',
+        criteria: { id: 'criteria-1', title: 'Technical Skills', questions: [] },
+        totalScore: 80,
+        interviewStage: 1
+      }]
+    }));
+
+    sessionStorage.setItem('userid', 'hr-user-1');
+    sessionStorage.setItem('email', 'hr@example.com');
+    sessionStorage.setItem('username', 'hruser');
+    sessionStorage.setItem('role', 'ROLE_USER');
+    (component as any).loadCurrentUserContext();
+
+    expect(component.canManageInterview(interview)).toBeFalse();
+    expect(component.canStartInterview(interview)).toBeFalse();
+    expect(component.canCreateScoreSheet(interview)).toBeFalse();
+    expect(component.canViewScoreSheet(interview)).toBeTrue();
+    expect(component.canDownloadScoreSheet(interview)).toBeTrue();
   });
 });

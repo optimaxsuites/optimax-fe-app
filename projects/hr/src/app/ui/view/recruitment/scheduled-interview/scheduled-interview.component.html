@@ -70,7 +70,7 @@
                           <li class="table-item-panel" *ngIf="canEndInterview(candidate)" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
                           <li class="table-item-panel" *ngIf="canViewScoreSheet(candidate)" (click)="openScoreSheetPreview(candidate)"> <i class="pi pi-file table-item me-2"></i>View Score Sheet</li>
                           <li class="table-item-panel" *ngIf="canMoveToNextStage(candidate)" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
-                          <li class="table-item-panel" *ngIf="canSendOffer(candidate)" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                          <li class="table-item-panel" *ngIf="canSendOffer(candidate)" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Job</li>
                           <li class="table-item-panel" *ngIf="canSendAppointmentLetter(candidate)" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
                           <li class="table-item-panel" *ngIf="canDownloadScoreSheet(candidate)" (click)="downloadScoresheet(candidate.id)"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
                       </div>
@@ -592,6 +592,12 @@
           <div class="response-item">
             <span class="response-label">Total Score</span>
             <span class="response-value">{{ scoreSheet.totalScore || 0 | number:'1.1-1' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Outcome</span>
+            <span class="response-value" [ngClass]="getOutcomeClass(getScoreSheetOutcome(scoreSheet))">
+              {{ getScoreSheetOutcome(scoreSheet) }}
+            </span>
           </div>
           <div class="response-item">
             <span class="response-label">Submitted</span>

@@ -34,6 +34,8 @@ export interface ProfileChangeRequestDTO {
   processedDate?: Date;
   processedBy?: any;
   rejectionReason?: string;
+  employee?: any
+  employeeUserId?: string | number;
 }
 
 /**

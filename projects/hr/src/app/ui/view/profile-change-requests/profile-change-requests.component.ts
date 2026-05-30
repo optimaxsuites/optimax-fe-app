@@ -24,7 +24,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   showRejectionDialog = false;
   rejectionForm: FormGroup;
   isDetailModalOpen = false;
-
   private destroy$ = new Subject<void>();
 
   // Filter options
@@ -49,6 +48,9 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     { label: 'Guarantor', value: 'guarantor' },
   ];
 
+  currentUserId: string = localStorage.getItem('userid') || '';
+  userIsAdmin: boolean = false
+
   constructor(
     private profileChangeRequestService: ProfileChangeRequestService,
     private messageService: MessageService,
@@ -62,12 +64,20 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadRequests();
 
+    console.log(this.requests);
+
+
     this.profileChangeRequestService.requests$
       .pipe(takeUntil(this.destroy$))
       .subscribe((requests) => {
         this.requests = requests;
         this.applyFilters();
       });
+
+      const userRegData = JSON.parse(localStorage.getItem('userRegData') || '{}');
+      console.log("userReg", userRegData)
+      this.userIsAdmin = userRegData && userRegData.roles[0] ? userRegData.roles[0] === 'ROLE_ADMIN': false;
+      console.log(this.userIsAdmin)
   }
 
   ngOnDestroy(): void {
@@ -98,19 +108,28 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
       });
   }
 
-  applyFilters(): void {
-    let filtered = [...this.requests];
+ applyFilters(): void {
+  let filtered = [...(this.requests || [])];
 
-    if (this.statusFilter) {
-      filtered = filtered.filter((r) => r.status === this.statusFilter);
-    }
-
-    if (this.fieldTypeFilter) {
-      filtered = filtered.filter((r) => r.fieldChangeType === this.fieldTypeFilter);
-    }
-
-    this.filteredRequests = filtered;
+  if (this.statusFilter) {
+    filtered = filtered.filter((r) => r?.status === this.statusFilter);
   }
+
+  if (this.fieldTypeFilter) {
+    filtered = filtered.filter((r) => r?.fieldChangeType === this.fieldTypeFilter);
+  }
+
+  if (this.currentUserId && !this.userIsAdmin) {
+    console.log(this.currentUserId)
+    filtered = filtered.filter((r) => {
+      console.log(r)
+      if (!r?.employeeId) return false;
+      return String(r.employeeUserId) === String(this.currentUserId);
+    });
+  }
+
+  this.filteredRequests = filtered;
+}
 
   viewDetails(request: ProfileChangeRequestDTO): void {
     this.selectedRequest = request;
@@ -126,8 +145,16 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     this.isProcessingRequest = true;
     const currentUser = this.getCurrentUser();
 
+    const idField = request.request.find(change => change.fieldName.toLowerCase() === 'id')?.value || request.request.find(change => change.fieldName.toLowerCase() === 'id')?.oldValue || null;
+
+    const requestData = {
+      id: idField,
+      type: request.requestType,
+      fieldType: request.fieldChangeType,
+    }
+
     this.profileChangeRequestService
-      .approveProfileChangeRequest(request.id!, currentUser)
+      .approveProfileChangeRequest(request.id!, currentUser, requestData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -250,4 +277,17 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
     }
     return `${request.request.length} fields changed`;
   }
+
+  get filteredChanges() {
+  return this.selectedRequest?.request?.filter(change => {
+    const isNotId = change.fieldName.toLowerCase() !== 'id';
+    
+    // Checks that value exists, is not null/undefined, and is not just whitespace
+    const hasNewValue = change.value !== null && 
+                        change.value !== undefined && 
+                        change.value.toString().trim() !== '';
+
+    return isNotId && hasNewValue;
+  }) || [];
+}
 }

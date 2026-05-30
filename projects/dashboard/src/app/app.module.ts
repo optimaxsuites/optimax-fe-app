@@ -74,6 +74,7 @@ import { ChannelModalComponent } from './communication/channel-modal/channel-mod
 import { EmailModalComponent } from './communication/email-modal/email-modal.component';
 import { CallModalComponent } from './communication/call-modal/call-modal.component';
 import { FeedComponent } from './feed/feed.component';
+import { EmployeeRelativesWidgetComponent } from './hr-dashboard/employee-relatives-widget/employee-relatives-widget.component';
 
 @NgModule({
   declarations: [
@@ -135,6 +136,7 @@ import { FeedComponent } from './feed/feed.component';
     ButtonModule,
     NgSelectModule,
     NgApexchartsModule,
+    EmployeeRelativesWidgetComponent,
   ],
   providers: [
     {

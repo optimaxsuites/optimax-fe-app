@@ -94,17 +94,57 @@ export class ProfileChangeRequestService {
   /**
    * Approve a profile change request
    */
-  approveProfileChangeRequest(id: string | number, processedBy: any): Observable<ProfileChangeRequestDTO> {
+  approveProfileChangeRequest(id: string | number, processedBy: any, record: any): Observable<ProfileChangeRequestDTO> {
     const request = this.findRequestById(id);
     if (!request) {
       return throwError(() => new Error(`Profile change request ${id} was not found`));
     }
 
     const approvedRequest = this.withStatus(id, request, 'approved', processedBy);
-    return this.applyApprovedChangesToEmployee(approvedRequest).pipe(
-      switchMap(() => this.saveRequestStatus(approvedRequest))
-    );
+
+    switch (record.fieldType) {
+      case 'NOK':
+        return this.applyNokChangesToEmployee(approvedRequest, record).pipe(
+          switchMap(() => this.saveRequestStatus(approvedRequest))
+        );
+
+      case 'guarantor':
+        return this.applyGuarantorChangesToEmployee(approvedRequest, record).pipe(
+          switchMap(() => this.saveRequestStatus(approvedRequest))
+        );
+
+      default: 
+        return this.applyApprovedChangesToEmployee(approvedRequest).pipe(
+          switchMap(() => this.saveRequestStatus(approvedRequest))
+        );
+    }
   }
+
+applyNokChangesToEmployee(request: ProfileChangeRequestDTO, record: any): Observable<any> {
+  const nokBaseUrl = `${environment.apiBaseUrl}/x/api/v2/hr/nextOfKins`;
+
+  switch (record.type) {
+    case 'change':
+      return this.http.get<any>(`${nokBaseUrl}/${record.id}`).pipe(
+        map((response) => response?.data ?? response?.result ?? response),
+        map((fetchedRecord) => this.buildUpdatedNOKPayload(fetchedRecord, request)),
+        switchMap((payload) => this.http.post<any>(nokBaseUrl, this.toNOKFormData(payload)))
+      );
+
+    case 'delete':
+      return this.http.delete<any>(`${nokBaseUrl}/${record.id}`).pipe();
+
+    default: 
+      console.warn('Unsupported NOK change type:', record.type);
+      return of(null);
+  }
+}
+
+applyGuarantorChangesToEmployee(request: ProfileChangeRequestDTO, record: any): Observable<any> {
+  return this.http.get<any>(`${this.employeesUrl}/${request.employeeId}`).pipe()
+
+
+}
 
   /**
    * Reject a profile change request
@@ -274,6 +314,7 @@ export class ProfileChangeRequestService {
     return {
       id: raw?.id,
       employeeId: raw?.employeeId ?? employee?.id,
+      employeeUserId: employee?.userId ?? employee?.user?.userId ?? employee?.user?.id,
       employeeName,
       employeeEmail: raw?.employeeEmail || employee?.workEmail || employee?.email,
       requestType: raw?.requestType,
@@ -381,9 +422,44 @@ export class ProfileChangeRequestService {
     return this.normalizeEmployeePayloadForUpdate(updatedEmployee);
   }
 
+  private buildUpdatedNOKPayload(record: any, request: ProfileChangeRequestDTO): any {
+    const updatedRecord = {
+      ...record,
+    };
+
+    request.request.forEach((change) => {
+      updatedRecord[change.fieldName] = change.value;
+    });
+
+    return this.normalizeRecordPayloadForUpdate(updatedRecord);
+  }
+
+ 
+ normalizeRecordPayloadForUpdate(record: any): any {
+   return {
+    id: Number(record?.id) || 0,
+    fullName: record.fullName,
+    email: record.email,
+    phone: record.phone,
+    address: record.address,
+    relationshipId: record.relationshipId,
+    dob: this.toDateOnlyString(record?.dob),
+    emergencyContact: record.emergencyContact,
+    employeeId: record.employeeId,
+    employeeMediaId: record.employeeMediaId,
+  }
+
+ }
+
   private toEmployeeFormData(employee: any): FormData {
     const formData = new FormData();
     formData.append('employee', JSON.stringify(employee));
+    return formData;
+  }
+
+  private toNOKFormData(record: any): FormData {
+    const formData = new FormData();
+    formData.append('nextOfKinDTO', JSON.stringify(record));
     return formData;
   }
 
