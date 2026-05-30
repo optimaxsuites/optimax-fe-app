@@ -52,7 +52,6 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';

@@ -410,3 +410,49 @@
     background: #065f46;
   }
 }
+
+@media (max-width: 768px) {
+  .office-hours-card {
+    .hours-display {
+      grid-template-columns: 1fr;
+    }
+
+    .hours-form {
+      grid-template-columns: 1fr;
+
+      .actions {
+        grid-column: span 1;
+      }
+    }
+  }
+
+  .import-modal-card {
+    width: 95%;
+    padding: 16px;
+
+    .latlng-row {
+      flex-direction: column;
+
+      input {
+        width: 100%;
+      }
+
+      .go-btn {
+        width: 100%;
+        padding: 10px;
+      }
+    }
+
+    .leaflet-map {
+      height: 280px;
+    }
+
+    .map-actions {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -33,4 +33,13 @@
   font-weight: 600;
 }
 
+@media (max-width: 768px) {
+  .late-list {
+    max-height: 200px;
+  }
 
+  .late-item {
+    font-size: 1.1rem;
+    gap: 0.5rem;
+  }
+}
