@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../shared-component/environments/environment';
+import { environment } from '../ui/sharedComponent/service/environments/environment';
 
 export interface NextOfKin {
   id?: number;
@@ -268,6 +268,33 @@ export class HrDashboardComponent implements OnInit {
       ],
       fill: { opacity: 1 }
     };
+  }
+
+  loadEmployeeRelatives(): void {
+    const employeeId = this.userInfo.employeeId;
+    if (!employeeId) return;
+
+    this.loadingRelatives = true;
+    this.relativesError = null;
+
+    const token = sessionStorage.getItem('accessToken') ?? sessionStorage.getItem('token') ?? '';
+    const headers = { Authorization: `Bearer ${token}`, 'X-Tenant-ID': 'optimax' };
+
+    this.http.get<any>(
+      `${environment.apiBaseUrl}/x/api/v2/hr/employees/${employeeId}/relatives`,
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        this.nextOfKinList = res.nextOfKin ?? [];
+        this.guarantorList = res.guarantors ?? [];
+        this.loadingRelatives = false;
+      },
+      error: (err) => {
+        console.error('Failed to load employee relatives:', err);
+        this.relativesError = 'Could not load relatives data.';
+        this.loadingRelatives = false;
+      }
+    });
   }
 
   generateReport() {
