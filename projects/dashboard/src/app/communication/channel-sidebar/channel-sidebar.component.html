@@ -379,6 +379,18 @@
         >
           {{ dm.unreadCount! > 99 ? "99+" : dm.unreadCount }}
         </span>
+        <span
+          *ngIf="canDeactivateDmUsers"
+          role="button"
+          tabindex="0"
+          title="Deactivate direct message user"
+          class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
+          (click)="requestDmDeactivation($event, dm)"
+          (keydown.enter)="requestDmDeactivation($event, dm)"
+          (keydown.space)="requestDmDeactivation($event, dm)"
+        >
+          <i class="pi pi-ban text-[12px]"></i>
+        </span>
       </button>
     </div>
   </nav>

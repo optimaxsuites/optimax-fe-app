@@ -1048,6 +1048,54 @@ export class CommunicationComponent
     this.selectDm(id);
   }
 
+  deactivateDmContact(contact: DmContact): void {
+    if (!this.canManageChannels || !contact?.userId) {
+      return;
+    }
+    const confirmed = window.confirm(
+      `Deactivate ${contact.fullName || contact.shortName} from direct messages? They will no longer appear in the DM user list.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.collabService.deactivateDmUser(contact.userId).subscribe({
+      next: () => {
+        this.dmContacts = this.dmContacts.filter((dm) => dm.id !== contact.id);
+        this.allEmployees = this.allEmployees.map((employee) => {
+          const employeeUserId = Number(this.employeeUserId(employee) || 0);
+          if (employeeUserId !== Number(contact.userId)) {
+            return employee;
+          }
+          return {
+            ...employee,
+            accountVerified: false,
+            accountState: 'SUSPENDED',
+            user: employee.user
+              ? {
+                  ...employee.user,
+                  accountVerified: false,
+                  accountState: 'SUSPENDED',
+                }
+              : employee.user,
+          };
+        });
+        if (this.activeView === 'dm' && this.activeDmId === contact.id) {
+          this.activeDmId = '';
+          if (this.channels.length) {
+            this.selectChannel(this.channels[0].id);
+          }
+        }
+        this.upcomingBirthdays = this.buildUpcomingBirthdays(this.dmContacts);
+        this.closeMobileSidebar();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        alert('Unable to deactivate this direct message user. Please try again.');
+      },
+    });
+  }
+
   onSidebarViewSet(v: 'threads'): void {
     this.closeMobileSidebar();
     this.setView(v);
@@ -3668,6 +3716,9 @@ export class CommunicationComponent
     const accountState = this.normalizeIdentityText(
       employee.accountState || employee.user?.accountState || '',
     );
+    if (accountState === 'suspended' || accountState === 'closed') {
+      return false;
+    }
     return accountVerified || accountState === 'opened';
   }
 

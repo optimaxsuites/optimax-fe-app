@@ -52,6 +52,7 @@ export class ChannelSidebarComponent {
   @Input() selectedRingtone = 'classic';
   @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
   @Input() canCreateChannels = false;
+  @Input() canDeactivateDmUsers = false;
   @Input() searchQuery = '';
   @Input() showSearch = false;
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];
@@ -61,6 +62,7 @@ export class ChannelSidebarComponent {
   @Output() dmSelected = new EventEmitter<string>();
   @Output() viewSet = new EventEmitter<'threads'>();
   @Output() createChannel = new EventEmitter<void>();
+  @Output() dmDeactivated = new EventEmitter<DmContact>();
   @Output() channelsRetried = new EventEmitter<void>();
   @Output() soundToggled = new EventEmitter<void>();
   @Output() ringtoneChanged = new EventEmitter<string>();
@@ -147,6 +149,12 @@ export class ChannelSidebarComponent {
 
   get visibleDmContacts(): DmContact[] {
     return (this.dmContacts || []).filter((contact) => !this.isOwnContact(contact));
+  }
+
+  requestDmDeactivation(event: Event, contact: DmContact): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dmDeactivated.emit(contact);
   }
 
   isDocumentLibraryChannel(channel: Channel | null | undefined): boolean {
