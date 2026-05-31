@@ -63,6 +63,7 @@ export class ChannelSidebarComponent {
   @Output() viewSet = new EventEmitter<'threads'>();
   @Output() createChannel = new EventEmitter<void>();
   @Output() dmDeactivated = new EventEmitter<DmContact>();
+  @Output() deactivatedDmUsersOpened = new EventEmitter<void>();
   @Output() channelsRetried = new EventEmitter<void>();
   @Output() soundToggled = new EventEmitter<void>();
   @Output() ringtoneChanged = new EventEmitter<string>();
@@ -155,6 +156,12 @@ export class ChannelSidebarComponent {
     event.preventDefault();
     event.stopPropagation();
     this.dmDeactivated.emit(contact);
+  }
+
+  openDeactivatedDmUsers(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.deactivatedDmUsersOpened.emit();
   }
 
   isDocumentLibraryChannel(channel: Channel | null | undefined): boolean {

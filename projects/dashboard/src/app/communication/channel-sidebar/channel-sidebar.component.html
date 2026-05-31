@@ -298,11 +298,20 @@
 
     <!-- Direct Messages -->
     <div class="px-2">
-      <div class="pl-2 mb-1 mt-1">
+      <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2">
         <span
           class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
           >Direct Messages</span
         >
+        <button
+          *ngIf="canDeactivateDmUsers"
+          type="button"
+          class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#2e6276] hover:bg-gray-100"
+          title="Manage deactivated DM users"
+          (click)="openDeactivatedDmUsers($event)"
+        >
+          <i class="pi pi-users text-[12px]"></i>
+        </button>
       </div>
       <div *ngIf="employeesLoading" class="flex flex-col gap-1.5 px-1 mt-1">
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-full"></div>
