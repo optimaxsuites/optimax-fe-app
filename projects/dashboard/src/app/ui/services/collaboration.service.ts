@@ -610,6 +610,21 @@ export class CollaborationService {
     );
   }
 
+  getDeactivatedDmUsers(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/deactivated-dm`,
+      { headers: this.headers },
+    );
+  }
+
+  restoreDmUser(userId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/${userId}/restore-dm`,
+      {},
+      { headers: this.headers },
+    );
+  }
+
   getEmployeeById(id: number): Observable<EmployeeProfile> {
     return this.http.get<EmployeeProfile>(
       `${this.baseUrl}/x/api/v2/hr/employees/${id}`,

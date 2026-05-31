@@ -615,6 +615,30 @@ export class CommunicationComponent
   private readonly CHANNELS_CACHE_TTL_MS = 15_000;
   employeesLoading = true;
   employeesError: string | null = null;
+  dmDeactivateDialog: {
+    open: boolean;
+    contact: DmContact | null;
+    saving: boolean;
+    error: string;
+  } = {
+    open: false,
+    contact: null,
+    saving: false,
+    error: '',
+  };
+  deactivatedDmUsersDialog: {
+    open: boolean;
+    loading: boolean;
+    error: string;
+    users: any[];
+    restoringUserId: number | null;
+  } = {
+    open: false,
+    loading: false,
+    error: '',
+    users: [],
+    restoringUserId: null,
+  };
   messagesLoading = false;
   conversationAccessMessage = '';
   soundEnabled = true;
@@ -1052,12 +1076,37 @@ export class CommunicationComponent
     if (!this.canManageChannels || !contact?.userId) {
       return;
     }
-    const confirmed = window.confirm(
-      `Deactivate ${contact.fullName || contact.shortName} from direct messages? They will no longer appear in the DM user list.`,
-    );
-    if (!confirmed) {
+    this.dmDeactivateDialog = {
+      open: true,
+      contact,
+      saving: false,
+      error: '',
+    };
+    this.closeMobileSidebar();
+  }
+
+  closeDmDeactivateDialog(): void {
+    if (this.dmDeactivateDialog.saving) {
       return;
     }
+    this.dmDeactivateDialog = {
+      open: false,
+      contact: null,
+      saving: false,
+      error: '',
+    };
+  }
+
+  confirmDmDeactivate(): void {
+    const contact = this.dmDeactivateDialog.contact;
+    if (!this.canManageChannels || !contact?.userId || this.dmDeactivateDialog.saving) {
+      return;
+    }
+    this.dmDeactivateDialog = {
+      ...this.dmDeactivateDialog,
+      saving: true,
+      error: '',
+    };
 
     this.collabService.deactivateDmUser(contact.userId).subscribe({
       next: () => {
@@ -1088,10 +1137,87 @@ export class CommunicationComponent
         }
         this.upcomingBirthdays = this.buildUpcomingBirthdays(this.dmContacts);
         this.closeMobileSidebar();
+        this.dmDeactivateDialog = {
+          open: false,
+          contact: null,
+          saving: false,
+          error: '',
+        };
         this.cdr.detectChanges();
       },
       error: () => {
-        alert('Unable to deactivate this direct message user. Please try again.');
+        this.dmDeactivateDialog = {
+          ...this.dmDeactivateDialog,
+          saving: false,
+          error: 'Unable to deactivate this direct message user. Please try again.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openDeactivatedDmUsersDialog(): void {
+    if (!this.canManageChannels) {
+      return;
+    }
+    this.deactivatedDmUsersDialog = {
+      open: true,
+      loading: true,
+      error: '',
+      users: [],
+      restoringUserId: null,
+    };
+    this.closeMobileSidebar();
+    this.collabService.getDeactivatedDmUsers().subscribe({
+      next: (users) => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          loading: false,
+          users: Array.isArray(users) ? users : [],
+          error: '',
+        };
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          loading: false,
+          error: 'Unable to load deactivated DM users.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  restoreDmUser(user: any): void {
+    const userId = Number(user?.id || 0);
+    if (!this.canManageChannels || !userId || this.deactivatedDmUsersDialog.restoringUserId) {
+      return;
+    }
+    this.deactivatedDmUsersDialog = {
+      ...this.deactivatedDmUsersDialog,
+      restoringUserId: userId,
+      error: '',
+    };
+    this.collabService.restoreDmUser(userId).subscribe({
+      next: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          restoringUserId: null,
+          users: this.deactivatedDmUsersDialog.users.filter(
+            (item) => Number(item?.id || 0) !== userId,
+          ),
+        };
+        this.loadEmployees(true);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          restoringUserId: null,
+          error: 'Unable to enable this user. Please try again.',
+        };
+        this.cdr.detectChanges();
       },
     });
   }
@@ -3808,7 +3934,7 @@ export class CommunicationComponent
     return (contacts || []).filter((contact) => !this.isOwnDmContact(contact));
   }
 
-  private loadEmployees(): void {
+  private loadEmployees(_forceRefresh = false): void {
     this.employeesLoading = true;
     forkJoin({
       profiles: this.collabService.getAllUserPrimaryInformation(),
