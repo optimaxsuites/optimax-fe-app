@@ -508,7 +508,8 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
 
   /** Navigate to the standalone Paystack Transfer wizard */
   navigateToInitiateTransfer(): void {
-    this.router.navigate(['/paystack/initiate-transfer']);
+    const uuid = this.route.snapshot.params['uuid'] || 'default';
+    this.router.navigate(['/paystack/initiate-transfer', uuid]);
   }
 
   setPaystackActiveTab(tab: 'balance' | 'transactions' | 'transfer'): void {
@@ -910,7 +911,8 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   }
 
   viewPaystackTransactionDetail(id: any): void {
-    this.router.navigate(['/bankaccountoverview/paystack/transfer', id]);
+    const uuid = this.route.snapshot.params['uuid'] || 'default';
+    this.router.navigate(['/bankaccountoverview/paystack/transfer', id, uuid]);
   }
 
   closePaystackDetailDialog(): void {
