@@ -44,6 +44,8 @@ const routes: Routes = [
     redirectTo: 'transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
+
+  //  check this out
   {
     path: 'transaction/:uuid',
     component: AccountingPageComponent,
