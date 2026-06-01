@@ -46,6 +46,7 @@
       [me]="me"
       [channels]="channels"
       [dmContacts]="dmContacts"
+      [upcomingBirthdays]="upcomingBirthdays"
       [activeChannelId]="activeChannelId"
       [activeDmId]="activeDmId"
       [activeView]="activeView"
@@ -57,6 +58,7 @@
       [selectedRingtone]="selectedRingtone"
       [ringtoneOptions]="ringtoneOptions"
       [canCreateChannels]="canManageChannels"
+      [canDeactivateDmUsers]="canManageChannels"
       [searchQuery]="searchQuery"
       [showSearch]="showSearch"
       [searchResults]="searchResults"
@@ -64,6 +66,8 @@
       (dmSelected)="onSidebarDmSelected($event)"
       (viewSet)="onSidebarViewSet($event)"
       (createChannel)="onSidebarCreateChannel()"
+      (dmDeactivated)="deactivateDmContact($event)"
+      (deactivatedDmUsersOpened)="openDeactivatedDmUsersDialog()"
       (channelsRetried)="loadChannels(false, true)"
       (soundToggled)="soundEnabled = !soundEnabled"
       (ringtoneChanged)="setRingtone($event)"
@@ -1125,8 +1129,9 @@
     <section
       *ngIf="workspaceMode === 'chat'"
       class="chat-workspace"
-      [class.rail-open]="showChatRail && !rightPanelOpen"
+      [class.rail-open]="showChatRail && !rightPanelOpen && !birthdayPanelOpen"
       [class.right-panel-open]="rightPanelOpen"
+      [class.birthday-panel-open]="birthdayPanelOpen"
       [style.--chat-rail-width.px]="chatRailWidth"
       [style.--thread-panel-width.px]="threadPanelWidth"
     >
@@ -1421,12 +1426,42 @@
         </div>
       </div>
 
-      <aside class="chat-thread-shell" *ngIf="rightPanelOpen">
+      <aside class="chat-thread-shell" *ngIf="rightPanelOpen || birthdayPanelOpen">
         <div
+          *ngIf="rightPanelOpen"
           class="chat-thread-resizer"
           (mousedown)="startResizeThread($event)"
         ></div>
+        <section class="right-panel-birthday-card">
+          <div class="rail-card-header">
+            <div>
+              <p class="rail-label">Birthday Calendar</p>
+              <h3>Upcoming celebrations</h3>
+            </div>
+          </div>
+          <div class="right-panel-birthday-empty" *ngIf="!upcomingBirthdays.length">
+            No HR birthdays are available yet for this workspace.
+          </div>
+          <button
+            type="button"
+            *ngFor="let birthday of upcomingBirthdays | slice:0:5"
+            class="right-panel-birthday-item"
+            (click)="selectDm(birthday.id, true)"
+          >
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">
+                {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+              </span>
+              <time>{{ birthday.birthdayMonthDayLabel }}</time>
+            </div>
+            <div class="rail-highlight-meta">
+              <strong>{{ birthday.fullName }}</strong>
+              <span>{{ birthday.jobTitle || birthday.department || 'Team member' }}</span>
+            </div>
+          </button>
+        </section>
         <app-thread-panel
+          *ngIf="rightPanelOpen"
           [mode]="rightPanelMode"
           [activeThread]="activeThread"
           [activeThreadReplyToId]="activeThreadReplyToId"
@@ -1503,6 +1538,39 @@
           class="chat-rail-resizer"
           (mousedown)="startResizeChatRail($event)"
         ></div>
+        <section class="rail-card" *ngIf="upcomingBirthdays.length">
+          <div class="rail-card-header">
+            <div>
+              <p class="rail-label">Birthday Calendar</p>
+              <h3>Upcoming celebrations</h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            *ngFor="let birthday of upcomingBirthdays"
+            class="rail-highlight tone-info text-left"
+            (click)="selectDm(birthday.id, true)"
+          >
+            <div class="rail-highlight-topline">
+              <span class="rail-highlight-pill">
+                {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+              </span>
+              <time>{{ birthday.birthdayMonthDayLabel }}</time>
+            </div>
+            <div class="rail-highlight-meta">
+              <strong>{{ birthday.fullName }}</strong>
+              <span>{{ birthday.jobTitle || birthday.department || 'Team member' }}</span>
+            </div>
+            <p>
+              {{
+                birthday.birthdayIsToday
+                  ? 'Send a birthday wish in direct message.'
+                  : 'Birthday comes up in ' + birthday.birthdayCountdownLabel.toLowerCase() + '.'
+              }}
+            </p>
+          </button>
+        </section>
+
         <section class="rail-card" *ngIf="taskRoutineTodos.length">
           <div class="rail-card-header">
             <div>
@@ -1664,6 +1732,93 @@
   ></app-call-modal>
 
 </div>
+
+<p-dialog
+  [(visible)]="dmDeactivateDialog.open"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(92vw, 440px)' }"
+  header="Deactivate DM user"
+>
+  <div class="flex flex-col gap-4">
+    <p class="text-sm text-gray-600 m-0">
+      Deactivate
+      <strong class="text-gray-900">{{ dmDeactivateDialog.contact?.fullName || dmDeactivateDialog.contact?.shortName }}</strong>
+      from direct messages? They will no longer appear in the DM user list.
+    </p>
+    <p *ngIf="dmDeactivateDialog.error" class="text-sm text-red-600 m-0">
+      {{ dmDeactivateDialog.error }}
+    </p>
+    <div class="flex items-center justify-end gap-2">
+      <button
+        type="button"
+        class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+        [disabled]="dmDeactivateDialog.saving"
+        (click)="closeDmDeactivateDialog()"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60"
+        [disabled]="dmDeactivateDialog.saving"
+        (click)="confirmDmDeactivate()"
+      >
+        {{ dmDeactivateDialog.saving ? 'Deactivating...' : 'Deactivate' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="deactivatedDmUsersDialog.open"
+  [modal]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(94vw, 560px)' }"
+  header="Deactivated DM users"
+>
+  <div class="flex flex-col gap-4">
+    <div *ngIf="deactivatedDmUsersDialog.loading" class="text-sm text-gray-500">
+      Loading deactivated users...
+    </div>
+    <p *ngIf="deactivatedDmUsersDialog.error" class="text-sm text-red-600 m-0">
+      {{ deactivatedDmUsersDialog.error }}
+    </p>
+    <div
+      *ngIf="!deactivatedDmUsersDialog.loading && !deactivatedDmUsersDialog.users.length"
+      class="rounded-xl border border-gray-200 px-4 py-6 text-center text-sm text-gray-500"
+    >
+      No deactivated DM users.
+    </div>
+    <div class="flex flex-col divide-y divide-gray-100">
+      <div
+        *ngFor="let user of deactivatedDmUsersDialog.users"
+        class="flex items-center justify-between gap-3 py-3"
+      >
+        <div class="min-w-0">
+          <p class="m-0 text-sm font-semibold text-gray-900 truncate">
+            {{ user.username || user.email || ('User ' + user.id) }}
+          </p>
+          <p class="m-0 text-xs text-gray-500 truncate">
+            {{ user.email }} · {{ user.accountState || 'SUSPENDED' }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="px-3 py-2 rounded-lg text-xs font-semibold text-[#2e6276] bg-[#e8f1f4] hover:bg-[#d7e8ee] disabled:opacity-60"
+          [disabled]="deactivatedDmUsersDialog.restoringUserId === user.id"
+          (click)="restoreDmUser(user)"
+        >
+          {{ deactivatedDmUsersDialog.restoringUserId === user.id ? 'Enabling...' : 'Enable' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</p-dialog>
 
 <p-dialog
   [(visible)]="feedMediaViewerOpen"

@@ -26,7 +26,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
   private wsConnected = false;
   private started = false;
   private currentUserId = 0;
-  private currentRouteUserId = '';
+  private currentRouteUuid = '';
   private channelTargets = new Map<number, GlobalChatChannelTarget>();
   private channelSubs = new Map<number, any>();
   private userNameCache = new Map<number, string>();
@@ -48,8 +48,8 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     private readonly ngZone: NgZone,
   ) {}
 
-  start(currentRouteUserId: string): void {
-    this.currentRouteUserId = currentRouteUserId || this.currentRouteUserId;
+  start(currentRouteUuid: string): void {
+    this.currentRouteUuid = currentRouteUuid || this.currentRouteUuid;
     this.currentUserId = this.resolveCurrentUserId();
     if (!this.currentUserId || this.started) {
       return;
@@ -265,7 +265,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       return;
     }
 
-    const routeUserId = this.currentRouteUserId || String(this.currentUserId);
+    const routeUuid = this.resolveCollaborationRouteUuid();
     nextTargets.forEach((target, backendId) => {
       const previousUnread = Number(previousTargets.get(backendId)?.unreadCount || 0);
       const nextUnread = Number(target.unreadCount || 0);
@@ -275,25 +275,39 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       const increase = nextUnread - previousUnread;
       const notificationTarget = {
         workspaceMode: 'chat' as const,
-        route: `/admin/dashboard/communications/${routeUserId}`,
+        route: `/admin/dashboard/communications/${routeUuid}`,
         channelBackendId:
           target.type === 'channel' ? target.backendId : undefined,
         dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
       };
-      const title =
-        target.type === 'dm' ? 'New direct message' : `New message in ${target.label}`;
-      const detail =
-        increase === 1
-          ? 'You have 1 new unread message.'
-          : `You have ${increase} new unread messages.`;
-      this.publishIncomingNotification(
-        target,
+      this.loadVerifiedIncomingMessage(
+        target.backendId,
         {
-          title,
-          detail,
-          createdAt: Date.now(),
+          senderName: '',
+          content:
+            increase === 1
+              ? 'You have 1 new unread message.'
+              : `You have ${increase} new unread messages.`,
         },
-        notificationTarget,
+        0,
+        (latestMessage) =>
+          this.resolveIncomingDisplay(
+            target,
+            {
+              senderName: '',
+              content:
+                increase === 1
+                  ? 'You have 1 new unread message.'
+                  : `You have ${increase} new unread messages.`,
+            },
+            latestMessage,
+            (resolved) =>
+              this.publishIncomingNotification(
+                target,
+                resolved,
+                notificationTarget,
+              ),
+          ),
       );
     });
   }
@@ -419,11 +433,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         this.bumpUnreadSnapshot(target);
         this.refreshChannels(true);
 
-        const routeUserId =
-          this.currentRouteUserId || String(this.currentUserId);
+        const routeUuid = this.resolveCollaborationRouteUuid();
         const notificationTargetBase = {
           workspaceMode: 'chat' as const,
-          route: `/admin/dashboard/communications/${routeUserId}`,
+          route: `/admin/dashboard/communications/${routeUuid}`,
           channelBackendId:
             target.type === 'channel' ? target.backendId : undefined,
           dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
@@ -515,6 +528,29 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     return ids.find((value) => Number(value) !== Number(this.currentUserId));
   }
 
+  private resolveCollaborationRouteUuid(): string {
+    const fromRouter = this.extractRouteUuid(this.router.url);
+    if (fromRouter) {
+      return fromRouter;
+    }
+    const fromCurrent = this.extractRouteUuid(this.currentRouteUuid);
+    if (fromCurrent) {
+      return fromCurrent;
+    }
+    return (
+      String(sessionStorage.getItem('uuid') || '').trim() ||
+      String(localStorage.getItem('uuid') || '').trim() ||
+      'uu'
+    );
+  }
+
+  private extractRouteUuid(url: string): string {
+    const match = String(url || '').match(
+      /\/admin\/dashboard\/communications\/([^/?#]+)/,
+    );
+    return match?.[1] || '';
+  }
+
   private showBrowserNotification(
     title: string,
     body: string,
@@ -576,6 +612,19 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     },
   ): void {
     this.ngZone.run(() => {
+      this.headerStateService.pushMessagePreview({
+        title: resolved.title,
+        body: resolved.detail,
+        createdAt: resolved.createdAt,
+        route: notificationTarget.route,
+        avatarUrl: resolved.avatarUrl,
+        contextLabel: target.type === 'dm' ? 'Direct message' : target.label,
+        workspaceMode: 'chat',
+        channelBackendId: notificationTarget.channelBackendId,
+        dmUserId: notificationTarget.dmUserId,
+        messageBackendId: notificationTarget.messageBackendId,
+        threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
+      });
       this.headerStateService.pushNotification({
         title: resolved.title,
         body: resolved.detail,

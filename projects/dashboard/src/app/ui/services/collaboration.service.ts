@@ -109,12 +109,20 @@ export interface UserPrimaryInfo {
   companyName?: string;
   industry?: string;
   bio?: string;
+  dob?: string;
+  DOB?: string;
+  birthDate?: string;
+  dateOfBirth?: string;
+  accountVerified?: boolean | string;
+  accountState?: string;
   user?: {
     id?: number;
     username?: string;
     email?: string;
     fullname?: string;
     userId?: number;
+    accountVerified?: boolean | string;
+    accountState?: string;
   };
   profilePic?: {
     id?: number;
@@ -138,7 +146,10 @@ export interface EmployeeProfile {
   email?: string;
   profileImage?: string;
   userId?: number;
+  accountVerified?: boolean | string;
+  accountState?: string;
   jobTitle?: string;
+  dob?: string;
   department?: { id: number; name: string; code: string };
   employeeMedia?: EmployeeMedia | null;
   employeeStatus?: string;
@@ -148,6 +159,8 @@ export interface EmployeeProfile {
     userId: number;
     email?: string;
     username?: string;
+    accountVerified?: boolean | string;
+    accountState?: string;
   };
 }
 
@@ -585,6 +598,29 @@ export class CollaborationService {
   getUserPrimaryInfoByUserId(userId: number): Observable<UserPrimaryInfo> {
     return this.http.get<UserPrimaryInfo>(
       `${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info/${userId}`,
+      { headers: this.headers },
+    );
+  }
+
+  deactivateDmUser(userId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/${userId}/deactivate-dm`,
+      {},
+      { headers: this.headers },
+    );
+  }
+
+  getDeactivatedDmUsers(): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/deactivated-dm`,
+      { headers: this.headers },
+    );
+  }
+
+  restoreDmUser(userId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/x/api/v2/us/ur/users/${userId}/restore-dm`,
+      {},
       { headers: this.headers },
     );
   }

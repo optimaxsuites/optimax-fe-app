@@ -31,7 +31,7 @@ import {
   CollabFeedReactionUser,
   TaskRoutineSummary,
 } from '../ui/services/collaboration.service';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, forkJoin, of } from 'rxjs';
 import { HeaderStateService } from '../../../../../src/app/ui/shared/service/header-state.service';
 import {
   ComposerLinkPreview,
@@ -149,6 +149,8 @@ export interface DmContact {
   avatarColor: string;
   avatarUrl?: string;
   email?: string;
+  accountVerified?: boolean | string;
+  accountState?: string;
   jobTitle?: string;
   department?: string;
   online: boolean;
@@ -158,6 +160,29 @@ export interface DmContact {
   dmChannelIds?: number[];
   lastMessagePreview?: string;
   lastMessageTime?: string;
+  dob?: string;
+  birthdayMonthDayLabel?: string;
+  birthdayCountdownLabel?: string;
+  daysUntilBirthday?: number | null;
+  birthdayIsToday?: boolean;
+}
+
+interface BirthdayReminderItem {
+  id: string;
+  employeeId: number;
+  userId: number;
+  fullName: string;
+  shortName: string;
+  initials: string;
+  avatarColor: string;
+  avatarUrl?: string;
+  jobTitle?: string;
+  department?: string;
+  dob: string;
+  birthdayMonthDayLabel: string;
+  birthdayCountdownLabel: string;
+  daysUntilBirthday: number;
+  birthdayIsToday: boolean;
 }
 
 interface CollaborationFeedHighlight {
@@ -280,6 +305,7 @@ const AVATAR_COLORS = [
   '#0ea5e9',
 ];
 const FEED_URL_REGEX = /((https?:\/\/|www\.)[^\s<]+)/gi;
+const BIRTHDAY_REMINDER_WINDOW_DAYS = 10;
 
 export function _colorFor(seed: number): string {
   return AVATAR_COLORS[Math.abs(seed) % AVATAR_COLORS.length];
@@ -546,6 +572,7 @@ export class CommunicationComponent
 
   workspaceHighlights: CollaborationFeedHighlight[] = [];
   taskRoutineTodos: TaskRoutineSummary[] = [];
+  upcomingBirthdays: BirthdayReminderItem[] = [];
 
   workspaceFocusItems: CollaborationFocusItem[] = [];
   chatArrivalToasts: ChatArrivalToast[] = [];
@@ -588,6 +615,30 @@ export class CommunicationComponent
   private readonly CHANNELS_CACHE_TTL_MS = 15_000;
   employeesLoading = true;
   employeesError: string | null = null;
+  dmDeactivateDialog: {
+    open: boolean;
+    contact: DmContact | null;
+    saving: boolean;
+    error: string;
+  } = {
+    open: false,
+    contact: null,
+    saving: false,
+    error: '',
+  };
+  deactivatedDmUsersDialog: {
+    open: boolean;
+    loading: boolean;
+    error: string;
+    users: any[];
+    restoringUserId: number | null;
+  } = {
+    open: false,
+    loading: false,
+    error: '',
+    users: [],
+    restoringUserId: null,
+  };
   messagesLoading = false;
   conversationAccessMessage = '';
   soundEnabled = true;
@@ -834,7 +885,7 @@ export class CommunicationComponent
       title: payload.title,
       body: payload.body,
       createdAt: Date.now(),
-      route: `/admin/dashboard/communications/${this.me.userId}`,
+      route: this.resolveCollaborationRoute(),
       avatarUrl: payload.avatarUrl,
       contextLabel: payload.contextLabel,
       workspaceMode: 'chat',
@@ -1019,6 +1070,156 @@ export class CommunicationComponent
   onSidebarDmSelected(id: string): void {
     this.closeMobileSidebar();
     this.selectDm(id);
+  }
+
+  deactivateDmContact(contact: DmContact): void {
+    if (!this.canManageChannels || !contact?.userId) {
+      return;
+    }
+    this.dmDeactivateDialog = {
+      open: true,
+      contact,
+      saving: false,
+      error: '',
+    };
+    this.closeMobileSidebar();
+  }
+
+  closeDmDeactivateDialog(): void {
+    if (this.dmDeactivateDialog.saving) {
+      return;
+    }
+    this.dmDeactivateDialog = {
+      open: false,
+      contact: null,
+      saving: false,
+      error: '',
+    };
+  }
+
+  confirmDmDeactivate(): void {
+    const contact = this.dmDeactivateDialog.contact;
+    if (!this.canManageChannels || !contact?.userId || this.dmDeactivateDialog.saving) {
+      return;
+    }
+    this.dmDeactivateDialog = {
+      ...this.dmDeactivateDialog,
+      saving: true,
+      error: '',
+    };
+
+    this.collabService.deactivateDmUser(contact.userId).subscribe({
+      next: () => {
+        this.dmContacts = this.dmContacts.filter((dm) => dm.id !== contact.id);
+        this.allEmployees = this.allEmployees.map((employee) => {
+          const employeeUserId = Number(this.employeeUserId(employee) || 0);
+          if (employeeUserId !== Number(contact.userId)) {
+            return employee;
+          }
+          return {
+            ...employee,
+            accountVerified: false,
+            accountState: 'SUSPENDED',
+            user: employee.user
+              ? {
+                  ...employee.user,
+                  accountVerified: false,
+                  accountState: 'SUSPENDED',
+                }
+              : employee.user,
+          };
+        });
+        if (this.activeView === 'dm' && this.activeDmId === contact.id) {
+          this.activeDmId = '';
+          if (this.channels.length) {
+            this.selectChannel(this.channels[0].id);
+          }
+        }
+        this.upcomingBirthdays = this.buildUpcomingBirthdays(this.dmContacts);
+        this.closeMobileSidebar();
+        this.dmDeactivateDialog = {
+          open: false,
+          contact: null,
+          saving: false,
+          error: '',
+        };
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.dmDeactivateDialog = {
+          ...this.dmDeactivateDialog,
+          saving: false,
+          error: 'Unable to deactivate this direct message user. Please try again.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openDeactivatedDmUsersDialog(): void {
+    if (!this.canManageChannels) {
+      return;
+    }
+    this.deactivatedDmUsersDialog = {
+      open: true,
+      loading: true,
+      error: '',
+      users: [],
+      restoringUserId: null,
+    };
+    this.closeMobileSidebar();
+    this.collabService.getDeactivatedDmUsers().subscribe({
+      next: (users) => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          loading: false,
+          users: Array.isArray(users) ? users : [],
+          error: '',
+        };
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          loading: false,
+          error: 'Unable to load deactivated DM users.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  restoreDmUser(user: any): void {
+    const userId = Number(user?.id || 0);
+    if (!this.canManageChannels || !userId || this.deactivatedDmUsersDialog.restoringUserId) {
+      return;
+    }
+    this.deactivatedDmUsersDialog = {
+      ...this.deactivatedDmUsersDialog,
+      restoringUserId: userId,
+      error: '',
+    };
+    this.collabService.restoreDmUser(userId).subscribe({
+      next: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          restoringUserId: null,
+          users: this.deactivatedDmUsersDialog.users.filter(
+            (item) => Number(item?.id || 0) !== userId,
+          ),
+        };
+        this.loadEmployees(true);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.deactivatedDmUsersDialog = {
+          ...this.deactivatedDmUsersDialog,
+          restoringUserId: null,
+          error: 'Unable to enable this user. Please try again.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   onSidebarViewSet(v: 'threads'): void {
@@ -1391,7 +1592,7 @@ export class CommunicationComponent
 
   private shareableFeedPostUrl(post: CollabFeedPost): string {
     const base = window.location.origin || '';
-    const path = `/admin/dashboard/communications/${this.me.userId}#post-${post.id}`;
+    const path = `${this.resolveCollaborationRoute()}#post-${post.id}`;
     return `${base}${path}`;
   }
 
@@ -2105,7 +2306,7 @@ export class CommunicationComponent
       title: `${this.feedAuthorName(notification.actor)} mentioned everyone`,
       body: notification.body || notification.title || '@all notification',
       category: 'feed',
-      route: `/admin/dashboard/communications/${this.me.userId}`,
+      route: this.resolveCollaborationRoute(),
       avatarUrl: this.feedAuthorAvatarUrl(notification.actor),
       contextLabel: 'Enterprise feed',
       workspaceMode: 'feed',
@@ -2961,7 +3162,7 @@ export class CommunicationComponent
               title: incoming.senderName || ch.name,
               body: incoming.content || `New message in ${ch.name}`,
               category: 'chat',
-              route: `/admin/dashboard/communications/${this.me.userId}`,
+              route: this.resolveCollaborationRoute(),
               avatarUrl: incoming.avatarUrl,
               contextLabel: ch.name,
               workspaceMode: 'chat',
@@ -3069,7 +3270,7 @@ export class CommunicationComponent
               title: incoming.senderName || contact.fullName,
               body: incoming.content || `New direct message from ${contact.fullName}`,
               category: 'chat',
-              route: `/admin/dashboard/communications/${this.me.userId}`,
+              route: this.resolveCollaborationRoute(),
               avatarUrl: incoming.avatarUrl || contact.avatarUrl,
               contextLabel: 'Direct message',
               workspaceMode: 'chat',
@@ -3605,6 +3806,14 @@ export class CommunicationComponent
       email: profile?.email || profile?.user?.email || '',
       profileImage: profile?.profileImage || '',
       userId: normalizedUserId || undefined,
+      accountVerified: profile?.accountVerified ?? profile?.user?.accountVerified,
+      accountState: profile?.accountState || profile?.user?.accountState || '',
+      dob:
+        profile?.dob ||
+        profile?.DOB ||
+        profile?.birthDate ||
+        profile?.dateOfBirth ||
+        undefined,
       employeeStatus: 'ACTIVE',
       employeeMedia: null,
       user: normalizedUserId
@@ -3614,9 +3823,29 @@ export class CommunicationComponent
             fullname: normalizedFullName,
             email: profile?.email || profile?.user?.email || '',
             username: profile?.username || profile?.user?.username || '',
+            accountVerified: profile?.accountVerified ?? profile?.user?.accountVerified,
+            accountState: profile?.accountState || profile?.user?.accountState || '',
           }
         : undefined,
     };
+  }
+
+  private isDmEligibleAccount(employee: EmployeeProfile | null | undefined): boolean {
+    if (!employee) {
+      return false;
+    }
+    const verifiedRaw =
+      employee.accountVerified ?? employee.user?.accountVerified ?? false;
+    const accountVerified =
+      verifiedRaw === true ||
+      String(verifiedRaw || '').trim().toLowerCase() === 'true';
+    const accountState = this.normalizeIdentityText(
+      employee.accountState || employee.user?.accountState || '',
+    );
+    if (accountState === 'suspended' || accountState === 'closed') {
+      return false;
+    }
+    return accountVerified || accountState === 'opened';
   }
 
   private isOwnUserId(userId: number | null | undefined): boolean {
@@ -3705,15 +3934,95 @@ export class CommunicationComponent
     return (contacts || []).filter((contact) => !this.isOwnDmContact(contact));
   }
 
-  private loadEmployees(): void {
+  private loadEmployees(_forceRefresh = false): void {
     this.employeesLoading = true;
-    this.collabService.getAllUserPrimaryInformation().subscribe({
-      next: (res) => {
-        const profiles: UserPrimaryInfo[] = Array.isArray(res)
-          ? res
-          : (res as any)?.content ?? (res as any)?.data ?? [];
-        const list: EmployeeProfile[] = profiles
-          .map((profile) => this.mapUserPrimaryInfoToEmployee(profile))
+    forkJoin({
+      profiles: this.collabService.getAllUserPrimaryInformation(),
+      hrEmployees: this.collabService.getAllEmployees().pipe(
+        catchError(() => of([])),
+      ),
+    }).subscribe({
+      next: ({ profiles: profilesResponse, hrEmployees: hrEmployeesResponse }) => {
+        const profiles: UserPrimaryInfo[] = Array.isArray(profilesResponse)
+          ? profilesResponse
+          : (profilesResponse as any)?.content ?? (profilesResponse as any)?.data ?? [];
+        const hrEmployees = this.extractHrEmployees(hrEmployeesResponse);
+        const hrEmployeeByUserId = new Map<number, any>();
+        const hrEmployeeByEmail = new Map<string, any>();
+        const hrEmployeeByName = new Map<string, any>();
+        for (const employee of hrEmployees) {
+          const userId = Number(
+            employee?.userId ||
+              employee?.user?.userId ||
+              employee?.user?.id ||
+              employee?.account?.userId ||
+              0,
+          );
+          if (userId) {
+            hrEmployeeByUserId.set(userId, employee);
+          }
+          const email = this.normalizeIdentityText(
+            employee?.email || employee?.user?.email || '',
+          );
+          if (email) {
+            hrEmployeeByEmail.set(email, employee);
+          }
+          const fullName = this.normalizeIdentityText(
+            employee?.fullname ||
+              employee?.fullName ||
+              `${employee?.firstName || ''} ${employee?.lastName || ''}`,
+          );
+          if (fullName) {
+            hrEmployeeByName.set(fullName, employee);
+          }
+        }
+        const mergedProfiles = new Map<number, EmployeeProfile>();
+        profiles.forEach((profile) => {
+          const mappedProfile = this.mapUserPrimaryInfoToEmployee(profile);
+          const profileUserId = Number(
+            profile?.userId ||
+              profile?.user?.userId ||
+              profile?.user?.id ||
+              profile?.id ||
+              0,
+          );
+          const profileEmail = this.normalizeIdentityText(
+            profile?.email || profile?.user?.email || '',
+          );
+          const profileName = this.normalizeIdentityText(
+            profile?.fullname || profile?.user?.fullname || '',
+          );
+          const hrRecord =
+            hrEmployeeByUserId.get(profileUserId) ||
+            hrEmployeeByEmail.get(profileEmail) ||
+            hrEmployeeByName.get(profileName);
+          const merged = this.mergeEmployeeProfileWithHrRecord(
+            mappedProfile,
+            hrRecord,
+          );
+          const key = Number(this.employeeUserId(merged) || merged.id || 0);
+          if (key) {
+            mergedProfiles.set(key, merged);
+          }
+        });
+        hrEmployees.forEach((employee) => {
+          const mapped = this.mapHrEmployeeToEmployeeProfile(employee);
+          if (!mapped) {
+            return;
+          }
+          const key = Number(this.employeeUserId(mapped) || mapped.id || 0);
+          if (!key) {
+            return;
+          }
+          const existing = mergedProfiles.get(key);
+          mergedProfiles.set(
+            key,
+            existing
+              ? this.mergeEmployeeProfileWithHrRecord(existing, employee)
+              : mapped,
+          );
+        });
+        const list: EmployeeProfile[] = Array.from(mergedProfiles.values())
           .filter((profile) => this.employeeUserId(profile) != null);
         const existingContacts = new Map(
           this.dmContacts.map((contact) => [Number(contact.userId), contact]),
@@ -3723,7 +4032,8 @@ export class CommunicationComponent
           .filter(
             (e) =>
               this.employeeUserId(e) != null &&
-              !this.isOwnUserId(this.employeeUserId(e)),
+              !this.isOwnUserId(this.employeeUserId(e)) &&
+              this.isDmEligibleAccount(e),
           )
           .map((e) => {
             const first = e.firstName || '',
@@ -3744,9 +4054,12 @@ export class CommunicationComponent
               initials: initialsFrom(fullName),
               avatarColor: _colorFor(e.id),
               email: e.user?.email || e.email || '',
+              accountVerified: e.accountVerified ?? e.user?.accountVerified,
+              accountState: e.accountState || e.user?.accountState || '',
               jobTitle: e.jobTitle,
               department: e.department?.name,
               online: false,
+              dob: e.dob,
             };
             const existing = existingContacts.get(contact.userId);
             if (existing) {
@@ -3755,6 +4068,7 @@ export class CommunicationComponent
               contact.hasUnread = existing.hasUnread;
               contact.avatarUrl = existing.avatarUrl || contact.avatarUrl;
             }
+            this.applyBirthdayReminderToContact(contact);
             if (contact.email) {
               this.userEmailCache[contact.userId] = contact.email;
             }
@@ -3766,6 +4080,8 @@ export class CommunicationComponent
             return contact;
           });
         this.dmContacts = this.stripSelfFromDmContacts(this.dmContacts);
+        this.upcomingBirthdays = this.buildUpcomingBirthdays(this.dmContacts);
+        this.enrichBirthdaysFromHrDetails(this.dmContacts);
         if (this.cachedCollabChannels.length) {
           this.mapDirectMessageChannels(this.cachedCollabChannels);
         } else {
@@ -3789,9 +4105,439 @@ export class CommunicationComponent
       error: () => {
         this.employeesError = 'Could not load contacts.';
         this.employeesLoading = false;
+        this.upcomingBirthdays = [];
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private extractHrEmployees(response: any): any[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (Array.isArray(response?.content)) {
+      return response.content;
+    }
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+    if (Array.isArray(response?.items)) {
+      return response.items;
+    }
+    return [];
+  }
+
+  private mergeEmployeeProfileWithHrRecord(
+    profile: EmployeeProfile,
+    employee: any,
+  ): EmployeeProfile {
+    if (!employee) {
+      return profile;
+    }
+    const firstName =
+      String(employee?.firstName || employee?.firstname || profile.firstName || '').trim();
+    const lastName =
+      String(employee?.lastName || employee?.lastname || profile.lastName || '').trim();
+    const fullName =
+      String(
+        employee?.fullname ||
+          employee?.fullName ||
+          `${firstName} ${lastName}`.trim() ||
+          profile.fullname ||
+          profile.user?.fullname ||
+          '',
+      ).trim();
+    const departmentName =
+      employee?.department?.name ||
+      employee?.departmentName ||
+      employee?.department ||
+      profile.department?.name ||
+      '';
+    const departmentCode =
+      employee?.department?.code ||
+      profile.department?.code ||
+      departmentName
+        .toString()
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-');
+    const media =
+      employee?.employeeMedia ||
+      employee?.profilePic ||
+      employee?.profilePicture ||
+      null;
+
+    return {
+      ...profile,
+      id: Number(employee?.id || employee?.employeeId || profile.id || 0) || profile.id,
+      firstName: firstName || profile.firstName,
+      lastName: lastName || profile.lastName,
+      fullname: fullName || profile.fullname,
+      email:
+        employee?.email ||
+        employee?.user?.email ||
+        profile.email ||
+        profile.user?.email ||
+        '',
+      accountVerified:
+        employee?.accountVerified ??
+        employee?.user?.accountVerified ??
+        employee?.account?.accountVerified ??
+        profile.accountVerified ??
+        profile.user?.accountVerified,
+      accountState:
+        employee?.accountState ||
+        employee?.user?.accountState ||
+        employee?.account?.accountState ||
+        profile.accountState ||
+        profile.user?.accountState ||
+        '',
+      username:
+        employee?.username ||
+        employee?.user?.username ||
+        profile.username ||
+        profile.user?.username ||
+        '',
+      userId:
+        Number(
+          employee?.userId ||
+            employee?.user?.userId ||
+            employee?.user?.id ||
+            profile.userId ||
+            0,
+        ) || profile.userId,
+      jobTitle:
+        employee?.jobTitle ||
+        employee?.designation ||
+        employee?.position ||
+        profile.jobTitle,
+      dob:
+        employee?.DOB ||
+        employee?.dob ||
+        employee?.birthDate ||
+        employee?.dateOfBirth ||
+        profile.dob,
+      department: departmentName
+        ? {
+            id: Number(employee?.department?.id || profile.department?.id || 0),
+            name: String(departmentName),
+            code: String(departmentCode || 'DEPARTMENT'),
+          }
+        : profile.department,
+      employeeMedia:
+        media && media?.mediaNo
+          ? {
+              id: Number(media?.id || 0),
+              name: String(media?.name || 'profile-image'),
+              mediaNo: String(media.mediaNo),
+            }
+          : profile.employeeMedia,
+      user:
+        profile.userId || employee?.userId || employee?.user?.userId || employee?.user?.id
+          ? {
+              id: Number(
+                employee?.user?.id ||
+                  employee?.userId ||
+                  employee?.user?.userId ||
+                  profile.user?.id ||
+                  profile.userId ||
+                  0,
+              ),
+              userId: Number(
+                employee?.userId ||
+                  employee?.user?.userId ||
+                  employee?.user?.id ||
+                  profile.user?.userId ||
+                  profile.userId ||
+                  0,
+              ),
+              fullname: fullName || profile.user?.fullname || profile.fullname || '',
+              email:
+                employee?.user?.email ||
+                employee?.email ||
+                profile.user?.email ||
+                profile.email ||
+                '',
+              username:
+                employee?.user?.username ||
+                employee?.username ||
+                profile.user?.username ||
+                profile.username ||
+                '',
+              accountVerified:
+                employee?.accountVerified ??
+                employee?.user?.accountVerified ??
+                employee?.account?.accountVerified ??
+                profile.user?.accountVerified ??
+                profile.accountVerified,
+              accountState:
+                employee?.accountState ||
+                employee?.user?.accountState ||
+                employee?.account?.accountState ||
+                profile.user?.accountState ||
+                profile.accountState ||
+                '',
+            }
+          : profile.user,
+    };
+  }
+
+  private mapHrEmployeeToEmployeeProfile(employee: any): EmployeeProfile | null {
+    if (!employee) {
+      return null;
+    }
+    const merged = this.mergeEmployeeProfileWithHrRecord(
+      {
+        id: Number(employee?.id || employee?.employeeId || 0),
+        firstName: String(employee?.firstName || employee?.firstname || '').trim(),
+        lastName: String(employee?.lastName || employee?.lastname || '').trim(),
+        fullname: String(
+          employee?.fullname ||
+            employee?.fullName ||
+            `${employee?.firstName || ''} ${employee?.lastName || ''}`,
+        ).trim(),
+        username: String(employee?.username || employee?.user?.username || '').trim(),
+        email: String(employee?.email || employee?.user?.email || '').trim(),
+        accountVerified:
+          employee?.accountVerified ??
+          employee?.user?.accountVerified ??
+          employee?.account?.accountVerified,
+        accountState:
+          employee?.accountState ||
+          employee?.user?.accountState ||
+          employee?.account?.accountState ||
+          '',
+        profileImage: String(employee?.profileImage || '').trim(),
+        userId: Number(
+          employee?.userId ||
+            employee?.user?.userId ||
+            employee?.user?.id ||
+            0,
+        ) || undefined,
+        jobTitle: String(
+          employee?.jobTitle || employee?.designation || employee?.position || '',
+        ).trim(),
+        dob:
+          employee?.DOB ||
+          employee?.dob ||
+          employee?.birthDate ||
+          employee?.dateOfBirth ||
+          undefined,
+        department: undefined,
+        employeeMedia: null,
+        employeeStatus: String(employee?.employeeStatus || 'ACTIVE').trim(),
+        user: undefined,
+      },
+      employee,
+    );
+    return this.employeeUserId(merged) != null ? merged : null;
+  }
+
+  private normalizeBirthdaySource(raw: unknown): string | null {
+    if (typeof raw !== 'string') {
+      return null;
+    }
+    const value = raw.trim();
+    if (!value) {
+      return null;
+    }
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) {
+      return null;
+    }
+    const year = parsed.getUTCFullYear();
+    const month = `${parsed.getUTCMonth() + 1}`.padStart(2, '0');
+    const day = `${parsed.getUTCDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private computeBirthdayReminder(rawDob: string | null | undefined): {
+    dob: string;
+    birthdayMonthDayLabel: string;
+    birthdayCountdownLabel: string;
+    daysUntilBirthday: number;
+    birthdayIsToday: boolean;
+  } | null {
+    const normalized = this.normalizeBirthdaySource(rawDob);
+    if (!normalized) {
+      return null;
+    }
+    const [, monthRaw, dayRaw] = normalized.split('-');
+    const birthMonth = Number(monthRaw || 0);
+    const birthDay = Number(dayRaw || 0);
+    if (!birthMonth || !birthDay) {
+      return null;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let nextBirthday = new Date(today.getFullYear(), birthMonth - 1, birthDay);
+    if (
+      nextBirthday.getMonth() !== birthMonth - 1 ||
+      nextBirthday.getDate() !== birthDay
+    ) {
+      return null;
+    }
+    if (nextBirthday.getTime() < today.getTime()) {
+      nextBirthday = new Date(today.getFullYear() + 1, birthMonth - 1, birthDay);
+    }
+    const daysUntilBirthday = Math.round(
+      (nextBirthday.getTime() - today.getTime()) / 86400000,
+    );
+    const birthdayMonthDayLabel = nextBirthday.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+    });
+    const birthdayIsToday = daysUntilBirthday === 0;
+    const birthdayCountdownLabel = birthdayIsToday
+      ? 'Today'
+      : daysUntilBirthday === 1
+        ? 'Tomorrow'
+        : `${daysUntilBirthday} days`;
+    return {
+      dob: normalized,
+      birthdayMonthDayLabel,
+      birthdayCountdownLabel,
+      daysUntilBirthday,
+      birthdayIsToday,
+    };
+  }
+
+  private applyBirthdayReminderToContact(contact: DmContact): void {
+    const reminder = this.computeBirthdayReminder(contact.dob);
+    contact.birthdayMonthDayLabel = reminder?.birthdayMonthDayLabel;
+    contact.birthdayCountdownLabel =
+      reminder && reminder.daysUntilBirthday <= BIRTHDAY_REMINDER_WINDOW_DAYS
+        ? reminder.birthdayCountdownLabel
+        : undefined;
+    contact.daysUntilBirthday = reminder?.daysUntilBirthday ?? null;
+    contact.birthdayIsToday = reminder?.birthdayIsToday ?? false;
+  }
+
+  private buildUpcomingBirthdays(contacts: DmContact[]): BirthdayReminderItem[] {
+    return (contacts || [])
+      .map((contact) => {
+        const reminder = this.computeBirthdayReminder(contact.dob);
+        if (!reminder) {
+          return null;
+        }
+        return {
+          id: contact.id,
+          employeeId: contact.employeeId,
+          userId: contact.userId,
+          fullName: contact.fullName,
+          shortName: contact.shortName,
+          initials: contact.initials,
+          avatarColor: contact.avatarColor,
+          avatarUrl: contact.avatarUrl,
+          jobTitle: contact.jobTitle,
+          department: contact.department,
+          dob: reminder.dob,
+          birthdayMonthDayLabel: reminder.birthdayMonthDayLabel,
+          birthdayCountdownLabel: reminder.birthdayCountdownLabel,
+          daysUntilBirthday: reminder.daysUntilBirthday,
+          birthdayIsToday: reminder.birthdayIsToday,
+        } as BirthdayReminderItem;
+      })
+      .filter((entry): entry is BirthdayReminderItem => !!entry)
+      .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday)
+      .slice(0, 8);
+  }
+
+  private enrichBirthdaysFromHrDetails(contacts: DmContact[]): void {
+    const contactsMissingDob = (contacts || []).filter(
+      (contact) => contact.userId && !this.normalizeBirthdaySource(contact.dob),
+    );
+    if (!contactsMissingDob.length) {
+      return;
+    }
+
+    const detailRequests = contactsMissingDob.map((contact) =>
+      this.collabService.getEmployeeByUserId(contact.userId).pipe(
+        catchError(() => of(null)),
+      ),
+    );
+
+    forkJoin(detailRequests).subscribe((responses) => {
+      let updated = false;
+
+      responses.forEach((response, index) => {
+        const contact = contactsMissingDob[index];
+        if (!contact) {
+          return;
+        }
+
+        const employee = (response as any)?.data || response || null;
+        const dob = this.normalizeBirthdaySource(
+          employee?.DOB ||
+            employee?.dob ||
+            employee?.birthDate ||
+            employee?.dateOfBirth ||
+            employee?.user?.DOB ||
+            employee?.user?.dob ||
+            null,
+        );
+
+        if (!dob) {
+          return;
+        }
+
+        const liveContact = this.dmContacts.find(
+          (entry) => Number(entry.userId) === Number(contact.userId),
+        );
+        if (!liveContact) {
+          return;
+        }
+
+        liveContact.dob = dob;
+        liveContact.jobTitle =
+          liveContact.jobTitle ||
+          employee?.jobTitle ||
+          employee?.designation ||
+          employee?.position ||
+          undefined;
+        liveContact.department =
+          liveContact.department ||
+          employee?.department?.name ||
+          employee?.departmentName ||
+          employee?.department ||
+          undefined;
+        this.applyBirthdayReminderToContact(liveContact);
+        updated = true;
+      });
+
+      if (!updated) {
+        return;
+      }
+
+      this.upcomingBirthdays = this.buildUpcomingBirthdays(this.dmContacts);
+      this.syncHeaderState();
+      this.cdr.detectChanges();
+    });
+  }
+
+  private resolveCollaborationRoute(): string {
+    return `/admin/dashboard/communications/${this.resolveDashboardRouteUuid()}`;
+  }
+
+  private resolveDashboardRouteUuid(): string {
+    if (typeof window !== 'undefined') {
+      const match = window.location.pathname.match(
+        /\/admin\/dashboard\/communications\/([^/?#]+)/,
+      );
+      if (match?.[1]) {
+        return match[1];
+      }
+    }
+    return (
+      String(sessionStorage.getItem('uuid') || '').trim() ||
+      String(localStorage.getItem('uuid') || '').trim() ||
+      'uu'
+    );
   }
 
   private refreshAvatarInMessages(userId: number, avatarUrl: string): void {
@@ -7759,6 +8505,10 @@ export class CommunicationComponent
     return (
       this.showPinnedPanel || !!this.activeThreadId || this.showChannelDetails
     );
+  }
+
+  get birthdayPanelOpen(): boolean {
+    return !this.rightPanelOpen && !this.isMobileViewport();
   }
 
   toggleChatRail(): void {

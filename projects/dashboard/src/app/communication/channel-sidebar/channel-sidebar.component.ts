@@ -3,7 +3,6 @@ import {
   Input,
   Output,
   EventEmitter,
-  OnChanges,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Channel, DmContact } from '../communication.component';
@@ -28,6 +27,20 @@ export class ChannelSidebarComponent {
   @Input() me!: MeInfo;
   @Input() channels: Channel[] = [];
   @Input() dmContacts: DmContact[] = [];
+  @Input() upcomingBirthdays: Array<{
+    id: string;
+    fullName: string;
+    shortName: string;
+    birthdayMonthDayLabel: string;
+    birthdayCountdownLabel: string;
+    birthdayIsToday: boolean;
+    daysUntilBirthday: number;
+    avatarUrl?: string;
+    initials?: string;
+    avatarColor?: string;
+    jobTitle?: string;
+    department?: string;
+  }> = [];
   @Input() activeChannelId = '';
   @Input() activeDmId = '';
   @Input() activeView: 'channel' | 'dm' | 'threads' = 'channel';
@@ -39,6 +52,7 @@ export class ChannelSidebarComponent {
   @Input() selectedRingtone = 'classic';
   @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
   @Input() canCreateChannels = false;
+  @Input() canDeactivateDmUsers = false;
   @Input() searchQuery = '';
   @Input() showSearch = false;
   @Input() searchResults: { msg: any; channelId: string; channelName: string }[] = [];
@@ -48,6 +62,8 @@ export class ChannelSidebarComponent {
   @Output() dmSelected = new EventEmitter<string>();
   @Output() viewSet = new EventEmitter<'threads'>();
   @Output() createChannel = new EventEmitter<void>();
+  @Output() dmDeactivated = new EventEmitter<DmContact>();
+  @Output() deactivatedDmUsersOpened = new EventEmitter<void>();
   @Output() channelsRetried = new EventEmitter<void>();
   @Output() soundToggled = new EventEmitter<void>();
   @Output() ringtoneChanged = new EventEmitter<string>();
@@ -134,6 +150,18 @@ export class ChannelSidebarComponent {
 
   get visibleDmContacts(): DmContact[] {
     return (this.dmContacts || []).filter((contact) => !this.isOwnContact(contact));
+  }
+
+  requestDmDeactivation(event: Event, contact: DmContact): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dmDeactivated.emit(contact);
+  }
+
+  openDeactivatedDmUsers(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.deactivatedDmUsersOpened.emit();
   }
 
   isDocumentLibraryChannel(channel: Channel | null | undefined): boolean {

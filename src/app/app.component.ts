@@ -111,23 +111,12 @@ export class AppComponent implements OnInit {
   }
 
   private syncSessionAuthToLocalStorage(): void {
-    const token =
-      sessionStorage.getItem('Token') ||
-      sessionStorage.getItem('token') ||
-      sessionStorage.getItem('accessToken') ||
-      '';
     const tenantId = sessionStorage.getItem('tenantId') || '';
     const userId = sessionStorage.getItem('userid') || '';
     const username = sessionStorage.getItem('username') || '';
     const fullname = sessionStorage.getItem('fullname') || '';
     const email = sessionStorage.getItem('email') || '';
     const userRegData = sessionStorage.getItem('userRegData') || '';
-
-    if (token) {
-      localStorage.setItem('Token', token);
-      localStorage.setItem('token', token);
-      localStorage.setItem('accessToken', token);
-    }
 
     if (tenantId) {
       localStorage.setItem('tenantId', tenantId);

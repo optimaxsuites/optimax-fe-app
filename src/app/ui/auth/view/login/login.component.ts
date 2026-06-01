@@ -19,6 +19,7 @@ import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions, isSuperUser } fro
 import { SubscriptionService } from 'src/app/ui/marketplace/service/subscription.service';
 import { MetadataService } from 'projects/POS/src/app/ui/service/metadata.service';
 import { TenantService } from 'src/app/ui/tenants/service/tenant.service';
+import { MenuItemsService } from 'src/app/ui/shared/service/menue-items/menu-items.service';
 import { Subscription } from 'rxjs';
 
 
@@ -90,6 +91,7 @@ export class LoginComponent implements OnInit {
     private subscriptionService: SubscriptionService,
     private metadataService: MetadataService,
     private tenantService: TenantService,
+    private menuItemsService: MenuItemsService,
     private cdr: ChangeDetectorRef
   ){}
 
@@ -219,12 +221,13 @@ async posLoginAction(): Promise<void> {
  this.loading = true;
  this.submitted = true;
 
- const loginDetails = {
-  username: this.loginInfo.username,
-  password: this.loginInfo.password,
-  project: `${environment.project}`,
-  apiKey: `${environment.apiKey}`
- };
+	 const loginDetails = {
+	  username: this.loginInfo.username,
+	  password: this.loginInfo.password,
+	  project: `${environment.project}`,
+	  clientId: environment.clientId,
+	  appVersion: environment.appVersion
+	 };
 
  if (!this.loginInfo.username || !this.loginInfo.password) {
   this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
@@ -284,10 +287,11 @@ async posLoginAction(): Promise<void> {
 
     this.loading = true;
 
-    const loginDetails = {
-      eCode: this.posCode,
-      apiKey: `${environment.apiKey}`
-    };
+	    const loginDetails = {
+	      eCode: this.posCode,
+	      clientId: environment.clientId,
+	      appVersion: environment.appVersion
+	    };
 
     try {
       const data = await this.authenticationService.userWithLogin(loginDetails).toPromise();
@@ -429,20 +433,31 @@ async posLoginAction(): Promise<void> {
     localStorage.setItem("fullname", data.fullname || '');
     localStorage.setItem("email", data.email || '');
     localStorage.setItem("userid", String(data.id || ''));
-    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
-    sessionStorage.setItem("Token", token);
-    sessionStorage.setItem("token", token);
-    localStorage.setItem("Token", token);
-    localStorage.setItem("Token2", token);
-    sessionStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("accessToken2", data.accessToken);
+    const accessToken = data.accessToken || data.token || '';
+    if (accessToken) {
+      sessionStorage.setItem("Token", accessToken);
+      sessionStorage.setItem("token", accessToken);
+      sessionStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("Token2", accessToken);
+      localStorage.removeItem("token");
+      localStorage.removeItem("accessToken");
+    } else {
+      sessionStorage.removeItem("Token");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("accessToken");
+      localStorage.removeItem("Token");
+      localStorage.removeItem("Token2");
+      localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("accessToken2");
+    }
     const tenantId = data.tenantId || data.tenant || 'mod';
     sessionStorage.setItem("tenantId", tenantId);
     localStorage.setItem("tenantId", tenantId);
-    sessionStorage["userRegData"] = JSON.stringify(data);
-    localStorage.setItem("userRegData", JSON.stringify(data));
+    const safeUserData = { ...data, accessToken: undefined, token: undefined };
+    sessionStorage["userRegData"] = JSON.stringify(safeUserData);
+    localStorage.setItem("userRegData", JSON.stringify(safeUserData));
 
     let redirectUrl: string | null =
       sessionStorage.getItem('pendingApprovalRedirect') ||
@@ -471,6 +486,7 @@ async posLoginAction(): Promise<void> {
     this.loadPlanLimits()
     this.metadataService.fetchMetaData()
     this.tenantService.loadFullTenants();
+    this.menuItemsService.refreshRegisteredApps();
 
 
 

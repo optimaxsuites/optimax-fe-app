@@ -23,14 +23,6 @@ export class AuthInterceptor implements HttpInterceptor {
             return next.handle(request);
         }
 
-        const accessToken = 
-            sessionStorage.getItem("Token") || 
-            sessionStorage.getItem("accessToken") ||
-            sessionStorage.getItem("token") ||
-            localStorage.getItem("Token2") ||
-            localStorage.getItem("accessToken2") ||
-            localStorage.getItem("token");
-
         // The tenant for this app is always 'optimax'.
         // Do NOT derive from the hostname subdomain (e.g. "accounting.optimaxsuites.com"
         // has subdomain "accounting", which is an app name, NOT the tenant slug).
@@ -47,25 +39,12 @@ export class AuthInterceptor implements HttpInterceptor {
 
         // Always add X-Tenant-ID header
         let updatedRequest = request.clone({
+            withCredentials: true,
             setHeaders: {
                 'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
             },
         });
 
-        // Add Bearer token if available
-        if (accessToken) {
-            updatedRequest = updatedRequest.clone({
-                setHeaders: {
-                    ...updatedRequest.headers.keys().reduce((acc, key) => {
-                        acc[key] = updatedRequest.headers.get(key)!;
-                        return acc;
-                    }, {} as Record<string, string>),
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-        }
-
         return next.handle(updatedRequest);
     }
 }
-

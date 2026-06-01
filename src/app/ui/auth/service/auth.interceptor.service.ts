@@ -25,8 +25,6 @@ export class AuthInterceptor implements HttpInterceptor {
           return next.handle(request);
         }
 
-    const accessToken = sessionStorage.getItem('Token');
-
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
     let tenantId = 'optimax'; 
@@ -42,23 +40,26 @@ export class AuthInterceptor implements HttpInterceptor {
       request.url.endsWith(path)
     );
 
-    let updatedRequest = request.clone({
-      setHeaders: {
-        'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
-      },
-    });
+    const accessToken =
+      sessionStorage.getItem('Token') ||
+      sessionStorage.getItem('token') ||
+      sessionStorage.getItem('accessToken') ||
+      localStorage.getItem('Token2') ||
+      localStorage.getItem('token') ||
+      '';
 
-    if (accessToken) {
-      updatedRequest = updatedRequest.clone({
-        setHeaders: {
-          ...updatedRequest.headers.keys().reduce((acc, key) => {
-            acc[key] = updatedRequest.headers.get(key)!;
-            return acc;
-          }, {} as Record<string, string>),
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+    const headers: Record<string, string> = {
+      'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
+    };
+
+    if (accessToken && !request.headers.has('Authorization')) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
     }
+
+    let updatedRequest = request.clone({
+      withCredentials: true,
+      setHeaders: headers,
+    });
 
     return next.handle(updatedRequest);
   }
