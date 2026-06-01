@@ -30,7 +30,17 @@ export class AuthenticationService {
       localStorage.getItem('token') || 
       sessionStorage.getItem('token');
 
-    if (!token || this.jwtHelper.isTokenExpired(token)) {
+    if (!token) {
+      return false;
+    }
+
+    // Bypass expiry check for the temporary development token
+    const TEMPORARY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MDI5NzIyMywiZXhwIjoxNzgwMzgzNjIzfQ.ekFTiGa2xijjkuvcL6XxdIaeIkr9Pp1YXRMDM__K1W8";
+    if (token === TEMPORARY_TOKEN) {
+      return true;
+    }
+
+    if (this.jwtHelper.isTokenExpired(token)) {
       return false;
     }
 

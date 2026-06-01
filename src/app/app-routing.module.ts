@@ -9,6 +9,7 @@ import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.compone
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
+import { PaystackTransferDetailComponent } from './ui/view/bank-account-overview/paystack-transfer-detail/paystack-transfer-detail.component';
 import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-reconciliation.component';
 import { GeneralReconciliationComponent } from './ui/view/general-reconciliation/general-reconciliation.component';
 import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconciliation-tab.component';
@@ -18,6 +19,7 @@ import { GeneralTransactionsComponent } from './ui/view/general-transactions/gen
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
 import { PaystackComponent } from './ui/view/paystack/paystack.component';
+import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-transfer/paystack-initiate-transfer.component';
 
 const routes: Routes = [
   {
@@ -27,6 +29,10 @@ const routes: Routes = [
   {
     path: 'paystack',
     component: PaystackComponent
+  },
+  {
+    path: 'paystack/initiate-transfer',
+    component: PaystackInitiateTransferComponent
   },
   {
     path: '',
@@ -76,6 +82,7 @@ const routes: Routes = [
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
   { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
+  { path: 'bankaccountoverview/paystack/transfer/:id', component: PaystackTransferDetailComponent },
   // ...other routes
   {
     path: 'reports/:uuid',

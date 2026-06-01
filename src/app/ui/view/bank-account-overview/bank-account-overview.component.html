@@ -17,7 +17,7 @@
         [class.text-white]="activeSource === 'paystack'"
         [class.text-gray-500]="activeSource !== 'paystack'"
         [class.hover:text-gray-900]="activeSource !== 'paystack'">
-        <i class="pi pi-wallet"></i> Paystack Wallet
+        <i class="pi pi-wallet"></i>Paystack Wallet
       </button>
     </div>
 
@@ -528,181 +528,330 @@
   <ng-container *ngIf="activeSource === 'paystack'">
     
     <!-- Paystack Wallet Overview & Balances -->
-    <section class="bg-white rounded-xl shadow-sm p-6 relative overflow-hidden">
-      <div class="absolute top-0 right-0 p-4 opacity-5">
-        <svg class="w-32 h-32 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 mb-8 relative overflow-hidden">
+      <div class="absolute top-0 right-0 p-6 opacity-10">
+        <svg class="w-40 h-40 text-customBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       </div>
 
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 flex-1">
           <!-- Balance Card -->
-          <div>
-            <div class="flex items-center gap-2 mb-3">
-              <label class="text-base font-semibold text-gray-500 uppercase tracking-wider">Wallet Balance</label>
-              <button (click)="refreshPaystackBalance()" [disabled]="paystackBalanceLoading"
-                class="p-1.5 hover:bg-gray-150 rounded text-gray-500 hover:text-customBlue transition-all"
-                title="Refresh Wallet Balance">
-                <svg class="w-4 h-4" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-              </button>
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col justify-between relative overflow-hidden h-full">
+            <div class="absolute top-0 right-0 p-4 opacity-5">
+              <svg class="w-32 h-32 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
             </div>
 
-            <!-- Loading / Error States -->
-            <div *ngIf="paystackBalanceLoading" class="py-2 flex items-center gap-2">
-              <div class="w-5 h-5 rounded-full border-2 border-gray-200 border-t-customBlue animate-spin"></div>
-              <span class="text-base text-gray-500 font-medium">Fetching balance...</span>
-            </div>
-            <div *ngIf="paystackBalanceError && !paystackBalanceLoading" class="text-base text-red-600 font-medium">
-              {{ paystackBalanceError }}
-            </div>
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <label class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Wallet Balance</label>
+                <button (click)="refreshPaystackBalance()" [disabled]="paystackBalanceLoading"
+                  class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-customBlue transition-all"
+                  title="Refresh Wallet Balance">
+                  <svg class="w-5 h-5" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                </button>
+              </div>
 
-            <!-- Balance Value -->
-            <div *ngIf="!paystackBalanceLoading && !paystackBalanceError">
-              <h2 class="text-4xl md:text-5xl font-extrabold text-customBlue tracking-tight">
-                {{ formatNaira(paystackBalanceData?.balance) }}
-              </h2>
-              <p class="text-base text-gray-500 mt-1 font-medium">Active currency: {{ paystackBalanceData?.currency || 'NGN' }}</p>
+              <!-- Loading State -->
+              <div *ngIf="paystackBalanceLoading" class="py-4 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin"></div>
+                <span class="text-gray-500 font-medium">Fetching wallet balance...</span>
+              </div>
+
+              <!-- Error State -->
+              <div *ngIf="paystackBalanceError && !paystackBalanceLoading" class="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 my-2">
+                <div class="flex items-start gap-2">
+                  <i class="pi pi-times-circle mt-0.5 text-red-500"></i>
+                  <div>
+                    <p class="font-semibold">Failed to load balance</p>
+                    <p class="text-xs mt-1">{{ paystackBalanceError }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Balance Value -->
+              <div *ngIf="!paystackBalanceLoading && !paystackBalanceError">
+                <h2 class="text-4xl font-extrabold text-customBlue tracking-tight">
+                  {{ formatPaystackNaira(paystackBalanceData?.balance) }}
+                </h2>
+                <p class="text-sm text-gray-500 mt-2 font-medium">Active currency: {{ paystackBalanceData?.currency || 'NGN' }}</p>
+              </div>
             </div>
           </div>
 
           <!-- Inflow Status -->
           <div>
-            <label class="text-base font-semibold text-gray-500 uppercase tracking-wider mb-3 block">Settled Inflow</label>
-            <div class="flex items-center gap-2 mt-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
-              <p class="text-base font-bold text-gray-900">Multi-channel Active</p>
+            <label class="text-lg font-bold text-gray-500 uppercase tracking-wider mb-4 block">Settled Inflow</label>
+            <div class="flex items-center gap-3 mt-3">
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 pulse-dot"></span>
+              <p class="text-xl font-bold text-gray-900">Multi-channel Active</p>
             </div>
           </div>
 
           <!-- Gateway Integration Connection -->
           <div>
-            <label class="text-base font-semibold text-gray-500 uppercase tracking-wider mb-3 block">Gateway Status</label>
-            <div class="flex items-center gap-2 mt-2">
-              <span class="px-2.5 py-1 rounded bg-blue-50 border border-blue-200 text-base font-bold text-customBlue">
+            <label class="text-lg font-bold text-gray-500 uppercase tracking-wider mb-4 block">Gateway Status</label>
+            <div class="flex items-center gap-3 mt-3">
+              <span class="px-4 py-2 rounded-xl bg-blue-50 border border-blue-200 text-lg font-extrabold text-customBlue">
                 Paystack Live Connection
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Sync Action -->
-        <div class="lg:border-l lg:border-gray-200 lg:pl-6">
+        <!-- Sync Action + Initiate Transfer -->
+        <div class="lg:border-l lg:border-gray-200 lg:pl-8 flex flex-col gap-3">
           <button (click)="refreshPaystackBalance()" [disabled]="paystackBalanceLoading"
-            class="px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-3 text-base md:text-lg">
-            <svg class="w-5 h-5" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="px-8 py-4 bg-customBlue hover:bg-customBlueHover text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-3 text-lg md:text-xl">
+            <svg class="w-6 h-6" [class.animate-spin]="paystackBalanceLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
             <span>Sync Wallet</span>
+          </button>
+
+          <!-- ✅ Initiate Transfer CTA — routes to /paystack/initiate-transfer -->
+          <button
+            (click)="navigateToInitiateTransfer()"
+            id="btn-open-initiate-transfer"
+            class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-3 text-lg md:text-xl">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+            </svg>
+            <span>Initiate Transfer</span>
           </button>
         </div>
       </div>
     </section>
 
-    <!-- Paystack Dynamic Interface Workspace (Split Grid) -->
+    <!-- Paystack Workspace -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Left 2 Cols: Paystack Ledger Transactions -->
+      <!-- Left 2 Cols: Paystack transfers table -->
       <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 animate-slideUp">
-          <!-- Filters Header -->
-          <div class="p-6 border-b border-gray-200 bg-gray-50/50">
-            <div class="flex flex-col sm:flex-row gap-4 items-end">
-              <div class="flex-1 w-full">
-                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">Start Date</label>
-                <input type="date" [(ngModel)]="paystackTxStartDate" (ngModelChange)="applyPaystackTxFilters()"
-                  class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg outline-none text-base font-medium text-gray-700" />
-              </div>
-              <div class="flex-1 w-full">
-                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">End Date</label>
-                <input type="date" [(ngModel)]="paystackTxEndDate" (ngModelChange)="applyPaystackTxFilters()"
-                  class="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg outline-none text-base font-medium text-gray-700" />
-              </div>
-              <div class="w-full sm:w-36">
-                <label class="text-base font-semibold text-gray-600 uppercase mb-2 block">Type</label>
-                <select [(ngModel)]="paystackTxTypeFilter" (ngModelChange)="applyPaystackTxFilters()"
-                  class="w-full px-4 py-2.5 bg-white border border-gray-350 rounded-lg outline-none text-base font-medium text-gray-700">
-                  <option value="">ALL</option>
-                  <option value="DEBIT">DEBIT</option>
-                  <option value="CREDIT">CREDIT</option>
-                </select>
-              </div>
-              <div class="flex gap-1">
-                <button (click)="loadPaystackTransactions()" [disabled]="paystackTxLoading"
-                  class="p-2.5 bg-customBlue hover:bg-customBlueHover text-white rounded-lg transition-colors">
-                  <svg class="w-5 h-5" [class.animate-spin]="paystackTxLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                  </svg>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-slideUp">
+          
+          <!-- Filters Header in beautiful premium Light Mode -->
+          <div class="p-6 border-b border-gray-200 bg-gray-50/70">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div class="flex items-center gap-4 flex-wrap">
+                
+                <!-- Add Filter Panel Toggle -->
+                <div class="relative">
+                  <button (click)="toggleAddFilterPanel()"
+                    class="px-6 py-3 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 font-semibold text-lg text-gray-700 shadow-sm flex items-center gap-3 transition-all">
+                    <i class="pi pi-filter-fill text-gray-500"></i>
+                    <span>Add Filter</span>
+                    <i class="pi pi-chevron-down text-xs text-gray-400"></i>
+                  </button>
+
+                  <!-- Filter Dropdown Panel (Light Mode) -->
+                  <div *ngIf="showAddFilterPanel"
+                    class="absolute left-0 mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-5 animate-fadeInUp">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="font-bold text-lg text-gray-800">Add filter...</h4>
+                      <button (click)="closeAllPanels()" class="text-gray-400 hover:text-gray-600">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+
+                    <ul class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      <li *ngFor="let opt of inactiveFilterOptions"
+                        (click)="addFilter(opt.key)"
+                        class="px-4 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold text-base cursor-pointer flex items-center gap-3 transition-colors">
+                        <i class="pi pi-plus text-xs text-gray-400"></i>
+                        <span>{{ opt.label }}</span>
+                      </li>
+                      <li *ngIf="inactiveFilterOptions.length === 0" class="text-gray-400 text-center py-4 text-base font-medium">
+                        All filters applied
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Date Filter Panel Toggle -->
+                <div class="relative">
+                  <button (click)="toggleDateFilterPanel()"
+                    class="px-6 py-3 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 font-semibold text-lg text-gray-700 shadow-sm flex items-center gap-3 transition-all">
+                    <i class="pi pi-calendar text-gray-500"></i>
+                    <span>{{ appliedDateLabel || 'Filter by Date' }}</span>
+                    <i class="pi pi-chevron-down text-xs text-gray-400"></i>
+                  </button>
+
+                  <!-- Date Dropdown Panel (Light Mode) -->
+                  <div *ngIf="showDateFilterPanel"
+                    class="absolute left-0 mt-3 w-96 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-5 animate-fadeInUp">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="font-bold text-lg text-gray-800">Filter by Date</h4>
+                      <button (click)="closeAllPanels()" class="text-gray-400 hover:text-gray-600">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="today" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>Today</span>
+                      </label>
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="last7" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>Last 7 days</span>
+                      </label>
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="thismonth" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>This month</span>
+                      </label>
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="lastmonth" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>Last month</span>
+                      </label>
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="alltime" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>All time</span>
+                      </label>
+                      <!-- Custom date range option -->
+                      <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-base font-semibold text-gray-700">
+                        <input type="radio" name="preset" value="custom" [(ngModel)]="selectedDatePreset" class="w-4 h-4 text-customBlue" />
+                        <span>Custom range</span>
+                      </label>
+
+                      <!-- Custom date pickers — only shown when 'custom' is selected -->
+                      <div *ngIf="selectedDatePreset === 'custom'" class="mt-3 px-3 space-y-3 animate-fadeIn">
+                        <div class="flex flex-col gap-1">
+                          <label class="text-sm font-bold text-gray-500 uppercase tracking-wide">From</label>
+                          <input type="date" [(ngModel)]="customRangeStart"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base font-semibold text-gray-800 outline-none focus:border-customBlue transition-colors" />
+                        </div>
+                        <div class="flex flex-col gap-1">
+                          <label class="text-sm font-bold text-gray-500 uppercase tracking-wide">To</label>
+                          <input type="date" [(ngModel)]="customRangeEnd" [min]="customRangeStart"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-base font-semibold text-gray-800 outline-none focus:border-customBlue transition-colors" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 mt-5 pt-3 border-t border-gray-100">
+                      <button (click)="resetDateFilter()" class="px-4 py-2 text-base font-bold text-gray-500 hover:text-gray-700">
+                        Clear
+                      </button>
+                      <button (click)="applyDateFilter()"
+                        [disabled]="selectedDatePreset === 'custom' && (!customRangeStart || !customRangeEnd)"
+                        class="px-4 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-lg font-bold text-base shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Clear All button if filters exist -->
+                <button *ngIf="hasAnyAppliedFilter" (click)="clearAllFilters()"
+                  class="px-5 py-3 border border-red-200 hover:border-red-300 text-red-600 bg-red-50 hover:bg-red-100/50 rounded-xl font-bold text-base transition-all">
+                  Clear All Filters
                 </button>
-                <button (click)="clearPaystackTxFilters()"
-                  class="px-4 py-2.5 bg-white hover:bg-gray-150 border border-gray-300 text-gray-700 rounded-lg font-semibold text-base transition-colors">
-                  Clear
-                </button>
+              </div>
+
+              <!-- Quick Reload Button -->
+              <button (click)="loadPaystackTransactions()" [disabled]="paystackTxLoading"
+                class="p-3 border border-gray-300 hover:bg-gray-50 rounded-xl shadow-sm text-gray-600 hover:text-customBlue transition-all flex items-center justify-center">
+                <svg class="w-6 h-6" [class.animate-spin]="paystackTxLoading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Interactive active filter inputs block -->
+            <div *ngIf="activeFilterKeys.length > 0" class="mt-6 flex flex-col gap-4 p-5 bg-white border border-gray-200 rounded-2xl">
+              <h4 class="text-base font-bold text-gray-800 uppercase tracking-wider">Configure Active Filters</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div *ngFor="let key of activeFilterKeys" class="flex flex-col gap-1.5 relative">
+                  <label class="text-base font-bold text-gray-600 flex items-center justify-between">
+                    <span>{{ getFilterOption(key)?.label }}</span>
+                    <button (click)="removeFilter(key)" class="text-red-500 hover:text-red-700 text-xs">
+                      <i class="pi pi-trash"></i> 
+                    </button>
+                  </label>
+
+                  <!-- Select Input type -->
+                  <select *ngIf="getFilterOption(key)?.type === 'select'" [(ngModel)]="filterValues[key]"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none text-base font-semibold text-gray-800 bg-white">
+                    <option value="">Show all</option>
+                    <option *ngFor="let opt of getFilterOption(key)?.options" [value]="opt">{{ opt }}</option>
+                  </select>
+
+                  <!-- Input Text type -->
+                  <input *ngIf="getFilterOption(key)?.type === 'input'" type="text" [(ngModel)]="filterValues[key]"
+                    [placeholder]="getFilterOption(key)?.placeholder"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none text-base font-semibold text-gray-800" />
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Loader / Errors -->
-          <div *ngIf="paystackTxLoading" class="py-16 text-center">
-            <div class="inline-block w-8 h-8 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin mb-3"></div>
-            <p class="text-gray-500 text-base font-semibold">Retrieving wallet ledger...</p>
+          <!-- Loading State -->
+          <div *ngIf="paystackTxLoading" class="py-24 text-center">
+            <div class="inline-block w-12 h-12 rounded-full border-4 border-gray-200 border-t-customBlue animate-spin mb-4"></div>
+            <p class="text-gray-500 text-xl font-bold">Retrieving Paystack direct transfers...</p>
           </div>
 
-          <div *ngIf="paystackTxError && !paystackTxLoading" class="p-8 text-center max-w-sm mx-auto animate-fadeIn">
-            <i class="pi pi-exclamation-triangle text-2xl text-red-500 mb-2 block"></i>
-            <p class="text-base font-semibold text-gray-900">Failed to load transactions</p>
-            <p class="text-base text-gray-500 mt-1 mb-4">{{ paystackTxError }}</p>
-            <button (click)="loadPaystackTransactions()" class="px-4 py-1.5 bg-customBlue text-white rounded text-base font-semibold">
+          <!-- Error State -->
+          <div *ngIf="paystackTxError && !paystackTxLoading" class="p-12 text-center max-w-lg mx-auto animate-fadeIn">
+            <i class="pi pi-exclamation-triangle text-4xl text-red-500 mb-4 block animate-bounce"></i>
+            <p class="text-xl font-bold text-gray-900">Failed to Connect to Gateway</p>
+            <p class="text-base text-gray-500 mt-2 mb-6">{{ paystackTxError }}</p>
+            <button (click)="loadPaystackTransactions()" class="px-8 py-3.5 bg-customBlue hover:bg-customBlueHover text-white rounded-xl text-lg font-bold shadow-md">
               Retry Connection
             </button>
           </div>
 
           <!-- Empty State -->
-          <div *ngIf="!paystackTxLoading && !paystackTxError && paystackTransactions.length === 0" class="py-16 text-center max-w-sm mx-auto">
-            <i class="pi pi-folder-open text-3xl text-gray-350 mb-2 block"></i>
-            <p class="text-base font-semibold text-gray-900">No Records Found</p>
-            <p class="text-base text-gray-500 mt-1">Initiate payouts to populate transaction history logs.</p>
+          <div *ngIf="!paystackTxLoading && !paystackTxError && filteredPaystackTransactions.length === 0" class="py-24 text-center max-w-md mx-auto">
+            <i class="pi pi-folder-open text-5xl text-gray-300 mb-4 block"></i>
+            <p class="text-xl font-bold text-gray-900">No Records Match Filters</p>
+            <p class="text-base text-gray-500 mt-2">Adjust your active filters or clear them to view all transfers.</p>
           </div>
 
-          <!-- Paystack Table -->
-          <div *ngIf="!paystackTxLoading && !paystackTxError && paystackTransactions.length > 0" class="animate-fadeIn">
+          <!-- Premium Light Mode Table -->
+          <div *ngIf="!paystackTxLoading && !paystackTxError && filteredPaystackTransactions.length > 0" class="animate-fadeIn">
             <div class="overflow-x-auto">
               <table class="w-full">
-                <thead class="bg-customBlue text-white">
+                <thead class="bg-gray-50 text-gray-600 border-b border-gray-200">
                   <tr>
-                    <th class="px-6 py-3 text-left text-base font-semibold uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-base font-semibold uppercase tracking-wider">Reference</th>
-                    <th class="px-6 py-3 text-center text-base font-semibold uppercase tracking-wider">Type</th>
-                    <th class="px-6 py-3 text-right text-base font-semibold uppercase tracking-wider">Amount</th>
-                    <th class="px-6 py-3 text-center text-base font-semibold uppercase tracking-wider">Status</th>
+                    <th class="px-8 py-5 text-left text-base font-bold uppercase tracking-wider">Date</th>
+                    <th class="px-8 py-5 text-left text-base font-bold uppercase tracking-wider">Recipient</th>
+                    <th class="px-8 py-5 text-left text-base font-bold uppercase tracking-wider">Reference</th>
+                    <th class="px-8 py-5 text-left text-base font-bold uppercase tracking-wider">Bank details</th>
+                    <th class="px-8 py-5 text-right text-base font-bold uppercase tracking-wider">Amount</th>
+                    <th class="px-8 py-5 text-center text-base font-bold uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                  <tr *ngFor="let tx of paginatedPaystackTransactions" (click)="viewPaystackTransactionDetail(tx.reference)"
-                    class="hover:bg-gray-50 transition-colors ledger-row cursor-pointer">
-                    <td class="px-6 py-3.5 text-base text-gray-700 whitespace-nowrap">
+                <tbody class="divide-y divide-gray-150">
+                  <tr *ngFor="let tx of paginatedPaystackTransactions" (click)="viewPaystackTransactionDetail(tx.id)"
+                    class="hover:bg-gray-50/50 transition-colors ledger-row cursor-pointer">
+                    <td class="px-8 py-5 text-lg text-gray-700 whitespace-nowrap">
                       {{ formatPaystackTxDate(tx.createdAt) }}
                     </td>
-                    <td class="px-6 py-3.5 text-base text-gray-900 font-bold whitespace-nowrap">
+                    <td class="px-8 py-5 whitespace-nowrap">
+                      <div class="text-lg font-bold text-gray-900">{{ tx.recipient?.name || 'Unknown Recipient' }}</div>
+                      <div class="text-base text-gray-500 mt-0.5">{{ tx.reason || 'No payout note' }}</div>
+                    </td>
+                    <td class="px-8 py-5 text-base font-mono text-gray-600 whitespace-nowrap">
                       {{ tx.reference }}
                     </td>
-                    <td class="px-6 py-3.5 text-center whitespace-nowrap">
-                      <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none"
-                        [ngClass]="getPaystackTypeClass(tx.type)">
-                        {{ tx.type }}
-                      </span>
+                    <td class="px-8 py-5 whitespace-nowrap">
+                      <div class="text-base font-semibold text-gray-800">{{ tx.recipient?.details?.bank_name || 'N/A' }}</div>
+                      <div class="text-base text-gray-500 mt-0.5 font-mono">{{ tx.recipient?.details?.account_number || 'N/A' }}</div>
                     </td>
-                    <td class="px-6 py-3.5 text-right whitespace-nowrap text-base">
-                      <span [ngClass]="getPaystackTypeAmountClass(tx.type)">
-                        {{ formatNaira(tx.amount) }}
-                      </span>
+                    <td class="px-8 py-5 text-right whitespace-nowrap text-lg font-black text-gray-900">
+                      {{ formatPaystackNaira(tx.amount) }}
                     </td>
-                    <td class="px-6 py-3.5 text-center whitespace-nowrap">
-                      <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none"
+                    <td class="px-8 py-5 text-center whitespace-nowrap">
+                      <span class="inline-flex px-3 py-1 rounded-xl text-base font-extrabold border"
                         [ngClass]="getPaystackStatusClass(tx.status)">
-                        {{ tx.status }}
+                        {{ (tx.status || 'unknown') | uppercase }}
                       </span>
                     </td>
                   </tr>
@@ -710,24 +859,24 @@
               </table>
             </div>
 
-            <!-- Paystack Pagination Footer -->
-            <div class="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200 text-base">
-              <div class="text-gray-600">
-                Showing <span class="font-semibold text-gray-900">{{ getPaystackTxPageStart() }}</span> to <span
-                  class="font-semibold text-gray-900">{{ getPaystackTxPageEnd() }}</span> of <span
-                  class="font-semibold text-gray-900">{{ paystackTransactions.length }}</span> logs
+            <!-- Paystack Pagination Footer with Larger Fonts & Controls -->
+            <div class="flex items-center justify-between px-8 py-5 bg-gray-50 border-t border-gray-200">
+              <div class="text-lg text-gray-600 font-medium">
+                Showing <span class="font-bold text-gray-900">{{ getPaystackTxPageStart() }}</span> to <span
+                  class="font-bold text-gray-900">{{ getPaystackTxPageEnd() }}</span> of <span
+                  class="font-bold text-gray-900">{{ filteredPaystackTransactions.length }}</span> logs
               </div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-3">
                 <button (click)="paystackTxPrevPage()" [disabled]="paystackTxCurrentPage === 1"
-                  class="p-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
-                  <i class="pi pi-angle-left text-gray-600"></i>
+                  class="p-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center transition-all shadow-sm">
+                  <i class="pi pi-angle-left text-lg text-gray-600"></i>
                 </button>
-                <span class="px-2 font-semibold text-gray-700">
+                <span class="px-4 text-lg font-bold text-gray-700">
                   Page {{ paystackTxCurrentPage }} of {{ paystackTxTotalPages }}
                 </span>
                 <button (click)="paystackTxNextPage()" [disabled]="paystackTxCurrentPage === paystackTxTotalPages"
-                  class="p-1 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
-                  <i class="pi pi-angle-right text-gray-600"></i>
+                  class="p-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center transition-all shadow-sm">
+                  <i class="pi pi-angle-right text-lg text-gray-600"></i>
                 </button>
               </div>
             </div>
@@ -736,58 +885,58 @@
         </div>
       </div>
 
-      <!-- Right 1 Col: Fund Transfer Card Interface -->
+      <!-- Right 1 Col: Direct Wallet Payout styled in light mode -->
       <div class="space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-slideUp">
-          <div class="p-5 border-b border-gray-200 bg-gray-50/50">
-            <h3 class="text-lg font-bold text-gray-900">Direct Wallet Payout</h3>
-            <p class="text-base text-gray-500 mt-0.5">Authorize instant disbursements utilizing security verified routing.</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-slideUp">
+          <div class="p-6 border-b border-gray-200 bg-gray-50/70">
+            <h3 class="text-xl font-bold text-gray-900">Direct Wallet Payout</h3>
+            <p class="text-base text-gray-500 mt-1">Authorize instant disbursements utilizing security verified routing.</p>
           </div>
 
-          <div class="p-6 space-y-4">
-            <!-- Paystack Error / Success Alerts -->
-            <div *ngIf="paystackTransferError" class="bg-red-50 border-l-4 border-red-500 p-3.5 rounded text-red-700 text-base animate-fadeIn">
-              <p class="font-bold">Transfer Authorization Denied</p>
-              <p class="mt-0.5">{{ paystackTransferError }}</p>
+          <div class="p-6 space-y-6">
+            <!-- Alert Statuses -->
+            <div *ngIf="paystackTransferError" class="bg-red-50 border-l-4 border-red-500 p-5 rounded-2xl text-red-700 text-base animate-fadeIn">
+              <p class="font-bold text-lg">Transfer Authorization Denied</p>
+              <p class="mt-1 font-semibold">{{ paystackTransferError }}</p>
             </div>
 
-            <div *ngIf="paystackLastTransferReference" class="bg-emerald-50 border-l-4 border-emerald-500 p-3.5 rounded text-emerald-800 text-base animate-fadeIn">
-              <p class="font-bold">Transfer Queued Successfully</p>
-              <p class="mt-0.5 font-semibold">Reference: {{ paystackLastTransferReference }}</p>
-              <p class="mt-0.5 text-gray-500">The gateway has initiated the routing block. Balance updates will verify settlement shortly.</p>
+            <div *ngIf="paystackLastTransferReference" class="bg-emerald-50 border-l-4 border-emerald-500 p-5 rounded-2xl text-emerald-800 text-base animate-fadeIn">
+              <p class="font-bold text-lg">Transfer Queued Successfully</p>
+              <p class="mt-1 font-semibold">Reference: {{ paystackLastTransferReference }}</p>
+              <p class="mt-1 text-gray-600">The gateway has initiated the routing block. Balance updates will verify settlement shortly.</p>
             </div>
 
-            <form (ngSubmit)="openPaystackConfirmDialog()" class="space-y-4">
-              <!-- HR Dropdown Selector -->
+            <form (ngSubmit)="openPaystackConfirmDialog()" class="space-y-6">
+              <!-- Recipient Selector -->
               <div>
-                <label class="text-base font-semibold text-gray-700 uppercase tracking-wide mb-1.5 block">Recipient</label>
+                <label class="text-base font-bold text-gray-700 uppercase tracking-wide mb-2 block">Recipient</label>
                 <div class="relative">
                   <select [(ngModel)]="paystackSelectedEmployeeId" name="employeeId" required
-                    class="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg text-base font-semibold text-gray-700 outline-none">
+                    class="w-full pl-4 pr-10 py-3.5 border border-gray-300 rounded-xl text-lg font-bold text-gray-800 outline-none bg-white">
                     <option [value]="null" disabled selected>-- Select an employee --</option>
                     <option *ngFor="let emp of paystackEmployees" [value]="emp.id">
                       {{ getPaystackEmployeeDisplayName(emp) }} ({{ emp.bankName || 'No bank' }} • {{ emp.accountNumber || 'No Account' }})
                     </option>
                   </select>
-                  <div *ngIf="paystackEmployeesLoading" class="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div class="w-3.5 h-3.5 border-2 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
+                  <div *ngIf="paystackEmployeesLoading" class="absolute right-4 top-1/2 -translate-y-1/2">
+                    <div class="w-5 h-5 border-2 border-gray-250 border-t-customBlue rounded-full animate-spin"></div>
                   </div>
                 </div>
               </div>
 
-              <!-- Naira Amount Input -->
+              <!-- Settlement Amount Input -->
               <div>
-                <label class="text-base font-semibold text-gray-700 uppercase tracking-wide mb-1.5 block">Settlement Amount (₦)</label>
+                <label class="text-base font-bold text-gray-700 uppercase tracking-wide mb-2 block">Settlement Amount (₦)</label>
                 <div class="relative">
-                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">₦</span>
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-lg">₦</span>
                   <input type="number" [(ngModel)]="paystackTransferAmount" name="amount" required min="1" step="0.01" placeholder="0.00"
-                    class="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg text-base font-bold text-gray-900 outline-none" />
+                    class="w-full pl-9 pr-4 py-3.5 border border-gray-300 rounded-xl text-lg font-black text-gray-900 outline-none" />
                 </div>
               </div>
 
               <div class="pt-2">
                 <button type="submit" [disabled]="!isPaystackTransferFormValid || paystackIsTransferring"
-                  class="w-full bg-customBlue hover:bg-customBlueHover text-white py-3 px-4 rounded-lg font-bold transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="w-full bg-customBlue hover:bg-customBlueHover text-white py-4 px-6 rounded-xl font-bold transition-all text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
                   <span *ngIf="paystackIsTransferring" class="loading-spinner"></span>
                   <span>{{ paystackIsTransferring ? 'Processing Wallet Transfer...' : 'Initiate Wallet Payout' }}</span>
                 </button>
@@ -911,41 +1060,41 @@
   <!-- PAYSTACK MODAL OVERLAYS -->
 
   <!-- Paystack Payout Confirmation Modal Overlay -->
-  <div *ngIf="paystackShowConfirmDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-fadeInUp">
-      <div class="p-5 border-b border-gray-200 flex items-center gap-3 bg-customBlue text-white rounded-t-xl">
-        <i class="pi pi-exclamation-circle text-lg"></i>
+  <div *ngIf="paystackShowConfirmDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeInUp overflow-hidden">
+      <div class="p-6 border-b border-gray-200 flex items-center gap-4 bg-customBlue text-white">
+        <i class="pi pi-exclamation-circle text-2xl"></i>
         <div>
-          <h3 class="text-base font-bold">Verify Fund Outflow</h3>
+          <h3 class="text-xl font-bold">Verify Fund Outflow</h3>
           <p class="text-base text-white/70">Secure validation process</p>
         </div>
       </div>
-      <div class="p-5 space-y-3.5">
-        <p class="text-base text-gray-600">Are you sure you want to authorize this direct wallet payout? The ledger balance will be debited instantly.</p>
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3.5 space-y-2.5 text-base text-gray-500">
-          <div class="flex justify-between">
-            <span>Beneficiary</span>
-            <span class="font-semibold text-gray-900">{{ getPaystackEmployeeDisplayName(selectedPaystackEmployee) }}</span>
+      <div class="p-6 space-y-4">
+        <p class="text-lg text-gray-600 leading-relaxed">Are you sure you want to authorize this direct wallet payout? The ledger balance will be debited instantly.</p>
+        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-4 text-base text-gray-600">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-semibold">Beneficiary</span>
+            <span class="font-bold text-gray-900 text-lg">{{ getPaystackEmployeeDisplayName(selectedPaystackEmployee) }}</span>
           </div>
-          <div class="flex justify-between">
-            <span>Financial Institution</span>
-            <span class="font-semibold text-gray-900">{{ selectedPaystackEmployee?.bankName || '—' }}</span>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-semibold">Financial Institution</span>
+            <span class="font-bold text-gray-900 text-lg">{{ selectedPaystackEmployee?.bankName || '—' }}</span>
           </div>
-          <div class="flex justify-between">
-            <span>Account Number</span>
-            <span class="font-semibold text-gray-900">{{ selectedPaystackEmployee?.accountNumber || '—' }}</span>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-semibold">Account Number</span>
+            <span class="font-mono font-bold text-gray-900 text-lg">{{ selectedPaystackEmployee?.accountNumber || '—' }}</span>
           </div>
-          <div class="border-t border-gray-200 pt-2 flex justify-between items-center text-sm">
-            <span class="font-bold text-gray-700">Settlement Amount</span>
-            <span class="font-extrabold text-customBlue">{{ formatNaira(paystackTransferAmount) }}</span>
+          <div class="border-t border-gray-200 pt-3 flex justify-between items-center">
+            <span class="font-bold text-gray-700 text-lg">Settlement Amount</span>
+            <span class="font-black text-2xl text-customBlue">{{ formatNaira(paystackTransferAmount) }}</span>
           </div>
         </div>
       </div>
-      <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5 rounded-b-xl">
-        <button (click)="cancelPaystackTransfer()" class="px-4 py-2 text-base font-semibold text-gray-700 rounded hover:bg-gray-250 transition-colors">
+      <div class="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
+        <button (click)="cancelPaystackTransfer()" class="px-6 py-3 text-lg font-bold text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
           Cancel
         </button>
-        <button (click)="confirmPaystackTransfer()" class="px-4 py-2 text-base font-semibold bg-customBlue text-white rounded hover:bg-customBlueHover transition-colors">
+        <button (click)="confirmPaystackTransfer()" class="px-6 py-3 text-lg font-bold bg-customBlue text-white rounded-xl hover:bg-customBlueHover transition-colors shadow-sm">
           Confirm & Dispatch
         </button>
       </div>
@@ -953,75 +1102,79 @@
   </div>
 
   <!-- Paystack Transaction Detail Modal Overlay -->
-  <div *ngIf="paystackShowDetailDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full animate-fadeInUp">
-      <div class="p-5 border-b border-gray-200 flex items-center justify-between bg-customBlue text-white rounded-t-xl">
-        <div class="flex items-center gap-3">
-          <i class="pi pi-info-circle text-lg"></i>
+  <div *ngIf="paystackShowDetailDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeInUp overflow-hidden">
+      <div class="p-6 border-b border-gray-200 flex items-center justify-between bg-customBlue text-white">
+        <div class="flex items-center gap-4">
+          <i class="pi pi-info-circle text-2xl"></i>
           <div>
-            <h3 class="text-base font-bold">Ledger Specifications</h3>
+            <h3 class="text-xl font-bold">Ledger Specifications</h3>
             <p class="text-base text-white/70">Verified core routing logs</p>
           </div>
         </div>
         <button (click)="closePaystackDetailDialog()" class="text-white hover:text-gray-200">
-          <i class="pi pi-times"></i>
+          <i class="pi pi-times text-xl"></i>
         </button>
       </div>
 
-      <div class="p-5">
-        <div *ngIf="paystackTxDetailLoading" class="py-8 flex flex-col items-center gap-2">
-          <div class="w-6 h-6 border-2 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
-          <span class="text-base text-gray-500">Retrieving details...</span>
+      <div class="p-6">
+        <div *ngIf="paystackTxDetailLoading" class="py-12 flex flex-col items-center gap-3">
+          <div class="w-10 h-10 border-4 border-gray-200 border-t-customBlue rounded-full animate-spin"></div>
+          <span class="text-lg text-gray-500 font-semibold">Retrieving details...</span>
         </div>
 
-        <div *ngIf="paystackTxDetailError && !paystackTxDetailLoading" class="text-base text-red-600 py-4 text-center">
+        <div *ngIf="paystackTxDetailError && !paystackTxDetailLoading" class="text-lg text-red-600 py-6 text-center font-bold">
           {{ paystackTxDetailError }}
         </div>
 
-        <div *ngIf="!paystackTxDetailLoading && !paystackTxDetailError && paystackSelectedTxDetail" class="space-y-3.5 text-base text-gray-500">
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3.5 space-y-2.5">
-            <div class="flex justify-between">
-              <span>Processor Reference</span>
-              <span class="font-mono font-bold text-gray-900">{{ paystackSelectedTxDetail.reference }}</span>
+        <div *ngIf="!paystackTxDetailLoading && !paystackTxDetailError && paystackSelectedTxDetail" class="space-y-4 text-base text-gray-600">
+          <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Processor Reference</span>
+              <span class="font-mono font-bold text-gray-900 text-lg">{{ paystackSelectedTxDetail.reference }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>Flow Classification</span>
-              <span class="font-semibold" [ngClass]="getPaystackTypeAmountClass(paystackSelectedTxDetail.type)">{{ paystackSelectedTxDetail.type }}</span>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Recipient Name</span>
+              <span class="font-bold text-gray-900 text-lg">{{ paystackSelectedTxDetail.recipient?.name || '—' }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>Settlement Amount</span>
-              <span class="font-bold text-gray-900">{{ formatNaira(paystackSelectedTxDetail.amount) }}</span>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Financial Institution</span>
+              <span class="font-bold text-gray-900 text-lg">{{ paystackSelectedTxDetail.recipient?.details?.bank_name || '—' }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>Currency</span>
-              <span class="font-semibold text-gray-900">{{ paystackSelectedTxDetail.currency }}</span>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Account Number</span>
+              <span class="font-mono font-bold text-gray-900 text-lg">{{ paystackSelectedTxDetail.recipient?.details?.account_number || '—' }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>Gateway Status</span>
-              <span class="inline-flex px-2 py-0.5 rounded text-base font-bold leading-none" [ngClass]="getPaystackStatusClass(paystackSelectedTxDetail.status)">
-                {{ paystackSelectedTxDetail.status }}
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Settlement Amount</span>
+              <span class="font-black text-gray-900 text-lg">{{ formatPaystackNaira(paystackSelectedTxDetail.amount) }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Currency</span>
+              <span class="font-bold text-gray-900 text-lg">{{ paystackSelectedTxDetail.currency }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Gateway Status</span>
+              <span class="inline-flex px-3 py-1 rounded-xl text-base font-extrabold border" [ngClass]="getPaystackStatusClass(paystackSelectedTxDetail.status)">
+                {{ (paystackSelectedTxDetail.status || 'unknown') | uppercase }}
               </span>
             </div>
-            <div class="flex justify-between">
-              <span>Initiated Date</span>
-              <span class="font-semibold text-gray-900">{{ formatPaystackTxDate(paystackSelectedTxDetail.createdAt) }}</span>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-500 font-semibold">Initiated Date</span>
+              <span class="font-bold text-gray-900 text-lg">{{ formatPaystackTxDate(paystackSelectedTxDetail.createdAt) }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>Origin Module</span>
-              <span class="font-semibold text-gray-900">{{ paystackSelectedTxDetail.source }}</span>
-            </div>
-            <div class="border-t border-gray-200 pt-2 flex flex-col gap-1">
-              <span class="font-bold text-gray-600">Audit Description</span>
-              <span class="bg-white p-2 rounded border border-gray-150 text-gray-800 leading-normal">
-                {{ paystackSelectedTxDetail.description || 'No additional log details captured.' }}
+            <div class="border-t border-gray-200 pt-3 flex flex-col gap-2">
+              <span class="font-bold text-gray-600 text-base">Audit Description</span>
+              <span class="bg-white p-3.5 rounded-xl border border-gray-200 text-gray-800 text-lg leading-relaxed font-semibold">
+                {{ paystackSelectedTxDetail.reason || 'No additional log details captured.' }}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end rounded-b-xl">
-        <button (click)="closePaystackDetailDialog()" class="px-5 py-2 text-base bg-customBlue text-white font-semibold rounded hover:bg-customBlueHover transition-colors">
+      <div class="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-end rounded-b-2xl">
+        <button (click)="closePaystackDetailDialog()" class="px-6 py-3 text-lg bg-customBlue text-white font-bold rounded-xl hover:bg-customBlueHover transition-colors shadow-sm">
           Dismiss Details
         </button>
       </div>
