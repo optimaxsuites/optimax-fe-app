@@ -11,6 +11,9 @@ export interface CollabChannel {
   name: string;
   description: string;
   channelType: 'PUBLIC' | 'PRIVATE';
+  workspaceMode?: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID';
+  allowFolders?: boolean;
+  allowSubfolders?: boolean;
   status: 'ACTIVE' | 'INACTIVE';
   createdBy: number;
   createdAt: number[];
@@ -46,12 +49,24 @@ export interface CollabAttachmentFull {
   id: number;
   channelId: number;
   messageId: number;
+  folderId?: number | null;
   uploaderUserId: number;
   fileName: string;
   contentType: string;
   fileSize: number;
   downloadUrl: string;
   uploadedAt: string;
+}
+
+export interface CollabDocumentFolder {
+  id: number;
+  channelId: number;
+  parentFolderId?: number | null;
+  name: string;
+  description?: string;
+  createdBy: number;
+  createdAt?: string | number[];
+  updatedAt?: string | number[];
 }
 
 export interface CollabMember {
@@ -653,6 +668,9 @@ export class CollaborationService {
     name: string;
     description: string;
     channelType: 'PUBLIC' | 'PRIVATE';
+    workspaceMode?: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID';
+    allowFolders?: boolean;
+    allowSubfolders?: boolean;
     createdBy: number;
   }): Observable<CollabChannel> {
     return this.http.post<CollabChannel>(
@@ -668,6 +686,9 @@ export class CollaborationService {
       name: string;
       description: string;
       channelType: 'PUBLIC' | 'PRIVATE';
+      workspaceMode?: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID';
+      allowFolders?: boolean;
+      allowSubfolders?: boolean;
       createdBy: number;
     },
   ): Observable<CollabChannel> {
@@ -830,6 +851,69 @@ export class CollaborationService {
       `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/channel/${channelId}`,
       { headers: this.headers },
     );
+  }
+
+  getDocumentFolders(channelId: number): Observable<CollabDocumentFolder[]> {
+    return this.http.get<CollabDocumentFolder[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}/folders`,
+      { headers: this.headers },
+    );
+  }
+
+  createDocumentFolder(
+    channelId: number,
+    payload: { name: string; description?: string; parentFolderId?: number | null; createdBy?: number },
+  ): Observable<CollabDocumentFolder> {
+    return this.http.post<CollabDocumentFolder>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}/folders`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  updateDocumentFolder(
+    channelId: number,
+    folderId: number,
+    payload: { name: string; description?: string; parentFolderId?: number | null; createdBy?: number },
+  ): Observable<CollabDocumentFolder> {
+    return this.http.put<CollabDocumentFolder>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}/folders/${folderId}`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  deleteDocumentFolder(channelId: number, folderId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/channel/${channelId}/folders/${folderId}`,
+      { headers: this.headers },
+    );
+  }
+
+  getChannelDocuments(
+    channelId: number,
+    folderId?: number | null,
+  ): Observable<CollabAttachmentFull[]> {
+    const query = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+    return this.http.get<CollabAttachmentFull[]>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/channel/${channelId}/documents${query}`,
+      { headers: this.headers },
+    );
+  }
+
+  uploadChannelDocument(
+    channelId: number,
+    uploaderUserId: number,
+    file: File,
+    folderId?: number | null,
+  ): Observable<CollabAttachmentFull> {
+    let url = `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/channel/${channelId}/documents/upload?uploaderUserId=${uploaderUserId}`;
+    if (folderId) url += `&folderId=${folderId}`;
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<CollabAttachmentFull>(url, fd, {
+      headers: this.multipartHeaders,
+    });
   }
 
   deleteAttachment(attachmentId: number): Observable<void> {

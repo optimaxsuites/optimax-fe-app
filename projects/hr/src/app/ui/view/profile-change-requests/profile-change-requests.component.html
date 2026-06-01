@@ -138,12 +138,12 @@
         <div class="detail-group">
           <label>Changes:</label>
           <div class="changes-list">
-            <div *ngFor="let change of selectedRequest.request" class="change-item">
+            <div *ngFor="let change of filteredChanges" class="change-item">
               <div class="change-field">
                 <strong>{{ change.fieldName }}:</strong>
               </div>
               <div class="change-values">
-                <span class="old-value">{{ change.oldValue }}</span>
+                <span class="old-value">{{ change.oldValue || "Empty" }}</span>
                 <i class="fa-solid fa-arrow-right"></i>
                 <span class="new-value">{{ change.value }}</span>
               </div>

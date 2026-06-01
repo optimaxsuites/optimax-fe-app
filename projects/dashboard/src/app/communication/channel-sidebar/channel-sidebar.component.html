@@ -227,6 +227,11 @@
           </svg>
           <span class="flex-1 truncate text-[14px]">{{ ch.name }}</span>
           <span
+            *ngIf="isDocumentLibraryChannel(ch)"
+            class="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-bold uppercase tracking-[0.14em]"
+            title="Document library channel"
+          >Docs</span>
+          <span
             *ngIf="ch.channelType === 'PRIVATE'"
             class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-gray-400 opacity-60"
             title="Private channel"

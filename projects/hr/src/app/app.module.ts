@@ -1,6 +1,7 @@
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -231,8 +232,11 @@ import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedul
 import { BrowserModule } from '@angular/platform-browser';
 import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { BankDetailsChangeRequestComponent } from './ui/view/profile-change-requests/bank-details-change-request/bank-details-change-request.component';
+import { NokChangeRequestComponent } from './ui/view/profile-change-requests/nok-change-request/nok-change-request.component';
+// import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-change-requests/employee-change-requests-dashboard/employee-change-requests-dashboard.component';
 import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
+import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 
 
@@ -391,6 +395,8 @@ import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashb
     InviteModalComponent,
     ProfileChangeRequestsComponent,
     BankDetailsChangeRequestComponent,
+    NokChangeRequestComponent,
+    GuarantorChangeRequestComponent,
     EmployeeChangeRequestsDashboardComponent,
     EmployeeChangeRequestsSummaryComponent
   ],
@@ -456,6 +462,7 @@ import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashb
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
     AppHrRoutingModule,
+    EmployeeRelativesWidgetComponent,
   ],
   providers: [
     {

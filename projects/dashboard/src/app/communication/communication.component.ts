@@ -14,6 +14,8 @@ import {
   CollabChannelSnap,
   CollabMessage,
   CollabMember,
+  CollabAttachmentFull,
+  CollabDocumentFolder,
   CollaborationService,
   EmployeeProfile,
   UserPrimaryInfo,
@@ -105,9 +107,35 @@ export interface Channel {
   name: string;
   description?: string;
   channelType?: 'PUBLIC' | 'PRIVATE';
+  workspaceMode?: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID';
+  allowFolders?: boolean;
+  allowSubfolders?: boolean;
   createdBy?: number;
   hasUnread?: boolean;
   unreadCount?: number;
+}
+
+interface ChannelDocumentFile {
+  id: number;
+  folderId?: number | null;
+  name: string;
+  contentType?: string;
+  fileSize?: number;
+  downloadUrl?: string;
+  uploadedAt?: string;
+}
+
+interface DocumentFolderModalState {
+  open: boolean;
+  mode: 'create' | 'edit';
+  folderId: number | null;
+  name: string;
+  description: string;
+  parentFolderId: number | null;
+  createdByLabel: string;
+  createdAtLabel: string;
+  saving: boolean;
+  error: string;
 }
 
 export interface DmContact {
@@ -205,6 +233,8 @@ interface FeedThreadState {
   mentionResults: EmployeeProfile[];
   showMentionMenu: boolean;
 }
+
+const COLLAB_UNREAD_SNAPSHOT_KEY = 'optimax_collab_unread_snapshot';
 
 interface FeedCommentNode extends CollabFeedComment {
   replies: FeedCommentNode[];
@@ -460,11 +490,33 @@ export class CommunicationComponent
     name: '',
     description: '',
     channelType: 'PUBLIC' as 'PUBLIC' | 'PRIVATE',
+    workspaceMode: 'CHAT' as 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID',
+    allowFolders: false,
+    allowSubfolders: false,
     selectedUserIds: [] as number[],
     saving: false,
     error: '',
     editingChannelId: undefined as number | undefined,
     editingCreatedBy: undefined as number | undefined,
+  };
+
+  documentFolders: CollabDocumentFolder[] = [];
+  documentFiles: ChannelDocumentFile[] = [];
+  documentLibraryLoading = false;
+  documentLibraryError = '';
+  activeDocumentFolderId: number | null = null;
+  channelWorkspacePane: 'chat' | 'files' = 'chat';
+  documentFolderModal: DocumentFolderModalState = {
+    open: false,
+    mode: 'create',
+    folderId: null,
+    name: '',
+    description: '',
+    parentFolderId: null,
+    createdByLabel: '',
+    createdAtLabel: '',
+    saving: false,
+    error: '',
   };
 
   emailModal = {
@@ -749,6 +801,7 @@ export class CommunicationComponent
       unreadChannels,
       unreadDirectMessages,
     });
+    this.writeCurrentUnreadSnapshot();
   }
 
   private pushWorkspaceNotification(payload: {
@@ -3791,41 +3844,31 @@ export class CommunicationComponent
     if (!silent) this.channelsLoading = true;
     this.channelsError = null;
     this.channelsRequestInFlight = true;
-    this.collabService.getChannels().subscribe({
-      next: (list) => {
+    this.collabService.getHomeChannels().subscribe({
+      next: (home) => {
         this.clearChannelsRetryTimer();
         this.lastChannelsLoadedAt = Date.now();
-        this.mapAndSetChannels(list || []);
+        this.mapAndSetChannels(home?.channels || []);
         this.channelsRequestInFlight = false;
         this.flushPendingForcedChannelsRefresh();
       },
       error: () => {
-        this.collabService.getHomeChannels().subscribe({
-          next: (home) => {
-            this.clearChannelsRetryTimer();
-            this.lastChannelsLoadedAt = Date.now();
-            this.mapAndSetChannels(home?.channels || []);
-            this.channelsRequestInFlight = false;
-            this.flushPendingForcedChannelsRefresh();
-          },
-          error: () => {
-            this.channelsRequestInFlight = false;
-            this.flushPendingForcedChannelsRefresh();
-            if (!this.channels.length) {
-              this.channelsError = 'Could not load channels.';
-              this.channels = [];
-              this.scheduleChannelsRetry();
-            }
-            this.channelsLoading = false;
-            this.cdr.detectChanges();
-          },
-        });
+        this.channelsRequestInFlight = false;
+        this.flushPendingForcedChannelsRefresh();
+        if (!this.channels.length) {
+          this.channelsError = 'Could not load channels.';
+          this.channels = [];
+          this.scheduleChannelsRetry();
+        }
+        this.channelsLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
 
   private mapAndSetChannels(list: CollabChannel[]): void {
     this.channelsError = null;
+    const storedUnreadSnapshot = this.readStoredUnreadSnapshot();
     const existingChannelUnread = new Map(
       this.channels.map((channel) => [
         Number(channel.backendId),
@@ -3871,15 +3914,19 @@ export class CommunicationComponent
         const isActiveChannel = this.isViewingChannel(String(backendId));
         const serverUnreadCount = Number(c.unreadCount ?? 0);
         const preservedUnreadCount = existingChannelUnread.get(backendId) || 0;
+        const storedUnreadCount = storedUnreadSnapshot.channels.get(backendId) || 0;
         const unreadCount = isActiveChannel
           ? 0
-          : Math.max(serverUnreadCount, preservedUnreadCount);
+          : Math.max(serverUnreadCount, preservedUnreadCount, storedUnreadCount);
         return {
           id: String(backendId),
           backendId,
           name: c.name,
           description: c.description,
           channelType: c.channelType,
+          workspaceMode: c.workspaceMode || 'CHAT',
+          allowFolders: Boolean(c.allowFolders),
+          allowSubfolders: Boolean(c.allowSubfolders),
           createdBy: c.createdBy,
           hasUnread: !isActiveChannel && unreadCount > 0,
           unreadCount: unreadCount > 0 ? unreadCount : undefined,
@@ -3903,6 +3950,7 @@ export class CommunicationComponent
   }
 
   private mapDirectMessageChannels(list: CollabChannel[]): void {
+    const storedUnreadSnapshot = this.readStoredUnreadSnapshot();
     const existingDmUnread = new Map(
       this.dmContacts.map((contact) => [
         Number(contact.userId),
@@ -3960,6 +4008,7 @@ export class CommunicationComponent
       const unreadCount = Math.max(
         unreadByUserId.get(Number(contact.userId)) || 0,
         existingDmUnread.get(Number(contact.userId)) || 0,
+        storedUnreadSnapshot.dms.get(Number(contact.userId)) || 0,
       );
       contact.unreadCount = unreadCount > 0 ? unreadCount : undefined;
       contact.hasUnread = unreadCount > 0;
@@ -3972,6 +4021,69 @@ export class CommunicationComponent
         this.subscribeToDmContactChannels(contact);
       }
     }
+  }
+
+  private readStoredUnreadSnapshot(): {
+    channels: Map<number, number>;
+    dms: Map<number, number>;
+  } {
+    const channels = new Map<number, number>();
+    const dms = new Map<number, number>();
+    if (typeof sessionStorage === 'undefined') {
+      return { channels, dms };
+    }
+    try {
+      const raw = sessionStorage.getItem(COLLAB_UNREAD_SNAPSHOT_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      if (!Array.isArray(parsed)) {
+        return { channels, dms };
+      }
+      for (const entry of parsed) {
+        const unreadCount = Number(entry?.unreadCount || 0);
+        if (unreadCount <= 0) {
+          continue;
+        }
+        const backendId = Number(entry?.backendId || 0);
+        const dmUserId = Number(entry?.dmUserId || 0);
+        if (entry?.type === 'dm' && dmUserId > 0) {
+          dms.set(dmUserId, Math.max(dms.get(dmUserId) || 0, unreadCount));
+          continue;
+        }
+        if (backendId > 0) {
+          channels.set(backendId, Math.max(channels.get(backendId) || 0, unreadCount));
+        }
+      }
+    } catch (_) {}
+    return { channels, dms };
+  }
+
+  private writeCurrentUnreadSnapshot(): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+    try {
+      const snapshot = [
+        ...this.channels
+          .filter((channel) => Number(channel.unreadCount || 0) > 0)
+          .map((channel) => ({
+            backendId: Number(channel.backendId),
+            type: 'channel',
+            unreadCount: Number(channel.unreadCount || 0),
+          })),
+        ...this.dmContacts
+          .filter((contact) => Number(contact.unreadCount || 0) > 0)
+          .map((contact) => ({
+            backendId: Number(contact.dmChannelId || 0),
+            type: 'dm',
+            dmUserId: Number(contact.userId),
+            unreadCount: Number(contact.unreadCount || 0),
+          })),
+      ];
+      sessionStorage.setItem(
+        COLLAB_UNREAD_SNAPSHOT_KEY,
+        JSON.stringify(snapshot),
+      );
+    } catch (_) {}
   }
 
   private dmChannelIdsFor(contact: DmContact): number[] {
@@ -4235,6 +4347,9 @@ export class CommunicationComponent
       name: '',
       description: '',
       channelType: 'PUBLIC',
+      workspaceMode: 'CHAT',
+      allowFolders: false,
+      allowSubfolders: false,
       selectedUserIds: [],
       saving: false,
       error: '',
@@ -4255,6 +4370,9 @@ export class CommunicationComponent
       name: ch.name,
       description: ch.description || '',
       channelType: ch.channelType || 'PUBLIC',
+      workspaceMode: ch.workspaceMode || 'CHAT',
+      allowFolders: Boolean(ch.allowFolders),
+      allowSubfolders: Boolean(ch.allowSubfolders),
       selectedUserIds: [],
       saving: false,
       error: '',
@@ -4275,6 +4393,22 @@ export class CommunicationComponent
   }
   onChannelModalTypeChange(val: 'PUBLIC' | 'PRIVATE'): void {
     this.channelModal.channelType = val;
+  }
+  onChannelModalWorkspaceModeChange(val: 'CHAT' | 'DOCUMENT_LIBRARY' | 'HYBRID'): void {
+    this.channelModal.workspaceMode = val;
+    if (val === 'CHAT') {
+      this.channelModal.allowFolders = false;
+      this.channelModal.allowSubfolders = false;
+    }
+  }
+  onChannelModalAllowFoldersChange(val: boolean): void {
+    this.channelModal.allowFolders = val;
+    if (!val) {
+      this.channelModal.allowSubfolders = false;
+    }
+  }
+  onChannelModalAllowSubfoldersChange(val: boolean): void {
+    this.channelModal.allowSubfolders = this.channelModal.allowFolders ? val : false;
   }
   onChannelModalMemberToggle(userId: number): void {
     const idx = this.channelModal.selectedUserIds.indexOf(userId);
@@ -4307,6 +4441,9 @@ export class CommunicationComponent
           name: m.name.trim(),
           description: m.description.trim(),
           channelType: m.channelType,
+          workspaceMode: m.workspaceMode,
+          allowFolders: m.allowFolders,
+          allowSubfolders: m.allowSubfolders,
           createdBy: this.me.userId,
         })
         .subscribe({
@@ -4340,6 +4477,9 @@ export class CommunicationComponent
           name: m.name.trim(),
           description: m.description.trim(),
           channelType: m.channelType,
+          workspaceMode: m.workspaceMode,
+          allowFolders: m.allowFolders,
+          allowSubfolders: m.allowSubfolders,
           createdBy: m.editingCreatedBy!,
         })
         .subscribe({
@@ -4525,6 +4665,9 @@ export class CommunicationComponent
         name: ch.name,
         description: ch.description || '',
         channelType: ch.channelType || 'PUBLIC',
+        workspaceMode: ch.workspaceMode || 'CHAT',
+        allowFolders: Boolean(ch.allowFolders),
+        allowSubfolders: Boolean(ch.allowSubfolders),
         createdBy: userId,
       })
       .subscribe({
@@ -4578,6 +4721,309 @@ export class CommunicationComponent
 
   // ── Navigation ────────────────────────────────────────
 
+  isDocumentLibraryChannel(channel: Channel | null | undefined): boolean {
+    return channel?.workspaceMode === 'DOCUMENT_LIBRARY';
+  }
+
+  isHybridWorkspaceChannel(channel: Channel | null | undefined): boolean {
+    return channel?.workspaceMode === 'HYBRID';
+  }
+
+  hasFileWorkspace(channel: Channel | null | undefined): boolean {
+    return this.isDocumentLibraryChannel(channel) || this.isHybridWorkspaceChannel(channel);
+  }
+
+  isShowingDocumentLibrary(): boolean {
+    const activeChannel = this.activeChannel || null;
+    if (this.activeView !== 'channel' || !activeChannel) {
+      return false;
+    }
+    if (this.isDocumentLibraryChannel(activeChannel)) {
+      return true;
+    }
+    return this.isHybridWorkspaceChannel(activeChannel) && this.channelWorkspacePane === 'files';
+  }
+
+  switchHybridWorkspacePane(pane: 'chat' | 'files'): void {
+    const activeChannel = this.activeChannel;
+    if (!activeChannel || !this.isHybridWorkspaceChannel(activeChannel)) {
+      return;
+    }
+    this.channelWorkspacePane = pane;
+    if (pane === 'files') {
+      this.loadDocumentLibrary(activeChannel, this.activeDocumentFolderId);
+    } else {
+      this.focusMessageComposerSoon();
+      this.scrollToLatestMessageSoon();
+    }
+    this.cdr.detectChanges();
+  }
+
+  private resetDocumentLibraryState(): void {
+    this.documentFolders = [];
+    this.documentFiles = [];
+    this.documentLibraryError = '';
+    this.documentLibraryLoading = false;
+    this.activeDocumentFolderId = null;
+    this.documentFolderModal = {
+      open: false,
+      mode: 'create',
+      folderId: null,
+      name: '',
+      description: '',
+      parentFolderId: null,
+      createdByLabel: '',
+      createdAtLabel: '',
+      saving: false,
+      error: '',
+    };
+  }
+
+  private loadDocumentLibrary(channel: Channel, preferredFolderId?: number | null): void {
+    this.documentLibraryLoading = true;
+    this.documentLibraryError = '';
+    this.messagesLoading = false;
+    this.activeDocumentFolderId = preferredFolderId ?? this.activeDocumentFolderId ?? null;
+    this.collabService.getDocumentFolders(channel.backendId).subscribe({
+      next: (folders) => {
+        this.documentFolders = folders || [];
+        const hasActiveFolder = this.documentFolders.some(
+          (folder) => Number(folder.id) === Number(this.activeDocumentFolderId || 0),
+        );
+        if (!hasActiveFolder) {
+          this.activeDocumentFolderId = null;
+        }
+        this.loadDocumentFiles(channel.backendId, this.activeDocumentFolderId);
+      },
+      error: () => {
+        this.documentLibraryLoading = false;
+        this.documentLibraryError = 'Could not load folders.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private loadDocumentFiles(channelId: number, folderId?: number | null): void {
+    this.collabService.getChannelDocuments(channelId, folderId ?? null).subscribe({
+      next: (files) => {
+        this.documentFiles = (files || []).map((file) => ({
+          id: Number(file.id),
+          folderId: file.folderId ?? null,
+          name: file.fileName,
+          contentType: file.contentType,
+          fileSize: file.fileSize,
+          downloadUrl: file.downloadUrl,
+          uploadedAt: file.uploadedAt,
+        }));
+        this.documentLibraryLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.documentFiles = [];
+        this.documentLibraryLoading = false;
+        this.documentLibraryError = 'Could not load documents.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  activeDocumentFolders(): CollabDocumentFolder[] {
+    const parentId = this.activeDocumentFolderId ?? null;
+    return this.documentFolders.filter(
+      (folder) => Number(folder.parentFolderId || 0) === Number(parentId || 0),
+    );
+  }
+
+  currentDocumentFolder(): CollabDocumentFolder | null {
+    return (
+      this.documentFolders.find(
+        (entry) => Number(entry.id) === Number(this.activeDocumentFolderId || 0),
+      ) || null
+    );
+  }
+
+  currentDocumentParentFolderId(): number | null {
+    return this.currentDocumentFolder()?.parentFolderId ?? null;
+  }
+
+  formatFolderTimestamp(value?: string | number[]): string {
+    if (!value) return 'Not available';
+    const date = Array.isArray(value) ? new Date(Number(value[0]), Number(value[1] || 1) - 1, Number(value[2] || 1), Number(value[3] || 0), Number(value[4] || 0), Number(value[5] || 0)) : new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Not available' : date.toLocaleString();
+  }
+
+  folderCreatedByLabel(userId?: number | null): string {
+    const uid = Number(userId || 0);
+    if (!uid) return this.me.name || 'Unknown user';
+    return this.userDirectory[uid] || (uid === Number(this.me.userId) ? this.me.name : `User ${uid}`);
+  }
+
+  documentBreadcrumbs(): CollabDocumentFolder[] {
+    const crumbs: CollabDocumentFolder[] = [];
+    let cursor = this.currentDocumentFolder();
+    const seen = new Set<number>();
+    while (cursor && !seen.has(Number(cursor.id))) {
+      crumbs.unshift(cursor);
+      seen.add(Number(cursor.id));
+      cursor =
+        this.documentFolders.find(
+          (entry) => Number(entry.id) === Number(cursor?.parentFolderId || 0),
+        ) || null;
+    }
+    return crumbs;
+  }
+
+  activeDocumentFolderName(): string {
+    return this.currentDocumentFolder()?.name || 'Root';
+  }
+
+  openDocumentFolder(folderId: number | null): void {
+    const activeChannel = this.activeChannel;
+    if (!activeChannel || !this.hasFileWorkspace(activeChannel)) {
+      return;
+    }
+    this.activeDocumentFolderId = folderId;
+    this.loadDocumentFiles(activeChannel.backendId, folderId);
+  }
+
+  openCreateDocumentFolderModal(): void {
+    const activeChannel = this.activeChannel;
+    if (!activeChannel || !this.hasFileWorkspace(activeChannel) || !activeChannel.allowFolders) {
+      return;
+    }
+    if (this.activeDocumentFolderId != null && !activeChannel.allowSubfolders) {
+      this.documentLibraryError = 'This channel allows folders but not subfolders.';
+      this.cdr.detectChanges();
+      return;
+    }
+    this.documentFolderModal = {
+      open: true,
+      mode: 'create',
+      folderId: null,
+      name: '',
+      description: '',
+      parentFolderId: this.activeDocumentFolderId,
+      createdByLabel: this.me.name,
+      createdAtLabel: new Date().toLocaleString(),
+      saving: false,
+      error: '',
+    };
+  }
+
+  openEditDocumentFolderModal(folder: CollabDocumentFolder, event?: Event): void {
+    event?.stopPropagation();
+    this.documentFolderModal = {
+      open: true,
+      mode: 'edit',
+      folderId: folder.id,
+      name: folder.name,
+      description: folder.description || '',
+      parentFolderId: folder.parentFolderId ?? null,
+      createdByLabel: this.folderCreatedByLabel(folder.createdBy),
+      createdAtLabel: this.formatFolderTimestamp(folder.createdAt),
+      saving: false,
+      error: '',
+    };
+  }
+
+  closeDocumentFolderModal(): void {
+    this.documentFolderModal = {
+      ...this.documentFolderModal,
+      open: false,
+      saving: false,
+      error: '',
+    };
+  }
+
+  saveDocumentFolderModal(): void {
+    const activeChannel = this.activeChannel;
+    const modal = this.documentFolderModal;
+    if (!activeChannel || !this.hasFileWorkspace(activeChannel)) return;
+    if (!modal.name.trim()) {
+      this.documentFolderModal = { ...modal, error: 'Folder name is required.' };
+      return;
+    }
+    this.documentFolderModal = { ...modal, saving: true, error: '' };
+    const payload = {
+      name: modal.name.trim(),
+      description: modal.description.trim(),
+      parentFolderId: modal.parentFolderId,
+      createdBy: this.me.userId,
+    };
+    const request =
+      modal.mode === 'create'
+        ? this.collabService.createDocumentFolder(activeChannel.backendId, payload)
+        : this.collabService.updateDocumentFolder(activeChannel.backendId, Number(modal.folderId), payload);
+    request.subscribe({
+      next: () => {
+        this.closeDocumentFolderModal();
+        this.loadDocumentLibrary(activeChannel, this.activeDocumentFolderId);
+      },
+      error: () => {
+        this.documentFolderModal = {
+          ...this.documentFolderModal,
+          saving: false,
+          error: modal.mode === 'create' ? 'Failed to create folder.' : 'Failed to update folder.',
+        };
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  renameDocumentFolder(folder: CollabDocumentFolder, event?: Event): void {
+    this.openEditDocumentFolderModal(folder, event);
+  }
+
+  deleteDocumentFolder(folder: CollabDocumentFolder, event?: Event): void {
+    event?.stopPropagation();
+    const activeChannel = this.activeChannel;
+    if (!activeChannel || !this.hasFileWorkspace(activeChannel)) {
+      return;
+    }
+    if (!confirm(`Delete folder "${folder.name}"? This only works if it is empty.`)) {
+      return;
+    }
+    this.collabService.deleteDocumentFolder(activeChannel.backendId, folder.id).subscribe({
+      next: () => {
+        const fallbackFolderId =
+          Number(this.activeDocumentFolderId) === Number(folder.id)
+            ? folder.parentFolderId ?? null
+            : this.activeDocumentFolderId;
+        this.loadDocumentLibrary(activeChannel, fallbackFolderId);
+      },
+      error: () => {
+        this.documentLibraryError = 'Failed to delete folder. Ensure it has no subfolders or documents.';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  uploadDocumentFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    const activeChannel = this.activeChannel;
+    if (!files.length || !activeChannel || !this.hasFileWorkspace(activeChannel)) {
+      if (input) input.value = '';
+      return;
+    }
+    this.documentLibraryLoading = true;
+    Promise.all(
+      files.map((file) =>
+        firstValueFrom(
+          this.collabService.uploadChannelDocument(
+            activeChannel.backendId,
+            this.me.userId,
+            file,
+            this.activeDocumentFolderId,
+          ),
+        ).catch(() => null),
+      ),
+    ).finally(() => {
+      input.value = '';
+      this.loadDocumentLibrary(activeChannel, this.activeDocumentFolderId);
+    });
+  }
+
   selectChannel(id: string, switchWorkspace = false): void {
     if (this.activeView === 'channel' && this.activeChannelId === id) {
       this.workspaceMode = 'chat';
@@ -4586,6 +5032,12 @@ export class CommunicationComponent
       this.showPinnedPanel = false;
       this.showSearch = false;
       const activeChannel = this.channels.find((channel) => channel.id === id);
+      if (activeChannel && this.hasFileWorkspace(activeChannel)) {
+        this.channelWorkspacePane = 'files';
+        this.loadDocumentLibrary(activeChannel, this.activeDocumentFolderId);
+        this.cdr.detectChanges();
+        return;
+      }
       if (activeChannel?.unreadCount) {
         activeChannel.hasUnread = false;
         activeChannel.unreadCount = undefined;
@@ -4616,6 +5068,15 @@ export class CommunicationComponent
     this.showSearch = false;
     const ch = this.channels.find((c) => c.id === id);
     if (ch) {
+      this.channelWorkspacePane = this.hasFileWorkspace(ch) ? 'files' : 'chat';
+      if (this.hasFileWorkspace(ch)) {
+        this.resetDocumentLibraryState();
+        this.loadDocumentLibrary(ch);
+      }
+      if (this.isDocumentLibraryChannel(ch)) {
+        this.cdr.detectChanges();
+        return;
+      }
       this.presenceChannelId = ch.backendId;
       if (
         this.channelMessages[id] !== undefined &&
@@ -5543,6 +6004,11 @@ export class CommunicationComponent
     return 'Several people are typing…';
   }
 
+  private shouldDisableTypingEndpoint(err: any): boolean {
+    const status = Number(err?.status || 0);
+    return status === 0 || status === 502 || status === 503 || status === 504;
+  }
+
   onComposerTyping(): void {
     if (this.typingEndpointBlocked) return;
     const chId =
@@ -5553,7 +6019,7 @@ export class CommunicationComponent
     clearTimeout(this.typingTimer);
     this.collabService.setTyping(chId, true).subscribe({
       error: (err) => {
-        if (err?.status === 0) {
+        if (this.shouldDisableTypingEndpoint(err)) {
           this.typingEndpointBlocked = true;
         }
       },
@@ -5562,7 +6028,7 @@ export class CommunicationComponent
       if (this.typingEndpointBlocked) return;
       this.collabService.setTyping(chId, false).subscribe({
         error: (err) => {
-          if (err?.status === 0) {
+          if (this.shouldDisableTypingEndpoint(err)) {
             this.typingEndpointBlocked = true;
           }
         },
@@ -7870,6 +8336,13 @@ export class CommunicationComponent
         setTimeout(() => URL.revokeObjectURL(obj), 10_000);
       })
       .catch((err) => console.error('[Comm] download failed:', err));
+  }
+
+  downloadDocumentFile(file: ChannelDocumentFile, event: Event): void {
+    this.downloadAttachment(
+      { name: file.name, downloadUrl: file.downloadUrl },
+      event,
+    );
   }
 
   openThreadFromList(msg: Message, event: Event): void {

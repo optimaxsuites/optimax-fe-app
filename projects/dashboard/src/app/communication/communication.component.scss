@@ -128,6 +128,33 @@
   overflow: visible !important;
 }
 
+.document-library-shell {
+  min-width: 0;
+}
+
+.document-library-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100%;
+}
+
+.document-library-sidebar,
+.document-library-content,
+.document-library-heading,
+.document-library-files {
+  min-width: 0;
+}
+
+.document-library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.document-library-breadcrumbs button {
+  max-width: 100%;
+}
+
 .workspace-overview,
 .workspace-toolbar,
 .feed-composer-card,
@@ -1963,6 +1990,35 @@
 }
 
 @media (max-width: 920px) {
+  .document-library-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .document-library-sidebar {
+    border-right: 0 !important;
+    border-bottom: 1px solid #e5e7eb;
+    max-height: 34vh;
+  }
+
+  .document-library-content {
+    padding: 1rem !important;
+  }
+
+  .document-library-header {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .document-library-actions {
+    justify-content: stretch;
+    gap: 0.65rem !important;
+  }
+
+  .document-library-actions > * {
+    flex: 1 1 100%;
+  }
+
   .comm-shell {
     padding: 0.75rem;
     gap: 0.75rem;
@@ -2175,6 +2231,43 @@
 }
 
 @media (max-width: 680px) {
+  .document-library-sidebar {
+    padding: 0.85rem !important;
+    max-height: 38vh;
+  }
+
+  .document-library-content {
+    padding: 0.85rem !important;
+  }
+
+  .document-library-heading h3 {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .document-library-breadcrumbs {
+    gap: 0.35rem !important;
+  }
+
+  .document-library-breadcrumbs button {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .document-library-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .document-library-files > button {
+    padding: 0.85rem 0.95rem;
+  }
+
+  .document-library-primary-btn {
+    width: 100%;
+  }
+
   .comm-shell {
     padding: 0.5rem;
     gap: 0.5rem;

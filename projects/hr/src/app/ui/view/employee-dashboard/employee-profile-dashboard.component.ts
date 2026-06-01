@@ -9,10 +9,32 @@ import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
+export interface NextOfKin {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  DOB?: string;
+  emergencyContact?: boolean;
+}
+
+export interface Guarantor {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  yearsKnown?: number;
+}
 
 @Component({
   selector: 'app-employee-profile-dashboard',
@@ -31,7 +53,17 @@ export class EmployeeProfileDashboardComponent {
   isBankChangeRequestOpen = false;
   bankChangeRequestForm: FormGroup;
   submittingBankChangeRequest = false;
+  isNokChangeRequestOpen = false;
+  nokChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedNokRecord: NextOfKin | null = null;
+  nokChangeHeader = 'Add Next of Kin';
+  isGuarantorChangeRequestOpen = false;
+  guarantorChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedGuarantorRecord: Guarantor | null = null;
+  guarantorChangeHeader = 'Add Guarantor';
   editForm: FormGroup;
+  nextOfKinList: NextOfKin[] = [];
+  guarantorList: Guarantor[] = [];
   nigerianBanks = [
     'Access Bank',
     'Zenith Bank',
@@ -77,7 +109,8 @@ export class EmployeeProfileDashboardComponent {
     private messageService: MessageService,
     private fb: FormBuilder,
     private router: Router,
-    private profileChangeRequestService: ProfileChangeRequestService
+    private profileChangeRequestService: ProfileChangeRequestService,
+    // private http: HttpClient
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -489,6 +522,9 @@ export class EmployeeProfileDashboardComponent {
   private applyEmployeeView(employee: any): void {
     this.employeeInView = employee;
     this.patchEditForm();
+
+    // Load employee relatives
+    this.loadEmployeeRelatives();
 
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
@@ -927,6 +963,100 @@ export class EmployeeProfileDashboardComponent {
           key: 'global',
         });
       },
+    });
+  }
+
+  loadEmployeeRelatives(): void {
+    if (!this.employeeInView?.id) return;
+          // this.nextOfKinList = this.employeeInView.nextOfKin || [];
+
+
+    this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.nextOfKinList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.nextOfKinList = [];
+        },
+      })
+
+    this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.guarantorList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.guarantorList = [];
+        },
+      })
+  }
+
+  // NOK Change Request Methods
+  openNokChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: NextOfKin): void {
+    this.nokChangeType = changeType;
+    this.selectedNokRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.nokChangeHeader = 'Add Next of Kin';
+    } else if (changeType === 'edit') {
+      this.nokChangeHeader = `Edit: ${record?.fullName || 'Next of Kin'}`;
+    } else if (changeType === 'delete') {
+      this.nokChangeHeader = `Delete: ${record?.fullName || 'Next of Kin'}`;
+    }
+    
+    this.isNokChangeRequestOpen = true;
+  }
+
+  closeNokChangeRequest(): void {
+    this.isNokChangeRequestOpen = false;
+    this.nokChangeType = 'add';
+    this.selectedNokRecord = null;
+    this.nokChangeHeader = 'Add Next of Kin';
+  }
+
+  onNokChangeRequestSubmitted(event: any): void {
+    this.closeNokChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your next of kin request has been submitted for review.',
+      key: 'tl',
+    });
+  }
+
+  // Guarantor Change Request Methods
+  openGuarantorChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: Guarantor): void {
+    this.guarantorChangeType = changeType;
+    this.selectedGuarantorRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.guarantorChangeHeader = 'Add Guarantor';
+    } else if (changeType === 'edit') {
+      this.guarantorChangeHeader = `Edit: ${record?.fullName || 'Guarantor'}`;
+    } else if (changeType === 'delete') {
+      this.guarantorChangeHeader = `Delete: ${record?.fullName || 'Guarantor'}`;
+    }
+    
+    this.isGuarantorChangeRequestOpen = true;
+  }
+
+  closeGuarantorChangeRequest(): void {
+    this.isGuarantorChangeRequestOpen = false;
+    this.guarantorChangeType = 'add';
+    this.selectedGuarantorRecord = null;
+    this.guarantorChangeHeader = 'Add Guarantor';
+  }
+
+  onGuarantorChangeRequestSubmitted(event: any): void {
+    this.closeGuarantorChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your guarantor request has been submitted for review.',
+      key: 'tl',
     });
   }
 }

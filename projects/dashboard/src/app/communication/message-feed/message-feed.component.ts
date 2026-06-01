@@ -523,10 +523,16 @@ export class MessageFeedComponent {
   }
 
   messageHtml(content: string): string {
+    const decoded = this.decodeHtmlEntities(content || '');
+    const extractedJson = this.extractStructuredJson(decoded);
+    if (extractedJson) {
+      return extractedJson
+        .split('\n')
+        .map((line) => this.highlightStructuredLine(line || ' ', 'json'))
+        .join('<br>');
+    }
     const escaped = this.escapeHtml(
-      this.cleanStructuredPasteArtifacts(
-        this.decodeHtmlEntities(content || ''),
-      ),
+      this.cleanStructuredPasteArtifacts(decoded),
     );
     return this.mentionifyHtml(escaped
       .replace(this.urlRegex, (rawUrl) => {
@@ -666,8 +672,12 @@ export class MessageFeedComponent {
     let cleaned = value || '';
     cleaned = cleaned.replace(/https:\s*class="token[^"]*">\s*\/\//gi, 'https://');
     cleaned = cleaned.replace(/http:\s*class="token[^"]*">\s*\/\//gi, 'http://');
+    cleaned = cleaned.replace(/https:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'http://');
     cleaned = cleaned.replace(/(?:<span\s+)?class="token[^"]*">/gi, '');
+    cleaned = cleaned.replace(/(?:&lt;span\s+)?class=&quot;token[^&]*&quot;>/gi, '');
     cleaned = cleaned.replace(/<\/span>/gi, '');
+    cleaned = cleaned.replace(/&lt;\/span&gt;/gi, '');
     cleaned = cleaned.replace(/\u00a0/g, ' ');
     cleaned = cleaned.replace(/\s+(?=")/g, ' ');
     cleaned = cleaned.replace(/:\s+(?=")/g, ': ');
@@ -684,17 +694,21 @@ export class MessageFeedComponent {
     if (parsedDirect) {
       return parsedDirect;
     }
-
-    const urlMatch = cleaned.match(/https?:\/\/\S+/i);
-    const jsonSlice = this.findJsonSlice(cleaned);
-    if (!jsonSlice) {
+    const jsonBlocks = this.findJsonBlocks(cleaned);
+    if (!jsonBlocks.length) {
       return null;
     }
-    const formattedJson = this.tryFormatJson(jsonSlice);
-    if (!formattedJson) {
-      return null;
-    }
-    return urlMatch ? `${urlMatch[0]}\n${formattedJson}` : formattedJson;
+    const formattedBlocks = jsonBlocks
+      .map((block) => {
+        const formattedJson = this.tryFormatJson(block.json);
+        if (!formattedJson) {
+          return null;
+        }
+        const prefix = this.normalizeStructuredPrefix(block.prefix);
+        return prefix ? `${prefix}\n${formattedJson}` : formattedJson;
+      })
+      .filter((value): value is string => !!value);
+    return formattedBlocks.length ? formattedBlocks.join('\n\n') : null;
   }
 
   private tryFormatJson(value: string): string | null {
@@ -705,18 +719,76 @@ export class MessageFeedComponent {
     }
   }
 
-  private findJsonSlice(value: string): string | null {
-    const objectStart = value.indexOf('{');
-    const objectEnd = value.lastIndexOf('}');
-    if (objectStart >= 0 && objectEnd > objectStart) {
-      return value.slice(objectStart, objectEnd + 1).trim();
+  private findJsonBlocks(value: string): Array<{ prefix: string; json: string }> {
+    const blocks: Array<{ prefix: string; json: string }> = [];
+    let depth = 0;
+    let start = -1;
+    let cursor = 0;
+    let inString = false;
+    let escaping = false;
+
+    for (let index = 0; index < value.length; index++) {
+      const char = value[index];
+      if (inString) {
+        if (escaping) {
+          escaping = false;
+          continue;
+        }
+        if (char === '\\') {
+          escaping = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (char === '{' || char === '[') {
+        if (depth === 0) {
+          start = index;
+        }
+        depth++;
+        continue;
+      }
+
+      if (char === '}' || char === ']') {
+        if (depth <= 0) {
+          continue;
+        }
+        depth--;
+        if (depth === 0 && start >= 0) {
+          blocks.push({
+            prefix: value.slice(cursor, start).trim(),
+            json: value.slice(start, index + 1).trim(),
+          });
+          cursor = index + 1;
+          start = -1;
+        }
+      }
     }
-    const arrayStart = value.indexOf('[');
-    const arrayEnd = value.lastIndexOf(']');
-    if (arrayStart >= 0 && arrayEnd > arrayStart) {
-      return value.slice(arrayStart, arrayEnd + 1).trim();
+
+    return blocks;
+  }
+
+  private normalizeStructuredPrefix(value: string): string {
+    const cleaned = (value || '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*:\s*$/g, '')
+      .trim();
+    if (!cleaned) {
+      return '';
     }
-    return null;
+    const lines = cleaned
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => !!line);
+    return lines.join('\n');
   }
 
   private highlightStructuredLine(

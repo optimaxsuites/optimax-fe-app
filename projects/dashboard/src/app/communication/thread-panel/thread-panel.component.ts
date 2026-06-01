@@ -304,11 +304,15 @@ export class ThreadPanelComponent {
 
   messageHtml(content: string): string {
     const decoded = this.decodeHtmlEntities(content || '');
+    const extractedJson = this.extractStructuredJson(decoded);
+    if (extractedJson) {
+      return this.linkifyPlainText(extractedJson);
+    }
     if (typeof document === 'undefined') {
-      return this.mentionifyHtml(this.linkifyPlainText(decoded));
+      return this.mentionifyHtml(this.linkifyPlainText(this.cleanStructuredPasteArtifacts(decoded)));
     }
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = decoded;
+    wrapper.innerHTML = this.cleanStructuredPasteArtifacts(decoded);
     const hasMarkup = wrapper.querySelector('*');
     if (hasMarkup) {
       wrapper.querySelectorAll('a').forEach((anchor) => {
@@ -329,7 +333,9 @@ export class ThreadPanelComponent {
       });
       return this.mentionifyHtml(wrapper.innerHTML);
     }
-    return this.mentionifyHtml(this.linkifyPlainText(decoded));
+    return this.mentionifyHtml(
+      this.linkifyPlainText(this.cleanStructuredPasteArtifacts(decoded)),
+    );
   }
 
   private linkifyPlainText(value: string): string {
@@ -340,6 +346,129 @@ export class ThreadPanelComponent {
         return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="thread-link">${safeLabel}</a>`;
       })
       .replace(/\n/g, '<br>');
+  }
+
+  private cleanStructuredPasteArtifacts(value: string): string {
+    let cleaned = value || '';
+    cleaned = cleaned.replace(/https:\s*class="token[^"]*">\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*class="token[^"]*">\s*\/\//gi, 'http://');
+    cleaned = cleaned.replace(/https:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'https://');
+    cleaned = cleaned.replace(/http:\s*&quot;?\s*class=&quot;token[^&]*&quot;>\s*\/\//gi, 'http://');
+    cleaned = cleaned.replace(/(?:<span\s+)?class="token[^"]*">/gi, '');
+    cleaned = cleaned.replace(/(?:&lt;span\s+)?class=&quot;token[^&]*&quot;>/gi, '');
+    cleaned = cleaned.replace(/<\/span>/gi, '');
+    cleaned = cleaned.replace(/&lt;\/span&gt;/gi, '');
+    cleaned = cleaned.replace(/\u00a0/g, ' ');
+    cleaned = cleaned.replace(/\s+(?=")/g, ' ');
+    cleaned = cleaned.replace(/:\s+(?=")/g, ': ');
+    cleaned = cleaned.replace(/,\s+(?=")/g, ', ');
+    cleaned = cleaned.replace(/([{[])\s+(?=")/g, '$1 ');
+    cleaned = cleaned.replace(/[ \t]+\n/g, '\n');
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    return cleaned.trim();
+  }
+
+  private extractStructuredJson(content: string): string | null {
+    const cleaned = this.cleanStructuredPasteArtifacts(content);
+    const parsedDirect = this.tryFormatJson(cleaned);
+    if (parsedDirect) {
+      return parsedDirect;
+    }
+    const jsonBlocks = this.findJsonBlocks(cleaned);
+    if (!jsonBlocks.length) {
+      return null;
+    }
+    const formattedBlocks = jsonBlocks
+      .map((block) => {
+        const formattedJson = this.tryFormatJson(block.json);
+        if (!formattedJson) {
+          return null;
+        }
+        const prefix = this.normalizeStructuredPrefix(block.prefix);
+        return prefix ? `${prefix}\n${formattedJson}` : formattedJson;
+      })
+      .filter((value): value is string => !!value);
+    return formattedBlocks.length ? formattedBlocks.join('\n\n') : null;
+  }
+
+  private tryFormatJson(value: string): string | null {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return null;
+    }
+  }
+
+  private findJsonBlocks(value: string): Array<{ prefix: string; json: string }> {
+    const blocks: Array<{ prefix: string; json: string }> = [];
+    let depth = 0;
+    let start = -1;
+    let cursor = 0;
+    let inString = false;
+    let escaping = false;
+
+    for (let index = 0; index < value.length; index++) {
+      const char = value[index];
+      if (inString) {
+        if (escaping) {
+          escaping = false;
+          continue;
+        }
+        if (char === '\\') {
+          escaping = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (char === '{' || char === '[') {
+        if (depth === 0) {
+          start = index;
+        }
+        depth++;
+        continue;
+      }
+
+      if (char === '}' || char === ']') {
+        if (depth <= 0) {
+          continue;
+        }
+        depth--;
+        if (depth === 0 && start >= 0) {
+          blocks.push({
+            prefix: value.slice(cursor, start).trim(),
+            json: value.slice(start, index + 1).trim(),
+          });
+          cursor = index + 1;
+          start = -1;
+        }
+      }
+    }
+
+    return blocks;
+  }
+
+  private normalizeStructuredPrefix(value: string): string {
+    const cleaned = (value || '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*:\s*$/g, '')
+      .trim();
+    if (!cleaned) {
+      return '';
+    }
+    const lines = cleaned
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => !!line);
+    return lines.join('\n');
   }
 
   onRenderedContentHover(event: MouseEvent): void {

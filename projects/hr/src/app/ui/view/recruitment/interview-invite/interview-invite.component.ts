@@ -93,7 +93,13 @@ export class InterviewInviteComponent implements OnInit {
     if (!content) return '';
     let processed = content;
     // Replace placeholders like {{name}} or {{job}} based on candidate input
-    processed = processed.replace(/{{name}}/g, `${this.candidate?.firstname} ${this.candidate?.lastname}`);
+    const candidateName = this.getCandidateName();
+    processed = processed
+      .replace(/{{name}}/g, candidateName)
+      .replace(/{{candidateName}}/g, candidateName)
+      .replace(/{{job}}/g, this.getCandidatePosition())
+      .replace(/{{jobTitle}}/g, this.getCandidatePosition())
+      .replace(/{{position}}/g, this.getCandidatePosition());
     
     // Map custom field responses
     Object.keys(this.interviewInviteSetup.customResponses).forEach(key => {
@@ -106,28 +112,60 @@ export class InterviewInviteComponent implements OnInit {
 
   sendFinalMail() {
     this.sendLoading = true;
+    const subject = this.resolveFinalContent(this.selectedInviteTemplate?.subject || '');
+    const body = this.resolveFinalContent(this.selectedInviteTemplate?.body || '');
     const payload = {
-      templateId: this.selectedInviteTemplate.id,
-      candidateId: this.candidate.id,
+      templateId: this.selectedInviteTemplate?.id,
+      candidateId: this.candidate?.id,
       panel: this.interviewInviteSetup.panelMembers,
-      content: this.resolveFinalContent(this.selectedInviteTemplate.body)
+      subject,
+      content: body
     };
 
-    this.onComplete.emit(payload);
-
-    // this.mailService.sendInterviewInvite(payload).subscribe({
-    //   next: () => {
-    //     this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Invite Sent' });
-    //     this.close();
-        
-    //   },
-    //   error: () => { this.sendLoading = false; }
-    // });
+    this.mailService.sendMail({
+      name: this.getCandidateFirstName(),
+      recieverEmail: this.candidate?.email || '',
+      subject,
+      body
+    }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Invite Sent' });
+        this.onComplete.emit(payload);
+        this.close();
+      },
+      error: (error) => {
+        console.error('Error sending interview invite:', error);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invite could not be sent' });
+        this.sendLoading = false;
+      }
+    });
   }
 
   close() {
     this.visible = false;
     this.visibleChange.emit(false);
     this.isStepTwo = false;
+  }
+
+  private getCandidateName(): string {
+    return (
+      this.candidate?.fullName ||
+      this.candidate?.fullname ||
+      this.candidate?.candidateName ||
+      `${this.candidate?.firstname || this.candidate?.firstName || ''} ${this.candidate?.lastname || this.candidate?.lastName || ''}`.trim()
+    );
+  }
+
+  private getCandidateFirstName(): string {
+    return this.candidate?.firstname || this.candidate?.firstName || this.getCandidateName().split(' ')[0] || 'Candidate';
+  }
+
+  private getCandidatePosition(): string {
+    return (
+      this.candidate?.position ||
+      this.candidate?.jobVacancy?.jobTitle ||
+      this.candidate?.job?.title ||
+      'the position'
+    );
   }
 }

@@ -32,6 +32,9 @@ export interface ApplicantDTO{
     offerSubject?: string;
     offerLetter?: string;
     offerAttachments?: AttachmentDTO[];
+    offerStatus?: 'Sent' | 'Accepted' | 'Rejected';
+    offeredAt?: string;
+    offeredInterviewStage?: number;
 
     appointmentSubject?: string;
     appointmentLetter?: string;
