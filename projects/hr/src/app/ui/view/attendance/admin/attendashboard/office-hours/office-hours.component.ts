@@ -84,24 +84,128 @@ export class OfficeHoursComponent implements OnInit{
   ) {}
 
   ngOnInit() {
-    const hours = this.officeHoursService.getOfficeHours();
+
+  // CREATE FORM FIRST
+  this.form = this.fb.group({
+    openingTime: ['09:00'],
+    closingTime: ['17:00'],
+    absentTime: ['10:00'],
+    latenessGracePeriod: ['09:15'],
+    lat: [null],
+    lng: [null]
+  },
+  { validators: officeHoursValidator });
+
+
+
+  // FETCH FROM BACKEND
+  this.officeHoursService.fetchCurrentOfficeHours()
+  .subscribe({
+
+    next: (res) => {
+
+      console.log('CURRENT OFFICE HOURS:', res);
+
+      this.officeHoursService.officeHoursId = res.id;
+
+      const hours = {
+
+        openingTime:
+          `${res.openingTime.hour.toString().padStart(2, '0')}:${res.openingTime.minute.toString().padStart(2, '0')}`,
+
+        closingTime:
+          `${res.closingTime.hour.toString().padStart(2, '0')}:${res.closingTime.minute.toString().padStart(2, '0')}`,
+
+        absentTime:
+          `${res.absentTime.hour.toString().padStart(2, '0')}:${res.absentTime.minute.toString().padStart(2, '0')}`,
+
+        latenessGracePeriod:
+          `${res.latenessGracePeriod.hour.toString().padStart(2, '0')}:${res.latenessGracePeriod.minute.toString().padStart(2, '0')}`,
+
+        companyLatitude: Number(res.companyLatitude),
+
+        companyLongitude: Number(res.companyLongitude)
+      };
+
+
+      // STORE COMPANY LOCATION
+      this.companyLatitude = hours.companyLatitude;
+      this.companyLongitude = hours.companyLongitude;
+
+
+      // PATCH FORM
+      this.form.patchValue({
+        openingTime: hours.openingTime,
+        closingTime: hours.closingTime,
+        absentTime: hours.absentTime,
+        latenessGracePeriod: hours.latenessGracePeriod,
+        lat: hours.companyLatitude,
+        lng: hours.companyLongitude
+      });
+
+    },
+
+    error: (err) => {
+      console.warn('No office hours yet:', err);
+    }
+
+  });
+
+}
+
+  /*ngOnInit() {
+    //const hours = this.officeHoursService.getOfficeHours();
+
+    
+
+    this.officeHoursService.fetchCurrentOfficeHours()
+.subscribe({
+  next: (res) => {
+
+    console.log('CURRENT OFFICE HOURS:', res);
+
+    this.officeHoursService.officeHoursId = res.id;
+
+    const hours = {
+      openingTime:
+        `${res.openingTime.hour.toString().padStart(2, '0')}:${res.openingTime.minute.toString().padStart(2, '0')}`,
+
+      closingTime:
+        `${res.closingTime.hour.toString().padStart(2, '0')}:${res.closingTime.minute.toString().padStart(2, '0')}`,
+
+      absentTime:
+        `${res.absentTime.hour.toString().padStart(2, '0')}:${res.absentTime.minute.toString().padStart(2, '0')}`,
+
+      latenessGracePeriod:
+        `${res.latenessGracePeriod.hour.toString().padStart(2, '0')}:${res.latenessGracePeriod.minute.toString().padStart(2, '0')}`,
+
+      companyLatitude: Number(res.companyLatitude),
+
+      companyLongitude: Number(res.companyLongitude)
+    };
+
+    this.form.patchValue({
+      openingTime: hours.openingTime,
+      closingTime: hours.closingTime,
+      absentTime: hours.absentTime,
+      latenessGracePeriod: hours.latenessGracePeriod,
+      lat: hours.companyLatitude,
+      lng: hours.companyLongitude
+    });
+  },
+
+  error: (err) => {
+    console.warn('No office hours yet:', err);
+  }
+});
     /*this.selectedMode = this.officeHoursService.getScheduleMode();*/
 
     // Load saved company location
-  this.companyName = hours.companyName ?? '';
+  /*this.companyName = hours.companyName ?? '';
   this.companyLatitude = hours.companyLatitude ?? null;
   this.companyLongitude = hours.companyLongitude ?? null;
 
-    this.form = this.fb.group({
-      openingTime: [hours.openingTime],
-      closingTime: [hours.closingTime],
-      absentTime: [hours.absentTime],
-      latenessGracePeriod: [hours.latenessGracePeriod],
-      lat: [this.companyLatitude],
-      lng: [this.companyLongitude]
-    },
-    {validators: officeHoursValidator});
-  }
+  }*/
 
   /*openLocationPicker() {
   this.locationPickerOpen = true;
