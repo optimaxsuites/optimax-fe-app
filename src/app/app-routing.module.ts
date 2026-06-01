@@ -31,8 +31,13 @@ const routes: Routes = [
     component: PaystackComponent
   },
   {
-    path: 'paystack/initiate-transfer',
+    path: 'paystack/initiate-transfer/:uuid',
     component: PaystackInitiateTransferComponent
+  },
+  {
+    path: 'paystack/initiate-transfer',
+    redirectTo: 'paystack/initiate-transfer/default',
+    pathMatch: 'full'
   },
   {
     path: '',
@@ -81,7 +86,13 @@ const routes: Routes = [
   { path: 'reports/income-statement', component: IncomeStatementComponent },
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
-  { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
+  { path: 'bankaccountoverview/:uuid', component: BankAccountOverviewComponent },
+  {
+    path: 'bankaccountoverview',
+    redirectTo: 'bankaccountoverview/default',
+    pathMatch: 'full'
+  },
+  { path: 'bankaccountoverview/paystack/transfer/:id/:uuid', component: PaystackTransferDetailComponent },
   { path: 'bankaccountoverview/paystack/transfer/:id', component: PaystackTransferDetailComponent },
   // ...other routes
   {

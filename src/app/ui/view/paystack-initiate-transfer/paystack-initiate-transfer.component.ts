@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PaystackService } from '../../../services/paystack.service';
@@ -71,7 +71,8 @@ export class PaystackInitiateTransferComponent implements OnInit, OnDestroy {
   constructor(
     private paystackService: PaystackService,
     private toastService: ToastService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -494,7 +495,8 @@ export class PaystackInitiateTransferComponent implements OnInit, OnDestroy {
   }
 
   navigateToOverview(): void {
-    this.router.navigate(['/bankaccountoverview'], { queryParams: { source: 'paystack' } });
+    const uuid = this.route.snapshot.params['uuid'] || 'default';
+    this.router.navigate(['/bankaccountoverview', uuid], { queryParams: { source: 'paystack' } });
   }
 
   // ==========================================================================
