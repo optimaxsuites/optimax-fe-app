@@ -12,7 +12,7 @@ export class ShiftListComponent implements OnInit{
   filteredShifts: ShiftDTO[] = [];
 
   searchText = '';
-  departmentFilter = '';
+  //departmentFilter = '';
 
   morningCount = 0;
   eveningCount = 0;
@@ -34,17 +34,17 @@ export class ShiftListComponent implements OnInit{
       !this.searchText ||
       shift.name.toLowerCase().includes(this.searchText.toLowerCase());
 
-    const matchesDepartment =
+    /*const matchesDepartment =
       !this.departmentFilter ||
-      shift.department === this.departmentFilter;
+      shift.department === this.departmentFilter;*/
 
-    return matchesName && matchesDepartment;
+    return matchesName; // && matchesDepartment;
   });
 }
 
 resetFilter() {
   this.searchText = '';
-  this.departmentFilter = '';
+  //this.departmentFilter = '';
 
   this.filteredShifts = this.shifts;
 }

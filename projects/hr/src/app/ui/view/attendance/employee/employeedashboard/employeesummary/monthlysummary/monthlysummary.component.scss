@@ -55,11 +55,24 @@
 @media (max-width: 900px) {
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+  }
+
+  .metric-card {
+    .label { font-size: 1.3rem; }
+    .value { font-size: 1.7rem; }
   }
 }
 
 @media (max-width: 500px) {
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 0.7rem;
+  }
+
+  .metric-card {
+    padding: 0.9rem 1rem;
+    .label { font-size: 1.2rem; }
+    .value { font-size: 1.5rem; }
   }
 }

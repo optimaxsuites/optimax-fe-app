@@ -9,6 +9,7 @@ import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.compone
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
+import { PaystackTransferDetailComponent } from './ui/view/bank-account-overview/paystack-transfer-detail/paystack-transfer-detail.component';
 import { BankReconciliationComponent } from './ui/view/bank-reconciliation/bank-reconciliation.component';
 import { GeneralReconciliationComponent } from './ui/view/general-reconciliation/general-reconciliation.component';
 import { ReconciliationTabComponent } from './ui/view/reconciliation-tab/reconciliation-tab.component';
@@ -18,6 +19,7 @@ import { GeneralTransactionsComponent } from './ui/view/general-transactions/gen
 import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-queue.component';
 import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
 import { PaystackComponent } from './ui/view/paystack/paystack.component';
+import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-transfer/paystack-initiate-transfer.component';
 
 const routes: Routes = [
   {
@@ -29,10 +31,21 @@ const routes: Routes = [
     component: PaystackComponent
   },
   {
+    path: 'admin/accounting/paystack/initiate-transfer/:uuid',
+    component: PaystackInitiateTransferComponent
+  },
+  {
+    path: 'admin/accounting/paystack/initiate-transfer',
+    redirectTo: 'admin/accounting/paystack/initiate-transfer/default',
+    pathMatch: 'full'
+  },
+  {
     path: '',
     redirectTo: 'transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
+
+  //  check this out
   {
     path: 'transaction/:uuid',
     component: AccountingPageComponent,
@@ -75,7 +88,14 @@ const routes: Routes = [
   { path: 'reports/income-statement', component: IncomeStatementComponent },
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
-  { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
+  { path: 'bankaccountoverview/:uuid', component: BankAccountOverviewComponent },
+  {
+    path: 'bankaccountoverview',
+    redirectTo: 'bankaccountoverview/default',
+    pathMatch: 'full'
+  },
+  { path: 'bankaccountoverview/paystack/transfer/:id/:uuid', component: PaystackTransferDetailComponent },
+  { path: 'bankaccountoverview/paystack/transfer/:id', component: PaystackTransferDetailComponent },
   // ...other routes
   {
     path: 'reports/:uuid',

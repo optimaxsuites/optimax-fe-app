@@ -84,7 +84,7 @@ export class UserSessionService {
         data.fullname
         ?? data.fullName
         ?? data.name
-        ?? `${data.firstName ?? ''} ${data.lastName ?? ''}`.trim();
+        ?? `${data.lastName ?? ''} ${data.firstName ?? ''}`.trim();
 
       const department =
         data.department?.name

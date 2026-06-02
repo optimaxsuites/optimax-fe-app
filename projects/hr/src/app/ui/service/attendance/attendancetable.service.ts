@@ -147,7 +147,7 @@ private mapApiRecord(api: any): AttendanceTableRecord {
   const emp = api.employeeId; // nested employee object
 
   const fullName = emp
-    ? `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim()
+    ? `${emp.lastName ?? ''} ${emp.firstName ?? ''}`.trim()
     : '';
 
   const department = emp?.department?.name ?? '';
@@ -351,7 +351,14 @@ private clockInApi(
   checkInLocation: string,
   checkInDistance: number
 ): void {
-  const body = { employeeId, checkIn, checkInLocation, checkInDistance };
+  const body = { 
+    employeeId,
+    attendanceDate: new Date().toISOString().split('T')[0], 
+    checkIn, 
+    checkInLocation, 
+    checkInDistance };
+
+    console.log('CLOCK IN BODY:', body);
 
   this.http.post<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
@@ -389,7 +396,12 @@ private clockInApi(
         console.warn('Clock-in succeeded but no ID returned in response:', res);
       }
     },
-    error: (err) => console.error('Clock-in failed:', err)
+    error: (err) => {
+      console.error('Clock-in failed:', err);
+      console.log('Full Backend Error body:', err.error);
+      console.log('Backend Message:', err?.error?.message);
+      alert(err?.error?.message ?? 'Clock-in failed alert');
+      }
   });
 }
 

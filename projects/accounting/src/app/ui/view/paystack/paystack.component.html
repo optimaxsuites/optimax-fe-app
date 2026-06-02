@@ -105,7 +105,7 @@
           </div>
         </div>
 
-        <!-- Quick Stats Cards (For premium experience) -->
+        <!-- Quick Stats Cards -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex items-center gap-4">
           <div class="w-12 h-12 bg-emerald-100 border border-emerald-200 rounded-lg flex items-center justify-center text-customGreen">
             <i class="pi pi-arrow-down-left text-xl"></i>
@@ -122,10 +122,158 @@
           </div>
           <div>
             <p class="text-sm font-semibold text-gray-500 uppercase">Transfer Capability</p>
-            <p class="text-xl font-bold text-gray-900 mt-1">Fully Connected & Audited</p>
+            <p class="text-xl font-bold text-gray-900 mt-1">Fully Connected &amp; Audited</p>
           </div>
         </div>
       </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- PAYSTACK-STYLE TRANSACTIONS SECTION (dummy data)           -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div class="ps-tx-section">
+
+        <!-- Header Row -->
+        <div class="ps-tx-header-row">
+          <h2 class="ps-tx-title">Transactions</h2>
+          <div class="ps-tx-header-actions">
+            <button class="ps-icon-btn" title="Search"><i class="pi pi-search"></i></button>
+            <button class="ps-export-btn">Export CSV <i class="pi pi-chevron-down"></i></button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="ps-filter-bar">
+
+          <!-- Add Filter -->
+          <div class="ps-filter-anchor">
+            <button class="ps-add-filter-btn" (click)="toggleAddFilterPanel()">
+              <i class="pi pi-plus" style="font-size:0.75rem"></i> Add filter
+            </button>
+
+            <div class="ps-dropdown-panel" *ngIf="showAddFilterPanel" (click)="$event.stopPropagation()">
+              <!-- Active configured filters -->
+              <div *ngIf="activeFilterKeys.length > 0" class="ps-configured-filters">
+                <div *ngFor="let key of activeFilterKeys" class="ps-active-filter-row">
+                  <span class="ps-active-filter-label">{{ getFilterOption(key)?.label }}</span>
+                  <div class="ps-active-filter-control">
+                    <div class="ps-select-wrapper" *ngIf="getFilterOption(key)?.type === 'select'">
+                      <select [(ngModel)]="filterValues[key]" class="ps-filter-select">
+                        <option *ngFor="let opt of getFilterOption(key)?.options"
+                          [value]="opt === 'Show all' ? '' : opt">{{ opt }}</option>
+                      </select>
+                      <i class="pi pi-chevron-down ps-select-arrow"></i>
+                    </div>
+                    <input *ngIf="getFilterOption(key)?.type === 'input'"
+                      type="text" [(ngModel)]="filterValues[key]"
+                      [placeholder]="getFilterOption(key)?.placeholder || ''"
+                      class="ps-filter-input" />
+                  </div>
+                  <button class="ps-remove-filter-btn" (click)="removeFilter(key)">
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </div>
+                <div class="ps-panel-divider" *ngIf="inactiveFilterOptions.length > 0"></div>
+              </div>
+
+              <!-- Available options -->
+              <div *ngFor="let opt of inactiveFilterOptions" class="ps-filter-option-row" (click)="addFilter(opt.key)">
+                <span class="ps-filter-option-label">{{ opt.label }}</span>
+                <button class="ps-add-option-btn"><i class="pi pi-plus"></i></button>
+              </div>
+
+              <div class="ps-panel-footer">
+                <button class="ps-panel-reset-btn" (click)="resetAddFilters()">Reset</button>
+                <button class="ps-panel-apply-btn" (click)="applyAddFilters()">Filter</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter by Date -->
+          <div class="ps-filter-anchor">
+            <button class="ps-date-filter-btn" [class.ps-date-active]="!!appliedDateLabel"
+              (click)="toggleDateFilterPanel()">
+              <i class="pi pi-calendar" style="font-size:0.8rem"></i> Filter by date
+            </button>
+
+            <div class="ps-dropdown-panel ps-date-panel" *ngIf="showDateFilterPanel" (click)="$event.stopPropagation()">
+              <div class="ps-date-option" [class.ps-date-option-selected]="selectedDatePreset==='last7'"    (click)="selectedDatePreset='last7'">Last 7 days</div>
+              <div class="ps-date-option" [class.ps-date-option-selected]="selectedDatePreset==='today'"    (click)="selectedDatePreset='today'">Today</div>
+              <div class="ps-date-option" [class.ps-date-option-selected]="selectedDatePreset==='alltime'"  (click)="selectedDatePreset='alltime'">All time</div>
+              <div class="ps-date-option" [class.ps-date-option-selected]="selectedDatePreset==='thismonth'"(click)="selectedDatePreset='thismonth'">This month</div>
+              <div class="ps-date-option" [class.ps-date-option-selected]="selectedDatePreset==='lastmonth'"(click)="selectedDatePreset='lastmonth'">Last month</div>
+              <div class="ps-date-custom-section">
+                <span class="ps-date-custom-label">Custom period</span>
+                <div class="ps-date-range-input" (click)="selectedDatePreset='custom'">
+                  <i class="pi pi-calendar" style="font-size:0.8rem;color:#60a5fa"></i>
+                  <span class="ps-range-placeholder">Pick a date range</span>
+                </div>
+              </div>
+              <div class="ps-panel-footer">
+                <button class="ps-panel-reset-btn" (click)="resetDateFilter()">Reset</button>
+                <button class="ps-panel-apply-btn" (click)="applyDateFilter()">Apply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Applied chip -->
+          <span *ngIf="appliedDateLabel" class="ps-applied-chip">
+            Date is {{ appliedDateLabel }}
+            <button class="ps-chip-remove" (click)="resetDateFilter()"><i class="pi pi-times"></i></button>
+          </span>
+          <button *ngIf="hasAnyAppliedFilter" class="ps-clear-all-btn" (click)="clearAllFilters()">Clear all</button>
+        </div>
+
+        <!-- Overlay to close panels -->
+        <div *ngIf="showAddFilterPanel || showDateFilterPanel"
+          class="ps-panel-overlay" (click)="closeAllPanels()"></div>
+
+        <!-- Table -->
+        <div class="ps-table-wrapper">
+          <table class="ps-table">
+            <thead>
+              <tr>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Customer</th>
+                <th>Reference</th>
+                <th>Channel</th>
+                <th>Paid on</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tx of paginatedPsTx" class="ps-table-row">
+                <td class="ps-cell-amount">{{ formatPsAmount(tx.amount, tx.currency) }}</td>
+                <td>
+                  <span class="ps-status-badge" [ngClass]="'ps-status-' + tx.status">
+                    {{ tx.status | titlecase }}
+                  </span>
+                </td>
+                <td class="ps-cell-email">{{ tx.customer }}</td>
+                <td class="ps-cell-ref">{{ tx.reference }}</td>
+                <td>
+                  <span class="ps-channel-badge">{{ getChannelLabel(tx.channel) }}</span>
+                </td>
+                <td class="ps-cell-date">
+                  <strong>{{ formatPsDate(tx.paidOn).split(',')[0] }},</strong>
+                  {{ formatPsDate(tx.paidOn).split(',').slice(1).join(',').trim() }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="ps-pagination" *ngIf="psTxTotalPages > 1">
+          <span class="ps-page-meta">Page {{ psTxPage }} of {{ psTxTotalPages }}</span>
+          <div class="ps-page-controls">
+            <button class="ps-pag-btn" (click)="psTxPrev()" [disabled]="psTxPage === 1"><i class="pi pi-angle-left"></i></button>
+            <button class="ps-pag-btn" (click)="psTxNext()" [disabled]="psTxPage === psTxTotalPages"><i class="pi pi-angle-right"></i></button>
+          </div>
+        </div>
+
+      </div>
+      <!-- END PAYSTACK-STYLE TRANSACTIONS SECTION -->
+
     </div>
 
     <!-- Transactions Tab -->

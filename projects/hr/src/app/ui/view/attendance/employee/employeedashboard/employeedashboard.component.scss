@@ -12,4 +12,36 @@
   /*.bottom-row {
     width: 100%;
   }*/
+
+
+  /*@media (max-width: 768px) {
+    gap: 1rem;
+    padding: 0 0.2rem;
+
+    .mid-row {
+      grid-template-columns: 1fr; // clock and today summary stack
+      gap: 1rem;
+    }
+  }*/
+}
+
+@media (max-width: 768px) {
+  .summary-container {
+    gap: 1.2rem;
+    padding: 0.2rem 0;
+  }
+
+  .summary-card {
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+
+      &::before {
+        height: 32px; // shrink the green accent bar
+      }
+    }
+  }
 }

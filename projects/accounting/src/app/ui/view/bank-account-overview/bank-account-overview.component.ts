@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { PaystackService } from '../../../services/paystack.service';
+import { PaystackService, PaystackBalanceResponse } from '../../../services/paystack.service';
 import { DisbursementService } from '../../../services/disbursement.service';
 import { ToastService } from '../../../services/toast.service';
 import {
@@ -230,11 +230,11 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
 
   // ── Paystack Wallet Integrated State ──────────────────
   paystackActiveTab: 'balance' | 'transactions' | 'transfer' = 'balance';
-  paystackBalanceData: PaystackBalanceDTO | null = null;
+  paystackBalanceData: any = null;
   paystackBalanceLoading = false;
   paystackBalanceError: string | null = null;
 
-  paystackTransactions: PaystackTransactionDTO[] = [];
+  paystackTransactions: any[] = [];
   paystackTxLoading = false;
   paystackTxError: string | null = null;
 
@@ -245,7 +245,7 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   paystackTxCurrentPage = 1;
   paystackTxPageSize = 10;
 
-  paystackSelectedTxDetail: PaystackTransactionDTO | null = null;
+  paystackSelectedTxDetail: any | null = null;
   paystackTxDetailLoading = false;
   paystackTxDetailError: string | null = null;
   paystackShowDetailDialog = false;
@@ -259,11 +259,32 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   paystackLastTransferReference: string | null = null;
   paystackTransferError: string | null = null;
 
+  // ── Paystack Light Mode Filters State ─────────────────
+  showAddFilterPanel = false;
+  showDateFilterPanel = false;
+
+  readonly availableFilterOptions = [
+    { key: 'status',     label: 'Status',          type: 'select', options: ['Show all', 'Success', 'Failed', 'Pending', 'Reversed'] },
+    { key: 'reference',  label: 'Reference',       type: 'input',  placeholder: 'Reference' },
+    { key: 'amount',     label: 'Amount (₦)',      type: 'input',  placeholder: 'Amount in Naira' },
+    { key: 'recipient',  label: 'Recipient Name',  type: 'input',  placeholder: 'Recipient Name' }
+  ];
+
+  activeFilterKeys: string[] = [];
+  filterValues: { [key: string]: string } = {};
+
+  // Date filter
+  selectedDatePreset = '';
+  appliedDateLabel   = '';
+  customRangeStart   = '';
+  customRangeEnd     = '';
+
   constructor(
     private paystackService: PaystackService,
     private disbursementService: DisbursementService,
     private toastService: ToastService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
   
   ngOnInit(): void {
@@ -278,6 +299,7 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
     });
 
     this.checkVerificationCallback();
+    this.refreshPaystackBalance();
   }
 
   ngOnDestroy(): void {
@@ -478,10 +500,16 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
     this.activeSource = source;
     if (source === 'paystack') {
       this.paystackActiveTab = 'balance';
-      this.loadPaystackBalance();
+      this.refreshPaystackBalance();
       this.loadPaystackTransactions();
       this.loadPaystackEmployees();
     }
+  }
+
+  /** Navigate to the standalone Paystack Transfer wizard */
+  navigateToInitiateTransfer(): void {
+    const uuid = this.route.snapshot.params['uuid'] || 'default';
+    this.router.navigate(['/paystack/initiate-transfer', uuid]);
   }
 
   setPaystackActiveTab(tab: 'balance' | 'transactions' | 'transfer'): void {
@@ -498,74 +526,232 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   // PAYSTACK WALLET BALANCE
   // ==========================================================================
 
-  loadPaystackBalance(): void {
+  refreshPaystackBalance(): void {
     this.paystackBalanceLoading = true;
     this.paystackBalanceError = null;
 
     this.paystackService.getBalance()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => {
-          this.paystackBalanceData = res.data;
+        next: (response: any) => {
+          // Robust mapping for API balance format
+          const dataObj = response.data && response.data[0] ? response.data[0] : response;
+          this.paystackBalanceData = {
+            ...response,
+            balance: dataObj.balance !== undefined ? dataObj.balance : (dataObj.availableBalance || 0),
+            currency: dataObj.currency || 'NGN'
+          };
           this.paystackBalanceLoading = false;
         },
         error: (err) => {
-          this.paystackBalanceError = err?.error?.message || 'Failed to load wallet balance. Please try again.';
+          const errMsg = err?.error?.message || err?.message || 'Failed to fetch balance';
+          this.paystackBalanceError = errMsg;
+          console.error('Paystack balance error:', err);
           this.paystackBalanceLoading = false;
         }
       });
   }
 
-  refreshPaystackBalance(): void {
-    this.loadPaystackBalance();
+  loadPaystackBalance(): void {
+    this.refreshPaystackBalance();
   }
 
   // ==========================================================================
-  // PAYSTACK TRANSACTIONS
+  // PAYSTACK LIGHT MODE FILTERS & DROPDOWNS
+  // ==========================================================================
+
+  toggleAddFilterPanel(): void {
+    this.showAddFilterPanel = !this.showAddFilterPanel;
+    if (this.showAddFilterPanel) this.showDateFilterPanel = false;
+  }
+
+  toggleDateFilterPanel(): void {
+    this.showDateFilterPanel = !this.showDateFilterPanel;
+    if (this.showDateFilterPanel) this.showAddFilterPanel = false;
+  }
+
+  closeAllPanels(): void {
+    this.showAddFilterPanel = false;
+    this.showDateFilterPanel = false;
+  }
+
+  addFilter(key: string): void {
+    if (!this.activeFilterKeys.includes(key)) {
+      this.activeFilterKeys.push(key);
+      this.filterValues[key] = '';
+    }
+  }
+
+  removeFilter(key: string): void {
+    this.activeFilterKeys = this.activeFilterKeys.filter(k => k !== key);
+    delete this.filterValues[key];
+  }
+
+  applyAddFilters(): void {
+    this.showAddFilterPanel = false;
+  }
+
+  resetAddFilters(): void {
+    this.activeFilterKeys = [];
+    this.filterValues = {};
+  }
+
+  applyDateFilter(): void {
+    const labels: { [k: string]: string } = {
+      last7:     'Last 7 days',
+      today:     'Today',
+      alltime:   'All time',
+      thismonth: 'This month',
+      lastmonth: 'Last month',
+    };
+    if (this.selectedDatePreset === 'custom') {
+      if (this.customRangeStart && this.customRangeEnd) {
+        this.appliedDateLabel = `${this.customRangeStart} – ${this.customRangeEnd}`;
+      } else {
+        return; // don't apply if both dates aren't set
+      }
+    } else {
+      this.appliedDateLabel = labels[this.selectedDatePreset] || '';
+    }
+    this.showDateFilterPanel = false;
+  }
+
+  resetDateFilter(): void {
+    this.selectedDatePreset = '';
+    this.appliedDateLabel   = '';
+    this.customRangeStart   = '';
+    this.customRangeEnd     = '';
+  }
+
+  clearAllFilters(): void {
+    this.resetAddFilters();
+    this.resetDateFilter();
+  }
+
+  getFilterOption(key: string): any {
+    return this.availableFilterOptions.find(f => f.key === key);
+  }
+
+  get inactiveFilterOptions(): any[] {
+    return this.availableFilterOptions.filter(f => !this.activeFilterKeys.includes(f.key));
+  }
+
+  get hasAnyAppliedFilter(): boolean {
+    return !!this.appliedDateLabel || this.activeFilterKeys.length > 0;
+  }
+
+  // ==========================================================================
+  // PAYSTACK DIRECT TRANSFERS LIST & FILTERING
   // ==========================================================================
 
   loadPaystackTransactions(): void {
     this.paystackTxLoading = true;
     this.paystackTxError = null;
     this.paystackTxCurrentPage = 1;
+    this.paystackTransactions = [];
+    // Kick off recursive all-pages fetch starting at page 1
+    this.fetchAllTransferPages(1, []);
+  }
 
-    this.paystackService
-      .getTransactions(
-        this.paystackTxStartDate || undefined,
-        this.paystackTxEndDate   || undefined,
-        this.paystackTxTypeFilter || undefined
-      )
+  private fetchAllTransferPages(page: number, accumulated: any[]): void {
+    this.paystackService.getTransfers({ perPage: '100', page: String(page) })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
-          this.paystackTransactions = res.data || [];
-          this.paystackTxLoading = false;
+          // Robustly extract records — handle res.data.data, res.data (array), or res directly
+          const payload = res?.data ?? res;
+          const records: any[] = Array.isArray(payload)
+            ? payload
+            : Array.isArray(payload?.data)
+              ? payload.data
+              : [];
+
+          const all = [...accumulated, ...records];
+
+          // Determine total count from meta so we know whether to fetch more pages
+          const meta = res?.meta ?? payload?.meta ?? null;
+          const total: number = meta?.total ?? payload?.total ?? res?.total ?? all.length;
+
+          if (records.length === 100 && all.length < total) {
+            // More pages remain — recurse to next page
+            this.fetchAllTransferPages(page + 1, all);
+          } else {
+            // All records collected
+            this.paystackTransactions = all;
+            this.paystackTxLoading = false;
+          }
         },
         error: (err) => {
-          this.paystackTxError = err?.error?.message || 'Failed to load transactions.';
+          this.paystackTxError = err?.error?.message || err?.message || 'Failed to load transfers.';
           this.paystackTxLoading = false;
         }
       });
   }
 
-  applyPaystackTxFilters(): void {
-    this.loadPaystackTransactions();
+  get filteredPaystackTransactions(): any[] {
+    return this.paystackTransactions.filter(tx => {
+      // 1. Status Filter
+      if (this.filterValues['status'] && tx.status && tx.status.toLowerCase() !== this.filterValues['status'].toLowerCase()) {
+        return false;
+      }
+      // 2. Reference Filter
+      if (this.filterValues['reference'] && tx.reference && !tx.reference.toLowerCase().includes(this.filterValues['reference'].toLowerCase())) {
+        return false;
+      }
+      // 3. Amount Filter (Input is in Naira, stored in kobo)
+      if (this.filterValues['amount']) {
+        const amt = parseFloat(this.filterValues['amount']);
+        if (!isNaN(amt)) {
+          const txAmtNaira = tx.amount / 100;
+          if (Math.abs(txAmtNaira - amt) > 0.01) {
+            return false;
+          }
+        }
+      }
+      // 4. Recipient Filter
+      if (this.filterValues['recipient']) {
+        const recipientName = tx.recipient?.name || '';
+        if (!recipientName.toLowerCase().includes(this.filterValues['recipient'].toLowerCase())) {
+          return false;
+        }
+      }
+      // 5. Date Filter preset
+      if (this.selectedDatePreset && this.selectedDatePreset !== 'alltime') {
+        const txDate = new Date(tx.createdAt || tx.transferred_at);
+        const now = new Date();
+        if (this.selectedDatePreset === 'today') {
+          if (txDate.toDateString() !== now.toDateString()) return false;
+        } else if (this.selectedDatePreset === 'last7') {
+          const diffTime = Math.abs(now.getTime() - txDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays > 7) return false;
+        } else if (this.selectedDatePreset === 'thismonth') {
+          if (txDate.getMonth() !== now.getMonth() || txDate.getFullYear() !== now.getFullYear()) return false;
+        } else if (this.selectedDatePreset === 'lastmonth') {
+          let lastMonth = now.getMonth() - 1;
+          let year = now.getFullYear();
+          if (lastMonth < 0) { lastMonth = 11; year--; }
+          if (txDate.getMonth() !== lastMonth || txDate.getFullYear() !== year) return false;
+        } else if (this.selectedDatePreset === 'custom') {
+          if (this.customRangeStart && this.customRangeEnd) {
+            const from = new Date(this.customRangeStart);
+            const to   = new Date(this.customRangeEnd);
+            to.setHours(23, 59, 59, 999); // inclusive end of day
+            if (txDate < from || txDate > to) return false;
+          }
+        }
+      }
+      return true;
+    });
   }
 
-  clearPaystackTxFilters(): void {
-    this.paystackTxStartDate   = '';
-    this.paystackTxEndDate     = '';
-    this.paystackTxTypeFilter  = '';
-    this.loadPaystackTransactions();
-  }
-
-  get paginatedPaystackTransactions(): PaystackTransactionDTO[] {
+  get paginatedPaystackTransactions(): any[] {
     const start = (this.paystackTxCurrentPage - 1) * this.paystackTxPageSize;
-    return this.paystackTransactions.slice(start, start + this.paystackTxPageSize);
+    return this.filteredPaystackTransactions.slice(start, start + this.paystackTxPageSize);
   }
 
   get paystackTxTotalPages(): number {
-    return Math.ceil(this.paystackTransactions.length / this.paystackTxPageSize) || 1;
+    return Math.ceil(this.filteredPaystackTransactions.length / this.paystackTxPageSize) || 1;
   }
 
   paystackTxNextPage(): void {
@@ -577,12 +763,12 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   }
 
   getPaystackTxPageStart(): number {
-    if (this.paystackTransactions.length === 0) return 0;
+    if (this.filteredPaystackTransactions.length === 0) return 0;
     return (this.paystackTxCurrentPage - 1) * this.paystackTxPageSize + 1;
   }
 
   getPaystackTxPageEnd(): number {
-    return Math.min(this.paystackTxCurrentPage * this.paystackTxPageSize, this.paystackTransactions.length);
+    return Math.min(this.paystackTxCurrentPage * this.paystackTxPageSize, this.filteredPaystackTransactions.length);
   }
 
   // ==========================================================================
@@ -685,6 +871,22 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   checkVerificationCallback(): void {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const ref = params['reference'] || params['trxref'];
+      const source = params['source'];
+      const tab = params['tab'];
+
+      if (source === 'paystack') {
+        this.activeSource = 'paystack';
+        if (tab === 'transactions') {
+          this.paystackActiveTab = 'transactions';
+          this.loadPaystackTransactions();
+        } else if (tab === 'transfer') {
+          this.paystackActiveTab = 'transfer';
+          this.loadPaystackEmployees();
+        } else {
+          this.paystackActiveTab = 'balance';
+        }
+      }
+
       if (ref) {
         this.activeSource = 'paystack';
         this.toastService.info(`Verifying transaction: ${ref}...`);
@@ -693,7 +895,7 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
           .subscribe({
             next: (res) => {
               if (res.data?.status === 'SUCCESS') {
-                this.toastService.success(`Payment verified successfully! Amount: ${this.formatNaira(res.data.amount)}`);
+                this.toastService.success(`Payment verified successfully! Amount: ${this.formatPaystackNaira(res.data.amount)}`);
               } else {
                 this.toastService.warn(`Payment status: ${res.data?.status || 'UNKNOWN'}`);
               }
@@ -708,24 +910,9 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewPaystackTransactionDetail(reference: string): void {
-    this.paystackTxDetailLoading = true;
-    this.paystackTxDetailError = null;
-    this.paystackShowDetailDialog = true;
-    this.paystackSelectedTxDetail = null;
-
-    this.paystackService.getTransactionByReference(reference)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res) => {
-          this.paystackSelectedTxDetail = res.data;
-          this.paystackTxDetailLoading = false;
-        },
-        error: (err) => {
-          this.paystackTxDetailError = err?.error?.message || 'Failed to fetch transaction details.';
-          this.paystackTxDetailLoading = false;
-        }
-      });
+  viewPaystackTransactionDetail(id: any): void {
+    const uuid = this.route.snapshot.params['uuid'] || 'default';
+    this.router.navigate(['/bankaccountoverview/paystack/transfer', id, uuid]);
   }
 
   closePaystackDetailDialog(): void {
@@ -739,25 +926,36 @@ export class BankAccountOverviewComponent implements OnInit, OnDestroy {
   // ==========================================================================
 
   formatNaira(amount: number | null | undefined): string {
-    if (amount == null) return '—';
-    return `₦${Number(amount).toLocaleString('en-NG', {
+    if (amount == null) {
+      return '₦0.00';
+    }
+    
+    let formatted = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    })}`;
+    }).format(amount);
+
+    if (formatted.startsWith('NGN')) {
+      formatted = formatted.replace('NGN', '₦').trim();
+    } else if (!formatted.startsWith('₦')) {
+      formatted = '₦' + formatted.trim();
+    }
+    return formatted;
   }
 
-  getPaystackTypeClass(type: string): string {
-    return type === 'CREDIT'
-      ? 'bg-green-100 text-green-700 border border-green-200'
-      : 'bg-red-100 text-red-700 border border-red-200';
-  }
-
-  getPaystackTypeAmountClass(type: string): string {
-    return type === 'CREDIT' ? 'text-customGreen font-semibold' : 'text-red-600 font-semibold';
+  // Round off & divide by 100 to show Naira and kobo perfectly
+  formatPaystackNaira(amountInKobo: number | null | undefined): string {
+    if (amountInKobo == null) {
+      return '₦0.00';
+    }
+    return this.formatNaira(amountInKobo / 100);
   }
 
   getPaystackStatusClass(status: string): string {
-    switch (status) {
+    const s = (status || '').toUpperCase();
+    switch (s) {
       case 'SUCCESS': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
       case 'PENDING': return 'bg-amber-100 text-amber-800 border border-amber-200';
       case 'FAILED':  return 'bg-rose-100 text-rose-800 border border-rose-200';

@@ -128,6 +128,8 @@ import { BankConnectionSettingsComponent } from './ui/view/bank-connection-setti
 import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
 import { PaystackComponent } from './ui/view/paystack/paystack.component';
 import { BankTransactionsComponent } from './ui/view/bank-transactions/bank-transactions.component';
+import { PaystackTransferDetailComponent } from './ui/view/bank-account-overview/paystack-transfer-detail/paystack-transfer-detail.component';
+import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-transfer/paystack-initiate-transfer.component';
 
 @NgModule({
   declarations: [
@@ -180,7 +182,9 @@ import { BankTransactionsComponent } from './ui/view/bank-transactions/bank-tran
     AccountingQueueComponent,
     BankConnectionSettingsComponent,
     PaystackComponent,
-    BankTransactionsComponent
+    BankTransactionsComponent,
+    PaystackTransferDetailComponent,
+    PaystackInitiateTransferComponent
   ],
   imports: [
     // BrowserModule,

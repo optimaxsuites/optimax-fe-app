@@ -101,3 +101,33 @@
   padding-left: 10px;
   margin-bottom: 8px;
 }
+
+@media (max-width: 768px) {
+  .attendance-list {
+    padding: 1rem 1rem;
+    border-radius: 14px;
+  }
+
+  // Wrap the table area and let it scroll horizontally
+  .table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-header,
+  .table-row {
+    min-width: 480px; // forces horizontal scroll instead of squishing
+    font-size: 1.1rem;
+    padding: 0.5rem 0.4rem;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .filter {
+      label    { font-size: 1.1rem; }
+      input    { font-size: 1.1rem; }
+    }
+  }
+}
