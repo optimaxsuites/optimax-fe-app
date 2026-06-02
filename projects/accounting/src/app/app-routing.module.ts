@@ -31,12 +31,12 @@ const routes: Routes = [
     component: PaystackComponent
   },
   {
-    path: 'paystack/initiate-transfer/:uuid',
+    path: 'admin/accounting/paystack/initiate-transfer/:uuid',
     component: PaystackInitiateTransferComponent
   },
   {
-    path: 'paystack/initiate-transfer',
-    redirectTo: 'paystack/initiate-transfer/default',
+    path: 'admin/accounting/paystack/initiate-transfer',
+    redirectTo: 'admin/accounting/paystack/initiate-transfer/default',
     pathMatch: 'full'
   },
   {
