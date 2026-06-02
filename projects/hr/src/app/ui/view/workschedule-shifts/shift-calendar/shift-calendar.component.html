@@ -115,6 +115,29 @@
 </div>
 
 <div *ngIf="viewMode === 'table'" class="table-view">
+
+  <div class="top-bar">
+    <div>
+      <label>Select Date:</label>
+
+      <input
+        type="date"
+        [value]="selectedDate"
+        (change)="onTableDateChange($event)"
+      />
+    </div>
+  </div>
+
+  <div class="schedule-card">
+
+    <h3 class="title">
+      Shifts for {{ selectedDateLabel }}
+    </h3>
+
+    </div>
+    </div>
+
+<!--<div *ngIf="viewMode === 'table'" class="table-view">
   <div class="table-controls">
     <input 
     type="date" 
@@ -140,21 +163,6 @@
       </tr>
     </thead>
 
-    <!--<tbody>
-      <ng-container *ngFor="let group of dayShiftGroups">
-        <tr *ngFor="let emp of group.employees">
-          <td>{{ group.shift.name }}</td>
-          <td>{{ group.schedule.project || '-' }}</td>
-          <td>{{ emp.name }}</td>
-          <td>{{ group.shift.startTime }} – {{ group.shift.endTime }}</td>
-          <td>
-            <span class="status-badge status--scheduled">
-              Scheduled
-            </span>
-          </td>
-        </tr>
-      </ng-container>
-    </tbody>-->
     <tbody>
     <tr *ngFor="let row of paginatedData">
       <td>{{ row.shiftName }}</td>
@@ -186,7 +194,7 @@
     No shifts scheduled for this day.
   </div>
 
-</div>
+</div>-->
  
   <!-- ASSIGNMENT MODAL -->
   <app-shift-assignment
