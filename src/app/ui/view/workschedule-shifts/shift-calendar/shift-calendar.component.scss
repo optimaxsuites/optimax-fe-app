@@ -359,10 +359,74 @@ $white: #ffffff;
 }
 
 .table-view {
-  margin-top: 16px;
+  //margin-top: 16px;
+  padding: 10px;
+}
+
+.top-bar {
+  margin-bottom: 15px;
+
+  label {
+    font-size: 13px;
+    color: #555;
+    margin-right: 8px;
+  }
+
+  input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+}
+
+.schedule-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333;
 }
 
 .shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.shift-table thead {
+  background: #f0f2f5;
+
+  th {
+    text-align: left;
+    font-size: 12px;
+    padding: 10px;
+    color: #666;
+    font-weight: 500;
+  }
+}
+
+.shift-table tbody tr {
+  border-top: 1px solid #eee;
+
+  td {
+    padding: 12px 10px;
+    font-size: 13px;
+    color: #333;
+  }
+}
+
+.shift-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/*.shift-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
@@ -415,7 +479,7 @@ $white: #ffffff;
   flex-wrap: wrap;
 }
 
-/* DATE INPUT */
+// DATE INPUT 
 .date-picker {
   appearance: none;
   -webkit-appearance: none;
@@ -433,19 +497,19 @@ $white: #ffffff;
   min-width: 180px;
 }
 
-/* HOVER */
+// HOVER 
 .date-picker:hover {
   border-color: #409eff;
 }
 
-/* FOCUS */
+// FOCUS 
 .date-picker:focus {
   outline: none;
   border-color: #409eff;
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15);
 }
 
-/* CALENDAR ICON (Chrome/Edge) */
+// CALENDAR ICON (Chrome/Edge) 
 .date-picker::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0.7;
@@ -456,12 +520,12 @@ $white: #ffffff;
   opacity: 1;
 }
 
-/* DISABLED STATE */
+// DISABLED STATE 
 .date-picker:disabled {
   background: #f5f7fa;
   cursor: not-allowed;
   color: #aaa;
-}
+} */
 
 /* OPTIONAL: Align button nicely */
 .assign-btn {

@@ -406,10 +406,14 @@ getModeLabel(modeValue: ScheduleMode): string {
   }*/
 
     save() {
+      console.log('SAVE CLICKED');
     if (/*this.officeHoursRelevant &&*/ this.form.invalid) {
+      console.log('FORM INVALID');
       this.form.markAllAsTouched();
       return;
     }
+
+    console.log('FORM VALUE: ', this.form.value);
     /*this.officeHoursService.setScheduleMode(this.selectedMode);
     if (this.officeHoursRelevant) {
       this.officeHoursService.updateOfficeHours(this.form.value);

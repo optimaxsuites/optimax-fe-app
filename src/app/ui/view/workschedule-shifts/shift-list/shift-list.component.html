@@ -42,12 +42,12 @@
       placeholder="Search shift name..."
       [(ngModel)]="searchText"
     />
-    <select [(ngModel)]="departmentFilter">
+    <!--<select [(ngModel)]="departmentFilter">
       <option value="">All Departments</option>
       <option value="HR">HR</option>
       <option value="Engineering">Engineering</option>
       <option value="Operations">Operations</option>
-    </select>
+    </select>-->
     <button class="apply-btn" (click)="applyFilter()">Apply</button>
     <button class="reset-btn" (click)="resetFilter()">Reset</button>
   </div>
@@ -61,7 +61,7 @@
           <th>Start</th>
           <th>End</th>
           <th>Break</th>
-          <th>Department</th>
+          <!--<th>Department</th>-->
           <th>Description</th>
           <th>Actions</th>
         </tr>
@@ -78,7 +78,7 @@
           <td>{{ shift.startTime }}</td>
           <td>{{ shift.endTime }}</td>
           <td>{{ shift.breakTime }} mins</td>
-          <td>{{ shift.department }}</td>
+          <!--<td>{{ shift.department }}</td>-->
           <td>{{ shift.description }}</td>
 
           <td class="actions">

@@ -59,6 +59,8 @@ export class OfficeHoursService {
   // UPDATE existing
   if (this.officeHoursId) {
 
+    console.log('UPDATING OFFICE HOURS', this.officeHoursId);
+
     this.http.put<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${this.officeHoursId}`,
       body,
@@ -78,6 +80,8 @@ export class OfficeHoursService {
 
   // CREATE new
   else {
+
+    console.log('CREATING OFFICE HOURS');
 
     this.http.post<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
@@ -172,6 +176,22 @@ private toBackendTime(time: string) {
     second: 0,
     nano: 0
   };
+}
+
+createOfficeHours(payload: any) {
+  return this.http.post(
+    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
+    payload,
+    { headers: this.getAuthHeaders() }
+  );
+}
+
+updateOfficeHoursApi(id: number, payload: any) {
+  return this.http.put(
+    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${id}`,
+    payload,
+    { headers: this.getAuthHeaders() }
+  );
 }
 
 fetchCurrentOfficeHours() {
