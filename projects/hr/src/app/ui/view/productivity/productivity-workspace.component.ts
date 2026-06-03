@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
 import {
@@ -12,20 +12,40 @@ import {
   ProductivityTaskCard,
 } from './productivity-data.service';
 import { ProductivityReviewService } from './productivity-review.service';
+import {
+  HrReportingService,
+  HrExecutiveReport,
+  HrWorkforceOverview,
+  HrPayrollSummary,
+  HrLeaveAttendance,
+  HrEmployeeTurnover,
+} from './hr-reporting.service';
+import { EmployeeService } from '../../service/employee.service';
 
 export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor';
 export type BoardView = 'board' | 'list' | 'gantt';
 type TaskStatus = 'To Do' | 'In Progress' | 'In Review' | 'Done';
 type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
-interface SubTask { id: string; title: string; done: boolean; assignee: string; }
+interface SubTask {
+  id: string; title: string; done: boolean; assignee: string;
+  status?: 'open' | 'ip' | 'blocked';
+  startDate?: string; dueDate?: string; dependency?: string;
+}
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
+interface FollowUp {
+  id: string; author: string; initials: string; color: string;
+  timestamp: string; text: string; photos: string[];
+  decision?: string; progress?: number;
+}
 
 export interface BoardTask {
   id: string; title: string; description: string; assignee: string; team: string;
   status: TaskStatus; priority: TaskPriority; dueDate: string; startDate: string;
   weight: number; progress: number; tags: string[];
   subtasks: SubTask[]; activity: ActivityEntry[];
+  followUps: FollowUp[];
+  inlineText?: string;
   expanded?: boolean;
 }
 
@@ -59,52 +79,74 @@ const HR_SEED: BoardTask[] = [
     id: 'hr1', title: 'Annual Appraisal Cycle Setup',
     description: 'Configure the annual performance appraisal cycle for all departments.',
     assignee: 'HR Manager', team: 'HR Operations', status: 'In Progress', priority: 'High',
-    startDate: '2026-06-01', dueDate: '2026-06-15', weight: 25, progress: 50, tags: ['appraisal'],
+    startDate: '2026-06-01', dueDate: '2026-06-15', weight: 25, progress: 50, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst1', title: 'Define review criteria', done: true, assignee: 'HR Manager' },
-      { id: 'hst2', title: 'Set scoring rubrics', done: false, assignee: 'HR Manager' },
-      { id: 'hst3', title: 'Notify employees', done: false, assignee: 'HR Admin' },
+      { id: 'hst1', title: 'Define review criteria', done: true, assignee: 'HR Manager', status: 'open' },
+      { id: 'hst2', title: 'Set scoring rubrics', done: false, assignee: 'HR Manager', status: 'ip' },
+      { id: 'hst3', title: 'Notify employees', done: false, assignee: 'HR Admin', status: 'open' },
     ],
     activity: [{ id: 'ha1', author: 'HR Manager', text: 'Criteria defined, moving to scoring rubrics.', timestamp: '2026-06-02T09:00:00Z' }],
+    followUps: [
+      { id: 'fu1', author: 'HR Manager', initials: 'HM', color: '#2563eb', timestamp: 'Jun 2, 09:00',
+        text: 'Criteria defined and approved. Moving to scoring rubrics — template drafted, awaiting HRBP review before distribution to staff.', photos: [], progress: 50 },
+    ],
   },
   {
-    id: 'hr2', title: 'Goal-Setting Workshop',
-    description: 'Facilitate department-wide goal-setting sessions for Q3.',
+    id: 'hr2', title: 'Goal-Setting Workshop — Q3',
+    description: 'Facilitate department-wide goal-setting sessions for Q3 across all business units.',
     assignee: 'L&D Lead', team: 'Learning & Development', status: 'To Do', priority: 'Medium',
-    startDate: '2026-06-10', dueDate: '2026-06-20', weight: 15, progress: 0, tags: ['goals', 'workshop'],
-    subtasks: [{ id: 'hst4', title: 'Book venues', done: false, assignee: 'L&D Lead' }],
+    startDate: '2026-06-10', dueDate: '2026-06-20', weight: 15, progress: 0, tags: ['Routine'],
+    subtasks: [
+      { id: 'hst4', title: 'Book venues', done: false, assignee: 'L&D Lead', status: 'open' },
+      { id: 'hst4b', title: 'Prepare facilitator guide', done: false, assignee: 'L&D Lead', status: 'open' },
+    ],
     activity: [],
+    followUps: [],
   },
   {
     id: 'hr3', title: 'Competency Framework Review',
     description: 'Update the organisational competency framework to reflect 2026 strategy.',
     assignee: 'HRBP', team: 'HR Strategy', status: 'In Review', priority: 'Critical',
-    startDate: '2026-05-20', dueDate: '2026-06-07', weight: 30, progress: 80, tags: ['framework'],
+    startDate: '2026-05-20', dueDate: '2026-06-07', weight: 30, progress: 80, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst5', title: 'Benchmark competitors', done: true, assignee: 'HRBP' },
-      { id: 'hst6', title: 'Board sign-off', done: false, assignee: 'MD' },
+      { id: 'hst5', title: 'Benchmark competitors', done: true, assignee: 'HRBP', status: 'open' },
+      { id: 'hst6', title: 'Board sign-off', done: false, assignee: 'MD', status: 'blocked' },
     ],
     activity: [{ id: 'ha2', author: 'HRBP', text: 'Benchmarking complete. Sent to board for sign-off.', timestamp: '2026-06-01T15:00:00Z' }],
+    followUps: [
+      { id: 'fu2', author: 'MD (Supervisor)', initials: 'MD', color: '#7c3aed', timestamp: 'Jun 1, 15:00',
+        text: 'Board sign-off requires updated 2026 benchmarking comparators. Please reattach with current data and resubmit before Jun 5.', photos: [], decision: 'Changes', progress: 80 },
+      { id: 'fu3', author: 'HRBP', initials: 'HB', color: '#2563eb', timestamp: 'Jun 1, 10:00',
+        text: 'Benchmarking complete across 6 peer organisations. Framework draft sent to MD for final sign-off. Awaiting board slot.', photos: [], progress: 80 },
+    ],
   },
   {
     id: 'hr4', title: 'Succession Planning Report',
     description: 'Identify critical roles and map succession candidates for C-suite.',
     assignee: 'HR Director', team: 'Talent', status: 'Done', priority: 'High',
-    startDate: '2026-05-01', dueDate: '2026-05-30', weight: 20, progress: 100, tags: ['succession'],
+    startDate: '2026-05-01', dueDate: '2026-05-30', weight: 20, progress: 100, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst7', title: 'Identify critical roles', done: true, assignee: 'HR Director' },
-      { id: 'hst8', title: 'Map candidates', done: true, assignee: 'HR Director' },
-      { id: 'hst9', title: 'Present to board', done: true, assignee: 'HR Director' },
+      { id: 'hst7', title: 'Identify critical roles', done: true, assignee: 'HR Director', status: 'open' },
+      { id: 'hst8', title: 'Map candidates', done: true, assignee: 'HR Director', status: 'open' },
+      { id: 'hst9', title: 'Present to board', done: true, assignee: 'HR Director', status: 'open' },
     ],
     activity: [{ id: 'ha3', author: 'HR Director', text: 'Report presented and approved.', timestamp: '2026-05-30T10:00:00Z' }],
+    followUps: [
+      { id: 'fu4', author: 'MD (Supervisor)', initials: 'MD', color: '#16a34a', timestamp: 'May 30, 10:00',
+        text: 'Report presented and unanimously approved by the board. Succession plan will be integrated into the 2027 talent strategy.', photos: [], decision: 'Approved', progress: 100 },
+    ],
   },
   {
     id: 'hr5', title: 'Employee Satisfaction Survey',
     description: 'Deploy the bi-annual employee satisfaction survey across all units.',
     assignee: 'OD Specialist', team: 'Org Development', status: 'To Do', priority: 'Medium',
-    startDate: '2026-06-15', dueDate: '2026-06-30', weight: 10, progress: 0, tags: ['survey'],
-    subtasks: [{ id: 'hst10', title: 'Design questionnaire', done: false, assignee: 'OD Specialist' }],
+    startDate: '2026-06-15', dueDate: '2026-06-30', weight: 10, progress: 0, tags: ['Routine'],
+    subtasks: [
+      { id: 'hst10', title: 'Design questionnaire', done: false, assignee: 'OD Specialist', status: 'open' },
+      { id: 'hst11', title: 'Set up survey platform', done: false, assignee: 'OD Specialist', status: 'open' },
+    ],
     activity: [],
+    followUps: [],
   },
 ];
 
@@ -131,7 +173,39 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return map[this.pmSection];
   }
 
-  setPmSection(s: PMSection): void { this.pmSection = s; }
+  setPmSection(s: PMSection): void {
+    this.pmSection = s;
+    if (s === 'reports' && !this.execReport && !this.reportsLoading) {
+      this.loadReports();
+    }
+  }
+
+  loadReports(): void {
+    this.reportsLoading = true;
+    this.reportsError = false;
+    this.subscription.add(
+      forkJoin({
+        exec: this.reportingService.getExecutiveReport(),
+        workforce: this.reportingService.getWorkforceOverview(),
+        payroll: this.reportingService.getPayrollSummary(),
+        leave: this.reportingService.getLeaveAttendance(),
+        turnover: this.reportingService.getEmployeeTurnover(),
+      }).subscribe({
+        next: (data) => {
+          this.execReport = data.exec;
+          this.workforceReport = data.workforce;
+          this.payrollReport = data.payroll;
+          this.leaveReport = data.leave;
+          this.turnoverReport = data.turnover;
+          this.reportsLoading = false;
+        },
+        error: () => {
+          this.reportsError = true;
+          this.reportsLoading = false;
+        }
+      })
+    );
+  }
 
   // ── Board ──────────────────────────────────────────────────────────────────
   boardTasks: BoardTask[] = [];
@@ -147,6 +221,20 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   newTask: Partial<BoardTask> = {};
   ganttDays: string[] = [];
   ganttStart!: Date;
+
+  // Quill toolbar config for the rich description editor
+  readonly editorModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ header: [2, 3, false] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ indent: '-1' }, { indent: '+1' }],
+      ['link'],
+      ['blockquote', 'code-block'],
+      [{ table: true }],
+      ['clean'],
+    ],
+  };
 
   readonly columns: Array<{ key: TaskStatus; label: string }> = [
     { key: 'To Do', label: 'To Do' },
@@ -261,6 +349,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   submitAssessment(): void { this.assessSubmitted = true; }
 
+  goalAvatarColor(goal: AssessmentGoal): string {
+    if (goal.selfRating >= 4) return '#2EB270';
+    if (goal.selfRating === 3 || goal.isOverdue) return '#d97706';
+    if (goal.selfRating > 0) return '#2563eb';
+    return '#9ca3af';
+  }
+
+  goalRatingLabel(goal: AssessmentGoal): string {
+    if (!goal.selfRating) return 'Click to rate — goal still in progress';
+    const map: Record<number, string> = {
+      5: '5/5 — Exceeded Target', 4: '4/5 — Substantially Met Target',
+      3: '3/5 — Partially Met Target', 2: '2/5 — Below Target', 1: '1/5 — Did Not Meet Target',
+    };
+    return map[goal.selfRating] ?? '';
+  }
+
+  goalRatingBadgeClass(goal: AssessmentGoal): string {
+    if (goal.selfRating >= 4) return 'b-green';
+    if (goal.selfRating === 3) return 'b-yellow';
+    if (goal.selfRating > 0) return 'b-blue';
+    return 'b-gray';
+  }
+
   // ── Supervisor ─────────────────────────────────────────────────────────────
   employeeSubmissions: EmployeeSubmission[] = [
     {
@@ -360,7 +471,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         id: `hr${Date.now()}_${Math.random().toString(36).slice(2)}`,
         title: r.title.trim(), description: r.kpiTarget, assignee: r.assignee, team: r.supervisor,
         status: 'To Do', priority, startDate: r.start, dueDate: r.due,
-        weight: r.weight, progress: 0, tags: [r.type], subtasks: subtaskList, activity: [],
+        weight: r.weight, progress: 0, tags: [r.type], subtasks: subtaskList, activity: [], followUps: [],
       });
     });
     this.save();
@@ -391,9 +502,34 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   trendPoints: number[] = [];
   insights: ProductivityInsight[] = [];
 
+  // ── Employee dropdowns (loaded from HR microservice) ──────────────────────
+  allEmployees: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }> = [];
+  employeesLoading = false;
+
+  get employeeNames(): string[] {
+    return this.allEmployees.map(e => e.fullName);
+  }
+
+  get supervisorNames(): string[] {
+    const sups = new Set(this.allEmployees.map(e => e.supervisor).filter(Boolean));
+    this.allEmployees.forEach(e => sups.add(e.fullName));
+    return [...sups].sort();
+  }
+
+  // ── Reports & Analytics ────────────────────────────────────────────────────
+  reportsLoading = false;
+  reportsError = false;
+  execReport: HrExecutiveReport | null = null;
+  workforceReport: HrWorkforceOverview | null = null;
+  payrollReport: HrPayrollSummary | null = null;
+  leaveReport: HrLeaveAttendance | null = null;
+  turnoverReport: HrEmployeeTurnover | null = null;
+
   constructor(
     private readonly productivityDataService: ProductivityDataService,
     private readonly productivityReviewService: ProductivityReviewService,
+    private readonly reportingService: HrReportingService,
+    private readonly employeeService: EmployeeService,
   ) {}
 
   ngOnInit(): void {
@@ -410,6 +546,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
     this.buildGantt();
     this.initNewTask();
+
+    // Load employees for dropdowns
+    this.employeesLoading = true;
+    this.employeeService.ensureEmployeesLoaded();
+    this.subscription.add(
+      this.employeeService.employees$.subscribe(emps => {
+        this.allEmployees = (emps || [])
+          .map((e: any) => {
+            const fn = String(e?.firstName || e?.firstname || '').trim();
+            const ln = String(e?.lastName || e?.lastname || '').trim();
+            const full = (`${fn} ${ln}`).trim() || String(e?.fullName || e?.name || '').trim();
+            return {
+              id: String(e?.id || ''),
+              fullName: full,
+              department: String(e?.department?.name || e?.department || ''),
+              role: String(e?.jobTitle || e?.designation || ''),
+              supervisor: String(e?.supervisor?.fullName || e?.supervisorName || ''),
+            };
+          })
+          .filter(e => !!e.fullName);
+        this.employeesLoading = false;
+      })
+    );
   }
 
   ngOnDestroy(): void { this.subscription.unsubscribe(); }
@@ -504,6 +663,92 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return `${col1} / ${Math.min(col2, this.ganttDays.length + 1)}`;
   }
 
+  ganttBarLeft(startDate: string): number {
+    if (!startDate || !this.ganttDays.length) return 0;
+    const start = new Date(startDate);
+    const dayIndex = Math.floor((start.getTime() - this.ganttStart.getTime()) / 86400000);
+    return Math.max(0, Math.min(95, (dayIndex / this.ganttDays.length) * 100));
+  }
+
+  ganttBarWidth(startDate: string, dueDate: string): number {
+    if (!startDate || !dueDate || !this.ganttDays.length) return 5;
+    const start = new Date(startDate);
+    const end = new Date(dueDate);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+    return Math.max(3, Math.min(90, (days / this.ganttDays.length) * 100));
+  }
+
+  get ganttRows(): Array<{ task: BoardTask; sub?: SubTask; isChild: boolean }> {
+    const rows: Array<{ task: BoardTask; sub?: SubTask; isChild: boolean }> = [];
+    for (const task of this.filteredBoard) {
+      rows.push({ task, isChild: false });
+      for (const sub of task.subtasks) {
+        rows.push({ task, sub, isChild: true });
+      }
+    }
+    return rows;
+  }
+
+  taskProgressDisplay(task: BoardTask): number {
+    if (task.subtasks.length > 0) {
+      const done = task.subtasks.filter(s => s.done).length;
+      return Math.round((done / task.subtasks.length) * 100);
+    }
+    return task.progress;
+  }
+
+  // ── Report row helpers ─────────────────────────────────────────────────────
+
+  workforceReportRows(): Array<{ label: string; value: string }> {
+    if (!this.workforceReport) return [];
+    const r = this.workforceReport as any;
+    return [
+      { label: 'Total Headcount', value: String(r.totalHeadcount ?? 'N/A') },
+      { label: 'Total Joins', value: String(r.totalJoins ?? 0) },
+      { label: 'Total Exits', value: String(r.totalExits ?? 0) },
+      { label: 'Total Vacancies', value: String(r.totalVacancies ?? 0) },
+      { label: 'Departments Tracked', value: String((r.rows ?? []).length) },
+    ];
+  }
+
+  payrollReportRows(): Array<{ label: string; value: string; color?: string }> {
+    if (!this.payrollReport) return [];
+    const r = this.payrollReport as any;
+    const fmt = (n: number | null | undefined) => n != null ? `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'N/A';
+    return [
+      { label: 'Total Gross Pay', value: fmt(r.totalGrossPay), color: '#2563eb' },
+      { label: 'Total Net Payable', value: fmt(r.totalNetPayable), color: '#16a34a' },
+      { label: 'Total Deductions', value: fmt(r.totalDeductions), color: '#dc2626' },
+      { label: 'Total Employer Cost', value: fmt(r.totalEmployerCost), color: '#d97706' },
+      { label: 'Departments on Payroll', value: String((r.rows ?? []).length) },
+    ];
+  }
+
+  leaveReportRows(): Array<{ label: string; value: string }> {
+    if (!this.leaveReport) return [];
+    const r = this.leaveReport as any;
+    return [
+      { label: 'Total Requests', value: String(r.totalRequests ?? 0) },
+      { label: 'Approved', value: String(r.approvedRequests ?? 0) },
+      { label: 'Pending', value: String(r.pendingRequests ?? 0) },
+      { label: 'Rejected', value: String(r.rejectedRequests ?? 0) },
+      { label: 'Total Leave Days', value: String(r.totalLeaveDays ?? 0) },
+    ];
+  }
+
+  turnoverReportRows(): Array<{ label: string; value: string; color?: string }> {
+    if (!this.turnoverReport) return [];
+    const r = this.turnoverReport as any;
+    const rate = r.turnoverRate != null ? `${Number(r.turnoverRate).toFixed(1)}%` : 'N/A';
+    return [
+      { label: 'Total Employees', value: String(r.totalEmployees ?? 0) },
+      { label: 'Total Joins', value: String(r.totalJoins ?? 0), color: '#16a34a' },
+      { label: 'Total Exits', value: String(r.totalExits ?? 0), color: '#dc2626' },
+      { label: 'Turnover Rate', value: rate, color: r.turnoverRate > 10 ? '#dc2626' : '#d97706' },
+      { label: 'Departments', value: String((r.rows ?? []).length) },
+    ];
+  }
+
   todayColumn(): number { return Math.floor((new Date().getTime() - this.ganttStart.getTime()) / 86400000) + 1; }
   completedSubtasks(task: BoardTask): number { return task.subtasks.filter(s => s.done).length; }
   priorityClass(p: string): string { return `priority-${p.toLowerCase()}`; }
@@ -518,4 +763,44 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     catch { return iso; }
   }
   get uniqueAssignees(): string[] { return [...new Set(this.boardTasks.map(t => t.assignee))].filter(Boolean); }
+
+  subDotClass(sub: SubTask): string {
+    if (sub.done) return 'done';
+    if (sub.status === 'blocked') return 'blocked';
+    if (sub.status === 'ip') return 'ip';
+    return 'open';
+  }
+
+  isTaskOverdue(task: BoardTask): boolean {
+    if (!task.dueDate || task.status === 'Done') return false;
+    return new Date(task.dueDate) < new Date();
+  }
+
+  overdueDays(task: BoardTask): number {
+    if (!task.dueDate) return 0;
+    return Math.max(0, Math.floor((new Date().getTime() - new Date(task.dueDate).getTime()) / 86400000));
+  }
+
+  getInitials(name: string): string {
+    return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  taskPriorityBadge(priority: string): string {
+    const m: Record<string, string> = { Low: 'b-green', Medium: 'b-yellow', High: 'b-red', Critical: 'b-red' };
+    return m[priority] || 'b-gray';
+  }
+
+  postInlineUpdate(task: BoardTask, event: Event): void {
+    event.stopPropagation();
+    if (!task.inlineText?.trim()) return;
+    task.followUps = task.followUps || [];
+    task.followUps.unshift({
+      id: `fu${Date.now()}`, author: task.assignee || 'You',
+      initials: this.getInitials(task.assignee || 'You'), color: '#2563eb',
+      timestamp: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date()),
+      text: task.inlineText.trim(), photos: [], progress: task.progress,
+    });
+    task.inlineText = '';
+    this.save();
+  }
 }
