@@ -21,13 +21,14 @@ import { ServicesListComponent } from './ui/view/room-management/services/servic
 import { BookingsShellComponent } from './ui/bookings/bookings-shell/bookings-shell.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'hospitality', pathMatch: 'full' },
+  { path: '', redirectTo: 'user/landing', pathMatch: 'full' },
+  { path: 'user', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
   {
     path: 'hospitality',
     component: HospitalityShellComponent,
     children: [
       { path: '', redirectTo: 'bookings/default', pathMatch: 'full' },
-      
+
       // List pages
       { path: 'room-types/:uuid',       component: RoomTypesListComponent },
       { path: 'rooms/:uuid',            component: RoomsListComponent },

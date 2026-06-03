@@ -35,6 +35,7 @@ import { RoomfooterComponent } from '../ui/bookings/roomfooter/roomfooter.compon
 import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 import { EBookingLoginComponent } from '../ui/bookings/auth/login/login.component';
 import { EBookingRegisterComponent } from '../ui/bookings/auth/register/register.component';
+import { LandingComponent } from '../ui/bookings/landing/landing.component';
 import { AppResizeDirective } from '../ui/service/app-resize.directive';
 
 // Standalone Components (imported here if used in templates of components above)
@@ -60,7 +61,8 @@ import { ModalComponent } from '../ui/sharedComponent/view/modal/modal.component
     RoomfooterComponent,
     MultipleBookingsComponent,
     EBookingLoginComponent,
-    EBookingRegisterComponent
+    EBookingRegisterComponent,
+    LandingComponent
   ],
   imports: [
     CommonModule,
