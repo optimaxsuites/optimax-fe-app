@@ -18,7 +18,18 @@ export class AuthGuard implements CanActivate {
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-      if (this.authService.isAuthenticated()) {
+
+    // Restore session from localStorage when opening a new tab (e.g. from a shared task link)
+    if (!sessionStorage.getItem('Token')) {
+      const AUTH_KEYS = ['Token', 'token', 'accessToken', 'Token2', 'accessToken2',
+                         'userid', 'tenantId', 'username', 'fullname', 'email', 'role', 'userRegData'];
+      AUTH_KEYS.forEach(key => {
+        const v = localStorage.getItem(key);
+        if (v) sessionStorage.setItem(key, v);
+      });
+    }
+
+    if (this.authService.isAuthenticated()) {
       return true;
     } else {
       const loginLink = this.navigationLink.getLink('signinLink')
