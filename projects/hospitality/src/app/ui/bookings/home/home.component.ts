@@ -30,6 +30,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   maxPrice = 200000;
   selectedAmenities: string[] = [];
   isMenuOpen = false;
+  isLoading = false;
+  error: string | null = null;
   showAuthModal = false;
   selectedRoomForAuth: DisplayRoom | null = null;
   branding: any = {
@@ -70,7 +72,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
     this.loadBranding();
-    
+
+    // Start loading
+    this.isLoading = true;
+    this.error = null;
+
     // Use switchMap to ensure room types are loaded BEFORE mapping rooms
     this.hotelService.getRoomTypes().pipe(
       tap(types => this.roomTypes = types as any),
@@ -84,12 +90,16 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
         this.filteredRooms = [...this.rooms];
         this.startAutoSlide();
+        this.isLoading = false;
+        this.error = null;
       },
       error: (err: any) => {
         console.error('Error loading rooms:', err);
         this.rooms = this.getDummyRooms();
         this.filteredRooms = [...this.rooms];
         this.startAutoSlide();
+        this.isLoading = false;
+        this.error = null;
       }
     });
   }
@@ -216,14 +226,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     if (mode === 'guest') {
       if (!this.selectedRoomForAuth) return;
-      this.router.navigate(['user/hospitality/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
+      this.router.navigate(['/user/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
     } else {
       const authPath = mode === 'signin' ? 'login' : 'register';
-      const returnUrl = this.selectedRoomForAuth 
-        ? `/user/hospitality/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
-        : `/user/hospitality/e-bookings/home/${this.uuid}`;
+      const returnUrl = this.selectedRoomForAuth
+        ? `/user/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
+        : `/user/e-bookings/home/${this.uuid}`;
 
-      this.router.navigate(['user/hospitality/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }

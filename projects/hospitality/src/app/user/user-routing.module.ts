@@ -18,7 +18,7 @@ import { RoomDetailsComponent } from '../ui/bookings/room-details/room-details.c
 import { EBookingCheckoutComponent } from '../ui/bookings/e-booking-checkout/e-booking-checkout.component';
 import { EBookingLoginComponent } from '../ui/bookings/auth/login/login.component';
 import { EBookingRegisterComponent } from '../ui/bookings/auth/register/register.component';
-
+import { LandingComponent } from '../ui/bookings/landing/landing.component';
 
 import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
 import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
@@ -29,18 +29,15 @@ import { ServiceCheckoutComponent } from '../ui/view/room-management/service-che
 
 const routes: Routes = [
   {
-    path: '',
-    redirectTo: 'e-bookings/rooms/default',
-    pathMatch: 'full',
-  },
-  {
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
-    {
-      path: "",
-      component: BookingsShellComponent,
-      children: [
+  {
+    path: '',
+    component: BookingsShellComponent,
+    children: [
+      { path: '', component: LandingComponent },
+      { path: 'landing', component: LandingComponent },
       { path: 'e-bookings/home/:uuid', component: HomeComponent },
       { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
       { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelserviceService, Room } from '../../hospitality/hotelservice.service';
 
 @Component({
@@ -10,35 +10,20 @@ import { HotelserviceService, Room } from '../../hospitality/hotelservice.servic
   styleUrls: ['./e-booking-checkout.component.scss'],
 })
 export class EBookingCheckoutComponent implements OnInit {
+  Math = Math;
+  bookingForm!: FormGroup;
   room: any = null;
   uuid = 'default';
-  loading = true;
+  loading = false;
   isSubmitting = false;
   showSuccessModal = false;
   confirmedBooking: any = null;
   isMenuOpen = false;
 
-  // Booking form state
-  checkinDate = '';
-  checkoutDate = '';
-  adults = 1;
-  children = 0;
-  
-  // Guest fields
-  title = 'Mr';
-  firstName = '';
-  lastName = '';
-  email = '';
-  phone = '';
-  gender = 'Male';
-  country = 'Nigeria';
-  idNumber = '';
-  specialRequests = '';
-
   // Options
-  titles: string[] = [];
-  genders: string[] = [];
-  countries: string[] = [];
+  titles: string[] = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof'];
+  genders: string[] = ['Male', 'Female', 'Other'];
+  countries: string[] = ['Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Uganda'];
 
   // Toast
   showToast = false;
@@ -55,17 +40,23 @@ export class EBookingCheckoutComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     public router: Router,
-    private hotelService: HotelserviceService
+    private hotelService: HotelserviceService,
+    private formBuilder: FormBuilder
   ) {}
 
   ngOnInit(): void {
     const roomId = this.route.snapshot.paramMap.get('id');
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
 
-    // Populate options
-    this.titles = this.hotelService.getTitles();
-    this.genders = this.hotelService.getGenders();
-    this.countries = this.hotelService.getCountries();
+    // Populate options (with fallbacks to defaults)
+    const serviceTitles = this.hotelService.getTitles();
+    if (serviceTitles && serviceTitles.length > 0) this.titles = serviceTitles;
+
+    const serviceGenders = this.hotelService.getGenders();
+    if (serviceGenders && serviceGenders.length > 0) this.genders = serviceGenders;
+
+    const serviceCountries = this.hotelService.getCountries();
+    if (serviceCountries && serviceCountries.length > 0) this.countries = serviceCountries;
 
     // Read selected service IDs passed as query param
     const servicesParam = this.route.snapshot.queryParamMap.get('services');
@@ -77,16 +68,40 @@ export class EBookingCheckoutComponent implements OnInit {
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    this.checkinDate = this.formatDate(today);
-    this.checkoutDate = this.formatDate(tomorrow);
+
+    // Initialize Reactive Form with validators
+    this.bookingForm = this.formBuilder.group({
+      checkinDate: [this.formatDate(today), [Validators.required]],
+      checkoutDate: [this.formatDate(tomorrow), [Validators.required]],
+      adults: [1, [Validators.required]],
+      children: [0, []],
+      title: ['', [Validators.required]],
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      lastName: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required, Validators.pattern(/^[+0-9\s\-().]{7,}$/)]],
+      gender: ['', [Validators.required]],
+      country: ['', [Validators.required]],
+      idNumber: ['', []],
+      specialRequests: ['', []]
+    });
 
     this.loadBranding();
 
-    this.hotelService.getRoomTypes().subscribe(() => {
-      if (roomId) {
-        this.loadRoom(Number(roomId));
-        this.loadServices();
-      }
+    // Debug form validation
+    console.log('Form after init:', this.bookingForm.valid, this.bookingForm.invalid);
+    this.bookingForm.statusChanges.subscribe(status => {
+      console.log('Form status changed:', status, 'Valid:', this.bookingForm.valid);
+    });
+
+    if (roomId) {
+      this.loadRoom(Number(roomId));
+      this.loadServices();
+    }
+
+    this.hotelService.getRoomTypes().subscribe({
+      next: () => {},
+      error: () => {}
     });
   }
 
@@ -135,8 +150,11 @@ export class EBookingCheckoutComponent implements OnInit {
   }
 
   get nights(): number {
-    if (!this.checkinDate || !this.checkoutDate) return 1;
-    return this.hotelService.calculateNights(this.checkinDate, this.checkoutDate) || 1;
+    if (!this.bookingForm) return 1;
+    const checkin = this.bookingForm.get('checkinDate')?.value;
+    const checkout = this.bookingForm.get('checkoutDate')?.value;
+    if (!checkin || !checkout) return 1;
+    return this.hotelService.calculateNights(checkin, checkout) || 1;
   }
 
   get roomTotal(): number {
@@ -165,43 +183,74 @@ export class EBookingCheckoutComponent implements OnInit {
     this.isMenuOpen = !this.isMenuOpen;
   }
 
-  confirmBooking(): void {
-    if (!this.room || this.isSubmitting) return;
+  incrementAdults(): void {
+    const control = this.bookingForm.get('adults');
+    if (control) {
+      control.setValue((control.value || 0) + 1);
+    }
+  }
 
-    // Enhanced validation
-    if (!this.firstName || !this.lastName || !this.email || !this.phone) {
-      this.showToastMessage('Please fill in all required guest information fields.', 'error');
+  decrementAdults(): void {
+    const control = this.bookingForm.get('adults');
+    if (control) {
+      control.setValue(Math.max(1, control.value - 1));
+    }
+  }
+
+  incrementChildren(): void {
+    const control = this.bookingForm.get('children');
+    if (control) {
+      control.setValue(control.value + 1);
+    }
+  }
+
+  decrementChildren(): void {
+    const control = this.bookingForm.get('children');
+    if (control) {
+      control.setValue(Math.max(0, control.value - 1));
+    }
+  }
+
+  confirmBooking(): void {
+    if (!this.isFormComplete()) {
+      this.showToastMessage('Please fill in all required fields correctly.', 'error');
+      return;
+    }
+
+    if (this.isSubmitting) {
+      this.showToastMessage('Please wait, processing your booking...', 'error');
       return;
     }
 
     this.isSubmitting = true;
+    const formValues = this.bookingForm.value;
 
-    // 1. Create/Identify Guest - Using all admin fields
+    // 1. Create/Identify Guest
     const guestData: any = {
-      title: this.title,
-      firstName: this.firstName,
-      lastName: this.lastName,
-      email: this.email,
-      phone: this.phone,
-      country: this.country,
-      idNumber: this.idNumber || 'N/A',
-      gender: this.gender
+      title: formValues.title,
+      firstName: formValues.firstName,
+      lastName: formValues.lastName,
+      email: formValues.email,
+      phone: formValues.phone,
+      country: formValues.country,
+      idNumber: formValues.idNumber || 'N/A',
+      gender: formValues.gender
     };
 
     console.log('DEBUG: E-Booking — Creating guest:', guestData);
-    
+
     this.hotelService.createGuest(guestData).subscribe({
       next: (createdGuest) => {
         console.log('DEBUG: E-Booking — Guest created:', createdGuest);
         const guestId = this.hotelService.getId(createdGuest);
-        
+
         // 2. Create Booking
         const bookingData: any = {
-          checkinDate: this.checkinDate,
-          checkoutDate: this.checkoutDate,
-          adults: this.adults,
-          children: this.children,
-          specialRequests: this.specialRequests,
+          checkinDate: formValues.checkinDate,
+          checkoutDate: formValues.checkoutDate,
+          adults: formValues.adults,
+          children: formValues.children,
+          specialRequests: formValues.specialRequests,
           subTotal: this.roomTotal,
           total: this.grandTotal,
           status: 'CONFIRMED',
@@ -249,5 +298,18 @@ export class EBookingCheckoutComponent implements OnInit {
 
   goBack(): void {
     history.back();
+  }
+
+  isFormComplete(): boolean {
+    const form = this.bookingForm.value;
+    return !!(
+      form.title &&
+      form.firstName && form.firstName.length >= 2 &&
+      form.lastName && form.lastName.length >= 2 &&
+      form.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+      form.phone && /^[+0-9\s\-().]{7,}$/.test(form.phone) &&
+      form.gender &&
+      form.country
+    );
   }
 }

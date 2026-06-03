@@ -142,14 +142,14 @@ export class RoomDetailsComponent implements OnInit {
       if (!this.room) return;
       const serviceIds = Array.from(this.selectedServices).join(',');
       const extras = serviceIds ? { queryParams: { services: serviceIds } } : {};
-      this.router.navigate(['e-bookings/checkout', this.room.id, this.uuid], extras);
+      this.router.navigate(['/user/e-bookings/checkout', this.room.id, this.uuid], extras);
     } else {
       const authPath = mode === 'signin' ? 'login' : 'register';
       const serviceIds = Array.from(this.selectedServices).join(',');
-      const checkoutUrl = this.room ? `/e-bookings/checkout/${this.room.id}/${this.uuid}` : `/e-bookings/home/${this.uuid}`;
+      const checkoutUrl = this.room ? `/user/e-bookings/checkout/${this.room.id}/${this.uuid}` : `/user/e-bookings/home/${this.uuid}`;
       const returnUrl = (this.room && serviceIds) ? `${checkoutUrl}?services=${serviceIds}` : checkoutUrl;
 
-      this.router.navigate(['e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }
