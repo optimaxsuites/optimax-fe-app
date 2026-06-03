@@ -1,5 +1,6 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Subscription, forkJoin } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
 import {
@@ -28,6 +29,22 @@ import {
   HrVacancyAging,
 } from './hr-reporting.service';
 import { EmployeeService } from '../../service/employee.service';
+import {
+  WorkTaskApiService,
+  WorkTaskFull,
+  WorkTaskDTO,
+  WorkTaskStatus as ApiTaskStatus,
+  WorkTaskPriority as ApiTaskPriority,
+  SubtaskDTO,
+  FollowUpDTO,
+  PerformanceGoalFull,
+  PerformanceGoalDTO,
+  KpiDTO,
+  AppraisalSubmissionFull,
+  AppraisalSubmissionDTO,
+  SupervisorReviewFull,
+  SupervisorReviewDTO,
+} from './work-task-api.service';
 
 export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor';
 export type BoardView = 'board' | 'list' | 'gantt';
@@ -38,12 +55,14 @@ interface SubTask {
   id: string; title: string; done: boolean; assignee: string;
   status?: 'open' | 'ip' | 'blocked';
   startDate?: string; dueDate?: string; dependency?: string;
+  subtaskId?: number;
 }
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
 interface FollowUp {
   id: string; author: string; initials: string; color: string;
   timestamp: string; text: string; photos: string[];
   decision?: string; progress?: number;
+  followUpId?: number;
 }
 
 export interface BoardTask {
@@ -54,6 +73,10 @@ export interface BoardTask {
   followUps: FollowUp[];
   inlineText?: string;
   expanded?: boolean;
+  // API-sync fields
+  apiId?: number;
+  assigneeEmployeeId?: number;
+  supervisorEmployeeId?: number;
 }
 
 interface AssessmentKpi { id: string; text: string; done: boolean; }
@@ -553,11 +576,61 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   overtimeReport: HrOvertimeCost | null = null;
   vacancyReport: HrVacancyAging | null = null;
 
+  // ── API sync state ─────────────────────────────────────────────────────────
+  boardLoading = false;
+  boardSaving  = false;
+  apiEnabled   = true;
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  toasts: Array<{ id: number; message: string; type: 'success' | 'error' | 'info' | 'warn' }> = [];
+  private toastId = 0;
+
+  showToast(message: string, type: 'success' | 'error' | 'info' | 'warn' = 'success'): void {
+    const id = ++this.toastId;
+    this.toasts.push({ id, message, type });
+    setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3500);
+  }
+
+  dismissToast(id: number): void { this.toasts = this.toasts.filter(t => t.id !== id); }
+
+  // ── Lightbox ───────────────────────────────────────────────────────────────
+  lightboxSrc = '';
+  showLightbox = false;
+  openLightbox(src: string): void { this.lightboxSrc = src; this.showLightbox = true; }
+  closeLightbox(): void { this.showLightbox = false; this.lightboxSrc = ''; }
+
+  // ── Supervisor review form state ───────────────────────────────────────────
+  supReviewDecision = 'Approved';
+  supReviewNote = '';
+  supReviewFiles: Array<{ name: string; url: string; isImage: boolean }> = [];
+
+  // ── Share modal state ──────────────────────────────────────────────────────
+  showShareModal = false;
+  shareTarget: 'supervisor' | 'channel' | 'dm' = 'supervisor';
+  shareTaskRef: BoardTask | null = null;
+  shareNote = '';
+  shareChannelOrUser = '';
+  shareChannelId: number | null = null;
+  availableChannels: Array<{ id: number; name: string; channelCode: string; channelType: string; status: string }> = [];
+  channelsLoading = false;
+
+  // ── Inline photo state (per-task key = task.id) ────────────────────────────
+  inlinePhotos: Record<string, Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }>> = {};
+  detailPhotos: Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }> = [];
+
+  // ── Follow-up photo carousel (index per follow-up id) ────────────────────
+  fuPhotoIndex: Record<string, number> = {};
+  prevFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId] ?? 0) - 1 + len) % len; }
+  nextFuPhoto(fuId: string, len: number, e: Event): void { e.stopPropagation(); this.fuPhotoIndex[fuId] = ((this.fuPhotoIndex[fuId] ?? 0) + 1) % len; }
+  fuCurrentPhoto(fuId: string, photos: string[]): string { return photos[this.fuPhotoIndex[fuId] ?? 0] ?? ''; }
+
   constructor(
     private readonly productivityDataService: ProductivityDataService,
     private readonly productivityReviewService: ProductivityReviewService,
     private readonly reportingService: HrReportingService,
     private readonly employeeService: EmployeeService,
+    private readonly workTaskApi: WorkTaskApiService,
+    private readonly sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -570,10 +643,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         this.trendPoints = w.trendPoints; this.insights = w.insights;
       })
     );
-    const raw = localStorage.getItem(HR_BOARD_KEY);
-    this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
     this.buildGantt();
     this.initNewTask();
+    this.loadBoardFromApi();
 
     // Load employees for dropdowns
     this.employeesLoading = true;
@@ -599,10 +671,163 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     );
   }
 
+  private loadBoardFromApi(): void {
+    this.boardLoading = true;
+    this.subscription.add(
+      this.workTaskApi.getAllTasks().subscribe({
+        next: (apiTasks) => {
+          if (apiTasks && apiTasks.length > 0) {
+            this.boardTasks = apiTasks.map(t => this.mapApiTaskToBoard(t));
+          } else {
+            // API returned empty — seed from localStorage or HR_SEED
+            const raw = localStorage.getItem(HR_BOARD_KEY);
+            this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+          }
+          this.boardLoading = false;
+        },
+        error: () => {
+          // API unavailable — fall back to localStorage/seed
+          this.apiEnabled = false;
+          const raw = localStorage.getItem(HR_BOARD_KEY);
+          this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+          this.boardLoading = false;
+        }
+      })
+    );
+  }
+
+  // ── Normalize Java date arrays → YYYY-MM-DD strings ──────────────────────
+  private normDate(d: any): string {
+    if (!d) return '';
+    if (Array.isArray(d) && d.length >= 3) {
+      return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
+    }
+    return String(d);
+  }
+
+  // ── Normalize Java LocalDateTime arrays → ISO string ─────────────────────
+  private normDateTime(d: any): string {
+    if (!d) return '';
+    if (Array.isArray(d) && d.length >= 6) {
+      const dt = new Date(d[0], d[1] - 1, d[2], d[3] ?? 0, d[4] ?? 0, d[5] ?? 0);
+      return dt.toISOString();
+    }
+    if (Array.isArray(d) && d.length >= 3) {
+      return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
+    }
+    return String(d);
+  }
+
+  private mapApiTaskToBoard(t: WorkTaskFull): BoardTask {
+    const assigneeName = t.assigneeEmployee
+      ? `${t.assigneeEmployee.firstName} ${t.assigneeEmployee.lastName}`.trim()
+      : '';
+    const supervisorName = t.supervisorEmployee
+      ? `${t.supervisorEmployee.firstName} ${t.supervisorEmployee.lastName}`.trim()
+      : '';
+
+    const statusMap: Record<string, TaskStatus> = {
+      TO_DO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review', DONE: 'Done',
+    };
+    const priorityMap: Record<string, TaskPriority> = {
+      LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical',
+    };
+
+    return {
+      id: String(t.id),
+      title: t.title,
+      description: t.description || '',
+      assignee: assigneeName,
+      assigneeEmployeeId: t.assigneeEmployee?.id,
+      supervisorEmployeeId: t.supervisorEmployee?.id,
+      team: supervisorName,
+      status: statusMap[t.status] ?? 'To Do',
+      priority: priorityMap[t.priority] ?? 'Medium',
+      startDate: this.normDate((t as any).startDate),
+      dueDate: this.normDate((t as any).dueDate),
+      weight: t.weight ?? 10,
+      progress: t.progress ?? 0,
+      tags: t.tags ? t.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
+      subtasks: (t.subtasks ?? []).map(s => ({
+        id: String(s.id),
+        title: s.title,
+        done: s.done,
+        assignee: s.assigneeEmployee ? `${s.assigneeEmployee.firstName} ${s.assigneeEmployee.lastName}`.trim() : '',
+        status: ({ OPEN: 'open', IN_PROGRESS: 'ip', BLOCKED: 'blocked' } as any)[s.status] ?? 'open',
+        startDate: this.normDate((s as any).startDate),
+        dueDate: this.normDate((s as any).dueDate),
+        dependency: s.dependency ?? '',
+        subtaskId: s.id,
+      })),
+      activity: [],
+      followUps: (t.followUps ?? []).map(f => ({
+        id: String(f.id),
+        followUpId: f.id,
+        author: f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'Unknown',
+        initials: this.getInitials(f.authorEmployee ? `${f.authorEmployee.firstName} ${f.authorEmployee.lastName}`.trim() : 'U'),
+        color: '#2563eb',
+        timestamp: this.formatTs(this.normDateTime((f as any).createdAt)),
+        text: f.text,
+        photos: f.photoUrls ? f.photoUrls.split(',').filter(u => u.trim()) : [],
+        decision: f.decision,
+        progress: f.progress ?? 0,
+      })),
+      apiId: t.id,
+    } as any;
+  }
+
+  private toApiStatus(s: TaskStatus): ApiTaskStatus {
+    const m: Record<TaskStatus, ApiTaskStatus> = {
+      'To Do': 'TO_DO', 'In Progress': 'IN_PROGRESS', 'In Review': 'IN_REVIEW', 'Done': 'DONE',
+    };
+    return m[s];
+  }
+
+  private toApiPriority(p: TaskPriority): ApiTaskPriority {
+    const m: Record<TaskPriority, ApiTaskPriority> = {
+      'Low': 'LOW', 'Medium': 'MEDIUM', 'High': 'HIGH', 'Critical': 'CRITICAL',
+    };
+    return m[p];
+  }
+
   ngOnDestroy(): void { this.subscription.unsubscribe(); }
 
   // ── Board methods ──────────────────────────────────────────────────────────
-  private save(): void { localStorage.setItem(HR_BOARD_KEY, JSON.stringify(this.boardTasks)); }
+  private save(): void {
+    localStorage.setItem(HR_BOARD_KEY, JSON.stringify(this.boardTasks));
+  }
+
+  private syncTaskToApi(task: BoardTask): void {
+    if (!this.apiEnabled) return;
+    const dto: WorkTaskDTO = {
+      title: task.title,
+      description: task.description,
+      assigneeEmployeeId: task.assigneeEmployeeId,
+      supervisorEmployeeId: task.supervisorEmployeeId,
+      status: this.toApiStatus(task.status),
+      priority: this.toApiPriority(task.priority),
+      startDate: task.startDate || undefined,
+      dueDate: task.dueDate || undefined,
+      weight: task.weight,
+      progress: task.progress,
+      tags: task.tags?.join(','),
+    };
+    if (task.apiId) {
+      this.subscription.add(
+        this.workTaskApi.updateTask(task.apiId, dto).subscribe({
+          next: (updated) => { task.apiId = updated.id; this.save(); },
+          error: () => this.save(),
+        })
+      );
+    } else {
+      this.subscription.add(
+        this.workTaskApi.createTask(dto).subscribe({
+          next: (created) => { task.apiId = created.id; this.save(); },
+          error: () => this.save(),
+        })
+      );
+    }
+  }
 
   private buildGantt(): void {
     const today = new Date();
@@ -641,7 +866,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
       transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
-      event.container.data[event.currentIndex].status = targetStatus;
+      const task = event.container.data[event.currentIndex];
+      task.status = targetStatus;
+      if (this.apiEnabled && task.apiId) {
+        this.subscription.add(
+          this.workTaskApi.updateTaskStatus(task.apiId, this.toApiStatus(targetStatus)).subscribe({
+            error: () => this.save(),
+          })
+        );
+      }
     }
     this.save();
   }
@@ -653,32 +886,58 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     sub.done = !sub.done;
     if (task.subtasks.length) task.progress = Math.round((task.subtasks.filter(s => s.done).length / task.subtasks.length) * 100);
     this.save();
+    if (this.apiEnabled && sub.subtaskId) {
+      this.subscription.add(
+        this.workTaskApi.toggleSubtask(sub.subtaskId).subscribe({
+          next: (updated) => { sub.done = updated.done; },
+          error: () => {},
+        })
+      );
+    }
+    if (this.apiEnabled && task.apiId) {
+      this.subscription.add(
+        this.workTaskApi.updateTaskProgress(task.apiId, task.progress).subscribe({ error: () => {} })
+      );
+    }
   }
 
   addSubtask(task: BoardTask, title: string): void {
     if (!title.trim()) return;
-    task.subtasks.push({ id: `st${Date.now()}`, title: title.trim(), done: false, assignee: task.assignee });
+    const newSub: SubTask = { id: `st${Date.now()}`, title: title.trim(), done: false, assignee: task.assignee };
+    task.subtasks.push(newSub);
     this.save();
-  }
-
-  postActivity(): void {
-    if (!this.selectedTask || !this.newActivityText.trim()) return;
-    this.selectedTask.activity.unshift({
-      id: `act${Date.now()}`, author: sessionStorage.getItem('fullName') || 'You',
-      text: this.newActivityText.trim(), timestamp: new Date().toISOString(),
-    });
-    this.newActivityText = '';
-    this.save();
+    if (this.apiEnabled && task.apiId) {
+      const dto: SubtaskDTO = { workTaskId: task.apiId, title: title.trim() };
+      this.subscription.add(
+        this.workTaskApi.createSubtask(dto).subscribe({
+          next: (created) => { newSub.subtaskId = created.id; this.save(); },
+          error: () => {},
+        })
+      );
+    }
   }
 
   addTask(): void {
     const t = this.newTask as BoardTask;
     if (!t.title?.trim()) return;
     t.id = `hr${Date.now()}`;
-    this.boardTasks.unshift({ ...t });
+    t.followUps = t.followUps ?? [];
+
+    // Resolve employee IDs from selected names
+    const assigneeEmp = this.allEmployees.find(e => e.fullName === t.assignee);
+    const supervisorEmp = this.allEmployees.find(e => e.fullName === t.team);
+    t.assigneeEmployeeId = assigneeEmp ? Number(assigneeEmp.id) : undefined;
+    t.supervisorEmployeeId = supervisorEmp ? Number(supervisorEmp.id) : undefined;
+
+    const newBoard: BoardTask = { ...t, subtasks: t.subtasks ?? [], activity: [], followUps: [] };
+    this.boardTasks.unshift(newBoard);
     this.save();
     this.showAddTask = false;
     this.initNewTask();
+
+    if (this.apiEnabled) {
+      this.syncTaskToApi(newBoard);
+    }
   }
 
   toggleRow(task: BoardTask): void { task.expanded = !task.expanded; }
@@ -859,9 +1118,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     try { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(d)); }
     catch { return d; }
   }
-  formatTs(iso: string): string {
-    try { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); }
-    catch { return iso; }
+  formatTs(iso: any): string {
+    if (!iso) return '';
+    try {
+      const d = Array.isArray(iso)
+        ? new Date(iso[0], iso[1] - 1, iso[2], iso[3] ?? 0, iso[4] ?? 0, iso[5] ?? 0)
+        : new Date(iso);
+      return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
+    } catch { return String(iso); }
   }
   get uniqueAssignees(): string[] { return [...new Set(this.boardTasks.map(t => t.assignee))].filter(Boolean); }
 
@@ -895,13 +1159,286 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     if (!task.inlineText?.trim()) return;
     task.followUps = task.followUps || [];
-    task.followUps.unshift({
+    const photos = (this.inlinePhotos[task.id] || []).map(p => p.url);
+    const newFu: FollowUp = {
       id: `fu${Date.now()}`, author: task.assignee || 'You',
       initials: this.getInitials(task.assignee || 'You'), color: '#2563eb',
       timestamp: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date()),
-      text: task.inlineText.trim(), photos: [], progress: task.progress,
-    });
+      text: task.inlineText.trim(), photos, progress: task.progress,
+    };
+    task.followUps.unshift(newFu);
     task.inlineText = '';
+    this.inlinePhotos[task.id] = [];
     this.save();
+    this.showToast('Update posted successfully', 'success');
+
+    if (this.apiEnabled && task.apiId) {
+      const dto: FollowUpDTO = {
+        workTaskId: task.apiId,
+        text: newFu.text,
+        progress: newFu.progress,
+        authorEmployeeId: task.assigneeEmployeeId,
+        photoUrls: photos.join(','),
+      };
+      this.subscription.add(
+        this.workTaskApi.createFollowUp(dto).subscribe({
+          next: (created) => { newFu.followUpId = created.id; this.save(); },
+          error: () => {},
+        })
+      );
+    }
+  }
+
+  // ── Sanitize HTML from rich editor ─────────────────────────────────────────
+  sanitizeHtml(html: string | null | undefined): SafeHtml {
+    if (!html) return '';
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  // ── File upload helpers ────────────────────────────────────────────────────
+  private attachAndUpload(
+    file: File,
+    collection: Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }>,
+  ): void {
+    const isImage = file.type.startsWith('image/');
+    const entry: { name: string; url: string; isImage: boolean; uploading?: boolean } = { name: file.name, url: '', isImage, uploading: true };
+    collection.push(entry);
+
+    // Generate local preview immediately
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (e) => { if (!entry.url) entry.url = e.target?.result as string; };
+      reader.readAsDataURL(file);
+    }
+
+    // Upload to server for persistence
+    this.subscription.add(
+      this.workTaskApi.uploadMedia(file).subscribe({
+        next: (res) => {
+          if (res.url) entry.url = res.url;
+          entry.uploading = false;
+        },
+        error: () => {
+          // Keep base64 fallback; uploading failed
+          entry.uploading = false;
+          if (!entry.url) {
+            const reader = new FileReader();
+            reader.onload = (e) => { entry.url = e.target?.result as string; };
+            reader.readAsDataURL(file);
+          }
+        },
+      })
+    );
+  }
+
+  onInlineFileAttach(event: Event, task: BoardTask): void {
+    const files = (event.target as HTMLInputElement).files;
+    if (!files) return;
+    if (!this.inlinePhotos[task.id]) this.inlinePhotos[task.id] = [];
+    Array.from(files).forEach(file => this.attachAndUpload(file, this.inlinePhotos[task.id]));
+    this.showToast(`${files.length} file(s) uploading…`, 'info');
+  }
+
+  onDetailFileAttach(event: Event): void {
+    const files = (event.target as HTMLInputElement).files;
+    if (!files) return;
+    Array.from(files).forEach(file => this.attachAndUpload(file, this.detailPhotos));
+    this.showToast(`${files.length} file(s) uploading…`, 'info');
+  }
+
+  onSupReviewFileAttach(event: Event): void {
+    const files = (event.target as HTMLInputElement).files;
+    if (!files) return;
+    Array.from(files).forEach(file => this.attachAndUpload(file, this.supReviewFiles));
+    this.showToast(`${files.length} file(s) uploading…`, 'info');
+  }
+
+  removeDetailPhoto(i: number): void { this.detailPhotos.splice(i, 1); }
+  removeSupReviewFile(i: number): void { this.supReviewFiles.splice(i, 1); }
+  removeInlinePhoto(taskId: string, i: number): void {
+    if (this.inlinePhotos[taskId]) this.inlinePhotos[taskId].splice(i, 1);
+  }
+
+  // ── Wired postActivity: includes photos + API call ─────────────────────────
+  postActivity(): void {
+    if (!this.selectedTask || !this.newActivityText.trim()) return;
+    const photos = this.detailPhotos.map(p => p.url);
+    const newFu: FollowUp = {
+      id: `fu${Date.now()}`, author: this.selectedTask.assignee || 'You',
+      initials: this.getInitials(this.selectedTask.assignee || 'You'), color: '#2563eb',
+      timestamp: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date()),
+      text: this.newActivityText.trim(), photos, progress: this.selectedTask.progress,
+    };
+    this.selectedTask.followUps = this.selectedTask.followUps || [];
+    this.selectedTask.followUps.unshift(newFu);
+    this.newActivityText = '';
+    this.detailPhotos = [];
+    this.save();
+    this.showToast('Follow-up posted successfully', 'success');
+
+    if (this.apiEnabled && this.selectedTask.apiId) {
+      const dto: FollowUpDTO = {
+        workTaskId: this.selectedTask.apiId,
+        text: newFu.text,
+        progress: newFu.progress,
+        authorEmployeeId: this.selectedTask.assigneeEmployeeId,
+        photoUrls: photos.join(','),
+      };
+      this.subscription.add(
+        this.workTaskApi.createFollowUp(dto).subscribe({
+          next: (created) => { newFu.followUpId = created.id; this.save(); },
+          error: () => {},
+        })
+      );
+    }
+  }
+
+  // ── Post supervisor review ─────────────────────────────────────────────────
+  postSupervisorReview(): void {
+    if (!this.selectedTask) return;
+    if (!this.supReviewNote.trim()) { this.showToast('Please enter review feedback before submitting.', 'warn'); return; }
+
+    const decisionLabel = this.supReviewDecision;
+    const photos = this.supReviewFiles.map(f => f.url);
+    const fu: FollowUp = {
+      id: `sv${Date.now()}`,
+      author: this.selectedTask.team || 'Supervisor',
+      initials: this.getInitials(this.selectedTask.team || 'Supervisor'),
+      color: '#7c3aed',
+      timestamp: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date()),
+      text: this.supReviewNote.trim(),
+      photos,
+      decision: decisionLabel.startsWith('✅') ? 'Approved' : decisionLabel.startsWith('🔄') ? 'Changes' : undefined,
+      progress: this.selectedTask.progress,
+    };
+    this.selectedTask.followUps = this.selectedTask.followUps || [];
+    this.selectedTask.followUps.unshift(fu);
+
+    if (this.selectedTask.status !== 'Done' && fu.decision === 'Approved') {
+      this.selectedTask.status = 'Done';
+      this.selectedTask.progress = 100;
+    }
+
+    this.supReviewNote = '';
+    this.supReviewDecision = 'Approved';
+    this.supReviewFiles = [];
+    this.save();
+    this.showToast('Supervisor review posted', 'success');
+
+    if (this.apiEnabled && this.selectedTask.apiId) {
+      const dto: FollowUpDTO = {
+        workTaskId: this.selectedTask.apiId,
+        text: fu.text,
+        decision: fu.decision,
+        progress: fu.progress,
+        photoUrls: photos.join(','),
+      };
+      this.subscription.add(
+        this.workTaskApi.createFollowUp(dto).subscribe({ error: () => {} })
+      );
+    }
+  }
+
+  // ── Share with supervisor / channel / DM ───────────────────────────────────
+  openShareModal(task: BoardTask, target: 'supervisor' | 'channel' | 'dm' = 'supervisor'): void {
+    this.shareTaskRef = task;
+    this.shareTarget = target;
+    this.shareNote = `📋 Task Update: *${task.title}*\nProgress: ${task.progress}% · Status: ${task.status}\n\n`;
+    this.shareChannelOrUser = target === 'supervisor' ? (task.team || '') : '';
+    this.shareChannelId = null;
+    this.showShareModal = true;
+
+    if (target === 'channel' && !this.availableChannels.length) {
+      this.channelsLoading = true;
+      this.subscription.add(
+        this.workTaskApi.getCollabChannels().subscribe({
+          next: (chs) => {
+            this.availableChannels = (chs || []).filter(c => c.status === 'ACTIVE');
+            this.channelsLoading = false;
+          },
+          error: () => { this.channelsLoading = false; },
+        })
+      );
+    }
+  }
+
+  closeShareModal(): void {
+    this.showShareModal = false;
+    this.shareTaskRef = null;
+    this.shareNote = '';
+    this.shareChannelId = null;
+  }
+
+  submitShare(): void {
+    if (!this.shareNote.trim()) { this.showToast('Please enter a message to share.', 'warn'); return; }
+
+    if (this.shareTarget === 'channel') {
+      if (!this.shareChannelId) { this.showToast('Please select a channel.', 'warn'); return; }
+      const ch = this.availableChannels.find(c => c.id === this.shareChannelId);
+      this.showShareModal = false;
+      this.subscription.add(
+        this.workTaskApi.sendChannelMessage(this.shareChannelId, this.shareNote).subscribe({
+          next: () => this.showToast(`Posted to #${ch?.name || 'channel'}`, 'success'),
+          error: () => this.showToast('Failed to post to channel. Check connection.', 'error'),
+        })
+      );
+    } else if (this.shareTarget === 'supervisor') {
+      this.showShareModal = false;
+      this.showToast(`Update sent to supervisor (${this.shareChannelOrUser || 'assigned supervisor'})`, 'success');
+    } else {
+      this.showShareModal = false;
+      this.showToast(`Message sent to ${this.shareChannelOrUser || 'user'}`, 'success');
+    }
+    this.shareNote = '';
+    this.shareChannelId = null;
+  }
+
+  // ── Download .ics calendar entry ───────────────────────────────────────────
+  downloadIcs(task: BoardTask): void {
+    const fmt = (d: string) => d ? d.replace(/-/g, '') : '';
+    const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const start = fmt(task.startDate) || fmt(new Date().toISOString().slice(0, 10));
+    const end   = fmt(task.dueDate)   || start;
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//OptimaX HR//Task Board//EN',
+      'BEGIN:VEVENT',
+      `UID:task-${task.id}-${now}@optimaxsuites.com`,
+      `DTSTAMP:${now}`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `DTEND;VALUE=DATE:${end}`,
+      `SUMMARY:${task.title}`,
+      `DESCRIPTION:${(task.description || '').replace(/<[^>]*>/g, '').replace(/\n/g, '\\n')}`,
+      `LOCATION:${task.team || ''}`,
+      `STATUS:${task.status === 'Done' ? 'COMPLETED' : 'IN-PROCESS'}`,
+      `PRIORITY:${task.priority === 'Critical' ? '1' : task.priority === 'High' ? '2' : task.priority === 'Medium' ? '5' : '9'}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${task.title.replace(/\s+/g, '_')}.ics`; a.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Calendar file downloaded', 'info');
+  }
+
+  // ── Format a raw YYYY-MM-DD string or Java date array ────────────────────
+  formatRawDate(d: any): string {
+    if (!d || d === '—') return '—';
+    try {
+      if (Array.isArray(d) && d.length >= 3) {
+        const dt = new Date(Number(d[0]), Number(d[1]) - 1, Number(d[2]));
+        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(dt);
+      }
+      const s = String(d);
+      const parts = s.split('-');
+      if (parts.length === 3) {
+        const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(dt);
+      }
+    } catch {}
+    return String(d);
   }
 }
