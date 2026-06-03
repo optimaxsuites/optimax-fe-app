@@ -1,25 +1,6 @@
 <!-- dami just modified this to add sticky-board and gantt planning for large-organisation task execution. -->
 <p-toast key="tasks-routines" position="top-right"></p-toast>
 <div class="tasks-shell">
-  <section class="hero-card">
-    <div class="hero-copy">
-      <p class="eyebrow">Tasks and Routines</p>
-      <h1>Plan work once, break it into delivery streams, then monitor it through review and reporting.</h1>
-      <p>
-        Build parent plans with nested sub tasks, dependencies, owners, attachments, and supervisor reviews. Teams can switch between
-        a visual sticky board and a gantt timeline without losing detail.
-      </p>
-    </div>
-
-    <div class="hero-metrics">
-      <article class="metric-card" *ngFor="let metric of reminderMetrics">
-        <strong>{{ metric.value }}</strong>
-        <span>{{ metric.label }}</span>
-        <small>{{ metric.caption }}</small>
-      </article>
-    </div>
-  </section>
-
   <section class="top-toolbar">
     <div class="workspace-tabs">
       <button type="button" class="tab-pill" [class.active]="activePage === 'planner'" (click)="setActivePage('planner')">

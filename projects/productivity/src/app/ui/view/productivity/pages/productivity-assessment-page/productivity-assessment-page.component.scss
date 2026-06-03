@@ -1,0 +1,476 @@
+.page-wrap {
+  display: grid;
+  gap: 2rem;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dde7ea;
+  border-radius: 0.8rem;
+  padding: 2rem;
+  box-shadow: 0 18px 42px rgba(46, 98, 118, 0.08);
+}
+
+// ── Cycle banner ──────────────────────────────────────────
+.cycle-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.banner-copy {
+  h3 {
+    margin: 0.5rem 0 0.8rem;
+    font-size: 2.6rem;
+    color: #1b3d4a;
+  }
+}
+
+.sub-text {
+  margin: 0;
+  color: #60737a;
+  font-size: 1.3rem;
+  line-height: 1.6;
+  max-width: 58ch;
+}
+
+.cycle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1.4rem;
+  border-radius: 999px;
+  background: rgba(46, 178, 112, 0.1);
+  color: #1e7e4a;
+  font-size: 1.2rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cycle-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: #2eb270;
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+// ── Section header ─────────────────────────────────────────
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #778b92;
+  font-size: 1.1rem;
+}
+
+.eyebrow.dark {
+  color: #3d6170;
+}
+
+.list-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h4 {
+    margin: 0.5rem 0 0;
+    font-size: 2rem;
+    color: #1b3d4a;
+  }
+}
+
+// ── Success banner ─────────────────────────────────────────
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.3rem 1.6rem;
+  border-radius: 0.8rem;
+  background: rgba(46, 178, 112, 0.1);
+  border: 1px solid rgba(46, 178, 112, 0.3);
+  color: #1a6e3e;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+// ── Goal cards ─────────────────────────────────────────────
+.goal-card {
+  background: #fff;
+  border: 1px solid #dde7ea;
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+
+  &.is-expanded {
+    box-shadow: 0 8px 24px rgba(46, 98, 118, 0.12);
+    border-color: var(--celadon-green, #3eae84);
+  }
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.6rem;
+  padding: 1.6rem 2rem;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: #f6fafb;
+  }
+}
+
+.goal-copy {
+  min-width: 0;
+
+  h5 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1b3d4a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  p {
+    margin: 0.4rem 0 0;
+    font-size: 1.2rem;
+    color: #60737a;
+
+    strong {
+      color: #224957;
+    }
+  }
+}
+
+.goal-indicators {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-shrink: 0;
+
+  .pi {
+    color: #778b92;
+    font-size: 1.4rem;
+  }
+}
+
+.bar-mini {
+  width: 8rem;
+  height: 0.6rem;
+  background: #e6eef1;
+  border-radius: 999px;
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-green, #2e6276), var(--celadon-green, #3eae84));
+    border-radius: 999px;
+  }
+}
+
+.pct-label {
+  font-size: 1.2rem;
+  color: #60737a;
+  min-width: 3rem;
+  text-align: right;
+}
+
+.score-badge {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(46, 178, 112, 0.12);
+  color: #1a6e3e;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+// ── Goal body (expanded) ───────────────────────────────────
+.goal-body {
+  padding: 0 2rem 2rem;
+  border-top: 1px solid #eef3f5;
+}
+
+.target-label {
+  margin: 1.4rem 0 1.6rem;
+  font-size: 1.25rem;
+  color: #60737a;
+  line-height: 1.5;
+}
+
+.field {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 1.6rem;
+
+  label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #3d6170;
+  }
+
+  .muted {
+    font-weight: 400;
+    color: #778b92;
+  }
+
+  textarea {
+    width: 100%;
+    border: 1px solid #d8e3e6;
+    border-radius: 0.8rem;
+    padding: 1.1rem 1.2rem;
+    font-size: 1.3rem;
+    font-family: inherit;
+    color: #1b3d4a;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--celadon-green, #3eae84);
+    }
+  }
+}
+
+.star-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.star {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  font-size: 2.4rem;
+  color: #d0dde1;
+  transition: color 0.15s ease, transform 0.15s ease;
+
+  &.lit {
+    color: #f59e0b;
+  }
+
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+.score-text {
+  margin-left: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #3d6170;
+}
+
+.kpi-list {
+  margin-top: 0.4rem;
+  padding: 1.4rem;
+  background: #f6fafb;
+  border-radius: 0.8rem;
+  border: 1px solid #e4ecef;
+
+  strong {
+    display: block;
+    font-size: 1.2rem;
+    color: #3d6170;
+    margin-bottom: 0.9rem;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-size: 1.25rem;
+    color: #60737a;
+  }
+}
+
+.kpi-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #d0dde1;
+  border: 2px solid #b0c4ca;
+
+  &.done {
+    background: #2eb270;
+    border-color: #1e7e4a;
+  }
+}
+
+// ── Buttons ────────────────────────────────────────────────
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 0;
+  border-radius: 0.8rem;
+  padding: 1rem 1.6rem;
+  background: var(--celadon-green, #3eae84);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.88;
+  }
+}
+
+// ── Empty state ────────────────────────────────────────────
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+
+  .empty-icon {
+    font-size: 4rem;
+    color: #b0c4ca;
+    margin-bottom: 1.4rem;
+  }
+
+  h4 {
+    margin: 0 0 0.8rem;
+    font-size: 2rem;
+    color: #1b3d4a;
+  }
+
+  p {
+    margin: 0;
+    color: #60737a;
+    font-size: 1.3rem;
+  }
+}
+
+// ── Past submissions ───────────────────────────────────────
+.submission-card {
+  background: #fff;
+  border: 1px solid #dde7ea;
+  border-radius: 0.8rem;
+  padding: 1.6rem 2rem;
+}
+
+.sub-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.6rem;
+
+  h5 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1b3d4a;
+  }
+
+  p {
+    margin: 0.4rem 0 0;
+    font-size: 1.2rem;
+    color: #60737a;
+
+    strong {
+      color: #224957;
+    }
+  }
+}
+
+.supervisor-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-top: 1.2rem;
+  padding: 1.1rem 1.4rem;
+  background: #f6fafb;
+  border-radius: 0.7rem;
+  font-size: 1.25rem;
+  color: #3d6170;
+
+  .pi {
+    color: #778b92;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+}
+
+// ── Status pills ───────────────────────────────────────────
+.status-pill {
+  display: inline-flex;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(46, 98, 118, 0.1);
+  color: #2e6276;
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92600b;
+}
+
+.status-approved {
+  background: rgba(46, 178, 112, 0.12);
+  color: #1a6e3e;
+}
+
+.status-needs-discussion {
+  background: rgba(79, 124, 255, 0.12);
+  color: #2d5bcc;
+}
+
+.status-sent-back {
+  background: rgba(233, 55, 55, 0.1);
+  color: #b30000;
+}
+
+.status-flagged {
+  background: rgba(233, 100, 55, 0.1);
+  color: #b34400;
+}
+
+@media screen and (max-width: 768px) {
+  .cycle-banner {
+    flex-direction: column;
+  }
+
+  .goal-row {
+    flex-wrap: wrap;
+  }
+
+  .goal-indicators {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sub-row {
+    flex-direction: column;
+  }
+}

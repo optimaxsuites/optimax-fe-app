@@ -1,0 +1,151 @@
+<section class="page-wrap">
+
+  <!-- Cycle banner -->
+  <div class="cycle-banner panel">
+    <div class="banner-copy">
+      <p class="eyebrow">Employee self-assessment</p>
+      <h3>Rate your performance against your goals.</h3>
+      <p class="sub-text">
+        Score each goal honestly, attach evidence, and flag any blockers.
+        Your supervisor will review and add their score before the cycle closes.
+      </p>
+    </div>
+    <div class="cycle-badge">
+      <span class="cycle-dot"></span>
+      <span>Active cycle: {{ currentPeriod }}</span>
+    </div>
+  </div>
+
+  <!-- Goals list -->
+  <ng-container *ngIf="goals.length > 0">
+    <div class="list-header">
+      <div>
+        <p class="eyebrow dark">Your goals</p>
+        <h4>{{ goals.length }} active work item{{ goals.length !== 1 ? 's' : '' }}</h4>
+      </div>
+      <button type="button" class="btn-primary" (click)="submit()">
+        <i class="pi pi-send"></i>&nbsp; Submit self-assessment
+      </button>
+    </div>
+
+    <div class="success-banner" *ngIf="submitted">
+      <i class="pi pi-check-circle"></i>
+      Self-assessment submitted successfully. Your supervisor has been notified.
+    </div>
+
+    <article
+      class="goal-card"
+      *ngFor="let goal of goals"
+      [class.is-expanded]="expandedGoal === goal.id"
+    >
+      <div class="goal-row" (click)="toggle(goal.id)">
+        <div class="goal-copy">
+          <h5>{{ goal.title }}</h5>
+          <p>Due {{ formatDate(goal.dueDate) }} &middot; Weight: <strong>{{ goal.weight }}%</strong></p>
+        </div>
+        <div class="goal-indicators">
+          <div class="bar-mini">
+            <span [style.width.%]="goal.progress"></span>
+          </div>
+          <span class="pct-label">{{ goal.progress }}%</span>
+          <span class="score-badge" *ngIf="selfScore(goal.id) > 0">
+            {{ selfScore(goal.id) }}/5
+          </span>
+          <i
+            class="pi"
+            [class.pi-chevron-down]="expandedGoal !== goal.id"
+            [class.pi-chevron-up]="expandedGoal === goal.id"
+          ></i>
+        </div>
+      </div>
+
+      <div class="goal-body" *ngIf="expandedGoal === goal.id">
+        <p class="target-label">Target: {{ goal.target }}</p>
+
+        <div class="field">
+          <label>Self-score <span class="muted">(1 = needs improvement &nbsp;·&nbsp; 5 = excellent)</span></label>
+          <div class="star-row">
+            <button
+              *ngFor="let s of starRange"
+              type="button"
+              class="star"
+              [class.lit]="s <= selfScore(goal.id)"
+              (click)="setScore(goal.id, s)"
+            >
+              <i class="pi pi-star-fill"></i>
+            </button>
+            <span class="score-text">
+              {{ selfScore(goal.id) > 0 ? selfScore(goal.id) + ' / 5' : 'Not scored yet' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Evidence &amp; deliverables</label>
+          <textarea
+            rows="3"
+            placeholder="Describe what you delivered — links, metrics, or specific outputs..."
+            [(ngModel)]="forms[goal.id].evidence"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label>Blockers &amp; notes</label>
+          <textarea
+            rows="2"
+            placeholder="Any obstacles, context, or information your supervisor should know..."
+            [(ngModel)]="forms[goal.id].notes"
+          ></textarea>
+        </div>
+
+        <div class="kpi-list" *ngIf="goal.metrics.length > 0">
+          <strong>KPI checkpoints</strong>
+          <ul>
+            <li *ngFor="let m of goal.metrics">
+              <span class="kpi-dot" [class.done]="m.completed"></span>
+              {{ m.name }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </ng-container>
+
+  <!-- Empty state (no goals) -->
+  <div class="empty-state panel" *ngIf="goals.length === 0">
+    <i class="pi pi-inbox empty-icon"></i>
+    <h4>No active goals assigned</h4>
+    <p>Your supervisor or HR will assign goals before you can submit a self-assessment.</p>
+  </div>
+
+  <!-- Past submissions -->
+  <ng-container *ngIf="submissions.length > 0">
+    <div class="list-header">
+      <div>
+        <p class="eyebrow dark">History</p>
+        <h4>Past self-assessments</h4>
+      </div>
+    </div>
+
+    <article class="submission-card" *ngFor="let sub of submissions">
+      <div class="sub-row">
+        <div class="sub-copy">
+          <h5>{{ sub.cycleName }}</h5>
+          <p>
+            Submitted {{ formatDate(sub.submittedAt) }}
+            &middot; {{ sub.goalsCount }} goal{{ sub.goalsCount !== 1 ? 's' : '' }}
+            &middot; Avg self-score: <strong>{{ sub.avgSelfScore }}/5</strong>
+          </p>
+        </div>
+        <span class="status-pill" [ngClass]="statusClass(sub.supervisorStatus)">
+          {{ statusLabel(sub.supervisorStatus) }}
+        </span>
+      </div>
+      <div class="supervisor-note" *ngIf="sub.supervisorNote">
+        <i class="pi pi-comment"></i>
+        <span>{{ sub.supervisorNote }}</span>
+      </div>
+    </article>
+  </ng-container>
+
+</section>

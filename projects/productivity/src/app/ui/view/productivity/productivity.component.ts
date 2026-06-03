@@ -19,7 +19,19 @@ const PRODUCTIVITY_NAV_ITEMS: ProductivityNavItem[] = [
     label: 'Reviews',
     route: 'reviews',
     icon: 'pi pi-star',
-    summary: 'Self-assessment, supervisor scoring, and active cycles',
+    summary: 'Active cycles, scorecards, and review coverage',
+  },
+  {
+    label: 'Self-Assessment',
+    route: 'assessment',
+    icon: 'pi pi-pencil',
+    summary: 'Score your goals and submit evidence for review',
+  },
+  {
+    label: 'Supervisor Queue',
+    route: 'supervisor',
+    icon: 'pi pi-users',
+    summary: 'Review submitted assessments and issue decisions',
   },
   {
     label: 'Analytics',

@@ -25,6 +25,14 @@ export class MenuItemsService {
           description: 'View and manage communications across the organization.'
         },
         {
+          label: 'Meetings & Appointments',
+          code: 'DASH_MEETINGS_APPOINTMENTS',
+          route: this.navigationLink.getLink('meetingsAppointmentsLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-calendar-check',
+          description: 'Schedule meetings, appointments, rooms, minutes, attendance, and follow-up actions.'
+        },
+        {
           label: 'OptimaXAI',
           code: 'OPTIMA_AI',
           route: this.navigationLink.getLink('optimaXAILink'), 

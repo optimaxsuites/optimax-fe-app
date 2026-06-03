@@ -386,7 +386,7 @@ const routes: Routes = [
 
   {
     path: 'performance/:uuid',
-    component: PerformanceComponent,
+    component: ProductivityWorkspaceComponent,
   },
   {
     path: 'productivity/:uuid',
