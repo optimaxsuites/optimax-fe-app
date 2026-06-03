@@ -19,6 +19,13 @@ import {
   HrPayrollSummary,
   HrLeaveAttendance,
   HrEmployeeTurnover,
+  HrCompensationEquity,
+  HrRiskSummary,
+  HrProbationTracking,
+  HrStatutoryRemittance,
+  HrBonusReport,
+  HrOvertimeCost,
+  HrVacancyAging,
 } from './hr-reporting.service';
 import { EmployeeService } from '../../service/employee.service';
 
@@ -185,22 +192,36 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.reportsError = false;
     this.subscription.add(
       forkJoin({
-        exec: this.reportingService.getExecutiveReport(),
+        exec:      this.reportingService.getExecutiveReport(),
         workforce: this.reportingService.getWorkforceOverview(),
-        payroll: this.reportingService.getPayrollSummary(),
-        leave: this.reportingService.getLeaveAttendance(),
-        turnover: this.reportingService.getEmployeeTurnover(),
+        payroll:   this.reportingService.getPayrollSummary(),
+        leave:     this.reportingService.getLeaveAttendance(),
+        turnover:  this.reportingService.getEmployeeTurnover(),
+        risk:      this.reportingService.getHrRisk(),
+        probation: this.reportingService.getProbationTracking(),
+        equity:    this.reportingService.getCompensationEquity(),
+        bonus:     this.reportingService.getBonusReport(),
+        statutory: this.reportingService.getStatutoryRemittance(),
+        overtime:  this.reportingService.getOvertimeCost(),
+        vacancy:   this.reportingService.getVacancyAging(),
       }).subscribe({
         next: (data) => {
-          this.execReport = data.exec;
+          this.execReport      = data.exec;
           this.workforceReport = data.workforce;
-          this.payrollReport = data.payroll;
-          this.leaveReport = data.leave;
-          this.turnoverReport = data.turnover;
-          this.reportsLoading = false;
+          this.payrollReport   = data.payroll;
+          this.leaveReport     = data.leave;
+          this.turnoverReport  = data.turnover;
+          this.riskReport      = data.risk;
+          this.probationReport = data.probation;
+          this.equityReport    = data.equity;
+          this.bonusReport     = data.bonus;
+          this.statutoryReport = data.statutory;
+          this.overtimeReport  = data.overtime;
+          this.vacancyReport   = data.vacancy;
+          this.reportsLoading  = false;
         },
         error: () => {
-          this.reportsError = true;
+          this.reportsError   = true;
           this.reportsLoading = false;
         }
       })
@@ -524,6 +545,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   payrollReport: HrPayrollSummary | null = null;
   leaveReport: HrLeaveAttendance | null = null;
   turnoverReport: HrEmployeeTurnover | null = null;
+  riskReport: HrRiskSummary | null = null;
+  probationReport: HrProbationTracking | null = null;
+  equityReport: HrCompensationEquity | null = null;
+  bonusReport: HrBonusReport | null = null;
+  statutoryReport: HrStatutoryRemittance | null = null;
+  overtimeReport: HrOvertimeCost | null = null;
+  vacancyReport: HrVacancyAging | null = null;
 
   constructor(
     private readonly productivityDataService: ProductivityDataService,
@@ -714,12 +742,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   payrollReportRows(): Array<{ label: string; value: string; color?: string }> {
     if (!this.payrollReport) return [];
     const r = this.payrollReport as any;
-    const fmt = (n: number | null | undefined) => n != null ? `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'N/A';
     return [
-      { label: 'Total Gross Pay', value: fmt(r.totalGrossPay), color: '#2563eb' },
-      { label: 'Total Net Payable', value: fmt(r.totalNetPayable), color: '#16a34a' },
-      { label: 'Total Deductions', value: fmt(r.totalDeductions), color: '#dc2626' },
-      { label: 'Total Employer Cost', value: fmt(r.totalEmployerCost), color: '#d97706' },
+      { label: 'Total Gross Pay', value: this.fmt(r.totalGrossPay), color: '#2563eb' },
+      { label: 'Total Net Payable', value: this.fmt(r.totalNetPayable), color: '#16a34a' },
+      { label: 'Total Deductions', value: this.fmt(r.totalDeductions), color: '#dc2626' },
+      { label: 'Total Employer Cost', value: this.fmt(r.totalEmployerCost), color: '#d97706' },
       { label: 'Departments on Payroll', value: String((r.rows ?? []).length) },
     ];
   }
@@ -747,6 +774,80 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       { label: 'Turnover Rate', value: rate, color: r.turnoverRate > 10 ? '#dc2626' : '#d97706' },
       { label: 'Departments', value: String((r.rows ?? []).length) },
     ];
+  }
+
+  fmt(n: number | null | undefined): string {
+    return n != null ? `₦${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'N/A';
+  }
+
+  riskReportRows(): Array<{ label: string; value: string; color?: string }> {
+    if (!this.riskReport) return [];
+    const r = this.riskReport;
+    return [
+      { label: 'Total Employees', value: String(r.totalEmployees ?? 0) },
+      { label: 'Active Employees', value: String(r.activeEmployees ?? 0), color: '#16a34a' },
+      { label: 'Total Loan Exposure', value: this.fmt(r.totalLoanExposure), color: '#d97706' },
+      { label: 'Overdue Loans', value: String(r.totalOverdueLoans ?? 0), color: r.totalOverdueLoans > 0 ? '#dc2626' : '#374151' },
+      { label: 'Defaulted Loans', value: String(r.totalDefaultedLoans ?? 0), color: r.totalDefaultedLoans > 0 ? '#dc2626' : '#374151' },
+      { label: 'Grace Period Requests', value: String(r.gracePeriodRequests ?? 0), color: '#7c3aed' },
+    ];
+  }
+
+  probationRows(): Array<{ name: string; department: string; level: string; endDate: string; status: string; statusClass: string }> {
+    if (!this.probationReport) return [];
+    return (this.probationReport.rows ?? []).map(row => ({
+      name: row.employeeName,
+      department: row.department,
+      level: row.level,
+      endDate: row.probationEndDate ? this.formatDate(row.probationEndDate) : '—',
+      status: row.probationStatus,
+      statusClass: row.probationStatus?.toLowerCase() === 'overdue' ? 'b-red' :
+                   row.probationStatus?.toLowerCase() === 'due-soon' ? 'b-yellow' : 'b-blue',
+    }));
+  }
+
+  equityRows(): Array<{ level: string; department: string; gender: string; count: number; avgNet: string; medianNet: string }> {
+    if (!this.equityReport) return [];
+    return (this.equityReport.rows ?? []).map(row => ({
+      level: row.level,
+      department: row.department,
+      gender: row.gender,
+      count: row.employeeCount,
+      avgNet: this.fmt(row.averageNetPayable),
+      medianNet: this.fmt(row.medianApproxNetPayable),
+    }));
+  }
+
+  bonusRows(): Array<{ level: string; type: string; count: number; total: string }> {
+    if (!this.bonusReport) return [];
+    return (this.bonusReport.rows ?? []).map(row => ({
+      level: row.level,
+      type: row.bonusType,
+      count: row.count,
+      total: this.fmt(row.totalAmount),
+    }));
+  }
+
+  overtimeRows(): Array<{ level: string; type: string; maxHours: number; rate: string; cost: string }> {
+    if (!this.overtimeReport) return [];
+    return (this.overtimeReport.rows ?? []).map(row => ({
+      level: row.level,
+      type: row.overtimeType,
+      maxHours: row.maxHours,
+      rate: this.fmt(row.rate),
+      cost: this.fmt(row.configuredCost),
+    }));
+  }
+
+  vacancyRows(): Array<{ title: string; location: string; type: string; daysOpen: number; expired: boolean }> {
+    if (!this.vacancyReport) return [];
+    return (this.vacancyReport.rows ?? []).map(row => ({
+      title: row.jobTitle,
+      location: row.location,
+      type: row.jobType,
+      daysOpen: row.daysOpen,
+      expired: row.expired,
+    }));
   }
 
   todayColumn(): number { return Math.floor((new Date().getTime() - this.ganttStart.getTime()) / 86400000) + 1; }
