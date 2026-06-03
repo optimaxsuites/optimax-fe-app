@@ -237,7 +237,7 @@ $radius-sm: 0.5rem;
   &.full { grid-column: 1 / -1; width: 100%; }
 }
 
-.date-input, .text-input {
+.date-input, input.text-input, textarea.text-input {
   border: 1.5px solid $border;
   border-radius: $radius-sm;
   padding: 0.6rem 0.875rem;
@@ -252,7 +252,11 @@ $radius-sm: 0.5rem;
   &:focus { border-color: $green; background: $white; }
 }
 
-textarea.text-input { resize: vertical; min-height: 4rem; }
+textarea.text-input {
+  resize: vertical;
+  min-height: 4rem;
+}
+
 
 .stepper {
   display: flex;
@@ -440,25 +444,26 @@ textarea.text-input { resize: vertical; min-height: 4rem; }
 
   .btn-confirm {
     width: 100%;
-    background: $green;
-    color: $white;
+    background: $green !important;
+    color: $white !important;
     font-size: 1rem;
     font-weight: 700;
     padding: 0.875rem 1.5rem;
     border: none;
     border-radius: $radius-sm;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     gap: 0.6rem;
     transition: all 0.2s;
     margin-bottom: 0.75rem;
 
-    &:hover:not(:disabled) { background: darken(#16a34a, 8%); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(22,163,74,0.3); }
+    &:hover:not(:disabled) { background: darken(#16a34a, 8%) !important; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(22,163,74,0.3); }
     &:disabled { opacity: 0.7; cursor: not-allowed; }
-    
-    i { margin-right: 0.5rem; }
+
+    i { margin-right: 0.5rem; color: $white !important; }
+    span { color: $white !important; }
   }
 
   .no-charge-note {
