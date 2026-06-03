@@ -226,14 +226,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     if (mode === 'guest') {
       if (!this.selectedRoomForAuth) return;
-      this.router.navigate(['user/hospitality/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
+      this.router.navigate(['/user/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
     } else {
       const authPath = mode === 'signin' ? 'login' : 'register';
-      const returnUrl = this.selectedRoomForAuth 
-        ? `/user/hospitality/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
-        : `/user/hospitality/e-bookings/home/${this.uuid}`;
+      const returnUrl = this.selectedRoomForAuth
+        ? `/user/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
+        : `/user/e-bookings/home/${this.uuid}`;
 
-      this.router.navigate(['user/hospitality/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }
