@@ -160,10 +160,28 @@ getScheduleMode() {
   this.scheduleMode = mode;
 }*/
 
+//maybetemporary
+/*
 private getAuthHeaders(): HttpHeaders {
   return new HttpHeaders({
     Authorization: `Bearer ${localStorage.getItem('token')}`,
     'X-Tenant-ID': localStorage.getItem('tenantId') || ''
+  });
+}
+*/
+
+private getAuthHeaders(): HttpHeaders {
+  const token = sessionStorage.getItem('accessToken')
+             ?? sessionStorage.getItem('token')
+             ?? sessionStorage.getItem('Token')
+             ?? '';
+
+    const tenantId = 'optimax';
+
+  return new HttpHeaders({
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'X-Tenant-ID': tenantId
   });
 }
 
