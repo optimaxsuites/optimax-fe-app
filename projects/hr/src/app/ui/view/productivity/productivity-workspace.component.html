@@ -98,20 +98,48 @@
           <option value="">All Assignees</option>
           <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
         </select>
+
+        <!-- Add Stage button -->
+        <ng-container *ngIf="!showAddStage">
+          <button class="btn-outline" style="white-space:nowrap"
+                  (click)="showAddStage = true">
+            <i class="fas fa-plus"></i> Add Stage
+          </button>
+        </ng-container>
+        <ng-container *ngIf="showAddStage">
+          <input class="add-stage-input"
+                 style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.95rem;font-family:var(--font);outline:none;width:160px"
+                 [(ngModel)]="newStageName"
+                 placeholder="Stage name…"
+                 (keyup.enter)="addStage()"
+                 (keyup.escape)="showAddStage = false; newStageName = ''"
+                 autofocus>
+          <button class="btn-primary" (click)="addStage()">Add</button>
+          <button class="btn-ghost" (click)="showAddStage = false; newStageName = ''">Cancel</button>
+        </ng-container>
       </div>
 
       <!-- ── KANBAN VIEW ── -->
-      <div class="kanban" *ngIf="boardView === 'board'">
-        <div class="lane" *ngFor="let col of columns"
-             [id]="colId(col.key)"
-             cdkDropList
-             [cdkDropListData]="columnTasks(col.key)"
-             [cdkDropListConnectedTo]="connectedTo(col.key)"
-             (cdkDropListDropped)="drop($event, col.key)">
-          <div class="lane-head">
+      <div class="kanban" *ngIf="boardView === 'board'"
+           cdkDropList
+           cdkDropListOrientation="horizontal"
+           (cdkDropListDropped)="dropColumn($event)">
+        <div class="lane" *ngFor="let col of columns" cdkDrag>
+          <div class="lane-head" cdkDragHandle>
+            <div class="lane-drag-icon">⣿</div>
             <strong>{{ col.label }}</strong>
-            <span class="cnt">{{ columnTasks(col.key).length }}</span>
+            <div class="lane-head-right">
+              <span class="cnt">{{ columnTasks(col.key).length }}</span>
+              <button class="lane-rm-btn" *ngIf="!isDefaultStage(col.key)"
+                      (click)="removeStage(col.key);$event.stopPropagation()" title="Remove stage">×</button>
+            </div>
           </div>
+          <div class="lane-cards"
+               [id]="colId(col.key)"
+               cdkDropList
+               [cdkDropListData]="columnTasks(col.key)"
+               [cdkDropListConnectedTo]="connectedTo(col.key)"
+               (cdkDropListDropped)="drop($event, col.key)">
 
           <div class="kcard" *ngFor="let task of columnTasks(col.key)"
                cdkDrag
@@ -119,21 +147,23 @@
                [class.review]="task.status === 'In Review'"
                (click)="openDetail(task)">
 
-            <!-- Card top badges + actions -->
+            <!-- Card top: Type badge (left) | Status/Priority badge + actions (right) -->
             <div class="kcard-top">
-              <span class="badge b-blue">{{ task.tags[0] || 'Task' }}</span>
-              <span class="badge b-red" *ngIf="isTaskOverdue(task)">🔴 OVERDUE {{ overdueDays(task) }}d</span>
-              <span class="badge b-purple" *ngIf="!isTaskOverdue(task) && task.status === 'In Review'">In Review</span>
-              <span class="badge b-green" *ngIf="!isTaskOverdue(task) && task.status === 'Done'">Done</span>
-              <span class="badge" *ngIf="!isTaskOverdue(task) && task.status !== 'In Review' && task.status !== 'Done'"
-                    [ngClass]="taskPriorityBadge(task.priority)">{{ task.priority }}</span>
-              <div class="kcard-action-btns" (click)="$event.stopPropagation()">
-                <button class="kcard-act-btn edit-btn" title="Edit task" (click)="openEditTask(task, $event)">
-                  <i class="fas fa-pencil-alt"></i>
-                </button>
-                <button class="kcard-act-btn del-btn" title="Delete task" (click)="deleteTask(task, $event)">
-                  <i class="fas fa-trash"></i>
-                </button>
+              <span class="badge" [ngClass]="tagBadgeClass(task.tags[0])">{{ task.tags[0] || 'Task' }}</span>
+              <div class="kcard-top-right">
+                <span class="badge b-red" *ngIf="isTaskOverdue(task)">🔴 OVERDUE {{ overdueDays(task) }}d</span>
+                <span class="badge b-purple" *ngIf="!isTaskOverdue(task) && task.status === 'In Review'">In Review</span>
+                <span class="badge b-green" *ngIf="!isTaskOverdue(task) && task.status === 'Done'">Done</span>
+                <span class="badge" *ngIf="!isTaskOverdue(task) && task.status !== 'In Review' && task.status !== 'Done'"
+                      [ngClass]="taskPriorityBadge(task.priority)">{{ task.priority }}</span>
+                <div class="kcard-action-btns" (click)="$event.stopPropagation()">
+                  <button class="kcard-act-btn edit-btn" title="Edit task" (click)="openEditTask(task, $event)">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="kcard-act-btn del-btn" title="Delete task" (click)="deleteTask(task, $event)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -158,30 +188,41 @@
             </div>
             <div class="prog-wrap">
               <div class="prog-bar"
-                   [class.g]="task.progress === 100"
-                   [class.y]="isTaskOverdue(task)"
-                   [class.r]="task.status === 'In Review' && task.progress < 100"
+                   [class.r]="isTaskOverdue(task)"
+                   [class.g]="task.progress === 100 && !isTaskOverdue(task)"
+                   [class.y]="task.progress >= 50 && task.progress < 100 && !isTaskOverdue(task)"
                    [style.width.%]="task.progress"></div>
             </div>
+            <div class="kcard-pct">{{ task.progress }}% complete</div>
 
-            <!-- Sub-tasks strip -->
+            <!-- Sub-tasks strip with coloured status dots -->
             <div class="sub-strip" *ngIf="task.subtasks.length">
               <div class="sub-item" *ngFor="let sub of task.subtasks | slice:0:4">
                 <div class="sub-dot" [ngClass]="subDotClass(sub)"></div>
-                <span>{{ sub.title }}{{ sub.done ? ' ✓' : '' }}</span>
+                <span>{{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}{{ sub.done ? ' ✓' : '' }}</span>
               </div>
             </div>
 
-            <!-- Latest follow-up preview -->
+            <!-- Latest follow-up preview (with decision badge + photo thumbs) -->
             <div class="card-followup" *ngIf="task.followUps?.length" (click)="$event.stopPropagation()">
               <div class="fu-row">
                 <div class="fu-ava" [style.background]="task.followUps[0].color">{{ task.followUps[0].initials }}</div>
                 <div class="fu-body">
                   <strong>{{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}
-                    <span class="badge b-yellow" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Changes'">Changes</span>
+                    <span class="badge b-yellow" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Changes'">Changes requested</span>
                     <span class="badge b-green" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Approved'">Approved</span>
                   </strong>
                   <span>{{ task.followUps[0].text }}</span>
+                  <div class="fu-thumb" *ngIf="task.followUps[0].photos?.length">
+                    <ng-container *ngFor="let ph of task.followUps[0].photos | slice:0:3">
+                      <div class="ph-thumb" (click)="openLightbox(ph);$event.stopPropagation()">
+                        <img [src]="ph" alt="photo">
+                      </div>
+                    </ng-container>
+                    <div class="more-ph" *ngIf="task.followUps[0].photos.length > 3">
+                      +{{ task.followUps[0].photos.length - 3 }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,8 +268,9 @@
             <i class="fas fa-inbox"></i>
             <span>Drop tasks here</span>
           </div>
-        </div>
-      </div>
+          </div><!-- /lane-cards -->
+        </div><!-- /lane -->
+      </div><!-- /kanban -->
 
       <!-- ── LIST / TREE VIEW ── -->
       <div class="list-view" *ngIf="boardView === 'list'">
@@ -1285,9 +1327,34 @@
       <div class="dp-body" *ngIf="detailTab === 'subtasks'">
         <div class="subtask-list-dp">
           <div class="st-row" *ngFor="let sub of selectedTask.subtasks">
-            <div class="st-dot" [ngClass]="subDotClass(sub)"></div>
+            <div class="st-dot" [ngClass]="subDotClass(sub)"
+                 (click)="cycleSubtaskStatus(selectedTask, sub)"
+                 style="cursor:pointer" title="Click to cycle status"></div>
             <div class="st-info">
-              <strong>{{ sub.title }}</strong>
+              <!-- Inline edit mode -->
+              <ng-container *ngIf="editingSubtaskId === sub.id; else subView">
+                <input class="sub-edit-input"
+                       [(ngModel)]="editingSubtaskTitle"
+                       placeholder="Sub-task title…"
+                       (keyup.escape)="cancelSubtaskEdit()"
+                       autofocus>
+                <textarea class="sub-edit-desc"
+                          [(ngModel)]="editingSubtaskDescription"
+                          placeholder="Description (optional)…"
+                          rows="2"></textarea>
+                <div class="sub-edit-actions">
+                  <button class="btn-primary-sm" (click)="saveSubtaskEdit(selectedTask, sub)">Save</button>
+                  <button class="btn-ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem"
+                          (click)="cancelSubtaskEdit()">Cancel</button>
+                </div>
+              </ng-container>
+              <ng-template #subView>
+                <strong (dblclick)="startEditSubtask(sub)" title="Double-click to edit"
+                        style="cursor:text">
+                  {{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}
+                </strong>
+                <small *ngIf="sub.description" class="sub-desc-preview">{{ sub.description }}</small>
+              </ng-template>
               <small>{{ sub.assignee }}{{ sub.dependency ? ' · Depends on: ' + sub.dependency : '' }}</small>
             </div>
             <div class="st-prog">
@@ -1295,9 +1362,16 @@
                 <div class="prog-bar" [class.g]="sub.done" [class.r]="sub.status==='blocked'" [style.width.%]="sub.done ? 100 : 0"></div>
               </div>
             </div>
-            <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
-              {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
+            <span class="badge st-status-badge"
+                  [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'"
+                  (click)="cycleSubtaskStatus(selectedTask, sub)"
+                  style="cursor:pointer" title="Click to change status">
+              {{ sub.done ? '✓ Done' : sub.status === 'blocked' ? '🚫 Blocked' : sub.status === 'ip' ? '⟳ In Progress' : '○ Open' }}
             </span>
+            <button class="kcard-act-btn edit-btn" style="flex-shrink:0;opacity:.5"
+                    title="Edit subtask" (click)="startEditSubtask(sub)">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
           </div>
           <div class="subtask-empty" *ngIf="selectedTask.subtasks.length === 0">No sub-tasks yet.</div>
         </div>
@@ -1313,7 +1387,11 @@
               <select><option *ngFor="let a of uniqueAssignees">{{ a }}</option></select>
             </div>
             <div class="fg"><label>Status</label>
-              <select><option>Open</option><option>In Progress</option><option>Blocked</option><option>Done</option></select>
+              <select [(ngModel)]="newSubStatus">
+                <option value="open">Open</option>
+                <option value="ip">In Progress</option>
+                <option value="blocked">Blocked</option>
+              </select>
             </div>
             <div class="fg"><label>Start Date</label><input type="date"></div>
             <div class="fg"><label>Due Date</label><input type="date"></div>

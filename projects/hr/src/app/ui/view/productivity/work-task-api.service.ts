@@ -384,10 +384,27 @@ export class WorkTaskApiService {
   }
 
   // ── Collab media upload (persists follow-up photos) ──────────────────────
+  // Uses same auth headers as CollaborationService to ensure upload works in Docker deployment
   uploadMedia(file: File): Observable<{ url?: string; fileName?: string; contentType?: string }> {
-    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const raw = sessionStorage.getItem('Token') || sessionStorage.getItem('token') ||
+                sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
+    // Normalise cookie-style and Bearer-prefixed tokens
+    let token = raw.trim();
+    if (token.includes('=') && token.includes(';')) {
+      const eq = token.indexOf('=') + 1;
+      const sc = token.indexOf(';', eq);
+      token = token.substring(eq, sc > -1 ? sc : undefined).trim();
+    } else if (/^bearer /i.test(token)) {
+      token = token.slice(7).trim();
+    }
     const tenantId = sessionStorage.getItem('tenantId') || 'default';
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId });
+    const userId = sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '';
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+      'X-Tenant-ID': tenantId,
+      'X-User-ID': userId,
+      userid: userId,
+    });
     const fd = new FormData();
     fd.append('file', file);
     return this.http.post<{ url?: string; fileName?: string; contentType?: string }>(

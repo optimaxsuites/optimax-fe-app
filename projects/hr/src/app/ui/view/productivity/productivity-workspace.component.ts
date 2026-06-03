@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Subscription, forkJoin } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import * as XLSX from 'xlsx';
@@ -51,11 +52,11 @@ import {
 
 export type PMSection = 'board' | 'reports' | 'batch' | 'assessment' | 'supervisor';
 export type BoardView = 'board' | 'list' | 'gantt';
-type TaskStatus = 'To Do' | 'In Progress' | 'In Review' | 'Done';
+type TaskStatus = string; // widened to support custom stages
 type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
 interface SubTask {
-  id: string; title: string; done: boolean; assignee: string;
+  id: string; title: string; description?: string; done: boolean; assignee: string;
   status?: 'open' | 'ip' | 'blocked';
   startDate?: string; dueDate?: string; dependency?: string;
   subtaskId?: number;
@@ -322,14 +323,77 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     ],
   };
 
-  readonly columns: Array<{ key: TaskStatus; label: string }> = [
-    { key: 'To Do', label: 'To Do' },
+  private static readonly STAGE_STORAGE_KEY = 'hr_pm_stages_v1';
+  private static readonly DEFAULT_STAGES: Array<{ key: string; label: string }> = [
+    { key: 'To Do',       label: 'To Do' },
     { key: 'In Progress', label: 'In Progress' },
-    { key: 'In Review', label: 'In Review' },
-    { key: 'Done', label: 'Done' },
+    { key: 'In Review',   label: 'In Review' },
+    { key: 'Done',        label: 'Done' },
   ];
-  readonly statuses: TaskStatus[] = ['To Do', 'In Progress', 'In Review', 'Done'];
+
+  columns: Array<{ key: TaskStatus; label: string }> = this.loadStages();
+  get statuses(): TaskStatus[] { return this.columns.map(c => c.key); }
   readonly priorities: TaskPriority[] = ['Low', 'Medium', 'High', 'Critical'];
+
+  // ── Stage management ──────────────────────────────────────────────────────
+  showAddStage = false;
+  newStageName = '';
+
+  private loadStages(): Array<{ key: string; label: string }> {
+    try {
+      const raw = localStorage.getItem(ProductivityWorkspaceComponent.STAGE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Array<{ key: string; label: string }>;
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch { /* ignore */ }
+    return [...ProductivityWorkspaceComponent.DEFAULT_STAGES];
+  }
+
+  private saveStages(): void {
+    localStorage.setItem(ProductivityWorkspaceComponent.STAGE_STORAGE_KEY, JSON.stringify(this.columns));
+  }
+
+  addStage(): void {
+    const name = this.newStageName.trim();
+    if (!name || this.columns.some(c => c.key.toLowerCase() === name.toLowerCase())) return;
+    this.columns = [...this.columns, { key: name, label: name }];
+    this.saveStages();
+    this.newStageName = '';
+    this.showAddStage = false;
+  }
+
+  removeStage(key: string): void {
+    const defaultKeys = ProductivityWorkspaceComponent.DEFAULT_STAGES.map(s => s.key);
+    if (defaultKeys.includes(key)) return; // cannot remove core stages
+    this.columns = this.columns.filter(c => c.key !== key);
+    this.saveStages();
+  }
+
+  isDefaultStage(key: string): boolean {
+    return ProductivityWorkspaceComponent.DEFAULT_STAGES.some(s => s.key === key);
+  }
+
+  dropColumn(event: CdkDragDrop<any[]>): void {
+    moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
+    this.columns = [...this.columns];
+    this.saveStages();
+  }
+
+  // ── Role-based visibility ─────────────────────────────────────────────────
+  get isAdminOrSupervisor(): boolean {
+    const role = (sessionStorage.getItem('role') || localStorage.getItem('role') || '').toUpperCase();
+    return role.includes('ADMIN') || role.includes('SUPERVISOR') || role.includes('MANAGER');
+  }
+
+  get currentUserFullName(): string {
+    return (sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || '').toLowerCase();
+  }
+
+  // ── Subtask inline edit ───────────────────────────────────────────────────
+  editingSubtaskId: string | null = null;
+  editingSubtaskTitle = '';
+  editingSubtaskDescription = '';
 
   get boardMetrics(): { label: string; value: string | number; sub: string; color: string }[] {
     const active = this.boardTasks.filter(t => t.status !== 'Done').length;
@@ -775,6 +839,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     );
     this.buildGantt();
     this.initNewTask();
+    // Eagerly merge local imports so they appear immediately regardless of API timing
+    this.mergeLocalImports();
     this.loadBoardFromApi();
 
     // Load employees for dropdowns
@@ -838,16 +904,25 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   private loadBoardFromApi(): void {
     this.boardLoading = true;
     this.subscription.add(
-      this.workTaskApi.getAllTasks().subscribe({
+      this.workTaskApi.getAllTasks().pipe(timeout(8000)).subscribe({
         next: (apiTasks) => {
           if (apiTasks && apiTasks.length > 0) {
-            this.boardTasks = apiTasks.map(t => this.mapApiTaskToBoard(t));
+            const mapped = apiTasks.map(t => this.mapApiTaskToBoard(t));
+            const apiIds = new Set(mapped.map(t => t.id));
+            // Keep any local-only tasks from the previous save (imports, manually-added)
+            // that the API doesn't know about — they'd be wiped otherwise.
+            const localRaw = localStorage.getItem(HR_BOARD_KEY);
+            const localOnly: BoardTask[] = localRaw
+              ? (JSON.parse(localRaw) as BoardTask[]).filter(t => !apiIds.has(t.id))
+              : [];
+            this.boardTasks = [...mapped, ...localOnly];
           } else {
             const raw = localStorage.getItem(HR_BOARD_KEY);
             this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
           }
-          // Always merge in any locally-imported tasks (Odoo, CSV) that aren't in the API set
-          this.mergeLocalImports();
+          // Always merge in any locally-imported tasks (Odoo, CSV) that aren't in the API set.
+          // persist=true writes merged state to HR_BOARD_KEY so imports survive future refreshes.
+          this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
         },
@@ -855,7 +930,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           this.apiEnabled = false;
           const raw = localStorage.getItem(HR_BOARD_KEY);
           this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
-          this.mergeLocalImports();
+          this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
         }
@@ -875,8 +950,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   // Merge tasks imported via Odoo/CSV from the dedicated imports key.
-  // This key is NEVER written by save(), so imports are never lost by board operations.
-  private mergeLocalImports(): void {
+  // When persist=true (called after board state is final), also saves to HR_BOARD_KEY
+  // so imports survive future refreshes without needing hr_pm_imports_v1 to be re-read.
+  private mergeLocalImports(persist = false): void {
     try {
       const raw = localStorage.getItem('hr_pm_imports_v1');
       if (!raw) return;
@@ -886,6 +962,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       const newOnes = imported.filter(t => !existingIds.has(t.id));
       if (newOnes.length > 0) {
         this.boardTasks = [...this.boardTasks, ...newOnes];
+        if (persist) {
+          // Persist merged state so imports survive refresh even if API wipes boardTasks next time
+          this.save();
+        }
       }
     } catch { /* ignore parse errors */ }
   }
@@ -1000,7 +1080,33 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   // ── Board methods ──────────────────────────────────────────────────────────
   private save(): void {
-    localStorage.setItem(HR_BOARD_KEY, JSON.stringify(this.boardTasks));
+    // Attempt 1: save everything including base64 previews (works for small images)
+    try {
+      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(this.boardTasks));
+      return;
+    } catch { /* QuotaExceededError — try stripping base64 */ }
+
+    // Attempt 2: keep server URLs (https://…), strip only base64
+    try {
+      const noBase64 = this.boardTasks.map(t => ({
+        ...t,
+        followUps: (t.followUps || []).map(fu => ({
+          ...fu,
+          photos: (fu.photos || []).filter(u => u && !u.startsWith('data:')),
+        })),
+      }));
+      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(noBase64));
+      return;
+    } catch { /* still over quota */ }
+
+    // Attempt 3: strip all photos
+    try {
+      const noPhotos = this.boardTasks.map(t => ({
+        ...t,
+        followUps: (t.followUps || []).map(fu => ({ ...fu, photos: [] })),
+      }));
+      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(noPhotos));
+    } catch { /* storage unavailable */ }
   }
 
   private syncTaskToApi(task: BoardTask): void {
@@ -1054,7 +1160,16 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   get filteredBoard(): BoardTask[] {
+    const me = this.currentUserFullName;
+    const adminView = this.isAdminOrSupervisor;
     return this.boardTasks.filter(t => {
+      // Non-admin/supervisor: only own tasks (assignee, multi-assignee list, or supervising)
+      if (!adminView && me) {
+        const assignee = (t.assignee || '').toLowerCase();
+        const inAssignees = (t.assignees || []).some(a => (a || '').toLowerCase().includes(me));
+        const isSupervisor = (t.team || '').toLowerCase().includes(me);
+        if (!assignee.includes(me) && !inAssignees && !isSupervisor) return false;
+      }
       if (this.filterStatus && t.status !== this.filterStatus) return false;
       if (this.filterPriority && t.priority !== this.filterPriority) return false;
       if (this.filterAssignee && !t.assignee.toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
@@ -1107,9 +1222,37 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
+  startEditSubtask(sub: SubTask): void {
+    this.editingSubtaskId = sub.id;
+    this.editingSubtaskTitle = sub.title;
+    this.editingSubtaskDescription = sub.description || '';
+  }
+
+  saveSubtaskEdit(task: BoardTask, sub: SubTask): void {
+    const t = this.editingSubtaskTitle.trim();
+    if (t) {
+      sub.title = t;
+      sub.description = this.editingSubtaskDescription;
+      this.save();
+    }
+    this.editingSubtaskId = null;
+    this.editingSubtaskTitle = '';
+    this.editingSubtaskDescription = '';
+  }
+
+  cancelSubtaskEdit(): void {
+    this.editingSubtaskId = null;
+    this.editingSubtaskTitle = '';
+    this.editingSubtaskDescription = '';
+  }
+
   addSubtask(task: BoardTask, title: string): void {
     if (!title.trim()) return;
-    const newSub: SubTask = { id: `st${Date.now()}`, title: title.trim(), done: false, assignee: task.assignee };
+    const newSub: SubTask = {
+      id: `st${Date.now()}`, title: title.trim(), done: false,
+      assignee: task.assignee, status: this.newSubStatus || 'open',
+    };
+    this.newSubStatus = 'open';
     task.subtasks.push(newSub);
     this.save();
     if (this.apiEnabled && task.apiId) {
@@ -1389,6 +1532,24 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return 'open';
   }
 
+  cycleSubtaskStatus(task: BoardTask, sub: SubTask): void {
+    // Cycle: open → ip → done → open (blocked stays until explicitly cleared)
+    if (sub.done) {
+      sub.done = false;
+      sub.status = 'open';
+    } else if (sub.status === 'ip') {
+      sub.done = true;
+      sub.status = undefined;
+    } else if (sub.status === 'blocked') {
+      sub.status = 'ip';
+    } else {
+      sub.status = 'ip';
+    }
+    this.save();
+  }
+
+  newSubStatus: 'open' | 'ip' | 'blocked' = 'open';
+
   isTaskOverdue(task: BoardTask): boolean {
     if (!task.dueDate || task.status === 'Done') return false;
     return new Date(task.dueDate) < new Date();
@@ -1411,15 +1572,26 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   taskPriorityBadge(priority: string): string {
-    const m: Record<string, string> = { Low: 'b-green', Medium: 'b-yellow', High: 'b-red', Critical: 'b-red' };
+    const m: Record<string, string> = { Low: 'b-gray', Medium: 'b-yellow', High: 'b-red', Critical: 'b-red' };
     return m[priority] || 'b-gray';
+  }
+
+  tagBadgeClass(tag: string): string {
+    const t = (tag || '').toLowerCase();
+    if (t === 'routine') return 'b-gray';
+    if (t === 'workplan') return 'b-blue';
+    if (t === 'odoo import') return 'b-purple';
+    if (t === 'project') return 'b-purple';
+    return 'b-blue';
   }
 
   postInlineUpdate(task: BoardTask, event: Event): void {
     event.stopPropagation();
     if (!task.inlineText?.trim()) return;
+    const pending = (this.inlinePhotos[task.id] || []).filter(p => p.uploading);
+    if (pending.length) { this.showToast('Please wait for uploads to complete…', 'info'); return; }
     task.followUps = task.followUps || [];
-    const photos = (this.inlinePhotos[task.id] || []).map(p => p.url);
+    const photos = (this.inlinePhotos[task.id] || []).map(p => p.url).filter(Boolean);
     const newFu: FollowUp = {
       id: `fu${Date.now()}`, author: task.assignee || 'You',
       initials: this.getInitials(task.assignee || 'You'), color: '#2563eb',
@@ -1471,12 +1643,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const entry: { name: string; url: string; isImage: boolean; uploading?: boolean } = { name: file.name, url: '', isImage, uploading: true };
     collection.push(entry);
 
-    // Generate local preview immediately
-    if (isImage) {
-      const reader = new FileReader();
-      reader.onload = (e) => { if (!entry.url) entry.url = e.target?.result as string; };
-      reader.readAsDataURL(file);
-    }
+    // Generate local base64 immediately for all file types so URL is ready before user posts
+    const previewReader = new FileReader();
+    previewReader.onload = (e) => { if (!entry.url) entry.url = e.target?.result as string; };
+    previewReader.readAsDataURL(file);
 
     // Upload to server for persistence
     this.subscription.add(
