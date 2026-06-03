@@ -9,6 +9,8 @@ import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.compone
 import { MetadataComponent } from '../metadata/metadata.component';
 import { PayrollComponent } from '../payroll/payroll.component';
 import { MailTemplatesComponent } from '../mail-templates/mail-templates.component';
+import { HrNotificationsComponent } from '../hr-notifications/hr-notifications.component';
+import { HrOdooImportComponent } from '../hr-odoo-import/hr-odoo-import.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -102,6 +104,18 @@ export class HrSettingsComponent {
       subSetting: ['Assessment questions, Grade Setting'],
       icon: 'fas fa-clipboard-list',
       component: AppraisalassessmentComponent,
+    },
+    {
+      name: 'Notification Subscriptions',
+      subSetting: ['Email, In-App, Push, SMS channels per project', 'Per-event toggles', 'Task Board, Appraisal, Payroll, Leave'],
+      icon: 'fas fa-bell',
+      component: HrNotificationsComponent,
+    },
+    {
+      name: 'Import from Odoo',
+      subSetting: ['Connect Odoo via XML-RPC', 'Preview & import tasks', 'CSV export alternative'],
+      icon: 'fas fa-puzzle-piece',
+      component: HrOdooImportComponent,
     },
   ];
 

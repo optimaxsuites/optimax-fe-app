@@ -56,6 +56,7 @@ import { ProfileChangeRequestsComponent } from './ui/view/profile-change-request
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -429,6 +430,10 @@ const routes: Routes = [
   {
     path: 'profile-change-requests/:uuid',
     component: ProfileChangeRequestsComponent,
+  },
+  {
+    path: 'HR-settings/:uuid',
+    component: HrSettingsComponent,
   },
   {
     path: '**',

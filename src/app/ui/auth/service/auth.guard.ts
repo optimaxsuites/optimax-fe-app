@@ -22,6 +22,17 @@ export class AuthGuard implements CanActivate {
   ): boolean | UrlTree {
 
     // -------- TOKEN BYPASS CHECK --------
+    // Restore sessionStorage from localStorage for shared links opened in a new tab.
+    // isAuthenticated() checks both, but the interceptors and HR services read sessionStorage directly.
+    if (!sessionStorage.getItem('userid') && localStorage.getItem('userid')) {
+      ['userid', 'username', 'fullname', 'email', 'role',
+       'Token', 'token', 'accessToken', 'Token2', 'accessToken2',
+       'tenantId', 'userRegData']
+        .forEach(key => {
+          const v = localStorage.getItem(key);
+          if (v) sessionStorage.setItem(key, v);
+        });
+    }
 
     if (this.authService.isAuthenticated()) {
       return true;

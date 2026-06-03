@@ -4,7 +4,7 @@
     <div class="side-bar-header">
       <img src="assets/logo.png" alt="Logo" />
     </div>
-    <!--removelater<ul>
+    <ul>
       <li *ngFor="let item of menuItems">
         <div class="menu-item" (click)="toggleSubMenu(item)">
           <a *ngIf="!item.submenu"
@@ -22,12 +22,12 @@
             <a [routerLink]="subItem.route"
                routerLinkActive="active"
                [routerLinkActiveOptions]="{ exact: true }">
-              <i *ngIf="subItem.icon" [class]="subItem.icon"></i> 
+              <i *ngIf="subItem.icon" [class]="subItem.icon"></i>
               {{ subItem.label }}
             </a>
           </li>
         </ul>
       </li>
-    </ul>-->
+    </ul>
 </nav>
   

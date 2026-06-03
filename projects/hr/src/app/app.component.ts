@@ -76,14 +76,17 @@ try {
   this.metadataService.fetchMetaData(true);
 
 } catch (error) {
-  this.authenticationService.logout();
+  // Do NOT call logout here — it would redirect to login and break shared task links
+  // opened in a new tab where the user is already authenticated via localStorage.
+  console.warn('Background auto-login skipped (likely a shared-link tab):', error);
 }
   }
 
   loadInitParam(data: any) {
+    const fullname = data.fullname || data.fullName || data.name || data.username;
     sessionStorage.setItem('role', data.roles);
     sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', data.fullname || data.fullName || data.name || data.username);
+    sessionStorage.setItem('fullname', fullname);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
     const token = this.extractToken(data.accessToken);
@@ -94,12 +97,20 @@ if (!token) {
 
 sessionStorage.setItem('Token', token);
 sessionStorage.setItem('token', token);
+sessionStorage.setItem('accessToken', data.accessToken);
+sessionStorage.setItem('userRegData', JSON.stringify(data));
+
+// Persist all auth keys to localStorage so shared links opened in a new tab stay authenticated
 localStorage.setItem('Token', token);
 localStorage.setItem('token', token);
 localStorage.setItem('Token2', token);
-sessionStorage.setItem('accessToken', data.accessToken);
 localStorage.setItem('accessToken2', data.accessToken);
-sessionStorage.setItem('userRegData', JSON.stringify(data));
+localStorage.setItem('userid', String(data.id || ''));
+localStorage.setItem('username', data.username || '');
+localStorage.setItem('fullname', fullname || '');
+localStorage.setItem('email', data.email || '');
+localStorage.setItem('role', data.roles || '');
+localStorage.setItem('userRegData', JSON.stringify(data));
   }
 
   private extractToken(accessToken: unknown): string {

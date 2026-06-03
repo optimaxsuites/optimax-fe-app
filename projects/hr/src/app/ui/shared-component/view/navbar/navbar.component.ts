@@ -1,26 +1,38 @@
-import { Component, Output, EventEmitter, Input, OnDestroy } from '@angular/core';
+import { Component, Output, EventEmitter, Input, OnDestroy, OnInit, HostListener } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { AuthenticationService } from '../../service/auth-service/authentication.service';
+import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 import { Subscription } from 'rxjs';
+import { HrTaskNotificationService, HrNotification } from '../../../service/hr-task-notification.service';
 
 @Component({
   selector: 'app-navbar',
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss'],
 })
-export class NavbarComponent implements OnDestroy {
+export class NavbarComponent implements OnInit, OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   @Input() sidebarHidden!: boolean;
 
   userInfoRegData: any = {};
   userRegData: any = {};
   private navigationSubscription?: Subscription;
+  private notifSub?: Subscription;
+
+  readonly hrSettingsRoute: string;
+
+  notifCount = 0;
+  showNotifPanel = false;
+  notifications: HrNotification[] = [];
 
   constructor(
     private router: Router,
     private authenticationService: AuthenticationService,
-
-  ){}
+    private navLinks: NavigationLinksService,
+    private notifService: HrTaskNotificationService,
+  ){
+    this.hrSettingsRoute = this.navLinks.getLink('HRSettings');
+  }
 
   onToggleSidebar() {
     this.toggleSidebar.emit();
@@ -28,13 +40,21 @@ export class NavbarComponent implements OnDestroy {
 
 
   ngOnInit() {
+    // Always wire up notification subscription — must not be inside the early return
+    // because it needs to work even before the session is fully populated (new-tab opens).
+    this.notifSub = this.notifService.unreadCount$.subscribe((count: number) => {
+      this.notifCount = count;
+      this.notifications = this.notifService.getAll().slice(0, 10);
+    });
+
     if (sessionStorage.getItem("username") == null) {
-        console.log(
-            "Session Expired.",
-            "Your current session has expired. Re-login."
-        );
-        // Navigation removed: app uses async auto-login, session may not be
-        // populated yet when navbar renders — navigating here causes a redirect loop.
+        // Session not yet populated — the async auto-login will populate it shortly.
+        // Subscribe to router events so we refresh user data once the session arrives.
+        this.navigationSubscription = this.router.events.subscribe((event) => {
+          if (event instanceof NavigationEnd) {
+            if (sessionStorage.getItem("username")) this.refreshUserData();
+          }
+        });
       return;
     }
 
@@ -44,12 +64,31 @@ export class NavbarComponent implements OnDestroy {
         this.refreshUserData();
       }
     });
-
-    // console.log("testing client types", this.userInfoRegData);
-}
+  }
 
   ngOnDestroy(): void {
     this.navigationSubscription?.unsubscribe();
+    this.notifSub?.unsubscribe();
+  }
+
+  @HostListener('document:click')
+  onDocClick(): void { if (this.showNotifPanel) this.showNotifPanel = false; }
+
+  toggleNotifPanel(): void {
+    this.showNotifPanel = !this.showNotifPanel;
+    if (this.showNotifPanel) {
+      this.notifications = this.notifService.getAll().slice(0, 10);
+    }
+  }
+
+  markAllRead(): void {
+    this.notifService.markAllRead();
+    this.showNotifPanel = false;
+  }
+
+  notifTime(iso: string): string {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
   }
   
 

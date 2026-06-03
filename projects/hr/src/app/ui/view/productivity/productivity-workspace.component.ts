@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/co
 import { Subscription, forkJoin } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import * as XLSX from 'xlsx';
 
 import {
   ProductivityCycleCard,
@@ -29,6 +30,8 @@ import {
   HrVacancyAging,
 } from './hr-reporting.service';
 import { EmployeeService } from '../../service/employee.service';
+import { HrTaskNotificationService } from '../../service/hr-task-notification.service';
+import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
 import {
   WorkTaskApiService,
   WorkTaskFull,
@@ -67,12 +70,14 @@ interface FollowUp {
 
 export interface BoardTask {
   id: string; title: string; description: string; assignee: string; team: string;
+  assignees?: string[];   // multi-assignee display names
   status: TaskStatus; priority: TaskPriority; dueDate: string; startDate: string;
   weight: number; progress: number; tags: string[];
   subtasks: SubTask[]; activity: ActivityEntry[];
   followUps: FollowUp[];
   inlineText?: string;
   expanded?: boolean;
+  supervisorGrade?: number;   // 1-5 rating set by supervisor
   // API-sync fields
   apiId?: number;
   assigneeEmployeeId?: number;
@@ -108,27 +113,29 @@ const HR_SEED: BoardTask[] = [
   {
     id: 'hr1', title: 'Annual Appraisal Cycle Setup',
     description: 'Configure the annual performance appraisal cycle for all departments.',
-    assignee: 'HR Manager', team: 'HR Operations', status: 'In Progress', priority: 'High',
+    assignee: 'Chidi Eze', assignees: ['Chidi Eze', 'Sarah Afolabi'],
+    team: 'Adaeze Okonkwo', status: 'In Progress', priority: 'High',
     startDate: '2026-06-01', dueDate: '2026-06-15', weight: 25, progress: 50, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst1', title: 'Define review criteria', done: true, assignee: 'HR Manager', status: 'open' },
-      { id: 'hst2', title: 'Set scoring rubrics', done: false, assignee: 'HR Manager', status: 'ip' },
-      { id: 'hst3', title: 'Notify employees', done: false, assignee: 'HR Admin', status: 'open' },
+      { id: 'hst1', title: 'Define review criteria', done: true, assignee: 'Chidi Eze', status: 'open' },
+      { id: 'hst2', title: 'Set scoring rubrics', done: false, assignee: 'Chidi Eze', status: 'ip' },
+      { id: 'hst3', title: 'Notify employees', done: false, assignee: 'Sarah Afolabi', status: 'open' },
     ],
-    activity: [{ id: 'ha1', author: 'HR Manager', text: 'Criteria defined, moving to scoring rubrics.', timestamp: '2026-06-02T09:00:00Z' }],
+    activity: [{ id: 'ha1', author: 'Chidi Eze', text: 'Criteria defined, moving to scoring rubrics.', timestamp: '2026-06-02T09:00:00Z' }],
     followUps: [
-      { id: 'fu1', author: 'HR Manager', initials: 'HM', color: '#2563eb', timestamp: 'Jun 2, 09:00',
-        text: 'Criteria defined and approved. Moving to scoring rubrics — template drafted, awaiting HRBP review before distribution to staff.', photos: [], progress: 50 },
+      { id: 'fu1', author: 'Chidi Eze', initials: 'CE', color: '#2563eb', timestamp: 'Jun 2, 09:00',
+        text: 'Criteria defined and approved. Moving to scoring rubrics — template drafted, awaiting Olabisi\'s HRBP review before distribution.', photos: [], progress: 50 },
     ],
   },
   {
     id: 'hr2', title: 'Goal-Setting Workshop — Q3',
     description: 'Facilitate department-wide goal-setting sessions for Q3 across all business units.',
-    assignee: 'L&D Lead', team: 'Learning & Development', status: 'To Do', priority: 'Medium',
+    assignee: 'Fatima Usman', assignees: ['Fatima Usman', 'Emeka Nwosu'],
+    team: 'Adaeze Okonkwo', status: 'To Do', priority: 'Medium',
     startDate: '2026-06-10', dueDate: '2026-06-20', weight: 15, progress: 0, tags: ['Routine'],
     subtasks: [
-      { id: 'hst4', title: 'Book venues', done: false, assignee: 'L&D Lead', status: 'open' },
-      { id: 'hst4b', title: 'Prepare facilitator guide', done: false, assignee: 'L&D Lead', status: 'open' },
+      { id: 'hst4', title: 'Book venues', done: false, assignee: 'Fatima Usman', status: 'open' },
+      { id: 'hst4b', title: 'Prepare facilitator guide', done: false, assignee: 'Emeka Nwosu', status: 'open' },
     ],
     activity: [],
     followUps: [],
@@ -136,51 +143,81 @@ const HR_SEED: BoardTask[] = [
   {
     id: 'hr3', title: 'Competency Framework Review',
     description: 'Update the organisational competency framework to reflect 2026 strategy.',
-    assignee: 'HRBP', team: 'HR Strategy', status: 'In Review', priority: 'Critical',
+    assignee: 'Olabisi Adeyemi', assignees: ['Olabisi Adeyemi', 'Chidi Eze'],
+    team: 'Adaeze Okonkwo', status: 'In Review', priority: 'Critical',
     startDate: '2026-05-20', dueDate: '2026-06-07', weight: 30, progress: 80, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst5', title: 'Benchmark competitors', done: true, assignee: 'HRBP', status: 'open' },
-      { id: 'hst6', title: 'Board sign-off', done: false, assignee: 'MD', status: 'blocked' },
+      { id: 'hst5', title: 'Benchmark competitors', done: true, assignee: 'Olabisi Adeyemi', status: 'open' },
+      { id: 'hst6', title: 'Board sign-off', done: false, assignee: 'Kemi Adeleke', status: 'blocked' },
     ],
-    activity: [{ id: 'ha2', author: 'HRBP', text: 'Benchmarking complete. Sent to board for sign-off.', timestamp: '2026-06-01T15:00:00Z' }],
+    activity: [{ id: 'ha2', author: 'Olabisi Adeyemi', text: 'Benchmarking complete. Sent to board for sign-off.', timestamp: '2026-06-01T15:00:00Z' }],
     followUps: [
-      { id: 'fu2', author: 'MD (Supervisor)', initials: 'MD', color: '#7c3aed', timestamp: 'Jun 1, 15:00',
+      { id: 'fu2', author: 'Adaeze Okonkwo', initials: 'AO', color: '#7c3aed', timestamp: 'Jun 1, 15:00',
         text: 'Board sign-off requires updated 2026 benchmarking comparators. Please reattach with current data and resubmit before Jun 5.', photos: [], decision: 'Changes', progress: 80 },
-      { id: 'fu3', author: 'HRBP', initials: 'HB', color: '#2563eb', timestamp: 'Jun 1, 10:00',
-        text: 'Benchmarking complete across 6 peer organisations. Framework draft sent to MD for final sign-off. Awaiting board slot.', photos: [], progress: 80 },
+      { id: 'fu3', author: 'Olabisi Adeyemi', initials: 'OA', color: '#2563eb', timestamp: 'Jun 1, 10:00',
+        text: 'Benchmarking complete across 6 peer organisations. Framework draft sent to Adaeze for final sign-off. Awaiting board slot.', photos: [], progress: 80 },
     ],
   },
   {
     id: 'hr4', title: 'Succession Planning Report',
     description: 'Identify critical roles and map succession candidates for C-suite.',
-    assignee: 'HR Director', team: 'Talent', status: 'Done', priority: 'High',
+    assignee: 'Adaeze Okonkwo', assignees: ['Adaeze Okonkwo', 'Ngozi Obi'],
+    team: 'Kemi Adeleke', status: 'Done', priority: 'High',
     startDate: '2026-05-01', dueDate: '2026-05-30', weight: 20, progress: 100, tags: ['Workplan'],
     subtasks: [
-      { id: 'hst7', title: 'Identify critical roles', done: true, assignee: 'HR Director', status: 'open' },
-      { id: 'hst8', title: 'Map candidates', done: true, assignee: 'HR Director', status: 'open' },
-      { id: 'hst9', title: 'Present to board', done: true, assignee: 'HR Director', status: 'open' },
+      { id: 'hst7', title: 'Identify critical roles', done: true, assignee: 'Adaeze Okonkwo', status: 'open' },
+      { id: 'hst8', title: 'Map candidates', done: true, assignee: 'Ngozi Obi', status: 'open' },
+      { id: 'hst9', title: 'Present to board', done: true, assignee: 'Adaeze Okonkwo', status: 'open' },
     ],
-    activity: [{ id: 'ha3', author: 'HR Director', text: 'Report presented and approved.', timestamp: '2026-05-30T10:00:00Z' }],
+    activity: [{ id: 'ha3', author: 'Adaeze Okonkwo', text: 'Report presented and approved by the board.', timestamp: '2026-05-30T10:00:00Z' }],
     followUps: [
-      { id: 'fu4', author: 'MD (Supervisor)', initials: 'MD', color: '#16a34a', timestamp: 'May 30, 10:00',
+      { id: 'fu4', author: 'Kemi Adeleke', initials: 'KA', color: '#16a34a', timestamp: 'May 30, 10:00',
         text: 'Report presented and unanimously approved by the board. Succession plan will be integrated into the 2027 talent strategy.', photos: [], decision: 'Approved', progress: 100 },
     ],
   },
   {
     id: 'hr5', title: 'Employee Satisfaction Survey',
     description: 'Deploy the bi-annual employee satisfaction survey across all units.',
-    assignee: 'OD Specialist', team: 'Org Development', status: 'To Do', priority: 'Medium',
+    assignee: 'Emeka Nwosu', assignees: ['Emeka Nwosu', 'Sarah Afolabi', 'Fatima Usman'],
+    team: 'Chidi Eze', status: 'To Do', priority: 'Medium',
     startDate: '2026-06-15', dueDate: '2026-06-30', weight: 10, progress: 0, tags: ['Routine'],
     subtasks: [
-      { id: 'hst10', title: 'Design questionnaire', done: false, assignee: 'OD Specialist', status: 'open' },
-      { id: 'hst11', title: 'Set up survey platform', done: false, assignee: 'OD Specialist', status: 'open' },
+      { id: 'hst10', title: 'Design questionnaire', done: false, assignee: 'Emeka Nwosu', status: 'open' },
+      { id: 'hst11', title: 'Set up survey platform', done: false, assignee: 'Sarah Afolabi', status: 'open' },
+    ],
+    activity: [],
+    followUps: [],
+  },
+  {
+    id: 'hr6', title: 'Payroll Reconciliation — June',
+    description: 'Reconcile payroll data for June across all branches before final run.',
+    assignee: 'Tunde Bakare', assignees: ['Tunde Bakare'],
+    team: 'Adaeze Okonkwo', status: 'To Do', priority: 'High',
+    startDate: '2026-06-18', dueDate: '2026-06-25', weight: 20, progress: 0, tags: ['Routine'],
+    subtasks: [
+      { id: 'hst12', title: 'Pull payroll data from HRIS', done: false, assignee: 'Tunde Bakare', status: 'open' },
+      { id: 'hst13', title: 'Variance analysis vs May', done: false, assignee: 'Tunde Bakare', status: 'open' },
+      { id: 'hst14', title: 'CFO sign-off', done: false, assignee: 'Tunde Bakare', status: 'open' },
+    ],
+    activity: [],
+    followUps: [],
+  },
+  {
+    id: 'hr7', title: 'New Hire Onboarding — July Cohort',
+    description: 'Coordinate onboarding for the 8 new hires joining in July.',
+    assignee: 'Ngozi Obi', assignees: ['Ngozi Obi', 'Sarah Afolabi'],
+    team: 'Chidi Eze', status: 'To Do', priority: 'Medium',
+    startDate: '2026-06-20', dueDate: '2026-07-01', weight: 15, progress: 0, tags: ['Routine'],
+    subtasks: [
+      { id: 'hst15', title: 'Prepare onboarding packs', done: false, assignee: 'Sarah Afolabi', status: 'open' },
+      { id: 'hst16', title: 'Schedule orientation sessions', done: false, assignee: 'Ngozi Obi', status: 'open' },
     ],
     activity: [],
     followUps: [],
   },
 ];
 
-const HR_BOARD_KEY = 'hr_pm_board_tasks';
+const HR_BOARD_KEY = 'hr_pm_board_tasks_v2';
 
 @Component({
   selector: 'app-productivity-workspace',
@@ -263,6 +300,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   subtaskInput = '';
   showAddTask = false;
   newTask: Partial<BoardTask> = {};
+
+  // Edit-task modal
+  showEditTask = false;
+  editingTask: BoardTask | null = null;
+  editTaskDraft: Partial<BoardTask> = {};
   ganttDays: string[] = [];
   ganttStart!: Date;
 
@@ -417,48 +459,77 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   // ── Supervisor ─────────────────────────────────────────────────────────────
+  supervisorFilter = '';   // filter team tasks by supervisor name
+
+  get myTeamTasks(): BoardTask[] {
+    const name = this.supervisorFilter.trim().toLowerCase();
+    return this.boardTasks.filter(t =>
+      !name || t.team.toLowerCase().includes(name) ||
+      (t.assignees || [t.assignee]).some(a => a.toLowerCase().includes(name))
+    );
+  }
+
+  get uniqueSupervisors(): string[] {
+    return [...new Set(this.boardTasks.map(t => t.team).filter(Boolean))].sort();
+  }
+
+  setTaskGrade(task: BoardTask, n: number): void {
+    task.supervisorGrade = task.supervisorGrade === n ? 0 : n;
+    this.save();
+  }
+
   employeeSubmissions: EmployeeSubmission[] = [
     {
-      id: 'e1', initials: 'DA', name: 'Damilola A.', role: 'Senior Manager', department: 'Risk & Compliance',
+      id: 'e1', initials: 'CE', name: 'Chidi Eze', role: 'HR Manager', department: 'Human Resources',
       color: '#2563eb', avgSelfScore: 4.0, supScore: 4, status: 'pending', open: true, reviewedNote: '',
       goals: [
-        { title: 'Q2 NPL Report Submission', weight: 20, selfScore: 4, evidenceCount: 2 },
-        { title: 'Compliance Audit Prep', weight: 25, selfScore: 5, evidenceCount: 1 },
-        { title: 'Credit Risk Analysis', weight: 20, selfScore: 3, evidenceCount: 1 },
+        { title: 'Annual Appraisal Cycle Setup', weight: 25, selfScore: 4, evidenceCount: 2 },
+        { title: 'Employee Handbook Update', weight: 20, selfScore: 5, evidenceCount: 1 },
+        { title: 'HR Policy Compliance Audit', weight: 20, selfScore: 3, evidenceCount: 1 },
         { title: 'Team Training Coordination', weight: 20, selfScore: 0, evidenceCount: 0 },
-        { title: 'IFRS 9 Filing Support', weight: 15, selfScore: 0, evidenceCount: 0 },
+        { title: 'Workforce Planning Report', weight: 15, selfScore: 0, evidenceCount: 0 },
       ],
-      reviewNote: 'Solid work overall. NPL submission remains open — please close by Jun 3 as committed. All other deliverables met standard.',
+      reviewNote: 'Solid performance on appraisal cycle setup. Compliance audit needs closure before Jun 10. Other deliverables on track.',
       decision: 'approved',
     },
     {
-      id: 'e2', initials: 'JO', name: 'John Obi', role: 'Analyst', department: 'IFRS & Reporting',
-      color: '#16a34a', avgSelfScore: 3.5, supScore: 4, status: 'reviewed', open: false,
-      reviewedNote: 'Strong IFRS 9 contribution. Data extraction completed ahead of schedule. Disclosure note review on track for Jun 15.',
+      id: 'e2', initials: 'FU', name: 'Fatima Usman', role: 'L&D Lead', department: 'Learning & Development',
+      color: '#16a34a', avgSelfScore: 3.8, supScore: 4, status: 'reviewed', open: false,
+      reviewedNote: 'Goal-setting workshop facilitation was exemplary. Q3 training calendar well-structured. Keep momentum on the competency mapping.',
       goals: [
-        { title: 'IFRS 9 Data Extraction', weight: 30, selfScore: 4, evidenceCount: 2 },
-        { title: 'Impairment Model Support', weight: 35, selfScore: 3, evidenceCount: 1 },
-        { title: 'Disclosure Note Review', weight: 35, selfScore: 3, evidenceCount: 0 },
+        { title: 'Q3 Goal-Setting Workshop', weight: 30, selfScore: 4, evidenceCount: 2 },
+        { title: 'Competency Mapping Exercise', weight: 35, selfScore: 3, evidenceCount: 1 },
+        { title: 'Training Needs Analysis', weight: 35, selfScore: 4, evidenceCount: 1 },
       ],
       reviewNote: '', decision: 'approved',
     },
     {
-      id: 'e3', initials: 'FK', name: 'Fatima K.', role: 'Senior Analyst', department: 'Payroll & Audit',
+      id: 'e3', initials: 'OA', name: 'Olabisi Adeyemi', role: 'HRBP', department: 'HR Strategy',
       color: '#d97706', avgSelfScore: 4.2, supScore: 0, status: 'pending', open: false, reviewedNote: '',
       goals: [
-        { title: 'Payroll Variance Audit', weight: 40, selfScore: 5, evidenceCount: 3 },
-        { title: 'Branch Compliance Checks', weight: 35, selfScore: 4, evidenceCount: 2 },
-        { title: 'Remediation Report', weight: 25, selfScore: 3, evidenceCount: 1 },
+        { title: 'Competency Framework Review', weight: 35, selfScore: 5, evidenceCount: 3 },
+        { title: 'Change Management Plan', weight: 30, selfScore: 4, evidenceCount: 2 },
+        { title: 'Employee Relations Cases', weight: 35, selfScore: 3, evidenceCount: 1 },
       ],
       reviewNote: '', decision: 'approved',
     },
     {
-      id: 'e4', initials: 'AS', name: 'Amara S.', role: 'Manager', department: 'Financial Reporting',
-      color: '#7c3aed', avgSelfScore: 3.8, supScore: 0, status: 'pending', open: false, reviewedNote: '',
+      id: 'e4', initials: 'TB', name: 'Tunde Bakare', role: 'Payroll Analyst', department: 'Compensation & Benefits',
+      color: '#7c3aed', avgSelfScore: 3.9, supScore: 0, status: 'pending', open: false, reviewedNote: '',
       goals: [
-        { title: 'Q1 Financial Statements', weight: 40, selfScore: 4, evidenceCount: 2 },
-        { title: 'Management Accounts', weight: 35, selfScore: 4, evidenceCount: 1 },
-        { title: 'FINREP Submission', weight: 25, selfScore: 3, evidenceCount: 1 },
+        { title: 'June Payroll Reconciliation', weight: 40, selfScore: 4, evidenceCount: 2 },
+        { title: 'Benefits Benchmarking Report', weight: 35, selfScore: 4, evidenceCount: 1 },
+        { title: 'PAYE Statutory Filing', weight: 25, selfScore: 3, evidenceCount: 1 },
+      ],
+      reviewNote: '', decision: 'approved',
+    },
+    {
+      id: 'e5', initials: 'NO', name: 'Ngozi Obi', role: 'Recruitment Manager', department: 'Talent Acquisition',
+      color: '#0891b2', avgSelfScore: 4.1, supScore: 0, status: 'pending', open: false, reviewedNote: '',
+      goals: [
+        { title: 'July Onboarding Coordination', weight: 30, selfScore: 4, evidenceCount: 2 },
+        { title: 'Graduate Recruitment Drive', weight: 40, selfScore: 4, evidenceCount: 3 },
+        { title: 'Time-to-Fill KPI Target', weight: 30, selfScore: 4, evidenceCount: 1 },
       ],
       reviewNote: '', decision: 'approved',
     },
@@ -534,6 +605,44 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     });
     this.batchRows = [...parsed, { title: '', assignee: '', supervisor: '', start: '', due: '', priority: 'High', type: 'Workplan', subtasks: '', kpiTarget: '', weight: 0 }];
     this.batchPasteText = '';
+  }
+
+  onImportFile(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target!.result as ArrayBuffer);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      // skip header row if it looks like a header
+      const dataRows = rows.length > 1 && typeof rows[0][0] === 'string' && isNaN(Number(rows[0][0])) ? rows.slice(1) : rows;
+      const parsed: BatchRow[] = dataRows
+        .filter((r: any[]) => r[0]?.toString().trim())
+        .map((r: any[]) => ({
+          title: String(r[0] || '').trim(),
+          assignee: String(r[1] || '').trim(),
+          supervisor: String(r[2] || '').trim(),
+          start: String(r[3] || '').trim(),
+          due: String(r[4] || '').trim(),
+          priority: String(r[5] || 'High').trim(),
+          type: String(r[6] || 'Workplan').trim(),
+          subtasks: String(r[7] || '').trim(),
+          kpiTarget: String(r[8] || '').trim(),
+          weight: Number(r[9]) || 0,
+        }));
+      this.batchRows = [...parsed, { title: '', assignee: '', supervisor: '', start: '', due: '', priority: 'High', type: 'Workplan', subtasks: '', kpiTarget: '', weight: 0 }];
+      (event.target as HTMLInputElement).value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  persistProgress(task: BoardTask): void {
+    this.save();
+    if (this.apiEnabled && task.apiId) {
+      this.workTaskApi.updateTaskProgress(task.apiId, task.progress).subscribe({ error: () => {} });
+    }
   }
 
   // ── Services (kept to avoid breaking service init) ─────────────────────────
@@ -613,6 +722,24 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   shareChannelId: number | null = null;
   availableChannels: Array<{ id: number; name: string; channelCode: string; channelType: string; status: string }> = [];
   channelsLoading = false;
+  channelUnreadCounts: Record<number, number> = {};
+
+  private loadChannelUnread(): void {
+    try { this.channelUnreadCounts = JSON.parse(localStorage.getItem('hr_ch_unread') || '{}'); } catch {}
+  }
+
+  incrementChannelUnread(channelId: number): void {
+    this.channelUnreadCounts = { ...this.channelUnreadCounts, [channelId]: (this.channelUnreadCounts[channelId] || 0) + 1 };
+    localStorage.setItem('hr_ch_unread', JSON.stringify(this.channelUnreadCounts));
+  }
+
+  clearChannelUnread(channelId: number | null): void {
+    if (!channelId) return;
+    const updated = { ...this.channelUnreadCounts };
+    delete updated[channelId];
+    this.channelUnreadCounts = updated;
+    localStorage.setItem('hr_ch_unread', JSON.stringify(this.channelUnreadCounts));
+  }
 
   // ── Inline photo state (per-task key = task.id) ────────────────────────────
   inlinePhotos: Record<string, Array<{ name: string; url: string; isImage: boolean; uploading?: boolean }>> = {};
@@ -631,9 +758,12 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     private readonly employeeService: EmployeeService,
     private readonly workTaskApi: WorkTaskApiService,
     private readonly sanitizer: DomSanitizer,
+    private readonly notifService: HrTaskNotificationService,
+    private readonly authService: AuthenticationService,
   ) {}
 
   ngOnInit(): void {
+    this.loadChannelUnread();
     this.productivityDataService.init();
     this.productivityReviewService.init();
     this.subscription.add(
@@ -667,8 +797,42 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           })
           .filter(e => !!e.fullName);
         this.employeesLoading = false;
+        // If employees loaded, patch supervisor review submissions with real names
+        this.patchSubmissionsFromUsers(this.allEmployees);
       })
     );
+
+    // Load users from the users API to populate supervisor review with DM users
+    this.subscription.add(
+      this.authService.getUsers().subscribe({
+        next: (users: any[]) => {
+          if (users && users.length > 0) {
+            const mapped = users.map((u: any) => ({
+              id: String(u?.id || ''),
+              fullName: (`${u?.firstName || u?.firstname || ''} ${u?.lastName || u?.lastname || ''}`).trim() || String(u?.username || u?.name || '').trim(),
+              department: String(u?.department?.name || u?.department || ''),
+              role: String(u?.jobTitle || u?.designation || u?.roles?.[0] || ''),
+              supervisor: '',
+            })).filter(u => !!u.fullName);
+            this.patchSubmissionsFromUsers(mapped);
+          }
+        },
+        error: () => {},
+      })
+    );
+  }
+
+  private patchSubmissionsFromUsers(users: Array<{ id: string; fullName: string; department: string; role: string; supervisor: string }>): void {
+    if (!users || users.length === 0) return;
+    this.employeeSubmissions.forEach((sub, i) => {
+      const u = users[i % users.length];
+      if (!u) return;
+      const parts = u.fullName.split(' ');
+      sub.name = u.fullName;
+      sub.initials = parts.map((p: string) => p[0] || '').join('').toUpperCase().slice(0, 2);
+      if (u.department) sub.department = u.department;
+      if (u.role) sub.role = u.role;
+    });
   }
 
   private loadBoardFromApi(): void {
@@ -679,21 +843,63 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           if (apiTasks && apiTasks.length > 0) {
             this.boardTasks = apiTasks.map(t => this.mapApiTaskToBoard(t));
           } else {
-            // API returned empty — seed from localStorage or HR_SEED
             const raw = localStorage.getItem(HR_BOARD_KEY);
             this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
           }
+          // Always merge in any locally-imported tasks (Odoo, CSV) that aren't in the API set
+          this.mergeLocalImports();
           this.boardLoading = false;
+          this.autoOpenFromUrl();
         },
         error: () => {
-          // API unavailable — fall back to localStorage/seed
           this.apiEnabled = false;
           const raw = localStorage.getItem(HR_BOARD_KEY);
           this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+          this.mergeLocalImports();
           this.boardLoading = false;
+          this.autoOpenFromUrl();
         }
       })
     );
+  }
+
+  private autoOpenFromUrl(): void {
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get('taskId');
+    if (!taskId) return;
+    const found = this.boardTasks.find(t => t.id === taskId || String(t.apiId) === taskId);
+    if (found) {
+      this.pmSection = 'board';
+      this.openDetail(found);
+    }
+  }
+
+  // Merge tasks imported via Odoo/CSV from the dedicated imports key.
+  // This key is NEVER written by save(), so imports are never lost by board operations.
+  private mergeLocalImports(): void {
+    try {
+      const raw = localStorage.getItem('hr_pm_imports_v1');
+      if (!raw) return;
+      const imported: BoardTask[] = JSON.parse(raw);
+      if (!imported.length) return;
+      const existingIds = new Set(this.boardTasks.map(t => t.id));
+      const newOnes = imported.filter(t => !existingIds.has(t.id));
+      if (newOnes.length > 0) {
+        this.boardTasks = [...this.boardTasks, ...newOnes];
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  // Called when the user explicitly promotes an imported task to the main board
+  // (e.g. by editing it). Removes it from the imports key and adds to boardTasks.
+  promoteImport(taskId: string): void {
+    try {
+      const raw = localStorage.getItem('hr_pm_imports_v1');
+      if (!raw) return;
+      const remaining = (JSON.parse(raw) as BoardTask[]).filter(t => t.id !== taskId);
+      localStorage.setItem('hr_pm_imports_v1', JSON.stringify(remaining));
+    } catch {}
+    this.save();
   }
 
   // ── Normalize Java date arrays → YYYY-MM-DD strings ──────────────────────
@@ -841,7 +1047,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   private initNewTask(): void {
     this.newTask = {
-      id: `hr${Date.now()}`, title: '', description: '', assignee: '', team: '',
+      id: `hr${Date.now()}`, title: '', description: '', assignee: '', assignees: [], team: '',
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
     };
@@ -922,7 +1128,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     if (!t.title?.trim()) return;
     t.id = `hr${Date.now()}`;
     t.followUps = t.followUps ?? [];
-
+    // Primary assignee is first in the multi-select list
+    if (t.assignees?.length) t.assignee = t.assignees[0];
     // Resolve employee IDs from selected names
     const assigneeEmp = this.allEmployees.find(e => e.fullName === t.assignee);
     const supervisorEmp = this.allEmployees.find(e => e.fullName === t.team);
@@ -937,6 +1144,52 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
     if (this.apiEnabled) {
       this.syncTaskToApi(newBoard);
+    }
+  }
+
+  openEditTask(task: BoardTask, e: Event): void {
+    e.stopPropagation();
+    this.editingTask = task;
+    this.editTaskDraft = { ...task, tags: [...(task.tags || [])] };
+    this.showEditTask = true;
+  }
+
+  saveEditTask(): void {
+    if (!this.editingTask || !this.editTaskDraft.title?.trim()) return;
+    const d = this.editTaskDraft;
+    const t = this.editingTask;
+    t.title       = d.title!.trim();
+    t.description = d.description || '';
+    t.assignees   = d.assignees ?? [];
+    t.assignee    = t.assignees.length ? t.assignees[0] : (d.assignee || '');
+    t.team        = d.team    || '';
+    t.status      = (d.status   as TaskStatus)   || t.status;
+    t.priority    = (d.priority as TaskPriority) || t.priority;
+    t.startDate   = d.startDate || '';
+    t.dueDate     = d.dueDate   || '';
+    t.weight      = d.weight    ?? t.weight;
+    const aEmp = this.allEmployees.find(e => e.fullName === t.assignee);
+    const sEmp = this.allEmployees.find(e => e.fullName === t.team);
+    if (aEmp) t.assigneeEmployeeId   = Number(aEmp.id);
+    if (sEmp) t.supervisorEmployeeId = Number(sEmp.id);
+    this.save();
+    this.showEditTask = false;
+    this.editingTask  = null;
+    this.showToast('Task updated', 'success');
+    if (this.apiEnabled) this.syncTaskToApi(t);
+  }
+
+  cancelEditTask(): void { this.showEditTask = false; this.editingTask = null; }
+
+  deleteTask(task: BoardTask, e: Event): void {
+    e.stopPropagation();
+    if (!confirm(`Delete "${task.title}"? This cannot be undone.`)) return;
+    this.boardTasks = this.boardTasks.filter(t => t.id !== task.id);
+    if (this.selectedTask?.id === task.id) this.selectedTask = null;
+    this.save();
+    this.showToast('Task deleted', 'success');
+    if (this.apiEnabled && task.apiId) {
+      this.subscription.add(this.workTaskApi.deleteTask(task.apiId).subscribe({ error: () => {} }));
     }
   }
 
@@ -1150,6 +1403,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
   }
 
+  avatarColor(name: string): string {
+    const palette = ['#2563eb','#7c3aed','#0891b2','#16a34a','#d97706','#dc2626','#9333ea','#0d9488'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  }
+
   taskPriorityBadge(priority: string): string {
     const m: Record<string, string> = { Low: 'b-green', Medium: 'b-yellow', High: 'b-red', Critical: 'b-red' };
     return m[priority] || 'b-gray';
@@ -1171,6 +1431,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.inlinePhotos[task.id] = [];
     this.save();
     this.showToast('Update posted successfully', 'success');
+    const recipients = task.assignees?.length ? task.assignees : [task.assignee];
+    recipients.forEach(r => r && this.notifService.add(
+      `Update on "${task.title}"`,
+      newFu.text.replace(/<[^>]*>/g, '').slice(0, 80),
+      r, task.id
+    ));
+    if (task.team) this.notifService.add(`Update on "${task.title}"`, `Progress ${task.progress}%`, task.team, task.id);
 
     if (this.apiEnabled && task.apiId) {
       const dto: FollowUpDTO = {
@@ -1261,7 +1528,9 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   // ── Wired postActivity: includes photos + API call ─────────────────────────
   postActivity(): void {
-    if (!this.selectedTask || !this.newActivityText.trim()) return;
+    if (!this.selectedTask) return;
+    const plainText = this.newActivityText.replace(/<[^>]*>/g, '').trim();
+    if (!plainText) return;
     const photos = this.detailPhotos.map(p => p.url);
     const newFu: FollowUp = {
       id: `fu${Date.now()}`, author: this.selectedTask.assignee || 'You',
@@ -1275,6 +1544,17 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.detailPhotos = [];
     this.save();
     this.showToast('Follow-up posted successfully', 'success');
+    const assignees = this.selectedTask.assignees?.length ? this.selectedTask.assignees : [this.selectedTask.assignee];
+    assignees.forEach(r => r && this.notifService.add(
+      `Follow-up on "${this.selectedTask!.title}"`,
+      plainText.slice(0, 80),
+      r, this.selectedTask!.id
+    ));
+    if (this.selectedTask.team) this.notifService.add(
+      `Follow-up on "${this.selectedTask.title}"`,
+      `${this.selectedTask.assignee} posted an update`,
+      this.selectedTask.team, this.selectedTask.id
+    );
 
     if (this.apiEnabled && this.selectedTask.apiId) {
       const dto: FollowUpDTO = {
@@ -1343,17 +1623,41 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   openShareModal(task: BoardTask, target: 'supervisor' | 'channel' | 'dm' = 'supervisor'): void {
     this.shareTaskRef = task;
     this.shareTarget = target;
-    this.shareNote = `📋 Task Update: *${task.title}*\nProgress: ${task.progress}% · Status: ${task.status}\n\n`;
     this.shareChannelOrUser = target === 'supervisor' ? (task.team || '') : '';
     this.shareChannelId = null;
     this.showShareModal = true;
 
-    if (target === 'channel' && !this.availableChannels.length) {
+    // Build rich pre-filled message with task context
+    const assigneeList = (task.assignees?.length ? task.assignees : [task.assignee]).filter(Boolean).join(', ') || '—';
+    const taskUrl = `${window.location.origin}/admin/hr/performance/${encodeURIComponent(window.location.pathname.split('/').pop() || 'uu')}`;
+    this.shareNote = [
+      `📋 *Task: ${task.title}*`,
+      `🚦 Status: ${task.status}  |  ⚡ Priority: ${task.priority}`,
+      `👥 Assignee(s): ${assigneeList}`,
+      `📅 Due: ${task.dueDate ? this.formatDate(task.dueDate) : '—'}  |  📊 Progress: ${task.progress}%`,
+      task.tags?.length ? `🏷️ Tags: ${task.tags.join(', ')}` : '',
+      ``,
+      `🔗 View task: ${taskUrl}?taskId=${task.id}`,
+      ``,
+      `Note: `,
+    ].filter(l => l !== undefined).join('\n');
+
+    if (target === 'channel') {
+      // Always reload channels to avoid stale/duplicate list
       this.channelsLoading = true;
+      this.availableChannels = [];
       this.subscription.add(
         this.workTaskApi.getCollabChannels().subscribe({
           next: (chs) => {
-            this.availableChannels = (chs || []).filter(c => c.status === 'ACTIVE');
+            const seen = new Set<number>();
+            this.availableChannels = (chs || [])
+              .filter(c =>
+                c.status === 'ACTIVE' &&
+                c.channelType !== 'DM' &&
+                !c.name?.toLowerCase().startsWith('dm-') &&
+                !c.channelCode?.toLowerCase().startsWith('dm-')
+              )
+              .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; });
             this.channelsLoading = false;
           },
           error: () => { this.channelsLoading = false; },
@@ -1372,22 +1676,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   submitShare(): void {
     if (!this.shareNote.trim()) { this.showToast('Please enter a message to share.', 'warn'); return; }
 
+    const task = this.shareTaskRef;
     if (this.shareTarget === 'channel') {
       if (!this.shareChannelId) { this.showToast('Please select a channel.', 'warn'); return; }
       const ch = this.availableChannels.find(c => c.id === this.shareChannelId);
       this.showShareModal = false;
       this.subscription.add(
         this.workTaskApi.sendChannelMessage(this.shareChannelId, this.shareNote).subscribe({
-          next: () => this.showToast(`Posted to #${ch?.name || 'channel'}`, 'success'),
+          next: () => {
+            this.showToast(`Task update posted to #${ch?.name || 'channel'}`, 'success');
+            if (task) this.notifService.add(`Shared to #${ch?.name || 'channel'}`, `"${task.title}" was shared`, ch?.name || 'channel', task.id);
+            this.incrementChannelUnread(this.shareChannelId!);
+          },
           error: () => this.showToast('Failed to post to channel. Check connection.', 'error'),
         })
       );
     } else if (this.shareTarget === 'supervisor') {
       this.showShareModal = false;
-      this.showToast(`Update sent to supervisor (${this.shareChannelOrUser || 'assigned supervisor'})`, 'success');
+      this.showToast(`Update sent to ${this.shareChannelOrUser || 'supervisor'}`, 'success');
+      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared with supervisor`, `"${task.title}" shared to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
     } else {
       this.showShareModal = false;
       this.showToast(`Message sent to ${this.shareChannelOrUser || 'user'}`, 'success');
+      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared`, `"${task.title}" sent to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
     }
     this.shareNote = '';
     this.shareChannelId = null;

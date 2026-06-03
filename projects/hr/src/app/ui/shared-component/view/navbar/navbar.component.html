@@ -16,8 +16,30 @@
 
     <div class="header-end">
         <!-- <div class="items"><p>Contacts</p></div> -->
-        <div class="items">
+        <div class="items bell-wrap" (click)="toggleNotifPanel()" style="position:relative">
           <i class="fas fa-bell"></i>
+          <span class="bell-badge" *ngIf="notifCount > 0">{{ notifCount > 99 ? '99+' : notifCount }}</span>
+        </div>
+
+        <!-- Notification dropdown -->
+        <div class="notif-panel" *ngIf="showNotifPanel" (click)="$event.stopPropagation()">
+          <div class="notif-panel-head">
+            <span class="notif-panel-title">Notifications</span>
+            <button class="notif-mark-read" (click)="markAllRead()">Mark all read</button>
+          </div>
+          <div class="notif-list" *ngIf="notifications.length; else noNotifs">
+            <div class="notif-item" *ngFor="let n of notifications" [class.unread]="!n.read">
+              <div class="notif-dot" *ngIf="!n.read"></div>
+              <div class="notif-content">
+                <div class="notif-title">{{ n.title }}</div>
+                <div class="notif-body">{{ n.body }}</div>
+                <div class="notif-meta">{{ notifTime(n.createdAt) }} &middot; {{ n.recipient }}</div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noNotifs>
+            <div class="notif-empty">No notifications yet</div>
+          </ng-template>
         </div>
         <div class="items"><i class="fas fa-message"></i></div>
         <div (click)="op.toggle($event)" class="items profile-item">
@@ -42,7 +64,7 @@
             </div>
               <p-divider></p-divider>
               <div>
-                <a routerLink="/settings" class="settings"><i class="pi pi-cog"></i>Settings</a>
+                <a [routerLink]="hrSettingsRoute" class="settings"><i class="pi pi-cog"></i>Settings</a>
                 <h4 (click)="logout()" class="logout"><i class="pi pi-sign-out"></i> Sign Out</h4>
               </div>
             </div>
