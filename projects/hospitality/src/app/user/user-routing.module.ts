@@ -30,17 +30,17 @@ import { ServiceCheckoutComponent } from '../ui/view/room-management/service-che
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'e-bookings/rooms/default',
+    redirectTo: 'bookings/room-select/sdvsdvsdvsdvs',  //change the default 
     pathMatch: 'full',
   },
   {
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
-    {
-      path: "",
-      component: BookingsShellComponent,
-      children: [
+  {
+    path: '',
+    component: BookingsShellComponent,
+    children: [
       { path: 'e-bookings/home/:uuid', component: HomeComponent },
       { path: 'e-bookings/rooms/:uuid', component: AllroomsComponent },
       { path: 'e-bookings/rooms/details/:id/:uuid', component: RoomDetailsComponent },

@@ -30,6 +30,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   maxPrice = 200000;
   selectedAmenities: string[] = [];
   isMenuOpen = false;
+  isLoading = false;
+  error: string | null = null;
   showAuthModal = false;
   selectedRoomForAuth: DisplayRoom | null = null;
   branding: any = {
@@ -70,7 +72,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
     this.loadBranding();
-    
+
+    // Start loading
+    this.isLoading = true;
+    this.error = null;
+
     // Use switchMap to ensure room types are loaded BEFORE mapping rooms
     this.hotelService.getRoomTypes().pipe(
       tap(types => this.roomTypes = types as any),
@@ -84,12 +90,16 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
         this.filteredRooms = [...this.rooms];
         this.startAutoSlide();
+        this.isLoading = false;
+        this.error = null;
       },
       error: (err: any) => {
         console.error('Error loading rooms:', err);
         this.rooms = this.getDummyRooms();
         this.filteredRooms = [...this.rooms];
         this.startAutoSlide();
+        this.isLoading = false;
+        this.error = null;
       }
     });
   }

@@ -1,3 +1,38 @@
+<style>
+select {
+  background: white !important;
+  color: #333 !important;
+  padding: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+select:hover {
+  border-color: #999 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+select:focus {
+  outline: none !important;
+  border-color: #4CAF50 !important;
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.1), 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+select option {
+  background: white !important;
+  color: #333 !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  border: none !important;
+}
+select option:hover {
+  background: #e8f5e9 !important;
+  color: #333 !important;
+}
+select option:checked {
+  background: #4CAF50 !important;
+  color: white !important;
+}
+</style>
+
 <div class="checkout-page" *ngIf="!loading">
 
   <!-- Toast Notification -->
@@ -24,7 +59,7 @@
       <main class="left-col">
 
         <!-- Room Banner -->
-        <div class="room-banner">
+        <div class="room-banner" *ngIf="room">
           <div class="banner-image">
             <img [src]="room.images[0]" [alt]="'Room ' + room.roomNumber">
             <div class="banner-overlay"></div>
@@ -43,27 +78,33 @@
         </div>
 
         <!-- Dates & Guests -->
-        <section class="form-card">
+        <section class="form-card" [formGroup]="bookingForm">
           <h3 class="card-title"><i class="fa-solid fa-calendar-days"></i> Stay Details</h3>
           <div class="dates-grid">
             <div class="field">
               <label>Check-In</label>
-              <input type="date" [(ngModel)]="checkinDate" class="date-input">
+              <input type="date" formControlName="checkinDate" class="date-input">
+              <span class="error-text" *ngIf="bookingForm.get('checkinDate')?.invalid && bookingForm.get('checkinDate')?.touched">
+                Check-in date is required
+              </span>
             </div>
             <div class="field">
               <label>Check-Out</label>
-              <input type="date" [(ngModel)]="checkoutDate" class="date-input">
+              <input type="date" formControlName="checkoutDate" class="date-input">
+              <span class="error-text" *ngIf="bookingForm.get('checkoutDate')?.invalid && bookingForm.get('checkoutDate')?.touched">
+                Check-out date is required
+              </span>
             </div>
           </div>
           <div class="guests-row">
             <div class="field">
               <label>Adults</label>
               <div class="stepper">
-                <button (click)="adults = adults > 1 ? adults - 1 : 1">
+                <button type="button" (click)="decrementAdults()">
                   <i class="fa-solid fa-minus"></i>
                 </button>
-                <span>{{ adults }}</span>
-                <button (click)="adults = adults + 1">
+                <span>{{ bookingForm.get('adults')?.value }}</span>
+                <button type="button" (click)="incrementAdults()">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -71,11 +112,11 @@
             <div class="field">
               <label>Children</label>
               <div class="stepper">
-                <button (click)="children = children > 0 ? children - 1 : 0">
+                <button type="button" (click)="decrementChildren()">
                   <i class="fa-solid fa-minus"></i>
                 </button>
-                <span>{{ children }}</span>
-                <button (click)="children = children + 1">
+                <span>{{ bookingForm.get('children')?.value }}</span>
+                <button type="button" (click)="incrementChildren()">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -84,56 +125,102 @@
         </section>
 
         <!-- Guest Info -->
-        <section class="form-card">
+        <section class="form-card" [formGroup]="bookingForm">
           <h3 class="card-title"><i class="fa-solid fa-user"></i> Guest Information</h3>
           <div class="info-grid">
             <div class="field">
               <label>Title</label>
-              <select [(ngModel)]="title" class="text-input">
-                <option *ngFor="let t of titles" [value]="t">{{ t }}</option>
+              <select formControlName="title" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; cursor: pointer !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('title')?.invalid && bookingForm.get('title')?.touched">
+                <option value="" disabled style="background: white !important; color: black !important;">Select Title</option>
+                <option value="Mr" style="background: white !important; color: black !important;">Mr</option>
+                <option value="Mrs" style="background: white !important; color: black !important;">Mrs</option>
+                <option value="Ms" style="background: white !important; color: black !important;">Ms</option>
+                <option value="Dr" style="background: white !important; color: black !important;">Dr</option>
+                <option value="Prof" style="background: white !important; color: black !important;">Prof</option>
               </select>
+              <span class="error-text" *ngIf="bookingForm.get('title')?.hasError('required') && bookingForm.get('title')?.touched">
+                Title is required
+              </span>
             </div>
             <div class="field">
               <label>First Name</label>
-              <input type="text" [(ngModel)]="firstName" placeholder="e.g. Amara" class="text-input">
+              <input type="text" formControlName="firstName" placeholder="e.g. Amara" class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('firstName')?.invalid && bookingForm.get('firstName')?.touched">
+              <span class="error-text" *ngIf="bookingForm.get('firstName')?.hasError('required') && bookingForm.get('firstName')?.touched">
+                First name is required
+              </span>
+              <span class="error-text" *ngIf="bookingForm.get('firstName')?.hasError('minlength') && bookingForm.get('firstName')?.touched">
+                First name must be at least 2 characters
+              </span>
             </div>
             <div class="field">
               <label>Last Name</label>
-              <input type="text" [(ngModel)]="lastName" placeholder="e.g. Okonkwo" class="text-input">
+              <input type="text" formControlName="lastName" placeholder="e.g. Okonkwo" class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('lastName')?.invalid && bookingForm.get('lastName')?.touched">
+              <span class="error-text" *ngIf="bookingForm.get('lastName')?.hasError('required') && bookingForm.get('lastName')?.touched">
+                Last name is required
+              </span>
+              <span class="error-text" *ngIf="bookingForm.get('lastName')?.hasError('minlength') && bookingForm.get('lastName')?.touched">
+                Last name must be at least 2 characters
+              </span>
             </div>
             <div class="field">
               <label>Email</label>
-              <input type="email" [(ngModel)]="email" placeholder="amara@email.com" class="text-input">
+              <input type="email" formControlName="email" placeholder="amara@email.com" class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('email')?.invalid && bookingForm.get('email')?.touched">
+              <span class="error-text" *ngIf="bookingForm.get('email')?.hasError('required') && bookingForm.get('email')?.touched">
+                Email is required
+              </span>
+              <span class="error-text" *ngIf="bookingForm.get('email')?.hasError('email') && bookingForm.get('email')?.touched">
+                Please enter a valid email address
+              </span>
             </div>
             <div class="field">
               <label>Phone</label>
-              <input type="tel" [(ngModel)]="phone" placeholder="+234 800 000 0000" class="text-input">
+              <input type="tel" formControlName="phone" placeholder="+234 800 000 0000" class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('phone')?.invalid && bookingForm.get('phone')?.touched">
+              <span class="error-text" *ngIf="bookingForm.get('phone')?.hasError('required') && bookingForm.get('phone')?.touched">
+                Phone is required
+              </span>
+              <span class="error-text" *ngIf="bookingForm.get('phone')?.hasError('pattern') && bookingForm.get('phone')?.touched">
+                Phone must be at least 7 digits with +, spaces, dashes, or parentheses
+              </span>
             </div>
             <div class="field">
               <label>Gender</label>
-              <select [(ngModel)]="gender" class="text-input">
-                <option *ngFor="let g of genders" [value]="g">{{ g }}</option>
+              <select formControlName="gender" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; cursor: pointer !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('gender')?.invalid && bookingForm.get('gender')?.touched">
+                <option value="" disabled style="background: white !important; color: black !important;">Select Gender</option>
+                <option value="Male" style="background: white !important; color: black !important;">Male</option>
+                <option value="Female" style="background: white !important; color: black !important;">Female</option>
+                <option value="Other" style="background: white !important; color: black !important;">Other</option>
               </select>
+              <span class="error-text" *ngIf="bookingForm.get('gender')?.hasError('required') && bookingForm.get('gender')?.touched">
+                Gender is required
+              </span>
             </div>
             <div class="field">
               <label>Country</label>
-              <select [(ngModel)]="country" class="text-input">
-                <option *ngFor="let c of countries" [value]="c">{{ c }}</option>
+              <select formControlName="country" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; cursor: pointer !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;" [class.error]="bookingForm.get('country')?.invalid && bookingForm.get('country')?.touched">
+                <option value="" disabled style="background: white !important; color: black !important;">Select Country</option>
+                <option value="Nigeria" style="background: white !important; color: black !important;">Nigeria</option>
+                <option value="Ghana" style="background: white !important; color: black !important;">Ghana</option>
+                <option value="Kenya" style="background: white !important; color: black !important;">Kenya</option>
+                <option value="South Africa" style="background: white !important; color: black !important;">South Africa</option>
+                <option value="Uganda" style="background: white !important; color: black !important;">Uganda</option>
               </select>
+              <span class="error-text" *ngIf="bookingForm.get('country')?.hasError('required') && bookingForm.get('country')?.touched">
+                Country is required
+              </span>
             </div>
             <div class="field">
               <label>ID Number</label>
-              <input type="text" [(ngModel)]="idNumber" placeholder="ID or Passport Number" class="text-input">
+              <input type="text" formControlName="idNumber" placeholder="ID or Passport Number" class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; min-height: 40px !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;">
             </div>
             <div class="field full">
               <label>Special Requests <span class="optional">(optional)</span></label>
-              <textarea [(ngModel)]="specialRequests" rows="3" placeholder="Any special requirements for your stay..." class="text-input"></textarea>
+              <textarea formControlName="specialRequests" rows="3" placeholder="Any special requirements for your stay..." class="text-input" style="background: white !important; color: #333 !important; padding: 8px !important; border: 1px solid #ccc !important; font-size: 16px !important; width: 100% !important; border-radius: 6px !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important; transition: all 0.2s ease !important;"></textarea>
             </div>
           </div>
         </section>
 
         <!-- Amenities -->
-        <section class="form-card" *ngIf="room.amenities?.length > 0">
+        <section class="form-card" *ngIf="room?.amenities?.length > 0">
           <h3 class="card-title"><i class="fa-solid fa-star"></i> What's Included</h3>
           <div class="amenity-chips">
             <div class="chip" *ngFor="let a of room.amenities">
@@ -174,14 +261,14 @@
         <div class="price-card">
           <div class="price-header">
             <div class="nightly">
-              <span class="amount">₦{{ room.displayPrice | number }}</span>
+              <span class="amount" *ngIf="room">₦{{ room.displayPrice | number }}</span>
               <span class="per">per night</span>
             </div>
             <div class="nights-badge">{{ nights }} night{{ nights !== 1 ? 's' : '' }}</div>
           </div>
 
           <div class="price-breakdown">
-            <div class="line">
+            <div class="line" *ngIf="room">
               <span>₦{{ room.displayPrice | number }} × {{ nights }} night{{ nights !== 1 ? 's' : '' }}</span>
               <span>₦{{ roomTotal | number }}</span>
             </div>
@@ -200,10 +287,8 @@
             <span class="total-amount">₦{{ grandTotal | number }}</span>
           </div>
 
-          <button class="btn-confirm" (click)="confirmBooking()" [disabled]="isSubmitting">
-            <i class="fa-solid fa-spinner fa-spin" *ngIf="isSubmitting"></i>
-            <i class="fa-solid fa-shield-halved" *ngIf="!isSubmitting"></i>
-            <span>{{ isSubmitting ? 'Processing...' : 'Confirm Booking' }}</span>
+          <button class="btn-confirm" (click)="confirmBooking()" [disabled]="isSubmitting || !isFormComplete()" style="background: #16a34a !important; color: white !important; font-size: 16px !important; font-weight: 700 !important;">
+            Confirm Booking
           </button>
 
           <p class="no-charge-note">
@@ -243,7 +328,7 @@
         </div>
         <div class="detail-row">
           <span class="label">Dates</span>
-          <span class="value">{{ checkinDate | date:'mediumDate' }} - {{ checkoutDate | date:'mediumDate' }}</span>
+          <span class="value">{{ bookingForm.get('checkinDate')?.value | date:'mediumDate' }} - {{ bookingForm.get('checkoutDate')?.value | date:'mediumDate' }}</span>
         </div>
         <div class="detail-row">
           <span class="label">Total Amount</span>
@@ -253,7 +338,7 @@
 
       <div class="success-note">
         <i class="fa-solid fa-envelope"></i>
-        A confirmation email has been sent to <strong>{{ email }}</strong>
+        A confirmation email has been sent to <strong>{{ bookingForm.get('email')?.value }}</strong>
       </div>
 
       <button class="btn-finish" (click)="finishBooking()">

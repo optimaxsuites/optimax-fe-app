@@ -76,14 +76,20 @@
             </div>
           </div>
 
-          <!-- Connection Error Message -->
-          <div *ngIf="rooms.length === 0" class="error-msg">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>Check your internet connection, and try again</span>
+          <!-- Loading State -->
+          <div *ngIf="isLoading" class="loading-wrap">
+            <div class="spinner"></div>
+            <span>Searching for the best rooms...</span>
           </div>
 
-          <!-- Room Cards Grid -->
-          <div class="room-grid" *ngIf="filteredRooms.length > 0; else loading">
+          <!-- Error State -->
+          <div *ngIf="error && !isLoading" class="error-msg">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ error }}</span>
+          </div>
+
+          <!-- Room Cards Grid (success state) -->
+          <div class="room-grid" *ngIf="!isLoading && !error && filteredRooms.length > 0; else noResults">
             <article *ngFor="let room of filteredRooms" class="room-card">
               <!-- Image Slider Wrap -->
               <div class="card-img-wrap">
@@ -140,10 +146,10 @@
             </article>
           </div>
 
-          <ng-template #loading>
+          <ng-template #noResults>
             <div class="loading-wrap">
-              <div class="spinner"></div>
-              <span>Searching for the best rooms...</span>
+              <i class="fa-solid fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+              <span>No rooms match your filters. Try adjusting your search.</span>
             </div>
           </ng-template>
 
