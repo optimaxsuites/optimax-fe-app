@@ -401,7 +401,221 @@
           </div>
         </div>
 
-        <!-- Board task activity log — always shown -->
+        <!-- ── HR Risk Summary ─────────────────────────────────────────── -->
+        <div class="rep-row-2" *ngIf="riskReport">
+          <div class="panel-card">
+            <h4 class="panel-card-title"><i class="fas fa-shield-alt" style="color:#dc2626;margin-right:6px"></i>HR Risk Summary</h4>
+            <div class="rep-stat-list">
+              <div class="rep-stat-row" *ngFor="let item of riskReportRows()">
+                <span class="rep-stat-lbl">{{ item.label }}</span>
+                <span class="rep-stat-val" [style.color]="item.color || '#374151'">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Probation Tracking summary card -->
+          <div class="panel-card" *ngIf="probationReport">
+            <h4 class="panel-card-title"><i class="fas fa-user-clock" style="color:#d97706;margin-right:6px"></i>Probation Tracking</h4>
+            <div class="rep-kpi-grid" style="grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:0">
+              <div class="rep-kpi" style="padding:12px">
+                <div class="rep-kpi-lbl">On Probation</div>
+                <div class="rep-kpi-val" style="color:#2563eb;font-size:22px">{{ probationReport.totalOnProbation }}</div>
+              </div>
+              <div class="rep-kpi" style="padding:12px">
+                <div class="rep-kpi-lbl">Due Soon</div>
+                <div class="rep-kpi-val" style="color:#d97706;font-size:22px">{{ probationReport.probationDueSoon }}</div>
+              </div>
+              <div class="rep-kpi" style="padding:12px">
+                <div class="rep-kpi-lbl">Overdue</div>
+                <div class="rep-kpi-val" style="color:#dc2626;font-size:22px">{{ probationReport.probationOverdue }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Probation Tracking detail table ─────────────────────── -->
+        <div class="panel-card" *ngIf="probationReport && probationReport.rows?.length">
+          <h4 class="panel-card-title">Probation Detail</h4>
+          <div class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Department</th>
+                  <th>Level</th>
+                  <th>End Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of probationRows()">
+                  <td style="font-weight:600;color:#1f2937">{{ row.name }}</td>
+                  <td style="font-size:12px">{{ row.department }}</td>
+                  <td style="font-size:12px">{{ row.level }}</td>
+                  <td style="font-size:12px">{{ row.endDate }}</td>
+                  <td><span class="badge" [ngClass]="row.statusClass">{{ row.status }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Compensation Equity ──────────────────────────────────── -->
+        <div class="panel-card" *ngIf="equityReport">
+          <div class="panel-card-header">
+            <h4 class="panel-card-title"><i class="fas fa-balance-scale" style="color:#7c3aed;margin-right:6px"></i>Compensation Equity</h4>
+            <div class="panel-card-meta">
+              <span>Overall avg net pay: <strong>{{ fmt(equityReport.overallAverageNetPayable) }}</strong></span>
+              <span style="color:#9ca3af">·</span>
+              <span>{{ equityReport.totalPayrollRecords }} payroll records</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr>
+                  <th>Level</th>
+                  <th>Department</th>
+                  <th>Gender</th>
+                  <th>Count</th>
+                  <th>Avg Net Pay</th>
+                  <th>Median Net Pay</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of equityRows()">
+                  <td style="font-weight:600">{{ row.level }}</td>
+                  <td style="font-size:12px">{{ row.department }}</td>
+                  <td style="font-size:12px">{{ row.gender }}</td>
+                  <td style="font-size:12px">{{ row.count }}</td>
+                  <td style="font-size:12px;color:#2563eb">{{ row.avgNet }}</td>
+                  <td style="font-size:12px;color:#7c3aed">{{ row.medianNet }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Bonus Report + Overtime Cost (side by side) ─────────── -->
+        <div class="rep-row-2">
+          <div class="panel-card" *ngIf="bonusReport">
+            <h4 class="panel-card-title"><i class="fas fa-gift" style="color:#16a34a;margin-right:6px"></i>Bonus Report</h4>
+            <div class="rep-stat-list" style="margin-bottom:12px">
+              <div class="rep-stat-row">
+                <span class="rep-stat-lbl">Total Bonuses Issued</span>
+                <span class="rep-stat-val" style="color:#16a34a">{{ bonusReport.totalBonuses }}</span>
+              </div>
+              <div class="rep-stat-row">
+                <span class="rep-stat-lbl">Total Bonus Amount</span>
+                <span class="rep-stat-val" style="color:#16a34a">{{ fmt(bonusReport.totalBonusAmount) }}</span>
+              </div>
+            </div>
+            <div class="table-wrap" *ngIf="bonusReport.rows?.length">
+              <table class="list-table">
+                <thead><tr><th>Level</th><th>Type</th><th>Count</th><th>Total</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let row of bonusRows()">
+                    <td style="font-size:12px;font-weight:600">{{ row.level }}</td>
+                    <td style="font-size:12px">{{ row.type }}</td>
+                    <td style="font-size:12px">{{ row.count }}</td>
+                    <td style="font-size:12px;color:#16a34a">{{ row.total }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel-card" *ngIf="overtimeReport">
+            <h4 class="panel-card-title"><i class="fas fa-clock" style="color:#d97706;margin-right:6px"></i>Overtime Cost</h4>
+            <div class="rep-stat-list" style="margin-bottom:12px">
+              <div class="rep-stat-row">
+                <span class="rep-stat-lbl">Total Configurations</span>
+                <span class="rep-stat-val">{{ overtimeReport.totalConfigurations }}</span>
+              </div>
+              <div class="rep-stat-row">
+                <span class="rep-stat-lbl">Total Configured Cost</span>
+                <span class="rep-stat-val" style="color:#d97706">{{ fmt(overtimeReport.totalConfiguredCost) }}</span>
+              </div>
+            </div>
+            <div class="table-wrap" *ngIf="overtimeReport.rows?.length">
+              <table class="list-table">
+                <thead><tr><th>Level</th><th>Type</th><th>Max Hrs</th><th>Rate</th><th>Cost</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let row of overtimeRows()">
+                    <td style="font-size:12px;font-weight:600">{{ row.level }}</td>
+                    <td style="font-size:12px">{{ row.type }}</td>
+                    <td style="font-size:12px">{{ row.maxHours }}</td>
+                    <td style="font-size:12px">{{ row.rate }}</td>
+                    <td style="font-size:12px;color:#d97706">{{ row.cost }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Statutory Remittance ────────────────────────────────── -->
+        <div class="panel-card" *ngIf="statutoryReport">
+          <h4 class="panel-card-title"><i class="fas fa-landmark" style="color:#2563eb;margin-right:6px"></i>Statutory Remittance</h4>
+          <div class="rep-stat-list" style="margin-bottom:12px">
+            <div class="rep-stat-row">
+              <span class="rep-stat-lbl">Total Records</span>
+              <span class="rep-stat-val">{{ statutoryReport.totalRecords }}</span>
+            </div>
+            <div class="rep-stat-row">
+              <span class="rep-stat-lbl">Total NSITF Rate</span>
+              <span class="rep-stat-val" style="color:#2563eb">{{ statutoryReport.totalNsitfRate | number:'1.2-2' }}%</span>
+            </div>
+            <div class="rep-stat-row">
+              <span class="rep-stat-lbl">Total ITF Rate</span>
+              <span class="rep-stat-val" style="color:#7c3aed">{{ statutoryReport.totalItfRate | number:'1.2-2' }}%</span>
+            </div>
+          </div>
+          <div class="table-wrap" *ngIf="statutoryReport.rows?.length">
+            <table class="list-table">
+              <thead><tr><th>#</th><th>NSITF Rate (%)</th><th>ITF Rate (%)</th><th>Created</th><th>Updated</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let row of statutoryReport.rows">
+                  <td style="font-size:12px">{{ row.id }}</td>
+                  <td style="font-size:12px;color:#2563eb">{{ row.nsitfRate | number:'1.2-2' }}</td>
+                  <td style="font-size:12px;color:#7c3aed">{{ row.itfRate | number:'1.2-2' }}</td>
+                  <td style="font-size:12px">{{ formatDate(row.createdAt) }}</td>
+                  <td style="font-size:12px">{{ formatDate(row.updatedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Vacancy Aging ───────────────────────────────────────── -->
+        <div class="panel-card" *ngIf="vacancyReport">
+          <div class="panel-card-header">
+            <h4 class="panel-card-title"><i class="fas fa-briefcase" style="color:#374151;margin-right:6px"></i>Vacancy Aging</h4>
+            <div class="panel-card-meta">
+              <span>{{ vacancyReport.totalVacancies }} open</span>
+              <span style="color:#9ca3af">·</span>
+              <span style="color:#dc2626">{{ vacancyReport.expiredVacancies }} expired</span>
+              <span style="color:#9ca3af">·</span>
+              <span>Avg {{ vacancyReport.averageDaysOpen | number:'1.0-0' }} days open</span>
+            </div>
+          </div>
+          <div class="table-wrap" *ngIf="vacancyReport.rows?.length">
+            <table class="list-table">
+              <thead><tr><th>Job Title</th><th>Location</th><th>Type</th><th>Days Open</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let row of vacancyRows()">
+                  <td style="font-weight:600;color:#1f2937">{{ row.title }}</td>
+                  <td style="font-size:12px">{{ row.location }}</td>
+                  <td style="font-size:12px">{{ row.type }}</td>
+                  <td style="font-size:12px" [style.color]="row.daysOpen > 60 ? '#dc2626' : row.daysOpen > 30 ? '#d97706' : '#374151'">{{ row.daysOpen }} days</td>
+                  <td><span class="badge" [class.b-red]="row.expired" [class.b-green]="!row.expired">{{ row.expired ? 'Expired' : 'Active' }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Task Activity Log ──────────────────────────────────── -->
         <div class="panel-card">
           <h4 class="panel-card-title">Task Activity Log</h4>
           <div class="table-wrap">
@@ -443,69 +657,104 @@
           </div>
         </div>
 
-        <!-- Productivity scorecards from data service -->
-        <div class="panel-card" *ngIf="scorecards.length">
-          <h4 class="panel-card-title">Team Scorecards</h4>
+        <!-- ── Workforce breakdown table ──────────────────────────── -->
+        <div class="panel-card" *ngIf="workforceReport && workforceReport.rows?.length">
+          <h4 class="panel-card-title">Workforce Breakdown by Department</h4>
           <div class="table-wrap">
             <table class="list-table">
               <thead>
                 <tr>
-                  <th>Employee</th>
-                  <th>Role</th>
                   <th>Department</th>
-                  <th>Completion</th>
-                  <th>On-time</th>
-                  <th>Score</th>
-                  <th>Review Status</th>
+                  <th>Level</th>
+                  <th>Status</th>
+                  <th>Gender</th>
+                  <th>Headcount</th>
+                  <th>Joins</th>
+                  <th>Exits</th>
+                  <th>Vacancies</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let sc of scorecards">
-                  <td style="font-weight:600">{{ sc.employee }}</td>
-                  <td style="font-size:12px">{{ sc.role }}</td>
-                  <td style="font-size:12px">{{ sc.department }}</td>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <div class="prog-wrap" style="width:50px;display:inline-block">
-                        <div class="prog-bar g" [style.width]="sc.completionRate"></div>
-                      </div>
-                      <span style="font-size:11px">{{ sc.completionRate }}</span>
-                    </div>
-                  </td>
-                  <td style="font-size:12px">{{ sc.onTimeRate }}</td>
-                  <td><span class="badge b-blue">{{ sc.score }}</span></td>
-                  <td style="font-size:11px;color:#4b5563">{{ sc.reviewStatus }}</td>
+                <tr *ngFor="let row of workforceReport.rows">
+                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
+                  <td style="font-size:12px">{{ row.level }}</td>
+                  <td style="font-size:12px">{{ row.status }}</td>
+                  <td style="font-size:12px">{{ row.gender }}</td>
+                  <td style="font-size:12px;font-weight:600">{{ row.headcount }}</td>
+                  <td style="font-size:12px;color:#16a34a">{{ row.joins }}</td>
+                  <td style="font-size:12px;color:#dc2626">{{ row.exits }}</td>
+                  <td style="font-size:12px;color:#d97706">{{ row.vacancyCount }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Department leaderboard -->
-        <div class="panel-card" *ngIf="leaderboard.length">
-          <h4 class="panel-card-title">Department Leaderboard</h4>
+        <!-- ── Payroll breakdown table ────────────────────────────── -->
+        <div class="panel-card" *ngIf="payrollReport && payrollReport.rows?.length">
+          <h4 class="panel-card-title">Payroll Breakdown by Department</h4>
           <div class="table-wrap">
             <table class="list-table">
               <thead>
                 <tr>
-                  <th>Unit</th>
-                  <th>Score</th>
-                  <th>Completed</th>
-                  <th>Overdue</th>
-                  <th>Self-review Rate</th>
-                  <th>Risk</th>
+                  <th>Department</th>
+                  <th>Employees</th>
+                  <th>Gross Pay</th>
+                  <th>Net Payable</th>
+                  <th>Deductions</th>
+                  <th>Employer Cost</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let row of leaderboard">
-                  <td style="font-weight:600">{{ row.unit }}</td>
-                  <td><span class="badge b-blue">{{ row.score }}</span></td>
-                  <td style="font-size:12px">{{ row.completed }}</td>
-                  <td style="font-size:12px;color:#dc2626">{{ row.overdue }}</td>
-                  <td style="font-size:12px">{{ row.selfReviewRate }}</td>
-                  <td>
-                    <span class="badge" [class.b-green]="row.risk==='Low'" [class.b-yellow]="row.risk==='Moderate'" [class.b-red]="row.risk==='High'">{{ row.risk }}</span>
+                <tr *ngFor="let row of payrollReport.rows">
+                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
+                  <td style="font-size:12px">{{ row.employeeCount }}</td>
+                  <td style="font-size:12px;color:#2563eb">{{ fmt(row.grossPay) }}</td>
+                  <td style="font-size:12px;color:#16a34a">{{ fmt(row.netPayable) }}</td>
+                  <td style="font-size:12px;color:#dc2626">{{ fmt(row.totalDeductions) }}</td>
+                  <td style="font-size:12px;color:#d97706">{{ fmt(row.employerCost) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Leave breakdown table ──────────────────────────────── -->
+        <div class="panel-card" *ngIf="leaveReport && leaveReport.rows?.length">
+          <h4 class="panel-card-title">Leave Breakdown by Type</h4>
+          <div class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr><th>Leave Type</th><th>Status</th><th>Requests</th><th>Total Days</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of leaveReport.rows">
+                  <td style="font-weight:600">{{ row.leaveType }}</td>
+                  <td style="font-size:12px">
+                    <span class="badge" [class.b-green]="row.status==='APPROVED'" [class.b-yellow]="row.status==='PENDING'" [class.b-red]="row.status==='REJECTED'" [class.b-gray]="row.status!=='APPROVED'&&row.status!=='PENDING'&&row.status!=='REJECTED'">{{ row.status }}</span>
                   </td>
+                  <td style="font-size:12px">{{ row.requestCount }}</td>
+                  <td style="font-size:12px">{{ row.totalDays }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Employee Turnover breakdown ────────────────────────── -->
+        <div class="panel-card" *ngIf="turnoverReport && turnoverReport.rows?.length">
+          <h4 class="panel-card-title">Turnover by Department</h4>
+          <div class="table-wrap">
+            <table class="list-table">
+              <thead>
+                <tr><th>Department</th><th>Joins</th><th>Exits</th><th>Turnover Rate</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of turnoverReport.rows">
+                  <td style="font-weight:600;color:#1f2937">{{ row.department }}</td>
+                  <td style="font-size:12px;color:#16a34a">{{ row.joins }}</td>
+                  <td style="font-size:12px;color:#dc2626">{{ row.exits }}</td>
+                  <td style="font-size:12px" [style.color]="row.turnoverRate > 10 ? '#dc2626' : '#d97706'">{{ row.turnoverRate | number:'1.1-1' }}%</td>
                 </tr>
               </tbody>
             </table>
