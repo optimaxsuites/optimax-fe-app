@@ -130,10 +130,10 @@
             </div>
 
             <h4>{{ task.title }}</h4>
-            <p *ngIf="task.description">{{ task.description }}</p>
+            <p *ngIf="task.description" class="kcard-desc" [innerHTML]="sanitizeHtml(task.description)"></p>
             <div class="kcard-meta">
-              <span>👤 {{ task.assignee }}</span>
-              <span>📅 {{ formatDate(task.dueDate) }}</span>
+              <span>👤 {{ task.assignee || '—' }}</span>
+              <span [style.color]="isTaskOverdue(task) ? '#dc2626' : 'inherit'">📅 {{ task.dueDate ? formatRawDate(task.dueDate) : '—' }}</span>
               <span *ngIf="task.team">🏢 {{ task.team }}</span>
             </div>
             <div class="prog-wrap">
@@ -171,11 +171,28 @@
               <textarea rows="2"
                         [placeholder]="task.followUps?.length ? 'Post another update with photos of work done…' : 'Add a progress update… describe what was done, what\'s next'"
                         [(ngModel)]="task.inlineText"></textarea>
+              <!-- Inline photo thumbs -->
+              <div class="inline-photo-row" *ngIf="inlinePhotos[task.id]?.length">
+                <ng-container *ngFor="let ph of inlinePhotos[task.id]; let pi = index">
+                  <div class="inline-thumb" *ngIf="ph.isImage" [class.uploading]="ph.uploading">
+                    <img [src]="ph.url" (click)="ph.url && openLightbox(ph.url);$event.stopPropagation()" alt="preview">
+                    <div class="upload-spinner" *ngIf="ph.uploading"></div>
+                    <button class="thumb-rm" (click)="removeInlinePhoto(task.id, pi);$event.stopPropagation()">×</button>
+                  </div>
+                  <div class="inline-file-chip" *ngIf="!ph.isImage">
+                    <i class="fas fa-file"></i> {{ ph.name }}
+                    <span *ngIf="ph.uploading" style="font-size:10px;color:#9ca3af"> uploading…</span>
+                    <button class="thumb-rm" (click)="removeInlinePhoto(task.id, pi);$event.stopPropagation()">×</button>
+                  </div>
+                </ng-container>
+              </div>
               <div class="card-update-actions">
                 <label class="attach-mini" title="Attach photos/files of work done">
-                  📎 Photo / File<input type="file" hidden multiple>
+                  📎 Photo / File
+                  <input type="file" hidden multiple accept="image/*,application/pdf,.doc,.docx"
+                         (change)="onInlineFileAttach($event, task)">
                 </label>
-                <div class="prog-input-row" *ngIf="task.followUps?.length">
+                <div class="prog-input-row">
                   <span>Progress:</span>
                   <input type="range" min="0" max="100" [(ngModel)]="task.progress" (click)="$event.stopPropagation()">
                   <span>{{ task.progress }}%</span>
@@ -235,7 +252,7 @@
                     {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
                   </span>
                 </div>
-                <div class="tree-cell">{{ sub.startDate || '—' }} → {{ sub.dueDate || '—' }}</div>
+                <div class="tree-cell">{{ formatRawDate(sub.startDate) }} → {{ formatRawDate(sub.dueDate) }}</div>
                 <div class="tree-cell">{{ sub.done ? '100%' : '—' }}</div>
                 <div class="tree-cell">{{ sub.dependency || '—' }}</div>
                 <div class="tree-cell"></div>
@@ -1172,12 +1189,14 @@
         </div>
         <div class="sep-ln"></div>
         <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#374151">Description</div>
-        <p style="font-size:13px;color:#374151;line-height:1.6;margin-bottom:14px">{{ selectedTask.description || 'No description added.' }}</p>
+        <div class="task-desc-render" [innerHTML]="sanitizeHtml(selectedTask.description) || 'No description added.'"></div>
         <div class="sep-ln"></div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button class="btn btn-p btn-sm" (click)="detailTab = 'activity'">Add Follow-up Update</button>
-          <button class="btn btn-o btn-sm">Share with Supervisor</button>
-          <button class="btn btn-o btn-sm">📥 Download .ics</button>
+          <button class="btn btn-o btn-sm" (click)="openShareModal(selectedTask, 'supervisor')">Share with Supervisor</button>
+          <button class="btn btn-o btn-sm" (click)="downloadIcs(selectedTask)">📥 Download .ics</button>
+          <button class="btn btn-o btn-sm" (click)="openShareModal(selectedTask, 'channel')">📢 Share to Channel</button>
+          <button class="btn btn-o btn-sm" (click)="openShareModal(selectedTask, 'dm')">💬 DM User</button>
         </div>
       </div>
 
@@ -1235,8 +1254,26 @@
           </div>
           <textarea class="fu-compose-ta" [(ngModel)]="newActivityText"
                     placeholder="Describe what was done today, what is next, and any blockers. The supervisor will see this with any photos you attach." rows="3"></textarea>
+          <!-- Detail photo previews -->
+          <div class="inline-photo-row" *ngIf="detailPhotos.length" style="padding:6px 0">
+            <ng-container *ngFor="let ph of detailPhotos; let di = index">
+              <div class="inline-thumb" *ngIf="ph.isImage" [class.uploading]="ph.uploading">
+                <img [src]="ph.url" (click)="ph.url && openLightbox(ph.url)" alt="preview">
+                <div class="upload-spinner" *ngIf="ph.uploading"></div>
+                <button class="thumb-rm" (click)="removeDetailPhoto(di)">×</button>
+              </div>
+              <div class="inline-file-chip" *ngIf="!ph.isImage">
+                <i class="fas fa-file"></i> {{ ph.name }}
+                <span *ngIf="ph.uploading" style="font-size:10px;color:#9ca3af"> uploading…</span>
+                <button class="thumb-rm" (click)="removeDetailPhoto(di)">×</button>
+              </div>
+            </ng-container>
+          </div>
           <div class="fu-compose-foot">
-            <label class="photo-upload-btn">📷 Attach photos / files<input type="file" hidden multiple></label>
+            <label class="photo-upload-btn">📷 Attach photos / files
+              <input type="file" hidden multiple accept="image/*,application/pdf,.doc,.docx"
+                     (change)="onDetailFileAttach($event)">
+            </label>
             <div class="prog-input-row" style="margin-left:auto">
               <span>Progress:</span>
               <input type="range" min="0" max="100" [(ngModel)]="selectedTask.progress">
@@ -1257,6 +1294,25 @@
                 <small>{{ fu.timestamp }}</small>
               </div>
               <div class="tl-note">{{ fu.text }}</div>
+              <!-- Photos carousel in timeline entry -->
+              <div class="tl-carousel" *ngIf="fu.photos?.length">
+                <div class="carousel-single" *ngIf="fu.photos.length === 1">
+                  <img [src]="fu.photos[0]" (click)="openLightbox(fu.photos[0])" class="carousel-img" alt="update photo">
+                </div>
+                <div class="carousel-multi" *ngIf="fu.photos.length > 1">
+                  <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fu.photos.length, $event)">‹</button>
+                  <img [src]="fuCurrentPhoto(fu.id, fu.photos)"
+                       (click)="openLightbox(fuCurrentPhoto(fu.id, fu.photos))"
+                       class="carousel-img" alt="update photo">
+                  <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fu.photos.length, $event)">›</button>
+                  <div class="carousel-dots">
+                    <span *ngFor="let _ of fu.photos; let pi = index"
+                          class="carousel-dot"
+                          [class.active]="pi === (fuPhotoIndex[fu.id] ?? 0)"></span>
+                  </div>
+                  <span class="carousel-counter">{{ (fuPhotoIndex[fu.id] ?? 0) + 1 }}/{{ fu.photos.length }}</span>
+                </div>
+              </div>
               <div class="tl-decision dec-changes" *ngIf="fu.decision === 'Changes'">🔄 Changes Requested</div>
               <div class="tl-decision dec-approved" *ngIf="fu.decision === 'Approved'">✅ Approved</div>
               <div class="prog-marker" *ngIf="fu.progress !== undefined">📈 Progress reported: {{ fu.progress }}%</div>
@@ -1273,20 +1329,39 @@
           <div class="subtask-empty" *ngIf="!selectedTask.followUps?.length && !selectedTask.activity.length">No updates yet. Post the first update above.</div>
         </div>
 
-        <!-- Supervisor reply form -->
+        <!-- Supervisor reply form (fully wired) -->
         <div class="sup-reply-form">
-          <label>Supervisor Review ({{ selectedTask.team }})</label>
-          <select>
+          <label>Supervisor Review — {{ selectedTask.team || 'Supervisor' }}</label>
+          <select [(ngModel)]="supReviewDecision">
             <option>✅ Approved — work meets requirements</option>
             <option>🔄 Changes Requested — revisions needed</option>
             <option>📌 Noted — acknowledged, no action needed</option>
             <option>⭐ Commendation — exceptional work</option>
             <option>📉 Performance Concern — persistent issue</option>
           </select>
-          <textarea placeholder="Write detailed feedback… reference specific deliverables, cite required standards, and set a clear revision deadline." rows="3"></textarea>
-          <div style="display:flex;gap:6px;margin-top:8px">
-            <label class="photo-upload-btn" style="border-color:#ddd6fe">📎 Attach reference docs<input type="file" hidden multiple></label>
-            <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;margin-left:auto;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer">Post Supervisor Review</button>
+          <textarea [(ngModel)]="supReviewNote"
+                    placeholder="Write detailed feedback… reference specific deliverables, cite required standards, and set a clear revision deadline." rows="3"></textarea>
+          <!-- Supervisor file previews -->
+          <div class="inline-photo-row" *ngIf="supReviewFiles.length" style="padding:6px 0">
+            <ng-container *ngFor="let sf of supReviewFiles; let si = index">
+              <div class="inline-thumb" *ngIf="sf.isImage">
+                <img [src]="sf.url" (click)="openLightbox(sf.url)" alt="reference">
+                <button class="thumb-rm" (click)="removeSupReviewFile(si)">×</button>
+              </div>
+              <div class="inline-file-chip" *ngIf="!sf.isImage">
+                <i class="fas fa-file"></i> {{ sf.name }}
+                <button class="thumb-rm" (click)="removeSupReviewFile(si)">×</button>
+              </div>
+            </ng-container>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <label class="photo-upload-btn" style="border-color:#ddd6fe">📎 Attach reference docs
+              <input type="file" hidden multiple accept="image/*,application/pdf,.doc,.docx"
+                     (change)="onSupReviewFileAttach($event)">
+            </label>
+            <button class="btn btn-o btn-sm" style="margin-left:0" (click)="openShareModal(selectedTask, 'supervisor')">📤 Share Update</button>
+            <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;margin-left:auto;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600"
+                    (click)="postSupervisorReview()" [disabled]="!supReviewNote.trim()">Post Supervisor Review</button>
           </div>
         </div>
 
@@ -1296,6 +1371,100 @@
   </div>
 
 </div><!-- /pm-page -->
+
+<!-- ══ TOAST STACK ══════════════════════════════════════════════════════════════ -->
+<div class="toast-stack">
+  <div class="toast-item" *ngFor="let t of toasts"
+       [class.toast-success]="t.type === 'success'"
+       [class.toast-error]="t.type === 'error'"
+       [class.toast-warn]="t.type === 'warn'"
+       [class.toast-info]="t.type === 'info'">
+    <span class="toast-icon">
+      {{ t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : t.type === 'warn' ? '⚠️' : 'ℹ️' }}
+    </span>
+    <span class="toast-msg">{{ t.message }}</span>
+    <button class="toast-close" (click)="dismissToast(t.id)">×</button>
+  </div>
+</div>
+
+<!-- ══ LIGHTBOX ═════════════════════════════════════════════════════════════════ -->
+<div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
+  <div class="lightbox-content" (click)="$event.stopPropagation()">
+    <button class="lightbox-close" (click)="closeLightbox()">✕</button>
+    <img [src]="lightboxSrc" alt="Full size view">
+  </div>
+</div>
+
+<!-- ══ SHARE MODAL ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showShareModal" (click)="closeShareModal()">
+  <div class="modal-card" style="max-width:480px" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Share Update</h3>
+      <button class="btn-icon" (click)="closeShareModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <!-- Share target toggle -->
+      <div class="form-row">
+        <label>Share via</label>
+        <div class="share-toggle">
+          <button [class.active]="shareTarget === 'supervisor'" (click)="shareTarget = 'supervisor'">👤 Supervisor</button>
+          <button [class.active]="shareTarget === 'channel'" (click)="shareTarget = 'channel'">📢 Channel</button>
+          <button [class.active]="shareTarget === 'dm'" (click)="shareTarget = 'dm'">💬 DM User</button>
+        </div>
+      </div>
+
+      <!-- Channel selector -->
+      <div class="form-row" *ngIf="shareTarget === 'channel'">
+        <label>Channel
+          <span *ngIf="channelsLoading" style="font-size:11px;color:#9ca3af;margin-left:4px">Loading…</span>
+        </label>
+        <select [(ngModel)]="shareChannelId" class="form-input">
+          <option [ngValue]="null" disabled>Select a channel…</option>
+          <option *ngFor="let ch of availableChannels" [ngValue]="ch.id">
+            #{{ ch.name }}{{ ch.channelType === 'PRIVATE' ? ' 🔒' : '' }}
+          </option>
+        </select>
+      </div>
+
+      <!-- DM recipient -->
+      <div class="form-row" *ngIf="shareTarget === 'dm'">
+        <label>Send to Employee</label>
+        <ng-select
+          class="task-ng-select"
+          [items]="allEmployees"
+          bindLabel="fullName"
+          bindValue="fullName"
+          [(ngModel)]="shareChannelOrUser"
+          placeholder="Search employee…"
+          [searchable]="true"
+          [clearable]="true">
+          <ng-template ng-option-tmp let-item="item">
+            <div class="ngs-option-main">{{ item.fullName }}</div>
+            <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
+          </ng-template>
+        </ng-select>
+      </div>
+
+      <!-- Supervisor pre-filled -->
+      <div class="form-row" *ngIf="shareTarget === 'supervisor'">
+        <label>Supervisor</label>
+        <input class="form-input" [(ngModel)]="shareChannelOrUser"
+               [placeholder]="shareTaskRef?.team || 'Supervisor name'">
+      </div>
+
+      <!-- Message -->
+      <div class="form-row">
+        <label>Message</label>
+        <textarea class="form-input" style="min-height:100px;resize:vertical" [(ngModel)]="shareNote"
+                  placeholder="Add context or a note…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-o btn-sm" (click)="closeShareModal()">Cancel</button>
+      <button class="btn btn-p btn-sm" (click)="submitShare()">Send</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ ADD TASK MODAL ═══════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" *ngIf="showAddTask" (click)="showAddTask = false">
