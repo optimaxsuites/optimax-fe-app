@@ -1,67 +1,386 @@
-<section class="page-grid">
-  <div class="panel filter-panel">
-    <div>
-      <p class="eyebrow">Assignment operations</p>
-      <h3>Track work at the level supervisors actually manage it.</h3>
+<section class="pm-page">
+
+  <!-- ═══ TOOLBAR ═══ -->
+  <div class="pm-toolbar">
+    <div class="toolbar-left">
+      <div class="view-switcher">
+        <button type="button" [class.active]="viewMode === 'board'" (click)="viewMode = 'board'">
+          <i class="pi pi-th-large"></i> Board
+        </button>
+        <button type="button" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'">
+          <i class="pi pi-list"></i> List
+        </button>
+        <button type="button" [class.active]="viewMode === 'gantt'" (click)="viewMode = 'gantt'">
+          <i class="pi pi-chart-bar"></i> Timeline
+        </button>
+      </div>
+
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input type="text" placeholder="Search tasks…" [(ngModel)]="searchText" />
+      </div>
     </div>
 
-    <div class="filter-row">
-      <label>
-        Status
-        <select [(ngModel)]="selectedFilter">
-          <option>All statuses</option>
-          <option>Not Started</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-          <option>Overdue</option>
-          <option>Blocked</option>
-        </select>
-      </label>
-
-      <label>
-        Owner
-        <input type="text" value="All teams" />
-      </label>
-
-      <label>
-        Period
-        <input type="text" value="This week" />
-      </label>
+    <div class="toolbar-right">
+      <select [(ngModel)]="filterStatus" class="filter-select">
+        <option value="">All statuses</option>
+        <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+      </select>
+      <select [(ngModel)]="filterPriority" class="filter-select">
+        <option value="">All priorities</option>
+        <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+      </select>
+      <select [(ngModel)]="filterAssignee" class="filter-select">
+        <option value="">All assignees</option>
+        <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
+      </select>
+      <button type="button" class="btn-ghost" (click)="showBatch = !showBatch">
+        <i class="pi pi-upload"></i> Import
+      </button>
+      <button type="button" class="btn-primary" (click)="showAddTask = true">
+        <i class="pi pi-plus"></i> Add task
+      </button>
     </div>
   </div>
 
-  <div class="board-grid">
-    <section class="panel board-column" *ngFor="let group of groupedTasks()">
-      <div class="column-header">
+  <!-- ═══ BATCH IMPORT PANEL ═══ -->
+  <div class="batch-panel" *ngIf="showBatch">
+    <div class="batch-inner">
+      <div class="batch-head">
         <div>
-          <p class="eyebrow">{{ group.label }}</p>
-          <h4>{{ group.items.length }} items</h4>
+          <strong>Batch import</strong>
+          <p>Paste rows from Excel. One row per line, columns separated by Tab.</p>
+          <code>Title &nbsp;|&nbsp; Assignee &nbsp;|&nbsp; Team &nbsp;|&nbsp; Due date &nbsp;|&nbsp; Status &nbsp;|&nbsp; Priority</code>
+        </div>
+        <button type="button" class="close-btn" (click)="showBatch = false"><i class="pi pi-times"></i></button>
+      </div>
+      <textarea rows="8" placeholder="Task title&#9;Assignee&#9;Team&#9;2026-06-30&#9;In Progress&#9;High" [(ngModel)]="batchText"></textarea>
+      <div class="batch-actions">
+        <button type="button" class="btn-ghost" (click)="showBatch = false; batchText = ''">Cancel</button>
+        <button type="button" class="btn-primary" (click)="importBatch()" [disabled]="!batchText.trim()">
+          <i class="pi pi-check"></i> Import rows
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ BOARD VIEW ═══ -->
+  <div class="board-wrap" *ngIf="viewMode === 'board'">
+    <div class="board-columns">
+      <div class="board-col" *ngFor="let col of columns">
+        <div class="col-header">
+          <span class="col-dot" [ngClass]="statusClass(col.key)"></span>
+          <strong>{{ col.label }}</strong>
+          <span class="col-count">{{ columnTasks(col.key).length }}</span>
+        </div>
+
+        <div
+          class="col-drop-zone"
+          cdkDropList
+          [id]="colId(col.key)"
+          [cdkDropListData]="columnTasks(col.key)"
+          [cdkDropListConnectedTo]="connectedTo(col.key)"
+          (cdkDropListDropped)="drop($event, col.key)"
+        >
+          <article
+            class="task-card"
+            *ngFor="let task of columnTasks(col.key)"
+            cdkDrag
+            (click)="openDetail(task)"
+          >
+            <div class="card-drag-handle" cdkDragHandle (click)="$event.stopPropagation()">
+              <i class="pi pi-grip-vertical"></i>
+            </div>
+            <div class="card-top">
+              <span class="priority-chip" [ngClass]="priorityClass(task.priority)">{{ task.priority }}</span>
+              <span class="tag-chip" *ngFor="let tag of task.tags.slice(0, 2)">{{ tag }}</span>
+            </div>
+            <h5>{{ task.title }}</h5>
+            <p class="card-team">{{ task.assignee }} &middot; {{ task.team }}</p>
+            <div class="card-progress">
+              <div class="progress-bar"><span [style.width.%]="task.progress"></span></div>
+              <span>{{ task.progress }}%</span>
+            </div>
+            <div class="card-footer">
+              <span class="due-chip"><i class="pi pi-calendar"></i> {{ formatDate(task.dueDate) }}</span>
+              <span class="sub-chip" *ngIf="task.subtasks.length">
+                <i class="pi pi-check-square"></i> {{ completedSubtasks(task) }}/{{ task.subtasks.length }}
+              </span>
+            </div>
+            <div *cdkDragPlaceholder class="drag-placeholder"></div>
+          </article>
+
+          <button type="button" class="quick-add" (click)="newTask.status = col.key; showAddTask = true">
+            <i class="pi pi-plus"></i> Add task
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LIST VIEW ═══ -->
+  <div class="list-wrap" *ngIf="viewMode === 'list'">
+    <table class="list-table">
+      <thead>
+        <tr>
+          <th class="th-expand"></th>
+          <th>Task</th>
+          <th>Assignee</th>
+          <th>Team</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Due date</th>
+          <th>Progress</th>
+          <th>Weight</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let task of filteredTasks">
+          <tr class="list-row" [class.row-done]="task.status === 'Done'" (click)="openDetail(task)">
+            <td class="td-expand">
+              <button type="button" class="expand-btn" *ngIf="task.subtasks.length"
+                (click)="$event.stopPropagation(); toggleRow(task)">
+                <i class="pi" [class.pi-chevron-right]="!task.expanded" [class.pi-chevron-down]="task.expanded"></i>
+              </button>
+            </td>
+            <td class="td-title">
+              <span class="row-check" [class.done]="task.status === 'Done'"><i class="pi pi-check"></i></span>
+              {{ task.title }}
+            </td>
+            <td>{{ task.assignee }}</td>
+            <td>{{ task.team }}</td>
+            <td><span class="status-pill compact" [ngClass]="statusClass(task.status)">{{ task.status }}</span></td>
+            <td><span class="priority-chip compact" [ngClass]="priorityClass(task.priority)">{{ task.priority }}</span></td>
+            <td>{{ formatDate(task.dueDate) }}</td>
+            <td>
+              <div class="inline-progress">
+                <div class="progress-bar"><span [style.width.%]="task.progress"></span></div>
+                <span>{{ task.progress }}%</span>
+              </div>
+            </td>
+            <td>{{ task.weight }}%</td>
+            <td>
+              <button type="button" class="icon-btn" (click)="$event.stopPropagation(); openDetail(task)">
+                <i class="pi pi-external-link"></i>
+              </button>
+            </td>
+          </tr>
+          <ng-container *ngIf="task.expanded">
+            <tr class="sub-row" *ngFor="let sub of task.subtasks">
+              <td></td>
+              <td class="td-sub-title" colspan="2">
+                <span class="sub-check" [class.done]="sub.done" (click)="$event.stopPropagation(); toggleSubtask(task, sub)">
+                  <i class="pi pi-check"></i>
+                </span>
+                <span [class.line-through]="sub.done">{{ sub.title }}</span>
+              </td>
+              <td>{{ sub.assignee }}</td>
+              <td colspan="6"></td>
+            </tr>
+          </ng-container>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ GANTT / TIMELINE VIEW ═══ -->
+  <div class="gantt-wrap" *ngIf="viewMode === 'gantt'">
+    <div class="gantt-container">
+      <div class="gantt-left">
+        <div class="gantt-left-header">Tasks</div>
+        <div class="gantt-task-label" *ngFor="let task of filteredTasks">
+          <span class="priority-dot" [ngClass]="priorityClass(task.priority)"></span>
+          <span class="gantt-label-text">{{ task.title }}</span>
+          <span class="status-pill compact" [ngClass]="statusClass(task.status)">{{ task.status }}</span>
         </div>
       </div>
 
-      <article class="task-card" *ngFor="let task of group.items">
-        <div class="task-top">
-          <span class="status-pill" [ngClass]="statusClass(task.status)">{{ task.status }}</span>
-          <span class="priority-pill">{{ task.priority }}</span>
+      <div class="gantt-right">
+        <div class="gantt-day-row" [style.grid-template-columns]="'repeat(' + ganttDays.length + ', minmax(48px,1fr))'">
+          <div class="gantt-day-label" *ngFor="let d of ganttDays">{{ d }}</div>
         </div>
 
-        <h5>{{ task.title }}</h5>
-        <p>{{ task.assignee }} · {{ task.team }}</p>
-
-        <ul class="task-meta">
-          <li><strong>Target</strong><span>{{ task.target }}</span></li>
-          <li><strong>Due</strong><span>{{ task.dueDate }}</span></li>
-          <li><strong>Weight</strong><span>{{ task.weight }}%</span></li>
-        </ul>
-
-        <div class="progress-line">
-          <span class="progress-fill" [style.width.%]="task.progress"></span>
+        <div class="gantt-track" *ngFor="let task of filteredTasks"
+          [style.grid-template-columns]="'repeat(' + ganttDays.length + ', minmax(48px,1fr))'">
+          <div class="gantt-today" [style.grid-column]="todayColumn() + ' / ' + (todayColumn() + 1)"></div>
+          <div
+            class="gantt-bar"
+            [ngClass]="statusClass(task.status)"
+            [style.grid-column]="ganttColumn(task.startDate, task.dueDate)"
+            (click)="openDetail(task)"
+            [title]="task.title"
+          >
+            <span class="bar-fill" [style.width.%]="task.progress"></span>
+            <span class="bar-label">{{ task.title }}</span>
+          </div>
         </div>
-        <div class="progress-footer">
-          <span>{{ task.progress }}% complete</span>
-          <button type="button">Open detail</button>
-        </div>
-      </article>
-    </section>
+      </div>
+    </div>
   </div>
+
+  <!-- ═══ TASK DETAIL SLIDE-OVER ═══ -->
+  <div class="overlay" *ngIf="selectedTask" (click)="closeDetail()"></div>
+  <aside class="detail-panel" *ngIf="selectedTask">
+    <div class="detail-header">
+      <div class="detail-chips-row">
+        <span class="priority-chip" [ngClass]="priorityClass(selectedTask.priority)">{{ selectedTask.priority }}</span>
+        <span class="status-pill" [ngClass]="statusClass(selectedTask.status)">{{ selectedTask.status }}</span>
+      </div>
+      <h3>{{ selectedTask.title }}</h3>
+      <p class="detail-meta">
+        <i class="pi pi-user"></i> {{ selectedTask.assignee }} &nbsp;&middot;&nbsp;
+        <i class="pi pi-building"></i> {{ selectedTask.team }} &nbsp;&middot;&nbsp;
+        <i class="pi pi-calendar"></i> {{ formatDate(selectedTask.dueDate) }}
+      </p>
+      <button type="button" class="close-btn detail-close" (click)="closeDetail()"><i class="pi pi-times"></i></button>
+    </div>
+
+    <div class="detail-tabs">
+      <button type="button" [class.active]="detailTab === 'overview'" (click)="detailTab = 'overview'">Overview</button>
+      <button type="button" [class.active]="detailTab === 'subtasks'" (click)="detailTab = 'subtasks'">
+        Subtasks <span class="tab-badge">{{ selectedTask.subtasks.length }}</span>
+      </button>
+      <button type="button" [class.active]="detailTab === 'activity'" (click)="detailTab = 'activity'">
+        Activity <span class="tab-badge">{{ selectedTask.activity.length }}</span>
+      </button>
+    </div>
+
+    <div class="detail-body" *ngIf="detailTab === 'overview'">
+      <div class="detail-field">
+        <label>Description</label>
+        <textarea rows="3" [(ngModel)]="selectedTask.description" placeholder="Add a description…"></textarea>
+      </div>
+      <div class="detail-grid-2">
+        <div class="detail-field">
+          <label>Status</label>
+          <select [(ngModel)]="selectedTask.status">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="detail-field">
+          <label>Priority</label>
+          <select [(ngModel)]="selectedTask.priority">
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+        <div class="detail-field">
+          <label>Start date</label>
+          <input type="date" [(ngModel)]="selectedTask.startDate" />
+        </div>
+        <div class="detail-field">
+          <label>Due date</label>
+          <input type="date" [(ngModel)]="selectedTask.dueDate" />
+        </div>
+        <div class="detail-field">
+          <label>Progress (%)</label>
+          <input type="number" min="0" max="100" [(ngModel)]="selectedTask.progress" />
+        </div>
+        <div class="detail-field">
+          <label>Weight (%)</label>
+          <input type="number" min="0" max="100" [(ngModel)]="selectedTask.weight" />
+        </div>
+      </div>
+      <div class="detail-progress">
+        <div class="progress-bar large"><span [style.width.%]="selectedTask.progress"></span></div>
+        <span>{{ selectedTask.progress }}% complete</span>
+      </div>
+    </div>
+
+    <div class="detail-body" *ngIf="detailTab === 'subtasks'">
+      <div class="sub-list">
+        <div class="sub-item" *ngFor="let sub of selectedTask.subtasks">
+          <label class="sub-check-label">
+            <input type="checkbox" [checked]="sub.done" (change)="toggleSubtask(selectedTask!, sub)" />
+            <span [class.line-through]="sub.done">{{ sub.title }}</span>
+          </label>
+          <span class="sub-assignee">{{ sub.assignee }}</span>
+        </div>
+        <p class="empty-note" *ngIf="selectedTask.subtasks.length === 0">No subtasks yet.</p>
+      </div>
+      <div class="add-sub-row">
+        <input type="text" placeholder="Add a subtask…" [(ngModel)]="subtaskInput"
+          (keydown.enter)="addSubtask(selectedTask!, subtaskInput); subtaskInput = ''" />
+        <button type="button" class="btn-primary" (click)="addSubtask(selectedTask!, subtaskInput); subtaskInput = ''">
+          <i class="pi pi-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-body" *ngIf="detailTab === 'activity'">
+      <div class="activity-post">
+        <textarea rows="2" placeholder="Post an update…" [(ngModel)]="newActivityText"></textarea>
+        <button type="button" class="btn-primary" (click)="postActivity()" [disabled]="!newActivityText.trim()">
+          <i class="pi pi-send"></i> Post
+        </button>
+      </div>
+      <div class="activity-feed">
+        <div class="activity-item" *ngFor="let a of selectedTask.activity">
+          <div class="activity-avatar">{{ a.author.charAt(0) }}</div>
+          <div class="activity-content">
+            <strong>{{ a.author }}</strong>
+            <span class="activity-time">{{ formatTs(a.timestamp) }}</span>
+            <p>{{ a.text }}</p>
+          </div>
+        </div>
+        <p class="empty-note" *ngIf="selectedTask.activity.length === 0">No activity yet.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ ADD TASK MODAL ═══ -->
+  <div class="modal-overlay" *ngIf="showAddTask" (click)="showAddTask = false"></div>
+  <div class="modal" *ngIf="showAddTask">
+    <div class="modal-header">
+      <h4>New task</h4>
+      <button type="button" class="close-btn" (click)="showAddTask = false"><i class="pi pi-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-field">
+        <label>Title <span class="required">*</span></label>
+        <input type="text" placeholder="Task title…" [(ngModel)]="newTask.title" />
+      </div>
+      <div class="detail-field">
+        <label>Description</label>
+        <textarea rows="2" placeholder="What needs to be done?" [(ngModel)]="newTask.description"></textarea>
+      </div>
+      <div class="detail-grid-2">
+        <div class="detail-field">
+          <label>Assignee</label>
+          <input type="text" placeholder="Name" [(ngModel)]="newTask.assignee" />
+        </div>
+        <div class="detail-field">
+          <label>Team</label>
+          <input type="text" placeholder="Team or dept" [(ngModel)]="newTask.team" />
+        </div>
+        <div class="detail-field">
+          <label>Status</label>
+          <select [(ngModel)]="newTask.status">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="detail-field">
+          <label>Priority</label>
+          <select [(ngModel)]="newTask.priority">
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+        <div class="detail-field">
+          <label>Start date</label>
+          <input type="date" [(ngModel)]="newTask.startDate" />
+        </div>
+        <div class="detail-field">
+          <label>Due date</label>
+          <input type="date" [(ngModel)]="newTask.dueDate" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-ghost" (click)="showAddTask = false">Cancel</button>
+      <button type="button" class="btn-primary" (click)="addTask()" [disabled]="!newTask.title?.trim()">
+        <i class="pi pi-check"></i> Create task
+      </button>
+    </div>
+  </div>
+
 </section>

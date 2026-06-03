@@ -53,6 +53,8 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';
@@ -454,6 +456,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     PasswordModule,
     ButtonModule,
     NgSelectModule,
+    DragDropModule,
     FullCalendarModule,
     BackButtonModule,
     LargeSideModalComponent,

@@ -487,6 +487,30 @@ export interface AnalyticsChatResponse {
   generatedAt?: string | number[];
 }
 
+export interface MeetingsAssistantResponse {
+  agenda?: string[];
+  summary?: string;
+  decisions?: string[];
+  risks?: string[];
+  actionItems?: string[];
+  followUpRecommendations?: string[];
+  sentiment?: string;
+  emailPreview?: string;
+  provider?: string;
+  qualityScore?: number;
+}
+
+export interface AudioTranscriptionJob {
+  id?: number;
+  title?: string;
+  meetingType?: string;
+  language?: string;
+  status?: string;
+  formattedMinutes?: string;
+  rawTranscript?: string;
+  errorMessage?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CollaborationService {
   private readonly baseUrl = environment.apiBaseUrl;
@@ -1483,6 +1507,91 @@ export class CollaborationService {
     return this.http.post<AnalyticsChatResponse>(
       `${this.baseUrl}/x/api/v2/ai/analytics/chat`,
       payload,
+      { headers: this.headers },
+    );
+  }
+
+  // ── Meetings and appointments ───────────────────────
+
+  getMeetingsAppointmentsWorkspace(): Observable<any> {
+    return this.http.get<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/workspace/me`,
+      { headers: this.headers },
+    );
+  }
+
+  saveMeetingsAppointmentsWorkspace(payload: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/workspace`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  createMeetingsAppointmentRecord(payload: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/events`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  updateMeetingsAppointmentRecord(id: string | number, payload: any): Observable<any> {
+    return this.http.put<any>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/events/${id}`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  runMeetingsAssistant(payload: {
+    operation: 'AGENDA' | 'MINUTES' | 'ACTIONS' | 'FOLLOW_UP' | 'SENTIMENT';
+    title?: string;
+    description?: string;
+    agendaItems?: string[];
+    notes?: string;
+    attendees?: string[];
+    context?: string;
+  }): Observable<MeetingsAssistantResponse> {
+    return this.http.post<MeetingsAssistantResponse>(
+      `${this.baseUrl}/x/api/v2/ai/meetings-appointments/assistant`,
+      payload,
+      { headers: this.headers },
+    );
+  }
+
+  uploadMeetingTranscription(payload: {
+    title: string;
+    meetingType: string;
+    language: string;
+    speakerHints?: string;
+    formatAsMinutes: boolean;
+    file: File;
+  }): Observable<AudioTranscriptionJob> {
+    const fd = new FormData();
+    fd.append('title', payload.title);
+    fd.append('meetingType', payload.meetingType);
+    fd.append('language', payload.language || 'en');
+    fd.append('speakerHints', payload.speakerHints || '');
+    fd.append('formatAsMinutes', String(payload.formatAsMinutes));
+    fd.append('file', payload.file);
+    return this.http.post<AudioTranscriptionJob>(
+      `${this.baseUrl}/x/api/v2/ai/audioTranscriptions/upload`,
+      fd,
+      { headers: this.multipartHeaders },
+    );
+  }
+
+  getMeetingTranscriptionJob(jobId: number): Observable<AudioTranscriptionJob> {
+    return this.http.get<AudioTranscriptionJob>(
+      `${this.baseUrl}/x/api/v2/ai/audioTranscriptions/${jobId}`,
+      { headers: this.headers },
+    );
+  }
+
+  getMyMeetingTranscriptionJobs(page = 1, size = 20): Observable<any> {
+    return this.http.get<any>(
+      `${this.baseUrl}/x/api/v2/ai/audioTranscriptions/mine?page=${page}&size=${size}`,
       { headers: this.headers },
     );
   }

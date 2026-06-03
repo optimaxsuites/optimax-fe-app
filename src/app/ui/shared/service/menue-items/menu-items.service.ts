@@ -11,9 +11,12 @@ export class MenuItemsService {
   private menuItems: MenuItem[] = [
     {
       label: 'Dashboard',
-      route: this.navigationLink.getLink('dashboardLink'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
+      submenu: [
+        { label: 'Communications', route: this.navigationLink.getLink('dashboardLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-comments' },
+        { label: 'Meetings & Appointments', route: this.navigationLink.getLink('meetingsAppointmentsLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-check' },
+      ],
     },
     {
       label: 'Sales',
@@ -90,8 +93,7 @@ export class MenuItemsService {
       submenu: [
         { label: 'Employee Management', route: this.navigationLink.getLink('employeeManagementLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
         { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-        { label: 'Project', route: this.navigationLink.getLink('projectLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-check' },
-        { label: 'Performance', route: this.navigationLink.getLink('performanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
+        { label: 'Project Management', route: this.navigationLink.getLink('performanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-th-large' },
         { label: 'Payroll', route: this.navigationLink.getLink('payroll'), roles: ['ROLE_USER'], icon: 'fas fa-dollar-sign' },
         { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-check' },
         { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-minus' },
