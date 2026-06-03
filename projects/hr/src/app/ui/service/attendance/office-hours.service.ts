@@ -41,13 +41,13 @@ export class OfficeHoursService {
   const body = {
     id: this.officeHoursId ?? 0,
 
-    openingTime: this.toBackendTime(hours.openingTime),
+    openingTime: hours.openingTime,
 
-    closingTime: this.toBackendTime(hours.closingTime),
+    closingTime: hours.closingTime,
 
-    absentTime: this.toBackendTime(hours.absentTime),
+    absentTime: hours.absentTime,
 
-    latenessGracePeriod: this.toBackendTime(hours.latenessGracePeriod),
+    latenessGracePeriod: hours.latenessGracePeriod,
 
     companyLatitude: hours.companyLatitude?.toString() ?? '',
 
@@ -185,7 +185,7 @@ private getAuthHeaders(): HttpHeaders {
   });
 }
 
-private toBackendTime(time: string) {
+/*private toBackendTime(time: string) {
   const [hour, minute] = time.split(':').map(Number);
 
   return {
@@ -194,7 +194,7 @@ private toBackendTime(time: string) {
     second: 0,
     nano: 0
   };
-}
+}*/
 
 createOfficeHours(payload: any) {
   return this.http.post(
