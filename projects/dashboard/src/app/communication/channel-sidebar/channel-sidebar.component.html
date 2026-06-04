@@ -247,52 +247,100 @@
     </div>
     <div class="mx-3 my-2 h-px bg-gray-100"></div>
 
-    <div class="px-2" *ngIf="upcomingBirthdays.length">
-      <div class="pl-2 mb-1 mt-1">
-        <span
-          class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest"
-          >Birthdays</span
-        >
+    <!-- Birthday section -->
+    <div class="px-2" *ngIf="upcomingBirthdays.length && birthdaysPanelOpen">
+      <!-- Section header with close button -->
+      <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2">
+        <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+          <i class="pi pi-gift text-[11px] text-amber-500"></i> Birthdays
+        </span>
+        <button
+          type="button"
+          title="Dismiss"
+          class="w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+          (click)="closeBirthdaysPanel()"
+        ><i class="pi pi-times text-[9px]"></i></button>
       </div>
-      <button
-        *ngFor="let birthday of upcomingBirthdays"
-        (click)="dmSelected.emit(birthday.id)"
-        class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
-      >
-        <div class="relative flex-shrink-0">
-          <img
-            *ngIf="birthday.avatarUrl"
-            [src]="birthday.avatarUrl"
-            alt=""
-            class="w-8 h-8 rounded-full object-cover"
-          />
-          <div
-            *ngIf="!birthday.avatarUrl"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
-            [style.background]="birthday.avatarColor || '#2e6276'"
-          >
-            {{ birthday.initials || (birthday.fullName || 'U').slice(0, 2).toUpperCase() }}
+
+      <!-- Upcoming list (within 30 days) -->
+      <ng-container *ngIf="nearBirthdays.length > 0; else nextBirthdayCalendarView">
+        <button
+          *ngFor="let birthday of nearBirthdays; trackBy: trackBirthday"
+          (click)="dmSelected.emit(birthday.id)"
+          class="sidebar-item flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors text-left"
+        >
+          <div class="relative flex-shrink-0">
+            <img *ngIf="birthday.avatarUrl" [src]="birthday.avatarUrl" alt=""
+              class="w-8 h-8 rounded-full object-cover" />
+            <div *ngIf="!birthday.avatarUrl"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+              [style.background]="birthday.avatarColor || '#2e6276'">
+              {{ birthday.initials || (birthday.fullName || 'U').slice(0, 2).toUpperCase() }}
+            </div>
           </div>
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">
-              {{ birthday.shortName || birthday.fullName }}
-            </span>
-            <span
-              class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap"
-            >
-              {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="truncate text-[14px] font-medium text-gray-800 block leading-tight">
+                {{ birthday.shortName || birthday.fullName }}
+              </span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold whitespace-nowrap">
+                {{ birthday.birthdayIsToday ? 'Today' : birthday.birthdayCountdownLabel }}
+              </span>
+            </div>
+            <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
+              Birthday {{ birthday.birthdayMonthDayLabel }}
+              <ng-container *ngIf="birthday.jobTitle || birthday.department">
+                · {{ birthday.jobTitle || birthday.department }}
+              </ng-container>
             </span>
           </div>
-          <span class="truncate text-[12px] text-gray-500 block leading-tight mt-0.5">
-            Birthday {{ birthday.birthdayMonthDayLabel }}
-            <ng-container *ngIf="birthday.jobTitle || birthday.department">
-              · {{ birthday.jobTitle || birthday.department }}
-            </ng-container>
-          </span>
-        </div>
-      </button>
+        </button>
+      </ng-container>
+
+      <!-- No upcoming within 30 days — show next birthday mini-calendar -->
+      <ng-template #nextBirthdayCalendarView>
+        <ng-container *ngIf="nextBirthdayPerson && nextBirthdayCalendar as cal">
+          <!-- Person chip -->
+          <div class="flex items-center gap-2 px-2 mb-2">
+            <div class="flex-shrink-0">
+              <img *ngIf="nextBirthdayPerson.avatarUrl" [src]="nextBirthdayPerson.avatarUrl" alt=""
+                class="w-7 h-7 rounded-full object-cover" />
+              <div *ngIf="!nextBirthdayPerson.avatarUrl"
+                class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
+                [style.background]="nextBirthdayPerson.avatarColor || '#2e6276'">
+                {{ nextBirthdayPerson.initials || (nextBirthdayPerson.fullName || 'U').slice(0, 2).toUpperCase() }}
+              </div>
+            </div>
+            <div class="min-w-0">
+              <p class="text-[12px] font-semibold text-gray-700 truncate leading-tight">
+                {{ nextBirthdayPerson.shortName || nextBirthdayPerson.fullName }}
+              </p>
+              <p class="text-[11px] text-amber-600 font-medium leading-tight">
+                {{ nextBirthdayPerson.birthdayMonthDayLabel }} · {{ nextBirthdayPerson.birthdayCountdownLabel }}
+              </p>
+            </div>
+          </div>
+          <!-- Mini calendar -->
+          <div class="birthday-mini-cal mx-1 mb-1 rounded-xl border border-gray-100 bg-gray-50 p-2">
+            <p class="text-[11px] font-semibold text-gray-500 text-center mb-1.5">{{ cal.monthLabel }}</p>
+            <div class="birthday-cal-grid">
+              <span *ngFor="let h of ['Su','Mo','Tu','We','Th','Fr','Sa']"
+                class="text-[9px] font-semibold text-gray-400 text-center py-0.5">{{ h }}</span>
+              <ng-container *ngFor="let week of cal.weeks">
+                <span *ngFor="let day of week"
+                  class="text-[11px] text-center py-0.5 leading-tight rounded"
+                  [ngClass]="{
+                    'birthday-cal-target font-bold text-white': day === cal.targetDay,
+                    'birthday-cal-today font-semibold text-[#2e6276]': day === cal.todayDay && day !== cal.targetDay,
+                    'text-gray-600': day && day !== cal.targetDay && day !== cal.todayDay,
+                    'invisible': !day
+                  }">{{ day || '' }}</span>
+              </ng-container>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
       <div class="mx-1 my-2 h-px bg-gray-100"></div>
     </div>
 

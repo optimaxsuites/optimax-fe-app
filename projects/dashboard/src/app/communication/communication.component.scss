@@ -155,6 +155,53 @@
   max-width: 100%;
 }
 
+/* ── Folder tree ─────────────────────────────────────────────── */
+.folder-tree-root {
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.folder-tree-item {
+  position: relative;
+
+  /* Vertical connecting line from parent to child */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--tree-line-x, 14px));
+    width: 1px;
+    background: #e5e7eb;
+    pointer-events: none;
+  }
+
+  /* Horizontal connector to node */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(var(--tree-line-x, 14px));
+    width: 8px;
+    height: 1px;
+    background: #e5e7eb;
+    pointer-events: none;
+  }
+}
+
+.folder-tree-actions {
+  flex-shrink: 0;
+}
+
+.folder-tree-chevron {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
 .workspace-overview,
 .workspace-toolbar,
 .feed-composer-card,
