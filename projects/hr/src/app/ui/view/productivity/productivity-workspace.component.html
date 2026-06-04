@@ -21,6 +21,36 @@
       <button class="btn-outline" (click)="setPmSection('batch')">
         <i class="fas fa-file-import"></i> Batch Import
       </button>
+      <div class="report-period-dropdown" style="position:relative">
+        <button class="btn-outline" style="white-space:nowrap;display:flex;align-items:center;gap:6px"
+                (click)="$event.stopPropagation(); reportDropOpen = !reportDropOpen">
+          <i class="fas fa-file-alt"></i>
+          <span>{{ reportPeriod === 'weekly' ? 'Weekly' : reportPeriod === 'monthly' ? 'Monthly' : 'Quarterly' }} Report</span>
+          <i class="fas fa-chevron-down" style="font-size:10px;opacity:.6"></i>
+        </button>
+        <div *ngIf="reportDropOpen"
+             style="position:absolute;top:calc(100% + 4px);right:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:170px;overflow:hidden"
+             (click)="$event.stopPropagation()">
+          <button class="task-view-opt" [class.active]="reportPeriod === 'weekly'"
+                  (click)="reportPeriod = 'weekly'; reportDropOpen = false; generateReport()"
+                  style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left">
+            <i class="fas fa-calendar-week" style="margin-top:2px;color:#2e6276;width:14px"></i>
+            <span><strong style="display:block;font-size:.875rem;color:#111827">Weekly</strong><small style="color:#6b7280;font-size:.78rem">Current week</small></span>
+          </button>
+          <button class="task-view-opt" [class.active]="reportPeriod === 'monthly'"
+                  (click)="reportPeriod = 'monthly'; reportDropOpen = false; generateReport()"
+                  style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left">
+            <i class="fas fa-calendar-alt" style="margin-top:2px;color:#2563eb;width:14px"></i>
+            <span><strong style="display:block;font-size:.875rem;color:#111827">Monthly</strong><small style="color:#6b7280;font-size:.78rem">Current month</small></span>
+          </button>
+          <button class="task-view-opt" [class.active]="reportPeriod === 'quarterly'"
+                  (click)="reportPeriod = 'quarterly'; reportDropOpen = false; generateReport()"
+                  style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left">
+            <i class="fas fa-chart-bar" style="margin-top:2px;color:#7c3aed;width:14px"></i>
+            <span><strong style="display:block;font-size:.875rem;color:#111827">Quarterly</strong><small style="color:#6b7280;font-size:.78rem">Current quarter</small></span>
+          </button>
+        </div>
+      </div>
       <button class="btn-primary" (click)="showAddTask = true">
         <i class="fas fa-plus"></i> New Task
       </button>
@@ -85,6 +115,50 @@
 
       <!-- Toolbar -->
       <div class="pm-toolbar">
+
+        <!-- View mode dropdown -->
+        <div class="task-view-dropdown" style="position:relative">
+          <button class="task-view-btn"
+                  (click)="viewDropOpen = !viewDropOpen"
+                  style="display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:0.9rem;font-weight:600;cursor:pointer;white-space:nowrap;color:#374151">
+            <i class="fas" [ngClass]="taskViewMode === 'mine' ? 'fa-user' : taskViewMode === 'all' ? 'fa-th-large' : 'fa-users'" style="font-size:12px;color:#2e6276"></i>
+            {{ taskViewLabel }}
+            <i class="fas fa-chevron-down" style="font-size:10px;color:#6b7280;margin-left:2px"></i>
+          </button>
+          <div *ngIf="viewDropOpen"
+               class="task-view-menu"
+               style="position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:200px;overflow:hidden">
+            <button class="task-view-opt" [class.active]="taskViewMode === 'mine'"
+                    (click)="setTaskViewMode('mine'); viewDropOpen = false"
+                    style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left">
+              <i class="fas fa-user" style="margin-top:2px;color:#2e6276;width:14px"></i>
+              <span>
+                <strong style="display:block;font-size:0.875rem;color:#111827">My Tasks</strong>
+                <small style="color:#6b7280;font-size:0.78rem">Tasks assigned to you</small>
+              </span>
+            </button>
+            <button class="task-view-opt" [class.active]="taskViewMode === 'all'"
+                    (click)="setTaskViewMode('all'); viewDropOpen = false"
+                    style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left"
+                    *ngIf="isAdminOrSupervisor">
+              <i class="fas fa-th-large" style="margin-top:2px;color:#7c3aed;width:14px"></i>
+              <span>
+                <strong style="display:block;font-size:0.875rem;color:#111827">All Tasks</strong>
+                <small style="color:#6b7280;font-size:0.78rem">All tasks and stages</small>
+              </span>
+            </button>
+            <button class="task-view-opt" [class.active]="taskViewMode === 'team'"
+                    (click)="setTaskViewMode('team'); viewDropOpen = false"
+                    style="display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 16px;border:none;background:none;cursor:pointer;text-align:left">
+              <i class="fas fa-users" style="margin-top:2px;color:#059669;width:14px"></i>
+              <span>
+                <strong style="display:block;font-size:0.875rem;color:#111827">Team Tasks</strong>
+                <small style="color:#6b7280;font-size:0.78rem">Tasks co-assigned with others</small>
+              </span>
+            </button>
+          </div>
+        </div>
+
         <input type="text" class="pm-search" placeholder="🔍 Search tasks…" [(ngModel)]="searchText">
         <select class="pm-select" [(ngModel)]="filterStatus">
           <option value="">All Statuses</option>
@@ -119,8 +193,16 @@
         </ng-container>
       </div>
 
+      <!-- ── KANBAN LOADING OVERLAY ── -->
+      <div *ngIf="boardLoading" class="board-loading-overlay">
+        <div class="board-loader-inner">
+          <div class="board-spinner"></div>
+          <p>Loading tasks…</p>
+        </div>
+      </div>
+
       <!-- ── KANBAN VIEW ── -->
-      <div class="kanban" *ngIf="boardView === 'board'"
+      <div class="kanban" *ngIf="boardView === 'board' && !boardLoading"
            cdkDropList
            cdkDropListOrientation="horizontal"
            (cdkDropListDropped)="dropColumn($event)">
@@ -186,6 +268,12 @@
                 <i class="fas fa-user-tie" style="font-size:10px;margin-right:3px;color:#7c3aed"></i>{{ task.team }}
               </span>
             </div>
+            <!-- Owner row -->
+            <div class="kcard-owner" *ngIf="task.assignee">
+              <i class="fas fa-user-circle" style="font-size:10px;color:#6b7280;margin-right:3px"></i>
+              <span>{{ task.assignee }}</span>
+              <span *ngIf="(task.assignees || []).length > 1" style="color:#9ca3af;margin-left:2px">+{{ (task.assignees || []).length - 1 }} more</span>
+            </div>
             <div class="prog-wrap">
               <div class="prog-bar"
                    [class.r]="isTaskOverdue(task)"
@@ -212,7 +300,7 @@
                     <span class="badge b-yellow" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Changes'">Changes requested</span>
                     <span class="badge b-green" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Approved'">Approved</span>
                   </strong>
-                  <span>{{ task.followUps[0].text }}</span>
+                  <span [innerHTML]="sanitizeHtml(task.followUps[0].text)"></span>
                   <div class="fu-thumb" *ngIf="task.followUps[0].photos?.length">
                     <ng-container *ngFor="let ph of task.followUps[0].photos | slice:0:3">
                       <div class="ph-thumb" (click)="openLightbox(ph);$event.stopPropagation()">
@@ -273,7 +361,7 @@
       </div><!-- /kanban -->
 
       <!-- ── LIST / TREE VIEW ── -->
-      <div class="list-view" *ngIf="boardView === 'list'">
+      <div class="list-view" *ngIf="boardView === 'list' && !boardLoading">
         <div class="tree-wrap">
           <div class="tree-hdr">
             <span>Task / Sub-task</span><span>Owner</span><span>Status</span>
@@ -303,7 +391,7 @@
               <div class="tree-preview" *ngIf="task.followUps?.length">
                 <div class="tree-preview-block">
                   <strong>Latest update · {{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}</strong>
-                  <p>{{ task.followUps[0].text }}</p>
+                  <p [innerHTML]="sanitizeHtml(task.followUps[0].text)"></p>
                 </div>
               </div>
               <div class="tree-row child" *ngFor="let sub of task.subtasks">
@@ -325,7 +413,7 @@
       </div>
 
       <!-- ── GANTT VIEW ── -->
-      <div class="gantt-view" *ngIf="boardView === 'gantt'">
+      <div class="gantt-view" *ngIf="boardView === 'gantt' && !boardLoading">
         <div class="gantt-wrap">
           <div class="gantt-hdr">
             <div class="gantt-label-col">Task / Sub-task</div>
@@ -1326,53 +1414,78 @@
       <!-- SUB-TASKS TAB -->
       <div class="dp-body" *ngIf="detailTab === 'subtasks'">
         <div class="subtask-list-dp">
-          <div class="st-row" *ngFor="let sub of selectedTask.subtasks">
-            <div class="st-dot" [ngClass]="subDotClass(sub)"
-                 (click)="cycleSubtaskStatus(selectedTask, sub)"
-                 style="cursor:pointer" title="Click to cycle status"></div>
-            <div class="st-info">
-              <!-- Inline edit mode -->
-              <ng-container *ngIf="editingSubtaskId === sub.id; else subView">
-                <input class="sub-edit-input"
-                       [(ngModel)]="editingSubtaskTitle"
-                       placeholder="Sub-task title…"
-                       (keyup.escape)="cancelSubtaskEdit()"
-                       autofocus>
-                <textarea class="sub-edit-desc"
-                          [(ngModel)]="editingSubtaskDescription"
-                          placeholder="Description (optional)…"
-                          rows="2"></textarea>
-                <div class="sub-edit-actions">
-                  <button class="btn-primary-sm" (click)="saveSubtaskEdit(selectedTask, sub)">Save</button>
-                  <button class="btn-ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem"
-                          (click)="cancelSubtaskEdit()">Cancel</button>
+          <!-- wrap each row + its follow-up area in ng-container so `sub` stays in scope -->
+          <ng-container *ngFor="let sub of selectedTask.subtasks">
+            <div class="st-row">
+              <div class="st-dot" [ngClass]="subDotClass(sub)"
+                   (click)="cycleSubtaskStatus(selectedTask, sub)"
+                   style="cursor:pointer" title="Click to cycle status"></div>
+              <div class="st-info">
+                <!-- Inline edit mode -->
+                <ng-container *ngIf="editingSubtaskId === sub.id; else subView">
+                  <input class="sub-edit-input"
+                         [(ngModel)]="editingSubtaskTitle"
+                         placeholder="Sub-task title…"
+                         (keyup.escape)="cancelSubtaskEdit()"
+                         autofocus>
+                  <textarea class="sub-edit-desc"
+                            [(ngModel)]="editingSubtaskDescription"
+                            placeholder="Description (optional)…"
+                            rows="2"></textarea>
+                  <div class="sub-edit-actions">
+                    <button class="btn-primary-sm" (click)="saveSubtaskEdit(selectedTask, sub)">Save</button>
+                    <button class="btn-ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem"
+                            (click)="cancelSubtaskEdit()">Cancel</button>
+                  </div>
+                </ng-container>
+                <ng-template #subView>
+                  <strong (dblclick)="startEditSubtask(sub)" title="Double-click to edit"
+                          style="cursor:text">
+                    {{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}
+                  </strong>
+                  <small *ngIf="sub.description" class="sub-desc-preview">{{ sub.description }}</small>
+                </ng-template>
+                <small>{{ sub.assignee }}{{ sub.dependency ? ' · Depends on: ' + sub.dependency : '' }}</small>
+              </div>
+              <div class="st-prog">
+                <div class="prog-wrap" style="width:60px;display:inline-block">
+                  <div class="prog-bar" [class.g]="sub.done" [class.r]="sub.status==='blocked'" [style.width.%]="sub.done ? 100 : 0"></div>
                 </div>
-              </ng-container>
-              <ng-template #subView>
-                <strong (dblclick)="startEditSubtask(sub)" title="Double-click to edit"
-                        style="cursor:text">
-                  {{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}
-                </strong>
-                <small *ngIf="sub.description" class="sub-desc-preview">{{ sub.description }}</small>
-              </ng-template>
-              <small>{{ sub.assignee }}{{ sub.dependency ? ' · Depends on: ' + sub.dependency : '' }}</small>
+              </div>
+              <span class="badge st-status-badge"
+                    [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'"
+                    (click)="cycleSubtaskStatus(selectedTask, sub)"
+                    style="cursor:pointer" title="Click to change status">
+                {{ sub.done ? '✓ Done' : sub.status === 'blocked' ? '🚫 Blocked' : sub.status === 'ip' ? '⟳ In Progress' : '○ Open' }}
+              </span>
+              <button class="kcard-act-btn edit-btn" style="flex-shrink:0;opacity:.5"
+                      title="Edit subtask" (click)="startEditSubtask(sub)">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
+              <button class="kcard-act-btn" style="flex-shrink:0;opacity:.6"
+                      title="Follow-up updates" (click)="toggleSubtaskExpand(sub.id)">
+                <i class="fas" [ngClass]="expandedSubtaskIds.has(sub.id) ? 'fa-chevron-up' : 'fa-comment-dots'"></i>
+                <span *ngIf="(sub.followUps || []).length" style="font-size:10px;margin-left:2px">{{ (sub.followUps || []).length }}</span>
+              </button>
             </div>
-            <div class="st-prog">
-              <div class="prog-wrap" style="width:60px;display:inline-block">
-                <div class="prog-bar" [class.g]="sub.done" [class.r]="sub.status==='blocked'" [style.width.%]="sub.done ? 100 : 0"></div>
+            <!-- Subtask follow-up expand area — sub is in scope because we're inside the ng-container *ngFor -->
+            <div *ngIf="expandedSubtaskIds.has(sub.id)" class="sub-fu-area">
+              <div *ngFor="let fu of (sub.followUps || [])" class="sub-fu-entry">
+                <span class="fu-ava-sm" style="background:#6366f1">{{ fu.initials }}</span>
+                <div class="sub-fu-body">
+                  <strong>{{ fu.author }}</strong>
+                  <span class="sub-fu-ts">{{ fu.timestamp | date:'MMM d, h:mm a' }}</span>
+                  <p [innerHTML]="sanitizeHtml(fu.text)"></p>
+                </div>
+              </div>
+              <div *ngIf="!(sub.followUps || []).length" style="font-size:11px;color:#9ca3af;padding:4px 0">No updates yet.</div>
+              <div class="sub-fu-compose">
+                <input type="text" [(ngModel)]="subtaskFollowUpText[sub.id]" placeholder="Add update for this subtask…"
+                       (keyup.enter)="addSubtaskFollowUp(selectedTask, sub)">
+                <button class="btn-primary-sm" (click)="addSubtaskFollowUp(selectedTask, sub)">Post</button>
               </div>
             </div>
-            <span class="badge st-status-badge"
-                  [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'"
-                  (click)="cycleSubtaskStatus(selectedTask, sub)"
-                  style="cursor:pointer" title="Click to change status">
-              {{ sub.done ? '✓ Done' : sub.status === 'blocked' ? '🚫 Blocked' : sub.status === 'ip' ? '⟳ In Progress' : '○ Open' }}
-            </span>
-            <button class="kcard-act-btn edit-btn" style="flex-shrink:0;opacity:.5"
-                    title="Edit subtask" (click)="startEditSubtask(sub)">
-              <i class="fas fa-pencil-alt"></i>
-            </button>
-          </div>
+          </ng-container>
           <div class="subtask-empty" *ngIf="selectedTask.subtasks.length === 0">No sub-tasks yet.</div>
         </div>
         <div class="sep-ln"></div>
@@ -1457,7 +1570,7 @@
                 <strong>{{ fu.author }}</strong>
                 <small>{{ fu.timestamp }}</small>
               </div>
-              <div class="tl-note">{{ fu.text }}</div>
+              <div class="tl-note" [innerHTML]="sanitizeHtml(fu.text)"></div>
               <!-- Photos carousel in timeline entry -->
               <div class="tl-carousel" *ngIf="fu.photos?.length">
                 <div class="carousel-single" *ngIf="fu.photos.length === 1">
@@ -1715,7 +1828,7 @@
 </div>
 
 <div class="modal-overlay" *ngIf="showAddTask" (click)="showAddTask = false">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card modal-xl" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Add New Task</h3>
       <button class="btn-icon" (click)="showAddTask = false"><i class="fas fa-times"></i></button>
@@ -1806,6 +1919,61 @@
       <div class="form-row">
         <label>Weight (%)</label>
         <input type="number" [(ngModel)]="newTask.weight" min="0" max="100">
+      </div>
+      <!-- Subtasks -->
+      <div class="form-row" style="margin-top:8px">
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>Subtasks</span>
+          <button type="button" class="btn-ghost" style="padding:2px 10px;font-size:12px" (click)="addNewTaskSubtask()">
+            <i class="fas fa-plus" style="margin-right:4px"></i>Add Subtask
+          </button>
+        </label>
+        <div *ngIf="newTaskSubtasks.length; else noSubtasks" style="overflow-x:auto;margin-top:6px">
+          <table class="subtask-table">
+            <thead>
+              <tr>
+                <th style="min-width:160px">Task Title</th>
+                <th style="min-width:140px">Assignee</th>
+                <th style="min-width:100px">Status</th>
+                <th style="min-width:110px">Start Date</th>
+                <th style="min-width:110px">End Date</th>
+                <th style="min-width:130px">Dependency</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sub of newTaskSubtasks; let i = index">
+                <td><input type="text" [(ngModel)]="sub.title" placeholder="Subtask title…"></td>
+                <td>
+                  <select [(ngModel)]="sub.assignee">
+                    <option value="">— none —</option>
+                    <option *ngFor="let emp of allEmployees" [value]="emp.fullName">{{ emp.fullName }}</option>
+                  </select>
+                </td>
+                <td>
+                  <select [(ngModel)]="sub.status">
+                    <option value="open">Open</option>
+                    <option value="ip">In Progress</option>
+                    <option value="blocked">Blocked</option>
+                  </select>
+                </td>
+                <td><input type="date" [(ngModel)]="sub.startDate"></td>
+                <td><input type="date" [(ngModel)]="sub.dueDate"></td>
+                <td>
+                  <input type="text" [(ngModel)]="sub.dependency" placeholder="Depends on…">
+                </td>
+                <td style="text-align:center">
+                  <button type="button" class="btn-icon" style="color:#dc2626;width:28px;height:28px;font-size:12px" (click)="removeNewTaskSubtask(i)" title="Remove">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noSubtasks>
+          <div style="font-size:12px;color:#9ca3af;padding:4px 0">No subtasks added — click Add Subtask to begin.</div>
+        </ng-template>
       </div>
     </div>
     <div class="modal-footer">
