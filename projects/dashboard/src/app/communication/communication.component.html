@@ -1420,6 +1420,13 @@
                       class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
                       (click)="downloadDocumentFile(file, $event)"
                     ><i class="pi pi-download text-[12px]"></i></button>
+                    <!-- Delete -->
+                    <button
+                      type="button"
+                      title="Delete file"
+                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 hover:bg-red-50"
+                      (click)="deleteDocumentFile(file, $event)"
+                    ><i class="pi pi-trash text-[12px]"></i></button>
                     <!-- Share to channel/DM -->
                     <button
                       type="button"
@@ -1825,9 +1832,11 @@
             <option *ngFor="let dm of dmContacts" [value]="dm.id">{{ dm.fullName }}</option>
           </select>
         </div>
-        <!-- Link preview -->
-        <div *ngIf="docShareModal.itemUrl" class="bg-gray-50 rounded-xl px-4 py-3 text-[12px] text-gray-400 truncate">
-          {{ docShareModal.itemUrl }}
+        <!-- Message preview -->
+        <div class="bg-gray-50 rounded-xl px-4 py-3 text-[13px] text-gray-600 leading-relaxed">
+          <span class="font-semibold text-gray-800">{{ me.name }}</span>
+          {{ ' has shared the ' + docShareModal.itemType + ' "' + docShareModal.itemName + '". ' }}
+          <a class="text-[#2e6276] underline font-medium">Click here to access</a>
         </div>
         <p *ngIf="docShareModal.error" class="text-[13px] text-red-500">{{ docShareModal.error }}</p>
       </div>

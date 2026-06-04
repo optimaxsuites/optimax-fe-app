@@ -553,6 +553,8 @@ export class CommunicationComponent
   expandedFolderIds: Set<number> = new Set();
   copiedFileId: number | null = null;
   birthdayCardDismissed = false;
+  pendingShareDocTarget: { channelBackendId: number; folderId: number | null } | null = null;
+  pendingShareFolderId: number | null = null;
   channelWorkspacePane: 'chat' | 'files' = 'chat';
   docShareModal: DocShareModalState = {
     open: false,
@@ -4714,6 +4716,7 @@ export class CommunicationComponent
       this.channels.forEach((channel) => this.subscribeToChannel(channel.backendId));
     }
     this.channelsLoading = false;
+    this.applyPendingShareDoc();
     if (
       this.channels.length > 0 &&
       !this.activeChannelId &&
@@ -5579,6 +5582,13 @@ export class CommunicationComponent
           this.expandPathToFolder(this.activeDocumentFolderId);
         }
         this.rebuildFolderTree();
+        // Navigate to a pending shared folder if one arrived via deep link
+        if (this.pendingShareFolderId != null) {
+          const targetFolderId = this.pendingShareFolderId;
+          this.pendingShareFolderId = null;
+          this.openDocumentFolder(targetFolderId);
+          return;
+        }
         this.loadDocumentFiles(channel.backendId, this.activeDocumentFolderId);
       },
       error: () => {
@@ -7946,6 +7956,7 @@ export class CommunicationComponent
 
   private processMentionHashNavigation(): void {
     if (typeof window === 'undefined') return;
+    if (this.processShareDocHash()) return;
     const match = window.location.hash.match(/^#dm-user-(\d+)$/i);
     if (!match) return;
     const userId = Number(match[1]);
@@ -7959,6 +7970,38 @@ export class CommunicationComponent
     }
     this.pendingMentionConversationUserId = null;
     this.openMentionConversation(userId);
+  }
+
+  private processShareDocHash(): boolean {
+    if (typeof window === 'undefined') return false;
+    const match = window.location.hash.match(/^#share-doc:(\d+):(\d*)$/i);
+    if (!match) return false;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    const channelBackendId = Number(match[1]);
+    const folderId = match[2] ? Number(match[2]) : null;
+    const channel = this.channels.find((c) => c.backendId === channelBackendId);
+    if (!channel) {
+      this.pendingShareDocTarget = { channelBackendId, folderId };
+      return true;
+    }
+    this.pendingShareDocTarget = null;
+    this.selectChannel(channel.id);
+    if (folderId != null) {
+      this.pendingShareFolderId = folderId;
+    }
+    return true;
+  }
+
+  private applyPendingShareDoc(): void {
+    if (!this.pendingShareDocTarget) return;
+    const { channelBackendId, folderId } = this.pendingShareDocTarget;
+    const channel = this.channels.find((c) => c.backendId === channelBackendId);
+    if (!channel) return;
+    this.pendingShareDocTarget = null;
+    this.selectChannel(channel.id);
+    if (folderId != null) {
+      this.pendingShareFolderId = folderId;
+    }
   }
 
   private applyPendingMentionConversation(): void {
@@ -8619,13 +8662,35 @@ export class CommunicationComponent
     return parts.join(' · ');
   }
 
+  private buildShareDocUrl(channelBackendId: number, folderId: number | null): string {
+    if (typeof window === 'undefined') return '';
+    const base = window.location.href.split('#')[0];
+    return `${base}#share-doc:${channelBackendId}:${folderId ?? ''}`;
+  }
+
+  deleteDocumentFile(file: ChannelDocumentFile, event?: Event): void {
+    event?.stopPropagation();
+    if (!confirm(`Delete "${file.name}"?`)) return;
+    this.collabService.deleteAttachment(file.id).subscribe({
+      next: () => {
+        this.documentFiles = this.documentFiles.filter((f) => f.id !== file.id);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.documentLibraryError = `Failed to delete "${file.name}".`;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   openFileShareModal(file: ChannelDocumentFile, event?: Event): void {
     event?.stopPropagation();
+    const channelBackendId = this.activeChannel?.backendId ?? 0;
     this.docShareModal = {
       open: true,
       itemName: file.name,
       itemType: 'file',
-      itemUrl: file.downloadUrl || '',
+      itemUrl: this.buildShareDocUrl(channelBackendId, file.folderId ?? null),
       targetType: 'channel',
       targetId: this.channels[0]?.id || '',
       sending: false,
@@ -8636,12 +8701,12 @@ export class CommunicationComponent
 
   openFolderShareModal(folder: CollabDocumentFolder, event?: Event): void {
     event?.stopPropagation();
-    const folderUrl = folder.id ? `${window.location.origin}${window.location.pathname}?folderId=${folder.id}` : '';
+    const channelBackendId = this.activeChannel?.backendId ?? 0;
     this.docShareModal = {
       open: true,
       itemName: folder.name,
       itemType: 'folder',
-      itemUrl: folderUrl,
+      itemUrl: this.buildShareDocUrl(channelBackendId, Number(folder.id)),
       targetType: 'channel',
       targetId: this.channels[0]?.id || '',
       sending: false,
@@ -8667,9 +8732,10 @@ export class CommunicationComponent
   executeDocShare(): void {
     const modal = this.docShareModal;
     if (!modal.targetId || modal.sending) return;
+    const label = modal.itemType === 'folder' ? 'folder' : 'file';
     const content = modal.itemUrl
-      ? `📎 Shared ${modal.itemType === 'folder' ? 'folder' : 'file'}: *${modal.itemName}*\n${modal.itemUrl}`
-      : `📎 Shared ${modal.itemType === 'folder' ? 'folder' : 'file'}: *${modal.itemName}*`;
+      ? `${this.me.name} has shared the ${label} "${modal.itemName}". [Click here to access](${modal.itemUrl})`
+      : `${this.me.name} has shared the ${label} "${modal.itemName}".`;
     this.docShareModal = { ...modal, sending: true, error: '' };
     this.cdr.detectChanges();
 
