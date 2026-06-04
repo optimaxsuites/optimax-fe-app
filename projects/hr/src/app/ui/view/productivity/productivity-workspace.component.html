@@ -98,20 +98,48 @@
           <option value="">All Assignees</option>
           <option *ngFor="let a of uniqueAssignees" [value]="a">{{ a }}</option>
         </select>
+
+        <!-- Add Stage button -->
+        <ng-container *ngIf="!showAddStage">
+          <button class="btn-outline" style="white-space:nowrap"
+                  (click)="showAddStage = true">
+            <i class="fas fa-plus"></i> Add Stage
+          </button>
+        </ng-container>
+        <ng-container *ngIf="showAddStage">
+          <input class="add-stage-input"
+                 style="border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.95rem;font-family:var(--font);outline:none;width:160px"
+                 [(ngModel)]="newStageName"
+                 placeholder="Stage name…"
+                 (keyup.enter)="addStage()"
+                 (keyup.escape)="showAddStage = false; newStageName = ''"
+                 autofocus>
+          <button class="btn-primary" (click)="addStage()">Add</button>
+          <button class="btn-ghost" (click)="showAddStage = false; newStageName = ''">Cancel</button>
+        </ng-container>
       </div>
 
       <!-- ── KANBAN VIEW ── -->
-      <div class="kanban" *ngIf="boardView === 'board'">
-        <div class="lane" *ngFor="let col of columns"
-             [id]="colId(col.key)"
-             cdkDropList
-             [cdkDropListData]="columnTasks(col.key)"
-             [cdkDropListConnectedTo]="connectedTo(col.key)"
-             (cdkDropListDropped)="drop($event, col.key)">
-          <div class="lane-head">
+      <div class="kanban" *ngIf="boardView === 'board'"
+           cdkDropList
+           cdkDropListOrientation="horizontal"
+           (cdkDropListDropped)="dropColumn($event)">
+        <div class="lane" *ngFor="let col of columns" cdkDrag>
+          <div class="lane-head" cdkDragHandle>
+            <div class="lane-drag-icon">⣿</div>
             <strong>{{ col.label }}</strong>
-            <span class="cnt">{{ columnTasks(col.key).length }}</span>
+            <div class="lane-head-right">
+              <span class="cnt">{{ columnTasks(col.key).length }}</span>
+              <button class="lane-rm-btn" *ngIf="!isDefaultStage(col.key)"
+                      (click)="removeStage(col.key);$event.stopPropagation()" title="Remove stage">×</button>
+            </div>
           </div>
+          <div class="lane-cards"
+               [id]="colId(col.key)"
+               cdkDropList
+               [cdkDropListData]="columnTasks(col.key)"
+               [cdkDropListConnectedTo]="connectedTo(col.key)"
+               (cdkDropListDropped)="drop($event, col.key)">
 
           <div class="kcard" *ngFor="let task of columnTasks(col.key)"
                cdkDrag
@@ -119,49 +147,82 @@
                [class.review]="task.status === 'In Review'"
                (click)="openDetail(task)">
 
-            <!-- Card top badges -->
+            <!-- Card top: Type badge (left) | Status/Priority badge + actions (right) -->
             <div class="kcard-top">
-              <span class="badge b-blue">{{ task.tags[0] || 'Task' }}</span>
-              <span class="badge b-red" *ngIf="isTaskOverdue(task)">🔴 OVERDUE {{ overdueDays(task) }}d</span>
-              <span class="badge b-purple" *ngIf="!isTaskOverdue(task) && task.status === 'In Review'">In Review</span>
-              <span class="badge b-green" *ngIf="!isTaskOverdue(task) && task.status === 'Done'">Done</span>
-              <span class="badge" *ngIf="!isTaskOverdue(task) && task.status !== 'In Review' && task.status !== 'Done'"
-                    [ngClass]="taskPriorityBadge(task.priority)">{{ task.priority }}</span>
+              <span class="badge" [ngClass]="tagBadgeClass(task.tags[0])">{{ task.tags[0] || 'Task' }}</span>
+              <div class="kcard-top-right">
+                <span class="badge b-red" *ngIf="isTaskOverdue(task)">🔴 OVERDUE {{ overdueDays(task) }}d</span>
+                <span class="badge b-purple" *ngIf="!isTaskOverdue(task) && task.status === 'In Review'">In Review</span>
+                <span class="badge b-green" *ngIf="!isTaskOverdue(task) && task.status === 'Done'">Done</span>
+                <span class="badge" *ngIf="!isTaskOverdue(task) && task.status !== 'In Review' && task.status !== 'Done'"
+                      [ngClass]="taskPriorityBadge(task.priority)">{{ task.priority }}</span>
+                <div class="kcard-action-btns" (click)="$event.stopPropagation()">
+                  <button class="kcard-act-btn edit-btn" title="Edit task" (click)="openEditTask(task, $event)">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button class="kcard-act-btn del-btn" title="Delete task" (click)="deleteTask(task, $event)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <h4>{{ task.title }}</h4>
             <p *ngIf="task.description" class="kcard-desc" [innerHTML]="sanitizeHtml(task.description)"></p>
             <div class="kcard-meta">
-              <span>👤 {{ task.assignee || '—' }}</span>
+              <!-- Multi-assignee avatars -->
+              <div class="assignee-avatars">
+                <ng-container *ngFor="let a of (task.assignees?.length ? task.assignees : [task.assignee]) | slice:0:3; let ai = index">
+                  <div class="aa-circle" [title]="a" [style.background]="avatarColor(a)" [style.z-index]="10 - ai">
+                    {{ getInitials(a) }}
+                  </div>
+                </ng-container>
+                <div class="aa-more" *ngIf="(task.assignees?.length || 1) > 3">
+                  +{{ (task.assignees?.length || 1) - 3 }}
+                </div>
+              </div>
               <span [style.color]="isTaskOverdue(task) ? '#dc2626' : 'inherit'">📅 {{ task.dueDate ? formatRawDate(task.dueDate) : '—' }}</span>
-              <span *ngIf="task.team">🏢 {{ task.team }}</span>
+              <span *ngIf="task.team" class="kcard-supervisor" [title]="'Supervisor: ' + task.team">
+                <i class="fas fa-user-tie" style="font-size:10px;margin-right:3px;color:#7c3aed"></i>{{ task.team }}
+              </span>
             </div>
             <div class="prog-wrap">
               <div class="prog-bar"
-                   [class.g]="task.progress === 100"
-                   [class.y]="isTaskOverdue(task)"
-                   [class.r]="task.status === 'In Review' && task.progress < 100"
+                   [class.r]="isTaskOverdue(task)"
+                   [class.g]="task.progress === 100 && !isTaskOverdue(task)"
+                   [class.y]="task.progress >= 50 && task.progress < 100 && !isTaskOverdue(task)"
                    [style.width.%]="task.progress"></div>
             </div>
+            <div class="kcard-pct">{{ task.progress }}% complete</div>
 
-            <!-- Sub-tasks strip -->
+            <!-- Sub-tasks strip with coloured status dots -->
             <div class="sub-strip" *ngIf="task.subtasks.length">
               <div class="sub-item" *ngFor="let sub of task.subtasks | slice:0:4">
                 <div class="sub-dot" [ngClass]="subDotClass(sub)"></div>
-                <span>{{ sub.title }}{{ sub.done ? ' ✓' : '' }}</span>
+                <span>{{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}{{ sub.done ? ' ✓' : '' }}</span>
               </div>
             </div>
 
-            <!-- Latest follow-up preview -->
+            <!-- Latest follow-up preview (with decision badge + photo thumbs) -->
             <div class="card-followup" *ngIf="task.followUps?.length" (click)="$event.stopPropagation()">
               <div class="fu-row">
                 <div class="fu-ava" [style.background]="task.followUps[0].color">{{ task.followUps[0].initials }}</div>
                 <div class="fu-body">
                   <strong>{{ task.followUps[0].author }} · {{ task.followUps[0].timestamp }}
-                    <span class="badge b-yellow" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Changes'">Changes</span>
+                    <span class="badge b-yellow" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Changes'">Changes requested</span>
                     <span class="badge b-green" style="font-size:10px;margin-left:4px" *ngIf="task.followUps[0].decision === 'Approved'">Approved</span>
                   </strong>
                   <span>{{ task.followUps[0].text }}</span>
+                  <div class="fu-thumb" *ngIf="task.followUps[0].photos?.length">
+                    <ng-container *ngFor="let ph of task.followUps[0].photos | slice:0:3">
+                      <div class="ph-thumb" (click)="openLightbox(ph);$event.stopPropagation()">
+                        <img [src]="ph" alt="photo">
+                      </div>
+                    </ng-container>
+                    <div class="more-ph" *ngIf="task.followUps[0].photos.length > 3">
+                      +{{ task.followUps[0].photos.length - 3 }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -194,7 +255,7 @@
                 </label>
                 <div class="prog-input-row">
                   <span>Progress:</span>
-                  <input type="range" min="0" max="100" [(ngModel)]="task.progress" (click)="$event.stopPropagation()">
+                  <input type="range" min="0" max="100" [(ngModel)]="task.progress" (click)="$event.stopPropagation()" (change)="persistProgress(task)">
                   <span>{{ task.progress }}%</span>
                 </div>
                 <button class="btn btn-p btn-sm" style="margin-left:auto"
@@ -207,8 +268,9 @@
             <i class="fas fa-inbox"></i>
             <span>Drop tasks here</span>
           </div>
-        </div>
-      </div>
+          </div><!-- /lane-cards -->
+        </div><!-- /lane -->
+      </div><!-- /kanban -->
 
       <!-- ── LIST / TREE VIEW ── -->
       <div class="list-view" *ngIf="boardView === 'list'">
@@ -847,12 +909,15 @@
       </div>
 
       <div class="panel-card">
-        <h4 class="panel-card-title">Or paste from Excel / Google Sheets</h4>
-        <textarea class="paste-area" [(ngModel)]="batchPasteText"
-                  placeholder="Paste tab-separated rows here…" rows="6"></textarea>
-        <button class="btn-outline" (click)="parseBatchPaste()" [disabled]="!batchPasteText.trim()" style="margin-top:10px">
-          Parse &amp; Preview
-        </button>
+        <h4 class="panel-card-title">Import from Excel / CSV File</h4>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:12px">
+          Upload a <strong>.xlsx</strong>, <strong>.xls</strong>, or <strong>.csv</strong> file.
+          Columns: Title, Assignee, Supervisor, Start Date, Due Date, Priority, Type, Sub-tasks (;), KPI Target, Weight %.
+        </p>
+        <label class="file-import-label">
+          <i class="fas fa-file-upload"></i> Choose file (.xlsx / .csv)
+          <input type="file" accept=".xlsx,.xls,.csv" hidden (change)="onImportFile($event)">
+        </label>
       </div>
 
       <div class="batch-actions">
@@ -984,7 +1049,7 @@
     <!-- ════════════════ SUPERVISOR ════════════════ -->
     <ng-container *ngSwitchCase="'supervisor'">
 
-      <!-- Stat strip — 3 mc metric cards -->
+      <!-- Stat strip -->
       <div class="sup-stat-strip">
         <div class="mc">
           <div class="lbl">Pending Review</div>
@@ -992,23 +1057,77 @@
           <div class="sub">of {{ employeeSubmissions.length }} submissions</div>
         </div>
         <div class="mc">
-          <div class="lbl">Reviewed Today</div>
+          <div class="lbl">Reviewed</div>
           <div class="val" style="color:#16a34a">{{ reviewedCount }}</div>
-          <div class="sub" style="color:#16a34a">↑ on track</div>
+          <div class="sub" style="color:#16a34a">Q2 2026 cycle</div>
         </div>
         <div class="mc">
           <div class="lbl">Avg Team Score</div>
           <div class="val" style="color:#7c3aed">{{ avgTeamScore }}</div>
-          <div class="sub">Q2 cycle self-avg</div>
+          <div class="sub">self-assessed avg</div>
+        </div>
+        <div class="mc">
+          <div class="lbl">Team Tasks</div>
+          <div class="val" style="color:#0891b2">{{ myTeamTasks.length }}</div>
+          <div class="sub">on the board</div>
         </div>
       </div>
 
-      <!-- Section header -->
-      <div class="sup-section-head">
-        <div class="sup-section-title">Q2 2026 — Employee Submissions</div>
+      <!-- ── TEAM TASKS (live board tasks for supervisor) ───────────────────── -->
+      <div class="sup-section-head" style="margin-top:20px">
+        <div class="sup-section-title">📋 My Team's Tasks</div>
+        <div class="sup-filter-row">
+          <select class="pm-select" [(ngModel)]="supervisorFilter">
+            <option value="">All Supervisors</option>
+            <option *ngFor="let s of uniqueSupervisors" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="team-task-list">
+        <div class="team-task-row" *ngFor="let t of myTeamTasks"
+             [class.tt-done]="t.status === 'Done'"
+             [class.tt-overdue]="isTaskOverdue(t)"
+             (click)="openDetail(t)">
+          <div class="tt-left">
+            <div class="tt-title">{{ t.title }}</div>
+            <div class="tt-meta">
+              <span class="badge" [ngClass]="taskPriorityBadge(t.priority)" style="font-size:10px">{{ t.priority }}</span>
+              <span class="badge b-gray" style="font-size:10px">{{ t.status }}</span>
+              <span *ngIf="isTaskOverdue(t)" class="badge b-red" style="font-size:10px">Overdue</span>
+              <span style="font-size:11px;color:#6b7280">
+                {{ (t.assignees?.length ? t.assignees! : [t.assignee]).join(', ') }}
+              </span>
+              <span style="font-size:11px;color:#9ca3af">· Due {{ t.dueDate ? formatRawDate(t.dueDate) : '—' }}</span>
+            </div>
+          </div>
+          <div class="tt-progress-wrap">
+            <div class="tt-prog-bar" [style.width.%]="t.progress"
+                 [class.g]="t.progress === 100" [class.y]="isTaskOverdue(t)"></div>
+            <span class="tt-pct">{{ t.progress }}%</span>
+          </div>
+          <!-- Supervisor star rating -->
+          <div class="tt-grade" (click)="$event.stopPropagation()">
+            <span class="sup-star" *ngFor="let s of stars"
+                  [class.on]="s <= (t.supervisorGrade || 0)"
+                  (click)="setTaskGrade(t, s)">★</span>
+            <span style="font-size:10px;color:#9ca3af;margin-left:4px">
+              {{ t.supervisorGrade ? t.supervisorGrade + '/5' : 'Grade' }}
+            </span>
+          </div>
+          <button class="btn btn-o btn-sm" style="font-size:11px;white-space:nowrap"
+                  (click)="openDetail(t);$event.stopPropagation()">Open →</button>
+        </div>
+        <div class="board-empty" *ngIf="myTeamTasks.length === 0" style="padding:24px">
+          <i class="fas fa-users"></i>
+          <span>No tasks found for this supervisor filter</span>
+        </div>
+      </div>
+
+      <!-- ── APPRAISAL SUBMISSIONS ──────────────────────────────────────────── -->
+      <div class="sup-section-head" style="margin-top:28px">
+        <div class="sup-section-title">📝 Q2 2026 — Appraisal Submissions</div>
         <div class="sup-filter-row">
           <select class="pm-select"><option>All Status</option><option>Pending</option><option>Reviewed</option></select>
-          <input type="text" class="pm-search" placeholder="Search employee…" style="width:160px">
         </div>
       </div>
 
@@ -1049,7 +1168,7 @@
               <span class="reviewed-tick">✅</span>
               <div>
                 <div class="reviewed-title">Review Completed — Approved</div>
-                <div class="reviewed-meta">Reviewed by Sarah K. · Jun 1, 2026 · Supervisor score: {{ sub.supScore }}.0/5</div>
+                <div class="reviewed-meta">Reviewed · Jun 1, 2026 · Supervisor score: {{ sub.supScore }}.0/5</div>
                 <div class="reviewed-quote">"{{ sub.reviewedNote }}"</div>
               </div>
             </div>
@@ -1090,7 +1209,7 @@
 
             <!-- Purple review form box -->
             <div class="review-form-box">
-              <div class="review-form-title">Supervisor Review — Sarah K.</div>
+              <div class="review-form-title">Supervisor Review</div>
 
               <div class="review-form-label">Supervisor Score</div>
               <div class="sup-score-row-inner">
@@ -1146,7 +1265,11 @@
       <div class="dp-header">
         <div>
           <div class="dp-title">{{ selectedTask.title }}</div>
-          <div class="dp-meta">{{ selectedTask.assignee }} · {{ selectedTask.priority }} · Due {{ formatDate(selectedTask.dueDate) }} · {{ selectedTask.team }}</div>
+          <div class="dp-meta">
+            {{ (selectedTask.assignees?.length ? selectedTask.assignees! : [selectedTask.assignee]).join(', ') }}
+            · {{ selectedTask.priority }} · Due {{ formatDate(selectedTask.dueDate) }}
+            <span *ngIf="selectedTask.team"> · <i class="fas fa-user-tie" style="font-size:10px;color:#7c3aed"></i> {{ selectedTask.team }}</span>
+          </div>
           <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
             <span class="badge b-red" *ngIf="isTaskOverdue(selectedTask)">Overdue {{ overdueDays(selectedTask) }} days</span>
             <span class="badge b-yellow">{{ selectedTask.progress }}% complete</span>
@@ -1204,9 +1327,34 @@
       <div class="dp-body" *ngIf="detailTab === 'subtasks'">
         <div class="subtask-list-dp">
           <div class="st-row" *ngFor="let sub of selectedTask.subtasks">
-            <div class="st-dot" [ngClass]="subDotClass(sub)"></div>
+            <div class="st-dot" [ngClass]="subDotClass(sub)"
+                 (click)="cycleSubtaskStatus(selectedTask, sub)"
+                 style="cursor:pointer" title="Click to cycle status"></div>
             <div class="st-info">
-              <strong>{{ sub.title }}</strong>
+              <!-- Inline edit mode -->
+              <ng-container *ngIf="editingSubtaskId === sub.id; else subView">
+                <input class="sub-edit-input"
+                       [(ngModel)]="editingSubtaskTitle"
+                       placeholder="Sub-task title…"
+                       (keyup.escape)="cancelSubtaskEdit()"
+                       autofocus>
+                <textarea class="sub-edit-desc"
+                          [(ngModel)]="editingSubtaskDescription"
+                          placeholder="Description (optional)…"
+                          rows="2"></textarea>
+                <div class="sub-edit-actions">
+                  <button class="btn-primary-sm" (click)="saveSubtaskEdit(selectedTask, sub)">Save</button>
+                  <button class="btn-ghost" style="padding:0.25rem 0.5rem;font-size:0.8rem"
+                          (click)="cancelSubtaskEdit()">Cancel</button>
+                </div>
+              </ng-container>
+              <ng-template #subView>
+                <strong (dblclick)="startEditSubtask(sub)" title="Double-click to edit"
+                        style="cursor:text">
+                  {{ sub.status === 'blocked' && !sub.done ? '🚫 ' : '' }}{{ sub.title }}
+                </strong>
+                <small *ngIf="sub.description" class="sub-desc-preview">{{ sub.description }}</small>
+              </ng-template>
               <small>{{ sub.assignee }}{{ sub.dependency ? ' · Depends on: ' + sub.dependency : '' }}</small>
             </div>
             <div class="st-prog">
@@ -1214,9 +1362,16 @@
                 <div class="prog-bar" [class.g]="sub.done" [class.r]="sub.status==='blocked'" [style.width.%]="sub.done ? 100 : 0"></div>
               </div>
             </div>
-            <span class="badge" [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'">
-              {{ sub.done ? 'Done' : sub.status === 'blocked' ? 'Blocked' : sub.status === 'ip' ? 'In Progress' : 'Open' }}
+            <span class="badge st-status-badge"
+                  [ngClass]="sub.done ? 'b-green' : sub.status === 'blocked' ? 'b-red' : sub.status === 'ip' ? 'b-yellow' : 'b-gray'"
+                  (click)="cycleSubtaskStatus(selectedTask, sub)"
+                  style="cursor:pointer" title="Click to change status">
+              {{ sub.done ? '✓ Done' : sub.status === 'blocked' ? '🚫 Blocked' : sub.status === 'ip' ? '⟳ In Progress' : '○ Open' }}
             </span>
+            <button class="kcard-act-btn edit-btn" style="flex-shrink:0;opacity:.5"
+                    title="Edit subtask" (click)="startEditSubtask(sub)">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
           </div>
           <div class="subtask-empty" *ngIf="selectedTask.subtasks.length === 0">No sub-tasks yet.</div>
         </div>
@@ -1232,7 +1387,11 @@
               <select><option *ngFor="let a of uniqueAssignees">{{ a }}</option></select>
             </div>
             <div class="fg"><label>Status</label>
-              <select><option>Open</option><option>In Progress</option><option>Blocked</option><option>Done</option></select>
+              <select [(ngModel)]="newSubStatus">
+                <option value="open">Open</option>
+                <option value="ip">In Progress</option>
+                <option value="blocked">Blocked</option>
+              </select>
             </div>
             <div class="fg"><label>Start Date</label><input type="date"></div>
             <div class="fg"><label>Due Date</label><input type="date"></div>
@@ -1252,8 +1411,13 @@
             <div class="fu-ava" style="background:#2563eb">{{ getInitials(selectedTask.assignee) }}</div>
             <span style="font-size:13px;font-weight:600;color:#374151">Post a Progress Update</span>
           </div>
-          <textarea class="fu-compose-ta" [(ngModel)]="newActivityText"
-                    placeholder="Describe what was done today, what is next, and any blockers. The supervisor will see this with any photos you attach." rows="3"></textarea>
+          <div class="fu-editor-wrap">
+            <p-editor [(ngModel)]="newActivityText"
+                      [modules]="editorModules"
+                      placeholder="Describe what was done today, what is next, and any blockers. The supervisor will see this with any photos you attach."
+                      [style]="{'height':'140px','font-family':'inherit','font-size':'13px'}">
+            </p-editor>
+          </div>
           <!-- Detail photo previews -->
           <div class="inline-photo-row" *ngIf="detailPhotos.length" style="padding:6px 0">
             <ng-container *ngFor="let ph of detailPhotos; let di = index">
@@ -1276,10 +1440,10 @@
             </label>
             <div class="prog-input-row" style="margin-left:auto">
               <span>Progress:</span>
-              <input type="range" min="0" max="100" [(ngModel)]="selectedTask.progress">
+              <input type="range" min="0" max="100" [(ngModel)]="selectedTask.progress" (change)="persistProgress(selectedTask)">
               <span>{{ selectedTask.progress }}%</span>
             </div>
-            <button class="btn btn-p btn-sm" (click)="postActivity()" [disabled]="!newActivityText.trim()">Post Update</button>
+            <button class="btn btn-p btn-sm" (click)="postActivity()" [disabled]="!newActivityText || !newActivityText.replace('<p><br></p>','').trim()">Post Update</button>
           </div>
         </div>
 
@@ -1418,10 +1582,10 @@
         <label>Channel
           <span *ngIf="channelsLoading" style="font-size:11px;color:#9ca3af;margin-left:4px">Loading…</span>
         </label>
-        <select [(ngModel)]="shareChannelId" class="form-input">
+        <select [(ngModel)]="shareChannelId" (ngModelChange)="clearChannelUnread($event)" class="form-input">
           <option [ngValue]="null" disabled>Select a channel…</option>
           <option *ngFor="let ch of availableChannels" [ngValue]="ch.id">
-            #{{ ch.name }}{{ ch.channelType === 'PRIVATE' ? ' 🔒' : '' }}
+            #{{ ch.name }}{{ ch.channelType === 'PRIVATE' ? ' 🔒' : '' }}{{ channelUnreadCounts[ch.id] ? ' (' + channelUnreadCounts[ch.id] + ' new)' : '' }}
           </option>
         </select>
       </div>
@@ -1467,6 +1631,89 @@
 </div>
 
 <!-- ══ ADD TASK MODAL ═══════════════════════════════════════════════════════════ -->
+<!-- ── EDIT TASK MODAL ─────────────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showEditTask" (click)="cancelEditTask()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Task</h3>
+      <button class="btn-icon" (click)="cancelEditTask()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" *ngIf="editTaskDraft">
+      <div class="form-row">
+        <label>Title *</label>
+        <input type="text" [(ngModel)]="editTaskDraft.title" placeholder="Task title">
+      </div>
+      <div class="form-row">
+        <label>Description</label>
+        <div class="task-editor-wrap">
+          <p-editor [(ngModel)]="editTaskDraft.description"
+                    [modules]="editorModules"
+                    placeholder="Describe the task…"
+                    [style]="{'height':'160px','font-family':'inherit','font-size':'13px'}">
+          </p-editor>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Assignees <span style="font-size:11px;color:#9ca3af;font-weight:400"> — select one or more</span></label>
+        <ng-select class="task-ng-select"
+          [items]="allEmployees" bindLabel="fullName" bindValue="fullName"
+          [(ngModel)]="editTaskDraft.assignees"
+          [multiple]="true"
+          placeholder="Search employees…" [searchable]="true" [clearable]="true">
+          <ng-template ng-option-tmp let-item="item">
+            <div class="ngs-option-main">{{ item.fullName }}</div>
+            <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="form-row">
+        <label>Supervisor / Team</label>
+        <ng-select class="task-ng-select"
+          [items]="allEmployees" bindLabel="fullName" bindValue="fullName"
+          [(ngModel)]="editTaskDraft.team"
+          placeholder="Search supervisor…" [searchable]="true" [clearable]="true">
+          <ng-template ng-option-tmp let-item="item">
+            <div class="ngs-option-main">{{ item.fullName }}</div>
+            <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Status</label>
+          <select [(ngModel)]="editTaskDraft.status">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Priority</label>
+          <select [(ngModel)]="editTaskDraft.priority">
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="editTaskDraft.startDate">
+        </div>
+        <div class="form-row">
+          <label>Due Date</label>
+          <input type="date" [(ngModel)]="editTaskDraft.dueDate">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Weight (%)</label>
+        <input type="number" [(ngModel)]="editTaskDraft.weight" min="0" max="100">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" (click)="cancelEditTask()">Cancel</button>
+      <button class="btn-primary" (click)="saveEditTask()"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" *ngIf="showAddTask" (click)="showAddTask = false">
   <div class="modal-card" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -1491,48 +1738,46 @@
         </div>
       </div>
 
-      <div class="form-2col">
-        <!-- Searchable assignee dropdown (ng-select) -->
-        <div class="form-row">
-          <label>Assignee
-            <span *ngIf="employeesLoading" class="field-loading-hint">Loading…</span>
-          </label>
-          <ng-select
-            class="task-ng-select"
-            [items]="allEmployees"
-            bindLabel="fullName"
-            bindValue="fullName"
-            [(ngModel)]="newTask.assignee"
-            placeholder="Search or select employee…"
-            [searchable]="true"
-            [clearable]="true"
-            notFoundText="No matching employee">
-            <ng-template ng-option-tmp let-item="item">
-              <div class="ngs-option-main">{{ item.fullName }}</div>
-              <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
-            </ng-template>
-          </ng-select>
-        </div>
-
-        <!-- Searchable supervisor / team dropdown (ng-select) -->
-        <div class="form-row">
-          <label>Supervisor / Team</label>
-          <ng-select
-            class="task-ng-select"
-            [items]="allEmployees"
-            bindLabel="fullName"
-            bindValue="fullName"
-            [(ngModel)]="newTask.team"
-            placeholder="Search or select supervisor…"
-            [searchable]="true"
-            [clearable]="true"
-            notFoundText="No matching person">
-            <ng-template ng-option-tmp let-item="item">
-              <div class="ngs-option-main">{{ item.fullName }}</div>
-              <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
-            </ng-template>
-          </ng-select>
-        </div>
+      <!-- Multi-assignee + supervisor row -->
+      <div class="form-row">
+        <label>Assignees
+          <span style="font-size:11px;color:#9ca3af;font-weight:400"> — select one or more</span>
+          <span *ngIf="employeesLoading" class="field-loading-hint">Loading…</span>
+        </label>
+        <ng-select
+          class="task-ng-select"
+          [items]="allEmployees"
+          bindLabel="fullName"
+          bindValue="fullName"
+          [(ngModel)]="newTask.assignees"
+          [multiple]="true"
+          placeholder="Search and select employees…"
+          [searchable]="true"
+          [clearable]="true"
+          notFoundText="No matching employee">
+          <ng-template ng-option-tmp let-item="item">
+            <div class="ngs-option-main">{{ item.fullName }}</div>
+            <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
+          </ng-template>
+        </ng-select>
+      </div>
+      <div class="form-row">
+        <label>Supervisor / Team</label>
+        <ng-select
+          class="task-ng-select"
+          [items]="allEmployees"
+          bindLabel="fullName"
+          bindValue="fullName"
+          [(ngModel)]="newTask.team"
+          placeholder="Search or select supervisor…"
+          [searchable]="true"
+          [clearable]="true"
+          notFoundText="No matching person">
+          <ng-template ng-option-tmp let-item="item">
+            <div class="ngs-option-main">{{ item.fullName }}</div>
+            <div class="ngs-option-sub">{{ item.role }}{{ item.department ? ' · ' + item.department : '' }}</div>
+          </ng-template>
+        </ng-select>
       </div>
       <div class="form-2col">
         <div class="form-row">

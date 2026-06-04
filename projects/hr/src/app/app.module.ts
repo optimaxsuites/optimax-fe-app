@@ -1,3 +1,4 @@
+import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -400,7 +401,8 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     NokChangeRequestComponent,
     GuarantorChangeRequestComponent,
     EmployeeChangeRequestsDashboardComponent,
-    EmployeeChangeRequestsSummaryComponent
+    EmployeeChangeRequestsSummaryComponent,
+    HrSettingsComponent,
   ],
   imports: [
     AppHrRoutingModule,

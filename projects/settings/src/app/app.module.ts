@@ -100,6 +100,8 @@ import { DropdownModule } from 'primeng/dropdown';
 import { ApprovalComponent } from './ui/view/user-setting/approval/approval.component';
 import { SmtpSetupComponent } from './ui/view/general/smtp-setup/smtp-setup.component';
 import { MailTemplatesComponent } from './ui/view/hr/mail-templates/mail-templates.component';
+import { HrNotificationsComponent } from './ui/view/hr/hr-notifications/hr-notifications.component';
+import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-import.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -145,7 +147,9 @@ import { MailTemplatesComponent } from './ui/view/hr/mail-templates/mail-templat
     BankTellerMappingComponent,
     ApprovalComponent,
     SmtpSetupComponent,
-    MailTemplatesComponent
+    MailTemplatesComponent,
+    HrNotificationsComponent,
+    HrOdooImportComponent,
   ],
   imports: [
     // BrowserModule,

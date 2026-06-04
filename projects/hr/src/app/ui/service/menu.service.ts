@@ -51,12 +51,12 @@ export class MenuService {
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
         icon: 'fas fa-calendar-minus'
       },
-      // {
-      //   label: 'Settings',
-      //   route: this.navigationLink.getLink('settingsLink'),
-      //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      //   icon: 'fas fa-sliders-h'
-      // },
+      {
+        label: 'Settings',
+        route: this.navigationLink.getLink('HRSettings'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-cog'
+      },
     ];
   }
 
