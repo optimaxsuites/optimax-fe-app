@@ -525,13 +525,27 @@ export class MessageFeedComponent {
         .join('<br>');
     }
     const escaped = this.escapeHtml(cleaned);
-    return this.mentionifyHtml(escaped
-      .replace(this.urlRegex, (rawUrl) => {
-        const normalized = this.normalizePreviewUrl(rawUrl);
-        const safeLabel = this.escapeHtml(rawUrl);
-        return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="chat-link">${safeLabel}</a>`;
-      })
-      .replace(/\n/g, '<br>'));
+
+    // Resolve [text](url) markdown links before URL regex so URLs inside them
+    // are not double-linkified. Use placeholder swap to keep the pipeline safe.
+    const mdPlaceholders: string[] = [];
+    const mdLinkRe = /\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
+    const withMdLinks = escaped.replace(mdLinkRe, (_match, linkText, linkUrl) => {
+      const safeHref = linkUrl.replace(/"/g, '%22');
+      const anchor = `<a href="${safeHref}" class="chat-link chat-share-link">${linkText}</a>`;
+      mdPlaceholders.push(anchor);
+      return `\x00MD${mdPlaceholders.length - 1}\x00`;
+    });
+
+    const withUrls = withMdLinks.replace(this.urlRegex, (rawUrl) => {
+      const normalized = this.normalizePreviewUrl(rawUrl);
+      const safeLabel = this.escapeHtml(rawUrl);
+      return `<a href="${normalized}" target="_blank" rel="noopener noreferrer" class="chat-link">${safeLabel}</a>`;
+    });
+
+    const restored = withUrls.replace(/\x00MD(\d+)\x00/g, (_, idx) => mdPlaceholders[Number(idx)] ?? '');
+
+    return this.mentionifyHtml(restored.replace(/\n/g, '<br>'));
   }
 
   messageLinkPreview(msg: Message): {
