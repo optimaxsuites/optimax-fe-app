@@ -4,6 +4,7 @@ import {
   Output,
   EventEmitter,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { Channel, DmContact } from '../communication.component';
 
@@ -23,6 +24,8 @@ export interface MeInfo {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChannelSidebarComponent {
+  constructor(private cdr: ChangeDetectorRef) {}
+
   // ── Inputs ──────────────────────────────────────────
   @Input() me!: MeInfo;
   @Input() channels: Channel[] = [];
@@ -72,6 +75,58 @@ export class ChannelSidebarComponent {
   @Output() searchExecuted = new EventEmitter<void>();
   @Output() searchClosed = new EventEmitter<void>();
   @Output() jumpTo = new EventEmitter<{ msg: any; channelId: string; channelName: string }>();
+
+  // ── Birthday panel state ──────────────────────────────
+  birthdaysPanelOpen = true;
+
+  closeBirthdaysPanel(): void {
+    this.birthdaysPanelOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  private readonly UPCOMING_WINDOW_DAYS = 30;
+
+  get nearBirthdays() {
+    return this.upcomingBirthdays.filter(
+      (b) => b.daysUntilBirthday <= this.UPCOMING_WINDOW_DAYS,
+    );
+  }
+
+  get nextBirthdayPerson() {
+    return this.upcomingBirthdays[0] ?? null;
+  }
+
+  get nextBirthdayCalendar(): {
+    monthLabel: string;
+    weeks: (number | null)[][];
+    targetDay: number;
+    todayDay: number;
+  } | null {
+    const person = this.nextBirthdayPerson;
+    if (!person) return null;
+    const today = new Date();
+    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const target = new Date(base);
+    target.setDate(base.getDate() + person.daysUntilBirthday);
+    const year = target.getFullYear();
+    const month = target.getMonth();
+    const targetDay = target.getDate();
+    const monthLabel = target.toLocaleDateString([], { month: 'long', year: 'numeric' });
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: (number | null)[] = Array(firstWeekday).fill(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const weeks: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+    const sameMonth =
+      base.getFullYear() === year && base.getMonth() === month;
+    return { monthLabel, weeks, targetDay, todayDay: sameMonth ? base.getDate() : -1 };
+  }
+
+  trackBirthday(_i: number, b: { id: string }): string {
+    return b.id;
+  }
 
   // ── Template helpers ─────────────────────────────────
 
