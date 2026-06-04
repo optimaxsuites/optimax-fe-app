@@ -247,6 +247,9 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
         employee: r.employee,
         date: r.date 
       })));
+
+      console.log('RAW API RESPONSE:', res.content);
+      console.log('MAPPED RECORDS:', mapped);
       
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
