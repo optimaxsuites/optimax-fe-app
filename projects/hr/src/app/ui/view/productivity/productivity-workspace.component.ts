@@ -1652,7 +1652,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.workTaskApi.uploadMedia(file).subscribe({
         next: (res) => {
-          if (res.url) entry.url = res.url;
+          if (res.url) {
+            entry.url = res.url.startsWith('/')
+              ? `https://be.optimaxsuites.com${res.url}`
+              : res.url;
+          }
           entry.uploading = false;
         },
         error: () => {
