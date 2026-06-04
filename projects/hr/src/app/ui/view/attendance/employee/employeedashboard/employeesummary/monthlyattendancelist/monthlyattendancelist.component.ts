@@ -111,13 +111,17 @@ export class MonthlyattendancelistComponent implements OnInit {
   }*/
 
   applyMonthFilter() {
+    
     const [year, month] = this.selectedMonth.split('-').map(Number);
 
   this.filteredData = this.attendanceData.filter(record => {
     if (!record.date) return false;
 
     const d = new Date(record.date);
+    console.log('Filtered data:', this.filteredData);
+    
     return d.getFullYear() === year && d.getMonth() + 1 === month;
+    
   });
     /*
     this.filteredData = this.attendanceData.filter(record => {
