@@ -1,101 +1,116 @@
-<nav class="sidebar rounded-r-3xl" [ngClass]="sidebarClass">
-  <div class="side-bar-header" *ngIf="!sidebarHidden">
-    <img src="assets/logo.png" alt="Logo" class="logo" />
+<nav class="sb" [ngClass]="sidebarClass">
+
+  <!-- ── Brand ──────────────────────────────────────────────────────────────── -->
+  <div class="sb-brand">
+    <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
+    <img *ngIf="sidebarHidden"  src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
   </div>
-  <div class="toggle-wrapper" [ngClass]="{
-    'max-w-full mx-auto  pl-8 my-3': sidebarHidden,
-    'absolute -right-4 top-14 z-[100]': !sidebarHidden
+
+  <!-- ── Toggle ─────────────────────────────────────────────────────────────── -->
+  <div class="sb-toggle-wrap" [ngClass]="{
+    'sb-toggle-wrap--collapsed': sidebarHidden,
+    'sb-toggle-wrap--expanded': !sidebarHidden
   }">
-    <button class="toggle-btn text-xl h-9 w-9 rounded-full text-white" (click)="onToggleSidebar()">
-      <i *ngIf="sidebarHidden" class="pi pi-angle-right text-xl"></i>
-      <i *ngIf="!sidebarHidden" class="pi pi-angle-left text-xl"></i> 
-      <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
+    <button class="sb-toggle-btn" (click)="onToggleSidebar()">
+      <i *ngIf="sidebarHidden"  class="pi pi-angle-right"></i>
+      <i *ngIf="!sidebarHidden" class="pi pi-angle-left"></i>
     </button>
   </div>
-  <ul id="dashboard-header" class="menu-list">
-    <li *ngFor="let item of menuItems | async as menuItems">
-      <div class="menu-item w-full" (click)="toggleSubMenu(item, menuItems)">
-        <a *ngIf="!item.submenu"
-           [routerLink]="item.route"
-           (click)="onNavigate()"
-           routerLinkActive="active"
-           class="menu-link flex gap-6 items-center w-full cursor-pointer"
-           [pTooltip]="item.label"
-   tooltipPosition="right"
-   [tooltipDisabled]="!sidebarHidden"
-           [routerLinkActiveOptions]="{ exact: true }">
-          <i *ngIf="item.icon" [class]="item.icon"  [ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"></i>  
-          <span *ngIf="!sidebarHidden">{{ item.label }}</span>
-        </a>
 
-        <a 
-          class="menu-link flex gap-6 items-center cursor-pointer"
-          [pTooltip]="item.label"
-          tooltipPosition="right"
-          [tooltipDisabled]="!sidebarHidden"
-          *ngIf="item.submenu">
-          <i *ngIf="item.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl flex gap-1': sidebarHidden}" [class]="item.icon">
-          <div *ngIf="sidebarHidden"> &#9662;</div>
+  <!-- ── Search ─────────────────────────────────────────────────────────────── -->
+  <div class="sb-search-wrap" *ngIf="!sidebarHidden">
+    <i class="pi pi-search sb-search-icon"></i>
+    <input type="text" class="sb-search" placeholder="Search menu…"
+           (input)="onSearch($any($event.target).value)" />
+  </div>
 
-          </i>
-          <span *ngIf="!sidebarHidden">{{ item.label }} &#9662;</span>
+  <!-- ── Nav list ───────────────────────────────────────────────────────────── -->
+  <ul class="sb-list">
+    <li *ngFor="let item of filteredMenuItems$ | async as menuItems" class="sb-entry">
 
-        </a>
+      <!-- Item without submenu -->
+      <a *ngIf="!item.submenu"
+         [routerLink]="item.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="item.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="item.icon" [class]="item.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ item.label }}</span>
+      </a>
+
+      <!-- Item with submenu -->
+      <div *ngIf="item.submenu"
+           class="sb-link sb-link--parent"
+           [class.sb-link--open]="item.open"
+           (click)="toggleSubMenu(item, menuItems)"
+           [pTooltip]="item.label" tooltipPosition="right"
+           [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="item.icon" [class]="item.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ item.label }}</span>
+        <i *ngIf="!sidebarHidden"
+           class="fas fa-chevron-right sb-chevron"
+           [class.sb-chevron--open]="item.open"></i>
       </div>
 
-      <ul class="submenu-list" [ngClass]="{'open': item.open}" *ngIf="item.submenu">
-        <ng-container *ngFor="let subItem of item.submenu">
-          <li *ngIf="!subItem.isNotSidebarItem">
-      
-            <a [routerLink]="subItem.route"
+      <!-- Submenu -->
+      <ul *ngIf="item.submenu" class="sb-sub" [class.sb-sub--open]="item.open">
+        <ng-container *ngFor="let sub of item.submenu">
+          <li *ngIf="!sub.isNotSidebarItem">
+            <a [routerLink]="sub.route"
                (click)="onNavigate()"
-               routerLinkActive="active"
+               routerLinkActive="sb-sub-link--active"
                [routerLinkActiveOptions]="{ exact: true }"
-               [pTooltip]="subItem.label"
-               tooltipPosition="right"
-               [tooltipDisabled]="!sidebarHidden"
-               class="submenu-link flex gap-4 items-center">
-              <i *ngIf="subItem.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}" [class]="subItem.icon"></i> 
-              <span *ngIf="!sidebarHidden">{{ subItem.label }}</span>
+               class="sb-sub-link"
+               [pTooltip]="sub.label" tooltipPosition="right"
+               [tooltipDisabled]="!sidebarHidden">
+              <span class="sb-sub-dot"></span>
+              <span *ngIf="!sidebarHidden" class="sb-sub-label">{{ sub.label }}</span>
             </a>
           </li>
         </ng-container>
       </ul>
+
     </li>
 
-    <li *ngIf="isSuperUser()" id="side-nav-inventory">
-      <div class="menu-item">
-        <a 
-          [routerLink]="marketplace.route"
-          (click)="onNavigate()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [pTooltip]="marketplace.label"
-          tooltipPosition="right"
-          [tooltipDisabled]="!sidebarHidden"
-          class="menu-link flex gap-4 items-center">
-          <i *ngIf="marketplace.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="marketplace.icon"></i>
-          <span *ngIf="!sidebarHidden">{{ marketplace.label }}</span>
-        </a>
-      </div>
+    <!-- Marketplace -->
+    <li *ngIf="isSuperUser()" class="sb-entry">
+      <a [routerLink]="marketplace.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="marketplace.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="marketplace.icon" [class]="marketplace.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ marketplace.label }}</span>
+      </a>
     </li>
 
-
-    <li *ngIf="showAdminUI" id="side-nav-inventory">
-      <div class="menu-item">
-        <a 
-          [routerLink]="tenant.route"
-          (click)="onNavigate()"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [pTooltip]="tenant.label"
-          tooltipPosition="right"
-          [tooltipDisabled]="!sidebarHidden"
-          class="menu-link flex gap-4 items-center">
-          <i *ngIf="tenant.icon"[ngClass]="{' text-xl': !sidebarHidden, 'w-full mx-auto text-2xl': sidebarHidden}"   [class]="tenant.icon"></i>
-          <span *ngIf="!sidebarHidden">{{ tenant.label }}</span>
-        </a>
-      </div>
+    <!-- Tenants -->
+    <li *ngIf="showAdminUI" class="sb-entry">
+      <a [routerLink]="tenant.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="tenant.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="tenant.icon" [class]="tenant.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ tenant.label }}</span>
+      </a>
     </li>
+
   </ul>
+
 </nav>

@@ -37,6 +37,20 @@ export class MarketplaceComponent {
   String = String
   Number = Number
   showAdminUI: boolean = false
+  searchTerm: string = ''
+  activeFilter: 'all' | 'installed' | 'available' | 'coming-soon' = 'all'
+
+  get filteredModules(): any[] {
+    const q = this.searchTerm.toLowerCase();
+    return this.modules.filter(m => {
+      const matchesSearch = !q || m.name?.toLowerCase().includes(q) || m.description?.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+      if (this.activeFilter === 'installed') return !m.locked && m.status === 'ACTIVE';
+      if (this.activeFilter === 'available') return m.locked && m.status === 'ACTIVE';
+      if (this.activeFilter === 'coming-soon') return m.status === 'INACTIVE';
+      return true;
+    });
+  }
 
   constructor(
     private menuService: MenuItemsService,

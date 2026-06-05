@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { UsersComponent } from './users/users.component';
 import { RolesNpermissionComponent } from './roles-npermission/roles-npermission.component';
 import { ApprovalComponent } from './approval/approval.component';
@@ -8,91 +9,47 @@ import { ApprovalComponent } from './approval/approval.component';
   templateUrl: './user-setting.component.html',
   styleUrl: './user-setting.component.scss'
 })
-export class UserSettingComponent {
-  tabs: Array<'Users' | 'Roles and permission'> = ['Users', 'Roles and permission'];
-  tabState: 'Users' | 'Roles and permission' = 'Users';
+export class UserSettingComponent implements OnInit {
+  sidebar = false;
+  selectedComp: Type<any> | null = null;
+  searchTerm = '';
 
-  changeTab(tab: 'Users' | 'Roles and permission') {
-    this.tabState = tab;
-    // this.loadDataBasedOnTab();
-    // this.showAddForm = false
+  settings = [
+    { name: 'User Management', key: 'users', icon: 'fas fa-users', component: UsersComponent,
+      subSetting: ['Create users', 'Assign roles', 'Staff accounts', 'Access management'] },
+    { name: 'Roles Management', key: 'roles', icon: 'fas fa-user-shield', component: RolesNpermissionComponent,
+      subSetting: ['Role setup', 'Permissions', 'Access control', 'Authorization levels'] },
+    { name: 'Approval Workflows', key: 'approvals', icon: 'fas fa-project-diagram', component: ApprovalComponent,
+      subSetting: ['Workflow configuration', 'Approval chains', 'Escalation rules'] },
+  ];
+
+  filteredSettings = [...this.settings];
+
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit(): void {
+    this.filteredSettings = [...this.settings];
+
+    this.route.queryParams.subscribe(params => {
+      const panel = params['panel'];
+      if (panel) {
+        const match = this.settings.find(s => s.key === panel);
+        if (match && match.component) { this.sidebar = true; this.selectedComp = match.component as any; }
+      }
+    });
   }
 
-    sidebar: boolean = false;
-    hoveredIndex: number = -1;
-  
-    settings = [
-  
-      {
-        name: 'User Management',
-        subSetting: [
-         'User creation', 'Assign roles', ' manage employees', 'add employee',
-      'new staff',
-      'manage users',
-      'manage employees',
-      'employee management',
-      'staff list',
-      'staff accounts',
-      'user accounts',
-      'assign roles',
-      'roles assignment',
-      'set user role',
-      'user access',
-        ],
-        icon: 'pi pi-receipt',
-        component: UsersComponent,
-      },
-      {
-        name: 'Roles Management',
-        subSetting: [
-         ' Assign roles', 'permissions', 'role assignment',
-            'permissions',
-            'user permissions',
-            'access control',
-            'privileges',
-            'authorization',
-            'permission settings',
-            'role setup',
-            'access levels',
-        ],
-        icon: 'pi pi-receipt',
-        component: RolesNpermissionComponent,
-      },
-      {
-        name: "Approval Workflows",
-        subSetting: [],
-        icon: 'pi pi-cog',
-        component: ApprovalComponent,
-      }
-    
-      
-    ];
-  
-    selectedComp = null;
-    openSideBar = (setting: any) => {
-      this.sidebar = true;
-      this.selectedComp = setting.component;
-    };
-    searchTerm: string = '';
-  
-    filteredSettings = [...this.settings];
-  
-    ngOnInit(): void {
-      this.filteredSettings = [...this.settings];
-    }
-  
-    filterSettings(): void {
-      const term = this.searchTerm.toLowerCase();
-  
-      this.filteredSettings = this.settings.filter((setting) => {
-        const nameMatch = setting.name.toLowerCase().includes(term);
-        const subSettingMatch = setting.subSetting.some((sub) =>
-          sub.toLowerCase().includes(term)
-        );
-        return nameMatch || subSettingMatch;
-      });
-  
-      console.log(this.filteredSettings);
-    }
+  filterSettings(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredSettings = this.settings.filter(s =>
+      s.name.toLowerCase().includes(term) ||
+      s.subSetting.some(sub => sub.toLowerCase().includes(term))
+    );
+  }
 
+  openSideBar(setting: any): void {
+    if (!setting.component) return;
+    this.sidebar = true;
+    this.selectedComp = setting.component;
+  }
 }

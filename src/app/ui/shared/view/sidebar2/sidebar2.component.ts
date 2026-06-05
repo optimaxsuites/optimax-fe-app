@@ -3,7 +3,8 @@ import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationEnd, Router, UrlTree } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar2',
@@ -15,6 +16,8 @@ export class Sidebar2Component {
      @Output() toggleSidebar = new EventEmitter<void>();
     showAdminUI = false;
   menuItems!: Observable<MenuItem[]>;
+  filteredMenuItems$!: Observable<MenuItem[]>;
+  searchQuery$ = new BehaviorSubject<string>('');
   role: string | null = null;
 marketplace : any =   {
   label: 'Marketplace',
@@ -52,6 +55,25 @@ tenant: any = {
 
     this.menuItems = this.menuService.getMenuItems$();
 
+    this.filteredMenuItems$ = combineLatest([this.menuItems, this.searchQuery$]).pipe(
+      map(([items, query]) => {
+        if (!query.trim()) return items;
+        const q = query.toLowerCase();
+        return items.reduce<MenuItem[]>((acc, item) => {
+          const labelMatch = item.label?.toLowerCase().includes(q);
+          if (item.submenu) {
+            const matchedSubs = item.submenu.filter((s: any) => s.label?.toLowerCase().includes(q));
+            if (labelMatch || matchedSubs.length) {
+              acc.push({ ...item, submenu: matchedSubs.length ? matchedSubs : item.submenu, open: true });
+            }
+          } else if (labelMatch) {
+            acc.push(item);
+          }
+          return acc;
+        }, []);
+      })
+    );
+
   // console.log("menuItems = ")
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
@@ -84,6 +106,10 @@ tenant: any = {
       item.open = willOpen; // Toggle the 'open' property to show/hide submenu
     }
   }
+  onSearch(value: string): void {
+    this.searchQuery$.next(value);
+  }
+
   onToggleSidebar() {
     this.toggleSidebar.emit();
   }
