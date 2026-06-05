@@ -1,147 +1,200 @@
-<div class="flex gap-4 items-center">
-    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+<div class="ps-wrap">
+
+  <!-- Header -->
+  <div class="ps-header">
     <div>
-        <p class="text-customBlue/60">General</p>
-        <p class="text-customBlue font-semibold text-[15px]">Email Office</p>
+      <h2 class="ps-title">Email Account Setup</h2>
+      <p class="ps-subtitle">Configure outbound mail via SMTP</p>
     </div>
-</div>
-<hr>
-
-<div class="flex justify-end mb-4">
-
-  <button (click)="createNew = !createNew" class="bg-customBlue text-white px-4 py-2 rounded-lg hover:bg-customBlue/90">
-    {{ createNew ? 'View All Configurations' : 'Create New Configuration' }}
-  </button>
-</div>
-
-<div *ngIf="createNew">
-  <form [formGroup]="smtpForm" (ngSubmit)="test()" class="smtp-form">
-
-    <div class="form-grid">
-      <div class="field-container">
-        <label>Configuration Name</label>
-        <input type="text" placeholder="e.g. Primary Mailer" formControlName="name" />
-        <small class="p-error" *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched">Name is required</small>
-      </div>
-      <div class="field-container">
-        <label>Host</label>
-        <input type="text" placeholder="smtp.example.com" formControlName="host" />
-        <small class="p-error" *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched">Host is required</small>
-      </div>
-      <div class="field-container">
-        <label>Port</label>
-        <input type="number" placeholder="587" formControlName="port" />
-        <small class="p-error" *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched">Port is required</small>
-      </div>
-      <div class="field-container">
-        <label>Protocol</label>
-        <input type="text" placeholder="SMTP" formControlName="protocol" />
-        <small class="p-error" *ngIf="smtpForm.get('protocol')?.invalid && smtpForm.get('protocol')?.touched">Protocol is required</small>
-      </div>
-    </div>
-
-    <div class="form-grid">
-      <div class="field-container">
-        <label>Username</label>
-        <input type="text" formControlName="username" />
-        <small class="p-error" *ngIf="smtpForm.get('username')?.invalid && smtpForm.get('username')?.touched">Username is required</small>
-      </div>
-      <div class="field-container">
-        <label>Password</label>
-        <input type="password" formControlName="password" />
-        <small class="p-error" *ngIf="smtpForm.get('password')?.invalid && smtpForm.get('password')?.touched">Password is required</small>
-      </div>
-      <div class="field-container">
-        <label>From Address</label>
-        <input type="email" placeholder="noreply@domain.com" formControlName="fromAddress" />
-        <small class="p-error" *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched">
-          <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From Address is required</span>
-          <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
-        </small>
-      </div>
-    </div>
-
-    <div class="checkbox-grid">
-      <label class="check-label">
-        <input type="checkbox" formControlName="authEnabled" /> Auth Enabled
-      </label>
-      <label class="check-label">
-        <input type="checkbox" formControlName="startTlsEnabled" /> STARTTLS Enabled
-      </label>
-      <label class="check-label">
-        <input type="checkbox" formControlName="sslEnabled" /> SSL Enabled
-      </label>
-      <label class="check-label">
-        <input type="checkbox" formControlName="active" /> Active Configuration
-      </label>
-    </div>
-
-    <div class="form-grid">
-      <div class="field-container">
-        <label>Connection Timeout (ms)</label>
-        <input type="number" formControlName="connectionTimeoutMs" />
-      </div>
-      <div class="field-container">
-        <label>Timeout (ms)</label>
-        <input type="number" formControlName="timeoutMs" />
-      </div>
-      <div class="field-container">
-        <label>Write Timeout (ms)</label>
-        <input type="number" formControlName="writeTimeoutMs" />
-      </div>
-    </div>
-
-    <button type="submit" [disabled]="loading || smtpForm.invalid" class="submit-btn disabled:cursor-not-allowed disabled:bg-gray-400">
-      {{ loading ? 'Testing...' : 'Test Configuration' }}
+    <button type="button" (click)="createNew = !createNew" class="ps-btn"
+            [class.ps-btn-primary]="!createNew"
+            [class.ps-btn-ghost]="createNew">
+      {{ createNew ? 'View Configurations' : '+ New Configuration' }}
     </button>
+  </div>
 
-  </form>
-</div>
+  <!-- ── Create form ─────────────────────────────────────────────────────────── -->
+  <form *ngIf="createNew" [formGroup]="smtpForm" (ngSubmit)="test()" class="ps-wrap">
+    <div class="ps-body">
 
-<div *ngIf="!createNew">
-   <mat-accordion class="">
-      @for(config of allConfigs; track config.name){
-        <mat-expansion-panel #panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title class="capitalize">
-              {{ config.name }}
-            </mat-panel-title>
-            <mat-panel-description class="action-buttons">
-               <button (click)="activateConfig(config,  $event)" class="text-yellow-600 hover:bg-yellow-200 p-3 rounded-xl">
-                <i class="fa-solid fa-power-off cursor-pointer text-2xl pr-2"></i>
-                <span *ngIf="panel.expanded">{{ !config.allowEcodeAuth ? 'Activate' : 'Deactivate' }}</span>
-              </button>
-              <button (click)="editConfig(config,  $event)" class="text-green-600 hover:bg-green-200 p-3 rounded-xl">
-                <i class="fa-solid fa-pen cursor-pointer text-2xl pr-2"></i>
-                <span *ngIf="panel.expanded">Edit</span>
-              </button>
-              <button (click)="confirmDeleteConfig(config, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!config.isEditing">
-                <i class="fa-solid fa-trash text-2xl pr-2"></i>
-                <span *ngIf="panel.expanded">Delete</span>
-              </button>
-            </mat-panel-description>
-          </mat-expansion-panel-header>
-          
-          <div>
-            <p><strong>Host:</strong> {{ config.host }}</p>
-            <p><strong>Port:</strong> {{ config.port }}</p>
-            <p><strong>Protocol:</strong> {{ config.protocol }}</p>
-            <p><strong>Username:</strong> {{ config.username }}</p>
-            <p><strong>From Address:</strong> {{ config.fromAddress }}</p>
-            <p><strong>Auth Enabled:</strong> {{ config.authEnabled ? 'Yes' : 'No' }}</p>
-            <p><strong>STARTTLS Enabled:</strong> {{ config.startTlsEnabled ? 'Yes' : 'No' }}</p>
-            <p><strong>SSL Enabled:</strong> {{ config.sslEnabled ? 'Yes' : 'No' }}</p>
-            <p><strong>Active Configuration:</strong> {{ config.active ? 'Yes' : 'No' }}</p>
-            <p><strong>Connection Timeout (ms):</strong> {{ config.connectionTimeoutMs }}</p>
-            <p><strong>Timeout (ms):</strong> {{ config.timeoutMs }}</p>
-            <p><strong>Write Timeout (ms):</strong> {{ config.writeTimeoutMs }}</p>
+      <!-- Connection -->
+      <div class="ps-section">
+        <div class="ps-section-label">Connection</div>
+        <div class="ps-grid-2">
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">Configuration Name <span class="ps-req">*</span></label>
+            <input type="text" formControlName="name" class="ps-input" placeholder="e.g. Primary Mailer" />
+            <span *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched"
+                  style="font-size:11px;color:#ef4444;">Name is required</span>
           </div>
-        </mat-expansion-panel>
-      }
-      @empty {<li>There are no items.</li>}
-    </mat-accordion>
-</div>
 
-<!-- <div *ngIf="response" class="response-log">
-  <pre>{{ response | json }}</pre>
-</div> -->
+          <div class="ps-field">
+            <label class="ps-label">Host <span class="ps-req">*</span></label>
+            <input type="text" formControlName="host" class="ps-input" placeholder="smtp.example.com" />
+            <span *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched"
+                  style="font-size:11px;color:#ef4444;">Host is required</span>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Port <span class="ps-req">*</span></label>
+            <input type="number" formControlName="port" class="ps-input" placeholder="587" />
+            <span *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched"
+                  style="font-size:11px;color:#ef4444;">Port is required</span>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Protocol <span class="ps-req">*</span></label>
+            <input type="text" formControlName="protocol" class="ps-input" placeholder="SMTP" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Username <span class="ps-req">*</span></label>
+            <input type="text" formControlName="username" class="ps-input" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Password <span class="ps-req">*</span></label>
+            <input type="password" formControlName="password" class="ps-input" />
+          </div>
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">From Address <span class="ps-req">*</span></label>
+            <input type="email" formControlName="fromAddress" class="ps-input" placeholder="noreply@domain.com" />
+            <span *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched"
+                  style="font-size:11px;color:#ef4444;">
+              <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From address is required</span>
+              <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="ps-section">
+        <div class="ps-section-label">Options</div>
+        <div class="ps-grid-2">
+          <label class="ps-option">
+            <input type="checkbox" formControlName="authEnabled" />
+            <span class="ps-option-text">Auth Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="startTlsEnabled" />
+            <span class="ps-option-text">STARTTLS Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="sslEnabled" />
+            <span class="ps-option-text">SSL Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="active" />
+            <span class="ps-option-text">Set as Active Configuration</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Timeouts -->
+      <div class="ps-section">
+        <div class="ps-section-label">Timeouts (ms)</div>
+        <div class="ps-grid-3">
+          <div class="ps-field">
+            <label class="ps-label">Connection</label>
+            <input type="number" formControlName="connectionTimeoutMs" class="ps-input" />
+          </div>
+          <div class="ps-field">
+            <label class="ps-label">Read</label>
+            <input type="number" formControlName="timeoutMs" class="ps-input" />
+          </div>
+          <div class="ps-field">
+            <label class="ps-label">Write</label>
+            <input type="number" formControlName="writeTimeoutMs" class="ps-input" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ps-footer">
+      <button type="submit" [disabled]="loading || smtpForm.invalid" class="ps-btn ps-btn-primary">
+        <i class="fas fa-paper-plane"></i>
+        {{ loading ? 'Testing…' : 'Test &amp; Save' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- ── Config list ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="!createNew" class="ps-body">
+    <div class="ps-section-label">Saved Configurations</div>
+
+    <div *ngIf="!allConfigs?.length" class="ps-empty">
+      <i class="fas fa-inbox"></i>
+      <p>No configurations yet.<br>Click <strong>+ New Configuration</strong> to add one.</p>
+    </div>
+
+    <div *ngFor="let config of allConfigs; let i = index" class="ps-config-item">
+      <!-- Row header -->
+      <div class="ps-config-row" (click)="config._expanded = !config._expanded">
+        <span class="ps-status-dot" [class.on]="config.active"></span>
+        <span class="ps-config-name-text">{{ config.name }}</span>
+        <span class="ps-config-host-text">{{ config.host }}:{{ config.port }}</span>
+        <div class="ps-icon-btn toggle" (click)="activateConfig(config, $event)" title="Toggle active">
+          <i class="fas fa-power-off"></i>
+        </div>
+        <div class="ps-icon-btn edit" (click)="editConfig(config, $event)" title="Edit">
+          <i class="fas fa-pen"></i>
+        </div>
+        <div class="ps-icon-btn delete" *ngIf="!config.isEditing"
+             (click)="confirmDeleteConfig(config, $event)" title="Delete">
+          <i class="fas fa-trash"></i>
+        </div>
+        <i class="fas" style="font-size:11px;color:#cbd5e1;margin-left:4px;"
+           [class.fa-chevron-down]="!config._expanded"
+           [class.fa-chevron-up]="config._expanded"></i>
+      </div>
+
+      <!-- Expanded detail -->
+      <div *ngIf="config._expanded" class="ps-config-detail">
+        <div class="ps-detail-grid">
+          <div>
+            <div class="ps-detail-key">Protocol</div>
+            <p class="ps-detail-val">{{ config.protocol }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">From</div>
+            <p class="ps-detail-val">{{ config.fromAddress }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Username</div>
+            <p class="ps-detail-val">{{ config.username }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Status</div>
+            <p class="ps-detail-val" [style.color]="config.active ? '#059669' : '#94a3b8'">
+              {{ config.active ? 'Active' : 'Inactive' }}
+            </p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Auth</div>
+            <p class="ps-detail-val">{{ config.authEnabled ? 'Enabled' : 'Disabled' }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">SSL / STARTTLS</div>
+            <p class="ps-detail-val">
+              {{ config.sslEnabled ? 'SSL' : '—' }}{{ config.startTlsEnabled ? ' · STARTTLS' : '' }}
+            </p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Conn. Timeout</div>
+            <p class="ps-detail-val">{{ config.connectionTimeoutMs }}ms</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Read / Write</div>
+            <p class="ps-detail-val">{{ config.timeoutMs }}ms / {{ config.writeTimeoutMs }}ms</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
