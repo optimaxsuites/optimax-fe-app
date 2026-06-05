@@ -672,111 +672,100 @@ export class MenuItemsService {
       code: 'General Settings',
       route: this.navigationLink.getLink('generalSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-home',
+      icon: 'fas fa-cog',
+      description: 'Configure business profile, branches, security and email setup.',
       submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
+        { label: 'Profile', route: this.navigationLink.getLink('generalSettings'), queryParams: { panel: 'profile' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-user-circle' },
+        { label: 'Branches & Location', route: this.navigationLink.getLink('generalSettings'), queryParams: { panel: 'branches' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-map-marker-alt' },
+        { label: 'Security / Privacy', route: this.navigationLink.getLink('generalSettings'), queryParams: { panel: 'security' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-lock' },
+        { label: 'Email Account Setup', route: this.navigationLink.getLink('generalSettings'), queryParams: { panel: 'email' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-envelope' },
       ],
     },
     {
       label: 'Sales',
       code: 'Sales',
-
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('salesSettings'),
-      icon: 'pi pi-dollar', 
-      submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-      ],
+      icon: 'fas fa-chart-line',
+      description: 'Configure sales channels, pricing rules and order preferences.',
+      submenu: [],
     },
     {
       label: 'Purchase',
       code: 'Purchase',
-
       route: this.navigationLink.getLink('purchaseSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-shopping-cart', 
-      submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-      ],
+      icon: 'fas fa-shopping-bag',
+      description: 'Set up purchase order workflows and supplier defaults.',
+      submenu: [],
     },
     {
       label: 'Inventory',
       code: 'Inventory',
-      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('inventorySettings'),
-
-      icon: 'pi pi-cog',
-      submenu: [
-        { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
-      ],
+      icon: 'fas fa-boxes',
+      description: 'Manage stock tracking, warehouses and reorder thresholds.',
+      submenu: [],
     },
     {
       label: 'Procurement',
       code: 'optimaXProcurement',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('vendorSettings'),
-
-      icon: 'pi pi-truck', 
-      submenu: [
-        { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
-      ],
+      icon: 'fas fa-truck',
+      description: 'Configure RFQ templates, vendor defaults and approval chains.',
+      submenu: [],
     },
     {
       label: 'Accounting',
       code: 'Accounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('accountSettings'),
-
-      icon: 'pi pi-credit-card', 
-      submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      ],
+      icon: 'fas fa-calculator',
+      description: 'Set fiscal year, chart of accounts and reconciliation rules.',
+      submenu: [],
     },
     {
       label: 'Human Resources',
       code: 'HR',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('HRSettings'),
-
-      icon: 'pi pi-users', 
+      icon: 'fas fa-users',
+      description: 'Manage salary, payroll, leave, appraisals and HR metadata.',
       submenu: [
-        { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Interview', route: this.navigationLink.getLink('interviewLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-        { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-        { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Work Productivity', code: 'HR_PRODUCTIVITY', route: this.navigationLink.getLink('productivityLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-chart-line' },
-        { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-
+        { label: 'Salary', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'salary' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-money-bill-wave' },
+        { label: 'Payroll', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'payroll' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-invoice-dollar' },
+        { label: 'Compensations & Deductions', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'compensation' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-balance-scale' },
+        { label: 'Metadata', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'metadata' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tags' },
+        { label: 'Level', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'level' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-layer-group' },
+        { label: 'Leave', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'leave' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-minus' },
+        { label: 'Email Templates', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'email-templates' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-envelope-open-text' },
+        { label: 'Score Sheet', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'scoresheet' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-clipboard-list' },
+        { label: 'Appraisal Assessment', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'appraisal' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tasks' },
+        { label: 'Notifications', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
+        { label: 'Import from Odoo', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'odoo' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-puzzle-piece' },
       ],
     },
     {
       label: 'Hospitality',
       code: 'Hospitality',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-users',
+      icon: 'fas fa-hotel',
       route: this.navigationLink.getLink('HOSSettings'),
-
-      submenu: [
-   
-      ],
- 
-
+      description: 'Configure room types, booking rules and hospitality services.',
+      submenu: [],
     },
     {
       label: 'Point of Sale (POS)',
       code: 'optimaXPOS',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('posSettings'),
-
-      icon: 'pi pi-shopping-bag', 
+      icon: 'fas fa-cash-register',
+      description: 'Set up e-store, payment gateways and product metadata.',
       submenu: [
-        { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-       
+        { label: 'E-store Settings', route: this.navigationLink.getLink('posSettings'), queryParams: { panel: 'estore' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-store' },
+        { label: 'Product Metadata', route: this.navigationLink.getLink('posSettings'), queryParams: { panel: 'metadata' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-boxes' },
       ],
     },
     {
@@ -784,22 +773,21 @@ export class MenuItemsService {
       code: 'Office Productivity',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('officeSet'),
-
-      icon: 'pi pi-shopping-bag', 
-      submenu: [
-        { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-       
-      ],
+      icon: 'fas fa-briefcase',
+      description: 'Configure workspace, collaboration and productivity tools.',
+      submenu: [],
     },
     {
       label: 'User and Roles Management',
       code: 'User and Roles Management',
       route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-check', 
+      icon: 'fas fa-user-shield',
+      description: 'Manage users, roles, permissions and approval workflows.',
       submenu: [
-        { label: 'Order Summary', route: this.navigationLink.getLink('userRoles'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
- 
+        { label: 'User Management', route: this.navigationLink.getLink('userRoles'), queryParams: { panel: 'users' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-users' },
+        { label: 'Roles Management', route: this.navigationLink.getLink('userRoles'), queryParams: { panel: 'roles' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-user-tag' },
+        { label: 'Approval Workflows', route: this.navigationLink.getLink('userRoles'), queryParams: { panel: 'approvals' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-project-diagram' },
       ],
     },
     {
@@ -807,50 +795,45 @@ export class MenuItemsService {
       code: 'CRM',
       route: this.navigationLink.getLink('CRMSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-users', 
-      submenu: [
-        { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-       
-      ],
+      icon: 'fas fa-handshake',
+      description: 'Configure customer pipeline, contact fields and CRM workflows.',
+      submenu: [],
     },
     {
       label: 'Expense',
       code: 'optimaXExpense',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('expenseSettings'),
-
-      icon: 'pi pi-money-bill', 
-      submenu: [
-        { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
- 
-
-      ],
+      icon: 'fas fa-money-bill-wave',
+      description: 'Set expense categories, approval limits and reimbursement rules.',
+      submenu: [],
     },
     {
       label: 'Tender',
       code: 'Tender',
       route: this.navigationLink.getLink('tenderSettings'),
-
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-user' 
+      icon: 'fas fa-file-contract',
+      description: 'Configure tender templates, evaluation criteria and bid rules.',
+      submenu: [],
     },
     {
       label: 'Vendor',
       code: 'Vendor',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-money-bill',
+      icon: 'fas fa-user-tie',
       route: this.navigationLink.getLink('vendorSettings'),
-      submenu: [
-        { label: 'View 1', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-      ],
+      description: 'Manage vendor onboarding, compliance and contract settings.',
+      submenu: [],
     },
     {
       label: 'User Management',
       code: 'User Management',
       route: this.navigationLink.getLink('userManagmentSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-cog' 
+      icon: 'fas fa-users-cog',
+      description: 'System-level user administration and access controls.',
+      submenu: [],
     },
   ];
 
@@ -996,14 +979,9 @@ export class MenuItemsService {
     return this.modulesRolePermissions.filter(module => unlockedModules.some(m => m.label === module.name))
   }
 
-  getUnlockedSettingsModules(){
-    // console.log(this.settingsMenuItems)
-    // let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'Dashboard');
-    // console.log(unlockedModules)
-    // return unlockedModules;
-    return this.settingsMenuItems$.pipe(
-      map((menuItems) => menuItems.filter((item) => !item.locked || item.label === 'Dashboard'))
-    );
+  getUnlockedSettingsModules(): MenuItem[] {
+    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');
+    return unlockedModules;
   }
   
   getAllModules() {

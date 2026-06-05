@@ -14,6 +14,8 @@ export interface MenuItem {
   locked?: boolean;
   active?: boolean;
 
+  queryParams?: Record<string, string>;
+
   isNotSidebarItem?: boolean;
   doNotRegisterAsPermission?: boolean;
 }

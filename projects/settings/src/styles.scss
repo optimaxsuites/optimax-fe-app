@@ -95,3 +95,5 @@ input[type="checkbox"] {
 input[type="radio"] {
   @apply accent-customBlue;
 }
+
+// sc-* settings page styles are in each component's own SCSS via _sc-shared.scss
