@@ -5,6 +5,8 @@ import { GeneralSettingsComponent } from './ui/view/general/general-settings/gen
 import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.component';
 import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
 import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
+import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
+import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 
 const routes: Routes = [
   {
@@ -27,6 +29,14 @@ const routes: Routes = [
       {
         path: 'user-roles/:uuid',
         component: UserSettingComponent,
+      },
+      {
+        path: 'module-registry/:uuid',
+        component: ModuleRegistryComponent,
+      },
+      {
+        path: 'bug-tracker/:uuid',
+        component: BugTrackerComponent,
       }
     ],
   },

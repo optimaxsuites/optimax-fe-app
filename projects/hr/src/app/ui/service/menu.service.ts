@@ -52,6 +52,18 @@ export class MenuService {
         icon: 'fas fa-calendar-minus'
       },
       {
+        label: 'Analytics',
+        route: this.navigationLink.getLink('hrAnalytics'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-chart-line'
+      },
+      {
+        label: 'Overtime',
+        route: this.navigationLink.getLink('hrOvertime'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        icon: 'fas fa-clock'
+      },
+      {
         label: 'Settings',
         route: this.navigationLink.getLink('HRSettings'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],

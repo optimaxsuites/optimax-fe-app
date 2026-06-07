@@ -43,8 +43,44 @@ export class ModulesService {
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/approlepermission", body)
       .pipe(catchError(this.handleError));
     }
-    
-    
+
+    createAppModule(body: any){
+      return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/modules", body)
+      .pipe(catchError(this.handleError));
+    }
+
+    updateAppModule(id: number, body: any){
+      return this.http
+      .put<any>(this.getBaseApiUrl() + `/x/api/v2/us/modules/${id}`, body)
+      .pipe(catchError(this.handleError));
+    }
+
+    deleteAppModule(id: number){
+      return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/us/modules/${id}`)
+      .pipe(catchError(this.handleError));
+    }
+
+    createAppRegister(body: any){
+      return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appregister", body)
+      .pipe(catchError(this.handleError));
+    }
+
+    getAppRegisters(){
+      return this.http
+      .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appregister")
+      .pipe(catchError(this.handleError));
+    }
+
+    deleteAppRegister(id: number){
+      return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/appregister/${id}`)
+      .pipe(catchError(this.handleError));
+    }
+
+
 
   private handleError(error: HttpErrorResponse) {
       let errorMessage = 'An unknown error occurred!';
