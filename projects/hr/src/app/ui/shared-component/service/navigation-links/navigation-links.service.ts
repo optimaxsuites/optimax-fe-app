@@ -84,6 +84,8 @@ export class NavigationLinksService {
 this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = '/admin/hr/HR-settings/' +uuidV4();
+    this.links['hrAnalytics'] = '/admin/hr/analytics/' +uuidV4();
+    this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
 this.links['userRoles'] = '/admin/settings/user-roles/' +uuidV4();
 
 

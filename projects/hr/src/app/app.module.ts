@@ -1,4 +1,6 @@
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
+import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -37,6 +39,7 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
 
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -403,6 +406,8 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     EmployeeChangeRequestsDashboardComponent,
     EmployeeChangeRequestsSummaryComponent,
     HrSettingsComponent,
+    HrAnalyticsDashboardComponent,
+    OvertimeManagementComponent,
   ],
   imports: [
     AppHrRoutingModule,
@@ -460,6 +465,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     NgSelectModule,
     DragDropModule,
     FullCalendarModule,
+    NgApexchartsModule,
     BackButtonModule,
     LargeSideModalComponent,
     FooterComponent,

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { MenuItem } from '../sharedComponents/domain/menuItem.dto';
 import { MenuItemsService } from '../sharedComponents/service/menue-items/menu-items.service';
 
@@ -8,27 +9,43 @@ import { MenuItemsService } from '../sharedComponents/service/menue-items/menu-i
   templateUrl: './settings-page.component.html',
   styleUrls: ['./settings-page.component.scss']
 })
-export class SettingsPageComponent {
+export class SettingsPageComponent implements OnDestroy {
   menuItems: MenuItem[] = [];
   role: string = "";
+  private subs = new Subscription();
 
   constructor(private menuService: MenuItemsService, private router: Router) {}
 
   ngOnInit(): void {
     this.role = JSON.stringify(sessionStorage.getItem('role'));
 
-    if (this.role) {
-      this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
-        ...item,
-        open: false
-      }));
-    }
+    // Read once immediately so the sidebar is populated before the API returns
+    this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
+      ...item,
+      open: false
+    }));
 
-    this.router.events.subscribe(event => {
-      if (event instanceof NavigationEnd) {
-        this.updateActiveState();
-      }
-    });
+    // Re-read whenever loadUnlockedSettingsModules() emits (after API resolves)
+    this.subs.add(
+      this.menuService.settingsMenuItems$.subscribe(() => {
+        this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
+          ...item,
+          open: false
+        }));
+      })
+    );
+
+    this.subs.add(
+      this.router.events.subscribe(event => {
+        if (event instanceof NavigationEnd) {
+          this.updateActiveState();
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   isRouteActive(route: any): boolean {

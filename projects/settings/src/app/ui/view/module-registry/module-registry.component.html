@@ -1,0 +1,200 @@
+<p-toast key="tl" position="top-right"></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="mr-page">
+
+  <!-- Header -->
+  <div class="mr-header">
+    <div>
+      <h2 class="mr-title">Module Registry</h2>
+      <p class="mr-sub">Manage AppModules and AppRegister entries. UIDs and AppCodes must match the TypeScript module/submenu codes for permissions to work.</p>
+    </div>
+    <div class="mr-header-actions">
+      <button class="mr-btn mr-btn-ghost" (click)="showRefPanel = !showRefPanel">
+        <i class="fas fa-code"></i> TS Reference
+      </button>
+      <button class="mr-btn mr-btn-primary" (click)="openModuleForm()">
+        <i class="fas fa-plus"></i> Add Module
+      </button>
+    </div>
+  </div>
+
+  <!-- TS Reference Panel -->
+  <div class="mr-ref-panel" *ngIf="showRefPanel">
+    <div class="mr-ref-header">
+      <span><i class="fas fa-info-circle"></i> TypeScript Module Codes Reference</span>
+      <button class="mr-ref-close" (click)="showRefPanel = false"><i class="fas fa-times"></i></button>
+    </div>
+    <p class="mr-ref-note">The <code>uid</code> of an AppModule must match the module <code>code</code>, and the <code>appCode</code> of an AppRegister must match the submenu <code>code</code>. Entries marked <span class="badge-ok">registered</span> are already in the DB.</p>
+    <div class="mr-ref-grid">
+      <div class="mr-ref-mod" *ngFor="let m of tsCodes">
+        <div class="mr-ref-mod-head">
+          <code class="mr-code">{{ m.code }}</code>
+          <span class="mr-ref-label">{{ m.label }}</span>
+          <span class="badge-ok" *ngIf="isRegistered(m.code)">registered</span>
+          <span class="badge-miss" *ngIf="!isRegistered(m.code)">missing</span>
+          <button class="mr-btn-xs" (click)="fillFromTsCode(m.code, 'module'); openModuleForm()" *ngIf="!isRegistered(m.code)">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        <div class="mr-ref-sub" *ngFor="let s of m.submenus">
+          <code class="mr-code-sm">{{ s.code }}</code>
+          <span class="mr-ref-sub-label">{{ s.label }}</span>
+          <span class="badge-ok" *ngIf="isRegistered(s.code)">registered</span>
+          <span class="badge-miss" *ngIf="!isRegistered(s.code)">missing</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="mr-loading" *ngIf="loading">
+    <mat-spinner diameter="32"></mat-spinner>
+    <span>Loading modules…</span>
+  </div>
+
+  <!-- Module list -->
+  <div class="mr-modules" *ngIf="!loading">
+    <div class="mr-empty" *ngIf="modules.length === 0">
+      <i class="fas fa-cubes"></i>
+      <p>No modules registered yet. Click <b>Add Module</b> to begin.</p>
+    </div>
+
+    <div class="mr-module-card" *ngFor="let mod of modules">
+      <div class="mr-module-head">
+        <div class="mr-module-info">
+          <div class="mr-module-title">{{ mod.title }}</div>
+          <div class="mr-module-meta">
+            <span class="mr-uid-badge"><i class="fas fa-key"></i> uid: {{ mod.uid }}</span>
+            <span class="mr-name-badge">name: {{ mod.name }}</span>
+          </div>
+          <div class="mr-module-desc" *ngIf="mod.shortDescription">{{ mod.shortDescription }}</div>
+        </div>
+        <div class="mr-module-actions">
+          <button class="mr-btn-icon" title="Add submenu register" (click)="openRegisterForm(mod)">
+            <i class="fas fa-plus-circle"></i>
+          </button>
+          <button class="mr-btn-icon" title="Edit module" (click)="openModuleForm(mod)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="mr-btn-icon mr-btn-danger" title="Delete module" (click)="confirmDeleteModule(mod, $event)">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- AppRegister entries -->
+      <div class="mr-register-list">
+        <div class="mr-register-empty" *ngIf="!mod.appRegister || mod.appRegister.length === 0">
+          <i class="fas fa-exclamation-triangle"></i>
+          No submenu registers linked — non-admin users cannot see this module's submenus until registers are added.
+        </div>
+        <div class="mr-register-row" *ngFor="let reg of mod.appRegister">
+          <div class="mr-register-info">
+            <span class="mr-reg-name">{{ reg.appName }}</span>
+            <code class="mr-reg-code">{{ reg.appCode }}</code>
+            <span class="mr-reg-desc" *ngIf="reg.description">{{ reg.description }}</span>
+          </div>
+          <button class="mr-btn-icon mr-btn-danger" title="Remove" (click)="confirmDeleteRegister(reg, $event)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit Module Dialog -->
+<p-dialog header="{{ editingModule ? 'Edit Module' : 'Add AppModule' }}"
+          [(visible)]="showModuleForm"
+          [modal]="true" [style]="{width:'520px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="mr-form">
+    <div class="mr-field">
+      <label>Module UID <span class="mr-required">*</span></label>
+      <input pInputText [(ngModel)]="moduleForm.uid" placeholder="e.g. optimaXCommerce" />
+      <span class="mr-hint">Must match the <code>code</code> field in menu-items.service.ts</span>
+    </div>
+
+    <div class="mr-field">
+      <label>Name <span class="mr-required">*</span></label>
+      <input pInputText [(ngModel)]="moduleForm.name" placeholder="e.g. commerce" />
+    </div>
+
+    <div class="mr-field">
+      <label>Title <span class="mr-required">*</span></label>
+      <input pInputText [(ngModel)]="moduleForm.title" placeholder="e.g. Commerce" />
+    </div>
+
+    <div class="mr-field">
+      <label>Short Description</label>
+      <input pInputText [(ngModel)]="moduleForm.shortDescription" placeholder="One-liner description" />
+    </div>
+
+    <div class="mr-field">
+      <label>Description</label>
+      <textarea pInputText [(ngModel)]="moduleForm.description" rows="3" placeholder="Full description…"></textarea>
+    </div>
+
+    <div class="mr-field-note">
+      <i class="fas fa-lightbulb"></i>
+      Use the <b>TS Reference</b> panel to copy the correct UID from the sidebar code.
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="mr-btn mr-btn-ghost" (click)="showModuleForm = false">Cancel</button>
+    <button class="mr-btn mr-btn-primary" (click)="saveModule()">
+      {{ editingModule ? 'Save Changes' : 'Create Module' }}
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- Add AppRegister Dialog -->
+<p-dialog header="Add Submenu Register to {{ activeModuleForRegister?.title }}"
+          [(visible)]="showRegisterForm"
+          [modal]="true" [style]="{width:'500px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="mr-form">
+    <div class="mr-field">
+      <label>App Code <span class="mr-required">*</span></label>
+      <input pInputText [(ngModel)]="registerForm.appCode" placeholder="e.g. AI_ANALYSIS" />
+      <span class="mr-hint">Must match the submenu <code>code</code> in menu-items.service.ts</span>
+    </div>
+
+    <div class="mr-field">
+      <label>App Name <span class="mr-required">*</span></label>
+      <input pInputText [(ngModel)]="registerForm.appName" placeholder="e.g. AI Analysis" />
+    </div>
+
+    <div class="mr-field">
+      <label>Description</label>
+      <textarea pInputText [(ngModel)]="registerForm.description" rows="3" placeholder="What this submenu does…"></textarea>
+    </div>
+
+    <!-- Quick fill from TS codes for the parent module -->
+    <div class="mr-quick-fill" *ngIf="activeModuleForRegister">
+      <p class="mr-quick-label">Quick fill from TS codes for <b>{{ activeModuleForRegister.title }}</b>:</p>
+      <div class="mr-quick-chips">
+        <ng-container *ngFor="let m of tsCodes">
+          <ng-container *ngIf="m.code === activeModuleForRegister.uid">
+            <button class="mr-chip"
+                    *ngFor="let s of m.submenus"
+                    [class.mr-chip-done]="isRegistered(s.code)"
+                    (click)="fillFromTsCode(s.code, 'register')">
+              {{ s.code }}
+            </button>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="mr-btn mr-btn-ghost" (click)="showRegisterForm = false">Cancel</button>
+    <button class="mr-btn mr-btn-primary" (click)="saveRegister()">Register Submenu</button>
+  </ng-template>
+</p-dialog>

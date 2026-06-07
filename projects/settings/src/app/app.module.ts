@@ -102,6 +102,8 @@ import { SmtpSetupComponent } from './ui/view/general/smtp-setup/smtp-setup.comp
 import { MailTemplatesComponent } from './ui/view/hr/mail-templates/mail-templates.component';
 import { HrNotificationsComponent } from './ui/view/hr/hr-notifications/hr-notifications.component';
 import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-import.component';
+import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
+import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -150,6 +152,8 @@ import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-impor
     MailTemplatesComponent,
     HrNotificationsComponent,
     HrOdooImportComponent,
+    ModuleRegistryComponent,
+    BugTrackerComponent,
   ],
   imports: [
     // BrowserModule,

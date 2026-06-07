@@ -364,9 +364,25 @@ export class MenuItemsService {
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'fas fa-chart-line',
           description: 'Track execution, reviews, and operational productivity in one workspace.'
+        },
+        {
+          label: 'Analytics',
+          code: 'HR_ANALYTICS',
+          route: this.navigationLink.getLink('hrAnalytics'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-chart-bar',
+          description: 'Executive HR analytics — workforce, payroll, leave, turnover, and risk.'
+        },
+        {
+          label: 'Overtime',
+          code: 'HR_OVERTIME',
+          route: this.navigationLink.getLink('hrOvertime'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-clock',
+          description: 'Configure overtime rules and manage overtime type catalog.'
         }
       ]
-    },    
+    },
     {
       label: 'Work Productivity',
       code: 'HR_PRODUCTIVITY',
@@ -835,6 +851,24 @@ export class MenuItemsService {
       description: 'System-level user administration and access controls.',
       submenu: [],
     },
+    {
+      label: 'Module Registry',
+      code: 'MODULE_REGISTRY',
+      route: this.navigationLink.getLink('moduleRegistry'),
+      roles: ['ROLE_ADMIN'],
+      icon: 'fas fa-cubes',
+      description: 'Create and manage AppModules and AppRegister entries to wire frontend components into role permissions.',
+      submenu: [],
+    },
+    {
+      label: 'Bug Tracker',
+      code: 'BUG_TRACKER',
+      route: this.navigationLink.getLink('bugTracker'),
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-bug',
+      description: 'Track, manage and resolve bugs and issues across all OptimaX modules.',
+      submenu: [],
+    },
   ];
 
   appList  = []
@@ -949,9 +983,10 @@ export class MenuItemsService {
     const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
     const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
   
+    const alwaysUnlocked = ['General Settings', 'User and Roles Management', 'MODULE_REGISTRY', 'BUG_TRACKER'];
     this.settingsMenuItems.forEach((module) => {
-      if (module.code === 'General Settings' || module.code === 'User and Roles Management') {
-        module.locked = false; 
+      if (alwaysUnlocked.includes(module.code || '')) {
+        module.locked = false;
       } else {
         module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label));
       }
@@ -980,8 +1015,8 @@ export class MenuItemsService {
   }
 
   getUnlockedSettingsModules(): MenuItem[] {
-    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');
-    return unlockedModules;
+    const alwaysShow = ['General Settings', 'User and Roles Management', 'Module Registry', 'Bug Tracker'];
+    return this.settingsMenuItems.filter(module => !module.locked || alwaysShow.includes(module.label));
   }
   
   getAllModules() {

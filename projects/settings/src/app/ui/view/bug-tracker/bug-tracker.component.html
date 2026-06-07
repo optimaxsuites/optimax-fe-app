@@ -1,0 +1,194 @@
+<div class="bt-page">
+
+  <!-- Header -->
+  <div class="bt-header">
+    <div>
+      <h2 class="bt-title">Bug Tracker</h2>
+      <p class="bt-sub">Track issues, bugs and work items across all OptimaX modules.</p>
+    </div>
+    <div class="bt-header-actions">
+      <button class="bt-btn bt-btn-ghost" (click)="exportCsv()"><i class="fas fa-download"></i> CSV</button>
+      <button class="bt-btn bt-btn-primary" (click)="openForm()"><i class="fas fa-plus"></i> New Issue</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="bt-stats" *ngIf="showStats">
+    <div class="bt-stat">
+      <div class="bt-stat-val">{{ stats.total }}</div>
+      <div class="bt-stat-label">Total</div>
+    </div>
+    <div class="bt-stat bt-stat-danger">
+      <div class="bt-stat-val">{{ stats.critical }}</div>
+      <div class="bt-stat-label">Critical Open</div>
+    </div>
+    <div class="bt-stat bt-stat-warn">
+      <div class="bt-stat-val">{{ stats.open }}</div>
+      <div class="bt-stat-label">Open</div>
+    </div>
+    <div class="bt-stat bt-stat-amber">
+      <div class="bt-stat-val">{{ stats.blocked }}</div>
+      <div class="bt-stat-label">Blocked</div>
+    </div>
+    <div class="bt-stat bt-stat-green">
+      <div class="bt-stat-val">{{ stats.done }}</div>
+      <div class="bt-stat-label">Resolved</div>
+    </div>
+    <div class="bt-stat-progress">
+      <div class="bt-prog-label">{{ stats.pct }}% resolved</div>
+      <div class="bt-prog-bar"><div class="bt-prog-fill" [style.width.%]="stats.pct"></div></div>
+    </div>
+  </div>
+
+  <!-- Module tabs -->
+  <div class="bt-tabs">
+    <button class="bt-tab" *ngFor="let m of modules"
+            [class.active]="activeModule === m"
+            (click)="selectModule(m)">{{ m }}</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bt-filters">
+    <div class="bt-search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search issues…" [(ngModel)]="searchText" (ngModelChange)="applyFilters()" />
+    </div>
+    <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses">{{ s }}</option>
+    </select>
+    <select [(ngModel)]="filterPriority" (ngModelChange)="applyFilters()">
+      <option value="">All Priorities</option>
+      <option *ngFor="let p of priorities">{{ p }}</option>
+    </select>
+    <select [(ngModel)]="filterAssignee" (ngModelChange)="applyFilters()">
+      <option value="">All Assignees</option>
+      <option *ngFor="let a of assignees">{{ a }}</option>
+    </select>
+    <select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="priority">By Priority</option>
+      <option value="status">By Status</option>
+    </select>
+  </div>
+
+  <!-- Bug list -->
+  <div class="bt-list">
+
+    <div class="bt-empty" *ngIf="filtered.length === 0">
+      <i class="fas fa-bug"></i>
+      <p>No issues found for these filters.</p>
+    </div>
+
+    <div class="bt-row" *ngFor="let bug of filtered" [class]="'pri-border-' + bug.priority.toLowerCase()">
+      <div class="bt-row-main" (click)="toggleExpand(bug.id)">
+
+        <div class="bt-row-left">
+          <span class="bt-id">{{ bug.id }}</span>
+          <div class="bt-row-body">
+            <div class="bt-bug-title">{{ bug.title }}</div>
+            <div class="bt-bug-meta">
+              <span class="bt-module-tag">{{ bug.module }}</span>
+              <span *ngIf="bug.assignee" class="bt-meta-item"><i class="fas fa-user"></i> {{ bug.assignee }}</span>
+              <span class="bt-meta-item"><i class="fas fa-clock"></i> {{ bug.createdAt | date:'dd MMM yyyy' }}</span>
+              <span *ngIf="bug.workLog.length" class="bt-meta-item"><i class="fas fa-comment-alt"></i> {{ bug.workLog.length }} log{{ bug.workLog.length > 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bt-row-right" (click)="$event.stopPropagation()">
+          <span class="bt-priority" [class]="priorityClass(bug.priority)">{{ bug.priority }}</span>
+          <select class="bt-status-select" [class]="statusClass(bug.status)"
+                  [(ngModel)]="bug.status" (change)="updateStatus(bug, bug.status)">
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+          <button class="bt-btn-icon" title="Edit" (click)="openForm(bug)"><i class="fas fa-edit"></i></button>
+          <button class="bt-btn-icon bt-btn-danger" title="Delete" (click)="deleteBug(bug.id)"><i class="fas fa-trash-alt"></i></button>
+          <i class="fas" [class.fa-chevron-down]="expandedId !== bug.id" [class.fa-chevron-up]="expandedId === bug.id" style="color:#94a3b8;font-size:11px;cursor:pointer"></i>
+        </div>
+
+      </div>
+
+      <!-- Expanded detail -->
+      <div class="bt-detail" *ngIf="expandedId === bug.id">
+        <div class="bt-detail-desc" *ngIf="bug.description">
+          <b>Description:</b>
+          <p>{{ bug.description }}</p>
+        </div>
+        <div class="bt-detail-reporter" *ngIf="bug.reporter">Reported by: <b>{{ bug.reporter }}</b></div>
+
+        <div class="bt-worklog">
+          <div class="bt-wl-header">Work Log</div>
+          <div class="bt-wl-add">
+            <input type="text" placeholder="Add a note or update…" [(ngModel)]="newLogNote" (keyup.enter)="addLog(bug)" />
+            <button class="bt-btn bt-btn-sm" (click)="addLog(bug)">Add</button>
+          </div>
+          <div class="bt-wl-empty" *ngIf="!bug.workLog.length">No work log entries yet.</div>
+          <div class="bt-wl-entry" *ngFor="let log of bug.workLog">
+            <span class="bt-wl-time">{{ log.timestamp }}</span>
+            <span class="bt-wl-note">{{ log.note }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit Dialog -->
+<p-dialog header="{{ editingBug ? 'Edit Issue' : 'New Issue' }}"
+          [(visible)]="showForm"
+          [modal]="true" [style]="{width:'560px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="bt-form">
+    <div class="bt-field">
+      <label>Title <span class="bt-req">*</span></label>
+      <input pInputText [(ngModel)]="form.title" placeholder="Brief description of the issue" />
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Module <span class="bt-req">*</span></label>
+        <select [(ngModel)]="form.module">
+          <option value="">Select module…</option>
+          <option *ngFor="let m of modules.slice(1)">{{ m }}</option>
+        </select>
+      </div>
+      <div class="bt-field">
+        <label>Priority <span class="bt-req">*</span></label>
+        <select [(ngModel)]="form.priority">
+          <option *ngFor="let p of priorities">{{ p }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Status <span class="bt-req">*</span></label>
+        <select [(ngModel)]="form.status">
+          <option *ngFor="let s of statuses">{{ s }}</option>
+        </select>
+      </div>
+      <div class="bt-field">
+        <label>Assignee</label>
+        <input pInputText list="bt-assignees" [(ngModel)]="form.assignee" placeholder="Assigned to…" />
+        <datalist id="bt-assignees">
+          <option *ngFor="let a of assignees" [value]="a"></option>
+        </datalist>
+      </div>
+    </div>
+    <div class="bt-field">
+      <label>Reporter</label>
+      <input pInputText list="bt-assignees" [(ngModel)]="form.reporter" placeholder="Reported by…" />
+    </div>
+    <div class="bt-field">
+      <label>Description</label>
+      <textarea [(ngModel)]="form.description" rows="4" placeholder="Steps to reproduce, context, root cause…"></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="bt-btn bt-btn-ghost" (click)="showForm = false">Cancel</button>
+    <button class="bt-btn bt-btn-primary" (click)="saveForm()">{{ editingBug ? 'Save Changes' : 'Create Issue' }}</button>
+  </ng-template>
+</p-dialog>
