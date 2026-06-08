@@ -1,0 +1,464 @@
+<div class="multi-item-container">
+  <div class="form-wrapper">
+    
+    <!-- Header -->
+    <div class="form-header">
+      <div>
+        <a routerLink="/commerce/requests" class="back-link">
+          <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to Requests
+        </a>
+        <h1 class="form-title">Create Multi-Item Order</h1>
+        <p class="form-subtitle">Request multiple products in a single order</p>
+      </div>
+      <div class="mode-toggle">
+        <a routerLink="/commerce/requests/new" class="mode-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+          </svg>
+          Single Product Form
+        </a>
+      </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+        <div class="step-number">1</div>
+        <span>Add Items</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 1"></div>
+      <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+        <div class="step-number">2</div>
+        <span>Order Details</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 2"></div>
+      <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
+        <div class="step-number">3</div>
+        <span>Vendor Targeting</span>
+      </div>
+      <div class="step-line" [class.active]="currentStep > 3"></div>
+      <div class="step" [class.active]="currentStep >= 4">
+        <div class="step-number">4</div>
+        <span>Review & Submit</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Add Items (Shopping Cart) -->
+    <div class="step-content" *ngIf="currentStep === 1">
+      <div class="cart-header">
+        <h3>Order Items</h3>
+        <button class="add-item-btn" (click)="openAddItemModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Item
+        </button>
+      </div>
+
+      <!-- Empty Cart -->
+      <div class="empty-cart" *ngIf="cartItems.length === 0">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6.5M17 13l1.5 6.5M9 21h6M9 21a2 2 0 11-4 0M9 21a2 2 0 104 0m-4 0h4"></path>
+        </svg>
+        <p>Your cart is empty</p>
+        <span>Click "Add Item" to start building your order</span>
+      </div>
+
+      <!-- Cart Items -->
+      <div class="cart-items" *ngIf="cartItems.length > 0">
+        <div *ngFor="let item of cartItems; let i = index" class="cart-item">
+          <div class="item-info">
+            <div class="item-name">{{ item.productName }}</div>
+            <div class="item-desc">{{ item.description | slice:0:80 }}</div>
+            <div class="item-meta">
+              <span class="item-qty">Qty: {{ item.quantity }}</span>
+              <span class="item-price">{{ formatCurrency(item.budget, item.currency) }}</span>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="edit-btn" (click)="editItem(i)">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+            <button class="remove-btn" (click)="removeItem(i)">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="cart-summary" *ngIf="cartItems.length > 0">
+        <div class="summary-row">
+          <span>Total Items:</span>
+          <strong>{{ cartItems.length }} products</strong>
+        </div>
+        <div class="summary-row">
+          <span>Total Quantity:</span>
+          <strong>{{ getTotalQuantity() }} units</strong>
+        </div>
+        <div class="summary-row total">
+          <span>Total Budget:</span>
+          <strong>{{ formatCurrency(getTotalBudget(), 'NGN') }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Order Details -->
+    <div class="step-content" *ngIf="currentStep === 2">
+      <form [formGroup]="mainForm" class="order-details-form">
+        <!-- Order Name -->
+        <div class="form-group">
+          <label class="form-label required">Order Name</label>
+          <input type="text" formControlName="orderName" class="form-input" 
+                 placeholder="e.g., Q3 Office Supplies Order">
+          <div class="form-hint">Give this order a name for easy reference</div>
+        </div>
+
+        <!-- Project & Department fields -->
+        <div class="form-row" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Project Name</label>
+            <input type="text" formControlName="projectName" class="form-input" 
+                   placeholder="e.g., Q3 Office Equipment Upgrade">
+            <div class="form-hint">Optional: Associate order with a project</div>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Department</label>
+            <input type="text" formControlName="departmentName" class="form-input" 
+                   placeholder="e.g., Information Technology">
+            <div class="form-hint">Optional: Department requesting these items</div>
+          </div>
+        </div>
+
+        <!-- Delivery Location -->
+        <div class="form-group">
+          <label class="form-label required">Master Delivery Location</label>
+          <select formControlName="masterDeliveryLocation" class="form-select">
+            <option value="">Select delivery location...</option>
+            <option *ngFor="let loc of savedLocations" [value]="loc.address">
+              {{ loc.name }} - {{ loc.address }}
+            </option>
+            <option value="CUSTOM">Enter new address...</option>
+          </select>
+        </div>
+
+        <div class="form-group" *ngIf="mainForm.get('masterDeliveryLocation')?.value === 'CUSTOM'">
+          <input type="text" class="form-input" [(ngModel)]="customDeliveryLocation" 
+                 [ngModelOptions]="{standalone: true}"
+                 placeholder="Enter full delivery address">
+        </div>
+
+        <!-- Delivery Deadline -->
+        <div class="form-group">
+          <label class="form-label required">Delivery Deadline</label>
+          <input type="date" formControlName="masterDeliveryDeadline" class="form-input" [min]="today">
+          <div class="form-hint">When do you need these items delivered?</div>
+        </div>
+
+        <!-- RFQ Expiry Date -->
+        <div class="form-group">
+          <label class="form-label required">RFQ Expiry Date</label>
+          <input type="date" formControlName="rfqExpiryDate" class="form-input" [min]="minExpiryDate">
+          <div class="form-hint">Vendors must submit quotations by this date</div>
+        </div>
+
+        <!-- Special Instructions -->
+        <div class="form-group">
+          <label class="form-label">Special Instructions (All Items)</label>
+          <textarea formControlName="masterSpecialInstructions" rows="3" class="form-textarea"
+                    placeholder="Any special instructions that apply to the entire order..."></textarea>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 3: Vendor Targeting -->
+    <div class="step-content" *ngIf="currentStep === 3">
+      <div class="vendor-targeting" [formGroup]="mainForm">
+        <div class="radio-group">
+          <label class="radio-card" [class.selected]="mainForm.get('vendorTargetingType')?.value === 'ALL_VENDORS'">
+            <input type="radio" formControlName="vendorTargetingType" value="ALL_VENDORS">
+            <div class="radio-content">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <div>
+                <strong>All Registered Vendors</strong>
+                <p>All approved vendors in this category will be notified</p>
+              </div>
+            </div>
+          </label>
+
+          <label class="radio-card" [class.selected]="mainForm.get('vendorTargetingType')?.value === 'SELECTED_VENDORS'">
+            <input type="radio" formControlName="vendorTargetingType" value="SELECTED_VENDORS">
+            <div class="radio-content">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <div>
+                <strong>Select Specific Vendors</strong>
+                <p>Only selected vendors will receive this RFQ</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Vendor Selection List -->
+        <div class="vendor-selection" *ngIf="mainForm.get('vendorTargetingType')?.value === 'SELECTED_VENDORS'">
+          <div class="vendor-search">
+            <input type="text" class="search-input" [(ngModel)]="searchVendorTerm" 
+                   [ngModelOptions]="{standalone: true}"
+                   placeholder="Search vendors by name or category...">
+            <div class="bulk-actions">
+              <button class="bulk-btn" (click)="selectAllVendors()">Select All</button>
+              <button class="bulk-btn" (click)="deselectAllVendors()">Deselect All</button>
+            </div>
+          </div>
+
+          <div class="vendor-list">
+            <div *ngFor="let vendor of getFilteredVendors()" class="vendor-item">
+              <label class="vendor-checkbox">
+                <input type="checkbox" [checked]="isVendorSelected(vendor.id)" 
+                       (change)="toggleVendorSelection(vendor.id)">
+                <div class="vendor-info">
+                  <span class="vendor-name">{{ vendor.name }}</span>
+                  <span class="vendor-category">{{ vendor.category }}</span>
+                  <span class="vendor-rating">★ {{ vendor.rating }}</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="selected-count" *ngIf="selectedVendorIds.length > 0">
+            {{ selectedVendorIds.length }} vendor(s) selected
+          </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <strong>RFQ Expiry: {{ mainForm.get('rfqExpiryDate')?.value | date }}</strong>
+            <p>Vendors must submit quotations before this date. Late submissions will not be accepted.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Review & Submit -->
+    <div class="step-content" *ngIf="currentStep === 4">
+      <div class="review-section">
+        <h3>Order Summary</h3>
+        
+        <div class="review-card">
+          <h4>Order Information</h4>
+          <div class="review-row">
+            <span>Order Name:</span>
+            <strong>{{ mainForm.get('orderName')?.value }}</strong>
+          </div>
+          <div class="review-row">
+            <span>Delivery Location:</span>
+            <span>{{ mainForm.get('masterDeliveryLocation')?.value === 'CUSTOM' ? customDeliveryLocation : mainForm.get('masterDeliveryLocation')?.value }}</span>
+          </div>
+          <div class="review-row">
+            <span>Delivery Deadline:</span>
+            <span>{{ mainForm.get('masterDeliveryDeadline')?.value | date }}</span>
+          </div>
+          <div class="review-row">
+            <span>RFQ Expiry Date:</span>
+            <span class="deadline">{{ mainForm.get('rfqExpiryDate')?.value | date }}</span>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4>Items ({{ cartItems.length }})</h4>
+          <div *ngFor="let item of cartItems" class="review-item">
+            <div class="item-header">
+              <strong>{{ item.productName }}</strong>
+              <span>{{ formatCurrency(item.budget, item.currency) }}</span>
+            </div>
+            <div class="item-details">
+              Qty: {{ item.quantity }} | {{ item.description | slice:0:60 }}
+            </div>
+          </div>
+          <div class="review-total">
+            <span>Total Budget:</span>
+            <strong>{{ formatCurrency(getTotalBudget(), 'USD') }}</strong>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4>Vendor Targeting</h4>
+          <div class="review-row">
+            <span>Type:</span>
+            <span>{{ mainForm.get('vendorTargetingType')?.value === 'ALL_VENDORS' ? 'All Registered Vendors' : 'Selected Vendors Only' }}</span>
+          </div>
+          <div class="review-row" *ngIf="mainForm.get('vendorTargetingType')?.value === 'SELECTED_VENDORS'">
+            <span>Vendors:</span>
+            <span>{{ selectedVendorIds.length }} vendor(s) selected</span>
+          </div>
+        </div>
+
+        <div class="review-card" *ngIf="mainForm.get('masterSpecialInstructions')?.value">
+          <h4>Special Instructions</h4>
+          <p>{{ mainForm.get('masterSpecialInstructions')?.value }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="form-navigation">
+      <button class="btn-prev" (click)="previousStep()" *ngIf="currentStep > 1">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Back
+      </button>
+      <button class="btn-next" (click)="nextStep()" *ngIf="currentStep < totalSteps">
+        Next
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      <button class="btn-submit" (click)="onSubmit()" [disabled]="isSubmitting" *ngIf="currentStep === totalSteps">
+        <div *ngIf="isSubmitting" class="spinner"></div>
+        <svg *ngIf="!isSubmitting" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        {{ isSubmitting ? 'Submitting...' : 'Submit Order & Send RFQ' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Item Modal -->
+<div class="modal-overlay" *ngIf="showItemModal" (click)="showItemModal = false">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editingItemIndex !== null ? 'Edit Item' : 'Add Item to Order' }}</h3>
+      <button class="modal-close" (click)="showItemModal = false">×</button>
+    </div>
+    <div class="modal-body" [formGroup]="itemForm">
+      <div class="form-group">
+        <label class="form-label required">Product Name</label>
+        <input type="text" formControlName="productName" class="form-input"
+               [class.is-invalid]="itemForm.get('productName')?.invalid && itemForm.get('productName')?.touched"
+               placeholder="e.g., Office Laptops, Executive Chairs">
+        <div class="form-error" *ngIf="itemForm.get('productName')?.invalid && itemForm.get('productName')?.touched">
+          Product name is required (min 3 characters)
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Description</label>
+        <textarea formControlName="description" rows="2" class="form-textarea"
+                  [class.is-invalid]="itemForm.get('description')?.invalid && itemForm.get('description')?.touched"
+                  placeholder="Describe the product specifications..."></textarea>
+        <div class="form-error" *ngIf="itemForm.get('description')?.invalid && itemForm.get('description')?.touched">
+          Description is required
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label required">Quantity</label>
+          <input type="number" formControlName="quantity" class="form-input"
+                 [class.is-invalid]="itemForm.get('quantity')?.invalid && itemForm.get('quantity')?.touched"
+                 min="1">
+          <div class="form-error" *ngIf="itemForm.get('quantity')?.invalid && itemForm.get('quantity')?.touched">
+            Enter a quantity of at least 1
+          </div>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Budget</label>
+          <input type="number" formControlName="budget" class="form-input"
+                 [class.is-invalid]="itemForm.get('budget')?.invalid && itemForm.get('budget')?.touched"
+                 step="0.01" placeholder="0.00">
+          <div class="form-error" *ngIf="itemForm.get('budget')?.invalid && itemForm.get('budget')?.touched">
+            Enter a budget greater than 0
+          </div>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Currency</label>
+          <select formControlName="currency" class="form-select">
+            <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Delivery Location (Optional)</label>
+        <input type="text" formControlName="deliveryLocation" class="form-input"
+               placeholder="Leave blank to use master delivery location">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Special Instructions (Optional)</label>
+        <textarea formControlName="specialInstructions" rows="2" class="form-textarea"
+                  placeholder="Any special instructions for this item..."></textarea>
+      </div>
+
+      <!-- Product Images for this item -->
+      <div class="form-group">
+        <label class="form-label">Product Images (Optional)</label>
+        <div class="upload-zone"
+             (dragover)="$event.preventDefault()"
+             (drop)="onModalImageDropped($event)"
+             (click)="modalImageInput.click()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span>Click or drag to upload images of this product (JPG, PNG, WEBP)</span>
+          <input #modalImageInput type="file" multiple hidden (change)="onModalImageSelected($event)" accept=".jpg,.jpeg,.png,.gif,.webp">
+        </div>
+        <div class="image-preview-grid" *ngIf="modalImagePreviews.length > 0">
+          <div *ngFor="let preview of modalImagePreviews; let i = index" class="image-preview-item">
+            <img [src]="preview" [alt]="modalImages[i].name" class="image-thumb">
+            <button type="button" class="image-remove" (click)="removeModalImage(i)">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+            <span class="image-name">{{ modalImages[i].name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vendor Documents for this item -->
+      <div class="form-group">
+        <label class="form-label">Vendor Documents (Optional)</label>
+        <div class="upload-zone"
+             (dragover)="$event.preventDefault()"
+             (drop)="onModalDocDropped($event)"
+             (click)="modalDocInput.click()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span>Click or drag to upload specs or requirement docs for vendors (PDF, DOC, XLS)</span>
+          <input #modalDocInput type="file" multiple hidden (change)="onModalDocSelected($event)" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip">
+        </div>
+        <div class="file-list" *ngIf="modalDocuments.length > 0">
+          <div *ngFor="let file of modalDocuments; let i = index" class="file-item">
+            <div class="file-info">
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-size">{{ formatFileSize(file.size) }}</span>
+            </div>
+            <button type="button" class="file-remove" (click)="removeModalDoc(i)">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="showItemModal = false">Cancel</button>
+      <button class="btn-save" (click)="saveItemToCart()">Save to Cart</button>
+    </div>
+  </div>
+</div>
