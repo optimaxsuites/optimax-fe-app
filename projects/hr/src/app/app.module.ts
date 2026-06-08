@@ -377,7 +377,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
-    ShiftCalendarComponent,
+    ShiftCalendarComponent, 
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
