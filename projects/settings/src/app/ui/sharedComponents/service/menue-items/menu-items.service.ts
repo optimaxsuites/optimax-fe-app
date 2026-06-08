@@ -70,22 +70,30 @@ export class MenuItemsService {
       active: false,
       submenu: [
         {
-          label: 'AI Analysis',
-          code: 'AI_ANALYSIS',
+          label: 'Sales',
+          code: 'COM_SALES',
           route: this.navigationLink.getLink('aiQuotationLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
           description: 'View and manage procurements across the organization.'
         },
          {
-          label: 'Procurement Management',
-          code: 'PROCURE_MGMT',
+          label: 'Procurement',
+          code: 'COM_PROCURE',
           route: this.navigationLink.getLink('PMLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'View and manage vendor purchase requests.'
         },
         {
+          label: 'Vendor Portal',
+          code: 'COM_VENDOR',
+          route: this.navigationLink.getLink('VPLink'), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'View and manage vendor quotations.'
+        },
+       /* {
           label: 'Delivery management ',
           code: 'DELIVERY_MGMT',
           route: this.navigationLink.getLink('deliveryManagementLink'), 
@@ -109,10 +117,10 @@ export class MenuItemsService {
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'View and manage vendor purchase requests.'
-        },
+        },*/
          {
-          label: 'Vendor Portal',
-          code: 'VENDOR_PORTAL',
+          label: 'Reports',
+          code: 'COM_REPORT',
           route: this.navigationLink.getLink('VPLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
