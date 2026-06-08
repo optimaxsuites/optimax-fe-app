@@ -1,0 +1,508 @@
+// request-cancellation-dialog.component.scss
+// Using your company colors
+
+.cancellation-dialog-container {
+  max-width: 560px;
+  width: 100%;
+  background: white;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Dialog Header
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #eef2f6;
+  
+  &.warning-header {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-bottom-color: #fecaca;
+  }
+}
+
+.header-icon-wrapper {
+  width: 3rem;
+  height: 3rem;
+  background: white;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  &.warning {
+    background: #fef3c7;
+    
+    .header-icon {
+      color: #f59e0b;
+    }
+  }
+  
+  &:not(.warning) {
+    background: #fee2e2;
+    
+    .header-icon {
+      color: #dc2626;
+    }
+  }
+}
+
+.header-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+}
+
+.dialog-subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin: 0 0 0.25rem 0;
+}
+
+.request-id-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #6c757d;
+  background: #eef2f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+// Alert Cards
+.alert-warning-card,
+.alert-info-card {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 1.5rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+.alert-warning-card {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+}
+
+.alert-info-card {
+  background: #dbeafe;
+  border-left: 4px solid #3b82f6;
+}
+
+.alert-icon-wrapper {
+  flex-shrink: 0;
+  
+  .alert-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.alert-warning-card .alert-icon {
+  color: #f59e0b;
+}
+
+.alert-info-card .alert-icon {
+  color: #3b82f6;
+}
+
+.alert-content {
+  flex: 1;
+  
+  strong {
+    display: block;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  p {
+    font-size: 0.75rem;
+    color: #4b5563;
+    margin: 0;
+  }
+}
+
+.policy-info {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #fde68a;
+  font-size: 0.7rem;
+  color: #92400e;
+  
+  svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+// Form Section
+.cancellation-form {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+  
+  &.required::after {
+    content: '*';
+    color: #dc2626;
+    margin-left: 0.25rem;
+  }
+}
+
+.section-hint {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin: 0 0 1rem 0;
+}
+
+// Reason Grid
+.reason-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reason-option {
+  .reason-radio {
+    display: none;
+  }
+}
+
+.reason-card {
+  display: block;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  background: white;
+  
+  &:hover {
+    border-color: #2E6276;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  &.selected {
+    border-color: #2EB270;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    box-shadow: 0 2px 8px rgba(46, 178, 112, 0.15);
+  }
+}
+
+.reason-card-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.reason-icon {
+  width: 2rem;
+  height: 2rem;
+  background: #f1f5f9;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+    color: #64748b;
+  }
+}
+
+.reason-card.selected .reason-icon {
+  background: #2EB270;
+  
+  svg {
+    color: white;
+  }
+}
+
+.reason-text {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reason-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.reason-check {
+  opacity: 0;
+  transition: opacity 0.2s;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+    color: #2EB270;
+  }
+}
+
+.reason-card.selected .reason-check {
+  opacity: 1;
+}
+
+// Textarea
+.textarea-wrapper {
+  position: relative;
+}
+
+.form-textarea-custom {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #1f2937;
+  transition: all 0.2s;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: #2E6276;
+    box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+  }
+  
+  &.is-invalid {
+    border-color: #dc2626;
+    
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+  }
+}
+
+.character-counter {
+  text-align: right;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+  
+  &.exceed {
+    color: #f59e0b;
+  }
+}
+
+// Checkbox
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  display: none;
+  
+  &:checked + .checkbox-custom {
+    background: #2EB270;
+    border-color: #2EB270;
+    
+    &::after {
+      opacity: 1;
+    }
+  }
+}
+
+.checkbox-custom {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 0.25rem;
+  background: white;
+  position: relative;
+  transition: all 0.2s;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0.25rem;
+    top: 0.0625rem;
+    width: 0.3125rem;
+    height: 0.5625rem;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+}
+
+.checkbox-text {
+  font-size: 0.75rem;
+  color: #4b5563;
+  line-height: 1.4;
+  
+  strong {
+    font-weight: 600;
+    color: #1f2937;
+  }
+}
+
+// Error Message
+.form-error-message {
+  font-size: 0.7rem;
+  color: #dc2626;
+  margin-top: 0.5rem;
+}
+
+// Action Buttons
+.dialog-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eef2f6;
+}
+
+.btn-secondary-custom,
+.btn-danger-custom {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.btn-secondary-custom {
+  background: #f1f5f9;
+  color: #475569;
+  
+  &:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+  }
+}
+
+.btn-danger-custom {
+  background: #dc2626;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.spinner-small {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid white;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .cancellation-dialog-container {
+    border-radius: 1rem;
+  }
+  
+  .dialog-header {
+    padding: 1rem;
+  }
+  
+  .alert-warning-card,
+  .alert-info-card {
+    margin: 0.75rem 1rem;
+    padding: 0.75rem;
+  }
+  
+  .cancellation-form {
+    padding: 0 1rem 1rem;
+  }
+  
+  .reason-card-content {
+    padding: 0.5rem;
+  }
+  
+  .dialog-actions {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+  
+  .btn-secondary-custom,
+  .btn-danger-custom {
+    padding: 0.75rem;
+  }
+}

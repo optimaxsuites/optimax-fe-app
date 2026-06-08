@@ -75,7 +75,7 @@ export class MenuItemsService {
           route: this.navigationLink.getLink('aiQuotationLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
-          description: 'View and manage procurements across the organization.'
+          description: 'Make procurement requests on behalf of the organization.'
         },
          {
           label: 'Procurement',
@@ -123,8 +123,17 @@ export class MenuItemsService {
           code: 'COM_REPORT',
           route: this.navigationLink.getLink('VPLink'), 
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fa fa-envelope',
           description: 'View and manage vendor quotations.'
+        },
+        {
+          label: 'Reports & Analytics',
+          code: 'REPORT_ANALYSIS',
+          route: this.navigationLink.getLink('RALink'), 
+          roles: ['ROLE_USER'],
+          icon: 'fa fa-chart-bar',
+          description: 'View and manage reports and analytics.'
+
         }
       ]
     },    

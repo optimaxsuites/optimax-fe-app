@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
 import { DialogModule } from '@angular/cdk/dialog';
@@ -71,10 +71,27 @@ import { ErrorToastInterceptor } from './ui/shared-component/service/error-messa
 
 import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.component';
 
-import { ProcurementRequestListComponent } from './ui/view/procurement-request-management/procurement-request-list/procurement-request-list.component';
-import { ProcurementRequestManagementComponent } from './ui/view/procurement-request-management/procurement-request-management.component';
-import { ProcurementRequestFormComponent } from './ui/view/procurement-request-management/procurement-request-form/procurement-request-form.component';
-import { ProcurementRequestDetailComponent } from './ui/view/procurement-request-management/procurement-request-detail/procurement-request-detail.component';
+import { ProductRequestListComponent } from './ui/view/request-management/product-request-management/product-request-list/product-request-list.component';
+import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
+import { ProductRequestFormComponent } from './ui/view/request-management/product-request-management/product-request-form/product-request-form.component';
+import { ProductRequestDetailComponent } from './ui/view/request-management/product-request-management/product-request-detail/product-request-detail.component';
+import { RequestEditFormComponent } from './ui/view/request-management/product-request-management/request-edit-form/request-edit-form.component';
+import { MultiItemRequestFormComponent } from './ui/view/request-management/product-request-management/multi-item-request-form/multi-item-request-form.component';
+import { DeliveryTrackingMapComponent } from './ui/view/request-management/product-request-management/delivery-tracking-map/delivery-tracking-map.component';
+import { VendorRatingComponent } from './ui/view/request-management/product-request-management/vendor-rating/vendor-rating.component';
+import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
+import { RequestReorderComponent } from './ui/view/request-management/product-request-management/request-reorder/request-reorder.component';
+import { NotificationCenterComponent } from './ui/view/request-management/product-request-management/notification-center/notification-center.component';
+import { ExportDropdownComponent } from './ui/view/request-management/product-request-management/export-dropdown/export-dropdown.component';
+import { ServiceRequestListComponent } from './ui/view/request-management/service-request-management/service-request-list/service-request-list.component';
+import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';  
+import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
+import { ApprovalInboxComponent } from './ui/view/approval-inbox/approval-inbox.component';
+
+
+
+
+
 @NgModule({
   declarations: [
     App,
@@ -83,9 +100,10 @@ import { ProcurementRequestDetailComponent } from './ui/view/procurement-request
     SideModalComponent,
     SidebarComponent,
     NavTabComponent,
-    ProcurementRequestListComponent,
-    ProcurementRequestManagementComponent,
-
+    ProductRequestListComponent,
+    ServiceRequestListComponent,
+    RequestManagementComponent,
+    NotificationCenterComponent,
   ],
   imports: [
     // BrowserModule,
@@ -129,6 +147,7 @@ import { ProcurementRequestDetailComponent } from './ui/view/procurement-request
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
+    ApprovalInboxComponent,
     MatIconModule,
     MatTabsModule,
     MatDatepickerModule,
@@ -145,8 +164,17 @@ import { ProcurementRequestDetailComponent } from './ui/view/procurement-request
     ProfileInfoComponent,
     UserInterfaceComponent,
     BackButtonComponent,
-    ProcurementRequestFormComponent,
-    ProcurementRequestDetailComponent,
+    ProductRequestFormComponent,
+    MultiItemRequestFormComponent,
+    ProductRequestDetailComponent,
+    RequestEditFormComponent,
+    DeliveryTrackingMapComponent,
+    VendorRatingComponent,
+    RequestDraftsComponent,
+    RequestReorderComponent,
+    ExportDropdownComponent,
+    ServiceRequestFormComponent,
+    OrderDetailComponent
   ],
   exports: [TableComponent],
   providers: [

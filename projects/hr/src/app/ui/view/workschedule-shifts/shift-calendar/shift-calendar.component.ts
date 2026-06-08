@@ -26,11 +26,13 @@ export class ShiftCalendarComponent implements OnInit {
 
   calendarDays: { date: Date; inMonth: boolean }[] = [];
 
-  viewMode: 'calendar' | 'table' = 'calendar';
+  viewMode: 'calendar' | 'table' | 'summary' = 'calendar';
 
-  setView(mode: 'calendar' | 'table') {
+  setView(mode: 'calendar' | 'table' | 'summary') {
     this.viewMode = mode;
   }
+
+  selectedSummaryDate: string | null = null;
   
   employees = [
     { id: 'emp-1', name: 'Afolabi Daniels' },
@@ -49,7 +51,36 @@ export class ShiftCalendarComponent implements OnInit {
     this.scheduleService.schedules$.subscribe(data => {
       this.schedules = data;
     });
+
+    const today = this.formatDateLocal(new Date());
+    this.selectedSummaryDate = today;
   }
+
+  get conflicts() {
+  const conflicts: any[] = [];
+
+  const daySchedules = this.schedules.filter(
+    s => s.date === this.selectedDate
+  );
+
+  for (const schedule of daySchedules) {
+    const result =
+      this.scheduleService.checkConflict(schedule);
+
+    if (result) {
+      const emp = this.employees.find(
+        e => e.id === schedule.employeeId
+      );
+
+      conflicts.push({
+        employeeName: emp?.name,
+        message: result.message
+      });
+    }
+  }
+
+  return conflicts;
+}
 
   formatDateLocal(date: Date): string {
   const year = date.getFullYear();
@@ -188,6 +219,103 @@ get flattenedTableData() {
   });
 
   return rows;
+}
+
+get totalSchedules(): number {
+  return this.schedules.length;
+}
+
+selectSummaryDate(date: string): void {
+  this.selectedSummaryDate = date;
+}
+
+get uniqueEmployees(): number {
+
+  return new Set(
+    this.schedules.map(
+      s => s.employeeId
+    )
+  ).size;
+}
+
+get openSlots(): number {
+
+  const requiredDailySlots = 10;
+
+  return Math.max(
+    0,
+    requiredDailySlots -
+      this.schedules.length
+  );
+}
+
+getDayDensity(date: Date): string {
+
+  const day = this.formatDateLocal(date);
+
+  const count = this.schedules.filter(
+    s => s.date === day
+  ).length;
+
+  if (count >= 5) return 'high';
+
+  if (count >= 3) return 'medium';
+
+  if (count > 0) return 'low';
+
+  return '';
+}
+
+get employeeSummary() {
+
+  const selectedDate = this.selectedSummaryDate;
+
+  return this.employees.map(emp => {
+
+    const schedules = this.schedules.filter(
+      s => s.employeeId === emp.id && 
+      (!selectedDate || s.date === selectedDate)
+    );
+
+    return {
+      employee: emp.name,
+      shifts: schedules.length
+    };
+
+  });
+
+}
+
+get weeklySummary() {
+
+  const result: {
+    date: string;
+    shifts: number;
+  }[] = [];
+
+  for (let i = 0; i < 7; i++) {
+
+    const date = new Date();
+
+    date.setDate(date.getDate() + i);
+
+    const formatted =
+      this.formatDateLocal(date);
+
+    result.push({
+
+      date: formatted,
+
+      shifts: this.schedules.filter(
+        s => s.date === formatted
+      ).length
+
+    });
+
+  }
+
+  return result;
+
 }
 
 get paginatedData() {

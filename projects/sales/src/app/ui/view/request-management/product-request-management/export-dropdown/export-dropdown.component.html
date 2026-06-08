@@ -1,0 +1,93 @@
+<!-- src/app/ui/shared/export-dropdown/export-dropdown.component.html -->
+
+<div class="export-container">
+  <button class="export-btn" (click)="toggleDropdown()" [class.disabled]="disabled">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+    Export
+    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <div class="export-dropdown" *ngIf="showDropdown">
+    <div class="dropdown-header">
+      <h4>Export Options</h4>
+      <button class="close-btn" (click)="toggleDropdown()">×</button>
+    </div>
+
+    <div class="dropdown-content">
+      <!-- Format Selection -->
+      <div class="option-group">
+        <label class="group-label">Format</label>
+        <div class="format-buttons">
+          <button class="format-btn" [class.active]="selectedFormat === 'PDF'" (click)="selectedFormat = 'PDF'">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            PDF
+          </button>
+          <button class="format-btn" [class.active]="selectedFormat === 'EXCEL'" (click)="selectedFormat = 'EXCEL'">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Excel
+          </button>
+          <button class="format-btn" [class.active]="selectedFormat === 'CSV'" (click)="selectedFormat = 'CSV'">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- What to Export -->
+      <div class="option-group">
+        <label class="group-label">What to export</label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="includeTimeline">
+          <span>Include timeline</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="includeQuotations">
+          <span>Include quotations</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="includeAttachments">
+          <span>Include attachments</span>
+        </label>
+      </div>
+
+      <!-- Date Range (for bulk exports) -->
+      <div class="option-group" *ngIf="mode === 'bulk'">
+        <label class="group-label">Date Range</label>
+        <div class="date-range">
+          <input type="date" [(ngModel)]="dateFrom" class="date-input" placeholder="From">
+          <span>to</span>
+          <input type="date" [(ngModel)]="dateTo" class="date-input" placeholder="To">
+        </div>
+      </div>
+
+      <!-- Progress Indicator -->
+      <div class="progress-section" *ngIf="isExporting">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="exportProgress"></div>
+        </div>
+        <span class="progress-text">{{ exportProgress }}% - {{ progressMessage }}</span>
+      </div>
+    </div>
+
+    <div class="dropdown-footer">
+      <button class="cancel-btn" (click)="toggleDropdown()">Cancel</button>
+      <button class="export-action-btn" (click)="export()" [disabled]="isExporting">
+        <svg *ngIf="!isExporting" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <div *ngIf="isExporting" class="spinner-small"></div>
+        {{ isExporting ? 'Exporting...' : 'Export Now' }}
+      </button>
+    </div>
+  </div>
+</div>
