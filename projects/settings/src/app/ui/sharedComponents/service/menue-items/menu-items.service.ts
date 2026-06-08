@@ -84,7 +84,7 @@ export class MenuItemsService {
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'View and manage vendor purchase requests.'
-        },
+        }, 
         {
           label: 'Vendor Portal',
           code: 'COM_VENDOR',
