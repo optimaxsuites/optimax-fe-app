@@ -80,13 +80,13 @@ export class MenuItemsService {
          {
           label: 'Sales Hub',
           code: 'SALES_MGMT',
-          route: this.navigationLink.getLink('salesLink'),
+          route: this.navigationLink.getLink('SHLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
           description: 'Make procurement requests on behalf of the organization.'
         },
          {
-          label: 'Procurement Management',
+          label: 'Procurement Hub',
           code: 'PROCURE_MGMT',
           route: this.navigationLink.getLink('PMLink'), 
           roles: ['ROLE_USER'],
