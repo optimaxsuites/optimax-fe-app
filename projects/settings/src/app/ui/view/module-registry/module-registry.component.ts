@@ -24,12 +24,16 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
   {
     code: 'optimaXCommerce', label: 'Commerce',
     submenus: [
-      { code: 'AI_ANALYSIS', label: 'AI Analysis' },
-      { code: 'PROCURE_MGMT', label: 'Procurement Management' },
-      { code: 'DELIVERY_MGMT', label: 'Delivery Management' },
-      { code: 'DOC_MGMT', label: 'Document Management' },
-      { code: 'QUOTE_MGMT', label: 'Quote Management' },
+      // { code: 'AI_ANALYSIS', label: 'AI Analysis' },
+      { code: 'SALES_MGMT', label: 'Sales Hub' },
+      { code: 'PROCURE_MGMT', label: 'Procurement Hub' },
+      // { code: 'DELIVERY_MGMT', label: 'Delivery Management' },
+      // { code: 'DOC_MGMT', label: 'Document Management' },
+      // { code: 'QUOTE_MGMT', label: 'Quote Management' },
       { code: 'VENDOR_PORTAL', label: 'Vendor Portal' },
+      // { code: 'VENDOR_PORTAL', label: 'Vendor Portal' },
+      { code: 'REPORT_ANALYSIS', label: 'Reports & Analytics' },
+
     ]
   },
   {

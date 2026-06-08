@@ -69,13 +69,21 @@ export class MenuItemsService {
       locked: true,
       active: false,
       submenu: [
-        {
-          label: 'AI Analysis',
-          code: 'AI_ANALYSIS',
-          route: this.navigationLink.getLink('aiQuotationLink'),
+        // {
+        //   label: 'AI Analysis',
+        //   code: 'AI_ANALYSIS',
+        //   route: this.navigationLink.getLink('aiQuotationLink'),
+        //   roles: ['ROLE_USER'],
+        //   icon: 'fas fa-file-alt',
+        //   description: 'View and manage procurements across the organization.'
+        // },
+         {
+          label: 'Sales Hub',
+          code: 'SALES_MGMT',
+          route: this.navigationLink.getLink('salesLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
-          description: 'View and manage procurements across the organization.'
+          description: 'Make procurement requests on behalf of the organization.'
         },
          {
           label: 'Procurement Management',
@@ -85,38 +93,47 @@ export class MenuItemsService {
           icon: 'pi pi-file',
           description: 'View and manage vendor purchase requests.'
         },
-        {
-          label: 'Delivery management ',
-          code: 'DELIVERY_MGMT',
-          route: this.navigationLink.getLink('deliveryManagementLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
-          description: 'Manage vendor profiles, contracts, and supplier relationships.'
-        },
-        {
-          label: 'Document management',
-          code: 'DOC_MGMT',
-          route: this.navigationLink.getLink('docGenLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View vendor details and manage vendor relationships.'
-        },
+        // {
+        //   label: 'Delivery management ',
+        //   code: 'DELIVERY_MGMT',
+        //   route: this.navigationLink.getLink('deliveryManagementLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'fas fa-file-alt',
+        //   description: 'Manage vendor profiles, contracts, and supplier relationships.'
+        // },
+        // {
+        //   label: 'Document management',
+        //   code: 'DOC_MGMT',
+        //   route: this.navigationLink.getLink('docGenLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'pi pi-file',
+        //   description: 'View vendor details and manage vendor relationships.'
+        // },
         
-         {
-          label: 'Quotation Management',
-          code: 'QUOTE_MGMT',
-          route: this.navigationLink.getLink('QTLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage vendor purchase requests.'
-        },
+        //  {
+        //   label: 'Quotation Management',
+        //   code: 'QUOTE_MGMT',
+        //   route: this.navigationLink.getLink('QTLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'pi pi-file',
+        //   description: 'View and manage vendor purchase requests.'
+        // },
          {
           label: 'Vendor Portal',
           code: 'VENDOR_PORTAL',
           route: this.navigationLink.getLink('VPLink'), 
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fa fa-envelope',
           description: 'View and manage vendor quotations.'
+        },
+        {
+          label: 'Reports & Analytics',
+          code: 'REPORT_ANALYSIS',
+          route: this.navigationLink.getLink('RALink'), 
+          roles: ['ROLE_USER'],
+          icon: 'fa fa-chart-bar',
+          description: 'View and manage reports and analytics.'
+
         }
       ]
     },    
