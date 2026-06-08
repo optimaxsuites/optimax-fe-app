@@ -1,6 +1,6 @@
-import { Component, OnDestroy, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { Subscription, forkJoin } from 'rxjs';
-import { timeout } from 'rxjs/operators';
+import { Component, OnDestroy, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { timeout, catchError } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import * as XLSX from 'xlsx';
@@ -60,6 +60,7 @@ interface SubTask {
   status?: 'open' | 'ip' | 'blocked';
   startDate?: string; dueDate?: string; dependency?: string;
   subtaskId?: number;
+  followUps?: FollowUp[];
 }
 interface ActivityEntry { id: string; author: string; text: string; timestamp: string; }
 interface FollowUp {
@@ -83,6 +84,7 @@ export interface BoardTask {
   apiId?: number;
   assigneeEmployeeId?: number;
   supervisorEmployeeId?: number;
+  createdByUserId?: number;
 }
 
 interface AssessmentKpi { id: string; text: string; done: boolean; }
@@ -301,6 +303,14 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   subtaskInput = '';
   showAddTask = false;
   newTask: Partial<BoardTask> = {};
+  newTaskSubtasks: Array<{
+    title: string;
+    assignee: string;
+    status: 'open' | 'ip' | 'blocked';
+    startDate: string;
+    dueDate: string;
+    dependency: string;
+  }> = [];
 
   // Edit-task modal
   showEditTask = false;
@@ -522,6 +532,33 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     return 'b-gray';
   }
 
+  // ── Task view mode (My Tasks / All Tasks / Team Tasks) ─────────────────────
+  taskViewMode: 'mine' | 'all' | 'team' = 'mine';
+  viewDropOpen = false;
+
+  // ── Report period ─────────────────────────────────────────────────────────
+  reportPeriod: 'weekly' | 'monthly' | 'quarterly' = 'weekly';
+  reportDropOpen = false;
+
+  // ── Subtask follow-up expand state ────────────────────────────────────────
+  expandedSubtaskIds = new Set<string>();
+  subtaskFollowUpText: Record<string, string> = {};
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(e: MouseEvent): void {
+    const el = e.target as HTMLElement;
+    if (!el.closest('.task-view-dropdown')) this.viewDropOpen = false;
+    if (!el.closest('.report-period-dropdown')) this.reportDropOpen = false;
+  }
+
+  setTaskViewMode(mode: 'mine' | 'all' | 'team'): void {
+    this.taskViewMode = mode;
+  }
+
+  get taskViewLabel(): string {
+    return { mine: 'My Tasks', all: 'All Tasks', team: 'Team Tasks' }[this.taskViewMode];
+  }
+
   // ── Supervisor ─────────────────────────────────────────────────────────────
   supervisorFilter = '';   // filter team tasks by supervisor name
 
@@ -641,19 +678,34 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   removeBatchRow(i: number): void { this.batchRows.splice(i, 1); }
 
   submitBatchRows(): void {
+    const userId = this.currentUserId;
+    const newTasks: BoardTask[] = [];
     this.batchRows.filter(r => r.title.trim()).forEach(r => {
       const subtaskList: SubTask[] = r.subtasks.split(';').filter(s => s.trim()).map((s, i) => ({
         id: `bst${Date.now()}_${i}`, title: s.trim(), done: false, assignee: r.assignee,
       }));
       const priority: TaskPriority = this.priorities.includes(r.priority.trim() as TaskPriority) ? r.priority.trim() as TaskPriority : 'Medium';
-      this.boardTasks.push({
+      // Resolve employee IDs from the employee list so identity matching works on reload
+      const assigneeEmp = this.allEmployees.find(e => e.fullName.toLowerCase() === (r.assignee || '').toLowerCase());
+      const supervisorEmp = this.allEmployees.find(e => e.fullName.toLowerCase() === (r.supervisor || '').toLowerCase());
+      const task: BoardTask = {
         id: `hr${Date.now()}_${Math.random().toString(36).slice(2)}`,
         title: r.title.trim(), description: r.kpiTarget, assignee: r.assignee, team: r.supervisor,
         status: 'To Do', priority, startDate: r.start, dueDate: r.due,
         weight: r.weight, progress: 0, tags: [r.type], subtasks: subtaskList, activity: [], followUps: [],
-      });
+        // Stamp identity so getMyLocalBoardTasks can find this task on reload without name matching
+        createdByUserId: userId || undefined,
+        assigneeEmployeeId: assigneeEmp ? Number(assigneeEmp.id) : undefined,
+        supervisorEmployeeId: supervisorEmp ? Number(supervisorEmp.id) : undefined,
+      };
+      newTasks.push(task);
     });
+    this.boardTasks.push(...newTasks);
     this.save();
+    // Sync each imported task to the backend so getTasksByAssignee picks them up on next load
+    if (this.apiEnabled) {
+      newTasks.forEach(t => this.syncTaskToApi(t));
+    }
     this.pmSection = 'board';
   }
 
@@ -753,6 +805,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   boardLoading = false;
   boardSaving  = false;
   apiEnabled   = true;
+  private resolvedEmployeeId = 0;   // set once employee ID is resolved from session/API
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   toasts: Array<{ id: number; message: string; type: 'success' | 'error' | 'info' | 'warn' }> = [];
@@ -841,7 +894,27 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.initNewTask();
     // Eagerly merge local imports so they appear immediately regardless of API timing
     this.mergeLocalImports();
-    this.loadBoardFromApi();
+
+    // Always resolve the current user's employee ID so "My Tasks" filter works for everyone.
+    // The board-loading logic (getAllTasks vs getTasksByAssignee) stays role-dependent inside loadBoardFromApi().
+    const cachedEmpId = Number(sessionStorage.getItem('employeeId') || localStorage.getItem('employeeId') || 0);
+    const cachedEmpUserId = sessionStorage.getItem('employeeUserId') || '';
+    const currentUserId2 = sessionStorage.getItem('userid') || '';
+    if (cachedEmpId && cachedEmpUserId === currentUserId2) {
+      this.resolvedEmployeeId = cachedEmpId;
+      this.taskViewMode = this.isAdminOrSupervisor ? 'all' : 'mine';
+      this.loadBoardFromApi();
+    } else {
+      this.subscription.add(
+        this.employeeService.getEmployeeIdForCurrentUser()
+          .pipe(timeout(6000), catchError(() => of(0)))
+          .subscribe(empId => {
+            this.resolvedEmployeeId = empId;
+            this.taskViewMode = this.isAdminOrSupervisor ? 'all' : 'mine';
+            this.loadBoardFromApi();
+          })
+      );
+    }
 
     // Load employees for dropdowns
     this.employeesLoading = true;
@@ -903,33 +976,46 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   private loadBoardFromApi(): void {
     this.boardLoading = true;
+    const employeeId = this.resolvedEmployeeId;
+    const isSupervisor = this.isAdminOrSupervisor;
+    const tasksRequest = isSupervisor
+      ? this.workTaskApi.getAllTasks()
+      : employeeId
+        ? this.workTaskApi.getTasksByAssignee(employeeId)
+        : this.workTaskApi.getAllTasks();
     this.subscription.add(
-      this.workTaskApi.getAllTasks().pipe(timeout(8000)).subscribe({
+      tasksRequest.pipe(timeout(8000)).subscribe({
         next: (apiTasks) => {
-          if (apiTasks && apiTasks.length > 0) {
-            const mapped = apiTasks.map(t => this.mapApiTaskToBoard(t));
-            const apiIds = new Set(mapped.map(t => t.id));
-            // Keep any local-only tasks from the previous save (imports, manually-added)
-            // that the API doesn't know about — they'd be wiped otherwise.
-            const localRaw = localStorage.getItem(HR_BOARD_KEY);
+          const mapped = (apiTasks && apiTasks.length > 0)
+            ? apiTasks.map(t => this.mapApiTaskToBoard(t))
+            : [];
+          const apiIds = new Set(mapped.map(t => t.id));
+          if (isSupervisor) {
+            // Supervisor/admin: full board cache merged with API results
+            const localRaw = localStorage.getItem(this.boardKey);
             const localOnly: BoardTask[] = localRaw
               ? (JSON.parse(localRaw) as BoardTask[]).filter(t => !apiIds.has(t.id))
               : [];
-            this.boardTasks = [...mapped, ...localOnly];
+            this.boardTasks = mapped.length ? [...mapped, ...localOnly] : (localOnly.length ? localOnly : [...HR_SEED]);
           } else {
-            const raw = localStorage.getItem(HR_BOARD_KEY);
-            this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+            // Regular user: API tasks + user's own locally-saved tasks (batch imports, etc.)
+            const localOwn = this.getMyLocalBoardTasks(apiIds);
+            const localImports = this.getLocalImportTasks().filter(t => !apiIds.has(t.id));
+            this.boardTasks = [...mapped, ...localOwn, ...localImports];
           }
-          // Always merge in any locally-imported tasks (Odoo, CSV) that aren't in the API set.
-          // persist=true writes merged state to HR_BOARD_KEY so imports survive future refreshes.
           this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
         },
         error: () => {
           this.apiEnabled = false;
-          const raw = localStorage.getItem(HR_BOARD_KEY);
-          this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+          if (isSupervisor) {
+            const raw = localStorage.getItem(this.boardKey);
+            this.boardTasks = raw ? JSON.parse(raw) : [...HR_SEED];
+          } else {
+            const empty = new Set<string>();
+            this.boardTasks = [...this.getMyLocalBoardTasks(empty), ...this.getLocalImportTasks()];
+          }
           this.mergeLocalImports(true);
           this.boardLoading = false;
           this.autoOpenFromUrl();
@@ -947,6 +1033,43 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       this.pmSection = 'board';
       this.openDetail(found);
     }
+  }
+
+  private getLocalImportTasks(): BoardTask[] {
+    try {
+      const raw = localStorage.getItem('hr_pm_imports_v1');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  // Read cached board tasks that belong to the current user (by employee ID, creator ID, or name).
+  // Used to recover batch-imported or locally-created tasks for a non-admin user without
+  // leaking other users' cached tasks from the shared HR_BOARD_KEY.
+  private getMyLocalBoardTasks(excludeIds: Set<string>): BoardTask[] {
+    try {
+      const raw = localStorage.getItem(this.boardKey);
+      if (!raw) return [];
+      const all: BoardTask[] = JSON.parse(raw);
+      const empId = this.resolvedEmployeeId;
+      const userId = this.currentUserId;
+      const me = this.currentUserFullName;
+      return all.filter(t => {
+        if (excludeIds.has(t.id)) return false;
+        // Created by this user
+        if (userId && (t as any).createdByUserId === userId) return true;
+        // Assigned to this user by employee ID
+        if (empId && ((t as any).assigneeEmployeeId === empId || (t as any).supervisorEmployeeId === empId)) return true;
+        // Batch-imported tasks (no employee IDs): match by name
+        const hasApiIds = !!(t as any).assigneeEmployeeId || !!(t as any).supervisorEmployeeId || !!(t as any).createdByUserId;
+        if (!hasApiIds && me) {
+          const assignee = (t.assignee || '').toLowerCase();
+          const inAssignees = (t.assignees || []).some((a: string) => (a || '').toLowerCase().includes(me));
+          const isSup = (t.team || '').toLowerCase().includes(me);
+          return assignee.includes(me) || inAssignees || isSup;
+        }
+        return false;
+      });
+    } catch { return []; }
   }
 
   // Merge tasks imported via Odoo/CSV from the dedicated imports key.
@@ -1059,6 +1182,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         progress: f.progress ?? 0,
       })),
       apiId: t.id,
+      createdByUserId: t.createdByUserId,
     } as any;
   }
 
@@ -1082,7 +1206,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   private save(): void {
     // Attempt 1: save everything including base64 previews (works for small images)
     try {
-      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(this.boardTasks));
+      localStorage.setItem(this.boardKey, JSON.stringify(this.boardTasks));
       return;
     } catch { /* QuotaExceededError — try stripping base64 */ }
 
@@ -1095,7 +1219,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           photos: (fu.photos || []).filter(u => u && !u.startsWith('data:')),
         })),
       }));
-      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(noBase64));
+      localStorage.setItem(this.boardKey, JSON.stringify(noBase64));
       return;
     } catch { /* still over quota */ }
 
@@ -1105,12 +1229,24 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         ...t,
         followUps: (t.followUps || []).map(fu => ({ ...fu, photos: [] })),
       }));
-      localStorage.setItem(HR_BOARD_KEY, JSON.stringify(noPhotos));
+      localStorage.setItem(this.boardKey, JSON.stringify(noPhotos));
     } catch { /* storage unavailable */ }
+  }
+
+  private get currentUserId(): number {
+    return Number(sessionStorage.getItem('userid') || localStorage.getItem('userid') || 0);
+  }
+
+  // Per-user storage key — prevents one user's saves from overwriting another's on shared browsers
+  private get boardKey(): string {
+    const uid = this.currentUserId;
+    return uid ? `${HR_BOARD_KEY}_u${uid}` : HR_BOARD_KEY;
   }
 
   private syncTaskToApi(task: BoardTask): void {
     if (!this.apiEnabled) return;
+    const userId = this.currentUserId;
+    if (!task.createdByUserId && userId) task.createdByUserId = userId;
     const dto: WorkTaskDTO = {
       title: task.title,
       description: task.description,
@@ -1123,6 +1259,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       weight: task.weight,
       progress: task.progress,
       tags: task.tags?.join(','),
+      createdByUserId: task.createdByUserId || (userId || undefined),
     };
     if (task.apiId) {
       this.subscription.add(
@@ -1157,19 +1294,42 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       status: 'To Do', priority: 'Medium', startDate: new Date().toISOString().slice(0, 10),
       dueDate: '', weight: 10, progress: 0, tags: [], subtasks: [], activity: [],
     };
+    this.newTaskSubtasks = [];
   }
 
   get filteredBoard(): BoardTask[] {
+    const empId = this.resolvedEmployeeId;
     const me = this.currentUserFullName;
-    const adminView = this.isAdminOrSupervisor;
+    const isSupervisor = this.isAdminOrSupervisor;
+
     return this.boardTasks.filter(t => {
-      // Non-admin/supervisor: only own tasks (assignee, multi-assignee list, or supervising)
-      if (!adminView && me) {
+      // ── View mode filter (ownership-based) ───────────────────────────────
+      if (this.taskViewMode === 'mine') {
+        // Applied for ALL users:
+        //   • Supervisors load all tasks via getAllTasks() → must filter to own
+        //   • Regular users may fall back to getAllTasks() when empId=0 → must filter
+        //   • When pre-scoped (getTasksByAssignee), assigneeEmployeeId matches so the filter passes cleanly
+        const userId = this.currentUserId;
         const assignee = (t.assignee || '').toLowerCase();
-        const inAssignees = (t.assignees || []).some(a => (a || '').toLowerCase().includes(me));
-        const isSupervisor = (t.team || '').toLowerCase().includes(me);
-        if (!assignee.includes(me) && !inAssignees && !isSupervisor) return false;
+        const inAssignees = (t.assignees || []).some((a: string) => (a || '').toLowerCase().includes(me));
+        const createdByMe = !!(userId && t.createdByUserId === userId);
+        const assignedToMe = !!(empId && (t.assigneeEmployeeId === empId || t.supervisorEmployeeId === empId));
+        const nameMatch = !!(me && (assignee.includes(me) || me.includes(assignee) || inAssignees));
+        if (!createdByMe && !assignedToMe && !nameMatch) return false;
+      } else if (this.taskViewMode === 'team') {
+        // Tasks co-assigned: 2+ assignees and current user is one of them
+        const assignees = t.assignees || [];
+        if (assignees.length < 2) return false;
+        const matchById = empId && t.assigneeEmployeeId === empId;
+        const matchByName = me && assignees.some((a: string) => {
+          const al = (a || '').toLowerCase();
+          return al.includes(me) || me.includes(al);
+        });
+        if (!matchById && !matchByName) return false;
       }
+      // 'all' mode: supervisor/admin sees everything — no extra filter
+
+      // ── Toolbar filters ───────────────────────────────────────────────────
       if (this.filterStatus && t.status !== this.filterStatus) return false;
       if (this.filterPriority && t.priority !== this.filterPriority) return false;
       if (this.filterAssignee && !t.assignee.toLowerCase().includes(this.filterAssignee.toLowerCase())) return false;
@@ -1266,6 +1426,39 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
+  addNewTaskSubtask(): void {
+    this.newTaskSubtasks.push({ title: '', assignee: '', status: 'open', startDate: '', dueDate: '', dependency: '' });
+  }
+
+  removeNewTaskSubtask(i: number): void {
+    this.newTaskSubtasks.splice(i, 1);
+  }
+
+  toggleSubtaskExpand(subId: string): void {
+    if (this.expandedSubtaskIds.has(subId)) {
+      this.expandedSubtaskIds.delete(subId);
+    } else {
+      this.expandedSubtaskIds.add(subId);
+    }
+  }
+
+  addSubtaskFollowUp(task: BoardTask, sub: SubTask): void {
+    const text = (this.subtaskFollowUpText[sub.id] || '').trim();
+    if (!text) return;
+    const fu: FollowUp = {
+      id: `sfu${Date.now()}`,
+      author: sessionStorage.getItem('fullname') || 'Me',
+      initials: this.getInitials(sessionStorage.getItem('fullname') || 'Me'),
+      color: '#6366f1',
+      timestamp: new Date().toISOString(),
+      text,
+      photos: [],
+    };
+    sub.followUps = [...(sub.followUps || []), fu];
+    this.subtaskFollowUpText[sub.id] = '';
+    this.save();
+  }
+
   addTask(): void {
     const t = this.newTask as BoardTask;
     if (!t.title?.trim()) return;
@@ -1278,6 +1471,21 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const supervisorEmp = this.allEmployees.find(e => e.fullName === t.team);
     t.assigneeEmployeeId = assigneeEmp ? Number(assigneeEmp.id) : undefined;
     t.supervisorEmployeeId = supervisorEmp ? Number(supervisorEmp.id) : undefined;
+    t.createdByUserId = this.currentUserId || undefined;
+
+    const manualSubtasks: SubTask[] = this.newTaskSubtasks
+      .filter(s => s.title.trim())
+      .map((s, i) => ({
+        id: `sub${Date.now()}_${i}`,
+        title: s.title.trim(),
+        done: false,
+        assignee: s.assignee || t.assignee || '',
+        status: (s.status || 'open') as 'open' | 'ip' | 'blocked',
+        startDate: s.startDate || undefined,
+        dueDate: s.dueDate || undefined,
+        dependency: s.dependency || undefined,
+      }));
+    t.subtasks = [...(t.subtasks ?? []), ...manualSubtasks];
 
     const newBoard: BoardTask = { ...t, subtasks: t.subtasks ?? [], activity: [], followUps: [] };
     this.boardTasks.unshift(newBoard);
@@ -1652,7 +1860,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.workTaskApi.uploadMedia(file).subscribe({
         next: (res) => {
-          if (res.url) entry.url = res.url;
+          if (res.url) {
+            entry.url = res.url.startsWith('/')
+              ? `https://be.optimaxsuites.com${res.url}`
+              : res.url;
+          }
           entry.uploading = false;
         },
         error: () => {
@@ -1921,5 +2133,229 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       }
     } catch {}
     return String(d);
+  }
+
+  // ── Weekly Tasks Report ────────────────────────────────────────────────────
+  generateReport(): void {
+    const now = new Date();
+    const period = this.reportPeriod;
+
+    // ── Compute date range ───────────────────────────────────────────────────
+    let rangeStart: Date, rangeEnd: Date, periodLabel: string;
+    if (period === 'monthly') {
+      rangeStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      rangeEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      periodLabel = 'Monthly';
+    } else if (period === 'quarterly') {
+      const q = Math.floor(now.getMonth() / 3);
+      rangeStart = new Date(now.getFullYear(), q * 3, 1, 0, 0, 0, 0);
+      rangeEnd   = new Date(now.getFullYear(), q * 3 + 3, 0, 23, 59, 59, 999);
+      periodLabel = `Q${q + 1}`;
+    } else {
+      rangeStart = new Date(now); rangeStart.setDate(now.getDate() - now.getDay()); rangeStart.setHours(0,0,0,0);
+      rangeEnd   = new Date(rangeStart); rangeEnd.setDate(rangeStart.getDate() + 6); rangeEnd.setHours(23,59,59,999);
+      periodLabel = 'Weekly';
+    }
+
+    const fmt    = (d: Date) => d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+    const fmtTs  = (s: string) => { try { return new Date(s).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return s; } };
+    const fmtDay = (s: string) => { try { return new Date(s).toLocaleDateString([], { month: 'short', day: 'numeric' }); } catch { return s || '—'; } };
+    const stars  = (n: number) => n ? '★'.repeat(Math.min(n, 5)) + '☆'.repeat(Math.max(0, 5 - n)) : '—';
+    const esc    = (s: string) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const subStatusLabel: Record<string, string> = { open: 'Open', ip: 'In Progress', blocked: 'Blocked' };
+    const subStatusColor: Record<string, string> = { open: '#6b7280', ip: '#2563eb', blocked: '#dc2626' };
+
+    const tasks  = this.filteredBoard;   // respects current view mode
+    const total  = tasks.length;
+    const done   = tasks.filter(t => t.status === 'Done').length;
+    const inProgress = tasks.filter(t => t.status === 'In Progress').length;
+    const inReview   = tasks.filter(t => t.status === 'In Review').length;
+    const overdue    = tasks.filter(t => this.isTaskOverdue(t)).length;
+    const pct        = total ? Math.round((done / total) * 100) : 0;
+    const avgScore   = (() => {
+      const scored = tasks.filter(t => t.supervisorGrade && t.supervisorGrade > 0);
+      return scored.length ? (scored.reduce((s, t) => s + (t.supervisorGrade || 0), 0) / scored.length).toFixed(1) : '—';
+    })();
+
+    const priorityColor: Record<string, string> = {
+      Critical: '#dc2626', High: '#ea580c', Medium: '#d97706', Low: '#16a34a',
+    };
+    const statusColor: Record<string, string> = {
+      'Done': '#16a34a', 'In Progress': '#2563eb', 'In Review': '#7c3aed', 'To Do': '#6b7280',
+    };
+
+    // ── Follow-up HTML for a list of FollowUps ──────────────────────────────
+    const fuHtml = (fus: FollowUp[], isSub = false) => {
+      if (!fus || !fus.length) return `<p style="color:#9ca3af;font-size:11px;margin:4px 0">${isSub ? 'No updates' : 'No follow-ups recorded'}</p>`;
+      return fus.map(f => {
+        const isSuper = f.author && this.filteredBoard.some(t => (t.team || '').toLowerCase() === (f.author || '').toLowerCase());
+        const border  = f.decision ? '2px solid #7c3aed' : isSuper ? '2px solid #ea580c' : '1px solid #e5e7eb';
+        return `
+        <div style="border-left:${border};padding:8px 12px;margin:6px 0;background:${f.decision ? '#faf5ff' : isSuper ? '#fff7ed' : '#f9fafb'};border-radius:0 6px 6px 0">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+            <span style="background:#2563eb;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${esc(f.initials || '?')}</span>
+            <strong style="font-size:12px;color:#111827">${esc(f.author)}</strong>
+            ${isSuper ? '<span style="font-size:10px;background:#fed7aa;color:#9a3412;padding:1px 6px;border-radius:10px;font-weight:600">Supervisor</span>' : ''}
+            <span style="font-size:11px;color:#9ca3af;margin-left:auto">${fmtTs(f.timestamp)}</span>
+          </div>
+          <div style="font-size:12px;color:#374151;line-height:1.5">${f.text || ''}</div>
+          ${f.decision ? `<div style="margin-top:6px;font-size:11px;background:#ede9fe;color:#5b21b6;padding:4px 8px;border-radius:4px"><strong>Supervisor Note:</strong> ${esc(f.decision)}</div>` : ''}
+          ${f.progress ? `<div style="margin-top:4px;font-size:11px;color:#6b7280">Progress reported: <strong>${f.progress}%</strong></div>` : ''}
+        </div>`;
+      }).join('');
+    };
+
+    // ── Subtask hierarchy HTML ───────────────────────────────────────────────
+    const subtasksHtml = (subs: SubTask[]) => {
+      if (!subs || !subs.length) return '';
+      return `
+      <div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:8px">Sub-tasks</div>
+        ${subs.map((s, idx) => {
+          const isLast = idx === subs.length - 1;
+          const stColor = s.done ? '#16a34a' : subStatusColor[s.status || 'open'] || '#6b7280';
+          const stLabel = s.done ? 'Done' : subStatusLabel[s.status || 'open'];
+          const hasFu   = (s.followUps || []).length > 0;
+          return `
+          <div style="display:flex;gap:0;margin-left:8px">
+            <div style="display:flex;flex-direction:column;align-items:center;margin-right:10px;padding-top:2px">
+              <div style="width:2px;height:10px;background:${isLast ? 'transparent' : '#e5e7eb'}"></div>
+              <div style="width:8px;height:8px;border-radius:50%;background:${stColor};flex-shrink:0"></div>
+              <div style="width:2px;flex:1;background:${isLast ? 'transparent' : '#e5e7eb'}"></div>
+            </div>
+            <div style="flex:1;padding-bottom:10px">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                <span style="font-size:12px;font-weight:600;color:#111827">${esc(s.title)}</span>
+                <span style="font-size:10px;background:${stColor}18;color:${stColor};padding:1px 6px;border-radius:10px;font-weight:600">${stLabel}</span>
+                ${s.assignee ? `<span style="font-size:11px;color:#6b7280">→ ${esc(s.assignee)}</span>` : ''}
+                ${s.startDate || s.dueDate ? `<span style="font-size:11px;color:#9ca3af">${fmtDay(s.startDate || '')} – ${fmtDay(s.dueDate || '')}</span>` : ''}
+                ${s.dependency ? `<span style="font-size:10px;color:#7c3aed">Dep: ${esc(s.dependency)}</span>` : ''}
+              </div>
+              ${hasFu ? `<div style="margin-top:6px;padding-left:4px">${fuHtml(s.followUps!, true)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    };
+
+    // ── Per-task card HTML ───────────────────────────────────────────────────
+    const byStatus: Record<string, BoardTask[]> = {};
+    tasks.forEach(t => { (byStatus[t.status] ??= []).push(t); });
+
+    const taskCardHtml = (t: BoardTask) => {
+      const isOverdue = t.dueDate && new Date(t.dueDate) < now && t.status !== 'Done';
+      const pCol = priorityColor[t.priority] || '#6b7280';
+      const grade = t.supervisorGrade || 0;
+      const supervisorFus = (t.followUps || []).filter(f =>
+        t.team && (f.author || '').toLowerCase() === t.team.toLowerCase()
+      );
+      return `
+      <div style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:20px;overflow:hidden;break-inside:avoid">
+        <!-- Task header -->
+        <div style="background:#f8fafc;padding:12px 16px;border-bottom:1px solid #e5e7eb">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div>
+              <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:#111827">${esc(t.title)}</h3>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px;color:#6b7280">
+                <span>Assignee: <strong style="color:#374151">${esc(t.assignee || '—')}</strong></span>
+                <span>·</span>
+                <span>Supervisor: <strong style="color:#374151">${esc(t.team || '—')}</strong></span>
+                <span>·</span>
+                <span>Due: <strong style="color:${isOverdue ? '#dc2626' : '#374151'}">${fmtDay(t.dueDate)}</strong></span>
+                <span>·</span>
+                <span>Progress: <strong style="color:#374151">${t.progress ?? 0}%</strong></span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+              <span style="background:${pCol}18;color:${pCol};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700">${esc(t.priority)}</span>
+              ${grade ? `<span style="font-size:13px;color:#f59e0b;letter-spacing:1px" title="Assessment score ${grade}/5">${stars(grade)}</span>` : '<span style="font-size:11px;color:#9ca3af">Not scored</span>'}
+            </div>
+          </div>
+        </div>
+        <!-- Description -->
+        ${t.description ? `
+        <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:6px">Description / Work Done</div>
+          <div style="font-size:12px;color:#374151;line-height:1.6">${t.description}</div>
+        </div>` : ''}
+        <!-- Follow-ups / Work Updates -->
+        <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;margin-bottom:6px">
+            Work Updates &amp; Follow-ups (${(t.followUps || []).length})
+          </div>
+          ${fuHtml(t.followUps || [])}
+        </div>
+        <!-- Supervisor's comments section (if they posted follow-ups) -->
+        ${supervisorFus.length ? `
+        <div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;background:#fff7ed">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9a3412;margin-bottom:6px">
+            Supervisor Comments (${supervisorFus.length})
+          </div>
+          ${fuHtml(supervisorFus)}
+        </div>` : ''}
+        <!-- Subtask hierarchy -->
+        ${(t.subtasks || []).length ? `
+        <div style="padding:12px 16px">
+          ${subtasksHtml(t.subtasks)}
+        </div>` : ''}
+      </div>`;
+    };
+
+    const sectionHtml = ['To Do', 'In Progress', 'In Review', 'Done']
+      .filter(s => byStatus[s]?.length)
+      .map(status => `
+      <div style="margin-bottom:36px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid ${statusColor[status]}40">
+          <span style="width:10px;height:10px;border-radius:50%;background:${statusColor[status]};display:inline-block"></span>
+          <h2 style="margin:0;font-size:15px;font-weight:700;color:${statusColor[status]};text-transform:uppercase;letter-spacing:.05em">${status} (${byStatus[status].length})</h2>
+        </div>
+        ${byStatus[status].map(t => taskCardHtml(t)).join('')}
+      </div>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="en"><head>
+      <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>${periodLabel} Task Report — ${fmt(rangeStart)} to ${fmt(rangeEnd)}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 32px; color: #111827; background: #fff; max-width: 900px; margin: 0 auto; }
+        @media print {
+          body { padding: 16px; max-width: 100%; }
+          .no-print { display: none !important; }
+          div[style*="break-inside:avoid"] { break-inside: avoid; }
+          h2 { break-after: avoid; }
+        }
+      </style>
+    </head><body>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #2e6276">
+        <div>
+          <h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#2e6276">${periodLabel} Task Report</h1>
+          <p style="margin:0;font-size:13px;color:#6b7280">${fmt(rangeStart)} — ${fmt(rangeEnd)} &nbsp;·&nbsp; View: ${this.taskViewLabel} &nbsp;·&nbsp; Generated ${fmt(now)}</p>
+        </div>
+        <button class="no-print" onclick="window.print()" style="background:#2e6276;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer">🖨 Print / Save PDF</button>
+      </div>
+      <!-- Summary stats -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:32px">
+        ${[
+          ['Total', total, '#2e6276', `${pct}% complete`],
+          ['Completed', done, '#16a34a', ''],
+          ['In Progress', inProgress, '#2563eb', ''],
+          ['In Review', inReview, '#7c3aed', ''],
+          ['Overdue', overdue, '#dc2626', ''],
+          ['Avg Score', avgScore, '#f59e0b', 'out of 5'],
+        ].map(([l, v, c, sub]) => `
+          <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;border-top:4px solid ${c}">
+            <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em">${l}</div>
+            <div style="font-size:22px;font-weight:800;color:${c};margin:4px 0">${v}</div>
+            ${sub ? `<div style="font-size:10px;color:#9ca3af">${sub}</div>` : ''}
+          </div>`).join('')}
+      </div>
+      ${sectionHtml}
+      <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center">
+        OptimaX HR · ${periodLabel} Task Report · ${fmt(now)}
+      </div>
+    </body></html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
   }
 }

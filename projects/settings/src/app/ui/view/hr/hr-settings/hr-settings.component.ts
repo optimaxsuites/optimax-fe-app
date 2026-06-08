@@ -1,9 +1,9 @@
-import { AppraisalassessmentComponent } from './../appraisalassessment/appraisalassessment.component';
-import { Component } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { AppraisalassessmentComponent } from '../appraisalassessment/appraisalassessment.component';
 import { SalaryComponent } from '../salary/salary.component';
 import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-config.component';
 import { LevelComponent } from '../level/level.component';
-import { LeaveComponent } from '../leave/leave.component';
 import { CompensationComponent } from '../compensation/compensation.component';
 import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.component';
 import { MetadataComponent } from '../metadata/metadata.component';
@@ -11,138 +11,74 @@ import { PayrollComponent } from '../payroll/payroll.component';
 import { MailTemplatesComponent } from '../mail-templates/mail-templates.component';
 import { HrNotificationsComponent } from '../hr-notifications/hr-notifications.component';
 import { HrOdooImportComponent } from '../hr-odoo-import/hr-odoo-import.component';
+import { ProbationSettingsComponent } from '../probation/probation-settings.component';
 
 @Component({
   selector: 'app-hr-settings',
   templateUrl: './hr-settings.component.html',
   styleUrl: './hr-settings.component.scss',
 })
-export class HrSettingsComponent {
-  sidebar: boolean = false;
-  hoveredIndex: number = -1;
+export class HrSettingsComponent implements OnInit {
+  sidebar = false;
+  selectedComp: Type<any> | null = null;
+  searchTerm = '';
 
   settings = [
-    {
-      name: 'Salary',
-      subSetting: [
-        'Salary Structure',
-        'Deductions and Overtime',
-        'Bonuses and Benefits',
-        'Payslip',
-      ],
-      icon: 'pi pi-receipt',
-      component: SalaryComponent,
-    },
-    {
-      name: 'Payroll',
-      subSetting: [
-        'Payroll Structure',
-        'Deductions',
-        'Bonuses and Benefits',
-        'Payslip',
-      ],
-      icon: 'pi pi-receipt',
-      component: PayrollComponent,
-    },
-    {
-      name: 'Compensations and Deductions',
-      subSetting: [
-        'Allowance Types',
-        'Deduction Types',
-        'Bonus Type',
-        'Overtime Types',
-      ],
-      icon: 'pi pi-receipt',
-      component: CompensationComponent,
-    },
-    {
-      name: 'Employee management',
-      subSetting: ['Salary Structure', 'Deductions and Overtime'],
-      icon: 'pi pi-receipt',
-      component: null,
-    },
-    {
-      name: 'Metadata',
-      subSetting: ['Genders', 'Marital Statuses', 'Religions'],
-      icon: 'pi pi-tags',
-      component: MetadataComponent,
-    },
-    {
-      name: 'Level',
-      subSetting: [
-        'Level Structure',
-        'Level Management',
-        'Add Level',
-        'Update Level',
-      ],
-      icon: 'pi pi-receipt',
-      component: LevelComponent,
-    },
-    {
-      name: 'Leave',
-      subSetting: [
-        'Leave Configuration',
-        'Update Leave Policies, Leave Allocation',
-      ],
-      icon: 'pi pi-receipt',
-      // component: LeaveComponent,
-      component: LeaveStrctureComponent
-    },
-     { name: 'Email Templates',
-      subSetting: ['email templates, rejection mail templates, acceptance mail templates, interview invite templates'],
-      icon: 'fas fa-envelope',
-      component: MailTemplatesComponent,
-    },
-    {
-      name: 'Score Sheet',
-      subSetting: ['Score Sheet Criteria, Grade Setting'],
-      icon: 'fas fa-clipboard-list',
-      component: ScoresheetConfigComponent,
-    },
-    {
-      name: 'Appraisal Assessment',
-      subSetting: ['Assessment questions, Grade Setting'],
-      icon: 'fas fa-clipboard-list',
-      component: AppraisalassessmentComponent,
-    },
-    {
-      name: 'Notification Subscriptions',
-      subSetting: ['Email, In-App, Push, SMS channels per project', 'Per-event toggles', 'Task Board, Appraisal, Payroll, Leave'],
-      icon: 'fas fa-bell',
-      component: HrNotificationsComponent,
-    },
-    {
-      name: 'Import from Odoo',
-      subSetting: ['Connect Odoo via XML-RPC', 'Preview & import tasks', 'CSV export alternative'],
-      icon: 'fas fa-puzzle-piece',
-      component: HrOdooImportComponent,
-    },
+    { name: 'Salary', key: 'salary', icon: 'fas fa-money-bill-wave', component: SalaryComponent,
+      subSetting: ['Salary structure', 'Deductions & overtime', 'Bonuses & benefits'] },
+    { name: 'Payroll', key: 'payroll', icon: 'fas fa-file-invoice-dollar', component: PayrollComponent,
+      subSetting: ['Payroll structure', 'Deductions', 'Bonuses & benefits'] },
+    { name: 'Compensations & Deductions', key: 'compensation', icon: 'fas fa-balance-scale', component: CompensationComponent,
+      subSetting: ['Allowance types', 'Deduction types', 'Bonus types', 'Overtime types'] },
+    { name: 'Employee Management', key: 'employee', icon: 'fas fa-users-cog', component: null,
+      subSetting: ['Salary structure', 'Deductions & overtime'] },
+    { name: 'Metadata', key: 'metadata', icon: 'fas fa-tags', component: MetadataComponent,
+      subSetting: ['Genders', 'Marital statuses', 'Religions'] },
+    { name: 'Level', key: 'level', icon: 'fas fa-layer-group', component: LevelComponent,
+      subSetting: ['Level structure', 'Level management', 'Add / update levels'] },
+    { name: 'Leave', key: 'leave', icon: 'fas fa-calendar-minus', component: LeaveStrctureComponent,
+      subSetting: ['Leave configuration', 'Leave policies', 'Leave allocation'] },
+    { name: 'Email Templates', key: 'email-templates', icon: 'fas fa-envelope-open-text', component: MailTemplatesComponent,
+      subSetting: ['Rejection templates', 'Acceptance templates', 'Interview invite templates'] },
+    { name: 'Score Sheet', key: 'scoresheet', icon: 'fas fa-clipboard-list', component: ScoresheetConfigComponent,
+      subSetting: ['Score sheet criteria', 'Grade settings'] },
+    { name: 'Appraisal Assessment', key: 'appraisal', icon: 'fas fa-tasks', component: AppraisalassessmentComponent,
+      subSetting: ['Assessment questions', 'Grade settings'] },
+    { name: 'Notification Subscriptions', key: 'notifications', icon: 'fas fa-bell', component: HrNotificationsComponent,
+      subSetting: ['Email · In-App · Push · SMS', 'Per-event toggles', 'Task Board, Appraisal, Payroll, Leave'] },
+    { name: 'Import from Odoo', key: 'odoo', icon: 'fas fa-puzzle-piece', component: HrOdooImportComponent,
+      subSetting: ['XML-RPC connection', 'Preview & import tasks', 'CSV export alternative'] },
+    { name: 'Probation Tracker', key: 'probation', icon: 'fas fa-user-clock', component: ProbationSettingsComponent,
+      subSetting: ['Active probation list', 'Overdue cases', 'Due-soon alerts'] },
   ];
-
-  selectedComp = null;
-  openSideBar = (setting: any) => {
-    this.sidebar = true;
-    this.selectedComp = setting.component;
-  };
-  searchTerm: string = '';
 
   filteredSettings = [...this.settings];
 
+  constructor(private route: ActivatedRoute) {}
+
   ngOnInit(): void {
     this.filteredSettings = [...this.settings];
+
+    this.route.queryParams.subscribe(params => {
+      const panel = params['panel'];
+      if (panel) {
+        const match = this.settings.find(s => s.key === panel);
+        if (match && match.component) { this.sidebar = true; this.selectedComp = match.component as any; }
+      }
+    });
   }
 
   filterSettings(): void {
     const term = this.searchTerm.toLowerCase();
+    this.filteredSettings = this.settings.filter(s =>
+      s.name.toLowerCase().includes(term) ||
+      s.subSetting.some(sub => sub.toLowerCase().includes(term))
+    );
+  }
 
-    this.filteredSettings = this.settings.filter((setting) => {
-      const nameMatch = setting.name.toLowerCase().includes(term);
-      const subSettingMatch = setting.subSetting.some((sub) =>
-        sub.toLowerCase().includes(term)
-      );
-      return nameMatch || subSettingMatch;
-    });
-
-    console.log(this.filteredSettings);
+  openSideBar(setting: any): void {
+    if (!setting.component) return;
+    this.sidebar = true;
+    this.selectedComp = setting.component;
   }
 }

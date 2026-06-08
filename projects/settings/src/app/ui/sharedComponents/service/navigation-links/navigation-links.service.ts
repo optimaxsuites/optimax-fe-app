@@ -70,6 +70,10 @@ export class NavigationLinksService {
     this.links['advance'] = '/admin/hr/loan/' +uuidV4();
     this.links['queryLink'] = '/admin/hr/payroll-operations/' +uuidV4();
     this.links['employeeDashboardLink'] = '/admin/hr/me/' +uuidV4();
+    this.links['hrAnalytics'] = '/admin/hr/analytics/' +uuidV4();
+    this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
+    this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
+    this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
 
 
 // hospitality ================================================================================================================
@@ -125,6 +129,8 @@ this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 this.links['posSettings'] = 'POS-settings/' +uuidV4();
 this.links['HOSSettings'] = 'Hospitality-settings/' +uuidV4();
 this.links['userRoles'] = 'user-roles/' +uuidV4();
+this.links['moduleRegistry'] = 'module-registry/' +uuidV4();
+this.links['bugTracker'] = 'bug-tracker/' +uuidV4();
 
 // POS ================================================================================================================
 this.links['productLink'] = '/admin/pos/product/' +uuidV4();

@@ -1254,60 +1254,99 @@
           <section class="document-library-shell flex-1 min-h-0 overflow-hidden bg-white">
             <div class="document-library-layout h-full">
               <aside class="document-library-sidebar border-r border-gray-200 p-4 overflow-y-auto">
+                <!-- Sidebar header -->
                 <div class="flex items-center justify-between mb-3">
                   <div>
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Folders</p>
                     <h3 class="text-[15px] font-semibold text-gray-800">{{ activeChannel?.name }}</h3>
                   </div>
-                  <button
-                    *ngIf="activeChannel?.allowFolders"
-                    type="button"
-                    class="document-library-primary-btn px-3 py-1.5 rounded-lg bg-[#2e6276] text-white text-[12px] font-semibold"
-                    (click)="openCreateDocumentFolderModal()"
-                  >Create Folder</button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      *ngIf="activeChannel?.allowFolders"
+                      type="button"
+                      title="Create Folder"
+                      class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#2e6276] text-white"
+                      (click)="openCreateDocumentFolderModal()"
+                    ><i class="pi pi-folder-plus text-[13px]"></i></button>
+                    <label
+                      title="Upload Files"
+                      class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#2e6276] text-white cursor-pointer"
+                    >
+                      <i class="pi pi-upload text-[13px]"></i>
+                      <input type="file" multiple class="hidden" (change)="uploadDocumentFiles($event)" />
+                    </label>
+                  </div>
                 </div>
+
+                <!-- Tree: Root node -->
                 <button
                   type="button"
-                  class="w-full text-left px-3 py-2 rounded-xl border mb-2"
-                  [ngClass]="activeDocumentFolderId == null ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]' : 'border-gray-200 text-gray-700'"
+                  class="folder-tree-root w-full text-left px-3 py-2 rounded-lg mb-1 flex items-center gap-2 text-[13px] font-semibold transition-colors"
+                  [ngClass]="activeDocumentFolderId == null ? 'bg-[#2e6276]/10 text-[#2e6276]' : 'text-gray-600 hover:bg-gray-50'"
                   (click)="openDocumentFolder(null)"
-                >Root</button>
-                <button
-                  *ngIf="activeDocumentFolderId != null"
-                  type="button"
-                  class="w-full text-left px-3 py-2 rounded-xl border mb-2 border-gray-200 text-gray-700"
-                  (click)="openDocumentFolder(currentDocumentParentFolderId())"
-                >← Back</button>
-                <div
-                  *ngFor="let folder of activeDocumentFolders()"
-                  class="w-full px-3 py-2 rounded-xl border mb-2 flex items-center gap-2"
-                  [ngClass]="activeDocumentFolderId === folder.id ? 'border-[#2e6276] bg-[#2e6276]/5 text-[#2e6276]' : 'border-gray-200 text-gray-700'"
                 >
-                  <button
-                    type="button"
-                    class="block text-[13px] font-semibold truncate flex-1 text-left"
-                    (click)="openDocumentFolder(folder.id)"
+                  <i class="pi pi-home text-[12px]"></i>
+                  <span class="truncate">Root</span>
+                </button>
+
+                <!-- Tree: folder nodes (flat list, depth-indented) -->
+                <div *ngFor="let item of folderTreeItems; trackBy: trackFolderItem" class="folder-tree-item"
+                     [style.padding-left.px]="12 + item.depth * 16">
+                  <div
+                    class="folder-tree-row flex items-center gap-1 py-1.5 pr-1 rounded-lg cursor-pointer transition-colors"
+                    [ngClass]="+(activeDocumentFolderId ?? -1) === +item.folder.id
+                      ? 'bg-[#2e6276]/10 text-[#2e6276]'
+                      : 'text-gray-600 hover:bg-gray-50'"
+                    (click)="openDocumentFolder(item.folder.id)"
                   >
-                    {{ folder.name }}
-                  </button>
-                  <button
-                    type="button"
-                    class="text-[11px] text-gray-400 hover:text-[#2e6276]"
-                    title="Rename folder"
-                    (click)="openEditDocumentFolderModal(folder, $event)"
-                  >
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    class="text-[11px] text-red-400 hover:text-red-600"
-                    title="Delete folder"
-                    (click)="deleteDocumentFolder(folder, $event)"
-                  >
-                    Delete
-                  </button>
+                    <!-- Expand/collapse chevron -->
+                    <button
+                      type="button"
+                      class="folder-tree-chevron flex-shrink-0 w-4 h-4 flex items-center justify-center rounded"
+                      *ngIf="item.hasChildren"
+                      (click)="toggleFolderExpand(item.folder.id, $event)"
+                      [title]="item.expanded ? 'Collapse' : 'Expand'"
+                    >
+                      <i class="pi text-[10px]"
+                         [ngClass]="item.expanded ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+                    </button>
+                    <!-- Spacer for leaf nodes -->
+                    <span *ngIf="!item.hasChildren" class="flex-shrink-0 w-4"></span>
+
+                    <!-- Folder icon -->
+                    <i class="pi text-[13px] flex-shrink-0"
+                       [ngClass]="item.expanded ? 'pi-folder-open' : 'pi-folder'"
+                       style="opacity:0.7"></i>
+
+                    <!-- Folder name -->
+                    <span class="text-[13px] font-medium truncate flex-1">{{ item.folder.name }}</span>
+
+                    <!-- Action buttons — always visible, small -->
+                    <div class="folder-tree-actions flex items-center gap-0.5 flex-shrink-0 ml-1"
+                         (click)="$event.stopPropagation()">
+                      <button
+                        type="button"
+                        class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-[#2e6276] hover:bg-[#2e6276]/10"
+                        title="Share"
+                        (click)="openFolderShareModal(item.folder, $event)"
+                      ><i class="pi pi-share-alt text-[9px]"></i></button>
+                      <button
+                        type="button"
+                        class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-[#2e6276] hover:bg-[#2e6276]/10"
+                        title="Rename"
+                        (click)="openEditDocumentFolderModal(item.folder, $event)"
+                      ><i class="pi pi-pencil text-[9px]"></i></button>
+                      <button
+                        type="button"
+                        class="w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        title="Delete"
+                        (click)="deleteDocumentFolder(item.folder, $event)"
+                      ><i class="pi pi-trash text-[9px]"></i></button>
+                    </div>
+                  </div>
                 </div>
-                <p *ngIf="!activeDocumentFolders().length" class="text-[13px] text-gray-400 mt-4">No folders here yet.</p>
+
+                <p *ngIf="!documentFolders.length" class="text-[13px] text-gray-400 mt-4 px-2">No folders yet.</p>
               </aside>
 
               <section class="document-library-content p-5 overflow-y-auto">
@@ -1340,15 +1379,14 @@
                     <button
                       *ngIf="activeChannel?.allowFolders"
                       type="button"
-                      class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-[13px] font-semibold"
+                      title="Create Folder"
+                      class="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-700"
                       (click)="openCreateDocumentFolderModal()"
                     >
-                      <i class="pi pi-folder-plus"></i>
-                      <span>Create Folder</span>
+                      <i class="pi pi-folder-plus text-[14px]"></i>
                     </button>
-                    <label class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2e6276] text-white text-[13px] font-semibold cursor-pointer">
-                      <i class="pi pi-upload"></i>
-                      <span>Upload Files</span>
+                    <label title="Upload Files" class="w-8 h-8 flex items-center justify-center rounded-xl bg-[#2e6276] text-white cursor-pointer">
+                      <i class="pi pi-upload text-[14px]"></i>
                       <input type="file" multiple class="hidden" (change)="uploadDocumentFiles($event)" />
                     </label>
                   </div>
@@ -1364,21 +1402,49 @@
                 </div>
 
                 <div *ngIf="!documentLibraryLoading && documentFiles.length" class="document-library-files grid gap-3">
-                  <button
+                  <div
                     *ngFor="let file of documentFiles"
-                    type="button"
-                    class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 hover:border-[#2e6276]/30 text-left"
-                    (click)="downloadDocumentFile(file, $event)"
+                    class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 hover:border-[#2e6276]/30"
                   >
                     <div class="w-11 h-11 rounded-xl bg-[#2e6276]/10 text-[#2e6276] flex items-center justify-center flex-shrink-0">
-                      <i class="pi pi-file"></i>
+                      <i class="pi pi-file text-[18px]"></i>
                     </div>
                     <div class="min-w-0 flex-1">
                       <strong class="block text-[14px] text-gray-800 truncate">{{ file.name }}</strong>
-                      <small class="block text-[12px] text-gray-400 truncate">{{ file.contentType || 'Document' }}</small>
+                      <small class="block text-[12px] text-gray-400 truncate">{{ docFileDescription(file) || 'Document' }}</small>
                     </div>
-                    <i class="pi pi-download text-gray-400"></i>
-                  </button>
+                    <!-- Download -->
+                    <button
+                      type="button"
+                      title="Download"
+                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
+                      (click)="downloadDocumentFile(file, $event)"
+                    ><i class="pi pi-download text-[12px]"></i></button>
+                    <!-- Delete -->
+                    <button
+                      type="button"
+                      title="Delete file"
+                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 hover:bg-red-50"
+                      (click)="deleteDocumentFile(file, $event)"
+                    ><i class="pi pi-trash text-[12px]"></i></button>
+                    <!-- Share to channel/DM -->
+                    <button
+                      type="button"
+                      title="Share to channel or DM"
+                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
+                      (click)="openFileShareModal(file, $event)"
+                    ><i class="pi pi-share-alt text-[12px]"></i></button>
+                    <!-- Copy link -->
+                    <button
+                      type="button"
+                      [title]="copiedFileId === file.id ? 'Copied!' : 'Copy link'"
+                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border text-[12px] transition-colors"
+                      [ngClass]="copiedFileId === file.id
+                        ? 'border-green-300 text-green-600 bg-green-50'
+                        : 'border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]'"
+                      (click)="copyFileLink(file, $event)"
+                    ><i class="pi" [ngClass]="copiedFileId === file.id ? 'pi-check' : 'pi-link'"></i></button>
+                  </div>
                 </div>
 
                 <div *ngIf="!documentLibraryLoading && !documentFiles.length" class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center">
@@ -1432,12 +1498,17 @@
           class="chat-thread-resizer"
           (mousedown)="startResizeThread($event)"
         ></div>
-        <section class="right-panel-birthday-card">
+        <section class="right-panel-birthday-card" *ngIf="!birthdayCardDismissed">
           <div class="rail-card-header">
             <div>
               <p class="rail-label">Birthday Calendar</p>
               <h3>Upcoming celebrations</h3>
             </div>
+            <button type="button" title="Dismiss"
+              class="w-6 h-6 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              (click)="birthdayCardDismissed = true">
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
           </div>
           <div class="right-panel-birthday-empty" *ngIf="!upcomingBirthdays.length">
             No HR birthdays are available yet for this workspace.
@@ -1538,12 +1609,17 @@
           class="chat-rail-resizer"
           (mousedown)="startResizeChatRail($event)"
         ></div>
-        <section class="rail-card" *ngIf="upcomingBirthdays.length">
+        <section class="rail-card" *ngIf="upcomingBirthdays.length && !birthdayCardDismissed">
           <div class="rail-card-header">
             <div>
               <p class="rail-label">Birthday Calendar</p>
               <h3>Upcoming celebrations</h3>
             </div>
+            <button type="button" title="Dismiss"
+              class="w-6 h-6 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              (click)="birthdayCardDismissed = true">
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
           </div>
           <button
             type="button"
@@ -1705,6 +1781,74 @@
           class="flex-1 py-2.5 bg-[#2e6276] text-white text-[14px] font-semibold rounded-xl hover:bg-[#255264] disabled:opacity-50"
         >
           {{ documentFolderModal.saving ? 'Saving…' : documentFolderModal.mode === 'create' ? 'Create Folder' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doc Share Modal -->
+  <div *ngIf="docShareModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       (click)="closeDocShareModal()">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="px-8 pt-7 pb-4 border-b border-gray-100">
+        <h2 class="text-[18px] font-bold text-gray-900">Share {{ docShareModal.itemType === 'folder' ? 'Folder' : 'File' }}</h2>
+        <p class="text-[13px] text-gray-500 mt-0.5 truncate">{{ docShareModal.itemName }}</p>
+      </div>
+      <div class="px-8 py-5 flex flex-col gap-4">
+        <!-- Target type -->
+        <div>
+          <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Send to</p>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="shareTarget" value="channel" class="accent-[#2e6276]"
+                [checked]="docShareModal.targetType === 'channel'"
+                (change)="setShareTargetType('channel')">
+              <span class="text-[14px] text-gray-700">Channel</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="shareTarget" value="dm" class="accent-[#2e6276]"
+                [checked]="docShareModal.targetType === 'dm'"
+                (change)="setShareTargetType('dm')">
+              <span class="text-[14px] text-gray-700">Direct Message</span>
+            </label>
+          </div>
+        </div>
+        <!-- Destination picker -->
+        <div>
+          <p class="text-[12px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            {{ docShareModal.targetType === 'channel' ? 'Select Channel' : 'Select Person' }}
+          </p>
+          <select *ngIf="docShareModal.targetType === 'channel'"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 focus:outline-none focus:border-[#2e6276]"
+            [value]="docShareModal.targetId"
+            (change)="setShareTargetId($any($event.target).value)">
+            <option *ngFor="let ch of channels" [value]="ch.id"># {{ ch.name }}</option>
+          </select>
+          <select *ngIf="docShareModal.targetType === 'dm'"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] text-gray-800 focus:outline-none focus:border-[#2e6276]"
+            [value]="docShareModal.targetId"
+            (change)="setShareTargetId($any($event.target).value)">
+            <option *ngFor="let dm of dmContacts" [value]="dm.id">{{ dm.fullName }}</option>
+          </select>
+        </div>
+        <!-- Message preview -->
+        <div class="bg-gray-50 rounded-xl px-4 py-3 text-[13px] text-gray-600 leading-relaxed">
+          <span class="font-semibold text-gray-800">{{ me.name }}</span>
+          {{ ' has shared the ' + docShareModal.itemType + ' "' + docShareModal.itemName + '". ' }}
+          <a class="text-[#2e6276] underline font-medium">Click here to access</a>
+        </div>
+        <p *ngIf="docShareModal.error" class="text-[13px] text-red-500">{{ docShareModal.error }}</p>
+      </div>
+      <div class="px-8 pb-6 flex gap-3">
+        <button (click)="closeDocShareModal()"
+          class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-[14px] font-medium rounded-xl hover:bg-gray-50">
+          Cancel
+        </button>
+        <button (click)="executeDocShare()"
+          [disabled]="docShareModal.sending || !docShareModal.targetId"
+          class="flex-1 py-2.5 bg-[#2e6276] text-white text-[14px] font-semibold rounded-xl hover:bg-[#255264] disabled:opacity-50">
+          {{ docShareModal.sending ? 'Sharing…' : 'Share' }}
         </button>
       </div>
     </div>

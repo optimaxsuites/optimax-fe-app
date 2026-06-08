@@ -1,152 +1,60 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AttendanceService } from '../../../service/attendance.service';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-attendance-sheet',
   templateUrl: './attendance-sheet.component.html',
-  styleUrls: ['./attendance-sheet.component.scss'] // if you have any styles
+  styleUrls: ['./attendance-sheet.component.scss'],
 })
-export class AttendanceSheetsComponent {
-  // title: string = 'Viewing Attendance Information';
-  // showAttendanceSheets: boolean = true; // Initially show the attendance sheets
-  // showCheckAttendance: boolean = false; // Initially hide the detailed attendance view
-  // activeItem: any = {}; // To store the currently active employee item
-  // viewModal: boolean = false; // Controls visibility of the attendance modal
-
-  // // Sample data for attendance sheets
-  // attendanceSheets: any[] = [
-  //   { employeeID: 'EMP001', employeeName: 'Akinola Ifeoluwa', department: 'IT', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' },
-  //   { employeeID: 'EMP002', employeeName: 'Damilola Awe', department: 'CEO', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' },
-  //   { employeeID: 'EMP003', employeeName: 'Babalola Oni', department: 'Accounting', date: '2023-11-20', inTime: '09:00', outTime: '17:00', regularizationStatus: 'Pending' },
-  //   { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' }
-  // ];
-
-  // attendanceDetails: any[] = []; // Array of detailed attendance data
-
-  // // Arrays for dropdown filter
-  // employees: any[] = this.attendanceSheets.map(sheet => ({ name: sheet.employeeName }));
-  // departments: string[] = [...new Set(this.attendanceSheets.map(sheet => sheet.department))]; // Extract unique departments
-
-  // // Variables to hold selected dropdown values
-  // selectedEmployeeName: string = '';
-  // selectedEmployeeDepartment: string = '';
-
-  // filteredAttendanceSheets: any[] = [...this.attendanceSheets]; // Array to hold filtered results
-
-  // // Method to filter attendance sheets based on dropdown selection
-  // filterAttendance() {
-  //   this.filteredAttendanceSheets = this.attendanceSheets.filter(sheet => {
-  //     return (
-  //       (this.selectedEmployeeName ? sheet.employeeName === this.selectedEmployeeName : true) &&
-  //       (this.selectedEmployeeDepartment ? sheet.department === this.selectedEmployeeDepartment : true)
-  //     );
-  //   });
-  // }
-
-  // // Method to toggle the view of attendance sheets and check attendance
-  // toggleAttendanceView() {
-  //   this.showAttendanceSheets = !this.showAttendanceSheets; // Optionally toggle attendance sheets visibility
-  //   this.viewModal = false; // Close modal if toggling views
-  // }
-
-  // // Method to navigate to check attendance for a specific employee and open the modal
-  // goToCheckAttendance(employeeID: string, op: any) {
-  //   this.activeItem = this.attendanceSheets.find(sheet => sheet.employeeID === employeeID) || {};
-  //   this.viewModal = true; // Open the modal to view attendance
-  //   this.loadAttendanceDetails(); // Load attendance details for the selected employee
-  //   op.hide();
-  // }
-
-  // // Load attendance details - this can be replaced with actual data fetching logic
-  // loadAttendanceDetails() {
-  //   this.attendanceDetails = [
-  //     { date: '2023-11-20', inTime: '07:00', outTime: '14:00', remarks: 'None' },
-  //     { date: '2023-11-21', inTime: '08:00', outTime: '16:00', remarks: 'None' },
-  //   ];
-  // }
-
-  // // Close the modal and reset views
-  // closeViewModal() {
-  //   this.viewModal = false; // Close the modal
-  //   this.showAttendanceSheets = true; // Show attendance sheets again when modal closes
-  //   this.showCheckAttendance = false; // Hide check attendance
-  // }
-
-  // // Method to approve regularization
-  // approveRegularization() {
-  //   console.log('Regularization approved.');
-  // }
-
-  // // Method to reject leave
-  // rejectLeave() {
-  //   console.log('Leave rejected.');
-  // }
-
-  employees: any[] = [];
+export class AttendanceSheetsComponent implements OnInit {
+  private allRecords: any[] = [];
   filteredEmployees: any[] = [];
   searchTerm = '';
   selectedDate = new Date().toISOString().split('T')[0];
-  viewDetail: boolean = false;
-  selectedId: number  = 0
+  viewDetail = false;
+  selectedId = 0;
+  loading = true;
 
-  constructor(
-    private attendanceService: AttendanceService,
-    private router: Router
-  ) {}
+  constructor(private attendanceService: AttendanceService, private router: Router) {}
 
   ngOnInit() {
     this.loadAttendance();
   }
 
   loadAttendance() {
-    const records = this.attendanceService.getAttendanceForDate(this.selectedDate);
-    const employees = this.attendanceService.getEmployees();
-
-    this.employees = employees.map(emp => {
-      const rec = records.find(r => r.userId === emp.id);
-      return {
-        ...emp,
-        status: rec?.status || 'Absent',
-        clockIn: rec?.clockIn || '-',
-        clockOut: rec?.clockOut || '-'
-      };
+    this.loading = true;
+    this.attendanceService.fetchDailyRecords().subscribe(records => {
+      this.allRecords = records;
+      this.loading = false;
+      this.filterEmployees();
     });
-
-    this.filterEmployees();
   }
 
   filterEmployees() {
-    const allEmployees = this.attendanceService.getEmployees();
-    const records = this.attendanceService.getAttendanceForDate(this.selectedDate);
-  
-    this.filteredEmployees = allEmployees
-      // Filter by name first
-      .filter(e =>
-        e.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-      )
-      // Then map to merge with attendance data for the selected date
-      .map(e => {
-        const rec = records.find(r => r.userId === e.id);
-        return {
-          ...e,
-          status: rec?.status || 'Absent',
-          clockIn: rec?.clockIn || '-',
-          clockOut: rec?.clockOut || '-'
-        };
-      });
+    const term = this.searchTerm.toLowerCase();
+    this.filteredEmployees = this.allRecords
+      .filter(r => {
+        const recDate = this.attendanceService.dateArrayToStr(r.attendanceDate);
+        const name = `${r.employeeId?.firstName ?? ''} ${r.employeeId?.lastName ?? ''}`.toLowerCase();
+        return (!this.selectedDate || recDate === this.selectedDate) && name.includes(term);
+      })
+      .map(r => ({
+        id: r.employeeId?.id,
+        name: `${r.employeeId?.firstName ?? ''} ${r.employeeId?.lastName ?? ''}`,
+        department: r.employeeId?.department?.name ?? '-',
+        status: r.status ?? 'ABSENT',
+        clockIn: r.checkIn ?? '-',
+        clockOut: r.checkOut ?? '-',
+      }));
   }
-  
 
   viewDetails(emp: any) {
-    // this.router.navigate(['/attendance', emp.id]);
     this.viewDetail = true;
-    this.selectedId = emp.id
+    this.selectedId = emp.id;
   }
 
-  toggleSidebar(){
-    this.viewDetail = !this.viewDetail
+  toggleSidebar() {
+    this.viewDetail = !this.viewDetail;
   }
-
-
 }

@@ -1,13 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { LeaveServiceService } from '../../../service/leave-service.service';
-
-interface LeaveType {
-  id: string;
-  typeName: string;
-  isActive: boolean;
-}
+import { LeaveApiService } from '../../../service/leave-api.service';
+import { forkJoin } from 'rxjs';
+import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-assign-leave',
@@ -15,116 +10,84 @@ interface LeaveType {
   styleUrl: './assign-leave.component.scss',
   providers: [MessageService],
 })
-export class AssignLeaveComponent {
+export class AssignLeaveComponent implements OnInit {
   constructor(
     private messageService: MessageService,
-    private token: RandomTokenService,
-    private leaveService: LeaveServiceService,
+    private leaveApi: LeaveApiService,
   ) {}
-  selectedEmployee: string[] = [];
+
   employees: any[] = [];
+  leaveTypes: any[] = [];
+  selectedEmployee: any[] = [];
+  selectedLeaveType: any = null;
+  fromDate = '';
+  toDate = '';
+  comment = '';
+  submitting = false;
 
   ngOnInit(): void {
-    this.loadLeaveTypes();
-    this.leaveService.getEmployees().subscribe(async (data) => {
-      if (data) {
-        this.employees = [...data];
-        console.log(this.employees);
-      } else {
-        console.log('error loading data');
-      }
+    forkJoin({
+      employees: this.leaveApi.getEmployees().pipe(catchError(() => of([]))),
+      leaveTypes: this.leaveApi.getLeaveTypes().pipe(catchError(() => of([]))),
+    }).subscribe(({ employees, leaveTypes }) => {
+      const emps = Array.isArray(employees) ? employees : (employees as any)?.content ?? [];
+      this.employees = emps.map((e: any) => ({
+        fullname: `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim(),
+        userId: e.user?.userId ?? e.user?.id ?? null,
+        employeeId: e.id,
+      }));
+
+      const types = Array.isArray(leaveTypes) ? leaveTypes : (leaveTypes as any)?.content ?? [];
+      this.leaveTypes = types;
     });
-  }
-  loadLeaveTypes(): void {
-    const stored = localStorage.getItem('leaveSettings');
-    if (stored) {
-      const data = JSON.parse(stored);
-      this.leaveTypes = data.leaveTypes
-        .filter((leave: LeaveType) => leave.isActive)
-        .map((leave: LeaveType) => leave.typeName);
-    }
-  }
-
-  leaveTypes: string[] = [];
-  fromDate: any;
-  toDate: any;
-  comment: any;
-  selectedLeaveType: any;
-
-  getCurrentDateTime(): string {
-    const currentDate = new Date();
-
-    const year = currentDate.getFullYear();
-    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-    const day = currentDate.getDate().toString().padStart(2, '0');
-
-    const hours = currentDate.getHours();
-    const minutes = currentDate.getMinutes().toString().padStart(2, '0');
-
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = (hours % 12 || 12).toString().padStart(2, '0');
-
-    return `${year}-${month}-${day}, ${formattedHours}:${minutes} ${ampm}`;
   }
 
   assignLeave() {
-    let leaveRequests = JSON.parse(
-      localStorage.getItem('leaveRequest') || '[]',
-    );
-
-    if (
-      this.selectedEmployee.length > 0 &&
-      this.fromDate &&
-      this.toDate &&
-      this.selectedLeaveType.length > 0
-    ) {
-      const from = new Date(this.fromDate);
-      const to = new Date(this.toDate);
-
-      const timeDiff = to.getTime() - from.getTime();
-
-      const dayDiff = timeDiff / (1000 * 3600 * 24);
-      this.selectedEmployee.forEach((employee: any) => {
-        const leaveRequest = {
-          Employee: employee,
-          Date: `${this.fromDate} to ${this.toDate}`,
-          LeaveType: this.selectedLeaveType,
-          NetLeaveBalance: '5.00 day(s)',
-          RequestedDuration: `${dayDiff}.00 day(s)`,
-          Status: 'Approved',
-          RequestComment: '',
-          AppliedOn: this.getCurrentDateTime(),
-          ApprovalComment: this.comment,
-          Id: this.token.getRandomToken(),
-        };
-
-        leaveRequests.push(leaveRequest);
-      });
-
-      // leaveRequests.push(leaveRequest);
-
-      localStorage.setItem('leaveRequest', JSON.stringify(leaveRequests));
-
-      this.selectedEmployee = [];
-      this.comment = '';
-      this.fromDate = '';
-      this.toDate = '';
-      this.selectedLeaveType = '';
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Leave',
-        detail: `Leave assigned sucessfully`,
-        key: 'tl',
-        life: 3000,
-      });
-    } else {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Leave',
-        detail: 'Please ensure all required fields are filled',
-        key: 'tl',
-        life: 3000,
-      });
+    if (!this.selectedEmployee?.length || !this.fromDate || !this.toDate || !this.selectedLeaveType) {
+      this.messageService.add({ severity: 'error', summary: 'Leave', detail: 'Please ensure all required fields are filled', key: 'tl', life: 3000 });
+      return;
     }
+
+    const from = new Date(this.fromDate);
+    const to = new Date(this.toDate);
+    const totalDays = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000));
+
+    const calls = this.selectedEmployee.map(emp => {
+      const payload = {
+        createdBy: emp.userId,
+        leaveTypeId: this.selectedLeaveType?.id ?? this.selectedLeaveType,
+        startDate: this.fromDate,
+        endDate: this.toDate,
+        totalDays,
+        planReason: this.comment || 'Admin assigned',
+        status: 'APPROVED',
+      };
+      return this.leaveApi.createLeavePlanRecord(payload).pipe(catchError(err => {
+        console.error('Assign leave error for', emp.fullname, err);
+        return of(null);
+      }));
+    });
+
+    this.submitting = true;
+    forkJoin(calls).subscribe({
+      next: results => {
+        this.submitting = false;
+        const failed = results.filter(r => r === null).length;
+        if (failed === 0) {
+          this.messageService.add({ severity: 'success', summary: 'Leave', detail: `Leave assigned to ${results.length} employee(s) successfully`, key: 'tl', life: 3000 });
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Leave', detail: `${results.length - failed} succeeded, ${failed} failed`, key: 'tl', life: 4000 });
+        }
+        this.selectedEmployee = [];
+        this.fromDate = '';
+        this.toDate = '';
+        this.comment = '';
+        this.selectedLeaveType = null;
+      },
+      error: () => {
+        this.submitting = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign leave', key: 'tl', life: 3000 });
+      },
+    });
   }
 }

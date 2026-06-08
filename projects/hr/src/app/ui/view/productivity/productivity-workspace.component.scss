@@ -2373,11 +2373,15 @@
 .modal-card {
   background: var(--white);
   border-radius: 14px;
-  width: 600px;
-  max-width: 95vw;
-  max-height: 90vh;
+  width: 900px;
+  max-width: 96vw;
+  max-height: 92vh;
   overflow-y: auto;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.modal-card.modal-xl {
+  width: 1100px;
 }
 
 .modal-header {
@@ -3064,6 +3068,51 @@
   border-radius: 0 0 14px 14px;
 }
 
+.task-view-btn:hover { background: #f9fafb !important; border-color: var(--secondary) !important; }
+
+// Subtask table inside new-task modal
+.subtask-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  th {
+    background: #f3f4f6;
+    padding: 7px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  td {
+    padding: 5px 6px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  tr:hover td { background: #fafbfc; }
+  input[type="text"], input[type="date"], select {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 4px 7px;
+    font-size: 12px;
+    font-family: var(--font);
+    background: #fff;
+    outline: none;
+    color: #374151;
+    &:focus { border-color: var(--secondary); box-shadow: 0 0 0 2px rgba(46,98,118,.12); }
+  }
+}
+
+.task-view-opt {
+  transition: background 0.15s;
+  &:hover { background: #f3f4f6; }
+  &.active {
+    background: rgba(46, 98, 118, 0.07);
+    strong { color: var(--secondary); }
+  }
+}
+
 .form-input {
   width: 100%;
   border: 1.5px solid var(--border);
@@ -3074,4 +3123,97 @@
   color: #374151;
   outline: none;
   &:focus { border-color: var(--secondary); }
+}
+
+// Subtask follow-up expand area
+.sub-fu-area {
+  margin: 4px 0 8px 28px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.sub-fu-entry {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: flex-start;
+}
+.fu-ava-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sub-fu-body {
+  flex: 1;
+  font-size: 12px;
+  strong { color: #111827; margin-right: 6px; }
+  p { margin: 2px 0 0; color: #374151; line-height: 1.4; }
+}
+.sub-fu-ts {
+  font-size: 10px;
+  color: #9ca3af;
+}
+.sub-fu-compose {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  input {
+    flex: 1;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-family: var(--font);
+    outline: none;
+    &:focus { border-color: var(--secondary); }
+  }
+}
+
+// ── Kanban loading overlay ────────────────────────────────────────────────────
+.board-loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  width: 100%;
+}
+.board-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: #6b7280;
+  font-size: 13px;
+  p { margin: 0; }
+}
+.board-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--secondary, #2e6276);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Kanban card owner row ─────────────────────────────────────────────────────
+.kcard-owner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+  padding: 3px 6px;
+  background: #f8fafc;
+  border-radius: 5px;
+  span { font-weight: 500; color: #374151; }
 }

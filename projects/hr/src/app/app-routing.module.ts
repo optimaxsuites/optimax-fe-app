@@ -57,6 +57,10 @@ import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-manag
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
+import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
+import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
+import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -434,6 +438,22 @@ const routes: Routes = [
   {
     path: 'HR-settings/:uuid',
     component: HrSettingsComponent,
+  },
+  {
+    path: 'analytics/:uuid',
+    component: HrAnalyticsDashboardComponent,
+  },
+  {
+    path: 'overtime/:uuid',
+    component: OvertimeManagementComponent,
+  },
+  {
+    path: 'org-chart/:uuid',
+    component: OrgChartComponent,
+  },
+  {
+    path: 'reports/:uuid',
+    component: HrReportsComponent,
   },
   {
     path: '**',

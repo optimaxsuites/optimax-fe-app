@@ -138,6 +138,24 @@ interface DocumentFolderModalState {
   error: string;
 }
 
+interface FolderTreeItem {
+  folder: CollabDocumentFolder;
+  depth: number;
+  hasChildren: boolean;
+  expanded: boolean;
+}
+
+interface DocShareModalState {
+  open: boolean;
+  itemName: string;
+  itemType: 'file' | 'folder';
+  itemUrl: string;
+  targetType: 'channel' | 'dm';
+  targetId: string;
+  sending: boolean;
+  error: string;
+}
+
 export interface DmContact {
   id: string;
   employeeId: number;
@@ -528,10 +546,26 @@ export class CommunicationComponent
 
   documentFolders: CollabDocumentFolder[] = [];
   documentFiles: ChannelDocumentFile[] = [];
+  folderTreeItems: FolderTreeItem[] = [];
   documentLibraryLoading = false;
   documentLibraryError = '';
   activeDocumentFolderId: number | null = null;
+  expandedFolderIds: Set<number> = new Set();
+  copiedFileId: number | null = null;
+  birthdayCardDismissed = false;
+  pendingShareDocTarget: { channelBackendId: number; folderId: number | null } | null = null;
+  pendingShareFolderId: number | null = null;
   channelWorkspacePane: 'chat' | 'files' = 'chat';
+  docShareModal: DocShareModalState = {
+    open: false,
+    itemName: '',
+    itemType: 'file',
+    itemUrl: '',
+    targetType: 'channel',
+    targetId: '',
+    sending: false,
+    error: '',
+  };
   documentFolderModal: DocumentFolderModalState = {
     open: false,
     mode: 'create',
@@ -4682,6 +4716,7 @@ export class CommunicationComponent
       this.channels.forEach((channel) => this.subscribeToChannel(channel.backendId));
     }
     this.channelsLoading = false;
+    this.applyPendingShareDoc();
     if (
       this.channels.length > 0 &&
       !this.activeChannelId &&
@@ -5508,6 +5543,8 @@ export class CommunicationComponent
   private resetDocumentLibraryState(): void {
     this.documentFolders = [];
     this.documentFiles = [];
+    this.folderTreeItems = [];
+    this.expandedFolderIds = new Set();
     this.documentLibraryError = '';
     this.documentLibraryLoading = false;
     this.activeDocumentFolderId = null;
@@ -5538,6 +5575,19 @@ export class CommunicationComponent
         );
         if (!hasActiveFolder) {
           this.activeDocumentFolderId = null;
+        }
+        // Expand path to active folder so it's visible in the tree
+        if (this.activeDocumentFolderId != null) {
+          this.expandedFolderIds.add(Number(this.activeDocumentFolderId));
+          this.expandPathToFolder(this.activeDocumentFolderId);
+        }
+        this.rebuildFolderTree();
+        // Navigate to a pending shared folder if one arrived via deep link
+        if (this.pendingShareFolderId != null) {
+          const targetFolderId = this.pendingShareFolderId;
+          this.pendingShareFolderId = null;
+          this.openDocumentFolder(targetFolderId);
+          return;
         }
         this.loadDocumentFiles(channel.backendId, this.activeDocumentFolderId);
       },
@@ -5578,6 +5628,53 @@ export class CommunicationComponent
     return this.documentFolders.filter(
       (folder) => Number(folder.parentFolderId || 0) === Number(parentId || 0),
     );
+  }
+
+  rebuildFolderTree(): void {
+    this.folderTreeItems = this.buildFlatTree(null, 0);
+    this.cdr.detectChanges();
+  }
+
+  trackFolderItem(_index: number, item: FolderTreeItem): number {
+    return Number(item.folder.id);
+  }
+
+  private buildFlatTree(parentId: number | null, depth: number): FolderTreeItem[] {
+    const result: FolderTreeItem[] = [];
+    const children = this.documentFolders.filter(
+      (f) => Number(f.parentFolderId || 0) === Number(parentId || 0),
+    );
+    for (const folder of children) {
+      const hasChildren = this.documentFolders.some(
+        (f) => Number(f.parentFolderId || 0) === Number(folder.id),
+      );
+      const expanded = this.expandedFolderIds.has(Number(folder.id));
+      result.push({ folder, depth, hasChildren, expanded });
+      if (expanded) {
+        result.push(...this.buildFlatTree(folder.id, depth + 1));
+      }
+    }
+    return result;
+  }
+
+  toggleFolderExpand(folderId: number, event?: Event): void {
+    event?.stopPropagation();
+    const id = Number(folderId);
+    if (this.expandedFolderIds.has(id)) {
+      this.expandedFolderIds.delete(id);
+    } else {
+      this.expandedFolderIds.add(id);
+    }
+    this.rebuildFolderTree();
+  }
+
+  private expandPathToFolder(folderId: number | null): void {
+    if (folderId == null) return;
+    let cursor = this.documentFolders.find((f) => Number(f.id) === Number(folderId));
+    while (cursor?.parentFolderId != null) {
+      this.expandedFolderIds.add(Number(cursor.parentFolderId));
+      cursor = this.documentFolders.find((f) => Number(f.id) === Number(cursor!.parentFolderId));
+    }
   }
 
   currentDocumentFolder(): CollabDocumentFolder | null {
@@ -5629,6 +5726,11 @@ export class CommunicationComponent
       return;
     }
     this.activeDocumentFolderId = folderId;
+    if (folderId != null) {
+      this.expandedFolderIds.add(Number(folderId));
+      this.expandPathToFolder(folderId);
+    }
+    this.rebuildFolderTree();
     this.loadDocumentFiles(activeChannel.backendId, folderId);
   }
 
@@ -7854,6 +7956,7 @@ export class CommunicationComponent
 
   private processMentionHashNavigation(): void {
     if (typeof window === 'undefined') return;
+    if (this.processShareDocHash()) return;
     const match = window.location.hash.match(/^#dm-user-(\d+)$/i);
     if (!match) return;
     const userId = Number(match[1]);
@@ -7867,6 +7970,38 @@ export class CommunicationComponent
     }
     this.pendingMentionConversationUserId = null;
     this.openMentionConversation(userId);
+  }
+
+  private processShareDocHash(): boolean {
+    if (typeof window === 'undefined') return false;
+    const match = window.location.hash.match(/^#share-doc:(\d+):(\d*)$/i);
+    if (!match) return false;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    const channelBackendId = Number(match[1]);
+    const folderId = match[2] ? Number(match[2]) : null;
+    const channel = this.channels.find((c) => c.backendId === channelBackendId);
+    if (!channel) {
+      this.pendingShareDocTarget = { channelBackendId, folderId };
+      return true;
+    }
+    this.pendingShareDocTarget = null;
+    this.selectChannel(channel.id);
+    if (folderId != null) {
+      this.pendingShareFolderId = folderId;
+    }
+    return true;
+  }
+
+  private applyPendingShareDoc(): void {
+    if (!this.pendingShareDocTarget) return;
+    const { channelBackendId, folderId } = this.pendingShareDocTarget;
+    const channel = this.channels.find((c) => c.backendId === channelBackendId);
+    if (!channel) return;
+    this.pendingShareDocTarget = null;
+    this.selectChannel(channel.id);
+    if (folderId != null) {
+      this.pendingShareFolderId = folderId;
+    }
   }
 
   private applyPendingMentionConversation(): void {
@@ -8508,7 +8643,125 @@ export class CommunicationComponent
   }
 
   get birthdayPanelOpen(): boolean {
-    return !this.rightPanelOpen && !this.isMobileViewport();
+    return !this.birthdayCardDismissed && !this.rightPanelOpen && !this.isMobileViewport();
+  }
+
+  docFileDescription(file: ChannelDocumentFile): string {
+    const parts: string[] = [];
+    const ext = file.contentType ? (file.contentType.split('/').pop() || '').toUpperCase() : '';
+    if (ext) parts.push(ext);
+    if (file.fileSize) parts.push(formatFileSize(file.fileSize));
+    if (file.uploadedAt) {
+      try {
+        const d = new Date(file.uploadedAt);
+        if (!Number.isNaN(d.getTime())) {
+          parts.push(d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }));
+        }
+      } catch (_) {}
+    }
+    return parts.join(' · ');
+  }
+
+  private buildShareDocUrl(channelBackendId: number, folderId: number | null): string {
+    if (typeof window === 'undefined') return '';
+    const base = window.location.href.split('#')[0];
+    return `${base}#share-doc:${channelBackendId}:${folderId ?? ''}`;
+  }
+
+  deleteDocumentFile(file: ChannelDocumentFile, event?: Event): void {
+    event?.stopPropagation();
+    if (!confirm(`Delete "${file.name}"?`)) return;
+    this.collabService.deleteAttachment(file.id).subscribe({
+      next: () => {
+        this.documentFiles = this.documentFiles.filter((f) => f.id !== file.id);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.documentLibraryError = `Failed to delete "${file.name}".`;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openFileShareModal(file: ChannelDocumentFile, event?: Event): void {
+    event?.stopPropagation();
+    const channelBackendId = this.activeChannel?.backendId ?? 0;
+    this.docShareModal = {
+      open: true,
+      itemName: file.name,
+      itemType: 'file',
+      itemUrl: this.buildShareDocUrl(channelBackendId, file.folderId ?? null),
+      targetType: 'channel',
+      targetId: this.channels[0]?.id || '',
+      sending: false,
+      error: '',
+    };
+    this.cdr.detectChanges();
+  }
+
+  openFolderShareModal(folder: CollabDocumentFolder, event?: Event): void {
+    event?.stopPropagation();
+    const channelBackendId = this.activeChannel?.backendId ?? 0;
+    this.docShareModal = {
+      open: true,
+      itemName: folder.name,
+      itemType: 'folder',
+      itemUrl: this.buildShareDocUrl(channelBackendId, Number(folder.id)),
+      targetType: 'channel',
+      targetId: this.channels[0]?.id || '',
+      sending: false,
+      error: '',
+    };
+    this.cdr.detectChanges();
+  }
+
+  closeDocShareModal(): void {
+    this.docShareModal = { ...this.docShareModal, open: false, sending: false, error: '' };
+    this.cdr.detectChanges();
+  }
+
+  setShareTargetType(type: 'channel' | 'dm'): void {
+    const defaultId = type === 'channel' ? (this.channels[0]?.id || '') : (this.dmContacts[0]?.id || '');
+    this.docShareModal = { ...this.docShareModal, targetType: type, targetId: defaultId };
+  }
+
+  setShareTargetId(id: string): void {
+    this.docShareModal = { ...this.docShareModal, targetId: id };
+  }
+
+  executeDocShare(): void {
+    const modal = this.docShareModal;
+    if (!modal.targetId || modal.sending) return;
+    const label = modal.itemType === 'folder' ? 'folder' : 'file';
+    const content = modal.itemUrl
+      ? `${this.me.name} has shared the ${label} "${modal.itemName}". [Click here to access](${modal.itemUrl})`
+      : `${this.me.name} has shared the ${label} "${modal.itemName}".`;
+    this.docShareModal = { ...modal, sending: true, error: '' };
+    this.cdr.detectChanges();
+
+    let channelBackendId: number | null = null;
+    if (modal.targetType === 'channel') {
+      const ch = this.channels.find((c) => c.id === modal.targetId);
+      channelBackendId = ch?.backendId ?? null;
+    } else {
+      const dm = this.dmContacts.find((d) => d.id === modal.targetId);
+      channelBackendId = dm?.dmChannelId ?? null;
+    }
+    if (!channelBackendId) {
+      this.docShareModal = { ...this.docShareModal, sending: false, error: 'Could not resolve destination.' };
+      this.cdr.detectChanges();
+      return;
+    }
+    this.collabService.sendMessage({ channelId: channelBackendId, senderUserId: this.me.userId, content, messageType: 'TEXT' })
+      .subscribe({
+        next: () => {
+          this.closeDocShareModal();
+        },
+        error: () => {
+          this.docShareModal = { ...this.docShareModal, sending: false, error: 'Failed to share. Please try again.' };
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   toggleChatRail(): void {
@@ -9093,6 +9346,20 @@ export class CommunicationComponent
       { name: file.name, downloadUrl: file.downloadUrl },
       event,
     );
+  }
+
+  copyFileLink(file: ChannelDocumentFile, event: Event): void {
+    event.stopPropagation();
+    const url = file.downloadUrl || '';
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      this.copiedFileId = Number(file.id);
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.copiedFileId = null;
+        this.cdr.detectChanges();
+      }, 2000);
+    });
   }
 
   openThreadFromList(msg: Message, event: Event): void {
