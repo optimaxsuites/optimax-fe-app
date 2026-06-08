@@ -86,6 +86,8 @@ this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = '/admin/hr/HR-settings/' +uuidV4();
     this.links['hrAnalytics'] = '/admin/hr/analytics/' +uuidV4();
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
+    this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
+    this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
 this.links['userRoles'] = '/admin/settings/user-roles/' +uuidV4();
 
 

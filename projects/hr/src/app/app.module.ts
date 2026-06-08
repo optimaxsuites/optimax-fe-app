@@ -1,6 +1,8 @@
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
+import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
+import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -408,6 +410,8 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     HrSettingsComponent,
     HrAnalyticsDashboardComponent,
     OvertimeManagementComponent,
+    OrgChartComponent,
+    HrReportsComponent,
   ],
   imports: [
     AppHrRoutingModule,

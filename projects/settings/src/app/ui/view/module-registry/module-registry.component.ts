@@ -68,6 +68,8 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
       { code: 'HR_LEAVE', label: 'Leave' },
       { code: 'HR_ANALYTICS', label: 'HR Analytics' },
       { code: 'HR_OVERTIME', label: 'Overtime' },
+      { code: 'HR_ORG_CHART', label: 'Org Chart' },
+      { code: 'HR_REPORTS', label: 'HR Reports' },
     ]
   },
   {
