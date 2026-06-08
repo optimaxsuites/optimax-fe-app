@@ -3,4 +3,12 @@ export interface RotationDTO {
   name: string;
   shifts: string[]; // shiftIds
   cycleLength: number; // days or weeks
+  rotationType:
+    | 'weekly'
+    | 'biweekly'
+    | 'monthly';
+
+  startDate: string;
+
+  autoAssign: boolean;
 }
