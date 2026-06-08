@@ -72,6 +72,8 @@ export class NavigationLinksService {
     this.links['employeeDashboardLink'] = '/admin/hr/me/' +uuidV4();
     this.links['hrAnalytics'] = '/admin/hr/analytics/' +uuidV4();
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
+    this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
+    this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
 
 
 // hospitality ================================================================================================================

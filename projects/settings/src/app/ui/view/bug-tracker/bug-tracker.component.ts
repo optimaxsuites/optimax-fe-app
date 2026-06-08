@@ -1,45 +1,56 @@
 import { Component, OnInit } from '@angular/core';
+import { MessageService } from 'primeng/api';
+import { IssueTrackerApiService } from '../../service/issue-tracker-api.service';
 
-type Priority = 'Critical' | 'High' | 'Medium' | 'Low';
-type Status = 'Open' | 'In Progress' | 'Blocked' | 'Done' | "Won't Fix";
+type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+type Status = 'OPEN' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'WONT_FIX';
 
 interface WorkLog {
-  timestamp: string;
+  id?: number;
   note: string;
+  loggedByUserId?: number;
+  loggedByEmail?: string;
+  loggedByName?: string;
+  createdAt?: string;
 }
 
-interface Bug {
-  id: string;
+interface Share {
+  id?: number;
+  shareType: 'CHANNEL' | 'DM';
+  channelName?: string;
+  sharedToEmail?: string;
+  sharedToName?: string;
+  sharedByUserId?: number;
+  sharedByEmail?: string;
+}
+
+interface Issue {
+  id?: number;
   title: string;
+  description?: string;
   module: string;
   priority: Priority;
   status: Status;
-  assignee: string;
-  reporter: string;
-  createdAt: string;
-  description: string;
-  workLog: WorkLog[];
+  reporterUserId?: number;
+  reporterEmail?: string;
+  reporterName?: string;
+  assigneeUserId?: number;
+  assigneeEmail?: string;
+  assigneeName?: string;
+  supervisorUserId?: number;
+  supervisorEmail?: string;
+  supervisorName?: string;
+  workTaskId?: number;
+  performanceGoalId?: number;
+  createdAt?: string;
+  workLog?: WorkLog[];
+  shares?: Share[];
 }
 
-const STORAGE_KEY = 'optimax_bugs_v2';
-
-const SEED_BUGS: Bug[] = [
-  { id: 'BUG-001', title: 'Commerce submenus not visible to non-admin users', module: 'Commerce', priority: 'Critical', status: 'Open', assignee: 'Frontend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'AppRegister entries missing for AI_ANALYSIS, QUOTE_MGMT, DELIVERY_MGMT, DOC_MGMT, PROCURE_MGMT, VENDOR_PORTAL. getUserPermissions() returns empty array for these codes so sidebar filters them out.', workLog: [] },
-  { id: 'BUG-002', title: 'Inventory Management not assignable to roles', module: 'Inventory', priority: 'Critical', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'No AppRegister rows for INVENTORY module. RolesNpermissionComponent builds permission matrix from module.appRegister which is empty, so Inventory never appears in role management.', workLog: [] },
-  { id: 'BUG-003', title: 'AppModule/AppRegister CRUD forms missing in Settings', module: 'General', priority: 'High', status: 'In Progress', assignee: 'Frontend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'No UI to create AppModules or AppRegister entries. Admins cannot wire new frontend components to role permissions without direct DB access.', workLog: [] },
-  { id: 'BUG-004', title: 'Paystack bulk transfer missing OTP confirmation step', module: 'Accounting', priority: 'High', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'PaystackTransferResource initiates bulk transfer but does not handle OTP finalisation endpoint (/transfer/finalize) when Paystack requires it.', workLog: [] },
-  { id: 'BUG-005', title: 'Mono bank sync job has no error retry or dead-letter queue', module: 'Accounting', priority: 'High', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'PaystackSyncJobService runs as a scheduled job but failed syncs are silently dropped. No retry policy, no alerting.', workLog: [] },
-  { id: 'BUG-006', title: 'Vendor RFQ comparison matrix not implemented', module: 'Procurement', priority: 'Medium', status: 'Open', assignee: 'Frontend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'VendorPortal shows individual vendor quotes but has no side-by-side comparison grid. Procurement staff must manually compare quotes.', workLog: [] },
-  { id: 'BUG-007', title: 'Sales Order entity missing — no formal SO lifecycle', module: 'Commerce', priority: 'High', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'QuotationResource handles quote-to-order but there is no dedicated SalesOrder entity with status (draft/confirmed/invoiced/shipped). COGS cannot be auto-posted without an SO trigger.', workLog: [] },
-  { id: 'BUG-008', title: 'Inventory reorder point alert not implemented', module: 'Inventory', priority: 'Medium', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'InventoryBalance tracks quantity but there is no scheduled job or webhook to raise an alert when stock falls below a configurable reorder point.', workLog: [] },
-  { id: 'BUG-009', title: 'HR attendance clock-in location not validated server-side', module: 'Attendance', priority: 'Medium', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'Clock-in endpoint accepts lat/lng from client without server-side geofence check against branch location. Easy to spoof.', workLog: [] },
-  { id: 'BUG-010', title: 'Payroll bulk payslip generation times out for large orgs', module: 'Payroll', priority: 'High', status: 'Open', assignee: 'Backend Team', reporter: 'Damilola Awe', createdAt: new Date().toISOString(), description: 'Processing all employees in a single synchronous HTTP call causes 504 on orgs with 200+ employees. Should be queued as a background job.', workLog: [] },
-];
-
-const MODULES = ['All', 'HR', 'Accounting', 'Commerce', 'Inventory', 'Procurement', 'Payroll', 'Attendance', 'Recruitment', 'Performance', 'Loans', 'POS', 'General', 'Infrastructure'];
-const STATUSES: Status[] = ['Open', 'In Progress', 'Blocked', 'Done', "Won't Fix"];
-const PRIORITIES: Priority[] = ['Critical', 'High', 'Medium', 'Low'];
-const ASSIGNEES = ['Ese Oseose', 'Miracle I.', 'Damilola Awe', 'Backend Team', 'Frontend Team', 'DevOps', 'QA'];
+const MODULES = ['All', 'HR', 'ACCOUNTING', 'COMMERCE', 'INVENTORY', 'PROCUREMENT',
+  'PAYROLL', 'ATTENDANCE', 'RECRUITMENT', 'PERFORMANCE', 'LOANS', 'POS', 'GENERAL', 'INFRASTRUCTURE'];
+const STATUSES: Status[] = ['OPEN', 'IN_PROGRESS', 'BLOCKED', 'DONE', 'WONT_FIX'];
+const PRIORITIES: Priority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
 @Component({
   selector: 'app-bug-tracker',
@@ -48,172 +59,268 @@ const ASSIGNEES = ['Ese Oseose', 'Miracle I.', 'Damilola Awe', 'Backend Team', '
 })
 export class BugTrackerComponent implements OnInit {
 
-  bugs: Bug[] = [];
-  filtered: Bug[] = [];
+  issues: Issue[] = [];
+  filtered: Issue[] = [];
+  loading = false;
+  saving = false;
 
   activeModule = 'All';
   filterStatus = '';
   filterPriority = '';
-  filterAssignee = '';
   searchText = '';
   sortBy: 'newest' | 'oldest' | 'priority' | 'status' = 'newest';
 
   modules = MODULES;
   statuses = STATUSES;
   priorities = PRIORITIES;
-  assignees = ASSIGNEES;
 
   showForm = false;
-  editingBug: Bug | null = null;
-  form: Partial<Bug> = this.blankForm();
+  editingIssue: Issue | null = null;
+  form: Partial<Issue> = this.blankForm();
 
-  expandedId: string | null = null;
+  expandedId: number | null = null;
   newLogNote = '';
+  newLogEmail = '';
 
-  showStats = true;
+  showShareDialog = false;
+  sharingIssue: Issue | null = null;
+  shareForm: Partial<Share> = { shareType: 'DM' };
+
+  // Link panel
+  showLinkPanel = false;
+  linkingIssue: Issue | null = null;
+  linkWorkTaskId = '';
+  linkGoalId = '';
+
+  constructor(
+    private api: IssueTrackerApiService,
+    private messageService: MessageService
+  ) {}
 
   ngOnInit(): void {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try { this.bugs = JSON.parse(stored); } catch { this.bugs = []; }
-    }
-    if (this.bugs.length === 0) {
-      this.bugs = SEED_BUGS;
-      this.save();
-    }
-    this.applyFilters();
+    this.load();
+  }
+
+  load(): void {
+    this.loading = true;
+    this.api.getAll(1, 100).subscribe({
+      next: (data) => {
+        this.issues = data || [];
+        this.applyFilters();
+        this.loading = false;
+      },
+      error: (err) => {
+        this.toast('error', err);
+        this.loading = false;
+      }
+    });
   }
 
   get stats() {
-    const total = this.bugs.length;
-    const done = this.bugs.filter(b => b.status === 'Done' || b.status === "Won't Fix").length;
-    const open = this.bugs.filter(b => b.status === 'Open').length;
-    const blocked = this.bugs.filter(b => b.status === 'Blocked').length;
-    const critical = this.bugs.filter(b => b.priority === 'Critical' && b.status !== 'Done').length;
+    const total = this.issues.length;
+    const done = this.issues.filter(b => b.status === 'DONE' || b.status === 'WONT_FIX').length;
+    const open = this.issues.filter(b => b.status === 'OPEN').length;
+    const blocked = this.issues.filter(b => b.status === 'BLOCKED').length;
+    const critical = this.issues.filter(b => b.priority === 'CRITICAL' && b.status !== 'DONE').length;
     const pct = total ? Math.round((done / total) * 100) : 0;
     return { total, done, open, blocked, critical, pct };
   }
 
   selectModule(m: string): void {
     this.activeModule = m;
-    this.applyFilters();
+    if (m !== 'All') {
+      this.loading = true;
+      this.api.getByModule(m).subscribe({
+        next: (data) => { this.issues = data || []; this.applyFilters(); this.loading = false; },
+        error: () => { this.loading = false; }
+      });
+    } else {
+      this.load();
+    }
   }
 
   applyFilters(): void {
-    let list = [...this.bugs];
-
-    if (this.activeModule !== 'All') {
-      list = list.filter(b => b.module === this.activeModule);
-    }
+    let list = [...this.issues];
     if (this.filterStatus) list = list.filter(b => b.status === this.filterStatus);
     if (this.filterPriority) list = list.filter(b => b.priority === this.filterPriority);
-    if (this.filterAssignee) list = list.filter(b => b.assignee === this.filterAssignee);
     if (this.searchText) {
       const t = this.searchText.toLowerCase();
-      list = list.filter(b => b.title.toLowerCase().includes(t) || b.description.toLowerCase().includes(t) || b.id.toLowerCase().includes(t));
+      list = list.filter(b =>
+        b.title?.toLowerCase().includes(t) ||
+        b.description?.toLowerCase().includes(t) ||
+        String(b.id).includes(t)
+      );
     }
-
     list = list.sort((a, b) => {
-      if (this.sortBy === 'newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (this.sortBy === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (this.sortBy === 'newest') return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+      if (this.sortBy === 'oldest') return new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime();
       if (this.sortBy === 'priority') return PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
       if (this.sortBy === 'status') return STATUSES.indexOf(a.status) - STATUSES.indexOf(b.status);
       return 0;
     });
-
     this.filtered = list;
   }
 
-  openForm(bug?: Bug): void {
-    if (bug) {
-      this.editingBug = bug;
-      this.form = { ...bug };
-    } else {
-      this.editingBug = null;
-      this.form = this.blankForm();
-    }
+  openForm(issue?: Issue): void {
+    this.editingIssue = issue || null;
+    this.form = issue ? { ...issue } : this.blankForm();
     this.showForm = true;
   }
 
   saveForm(): void {
-    if (!this.form.title || !this.form.module || !this.form.priority || !this.form.status) return;
+    if (!this.form.title || !this.form.module || !this.form.priority) return;
+    this.saving = true;
+    const payload = { ...this.form, status: this.form.status || 'OPEN' };
 
-    if (this.editingBug) {
-      const idx = this.bugs.findIndex(b => b.id === this.editingBug!.id);
-      if (idx > -1) this.bugs[idx] = { ...this.bugs[idx], ...this.form } as Bug;
-    } else {
-      const newBug: Bug = {
-        id: 'BUG-' + String(this.nextId()).padStart(3, '0'),
-        title: this.form.title!,
-        module: this.form.module!,
-        priority: this.form.priority as Priority,
-        status: this.form.status as Status,
-        assignee: this.form.assignee || '',
-        reporter: this.form.reporter || '',
-        createdAt: new Date().toISOString(),
-        description: this.form.description || '',
-        workLog: []
-      };
-      this.bugs.unshift(newBug);
-    }
-    this.save();
-    this.applyFilters();
-    this.showForm = false;
+    const req = this.editingIssue?.id
+      ? this.api.update(this.editingIssue.id, payload)
+      : this.api.create(payload);
+
+    req.subscribe({
+      next: (saved) => {
+        if (this.editingIssue?.id) {
+          const idx = this.issues.findIndex(i => i.id === this.editingIssue!.id);
+          if (idx > -1) this.issues[idx] = saved;
+        } else {
+          this.issues.unshift(saved);
+        }
+        this.applyFilters();
+        this.showForm = false;
+        this.saving = false;
+        this.toast('success', this.editingIssue?.id ? 'Issue updated' : 'Issue created — notifications sent');
+      },
+      error: (err) => { this.toast('error', err); this.saving = false; }
+    });
   }
 
-  deleteBug(id: string): void {
-    if (!confirm('Delete this bug?')) return;
-    this.bugs = this.bugs.filter(b => b.id !== id);
-    this.save();
-    this.applyFilters();
+  deleteIssue(id: number): void {
+    if (!confirm('Delete this issue?')) return;
+    this.api.delete(id).subscribe({
+      next: () => {
+        this.issues = this.issues.filter(i => i.id !== id);
+        this.applyFilters();
+        this.toast('success', 'Issue deleted');
+      },
+      error: (err) => this.toast('error', err)
+    });
   }
 
-  updateStatus(bug: Bug, status: Status): void {
-    bug.status = status;
-    this.save();
-    this.applyFilters();
+  updateStatus(issue: Issue, status: Status): void {
+    this.api.patchStatus(issue.id!, status).subscribe({
+      next: (updated) => {
+        const idx = this.issues.findIndex(i => i.id === issue.id);
+        if (idx > -1) this.issues[idx] = updated;
+        this.applyFilters();
+      },
+      error: (err) => this.toast('error', err)
+    });
   }
 
-  toggleExpand(id: string): void {
+  toggleExpand(id: number): void {
     this.expandedId = this.expandedId === id ? null : id;
     this.newLogNote = '';
+    this.newLogEmail = '';
   }
 
-  addLog(bug: Bug): void {
+  addLog(issue: Issue): void {
     if (!this.newLogNote.trim()) return;
-    bug.workLog.unshift({ timestamp: new Date().toLocaleString(), note: this.newLogNote.trim() });
-    this.newLogNote = '';
-    this.save();
+    const payload = {
+      note: this.newLogNote.trim(),
+      loggedByUserId: 0,
+      loggedByEmail: this.newLogEmail || '',
+      loggedByName: ''
+    };
+    this.api.addWorkLog(issue.id!, payload).subscribe({
+      next: (log) => {
+        if (!issue.workLog) issue.workLog = [];
+        issue.workLog.unshift(log);
+        this.newLogNote = '';
+        this.newLogEmail = '';
+      },
+      error: (err) => this.toast('error', err)
+    });
+  }
+
+  openShare(issue: Issue): void {
+    this.sharingIssue = issue;
+    this.shareForm = { shareType: 'DM' };
+    this.showShareDialog = true;
+  }
+
+  submitShare(): void {
+    if (!this.sharingIssue?.id) return;
+    const payload = { ...this.shareForm, sharedByUserId: 0 };
+    this.api.shareIssue(this.sharingIssue.id, payload).subscribe({
+      next: () => {
+        this.showShareDialog = false;
+        this.toast('success', this.shareForm.shareType === 'DM'
+          ? `Issue shared with ${this.shareForm.sharedToEmail} — email sent`
+          : `Issue posted to #${this.shareForm.channelName}`);
+      },
+      error: (err) => this.toast('error', err)
+    });
+  }
+
+  openLinkPanel(issue: Issue): void {
+    this.linkingIssue = issue;
+    this.linkWorkTaskId = issue.workTaskId ? String(issue.workTaskId) : '';
+    this.linkGoalId = issue.performanceGoalId ? String(issue.performanceGoalId) : '';
+    this.showLinkPanel = true;
+  }
+
+  saveLinks(): void {
+    if (!this.linkingIssue?.id) return;
+    const payload = {
+      ...this.linkingIssue,
+      workTaskId: this.linkWorkTaskId ? Number(this.linkWorkTaskId) : null,
+      performanceGoalId: this.linkGoalId ? Number(this.linkGoalId) : null
+    };
+    this.api.update(this.linkingIssue.id, payload).subscribe({
+      next: (updated) => {
+        const idx = this.issues.findIndex(i => i.id === this.linkingIssue!.id);
+        if (idx > -1) this.issues[idx] = updated;
+        this.applyFilters();
+        this.showLinkPanel = false;
+        this.toast('success', 'Links saved');
+      },
+      error: (err) => this.toast('error', err)
+    });
   }
 
   exportCsv(): void {
-    const rows = [['ID', 'Title', 'Module', 'Priority', 'Status', 'Assignee', 'Reporter', 'Created']];
-    this.filtered.forEach(b => rows.push([b.id, b.title, b.module, b.priority, b.status, b.assignee, b.reporter, b.createdAt]));
+    const rows = [['ID', 'Title', 'Module', 'Priority', 'Status', 'Assignee', 'Reporter', 'Created',
+      'WorkTask', 'PerformanceGoal']];
+    this.filtered.forEach(b => rows.push([
+      String(b.id), b.title, b.module, b.priority, b.status,
+      b.assigneeEmail || '', b.reporterEmail || '', b.createdAt || '',
+      b.workTaskId ? String(b.workTaskId) : '', b.performanceGoalId ? String(b.performanceGoalId) : ''
+    ]));
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = 'optimax_bugs.csv';
+    a.download = 'optimax_issues.csv';
     a.click();
   }
 
   priorityClass(p: Priority): string {
-    return { Critical: 'pri-critical', High: 'pri-high', Medium: 'pri-medium', Low: 'pri-low' }[p] || '';
+    return { CRITICAL: 'pri-critical', HIGH: 'pri-high', MEDIUM: 'pri-medium', LOW: 'pri-low' }[p] || '';
   }
 
   statusClass(s: Status): string {
-    return { 'Open': 'st-open', 'In Progress': 'st-inprog', 'Blocked': 'st-blocked', 'Done': 'st-done', "Won't Fix": 'st-wontfix' }[s] || '';
+    return { OPEN: 'st-open', IN_PROGRESS: 'st-inprog', BLOCKED: 'st-blocked', DONE: 'st-done', WONT_FIX: 'st-wontfix' }[s] || '';
   }
 
-  private nextId(): number {
-    const ids = this.bugs.map(b => parseInt(b.id.replace('BUG-', ''), 10)).filter(n => !isNaN(n));
-    return ids.length ? Math.max(...ids) + 1 : 1;
+  statusLabel(s: Status): string {
+    return { OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked', DONE: 'Done', WONT_FIX: "Won't Fix" }[s] || s;
   }
 
-  private blankForm(): Partial<Bug> {
-    return { title: '', module: '', priority: 'Medium', status: 'Open', assignee: '', reporter: '', description: '' };
+  private blankForm(): Partial<Issue> {
+    return { title: '', module: '', priority: 'MEDIUM', status: 'OPEN',
+      reporterEmail: '', reporterName: '', assigneeEmail: '', assigneeName: '',
+      supervisorEmail: '', supervisorName: '', description: '' };
   }
 
-  private save(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.bugs));
+  private toast(severity: 'success' | 'error', detail: string): void {
+    this.messageService.add({ severity, summary: severity === 'success' ? 'Done' : 'Error', detail, key: 'tl', life: 3500 });
   }
 }

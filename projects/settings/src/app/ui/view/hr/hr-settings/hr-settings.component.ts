@@ -11,6 +11,7 @@ import { PayrollComponent } from '../payroll/payroll.component';
 import { MailTemplatesComponent } from '../mail-templates/mail-templates.component';
 import { HrNotificationsComponent } from '../hr-notifications/hr-notifications.component';
 import { HrOdooImportComponent } from '../hr-odoo-import/hr-odoo-import.component';
+import { ProbationSettingsComponent } from '../probation/probation-settings.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -47,6 +48,8 @@ export class HrSettingsComponent implements OnInit {
       subSetting: ['Email · In-App · Push · SMS', 'Per-event toggles', 'Task Board, Appraisal, Payroll, Leave'] },
     { name: 'Import from Odoo', key: 'odoo', icon: 'fas fa-puzzle-piece', component: HrOdooImportComponent,
       subSetting: ['XML-RPC connection', 'Preview & import tasks', 'CSV export alternative'] },
+    { name: 'Probation Tracker', key: 'probation', icon: 'fas fa-user-clock', component: ProbationSettingsComponent,
+      subSetting: ['Active probation list', 'Overdue cases', 'Due-soon alerts'] },
   ];
 
   filteredSettings = [...this.settings];

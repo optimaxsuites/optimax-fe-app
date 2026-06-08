@@ -380,6 +380,22 @@ export class MenuItemsService {
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'fas fa-clock',
           description: 'Configure overtime rules and manage overtime type catalog.'
+        },
+        {
+          label: 'Org Chart',
+          code: 'HR_ORG_CHART',
+          route: this.navigationLink.getLink('hrOrgChart'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-sitemap',
+          description: 'Visual organisational chart — departments, reporting lines, and headcount.'
+        },
+        {
+          label: 'Reports',
+          code: 'HR_REPORTS',
+          route: this.navigationLink.getLink('hrReports'),
+          roles: ['ROLE_ADMIN'],
+          icon: 'fas fa-chart-bar',
+          description: 'Overtime cost analysis and probation tracking reports.'
         }
       ]
     },
