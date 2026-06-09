@@ -72,7 +72,7 @@ export class MenuItemsService {
         {
           label: 'Sales',
           code: 'COM_SALES',
-          route: this.navigationLink.getLink('aiQuotationLink'),
+          route: this.navigationLink.getLink('SHLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
           description: 'Make procurement requests on behalf of the organization.'
