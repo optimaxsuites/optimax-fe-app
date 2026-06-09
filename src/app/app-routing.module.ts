@@ -221,7 +221,7 @@ const routes: Routes = [
       },
        {
         path: 'sales',
-        loadChildren: () => import('../../projects/sales/src/app/app-module').then(m => m.AppModule),
+        loadChildren: () => import('../../projects/sales/src/app/app.module').then(m => m.AppModule),
         canActivate: [UuidGuard]
 
       },
