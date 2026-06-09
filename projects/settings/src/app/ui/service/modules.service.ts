@@ -48,7 +48,7 @@ export class ModulesService {
       return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/modules", body)
       .pipe(catchError(this.handleError));
-    }
+    } 
 
     updateAppModule(id: number, body: any){
       return this.http
@@ -63,7 +63,7 @@ export class ModulesService {
     }
 
     createAppRegister(body: any){
-      return this.http
+     return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appregister", body)
       .pipe(catchError(this.handleError));
     }
