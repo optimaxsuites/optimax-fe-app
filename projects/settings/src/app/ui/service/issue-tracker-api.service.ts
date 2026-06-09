@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment.prod';
@@ -10,6 +10,43 @@ export class IssueTrackerApiService {
 
   private base(): string {
     return (isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl) + '/x/api/v2/manager/issues';
+  }
+
+  private root(): string {
+    return (isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl);
+  }
+
+  private authHeaders(): HttpHeaders {
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') ||
+                  sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const userId = sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || '';
+    return new HttpHeaders({
+      Authorization: `Bearer ${token.replace(/^bearer /i, '').trim()}`,
+      'X-Tenant-ID': tenantId,
+      'X-User-ID': userId,
+      'Content-Type': 'application/json',
+    });
+  }
+
+  getChannels() {
+    return this.http.get<any[]>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
+  getAllUsers() {
+    return this.http.get<any[]>(`${this.root()}/x/api/v2/us/ur/findAllUserPrimaryInformation`,
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
+  getAllTasks(page = 1, size = 100) {
+    return this.http.get<any[]>(`${this.root()}/x/api/v2/hr/workTasks?page=${page}&size=${size}`,
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
+  createTask(body: any) {
+    return this.http.post<any>(`${this.root()}/x/api/v2/hr/workTasks`, body,
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
   }
 
   getAll(page = 1, size = 50) {
