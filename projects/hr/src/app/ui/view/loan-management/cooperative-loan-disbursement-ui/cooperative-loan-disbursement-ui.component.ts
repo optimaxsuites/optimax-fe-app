@@ -418,8 +418,9 @@ sendToAccounting(): void {
   const member = this.getMemberForLoan(loan);
   const memberName = this.getMemberName(loan);
   
-  // Calculate total repayable amount
-  const totalRepayable = Number(loan.amount || 0) * (1 + (Number(group.interestRate || 0) / 100));
+  const approvedAmount = Number(loan.approvedAmount || loan.amount || 0);
+  // Keep totalRepayable for metadata visibility only.
+  const totalRepayable = approvedAmount * (1 + (Number(group.interestRate || 0) / 100));
 
   this.isSubmitting = true;
   
@@ -431,7 +432,7 @@ sendToAccounting(): void {
     id: 0,
     sourceModule: "HR",
     eventType: "LOAN_DISBURSEMENT",
-    amount: Number(loan.approvedAmount || loan.amount || 0),
+    amount: approvedAmount,
     currency: "NGN",
     reference: instructionReference,
     description: adminComment || `Loan disbursement for ${memberName}`,
@@ -447,7 +448,7 @@ sendToAccounting(): void {
       groupCode: group.code,
       groupInterestRate: group.interestRate,
       repaymentPeriod: loan.duration || loan.repaymentTime,
-      approvedAmount: Number(loan.approvedAmount || loan.amount || 0),
+      approvedAmount,
       totalRepayable: totalRepayable,
       modeOfPayment: loan.modeOfPayment || 'MONTHLY',
       paymentMethod: this.paymentMethod,
