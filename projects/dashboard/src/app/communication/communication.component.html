@@ -163,7 +163,6 @@
       <div class="workspace-toolbar-actions" *ngIf="workspaceMode === 'chat'">
         <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" (click)="openCreateChannelModal()" title="New channel" aria-label="New channel">
           <i class="pi pi-plus-circle"></i>
-          <span>New channel</span>
         </button>
         <button
           *ngIf="!isMobileViewport()"
@@ -175,11 +174,12 @@
           [attr.aria-label]="showChatRail ? 'Hide side panel' : 'Show side panel'"
         >
           <i class="pi" [ngClass]="showChatRail ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
-          <span>{{ showChatRail ? 'Hide side panel' : 'Show side panel' }}</span>
+        </button>
+        <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action icon-action" [class.active]="!birthdayCardDismissed" (click)="birthdayCardDismissed = !birthdayCardDismissed" title="Birthday calendar" aria-label="Birthday calendar">
+          <i class="pi pi-gift"></i>
         </button>
         <button *ngIf="!isMobileViewport()" type="button" class="toolbar-action primary icon-action" (click)="setWorkspaceMode('feed')" title="Back to feed" aria-label="Back to feed">
           <i class="pi pi-arrow-left"></i>
-          <span>Back to feed</span>
         </button>
         <button
           *ngIf="isMobileViewport()"
@@ -1414,12 +1414,15 @@
                       <small class="block text-[12px] text-gray-400 truncate">{{ docFileDescription(file) || 'Document' }}</small>
                     </div>
                     <!-- Download -->
-                    <button
-                      type="button"
-                      title="Download"
-                      class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
-                      (click)="downloadDocumentFile(file, $event)"
-                    ><i class="pi pi-download text-[12px]"></i></button>
+                    <div class="flex-shrink-0 flex flex-col items-center gap-0.5">
+                      <button
+                        type="button"
+                        title="Download"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#2e6276]/40 hover:text-[#2e6276]"
+                        (click)="downloadDocumentFile(file, $event)"
+                      ><i class="pi pi-download text-[12px]"></i></button>
+                      <span *ngIf="file.downloadCount" class="text-[10px] text-gray-400 leading-none">{{ file.downloadCount }}</span>
+                    </div>
                     <!-- Delete -->
                     <button
                       type="button"

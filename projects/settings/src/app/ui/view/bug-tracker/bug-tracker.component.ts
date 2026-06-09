@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 import { IssueTrackerApiService } from '../../service/issue-tracker-api.service';
 
 type Priority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -20,6 +21,7 @@ interface Share {
   channelName?: string;
   sharedToEmail?: string;
   sharedToName?: string;
+  sharedToUserId?: number;
   sharedByUserId?: number;
   sharedByEmail?: string;
 }
@@ -46,6 +48,10 @@ interface Issue {
   workLog?: WorkLog[];
   shares?: Share[];
 }
+
+interface ChannelItem { id: number; name: string; selected: boolean; }
+interface UserItem { id: number; userId?: number; fullname?: string; email?: string; selected: boolean; }
+interface TaskItem { id: number; title: string; status: string; priority: string; }
 
 const MODULES = ['All', 'HR', 'ACCOUNTING', 'COMMERCE', 'INVENTORY', 'PROCUREMENT',
   'PAYROLL', 'ATTENDANCE', 'RECRUITMENT', 'PERFORMANCE', 'LOANS', 'POS', 'GENERAL', 'INFRASTRUCTURE'];
@@ -82,15 +88,57 @@ export class BugTrackerComponent implements OnInit {
   newLogNote = '';
   newLogEmail = '';
 
+  // ── Share dialog ────────────────────────────────────────────────────────────
   showShareDialog = false;
   sharingIssue: Issue | null = null;
-  shareForm: Partial<Share> = { shareType: 'DM' };
+  shareLoading = false;
+  shareSubmitting = false;
+  shareTab: 'DM' | 'CHANNEL' = 'DM';
 
-  // Link panel
+  channels: ChannelItem[] = [];
+  channelSearch = '';
+
+  dmUsers: UserItem[] = [];
+  userSearch = '';
+
+  get filteredChannels(): ChannelItem[] {
+    const q = this.channelSearch.toLowerCase();
+    return q ? this.channels.filter(c => c.name.toLowerCase().includes(q)) : this.channels;
+  }
+
+  get filteredDmUsers(): UserItem[] {
+    const q = this.userSearch.toLowerCase();
+    return q
+      ? this.dmUsers.filter(u =>
+          (u.fullname || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q))
+      : this.dmUsers;
+  }
+
+  get selectedChannelCount(): number { return this.channels.filter(c => c.selected).length; }
+  get selectedUserCount(): number { return this.dmUsers.filter(u => u.selected).length; }
+
+  // ── Link panel ─────────────────────────────────────────────────────────────
   showLinkPanel = false;
   linkingIssue: Issue | null = null;
-  linkWorkTaskId = '';
-  linkGoalId = '';
+  linkPanelLoading = false;
+
+  availableTasks: TaskItem[] = [];
+  taskSearch = '';
+  selectedTaskId: number | null = null;
+  linkedTaskTitle = '';
+
+  showCreateTask = false;
+  newTaskTitle = '';
+  newTaskPriority = 'MEDIUM';
+  newTaskStatus = 'TO_DO';
+  creatingTask = false;
+
+  get filteredTasks(): TaskItem[] {
+    const q = this.taskSearch.toLowerCase();
+    return q ? this.availableTasks.filter(t =>
+      t.title.toLowerCase().includes(q) || String(t.id).includes(q)) : this.availableTasks;
+  }
 
   constructor(
     private api: IssueTrackerApiService,
@@ -241,39 +289,165 @@ export class BugTrackerComponent implements OnInit {
     });
   }
 
+  // ── Share ───────────────────────────────────────────────────────────────────
+
   openShare(issue: Issue): void {
     this.sharingIssue = issue;
-    this.shareForm = { shareType: 'DM' };
+    this.shareTab = 'DM';
+    this.channelSearch = '';
+    this.userSearch = '';
+    this.channels = [];
+    this.dmUsers = [];
+    this.shareLoading = true;
     this.showShareDialog = true;
-  }
 
-  submitShare(): void {
-    if (!this.sharingIssue?.id) return;
-    const payload = { ...this.shareForm, sharedByUserId: 0 };
-    this.api.shareIssue(this.sharingIssue.id, payload).subscribe({
-      next: () => {
-        this.showShareDialog = false;
-        this.toast('success', this.shareForm.shareType === 'DM'
-          ? `Issue shared with ${this.shareForm.sharedToEmail} — email sent`
-          : `Issue posted to #${this.shareForm.channelName}`);
+    forkJoin({
+      channels: this.api.getChannels(),
+      users: this.api.getAllUsers(),
+    }).subscribe({
+      next: ({ channels, users }) => {
+        this.channels = (channels || [])
+          .filter((c: any) => c.status !== 'ARCHIVED' && c.channelType !== 'PRIVATE')
+          .map((c: any) => ({ id: c.id, name: c.name || c.channelCode || 'Channel', selected: false }))
+          .sort((a: ChannelItem, b: ChannelItem) => a.name.localeCompare(b.name));
+
+        this.dmUsers = (users || [])
+          .map((u: any) => ({
+            id: u.id || u.userId || 0,
+            userId: u.userId || u.id,
+            fullname: u.fullname || u.username || '',
+            email: u.email || '',
+            selected: false,
+          }))
+          .filter((u: UserItem) => u.email)
+          .sort((a: UserItem, b: UserItem) => (a.fullname || '').localeCompare(b.fullname || ''));
+
+        this.shareLoading = false;
       },
-      error: (err) => this.toast('error', err)
+      error: () => { this.shareLoading = false; }
     });
   }
 
+  toggleChannelSelect(item: ChannelItem): void { item.selected = !item.selected; }
+  toggleUserSelect(item: UserItem): void { item.selected = !item.selected; }
+
+  submitShare(): void {
+    if (!this.sharingIssue?.id) return;
+
+    const selectedChannels = this.channels.filter(c => c.selected);
+    const selectedUsers = this.dmUsers.filter(u => u.selected);
+
+    if (this.shareTab === 'CHANNEL' && !selectedChannels.length) {
+      this.toast('error', 'Select at least one channel.');
+      return;
+    }
+    if (this.shareTab === 'DM' && !selectedUsers.length) {
+      this.toast('error', 'Select at least one person.');
+      return;
+    }
+
+    this.shareSubmitting = true;
+    const id = this.sharingIssue.id;
+
+    const calls = this.shareTab === 'CHANNEL'
+      ? selectedChannels.map(c => this.api.shareIssue(id, {
+          shareType: 'CHANNEL',
+          channelName: c.name,
+          sharedByUserId: 0,
+        }))
+      : selectedUsers.map(u => this.api.shareIssue(id, {
+          shareType: 'DM',
+          sharedToUserId: u.userId,
+          sharedToName: u.fullname,
+          sharedToEmail: u.email,
+          sharedByUserId: 0,
+        }));
+
+    forkJoin(calls).subscribe({
+      next: () => {
+        this.shareSubmitting = false;
+        this.showShareDialog = false;
+        const count = calls.length;
+        this.toast('success', this.shareTab === 'CHANNEL'
+          ? `Issue shared to ${count} channel${count > 1 ? 's' : ''}`
+          : `Issue shared with ${count} person${count > 1 ? 's' : ''} — email sent`);
+      },
+      error: (err) => { this.toast('error', err); this.shareSubmitting = false; }
+    });
+  }
+
+  // ── Link to task ────────────────────────────────────────────────────────────
+
   openLinkPanel(issue: Issue): void {
     this.linkingIssue = issue;
-    this.linkWorkTaskId = issue.workTaskId ? String(issue.workTaskId) : '';
-    this.linkGoalId = issue.performanceGoalId ? String(issue.performanceGoalId) : '';
+    this.selectedTaskId = issue.workTaskId || null;
+    this.linkedTaskTitle = '';
+    this.taskSearch = '';
+    this.showCreateTask = false;
+    this.newTaskTitle = '';
+    this.newTaskPriority = 'MEDIUM';
+    this.newTaskStatus = 'TO_DO';
+    this.availableTasks = [];
+    this.linkPanelLoading = true;
     this.showLinkPanel = true;
+
+    this.api.getAllTasks().subscribe({
+      next: (tasks) => {
+        this.availableTasks = (tasks || []).map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          status: t.status || '',
+          priority: t.priority || '',
+        }));
+        if (this.selectedTaskId) {
+          const linked = this.availableTasks.find(t => t.id === this.selectedTaskId);
+          if (linked) this.linkedTaskTitle = linked.title;
+        }
+        this.linkPanelLoading = false;
+      },
+      error: () => { this.linkPanelLoading = false; }
+    });
+  }
+
+  selectTask(task: TaskItem): void {
+    this.selectedTaskId = task.id;
+    this.linkedTaskTitle = task.title;
+    this.taskSearch = '';
+  }
+
+  clearTaskLink(): void {
+    this.selectedTaskId = null;
+    this.linkedTaskTitle = '';
+  }
+
+  createAndLinkTask(): void {
+    if (!this.newTaskTitle.trim()) return;
+    this.creatingTask = true;
+    const dto = {
+      title: this.newTaskTitle.trim(),
+      priority: this.newTaskPriority,
+      status: this.newTaskStatus,
+      description: `Linked from Issue #${this.linkingIssue?.id}: ${this.linkingIssue?.title}`,
+    };
+    this.api.createTask(dto).subscribe({
+      next: (created) => {
+        this.availableTasks.unshift({ id: created.id, title: created.title, status: created.status, priority: created.priority });
+        this.selectedTaskId = created.id;
+        this.linkedTaskTitle = created.title;
+        this.showCreateTask = false;
+        this.newTaskTitle = '';
+        this.creatingTask = false;
+        this.toast('success', `Task #${created.id} created and selected`);
+      },
+      error: (err) => { this.toast('error', err); this.creatingTask = false; }
+    });
   }
 
   saveLinks(): void {
     if (!this.linkingIssue?.id) return;
     const payload = {
       ...this.linkingIssue,
-      workTaskId: this.linkWorkTaskId ? Number(this.linkWorkTaskId) : null,
-      performanceGoalId: this.linkGoalId ? Number(this.linkGoalId) : null
+      workTaskId: this.selectedTaskId || null,
     };
     this.api.update(this.linkingIssue.id, payload).subscribe({
       next: (updated) => {
@@ -281,10 +455,14 @@ export class BugTrackerComponent implements OnInit {
         if (idx > -1) this.issues[idx] = updated;
         this.applyFilters();
         this.showLinkPanel = false;
-        this.toast('success', 'Links saved');
+        this.toast('success', this.selectedTaskId ? `Linked to Task #${this.selectedTaskId}` : 'Task link removed');
       },
       error: (err) => this.toast('error', err)
     });
+  }
+
+  taskStatusLabel(s: string): string {
+    return { TO_DO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review', DONE: 'Done' }[s] || s;
   }
 
   exportCsv(): void {
@@ -302,8 +480,8 @@ export class BugTrackerComponent implements OnInit {
     a.click();
   }
 
-  priorityClass(p: Priority): string {
-    return { CRITICAL: 'pri-critical', HIGH: 'pri-high', MEDIUM: 'pri-medium', LOW: 'pri-low' }[p] || '';
+  priorityClass(p: string): string {
+    return ({ CRITICAL: 'pri-critical', HIGH: 'pri-high', MEDIUM: 'pri-medium', LOW: 'pri-low' } as Record<string, string>)[p] || '';
   }
 
   statusClass(s: Status): string {

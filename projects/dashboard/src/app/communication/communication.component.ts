@@ -123,6 +123,7 @@ interface ChannelDocumentFile {
   fileSize?: number;
   downloadUrl?: string;
   uploadedAt?: string;
+  downloadCount?: number;
 }
 
 interface DocumentFolderModalState {
@@ -552,7 +553,7 @@ export class CommunicationComponent
   activeDocumentFolderId: number | null = null;
   expandedFolderIds: Set<number> = new Set();
   copiedFileId: number | null = null;
-  birthdayCardDismissed = false;
+  birthdayCardDismissed = true;
   pendingShareDocTarget: { channelBackendId: number; folderId: number | null } | null = null;
   pendingShareFolderId: number | null = null;
   channelWorkspacePane: 'chat' | 'files' = 'chat';
@@ -682,6 +683,7 @@ export class CommunicationComponent
     { value: 'soft', label: 'Soft chime' },
     { value: 'crystal', label: 'Crystal bell' },
     { value: 'pulse', label: 'Pulse' },
+    { value: 'doorbell', label: 'Doorbell' },
   ];
   readonly chatReactionOptions: ChatReactionOption[] = [
     { code: 'LIKE', emoji: '👍', label: 'Like' },
@@ -705,6 +707,7 @@ export class CommunicationComponent
   private readStateMap: Record<number, number[]> = {};
   private lastMessageBackendId: number | null = null;
   private attachmentPreviewCache: Record<string, string> = {};
+  private docDownloadCounts: Record<number, number> = {};
   private attachmentPreviewLoading = new Set<string>();
   private flashId: string | null = null;
   private flashTimer: any;
@@ -5610,6 +5613,7 @@ export class CommunicationComponent
           fileSize: file.fileSize,
           downloadUrl: file.downloadUrl,
           uploadedAt: file.uploadedAt,
+          downloadCount: this.docDownloadCounts[Number(file.id)] ?? (file.downloadCount ?? 0),
         }));
         this.documentLibraryLoading = false;
         this.cdr.detectChanges();
@@ -6892,6 +6896,13 @@ export class CommunicationComponent
       if (typeof ctx.resume === 'function' && ctx.state === 'suspended') {
         void ctx.resume().catch(() => {});
       }
+
+      if (this.selectedRingtone === 'doorbell' && !urgent) {
+        this.playDoorbellSound(ctx);
+        this.triggerMobileHaptics(urgent);
+        return;
+      }
+
       const master = ctx.createGain();
       master.gain.setValueAtTime(0.0001, ctx.currentTime);
       const peakGain = urgent ? 0.42 : 0.24;
@@ -6936,6 +6947,35 @@ export class CommunicationComponent
       });
       this.triggerMobileHaptics(urgent);
     } catch (_) {}
+  }
+
+  private playDoorbellSound(ctx: AudioContext): void {
+    const ringOffsets = [0, 0.85, 1.70];
+    ringOffsets.forEach((offset) => {
+      const dingGain = ctx.createGain();
+      dingGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
+      dingGain.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + offset + 0.02);
+      dingGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.5);
+      dingGain.connect(ctx.destination);
+      const ding = ctx.createOscillator();
+      ding.type = 'sine';
+      ding.frequency.setValueAtTime(880, ctx.currentTime + offset);
+      ding.connect(dingGain);
+      ding.start(ctx.currentTime + offset);
+      ding.stop(ctx.currentTime + offset + 0.5);
+
+      const dongGain = ctx.createGain();
+      dongGain.gain.setValueAtTime(0.0001, ctx.currentTime + offset + 0.28);
+      dongGain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + offset + 0.30);
+      dongGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.78);
+      dongGain.connect(ctx.destination);
+      const dong = ctx.createOscillator();
+      dong.type = 'sine';
+      dong.frequency.setValueAtTime(698, ctx.currentTime + offset + 0.28);
+      dong.connect(dongGain);
+      dong.start(ctx.currentTime + offset + 0.28);
+      dong.stop(ctx.currentTime + offset + 0.78);
+    });
   }
 
   private ensureNotificationAudioContext(): AudioContext | null {
@@ -9342,6 +9382,14 @@ export class CommunicationComponent
   }
 
   downloadDocumentFile(file: ChannelDocumentFile, event: Event): void {
+    event.stopPropagation();
+    this.docDownloadCounts[file.id] = (this.docDownloadCounts[file.id] || 0) + 1;
+    const updated = this.documentFiles.find((f) => f.id === file.id);
+    if (updated) {
+      updated.downloadCount = this.docDownloadCounts[file.id];
+      this.cdr.detectChanges();
+    }
+    this.collabService.incrementAttachmentDownloadCount(file.id).subscribe({ error: () => {} });
     this.downloadAttachment(
       { name: file.name, downloadUrl: file.downloadUrl },
       event,
