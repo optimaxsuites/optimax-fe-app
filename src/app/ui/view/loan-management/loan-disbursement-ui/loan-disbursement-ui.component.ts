@@ -319,244 +319,256 @@ export class LoanDisbursementUiComponent implements OnInit {
     });
   }
 
-  sendToAccounting(): void {
-    if (!this.emailNotes?.trim() || this.isSubmittingDisbursement) {
-      this.emailNotesError = !this.emailNotes?.trim();
-      return;
+sendToAccounting(): void {
+  if (!this.emailNotes?.trim() || this.isSubmittingDisbursement) {
+    this.emailNotesError = !this.emailNotes?.trim();
+    return;
+  }
+
+  if (this.isBatchMode) {
+    this.sendBatchToAccounting();
+    return;
+  }
+
+  if (!this.selectedDisbursementLoan) {
+    return;
+  }
+
+  // Record disbursement initiation
+  this.disbursementInitiatedAt = new Date().toISOString();
+  this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+  this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
+
+  // Get approved amount
+  const approvedAmount = this.getApprovedAmount(this.selectedDisbursementLoan);
+  const totalRepayable = resolveLoanTotalRepayableAmount(this.selectedDisbursementLoan);
+
+  this.isSubmittingDisbursement = true;
+
+  // Step 1: Create disbursement confirmation record in API
+  const payload: CreateDisbursementPayload = {
+    loanId: this.selectedDisbursementLoan.id,
+    disbursedAmount: approvedAmount,
+    disbursementInstructionReference: this.disbursementInstructionReference,
+    disbursementReference: this.disbursementReference || `PENDING-${this.disbursementInstructionReference}`,
+    paymentMethod: this.paymentMethod,
+    notes: this.emailNotes
+  };
+
+  this.disbursementConfirmationService.createConfirmation(payload).subscribe({
+    next: (confirmation) => {
+      // Step 2: Send accounting event to /x/api/v2/accounting/events
+      const accountingPayload = {
+        id: 0,
+        sourceModule: 'HR',
+        eventType: 'LOAN_DISBURSEMENT',
+        amount: approvedAmount,
+        currency: 'NGN',
+        reference: this.disbursementInstructionReference,
+        description: this.emailNotes,
+        transactionDate: this.disbursementInitiatedAt,
+        metadata: {
+          loanId: this.selectedDisbursementLoan!.id,
+          loanCode: this.getFormattedLoanCode(this.selectedDisbursementLoan!),
+          employeeName: this.selectedDisbursementLoan!.fullName,
+          employeeId: this.selectedDisbursementLoan!.employeeId,
+          employeeEmail: this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || '',
+          department: this.selectedDisbursementLoan!.department,
+          approvedAmount: approvedAmount,
+          interest: this.selectedDisbursementLoan!.interestRate,
+          repaymentPeriod: this.selectedDisbursementLoan!.repaymentTime,
+          modeOfPayment: this.selectedDisbursementLoan!.modeOfPayment,
+          purpose: this.selectedDisbursementLoan!.purpose,
+          approvedDate: this.selectedDisbursementLoan!.approvedDate,
+          approvedBy: this.getApprovedByName(),
+          bankName: this.selectedEmployeeDetails?.bankName,
+          accountNumber: this.selectedEmployeeDetails?.accountNumber || '',
+          accountName: `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || this.selectedDisbursementLoan!.fullName,
+          paymentMethod: this.paymentMethod,
+          initiatedBy: this.disbursementInitiatedBy,
+          initiatedAt: this.disbursementInitiatedAt,
+          notes: this.emailNotes
+        }
+      };
+
+      const apiBaseUrl = environment.apiBaseUrl || '';
+      const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+      
+      // FIX: Add authentication headers
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const headers = new HttpHeaders({ 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      });
+
+      this.http.post(url, accountingPayload, { headers }).subscribe({
+        next: () => {
+          // Step 3: Update loan status to READY_FOR_DISBURSEMENT
+          this.moveLoanToReadyForDisbursement();
+        },
+        error: (error) => {
+          console.error('Error sending accounting event:', error);
+          this.messages = [{
+            severity: 'error',
+            summary: 'Accounting Event Failed',
+            detail: 'Failed to send event to accounting. Loan status was not updated.'
+          }];
+          this.isSubmittingDisbursement = false;
+        }
+      });
+    },
+    error: (error) => {
+      console.error('Error creating disbursement confirmation:', error);
+      this.messages = [{
+        severity: 'error',
+        summary: 'Disbursement Record Failed',
+        detail: 'Failed to record disbursement in the system.'
+      }];
+      this.isSubmittingDisbursement = false;
     }
+  });
+}
 
-    if (this.isBatchMode) {
-      this.sendBatchToAccounting();
-      return;
-    }
+  private sendBatchToAccounting(): void {
+  const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
+  if (!loans.length) return;
 
-    if (!this.selectedDisbursementLoan) {
-      return;
-    }
+  const initiatedAt = new Date().toISOString();
+  const initiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+  this.emailNotesError = false;
+  this.isSubmittingDisbursement = true;
 
-    // Record disbursement initiation
-    this.disbursementInitiatedAt = new Date().toISOString();
-    this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
-    this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
+  const loanRefs = loans.map(loan => ({
+    loan,
+    reference: this.generateUniqueDisbursementReference(loan),
+    employeeDetails: this.batchEmployeeDetailsMap.get(loan.id) || null
+  }));
 
-    // Get approved amount
-    const approvedAmount = this.getApprovedAmount(this.selectedDisbursementLoan);
-    const totalRepayable = resolveLoanTotalRepayableAmount(this.selectedDisbursementLoan);
-
-    this.isSubmittingDisbursement = true;
-
-    // Step 1: Create disbursement confirmation record in API
-    const payload: CreateDisbursementPayload = {
-      loanId: this.selectedDisbursementLoan.id,
-      disbursedAmount: approvedAmount,
-      disbursementInstructionReference: this.disbursementInstructionReference,
-      disbursementReference: this.disbursementReference || `PENDING-${this.disbursementInstructionReference}`,
+  // Step 1: Create disbursement confirmation records concurrently
+  const confirmationRequests = loanRefs.map(({ loan, reference }) =>
+    this.disbursementConfirmationService.createConfirmation({
+      loanId: loan.id,
+      disbursedAmount: this.getApprovedAmount(loan),
+      disbursementInstructionReference: reference,
+      disbursementReference: `PENDING-${reference}`,
       paymentMethod: this.paymentMethod,
       notes: this.emailNotes
-    };
+    })
+  );
 
-    this.disbursementConfirmationService.createConfirmation(payload).subscribe({
-      next: (confirmation) => {
-        // Step 2: Send accounting event to /x/api/v2/accounting/events
-        const accountingPayload = {
+  forkJoin(confirmationRequests).subscribe({
+    next: () => {
+      // Step 2: Build array payload and POST to accounting
+      const batchPayload = loanRefs.map(({ loan, reference, employeeDetails }) => {
+        const approvedAmount = this.getApprovedAmount(loan);
+        const totalRepayable = resolveLoanTotalRepayableAmount(loan);
+        const approvedByRaw = loan.approvedBy as any;
+        const approvedByName = approvedByRaw && typeof approvedByRaw === 'object'
+          ? String(approvedByRaw.fullname || approvedByRaw.username || 'Unknown')
+          : String(approvedByRaw || 'Unknown');
+        return {
           id: 0,
           sourceModule: 'HR',
           eventType: 'LOAN_DISBURSEMENT',
-          amount: totalRepayable,
+          amount: approvedAmount,
           currency: 'NGN',
-          reference: this.disbursementInstructionReference,
-          description: this.emailNotes, // Now properly mapped
-          transactionDate: this.disbursementInitiatedAt,
+          reference,
+          description: this.emailNotes,
+          transactionDate: initiatedAt,
           metadata: {
-            loanId: this.selectedDisbursementLoan!.id,
-            loanCode: this.getFormattedLoanCode(this.selectedDisbursementLoan!),
-            employeeName: this.selectedDisbursementLoan!.fullName,
-            employeeId: this.selectedDisbursementLoan!.employeeId,
-            employeeEmail: this.selectedEmployeeDetails?.email || this.selectedEmployeeDetails?.workEmail || '',
-            department: this.selectedDisbursementLoan!.department,
-            approvedAmount: approvedAmount,
-            interest: this.selectedDisbursementLoan!.interestRate,
-            repaymentPeriod: this.selectedDisbursementLoan!.repaymentTime,
-            modeOfPayment: this.selectedDisbursementLoan!.modeOfPayment,
-            purpose: this.selectedDisbursementLoan!.purpose,
-            approvedDate: this.selectedDisbursementLoan!.approvedDate,
-            approvedBy: this.getApprovedByName(),
-            bankName: this.selectedEmployeeDetails?.bankName,
-            accountNumber: this.selectedEmployeeDetails?.accountNumber || '',
-            accountName: `${this.selectedEmployeeDetails?.firstName || ''} ${this.selectedEmployeeDetails?.lastName || ''}`.trim() || this.selectedDisbursementLoan!.fullName,
+            loanId: loan.id,
+            loanCode: this.getFormattedLoanCode(loan),
+            employeeName: loan.fullName,
+            employeeId: loan.employeeId,
+            employeeEmail: employeeDetails?.email || employeeDetails?.workEmail || '',
+            department: loan.department,
+            approvedAmount,
+            interest: loan.interestRate,
+            repaymentPeriod: loan.repaymentTime,
+            modeOfPayment: loan.modeOfPayment,
+            purpose: loan.purpose,
+            approvedDate: loan.approvedDate,
+            approvedBy: approvedByName,
+            bankName: employeeDetails?.bankName,
+            accountNumber: employeeDetails?.accountNumber || '',
+            accountName: `${employeeDetails?.firstName || ''} ${employeeDetails?.lastName || ''}`.trim() || loan.fullName,
             paymentMethod: this.paymentMethod,
-            initiatedBy: this.disbursementInitiatedBy,
-            initiatedAt: this.disbursementInitiatedAt,
+            initiatedBy,
+            initiatedAt,
             notes: this.emailNotes
           }
         };
+      });
 
-        const apiBaseUrl = environment.apiBaseUrl || '';
-        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
-        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+      const apiBaseUrl = environment.apiBaseUrl || '';
+      const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+      
+      // FIX: Add authentication headers
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const headers = new HttpHeaders({ 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      });
 
-        this.http.post(url, accountingPayload, { headers }).subscribe({
-          next: () => {
-            // Step 3: Update loan status to READY_FOR_DISBURSEMENT
-            this.moveLoanToReadyForDisbursement();
-          },
-          error: (error) => {
-            console.error('Error sending accounting event:', error);
-            this.messages = [{
-              severity: 'error',
-              summary: 'Accounting Event Failed',
-              detail: 'Failed to send event to accounting. Loan status was not updated.'
-            }];
-            this.isSubmittingDisbursement = false;
-          }
-        });
-      },
-      error: (error) => {
-        console.error('Error creating disbursement confirmation:', error);
-        this.messages = [{
-          severity: 'error',
-          summary: 'Disbursement Record Failed',
-          detail: 'Failed to record disbursement in the system.'
-        }];
-        this.isSubmittingDisbursement = false;
-      }
-    });
-  }
+      this.http.post(url, batchPayload, { headers }).subscribe({
+        next: () => {
+          // Step 3: Update each loan status individually
+          const statusUpdates = loanRefs.map(({ loan, reference }) => {
+            const notes = this.emailNotes?.trim()
+              ? `Sent to accounting for disbursement. Reference: ${reference}. Notes: ${this.emailNotes.trim()}`
+              : `Sent to accounting for disbursement. Reference: ${reference}.`;
+            return this.loanApprovalService.updateApplicationStatus(loan.id, {
+              status: 'READY_FOR_DISBURSEMENT',
+              changedAt: initiatedAt,
+              disbursementInitiatedAt: initiatedAt,
+              disbursementInitiatedBy: this.getCurrentUserId(),
+              disbursementInstructionReference: reference,
+              notes
+            });
+          });
 
-  private sendBatchToAccounting(): void {
-    const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
-    if (!loans.length) return;
-
-    const initiatedAt = new Date().toISOString();
-    const initiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
-    this.emailNotesError = false;
-    this.isSubmittingDisbursement = true;
-
-    const loanRefs = loans.map(loan => ({
-      loan,
-      reference: this.generateUniqueDisbursementReference(loan),
-      employeeDetails: this.batchEmployeeDetailsMap.get(loan.id) || null
-    }));
-
-    // Step 1: Create disbursement confirmation records concurrently
-    const confirmationRequests = loanRefs.map(({ loan, reference }) =>
-      this.disbursementConfirmationService.createConfirmation({
-        loanId: loan.id,
-        disbursedAmount: this.getApprovedAmount(loan),
-        disbursementInstructionReference: reference,
-        disbursementReference: `PENDING-${reference}`,
-        paymentMethod: this.paymentMethod,
-        notes: this.emailNotes
-      })
-    );
-
-    forkJoin(confirmationRequests).subscribe({
-      next: () => {
-        // Step 2: Build array payload and POST to accounting
-        const batchPayload = loanRefs.map(({ loan, reference, employeeDetails }) => {
-          const approvedAmount = this.getApprovedAmount(loan);
-          const totalRepayable = resolveLoanTotalRepayableAmount(loan);
-          const approvedByRaw = loan.approvedBy as any;
-          const approvedByName = approvedByRaw && typeof approvedByRaw === 'object'
-            ? String(approvedByRaw.fullname || approvedByRaw.username || 'Unknown')
-            : String(approvedByRaw || 'Unknown');
-          return {
-            id: 0,
-            sourceModule: 'HR',
-            eventType: 'LOAN_DISBURSEMENT',
-            amount: totalRepayable,
-            currency: 'NGN',
-            reference,
-            description: this.emailNotes,
-            transactionDate: initiatedAt,
-            metadata: {
-              loanId: loan.id,
-              loanCode: this.getFormattedLoanCode(loan),
-              employeeName: loan.fullName,
-              employeeId: loan.employeeId,
-              employeeEmail: employeeDetails?.email || employeeDetails?.workEmail || '',
-              department: loan.department,
-              approvedAmount,
-              interest: loan.interestRate,
-              repaymentPeriod: loan.repaymentTime,
-              modeOfPayment: loan.modeOfPayment,
-              purpose: loan.purpose,
-              approvedDate: loan.approvedDate,
-              approvedBy: approvedByName,
-              bankName: employeeDetails?.bankName,
-              accountNumber: employeeDetails?.accountNumber || '',
-              accountName: `${employeeDetails?.firstName || ''} ${employeeDetails?.lastName || ''}`.trim() || loan.fullName,
-              paymentMethod: this.paymentMethod,
-              initiatedBy,
-              initiatedAt,
-              notes: this.emailNotes
+          forkJoin(statusUpdates).subscribe({
+            next: (updatedLoans) => {
+              updatedLoans.forEach(updated => this.replaceQueueLoan(updated));
+              this.isSendToAccountingModalVisible = false;
+              this.clearBatchSelection();
+              this.isSubmittingDisbursement = false;
+              this.messages = [{
+                severity: 'success',
+                summary: 'Batch Sent',
+                detail: `${loans.length} disbursement request(s) sent to accounting successfully.`
+              }];
+            },
+            error: () => {
+              this.isSubmittingDisbursement = false;
+              this.messages = [{
+                severity: 'error',
+                summary: 'Status Update Failed',
+                detail: 'Accounting events were posted, but some loan statuses could not be updated.'
+              }];
             }
-          };
-        });
-
-        const apiBaseUrl = environment.apiBaseUrl || '';
-        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
-        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-
-        this.http.post(url, batchPayload, { headers }).subscribe({
-          next: () => {
-            // Step 3: Update each loan status individually
-            const statusUpdates = loanRefs.map(({ loan, reference }) => {
-              const notes = this.emailNotes?.trim()
-                ? `Sent to accounting for disbursement. Reference: ${reference}. Notes: ${this.emailNotes.trim()}`
-                : `Sent to accounting for disbursement. Reference: ${reference}.`;
-              return this.loanApprovalService.updateApplicationStatus(loan.id, {
-                status: 'READY_FOR_DISBURSEMENT',
-                changedAt: initiatedAt,
-                disbursementInitiatedAt: initiatedAt,
-                disbursementInitiatedBy: this.getCurrentUserId(),
-                disbursementInstructionReference: reference,
-                notes
-              });
-            });
-
-            forkJoin(statusUpdates).subscribe({
-              next: (updatedLoans) => {
-                updatedLoans.forEach(updated => this.replaceQueueLoan(updated));
-                this.isSendToAccountingModalVisible = false;
-                this.clearBatchSelection();
-                this.isSubmittingDisbursement = false;
-                this.messages = [{
-                  severity: 'success',
-                  summary: 'Batch Sent',
-                  detail: `${loans.length} disbursement request(s) sent to accounting successfully.`
-                }];
-              },
-              error: () => {
-                this.isSubmittingDisbursement = false;
-                this.messages = [{
-                  severity: 'error',
-                  summary: 'Status Update Failed',
-                  detail: 'Accounting events were posted, but some loan statuses could not be updated.'
-                }];
-              }
-            });
-          },
-          error: (error: any) => {
-            this.isSubmittingDisbursement = false;
-            this.messages = [{
-              severity: 'error',
-              summary: 'Batch Post Failed',
-              detail: `Failed to send batch to accounting: ${error.message || 'Unknown error'}`
-            }];
-          }
-        });
-      },
-      error: () => {
-        this.isSubmittingDisbursement = false;
-        this.messages = [{
-          severity: 'error',
-          summary: 'Confirmation Failed',
-          detail: 'Failed to create disbursement confirmation records for one or more loans.'
-        }];
-      }
-    });
-  }
+          });
+        },
+        error: (error: any) => {
+          this.isSubmittingDisbursement = false;
+          this.messages = [{
+            severity: 'error',
+            summary: 'Batch Post Failed',
+            detail: `Failed to send batch to accounting: ${error.message || 'Unknown error'}`
+          }];
+        }
+      });
+    },
+    error: () => {
+      this.isSubmittingDisbursement = false;
+      this.messages = [{
+        severity: 'error',
+        summary: 'Confirmation Failed',
+        detail: 'Failed to create disbursement confirmation records for one or more loans.'
+      }];
+    }
+  });
+}
 
   private moveLoanToReadyForDisbursement(): void {
     if (!this.selectedDisbursementLoan) {

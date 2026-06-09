@@ -53,8 +53,9 @@ export class AppHrComponent {
       username: 'Eseose',
       password: 'soyBTY86b*rC',
       project: 'ERP',
-      apiKey: environment.apiKey,
-    };
+      clientId: 'optimax-erp-web',
+      appVersion: '2026.05.30'
+   };
 
 if (!loginDetails.username || !loginDetails.password) {
   this.messageService.add({
@@ -179,6 +180,8 @@ return rawToken;
       apiKey: environment.apiKey,
     };
 
+
+    // eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzgwNTY0OTY2LCJleHAiOjE3ODA2NTEzNjZ9.3ioaIPHGekrrS676pesQ27yDg25QP9Gpk_KMXWO9SOc
     try {
       const data = await this.authenticationService.userLogin(loginDetails).toPromise();
       if (data) {
