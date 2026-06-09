@@ -303,6 +303,37 @@
               <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
             </div>
           </div>
+
+           <div class="info-block">
+            <div class="info-block-header">
+              <div>
+                <p class="block-title">Bank Details</p>
+                <p class="block-copy">Payroll destination currently on file</p>
+              </div>
+              <button
+                type="button"
+                class="inline-action-btn"
+                (click)="openBankChangeRequest()"
+              >
+                Request change
+              </button>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Account number</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.accountNumber || '-' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Bank Name</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.bankName || '-' }}</span>
+            </div>
+            <!-- <div class="info-row">
+              <span class="info-label">Supervisor</span>
+              <span class="row-leader"></span>
+              <span class="info-value">{{ employeeInView?.supervisor || '-' }}</span>
+            </div> -->
+          </div>
         </div>
       </div>
 
@@ -445,23 +476,7 @@
 
     <section class="grid xl:grid-cols-3 gap-4">
       <div class="info-card">
-        <div class="card-header">
-          <p class="card-title">Leave Summary</p>
-        </div>
-        <div class="stat-stack">
-          <div class="stat-card">
-            <span class="stat-label">Available days left</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.leavesRemaining || 0 }} day(s)</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Days used</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.usedLeaves || 0 }} day(s)</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Total accrued</span>
-            <span class="stat-value">{{ employeeInView?.leaveDetails?.assignedLeaves || 0 }} day(s)</span>
-          </div>
-        </div>
+        <app-employee-change-requests-summary [employeeId]="employeeInView?.id"></app-employee-change-requests-summary>
       </div>
 
       <div class="info-card">
@@ -504,6 +519,17 @@
         </div>
       </div>
     </section>
+
+    <!-- Employee Relatives Widget -->
+    <section class="mt-6">
+      <app-employee-relatives-widget 
+        [nextOfKinList]="nextOfKinList"
+        [guarantorList]="guarantorList"
+        [employeeName]="employeeInView?.firstName + ' ' + employeeInView?.lastName"
+        (openNokChangeRequest)="openNokChangeRequest($event.type, $event.contact)"
+        (openGuarantorChangeRequest)="openGuarantorChangeRequest($event.type, $event.contact)">
+      </app-employee-relatives-widget>
+    </section>
   </div>
 </div>
 
@@ -512,6 +538,31 @@
     <p class="text-sm text-slate-500">No employee record found.</p>
   </div>
 </ng-template>
+
+<app-modal *ngIf="isBankChangeRequestOpen" [header]="'Request bank detail change'" (close)="closeBankChangeRequest()">
+  <app-bank-details-change-request
+    [employee]="employeeInView"
+    (requestSubmitted)="onBankChangeRequestSubmitted($event)"
+  ></app-bank-details-change-request>
+</app-modal>
+
+<app-modal *ngIf="isNokChangeRequestOpen" [header]="nokChangeHeader" (close)="closeNokChangeRequest()">
+  <app-nok-change-request
+    [employee]="employeeInView"
+    [nokRecord]="selectedNokRecord"
+    [changeType]="nokChangeType"
+    (requestSubmitted)="onNokChangeRequestSubmitted($event)"
+  ></app-nok-change-request>
+</app-modal>
+
+<app-modal *ngIf="isGuarantorChangeRequestOpen" [header]="guarantorChangeHeader" (close)="closeGuarantorChangeRequest()">
+  <app-guarantor-change-request
+    [employee]="employeeInView"
+    [guarantorRecord]="selectedGuarantorRecord"
+    [changeType]="guarantorChangeType"
+    (requestSubmitted)="onGuarantorChangeRequestSubmitted($event)"
+  ></app-guarantor-change-request>
+</app-modal>
 
 <app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
   <div class="staff-id-modal">

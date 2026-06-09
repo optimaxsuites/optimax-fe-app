@@ -116,7 +116,9 @@
     />
   </div>
 
-  <table class="min-w-full border border-gray-200 rounded-lg">
+  <div *ngIf="loading" class="text-center py-8 text-gray-500">Loading attendance data…</div>
+
+  <table *ngIf="!loading" class="min-w-full border border-gray-200 rounded-lg">
     <thead class="bg-gray-100">
       <tr>
         <th class="text-left p-3">Name</th>
@@ -139,8 +141,9 @@
           <span
             class="px-3 py-1 rounded-full text-xs font-medium"
             [ngClass]="{
-              'bg-green-100 text-green-700': emp.status === 'Present',
-              'bg-red-100 text-red-700': emp.status === 'Absent'
+              'bg-green-100 text-green-700': emp.status === 'PRESENT',
+              'bg-yellow-100 text-yellow-700': emp.status === 'LATE',
+              'bg-red-100 text-red-700': emp.status === 'ABSENT'
             }"
           >
             {{ emp.status }}
@@ -149,6 +152,9 @@
         <td class="p-3">{{ emp.clockIn }}</td>
         <td class="p-3">{{ emp.clockOut }}</td>
         <td class="text-center p-3 text-blue-600">View</td>
+      </tr>
+      <tr *ngIf="filteredEmployees.length === 0">
+        <td colspan="6" class="text-center p-6 text-gray-400">No records found for this date.</td>
       </tr>
     </tbody>
   </table>

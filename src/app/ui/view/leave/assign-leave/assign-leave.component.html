@@ -47,7 +47,7 @@
       <div class="w-full">
         <ng-select
           [items]="leaveTypes"
-          bindLabel="position"
+          bindLabel="name"
           [multiple]="false"
           placeholder="Select leave type"
           [(ngModel)]="selectedLeaveType"
@@ -72,10 +72,11 @@
 
   <div class="flex items-center justify-end">
     <button
-      class="hover:bg-customBlueHover font-bold bg-customBlue text-white rounded-xl p-4"
+      class="hover:bg-customBlueHover font-bold bg-customBlue text-white rounded-xl p-4 disabled:opacity-50"
       (click)="assignLeave()"
+      [disabled]="submitting"
     >
-      Assign
+      {{ submitting ? 'Assigning…' : 'Assign' }}
     </button>
   </div>
 </div>

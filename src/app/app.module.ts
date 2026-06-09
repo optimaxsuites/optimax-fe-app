@@ -1,6 +1,12 @@
+import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
+import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
+import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
+import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -31,9 +37,11 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
 import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,6 +60,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
 import { CommonModule } from '@angular/common';
@@ -229,6 +238,15 @@ import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management
 import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
 import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
 import { BrowserModule } from '@angular/platform-browser';
+import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+import { BankDetailsChangeRequestComponent } from './ui/view/profile-change-requests/bank-details-change-request/bank-details-change-request.component';
+import { NokChangeRequestComponent } from './ui/view/profile-change-requests/nok-change-request/nok-change-request.component';
+// import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
+import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-change-requests/employee-change-requests-dashboard/employee-change-requests-dashboard.component';
+import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
+import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
+// import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+
 
 @NgModule({
   declarations: [
@@ -359,7 +377,7 @@ import { BrowserModule } from '@angular/platform-browser';
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
-    ShiftCalendarComponent,
+    ShiftCalendarComponent, 
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
@@ -382,12 +400,23 @@ import { BrowserModule } from '@angular/platform-browser';
     CooperativePatronageDistributionComponent,
     ProductivityWorkspaceComponent,
     InterviewResponseComponent,
-    InviteModalComponent
+    InviteModalComponent,
+    ProfileChangeRequestsComponent,
+    BankDetailsChangeRequestComponent,
+    NokChangeRequestComponent,
+    GuarantorChangeRequestComponent,
+    EmployeeChangeRequestsDashboardComponent,
+    EmployeeChangeRequestsSummaryComponent,
+    HrSettingsComponent,
+    HrAnalyticsDashboardComponent,
+    OvertimeManagementComponent,
+    OrgChartComponent,
+    HrReportsComponent,
   ],
   imports: [
     AppHrRoutingModule,
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -438,13 +467,17 @@ import { BrowserModule } from '@angular/platform-browser';
     PasswordModule,
     ButtonModule,
     NgSelectModule,
+    DragDropModule,
     FullCalendarModule,
+    NgApexchartsModule,
     BackButtonModule,
     LargeSideModalComponent,
     FooterComponent,
     MenuModule,
+    AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
     AppHrRoutingModule,
+    EmployeeRelativesWidgetComponent,
   ],
   providers: [
     {

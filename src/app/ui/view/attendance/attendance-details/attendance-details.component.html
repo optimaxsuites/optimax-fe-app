@@ -70,9 +70,9 @@
               <span
                 class="px-3 py-1 rounded-full text-xs font-medium"
                 [ngClass]="{
-                  'bg-green-100 text-green-700': record.status === 'Present',
-                  'bg-yellow-100 text-yellow-700': record.status === 'Late',
-                  'bg-red-100 text-red-700': record.status === 'Absent'
+                  'bg-green-100 text-green-700': record.status === 'PRESENT',
+                  'bg-yellow-100 text-yellow-700': record.status === 'LATE',
+                  'bg-red-100 text-red-700': record.status === 'ABSENT'
                 }"
               >
                 {{ record.status }}

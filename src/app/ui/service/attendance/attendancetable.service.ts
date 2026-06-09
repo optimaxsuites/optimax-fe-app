@@ -17,7 +17,7 @@ export class AttendancetableService {
   // added these two properties after attendanceSubject:
   private localRecords = new Map<string, AttendanceTableRecord>(); // key: `${employeeId}_${date}`
 
-  private localKey(employeeId: number, date: string): string {
+  private localKey(employeeId: any, date: string): string {
     return `${employeeId}_${date}`;
   }
 
@@ -136,8 +136,8 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
       return {
         id: Number(match.id),
         department: match.department?.name ?? '',
-        fullName: `${match.lastName ?? ''} ${match.firstName ?? ''}`.trim()
-      }; 
+        fullName: `${match.firstName ?? ''} ${match.lastName ?? ''}`.trim()
+      };
     })
   );
 }

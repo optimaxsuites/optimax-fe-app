@@ -4,14 +4,37 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
+import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { HttpClient } from '@angular/common/http';
 import QRCode from 'qrcode';
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+
+export interface NextOfKin {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  DOB?: string;
+  emergencyContact?: boolean;
+}
+
+export interface Guarantor {
+  id?: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  relationship?: string;
+  yearsKnown?: number;
+}
 
 @Component({
   selector: 'app-employee-profile-dashboard',
@@ -27,7 +50,46 @@ export class EmployeeProfileDashboardComponent {
   isStaffIdOpen = false;
   staffIdQrDataUrl = '';
   staffIdBarcodeDataUrl = '';
+  isBankChangeRequestOpen = false;
+  bankChangeRequestForm: FormGroup;
+  submittingBankChangeRequest = false;
+  isNokChangeRequestOpen = false;
+  nokChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedNokRecord: NextOfKin | null = null;
+  nokChangeHeader = 'Add Next of Kin';
+  isGuarantorChangeRequestOpen = false;
+  guarantorChangeType: 'add' | 'edit' | 'delete' = 'add';
+  selectedGuarantorRecord: Guarantor | null = null;
+  guarantorChangeHeader = 'Add Guarantor';
   editForm: FormGroup;
+  nextOfKinList: NextOfKin[] = [];
+  guarantorList: Guarantor[] = [];
+  nigerianBanks = [
+    'Access Bank',
+    'Zenith Bank',
+    'GTBank',
+    'FCMB',
+    'First Bank',
+    'Fidelity Bank',
+    'UBA',
+    'Intercontinental Bank',
+    'Standard Chartered',
+    'HSBC',
+    'Diamond Bank',
+    'Polaris Bank',
+    'Wema Bank',
+    'Stanbic IBTC',
+    'Ecobank',
+    'Union Bank',
+    'Heritage Bank',
+    'Keystone Bank',
+    'Providus Bank',
+    'Titan Bank',
+    'ALAT',
+    'Taj Bank',
+    'Opay',
+    'Moniepoint',
+  ];
   pendingProfilePhotoDataUrl: string | null = null;
   pendingProfilePhotoName: string | null = null;
   pendingProfilePhotoFile: File | null = null;
@@ -46,13 +108,20 @@ export class EmployeeProfileDashboardComponent {
     private sanitizer: DomSanitizer,
     private messageService: MessageService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private profileChangeRequestService: ProfileChangeRequestService,
+    // private http: HttpClient
   ) {
     this.editForm = this.fb.group({
       phone: [''],
       email: ['', [Validators.email]],
       address: [''],
       workEmail: [{ value: '', disabled: true }],
+    });
+    this.bankChangeRequestForm = this.fb.group({
+      requestedBankName: ['', Validators.required],
+      requestedAccountNumber: ['', Validators.required],
+      reason: [''],
     });
   }
 
@@ -343,28 +412,19 @@ export class EmployeeProfileDashboardComponent {
 
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     if (storedUserId) {
+      this.applySessionEmployeeFallback(storedUserId);
       const startedAt = this.startLoading();
       this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
         next: (data) => {
           const employee = data?.data ?? data ?? null;
           if (!employee) {
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'No employee',
-              detail: 'No employee record linked to this user.',
-              key: 'global',
-            });
+            this.fetchEmployeeFromListFallback(storedUserId);
             return;
           }
           this.applyEmployeeView(employee);
         },
         error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Load failed',
-            detail: 'Unable to fetch employee record for this user.',
-            key: 'global',
-          });
+          this.fetchEmployeeFromListFallback(storedUserId);
         },
         complete: () => {
           this.finishLoading(startedAt);
@@ -374,6 +434,39 @@ export class EmployeeProfileDashboardComponent {
     }
 
     this.fetchFirstEmployee();
+  }
+
+  private fetchEmployeeFromListFallback(userId: string): void {
+    this.employeeService.getAllEmployee().subscribe({
+      next: (employees) => {
+        const employee =
+          employees.find((entry: any) =>
+            String(entry?.userId ?? '') === String(userId) ||
+            String(entry?.user?.userId ?? '') === String(userId) ||
+            String(entry?.user?.id ?? '') === String(userId)
+          ) ?? null;
+
+        if (employee) {
+          this.applyEmployeeView(employee);
+          return;
+        }
+
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No employee',
+          detail: 'No employee record linked to this user.',
+          key: 'global',
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Load failed',
+          detail: 'Unable to fetch employee record for this user.',
+          key: 'global',
+        });
+      },
+    });
   }
 
   private isEmployeeManagementContext(): boolean {
@@ -430,6 +523,9 @@ export class EmployeeProfileDashboardComponent {
     this.employeeInView = employee;
     this.patchEditForm();
 
+    // Load employee relatives
+    this.loadEmployeeRelatives();
+
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
         next: (salaryData) => {
@@ -455,6 +551,54 @@ export class EmployeeProfileDashboardComponent {
         dateClick: (arg) => this.handleDateClick(arg),
         events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
       };
+    }
+  }
+
+  private applySessionEmployeeFallback(userId: string): void {
+    try {
+      const raw =
+        sessionStorage.getItem('userRegData') ||
+        localStorage.getItem('userRegData');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const fullName =
+        parsed?.fullname ||
+        parsed?.name ||
+        parsed?.username ||
+        sessionStorage.getItem('fullname') ||
+        localStorage.getItem('fullname') ||
+        `User ${userId}`;
+      const nameParts = String(fullName).trim().split(/\s+/).filter(Boolean);
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.slice(1).join(' ');
+      const fallbackImage =
+        parsed?.profileImage ||
+        parsed?.imageUrl ||
+        parsed?.avatarUrl ||
+        parsed?.profilePicture ||
+        parsed?.photoUrl ||
+        '';
+
+      this.employeeInView = {
+        ...(this.employeeInView || {}),
+        firstName,
+        lastName,
+        userId: Number(userId),
+        user: {
+          id: parsed?.id ?? Number(userId),
+          userId: parsed?.userId ?? Number(userId),
+          fullname: fullName,
+          username: parsed?.username || fullName,
+          email: parsed?.email || '',
+        },
+        imageUrl: fallbackImage || this.employeeInView?.imageUrl || '',
+      };
+
+      if (fallbackImage) {
+        this.employeeProfilePhotoUrl = fallbackImage;
+      }
+      this.patchEditForm();
+    } catch {
+      // Keep the default placeholder state when no cached user payload is available.
     }
   }
 
@@ -753,5 +897,166 @@ export class EmployeeProfileDashboardComponent {
   private toNumber(value: any): number {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  openBankChangeRequest(): void {
+    this.bankChangeRequestForm.reset();
+    this.isBankChangeRequestOpen = true;
+  }
+
+  closeBankChangeRequest(): void {
+    this.isBankChangeRequestOpen = false;
+    this.bankChangeRequestForm.reset();
+  }
+
+  onBankChangeRequestSubmitted(event: any): void {
+    this.closeBankChangeRequest();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your bank change request has been submitted for HR review.',
+      key: 'global',
+    });
+  }
+
+  submitBankChangeRequest(): void {
+    if (this.bankChangeRequestForm.invalid || !this.employeeInView) {
+      return;
+    }
+
+    this.submittingBankChangeRequest = true;
+
+    const formValue = this.bankChangeRequestForm.value;
+    const currentBank = {
+      bankName: this.employeeInView.bankName || '',
+      accountNumber: this.employeeInView.accountNumber || '',
+    };
+    const requestedBank = {
+      bankName: formValue.requestedBankName,
+      accountNumber: formValue.requestedAccountNumber,
+    };
+
+    this.profileChangeRequestService.submitBankChangeRequest(
+      this.employeeInView.id,
+      `${this.employeeInView.firstName} ${this.employeeInView.lastName}`,
+      currentBank,
+      requestedBank,
+      formValue.reason || undefined
+    ).subscribe({
+      next: () => {
+        this.submittingBankChangeRequest = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Request submitted',
+          detail: 'Your bank change request has been submitted for HR review.',
+          key: 'global',
+        });
+        this.closeBankChangeRequest();
+      },
+      error: (error) => {
+        this.submittingBankChangeRequest = false;
+        console.error('Error submitting bank change request:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Submission failed',
+          detail: 'Failed to submit bank change request. Please try again.',
+          key: 'global',
+        });
+      },
+    });
+  }
+
+  loadEmployeeRelatives(): void {
+    if (!this.employeeInView?.id) return;
+          // this.nextOfKinList = this.employeeInView.nextOfKin || [];
+
+
+    this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.nextOfKinList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.nextOfKinList = [];
+        },
+      })
+
+    this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
+        next: (res: any) => {
+          this.guarantorList = res;
+          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+        },
+        error: () => {
+          this.guarantorList = [];
+        },
+      })
+  }
+
+  // NOK Change Request Methods
+  openNokChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: NextOfKin): void {
+    this.nokChangeType = changeType;
+    this.selectedNokRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.nokChangeHeader = 'Add Next of Kin';
+    } else if (changeType === 'edit') {
+      this.nokChangeHeader = `Edit: ${record?.fullName || 'Next of Kin'}`;
+    } else if (changeType === 'delete') {
+      this.nokChangeHeader = `Delete: ${record?.fullName || 'Next of Kin'}`;
+    }
+    
+    this.isNokChangeRequestOpen = true;
+  }
+
+  closeNokChangeRequest(): void {
+    this.isNokChangeRequestOpen = false;
+    this.nokChangeType = 'add';
+    this.selectedNokRecord = null;
+    this.nokChangeHeader = 'Add Next of Kin';
+  }
+
+  onNokChangeRequestSubmitted(event: any): void {
+    this.closeNokChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your next of kin request has been submitted for review.',
+      key: 'tl',
+    });
+  }
+
+  // Guarantor Change Request Methods
+  openGuarantorChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: Guarantor): void {
+    this.guarantorChangeType = changeType;
+    this.selectedGuarantorRecord = record || null;
+    
+    if (changeType === 'add') {
+      this.guarantorChangeHeader = 'Add Guarantor';
+    } else if (changeType === 'edit') {
+      this.guarantorChangeHeader = `Edit: ${record?.fullName || 'Guarantor'}`;
+    } else if (changeType === 'delete') {
+      this.guarantorChangeHeader = `Delete: ${record?.fullName || 'Guarantor'}`;
+    }
+    
+    this.isGuarantorChangeRequestOpen = true;
+  }
+
+  closeGuarantorChangeRequest(): void {
+    this.isGuarantorChangeRequestOpen = false;
+    this.guarantorChangeType = 'add';
+    this.selectedGuarantorRecord = null;
+    this.guarantorChangeHeader = 'Add Guarantor';
+  }
+
+  onGuarantorChangeRequestSubmitted(event: any): void {
+    this.closeGuarantorChangeRequest();
+    this.loadEmployeeRelatives();
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request submitted',
+      detail: 'Your guarantor request has been submitted for review.',
+      key: 'tl',
+    });
   }
 }

@@ -47,7 +47,7 @@ private mapInstance: L.Map | null = null;
 
  private closingTimer: any;
 
-selectedLocation: { recordId: number; type: 'in' | 'out' } | null = null;
+selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } | null = null;
   //heatmapData: any[] = [];
   //lateArrivalsData: any[] = [];
   //statsData: any[] = [];

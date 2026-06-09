@@ -52,9 +52,15 @@ import { CooperativeLoanApprovalUiComponent } from './ui/view/loan-management/co
 import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
 import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
 import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
+import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
+import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
+import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
+import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
+import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
@@ -385,7 +391,7 @@ const routes: Routes = [
 
   {
     path: 'performance/:uuid',
-    component: PerformanceComponent,
+    component: ProductivityWorkspaceComponent,
   },
   {
     path: 'productivity/:uuid',
@@ -426,12 +432,36 @@ const routes: Routes = [
     component: SchedulingComponent,
   },
   {
+    path: 'profile-change-requests/:uuid',
+    component: ProfileChangeRequestsComponent,
+  },
+  {
+    path: 'HR-settings/:uuid',
+    component: HrSettingsComponent,
+  },
+  {
+    path: 'analytics/:uuid',
+    component: HrAnalyticsDashboardComponent,
+  },
+  {
+    path: 'overtime/:uuid',
+    component: OvertimeManagementComponent,
+  },
+  {
+    path: 'org-chart/:uuid',
+    component: OrgChartComponent,
+  },
+  {
+    path: 'reports/:uuid',
+    component: HrReportsComponent,
+  },
+  {
     path: '**',
     redirectTo: DEFAULT_LOAN_ROUTE,
   },
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}
