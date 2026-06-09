@@ -25,7 +25,7 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
     code: 'optimaXCommerce', label: 'Commerce',
     submenus: [
       // { code: 'AI_ANALYSIS', label: 'AI Analysis' },
-      { code: 'SALES_MGMT', label: 'Sales Hub' },
+      { code: 'COM_SALES', label: 'Sales Hub' },
       { code: 'PROCURE_MGMT', label: 'Procurement Hub' },
       // { code: 'DELIVERY_MGMT', label: 'Delivery Management' },
       // { code: 'DOC_MGMT', label: 'Document Management' },

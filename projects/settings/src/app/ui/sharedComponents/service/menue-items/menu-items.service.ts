@@ -79,7 +79,7 @@ export class MenuItemsService {
         // },
          {
           label: 'Sales Hub',
-          code: 'SALES_MGMT',
+          code: 'COM_SALES',
           route: this.navigationLink.getLink('SHLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-file-alt',
