@@ -87,7 +87,10 @@ import { ServiceRequestListComponent } from './ui/view/request-management/servic
 import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';  
 import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
 import { ApprovalInboxComponent } from './ui/view/approval-inbox/approval-inbox.component';
-
+import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
+import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
+import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
+import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 
 
 
@@ -104,10 +107,14 @@ import { ApprovalInboxComponent } from './ui/view/approval-inbox/approval-inbox.
     ServiceRequestListComponent,
     RequestManagementComponent,
     NotificationCenterComponent,
+    DashboardComponent,
+    FinanceComponent,
+    LpoComponent,
+    VendorPortalComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     TableModule,

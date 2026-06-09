@@ -37,6 +37,13 @@ export class NavigationLinksService {
 		this.links["payroll"] = "/admin/hr/payroll/" + uuidV4();
 		this.links["allPayslip"] = "employee-payslip";
 
+
+		// commerce resources ==============================================================================================================
+		this.links["SHLink"] = "/admin/sales/" + uuidV4();
+		this.links["PMLink"] = "/admin/commerce/procurement-management/" + uuidV4();
+		this.links["VPLink"] = "/admin/commerce/vendor-portal/" + uuidV4();
+		this.links["RALink"] = "/admin/sales/reports/" + uuidV4();
+		
 		//  resources ================================================================================================================
 		this.links["posLink"] = "/admin/pos/" + uuidV4();
 		this.links["crmLink"] = "/admin/crm/" + uuidV4();

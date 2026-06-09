@@ -96,6 +96,21 @@ export class MenuItemsService {
   
         ],
       },
+       {
+        label: 'Commerce',
+        roles: ['ROLE_USER', 'ROLE_ADMIN'],
+        // route: this.navigationLink.getLink('HRSettings'),
+  
+        icon: 'pi pi-users', 
+        submenu: [
+          { label: 'Sales Hub', route: this.navigationLink.getLink('SHLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+          { label: 'Procurement Management', route: this.navigationLink.getLink('PMLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
+          { label: 'Vendor Portal', route: this.navigationLink.getLink('VPLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
+          { label: 'Reports', route: this.navigationLink.getLink('RALink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+          { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+  
+        ],
+      },
       {
         label: 'POS',
         roles: ['ROLE_USER', 'ROLE_ADMIN'],
