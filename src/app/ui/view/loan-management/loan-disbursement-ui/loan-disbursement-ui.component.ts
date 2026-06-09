@@ -395,10 +395,11 @@ sendToAccounting(): void {
       const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
       
       // FIX: Add authentication headers
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const headers = new HttpHeaders({ 
+      const token = sessionStorage.getItem('token');
+      const headers = new HttpHeaders({
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': 'optimax'
       });
 
       this.http.post(url, accountingPayload, { headers }).subscribe({
@@ -504,10 +505,11 @@ sendToAccounting(): void {
       const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
       
       // FIX: Add authentication headers
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const headers = new HttpHeaders({ 
+      const token = sessionStorage.getItem('token');
+      const headers = new HttpHeaders({
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Tenant-ID': 'optimax'
       });
 
       this.http.post(url, batchPayload, { headers }).subscribe({
