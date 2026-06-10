@@ -3,7 +3,7 @@ import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { BehaviorSubject, map, Observable } from 'rxjs';
 import { AppRegisterServiceService } from '../app-register-service.service';
-
+ 
 @Injectable({
   providedIn: 'root'
 })
@@ -936,11 +936,11 @@ export class MenuItemsService {
   }
   
   private getRegisteredItemCode(app: any): string {
-    return String(app?.appCode || app?.code || app?.name || '').trim();
+    return String(app?.uid || app?.appCode || app?.code || app?.name || '').trim();
   }
 
   private getRegisteredItemLabel(app: any): string {
-    return String(app?.appName || app?.label || app?.name || '').trim();
+    return String(app?.appName || app?.label || app?.title || app?.name || '').trim();
   }
 
   async getRegisterApps(){

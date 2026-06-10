@@ -56,6 +56,7 @@ export interface CollabAttachmentFull {
   fileSize: number;
   downloadUrl: string;
   uploadedAt: string;
+  downloadCount?: number;
 }
 
 export interface CollabDocumentFolder {
@@ -983,6 +984,14 @@ export class CollaborationService {
     );
   }
 
+  incrementAttachmentDownloadCount(attachmentId: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/x/api/v2/ai/collab/chat/attachment/${attachmentId}/download/increment`,
+      null,
+      { headers: this.headers },
+    );
+  }
+
   fetchChatAttachmentBlob(downloadUrl: string): Observable<Blob> {
     const url = this.normalizeProtectedApiUrl(downloadUrl);
     return this.http.get(url, {
@@ -999,7 +1008,7 @@ export class CollaborationService {
     }
     try {
       const parsed = new URL(downloadUrl);
-      if (parsed.pathname.startsWith('/x/api/v2/ai/')) {
+      if (parsed.pathname.startsWith('/x/api/')) {
         return `${base}${parsed.pathname}${parsed.search}`;
       }
       return downloadUrl;
