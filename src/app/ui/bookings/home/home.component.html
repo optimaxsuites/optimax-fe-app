@@ -77,9 +77,8 @@
           </div>
 
           <!-- Loading State -->
-          <div *ngIf="isLoading" class="loading-wrap">
-            <div class="spinner"></div>
-            <span>Searching for the best rooms...</span>
+          <div *ngIf="isLoading" class="skeleton-grid">
+            <app-loading-skeleton type="card" [count]="6"></app-loading-skeleton>
           </div>
 
           <!-- Error State -->

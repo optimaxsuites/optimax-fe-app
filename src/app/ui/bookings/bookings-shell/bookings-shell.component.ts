@@ -1,7 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { HotelserviceService } from '../../hospitality/hotelservice.service';
+import { LoggerService } from '../../../shared/services/logger.service';
+import { AppConstants } from '../../../shared/constants/app.constants';
 
 @Component({
   selector: 'app-bookings-shell',
@@ -9,7 +13,7 @@ import { HotelserviceService } from '../../hospitality/hotelservice.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
 })
-export class BookingsShellComponent implements OnInit {
+export class BookingsShellComponent implements OnInit, OnDestroy {
   uuid = '';
   isMenuOpen = false;
   isUserMenuOpen = false;
@@ -19,19 +23,28 @@ export class BookingsShellComponent implements OnInit {
     logoPosition: 'left'
   };
 
+  private destroy$ = new Subject<void>();
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private hotelService: HotelserviceService
+    private hotelService: HotelserviceService,
+    private logger: LoggerService
   ) {}
 
   ngOnInit(): void {
-    // Read uuid from the current or child route parameter
-    this.route.paramMap.subscribe(params => {
-      this.uuid = this.getDeepParam(this.route.snapshot, 'uuid') || '';
-      console.log('BookingsShell Resolved UUID:', this.uuid);
-    });
+    this.route.paramMap
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.uuid = this.getDeepParam(this.route.snapshot, 'uuid') || '';
+        this.logger.debug('UUID resolved', { uuid: this.uuid });
+      });
     this.loadBranding();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private getDeepParam(snapshot: any, param: string): string | null {
@@ -46,7 +59,7 @@ export class BookingsShellComponent implements OnInit {
   }
 
   private loadBranding(): void {
-    const saved = localStorage.getItem('optimax_settings');
+    const saved = localStorage.getItem(AppConstants.STORAGE_BRANDING);
     if (saved) {
       this.branding = JSON.parse(saved);
     }

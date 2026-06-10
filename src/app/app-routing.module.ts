@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AppComponent } from './app.component';
+import { ErrorPageComponent } from './shared/error-page/error-page.component';
 import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
 import { BookingCreateComponent } from './ui/view/room-management/booking-create/booking-create.component';
 import { BookingDetailComponent } from './ui/view/room-management/booking-detail/booking-detail.component';
@@ -23,6 +24,11 @@ import { BookingsShellComponent } from './ui/bookings/bookings-shell/bookings-sh
 const routes: Routes = [
   { path: '', redirectTo: 'user/landing', pathMatch: 'full' },
   { path: 'user', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
+  { path: 'error', component: ErrorPageComponent },
+  { path: '404', component: ErrorPageComponent },
+  { path: '401', component: ErrorPageComponent },
+  { path: '403', component: ErrorPageComponent },
+  { path: '500', component: ErrorPageComponent },
   {
     path: 'hospitality',
     component: HospitalityShellComponent,
@@ -46,6 +52,7 @@ const routes: Routes = [
       { path: 'room-view/:uuid', component: HotelAdmintableComponent },
     ]
   },
+  { path: '**', component: ErrorPageComponent }
 ];
 
 @NgModule({
