@@ -14,24 +14,7 @@ import { OrderDetailComponent } from './ui/view/request-management/product-reque
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 
 const routes: Routes = [
-  {
-    path: "",
-    redirectTo: 'procurement-management/requests/:uuid',
-    pathMatch: 'full'
-  },
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/requests',
-  //   pathMatch: 'full'
-  // },
-  {
-    path: 'commerce/requests/:uuid',
-    component: RequestManagementComponent,
-  },
-  {
-    path: 'vendor-portal/:uuid',
-    component: VendorPortalComponent,
-  },
+  // Procurement requests — specific segments before dynamic ones
   {
     path: 'commerce/requests/new',
     component: ProductRequestFormComponent,
@@ -39,10 +22,6 @@ const routes: Routes = [
   {
     path: 'commerce/requests/drafts',
     component: RequestDraftsComponent,
-  },
-  {
-    path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent,
   },
   {
     path: 'commerce/requests/:id/edit',
@@ -53,9 +32,36 @@ const routes: Routes = [
     component: DeliveryTrackingMapComponent,
   },
   {
-    path: 'commerce/service-requests',
+    path: 'commerce/requests/:id',
+    component: ProductRequestDetailComponent,
+  },
+  // Sidebar entry point — UUID here satisfies UuidGuard on the parent admin/sales route
+  {
+    path: 'commerce/requests/home/:uuid',
     component: RequestManagementComponent,
   },
+
+  // Vendor portal
+  {
+    path: 'vendor-portal/:uuid',
+    component: VendorPortalComponent,
+  },
+
+  // Multi-item orders — with UUID for sidebar entry, without for internal nav
+  {
+    path: 'commerce/orders/new',
+    component: MultiItemRequestFormComponent,
+  },
+  {
+    path: 'commerce/orders/new/:uuid',
+    component: MultiItemRequestFormComponent,
+  },
+  {
+    path: 'commerce/orders/:id',
+    component: OrderDetailComponent,
+  },
+
+  // Service requests
   {
     path: 'commerce/service-requests/new',
     component: ServiceRequestFormComponent,
@@ -67,14 +73,6 @@ const routes: Routes = [
   {
     path: 'commerce/service-requests/:id',
     component: ServiceRequestDetailComponent,
-  },
-  {
-    path: 'commerce/orders/new/:uuid',
-    component: MultiItemRequestFormComponent,
-  },
-  {
-    path: 'commerce/orders/:id',
-    component: OrderDetailComponent,
   },
 ];
 

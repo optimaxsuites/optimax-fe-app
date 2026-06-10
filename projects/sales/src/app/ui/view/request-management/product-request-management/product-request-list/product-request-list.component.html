@@ -12,7 +12,7 @@
 
       <div class="header-actions">
         <div class="header-right">
-          <a routerLink="/commerce/requests/drafts" class="btn-secondary-action">
+          <a routerLink="/admin/sales/commerce/requests/drafts" class="btn-secondary-action">
             Request Drafts
           </a>
 
@@ -35,7 +35,7 @@
             </button>
 
             <div class="create-options" *ngIf="showCreateOptions">
-              <div class="options-card" routerLink="/commerce/requests/new" (click)="showCreateOptions = false">
+              <div class="options-card" routerLink="/admin/sales/commerce/requests/new" (click)="showCreateOptions = false">
                 <div class="options-icon">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
@@ -47,7 +47,7 @@
                 </div>
               </div>
 
-              <div class="options-card" routerLink="/commerce/orders/new" (click)="showCreateOptions = false">
+              <div class="options-card" routerLink="/admin/sales/commerce/orders/new" (click)="showCreateOptions = false">
                 <div class="options-icon">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
