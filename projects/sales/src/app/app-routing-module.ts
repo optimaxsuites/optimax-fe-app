@@ -69,7 +69,7 @@ const routes: Routes = [
     component: ServiceRequestDetailComponent,
   },
   {
-    path: 'commerce/orders/new',
+    path: 'commerce/orders/new/:uuid',
     component: MultiItemRequestFormComponent,
   },
   {
