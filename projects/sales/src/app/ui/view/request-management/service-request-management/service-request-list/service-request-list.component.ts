@@ -189,12 +189,12 @@ export class ServiceRequestListComponent implements OnInit {
 
   onActionClick(event: { actionId: string; row: ServiceRequest }): void {
     if (event.actionId === 'view') {
-      this.router.navigate(['/admin/sales/commerce/service-requests', event.row.id]);
+      this.router.navigate(['/commerce/service-requests', event.row.id]);
       return;
     }
 
     if (event.actionId === 'edit') {
-      this.router.navigate(['/admin/sales/commerce/service-requests', event.row.id, 'edit']);
+      this.router.navigate(['/commerce/service-requests', event.row.id, 'edit']);
       return;
     }
 
@@ -205,7 +205,7 @@ export class ServiceRequestListComponent implements OnInit {
   }
 
   onCreateRequest(): void {
-    this.router.navigate(['/admin/sales/commerce/service-requests/new']);
+    this.router.navigate(['/commerce/service-requests/new']);
   }
 
   getServiceTypeLabel(type: ServiceType): string {

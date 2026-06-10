@@ -351,7 +351,7 @@ export class RequestReorderComponent implements OnInit, OnDestroy {
   }
 
   viewNewRequest(requestId: string): void {
-    this.router.navigate(['/admin/sales/commerce/requests', requestId]);
+    this.router.navigate(['/commerce/requests', requestId]);
   }
 
   formatCurrency(amount: number, currency: string): string {

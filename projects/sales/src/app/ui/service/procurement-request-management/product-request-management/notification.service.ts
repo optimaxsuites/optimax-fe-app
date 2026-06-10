@@ -53,7 +53,7 @@ export class NotificationService implements OnDestroy {
         status: 'UNREAD',
         data: { requestId: 'REQ-001', status: 'VENDORS_QUOTING' },
         createdAt: new Date(Date.now() - 5 * 60 * 1000),
-        actions: [{ label: 'View Request', action: 'view', url: '/admin/sales/commerce/requests/REQ-001', primary: true }]
+        actions: [{ label: 'View Request', action: 'view', url: '/commerce/requests/REQ-001', primary: true }]
       },
       {
         id: '2',
@@ -66,7 +66,7 @@ export class NotificationService implements OnDestroy {
         data: { requestId: 'REQ-001', vendorId: 'VEND-001', vendorName: 'Furniture Hub Ltd', amount: 21000, currency: 'NGN' },
         createdAt: new Date(Date.now() - 15 * 60 * 1000),
         actions: [
-          { label: 'View Quotation', action: 'view', url: '/admin/sales/commerce/requests/REQ-001', primary: true },
+          { label: 'View Quotation', action: 'view', url: '/commerce/requests/REQ-001', primary: true },
           { label: 'Dismiss', action: 'dismiss', primary: false }
         ]
       },
@@ -80,7 +80,7 @@ export class NotificationService implements OnDestroy {
         status: 'READ',
         data: { requestId: 'REQ-002', trackingNumber: 'TRK-123456789' },
         createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        actions: [{ label: 'Track Delivery', action: 'track', url: '/admin/sales/commerce/track/REQ-002', primary: true }]
+        actions: [{ label: 'Track Delivery', action: 'track', url: '/commerce/track/REQ-002', primary: true }]
       },
       {
         id: '4',
@@ -92,7 +92,7 @@ export class NotificationService implements OnDestroy {
         status: 'READ',
         data: { requestId: 'REQ-001', amount: 22500, currency: 'NGN' },
         createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        actions: [{ label: 'View Receipt', action: 'view', url: '/admin/sales/commerce/requests/REQ-001', primary: true }]
+        actions: [{ label: 'View Receipt', action: 'view', url: '/commerce/requests/REQ-001', primary: true }]
       },
       {
         id: '5',
@@ -104,7 +104,7 @@ export class NotificationService implements OnDestroy {
         status: 'UNREAD',
         data: { requestId: 'REQ-003', eta: '2026-06-01' },
         createdAt: new Date(Date.now() - 30 * 60 * 1000),
-        actions: [{ label: 'Track Delivery', action: 'track', url: '/admin/sales/commerce/track/REQ-003', primary: true }]
+        actions: [{ label: 'Track Delivery', action: 'track', url: '/commerce/track/REQ-003', primary: true }]
       }
     ];
     

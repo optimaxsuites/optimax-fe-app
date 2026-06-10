@@ -130,11 +130,11 @@ export class RequestDraftsComponent implements OnInit, OnDestroy {
   }
   
   openDraft(draft: RequestDraft): void {
-    this.router.navigate(['/admin/sales/commerce/requests/draft', draft.id]);
+    this.router.navigate(['/commerce/requests/draft', draft.id]);
   }
   
   continueEditing(draft: RequestDraft): void {
-    this.router.navigate(['/admin/sales/commerce/requests/edit-draft', draft.id]);
+    this.router.navigate(['/commerce/requests/edit-draft', draft.id]);
   }
   
   confirmDelete(draft: RequestDraft): void {
@@ -175,7 +175,7 @@ export class RequestDraftsComponent implements OnInit, OnDestroy {
         next: (result) => {
           this.isConverting = false;
           if (result.success) {
-            this.router.navigate(['/admin/sales/commerce/requests', result.requestId]);
+            this.router.navigate(['/commerce/requests', result.requestId]);
           }
         },
         error: (error) => {
@@ -186,11 +186,11 @@ export class RequestDraftsComponent implements OnInit, OnDestroy {
   }
   
   createNewDraft(): void {
-    this.router.navigate(['/admin/sales/commerce/requests/new'], { queryParams: { draft: true } });
+    this.router.navigate(['/commerce/requests/new'], { queryParams: { draft: true } });
   }
 
   goBackToRequests(): void {
-    this.router.navigate(['/admin/sales/commerce/requests']);
+    this.router.navigate(['/commerce/requests']);
   }
   
   getStatusIcon(status: DraftStatus): string {

@@ -428,13 +428,13 @@ private createApprovalRequestForOrder(orderId: string, orderData: any): void {
     next: (approvalResponse) => {
       this.isSubmitting = false;
       alert(`Order "${orderData.orderName}" submitted for approval! Vendors will be notified once approved.`);
-      this.router.navigate(['/admin/sales/commerce/requests']);
+      this.router.navigate(['/commerce/requests']);
     },
     error: (error) => {
       console.error('Error creating approval request:', error);
       this.isSubmitting = false;
       alert('Order created but approval setup failed. Please contact support.');
-      this.router.navigate(['/admin/sales/commerce/requests']);
+      this.router.navigate(['/commerce/requests']);
     }
   });
 }
@@ -463,10 +463,10 @@ private getUserDepartment(): string {
   cancel(): void {
     if (this.cartItems.length > 0 || this.mainForm.dirty) {
       if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
-        this.router.navigate(['/admin/sales/commerce/requests']);
+        this.router.navigate(['/commerce/requests']);
       }
     } else {
-      this.router.navigate(['/admin/sales/commerce/requests']);
+      this.router.navigate(['/commerce/requests']);
     }
   }
 

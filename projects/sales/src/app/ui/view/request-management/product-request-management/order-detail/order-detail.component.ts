@@ -35,12 +35,12 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
             this.order = order ?? null;
             this.isLoading = false;
             if (!order) {
-              this.router.navigate(['/admin/sales/commerce/requests']);
+              this.router.navigate(['/commerce/requests']);
             }
           },
           error: () => {
             this.isLoading = false;
-            this.router.navigate(['/admin/sales/commerce/requests']);
+            this.router.navigate(['/commerce/requests']);
           }
         });
     }

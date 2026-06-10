@@ -326,7 +326,7 @@ export class ProductRequestDetailComponent implements OnInit, OnDestroy {
   }
 
   editRequest(): void {
-    this.router.navigate(['/admin/sales/commerce/requests', this.request?.id, 'edit']);
+    this.router.navigate(['/commerce/requests', this.request?.id, 'edit']);
   }
 
   confirmCancelWithReason(result: CancellationResult): void {
@@ -360,7 +360,7 @@ export class ProductRequestDetailComponent implements OnInit, OnDestroy {
 
   makePayment(): void {
     // Navigate to payment page
-    this.router.navigate(['/admin/sales/commerce/payment', this.request?.id]);
+    this.router.navigate(['/commerce/payment', this.request?.id]);
   }
 
   confirmDelivery(): void {
@@ -529,6 +529,6 @@ closeReorderModal(): void {
 onReorderComplete(result: ReorderResult): void {
   this.showReorderModal = false;
   this.reorderSourceRequest = null;
-  this.router.navigate(['/admin/sales/commerce/requests']);
+  this.router.navigate(['/commerce/requests']);
 }
 }
