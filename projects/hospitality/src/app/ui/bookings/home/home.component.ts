@@ -1,7 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { HotelserviceService, Room as ApiRoom } from '../../hospitality/hotelservice.service';
-import { forkJoin, switchMap, tap } from 'rxjs';
+import { HotelserviceService } from '../../hospitality/hotelservice.service';
+import { switchMap, tap, takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin } from 'rxjs';
+import { AppConstants } from '../../../shared/constants/app.constants';
+import { LoggerService } from '../../../shared/services/logger.service';
+import { Room, ApiRoom } from '../../../shared/models';
 
 interface DisplayRoom {
   id: number;
@@ -40,7 +44,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     logoPosition: 'left'
   };
   uuid = 'default';
-  private slideInterval: any;
+
+  private slideInterval: ReturnType<typeof setInterval> | null = null;
+  private destroy$ = new Subject<void>();
 
   private readonly fallbackImages = [
     'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=800',
@@ -66,42 +72,42 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private hotelService: HotelserviceService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private logger: LoggerService
   ) {}
 
   ngOnInit(): void {
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
     this.loadBranding();
 
-    // Start loading
     this.isLoading = true;
     this.error = null;
 
-    // Use switchMap to ensure room types are loaded BEFORE mapping rooms
-    this.hotelService.getRoomTypes().pipe(
-      tap(types => this.roomTypes = types as any),
-      switchMap(() => this.hotelService.getRooms())
-    ).subscribe({
-      next: (apiRooms: ApiRoom[]) => {
-        if (apiRooms && apiRooms.length > 0) {
-          this.rooms = this.mapRooms(apiRooms);
-        } else {
-          this.rooms = this.getDummyRooms();
+    const minDuration = new Promise<void>(resolve =>
+      setTimeout(resolve, AppConstants.SKELETON_MIN_DURATION)
+    );
+
+    this.hotelService.getRoomTypes()
+      .pipe(
+        tap(types => {
+          this.roomTypes = types as any;
+        }),
+        switchMap(() => this.hotelService.getRooms()),
+        tap(() => {
+          minDuration.then(() => {
+            // Skeleton min duration completed
+          });
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (apiRooms: any[]) => {
+          this.handleRoomsLoaded(apiRooms);
+        },
+        error: (err) => {
+          this.handleRoomsLoadError(err);
         }
-        this.filteredRooms = [...this.rooms];
-        this.startAutoSlide();
-        this.isLoading = false;
-        this.error = null;
-      },
-      error: (err: any) => {
-        console.error('Error loading rooms:', err);
-        this.rooms = this.getDummyRooms();
-        this.filteredRooms = [...this.rooms];
-        this.startAutoSlide();
-        this.isLoading = false;
-        this.error = null;
-      }
-    });
+      });
   }
 
   private loadBranding(): void {
@@ -125,7 +131,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         description: room.description || 'A premium room experience awaits.',
         price: room.rate,
         capacity: room.maxOccupancy,
-        amenities: this.mapAmenities(room.amenities),
+        amenities: this.mapAmenities(room.amenities || []),
         images: images,
         activeImageIndex: 0,
         available: room.roomStatus === 'AVAILABLE'
@@ -176,19 +182,49 @@ export class HomeComponent implements OnInit, OnDestroy {
     }));
   }
 
+  private handleRoomsLoaded(apiRooms: ApiRoom[]): void {
+    if (apiRooms && apiRooms.length > 0) {
+      this.rooms = this.mapRooms(apiRooms);
+    } else {
+      this.rooms = this.getDummyRooms();
+    }
+    this.filteredRooms = [...this.rooms];
+    this.startAutoSlide();
+    this.isLoading = false;
+    this.error = null;
+    this.logger.info('Rooms loaded', { count: this.rooms.length });
+  }
+
+  private handleRoomsLoadError(err: any): void {
+    this.logger.error('Error loading rooms', err);
+    this.rooms = this.getDummyRooms();
+    this.filteredRooms = [...this.rooms];
+    this.startAutoSlide();
+    this.isLoading = false;
+  }
+
   private startAutoSlide(): void {
-    if (this.slideInterval) clearInterval(this.slideInterval);
+    this.clearSlideInterval();
     this.slideInterval = setInterval(() => {
       this.rooms.forEach(room => {
         if (room.images.length > 1) {
           room.activeImageIndex = (room.activeImageIndex + 1) % room.images.length;
         }
       });
-    }, 4000);
+    }, AppConstants.CAROUSEL_SLIDE_INTERVAL);
+  }
+
+  private clearSlideInterval(): void {
+    if (this.slideInterval) {
+      clearInterval(this.slideInterval);
+      this.slideInterval = null;
+    }
   }
 
   ngOnDestroy(): void {
-    if (this.slideInterval) clearInterval(this.slideInterval);
+    this.clearSlideInterval();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getCategory(room: DisplayRoom): string {
@@ -202,13 +238,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   viewRoomDetails(room: DisplayRoom): void {
-    // Navigate using the restored flat absolute path
-    this.router.navigate(['user/hospitality/e-bookings/rooms/details', room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: DisplayRoom): void {
-    // Navigate directly to the booking form (with the sidebar)
-    this.router.navigate(['user/hospitality/e-bookings/booking-form', room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/booking-form', room.id, this.uuid]);
   }
 
   openAuthModal(room: DisplayRoom): void {
@@ -233,7 +267,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         ? `/user/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
         : `/user/e-bookings/home/${this.uuid}`;
 
-      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }

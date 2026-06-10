@@ -220,10 +220,10 @@ select option:checked {
         </section>
 
         <!-- Amenities -->
-        <section class="form-card" *ngIf="room?.amenities?.length > 0">
+        <section class="form-card" *ngIf="room && room.amenities && room.amenities.length > 0">
           <h3 class="card-title"><i class="fa-solid fa-star"></i> What's Included</h3>
           <div class="amenity-chips">
-            <div class="chip" *ngFor="let a of room.amenities">
+            <div class="chip" *ngFor="let a of room?.amenities">
               <i [class]="'fa-solid ' + (a.toLowerCase().includes('breakfast') ? 'fa-mug-hot' : a.toLowerCase().includes('lounge') ? 'fa-couch' : a.toLowerCase().includes('gym') ? 'fa-dumbbell' : a.toLowerCase().includes('wifi') ? 'fa-wifi' : 'fa-check')"></i>
               {{ a }}
             </div>

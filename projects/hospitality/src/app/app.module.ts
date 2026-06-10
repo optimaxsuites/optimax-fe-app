@@ -2,6 +2,7 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
 import { TableModule } from 'primeng/table';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { ToastContainerComponent } from './shared/toast-container/toast-container.component';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -130,6 +131,7 @@ import { ServiceCheckoutComponent } from './ui/view/room-management/service-chec
     DialogModule,
     InputNumberModule,
     NavTabComponent,
+    ToastContainerComponent,
     CheckboxModule,
     FileUploadModule,
     ProgressSpinnerModule,

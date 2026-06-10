@@ -42,6 +42,7 @@ import { AppResizeDirective } from '../ui/service/app-resize.directive';
 import { NavTabComponent } from '../ui/sharedComponent/view/nav-tab/nav-tab.component';
 import { ButtonComponent } from '../ui/sharedComponent/view/button/button.component';
 import { ModalComponent } from '../ui/sharedComponent/view/modal/modal.component';
+import { LoadingSkeletonComponent } from '../shared/loading-skeleton/loading-skeleton.component';
 
 @NgModule({
   declarations: [
@@ -85,7 +86,8 @@ import { ModalComponent } from '../ui/sharedComponent/view/modal/modal.component
     // Standalone
     NavTabComponent,
     ButtonComponent,
-    ModalComponent
+    ModalComponent,
+    LoadingSkeletonComponent
   ],
   exports: [],
   providers: [],

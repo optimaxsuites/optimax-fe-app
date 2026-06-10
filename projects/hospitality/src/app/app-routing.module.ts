@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AppComponent } from './app.component';
+import { ErrorPageComponent } from './shared/error-page/error-page.component';
 import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
 import { BookingCreateComponent } from './ui/view/room-management/booking-create/booking-create.component';
 import { BookingDetailComponent } from './ui/view/room-management/booking-detail/booking-detail.component';
@@ -47,7 +48,6 @@ const routes: Routes = [
       
       // Admin Table (Room view)
       { path: 'room-view/:uuid', component: HotelAdmintableComponent },
-
 ];
 
 @NgModule({

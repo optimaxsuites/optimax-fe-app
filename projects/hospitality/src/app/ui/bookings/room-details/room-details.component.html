@@ -1,3 +1,8 @@
+<!-- Loading State -->
+<div class="loading-container" *ngIf="loading">
+  <app-loading-skeleton type="room-grid" [count]="1"></app-loading-skeleton>
+</div>
+
 <div class="page-wrapper" *ngIf="!loading">
 
   <div class="room-details-page">
@@ -15,7 +20,7 @@
       </header>
 
       <!-- Main Slider -->
-      <section class="slider-section">
+      <section class="slider-section" *ngIf="room">
         <div class="main-preview">
           <img [src]="room.images[activeImageIndex]" alt="Room preview">
           
@@ -42,13 +47,13 @@
         </div>
       </section>
 
-      <div class="content-layout">
+      <div class="content-layout" *ngIf="room">
         <!-- Left: Details -->
         <main class="info-column">
           <div class="hero-info">
             <div class="badge-row">
               <span class="category-badge">PREMIUM CHOICE</span>
-              <span class="category-badge outline">{{ room.roomTypeName }}</span>
+              <span class="category-badge outline">{{ room?.roomTypeName }}</span>
               <div class="rating">
                 <i class="fa-solid fa-star"></i>
                 <span>{{ room.rating }}</span>
@@ -142,7 +147,7 @@
               </div>
               <div class="item">
                 <i class="fa-solid fa-layer-group"></i>
-                <span>Floor {{ room.floorNumber }}</span>
+                <span>Floor {{ room?.floorNumber }}</span>
               </div>
             </div>
 
