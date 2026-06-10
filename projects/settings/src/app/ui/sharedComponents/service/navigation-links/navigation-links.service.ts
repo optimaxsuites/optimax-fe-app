@@ -38,10 +38,10 @@ export class NavigationLinksService {
     // this.links['aiQuotationLink'] = '/admin/commerce/ai-quotation/' +uuidV4();
     // this.links['deliveryManagementLink'] = '/admin/commerce/delivery-management/' +uuidV4();
     // this.links['docGenLink'] = '/admin/commerce/document-management/' +uuidV4();
-    this.links['SHLink'] = '/admin/sales/' +uuidV4();
-    this.links['PMLink'] = '/admin/commerce/procurement-management/' +uuidV4();
+    this.links['SHLink'] = '/admin/sales/commerce/orders/new/' +uuidV4();
+    this.links['PMLink'] = '/admin/sales/commerce/requests/' +uuidV4();
     // this.links['QTLink'] = '/admin/commerce/quote-management/' +uuidV4();
-    this.links['VPLink'] = '/admin/commerce/vendor-portal/' +uuidV4();
+    this.links['VPLink'] = '/admin/sales/vendor-portal/' +uuidV4();
     this.links['RALink'] = '/admin/sales/reports/' +uuidV4();
 
 

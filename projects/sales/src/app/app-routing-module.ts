@@ -25,11 +25,11 @@ const routes: Routes = [
   //   pathMatch: 'full'
   // },
   {
-    path: 'commerce/requests',
+    path: 'commerce/requests/:uuid',
     component: RequestManagementComponent,
   },
   {
-    path: 'vendor-portal',
+    path: 'vendor-portal/:uuid',
     component: VendorPortalComponent,
   },
   {
