@@ -20,6 +20,18 @@
     </div>
   </div>
 
+  <!-- ── Deploy Your Own Instance Banner ──────────────────────────────────── -->
+  <div class="mk-deploy-banner" *ngIf="!openHistory">
+    <div class="mk-deploy-banner-icon"><i class="fas fa-rocket"></i></div>
+    <div class="mk-deploy-banner-text">
+      <strong>Deploy OptimaX ERP on Your Infrastructure</strong>
+      <span>Get a fully managed or self-hosted instance deployed to your own server or cloud in minutes.</span>
+    </div>
+    <button class="mk-btn mk-btn-primary" (click)="showDeployDialog = true">
+      <i class="fas fa-rocket"></i> Deploy Your Own Instance
+    </button>
+  </div>
+
   <ng-container *ngIf="!loading; else loadingTpl">
 
     <!-- ── Modules View ──────────────────────────────────────────────────── -->
@@ -297,5 +309,11 @@
       </div>
     </div>
   </div>
+
+  <!-- ── Deploy ERP Wizard ─────────────────────────────────────────────────── -->
+  <app-deploy-erp
+    *ngIf="showDeployDialog"
+    (closed)="showDeployDialog = false">
+  </app-deploy-erp>
 
 </div>

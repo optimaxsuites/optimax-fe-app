@@ -147,6 +147,7 @@ export class BugTrackerComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadDmChannelMap();
   }
 
   load(): void {
@@ -347,32 +348,69 @@ export class BugTrackerComponent implements OnInit {
     }
 
     this.shareSubmitting = true;
-    const id = this.sharingIssue.id;
+    const issue = this.sharingIssue;
+    const id = issue.id!;
+    const senderUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+    const issueMsg = `📌 *Issue #${id} shared* — [${issue.module}] ${issue.title}\n` +
+      `Priority: ${issue.priority} | Status: ${issue.status}` +
+      (issue.description ? `\n${issue.description.slice(0, 200)}${issue.description.length > 200 ? '…' : ''}` : '');
 
-    const calls = this.shareTab === 'CHANNEL'
+    const shareCalls = this.shareTab === 'CHANNEL'
       ? selectedChannels.map(c => this.api.shareIssue(id, {
-          shareType: 'CHANNEL',
-          channelName: c.name,
-          sharedByUserId: 0,
+          shareType: 'CHANNEL', channelName: c.name, sharedByUserId: senderUserId,
         }))
       : selectedUsers.map(u => this.api.shareIssue(id, {
-          shareType: 'DM',
-          sharedToUserId: u.userId,
-          sharedToName: u.fullname,
-          sharedToEmail: u.email,
-          sharedByUserId: 0,
+          shareType: 'DM', sharedToUserId: u.userId,
+          sharedToName: u.fullname, sharedToEmail: u.email, sharedByUserId: senderUserId,
         }));
 
-    forkJoin(calls).subscribe({
+    forkJoin(shareCalls).subscribe({
       next: () => {
+        // Post collaboration messages so the share is visible in chat
+        const msgCalls = this.shareTab === 'CHANNEL'
+          ? selectedChannels.map(c =>
+              this.api.postCollabMessage(c.id, senderUserId, issueMsg))
+          : selectedUsers.map(u => {
+              // Find the DM channel between current user and target user
+              const uid1 = Math.min(senderUserId, u.userId!);
+              const uid2 = Math.max(senderUserId, u.userId!);
+              const dmChannel = this.dmChannelMap[`${uid1}-${uid2}`];
+              return dmChannel
+                ? this.api.postCollabMessage(dmChannel, senderUserId, issueMsg)
+                : this.api.shareIssue(id, {}); // fallback no-op
+            });
+
+        forkJoin(msgCalls.length ? msgCalls : [this.api.getShares(id)]).subscribe({
+          error: () => {} // message posting failure is non-critical
+        });
+
         this.shareSubmitting = false;
         this.showShareDialog = false;
-        const count = calls.length;
+        const count = shareCalls.length;
         this.toast('success', this.shareTab === 'CHANNEL'
           ? `Issue shared to ${count} channel${count > 1 ? 's' : ''}`
-          : `Issue shared with ${count} person${count > 1 ? 's' : ''} — email sent`);
+          : `Issue shared with ${count} person${count > 1 ? 's' : ''}`);
       },
       error: (err) => { this.toast('error', err); this.shareSubmitting = false; }
+    });
+  }
+
+  private dmChannelMap: Record<string, number> = {};
+
+  private loadDmChannelMap(): void {
+    const me = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+    if (!me) return;
+    this.api.getDmChannels().subscribe({
+      next: (channels) => {
+        (channels || []).forEach((c: any) => {
+          const m = /^dm-(\d+)-(\d+)$/i.exec(c.name || '');
+          if (m) {
+            const k = `${Math.min(+m[1], +m[2])}-${Math.max(+m[1], +m[2])}`;
+            this.dmChannelMap[k] = c.id;
+          }
+        });
+      },
+      error: () => {}
     });
   }
 

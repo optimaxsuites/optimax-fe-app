@@ -294,6 +294,20 @@ export class MessageFeedComponent {
     return 'FILE';
   }
 
+  attachmentFileIcon(attachment: Message['attachment'] | undefined): string {
+    const name = (attachment?.name || '').toLowerCase();
+    const type = (attachment?.type || '').toLowerCase();
+    if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/.test(name)) return 'pi-image';
+    if (type === 'application/pdf' || name.endsWith('.pdf')) return 'pi-file-pdf';
+    if (/\.(doc|docx)$/.test(name)) return 'pi-file-word';
+    if (/\.(xls|xlsx|csv)$/.test(name)) return 'pi-file-excel';
+    if (/\.(ppt|pptx)$/.test(name)) return 'pi-file';
+    if (/\.(zip|rar|7z|tar|gz)$/.test(name)) return 'pi-folder';
+    if (/\.(mp4|mov|webm|avi)$/.test(name) || type.startsWith('video/')) return 'pi-video';
+    if (/\.(mp3|wav|ogg|aac)$/.test(name) || type.startsWith('audio/')) return 'pi-volume-up';
+    return 'pi-paperclip';
+  }
+
   messageAttachments(msg: Message): NonNullable<Message['attachments']> {
     if (msg.attachments?.length) {
       return msg.attachments;

@@ -105,6 +105,17 @@ export class IssueTrackerApiService {
     return this.http.get<any[]>(`${this.base()}/${issueId}/shares`).pipe(catchError(this.err));
   }
 
+  postCollabMessage(channelId: number, senderUserId: number, content: string) {
+    return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/message`,
+      { channelId, senderUserId, content, messageType: 'TEXT' },
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
+  getDmChannels() {
+    return this.http.get<any[]>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
   private err(error: HttpErrorResponse) {
     const msg = error.error?.message || error.message || 'An unexpected error occurred.';
     return throwError(() => msg);
