@@ -39,7 +39,7 @@ export class NavigationLinksService {
 
 
 		// commerce resources ==============================================================================================================
-		this.links["SHLink"] = "/admin/sales/" + uuidV4();
+		this.links["SHLink"] = "commerce/orders/new" + uuidV4();
 		this.links["PMLink"] = "/admin/commerce/procurement-management/" + uuidV4();
 		this.links["VPLink"] = "/admin/commerce/vendor-portal/" + uuidV4();
 		this.links["RALink"] = "/admin/sales/reports/" + uuidV4();

@@ -19,6 +19,7 @@ import { EBookingCheckoutComponent } from '../ui/bookings/e-booking-checkout/e-b
 import { EBookingLoginComponent } from '../ui/bookings/auth/login/login.component';
 import { EBookingRegisterComponent } from '../ui/bookings/auth/register/register.component';
 import { LandingComponent } from '../ui/bookings/landing/landing.component';
+import { EBookingConfirmationComponent } from '../ui/bookings/e-booking-confirmation/e-booking-confirmation.component';
 
 import { BookingsShellComponent } from '../ui/bookings/bookings-shell/bookings-shell.component';
 import { BookingCreateComponent } from '../ui/view/room-management/booking-create/booking-create.component';
@@ -44,6 +45,7 @@ const routes: Routes = [
       { path: 'e-bookings/booking-form/:id/:uuid', component: BookingformComponent },
       { path: 'e-bookings/multiple-rooms/:uuid', component: MultipleBookingsComponent },
       { path: 'e-bookings/checkout/:id/:uuid', component: EBookingCheckoutComponent },
+      { path: 'e-bookings/confirmation/:uuid', component: EBookingConfirmationComponent },
       { path: 'e-bookings/auth/login/:uuid', component: EBookingLoginComponent },
       { path: 'e-bookings/auth/register/:uuid', component: EBookingRegisterComponent },
       ]

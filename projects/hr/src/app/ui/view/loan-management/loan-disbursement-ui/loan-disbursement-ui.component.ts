@@ -334,9 +334,30 @@ sendToAccounting(): void {
     return;
   }
 
+  // Get authentication token and tenant ID (SAME as loan.service.ts)
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  const tenantId = 'optimax';
+  
+  if (!token) {
+    console.error('No authentication token found!');
+    this.messages = [{
+      severity: 'error',
+      summary: 'Authentication Error',
+      detail: 'You are not logged in. Please refresh the page or log in again.'
+    }];
+    return;
+  }
+
+  // Get current user info
+  const currentUser = sessionStorage.getItem('fullname') || 
+                      sessionStorage.getItem('username') || 
+                      localStorage.getItem('fullname') || 
+                      localStorage.getItem('username') || 
+                      'System';
+
   // Record disbursement initiation
   this.disbursementInitiatedAt = new Date().toISOString();
-  this.disbursementInitiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+  this.disbursementInitiatedBy = currentUser;
   this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
 
   // Get approved amount
@@ -394,13 +415,15 @@ sendToAccounting(): void {
       const apiBaseUrl = environment.apiBaseUrl || '';
       const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
       
-      // FIX: Add authentication headers
-      const token = sessionStorage.getItem('token');
+      // CRITICAL FIX: Add authentication headers (matching loan.service.ts)
       const headers = new HttpHeaders({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax'
+        'X-Tenant-ID': tenantId
       });
+
+      console.log('Sending to accounting with headers:', headers.keys());
+      console.log('Payload:', accountingPayload);
 
       this.http.post(url, accountingPayload, { headers }).subscribe({
         next: () => {
@@ -409,10 +432,11 @@ sendToAccounting(): void {
         },
         error: (error) => {
           console.error('Error sending accounting event:', error);
+          console.error('Error details:', error.error);
           this.messages = [{
             severity: 'error',
             summary: 'Accounting Event Failed',
-            detail: 'Failed to send event to accounting. Loan status was not updated.'
+            detail: `Failed to send event to accounting: ${error.error?.message || error.message}`
           }];
           this.isSubmittingDisbursement = false;
         }
@@ -434,8 +458,29 @@ sendToAccounting(): void {
   const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
   if (!loans.length) return;
 
+  // Get authentication token and tenant ID (SAME as loan.service.ts)
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  const tenantId = 'optimax';
+  
+  if (!token) {
+    console.error('No authentication token found!');
+    this.messages = [{
+      severity: 'error',
+      summary: 'Authentication Error',
+      detail: 'You are not logged in. Please refresh the page or log in again.'
+    }];
+    return;
+  }
+
+  // Get current user info
+  const currentUser = sessionStorage.getItem('fullname') || 
+                      sessionStorage.getItem('username') || 
+                      localStorage.getItem('fullname') || 
+                      localStorage.getItem('username') || 
+                      'System';
+
   const initiatedAt = new Date().toISOString();
-  const initiatedBy = sessionStorage.getItem('fullname') || sessionStorage.getItem('username') || 'Admin';
+  const initiatedBy = currentUser;
   this.emailNotesError = false;
   this.isSubmittingDisbursement = true;
 
@@ -504,13 +549,15 @@ sendToAccounting(): void {
       const apiBaseUrl = environment.apiBaseUrl || '';
       const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
       
-      // FIX: Add authentication headers
-      const token = sessionStorage.getItem('token');
+      // CRITICAL FIX: Add authentication headers (matching loan.service.ts)
       const headers = new HttpHeaders({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-Tenant-ID': 'optimax'
+        'X-Tenant-ID': tenantId
       });
+
+      console.log('Sending batch to accounting with headers:', headers.keys());
+      console.log('Batch payload size:', batchPayload.length);
 
       this.http.post(url, batchPayload, { headers }).subscribe({
         next: () => {
@@ -553,10 +600,11 @@ sendToAccounting(): void {
         },
         error: (error: any) => {
           this.isSubmittingDisbursement = false;
+          console.error('Batch POST error:', error);
           this.messages = [{
             severity: 'error',
             summary: 'Batch Post Failed',
-            detail: `Failed to send batch to accounting: ${error.message || 'Unknown error'}`
+            detail: `Failed to send batch to accounting: ${error.error?.message || error.message}`
           }];
         }
       });
@@ -570,7 +618,7 @@ sendToAccounting(): void {
       }];
     }
   });
-}
+}  
 
   private moveLoanToReadyForDisbursement(): void {
     if (!this.selectedDisbursementLoan) {

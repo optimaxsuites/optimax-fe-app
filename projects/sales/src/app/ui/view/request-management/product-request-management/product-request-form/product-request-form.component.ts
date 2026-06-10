@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { ProcurementRequestService } from '../../../../service/procurement-request-management/product-request-management/procurement-request.service';
 import { RequestDraftService } from '../../../../service/procurement-request-management/product-request-management/request-draft.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
@@ -15,7 +16,9 @@ import { ApprovalService } from '../../../../service/approval-inbox/approval.ser
   styleUrls: ['./product-request-form.component.scss']
 })
 export class ProductRequestFormComponent implements OnInit, OnDestroy {
-  
+
+  readonly backToListLink = '/admin/sales/commerce/requests/home/' + uuidV4();
+
   requestForm: FormGroup;
   isSubmitting = false;
   productImages: File[] = [];

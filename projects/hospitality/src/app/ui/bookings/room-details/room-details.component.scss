@@ -8,6 +8,16 @@ $bg-light: #f9fafb;
 $border-light: #e5e7eb;
 $radius-lg: 0.5rem;
 
+// Loading State
+.loading-container {
+  background-color: $bg-light;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
 .page-wrapper {
   background-color: $bg-light;
   min-height: 100vh;

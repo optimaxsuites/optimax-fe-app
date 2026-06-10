@@ -1,5 +1,4 @@
 import { Component, HostListener } from '@angular/core';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
@@ -11,7 +10,7 @@ export class NavbarComponent {
   isDarkMode = false;
   currentUserId = '123'; // Replace with actual user ID or get it from your auth service
 
-  constructor(private router: Router) {
+  constructor() {
     // Check for saved theme preference or use system preference
     this.isDarkMode =
       localStorage.getItem('theme') === 'dark' ||

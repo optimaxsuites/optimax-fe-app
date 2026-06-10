@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="form-header">
       <div>
-        <a routerLink="/commerce/requests" class="back-link">
+        <a [routerLink]="backToListLink" class="back-link">
           <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
           </svg>
@@ -14,7 +14,7 @@
         <p class="form-subtitle">Request multiple products in a single order</p>
       </div>
       <div class="mode-toggle">
-        <a routerLink="/commerce/requests/new" class="mode-link">
+        <a [routerLink]="singleRequestLink" class="mode-link">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
           </svg>

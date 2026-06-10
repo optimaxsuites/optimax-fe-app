@@ -1,127 +1,207 @@
 <div class="auth-wrapper">
-  <!-- Left Side: Form -->
-  <div class="auth-left">
-    <div class="auth-header">
-      <div class="logo-container" (click)="goBack()">
-        <img src="assets/logo.png" alt="Optimax Hospitality" class="logo-img" onerror="this.src='https://optimax.com/logo.png'">
-        <span class="logo-text">Optimax<span class="text-emerald-600">Hospitality</span></span>
-      </div>
-    </div>
+  <div class="auth-container">
+    <!-- Logo & Back -->
+    <button class="btn-back" (click)="goBack()">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back</span>
+    </button>
 
-    <div class="auth-content-container scrollable">
-      <div class="auth-content register">
+    <!-- Auth Card -->
+    <div class="auth-card">
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="logo-container">
+          <img src="assets/logo.png" alt="Optimax Hospitality" class="logo-img" onerror="this.src='https://via.placeholder.com/40'">
+        </div>
         <h1 class="auth-title">Create Account</h1>
-        <p class="auth-subtitle">Join our community for a premium hospitality experience.</p>
+        <p class="auth-subtitle">Join our community for premium stays and exclusive benefits</p>
+      </div>
 
-        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
-          
-          <div class="field-container">
-            <label class="field-label">Full Name</label>
-            <div class="input-wrapper" [class.error]="submitted && registerForm.get('fullname')?.errors">
-              <i class="fa-solid fa-user input-icon"></i>
-              <input type="text" formControlName="fullname" placeholder="Amara Okonkwo" class="auth-input">
-            </div>
-            <div *ngIf="submitted && registerForm.get('fullname')?.errors" class="error-msg">
-              <span *ngIf="registerForm.get('fullname')?.hasError('required')">Full name is required</span>
-            </div>
+      <!-- Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <!-- Full Name Field -->
+        <div class="form-group">
+          <label for="fullname" class="form-label">Full Name</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('fullname')?.errors">
+            <i class="fa-solid fa-user input-icon" aria-hidden="true"></i>
+            <input
+              id="fullname"
+              type="text"
+              formControlName="fullname"
+              placeholder="John Doe"
+              class="form-input"
+              aria-label="Full Name"
+              aria-required="true"
+              [attr.aria-describedby]="(submitted && registerForm.get('fullname')?.errors) ? 'fullname-error' : null"
+            >
           </div>
-
-          <div class="field-container">
-            <label class="field-label">Username</label>
-            <div class="input-wrapper" [class.error]="submitted && registerForm.get('username')?.errors">
-              <i class="fa-solid fa-at input-icon"></i>
-              <input type="text" formControlName="username" placeholder="amara_lux" class="auth-input">
-            </div>
-            <div *ngIf="submitted && registerForm.get('username')?.errors" class="error-msg">
-              <span *ngIf="registerForm.get('username')?.hasError('required')">Username is required</span>
-              <span *ngIf="registerForm.get('username')?.hasError('minlength')">Min 3 characters</span>
-            </div>
+          <div *ngIf="submitted && registerForm.get('fullname')?.errors" id="fullname-error" class="field-error" role="alert">
+            Full name is required
           </div>
+        </div>
 
-          <div class="field-container">
-            <label class="field-label">Email Address</label>
-            <div class="input-wrapper" [class.error]="submitted && registerForm.get('email')?.errors">
-              <i class="fa-solid fa-envelope input-icon"></i>
-              <input type="email" formControlName="email" placeholder="amara@email.com" class="auth-input">
-            </div>
+        <!-- Username Field -->
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('username')?.errors">
+            <i class="fa-solid fa-at input-icon"></i>
+            <input
+              type="text"
+              formControlName="username"
+              placeholder="johndoe123"
+              class="form-input"
+            >
           </div>
-
-          <div class="field-container">
-            <label class="field-label">Phone Number</label>
-            <div class="input-wrapper" [class.error]="submitted && registerForm.get('phonenumber')?.errors">
-              <i class="fa-solid fa-phone input-icon"></i>
-              <input type="tel" formControlName="phonenumber" placeholder="+234 810 000 0000" class="auth-input">
-            </div>
+          <div *ngIf="submitted && registerForm.get('username')?.errors" class="field-error">
+            <span *ngIf="registerForm.get('username')?.hasError('required')">Username is required</span>
+            <span *ngIf="registerForm.get('username')?.hasError('minlength')">Min 3 characters</span>
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="field-container half">
-              <label class="field-label">Password</label>
-              <div class="input-wrapper" [class.error]="submitted && registerForm.get('password')?.errors">
-                <input [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" class="auth-input">
-                <button type="button" (click)="togglePassword()" class="password-toggle">
-                    <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
-                </button>
-              </div>
-              <div *ngIf="submitted && registerForm.get('password')?.errors" class="error-msg">
-                <span *ngIf="registerForm.get('password')?.hasError('required')">Password is required</span>
-                <span *ngIf="registerForm.get('password')?.hasError('minlength')">Min 6 characters</span>
-              </div>
-            </div>
-            <div class="field-container half">
-              <label class="field-label">Confirm Password</label>
-              <div class="input-wrapper" [class.error]="submitted && registerForm.get('confirmPassword')?.errors">
-                <input [type]="showPassword ? 'text' : 'password'" formControlName="confirmPassword" placeholder="••••••••" class="auth-input">
-              </div>
-              <div *ngIf="submitted && registerForm.get('confirmPassword')?.errors" class="error-msg">
-                <span *ngIf="registerForm.get('confirmPassword')?.hasError('required')">Confirm password</span>
-                <span *ngIf="registerForm.get('confirmPassword')?.hasError('mustMatch')">Passwords must match</span>
-              </div>
-            </div>
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('email')?.errors">
+            <i class="fa-solid fa-envelope input-icon" aria-hidden="true"></i>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="you@example.com"
+              class="form-input"
+              aria-label="Email Address"
+              aria-required="true"
+              [attr.aria-describedby]="(submitted && registerForm.get('email')?.errors) ? 'email-error' : null"
+            >
           </div>
-
-          <button type="submit" class="auth-btn mt-6" [disabled]="loading">
-            <span *ngIf="!loading">Create Account <i class="fa-solid fa-user-plus ml-2"></i></span>
-            <span *ngIf="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Registering...</span>
-          </button>
-
-          <div *ngIf="error" class="error-alert mt-4">
-            <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ error }}
+          <div *ngIf="submitted && registerForm.get('email')?.errors" id="email-error" class="field-error" role="alert">
+            <span *ngIf="registerForm.get('email')?.hasError('required')">Email is required</span>
+            <span *ngIf="registerForm.get('email')?.hasError('email')">Please enter a valid email</span>
           </div>
-        </form>
+        </div>
 
-        <p class="auth-footer-text">
-          Already have an account? <a [routerLink]="['/e-bookings/auth/login', uuid]" class="signup-link">Sign in</a>
+        <!-- Phone Field -->
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('phonenumber')?.errors">
+            <i class="fa-solid fa-phone input-icon"></i>
+            <input
+              type="tel"
+              formControlName="phonenumber"
+              placeholder="+234 810 000 0000"
+              class="form-input"
+            >
+          </div>
+          <div *ngIf="submitted && registerForm.get('phonenumber')?.errors" class="field-error">
+            Phone number is required
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('password')?.errors">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="form-input"
+            >
+            <button type="button" (click)="togglePassword()" class="btn-toggle-password">
+              <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+            </button>
+          </div>
+          <div *ngIf="submitted && registerForm.get('password')?.errors" class="field-error">
+            <span *ngIf="registerForm.get('password')?.hasError('required')">Password is required</span>
+            <span *ngIf="registerForm.get('password')?.hasError('minlength')">Min 6 characters</span>
+          </div>
+          <div class="password-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Use 6+ characters with mix of letters and numbers</span>
+          </div>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-group" [class.error]="submitted && registerForm.get('confirmPassword')?.errors">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              placeholder="••••••••"
+              class="form-input"
+            >
+          </div>
+          <div *ngIf="submitted && registerForm.get('confirmPassword')?.errors" class="field-error">
+            <span *ngIf="registerForm.get('confirmPassword')?.hasError('required')">Please confirm password</span>
+            <span *ngIf="registerForm.get('confirmPassword')?.hasError('mustMatch')">Passwords must match</span>
+          </div>
+        </div>
+
+        <!-- Terms & Conditions Checkbox -->
+        <div class="terms-checkbox-group" [class.error]="submitted && registerForm.get('agreeTerms')?.errors">
+          <div class="checkbox-wrapper">
+            <input
+              type="checkbox"
+              formControlName="agreeTerms"
+              id="agreeTerms"
+              class="checkbox-input"
+              aria-label="Agree to Terms of Service and Privacy Policy"
+              aria-required="true"
+              [attr.aria-describedby]="(submitted && registerForm.get('agreeTerms')?.errors) ? 'terms-error' : null"
+            >
+            <label for="agreeTerms" class="checkbox-label">
+              I agree to the <a href="#" aria-label="Read Terms of Service">Terms of Service</a> and <a href="#" aria-label="Read Privacy Policy">Privacy Policy</a>
+            </label>
+          </div>
+          <div *ngIf="submitted && registerForm.get('agreeTerms')?.errors" id="terms-error" class="field-error checkbox-error" role="alert">
+            You must agree to the terms to create an account
+          </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div *ngIf="submitted && registerForm.invalid && !registerForm.get('agreeTerms')?.errors" class="alert alert-info" role="alert" aria-live="polite">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          <span>Please fill in all required fields correctly</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn-submit" [disabled]="loading" aria-label="Create your account">
+          <span *ngIf="!loading">
+            <span>Create Account</span>
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+          </span>
+          <span *ngIf="loading" class="loading-state">
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>Creating...</span>
+          </span>
+        </button>
+
+        <!-- Divider -->
+        <div class="divider">
+          <span>Already have an account?</span>
+        </div>
+
+        <!-- Sign In Link -->
+        <a [routerLink]="['/e-bookings/auth/login', uuid]" class="btn-secondary">
+          Sign In Instead
+        </a>
+      </form>
+
+      <!-- Footer -->
+      <div class="auth-footer">
+        <p class="footer-text">
+          By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
         </p>
       </div>
     </div>
 
-    <div class="auth-footer">
-      <div class="system-status">
-        <span class="status-dot"></span>
-        Secure Registration
-      </div>
-      <div class="help-text">By signing up, you agree to our <a href="#">Terms</a>.</div>
-    </div>
-  </div>
-
-  <!-- Right Side: Image/Branding -->
-  <div class="auth-right">
-    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1200" alt="Hospitality Background" class="bg-img">
-    <div class="overlay"></div>
-    
-    <div class="quote-container">
-      <div class="quote-icon-box">
-        <i class="fa-solid fa-shield-halved quote-icon"></i>
-      </div>
-      <h2 class="quote-text">"Your comfort, our priority. Join us for an exclusive stay."</h2>
-      <p class="quote-sub">Premium membership starts here.</p>
-      
-      <div class="pagination">
-        <span class="dot"></span>
-        <span class="dot active"></span>
-        <span class="dot"></span>
-      </div>
+    <!-- Trust Badge -->
+    <div class="trust-badge">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Your information is encrypted and secure</span>
     </div>
   </div>
 </div>
