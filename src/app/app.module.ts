@@ -255,6 +255,7 @@ import { TourGuideComponent } from './ui/onboarding/tour-guide';
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { EstimatedDeliveryPipe } from 'projects/settings/src/app/ui/view/pos/delvery/estimated-delivery.pipe';
 import { ModuleComponent } from './ui/marketplace/view/module/module.component';
+import { DeployErpComponent } from './ui/marketplace/view/deploy-erp/deploy-erp.component';
 import { TenantInit } from './ui/tenants/service/tenant-init.service';
 import { MenuModule } from 'primeng/menu';
 
@@ -493,6 +494,7 @@ const dbConfig: DBConfig = {
     TourGuideComponent,
     TenantsComponent,
     ModuleComponent,
+    DeployErpComponent,
     InterviewInviteComponent
     //  EstimatedDeliveryPipe
 

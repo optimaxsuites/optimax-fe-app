@@ -39,6 +39,7 @@ export class MarketplaceComponent {
   showAdminUI: boolean = false
   searchTerm: string = ''
   activeFilter: 'all' | 'installed' | 'available' | 'coming-soon' = 'all'
+  showDeployDialog: boolean = false
 
   get filteredModules(): any[] {
     const q = this.searchTerm.toLowerCase();
