@@ -267,13 +267,13 @@ private createApprovalRequest(requestId: string, requestData: any): void {
     next: (approvalResponse) => {
       this.isSubmitting = false;
       alert('Request submitted for approval! You will be notified once approved.');
-      this.router.navigate(['/commerce/requests']);
+      this.router.navigate(['/admin/sales/commerce/requests']);
     },
     error: (error) => {
       console.error('Error creating approval request:', error);
       this.isSubmitting = false;
       alert('Request created but approval setup failed. Please contact support.');
-      this.router.navigate(['/commerce/requests']);
+      this.router.navigate(['/admin/sales/commerce/requests']);
     }
   });
 }
@@ -341,7 +341,7 @@ private showAutoSaveNotification(): void {
   private uploadFiles(requestId: string): void {
     // Implement file upload logic
     // After upload complete, navigate to list so the new row is visible immediately.
-    this.router.navigate(['/commerce/requests']);
+    this.router.navigate(['/admin/sales/commerce/requests']);
   }
 
  saveAsDraft(): void {
@@ -350,7 +350,7 @@ private showAutoSaveNotification(): void {
     .subscribe({
       next: (draft) => {
         alert('Draft saved successfully! You can continue later from your drafts page.');
-        this.router.navigate(['/commerce/requests/drafts']);
+        this.router.navigate(['/admin/sales/commerce/requests/drafts']);
       },
       error: (error) => {
         console.error('Error saving draft:', error);

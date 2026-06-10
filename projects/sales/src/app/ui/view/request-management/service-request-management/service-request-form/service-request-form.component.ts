@@ -152,7 +152,7 @@ export class ServiceRequestFormComponent implements OnInit, OnDestroy {
           console.error('Error loading service request:', error);
           this.isLoading = false;
           alert('Failed to load service request. Please try again.');
-          this.router.navigate(['/commerce/service-requests']);
+          this.router.navigate(['/admin/sales/commerce/service-requests']);
         }
       });
   }
@@ -450,9 +450,9 @@ export class ServiceRequestFormComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Service request updated successfully!' : 'Service request created successfully!');
         if (this.isEditMode) {
-          this.router.navigate(['/commerce/service-requests', response.id]);
+          this.router.navigate(['/admin/sales/commerce/service-requests', response.id]);
         } else {
-          this.router.navigate(['/commerce/service-requests']);
+          this.router.navigate(['/admin/sales/commerce/service-requests']);
         }
       },
       error: (error) => {
@@ -464,7 +464,7 @@ export class ServiceRequestFormComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
-    this.router.navigate(['/commerce/service-requests']);
+    this.router.navigate(['/admin/sales/commerce/service-requests']);
   }
 
   // Helper methods

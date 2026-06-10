@@ -365,7 +365,7 @@ export class ServiceRequestDetailComponent implements OnInit, OnDestroy {
 }
 
   editRequest(): void {
-    this.router.navigate(['/commerce/service-requests', this.serviceRequest?.id, 'edit']);
+    this.router.navigate(['/admin/sales/commerce/service-requests', this.serviceRequest?.id, 'edit']);
   }
 
   selectVendor(quotation: any): void {

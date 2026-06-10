@@ -280,7 +280,7 @@ export class ProductRequestListComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        filter(e => e.urlAfterRedirects === '/commerce/requests'),
+        filter(e => e.urlAfterRedirects === '/admin/sales/commerce/requests'),
         takeUntil(this.destroy$)
       )
       .subscribe(() => this.loadRequests());
@@ -518,15 +518,15 @@ getDeliveredCount(): number {
     }
     if (event.actionId === 'view') {
       if (event.row._rowType === 'ORDER') {
-        this.router.navigate(['/commerce/orders', event.row.id]);
+        this.router.navigate(['/admin/sales/commerce/orders', event.row.id]);
       } else {
-        this.router.navigate(['/commerce/requests', event.row.id]);
+        this.router.navigate(['/admin/sales/commerce/requests', event.row.id]);
       }
       return;
     }
     if (event.row._rowType === 'ORDER') return;
     if (event.actionId === 'edit') {
-      this.router.navigate(['/commerce/requests', event.row.id, 'edit']);
+      this.router.navigate(['/admin/sales/commerce/requests', event.row.id, 'edit']);
       return;
     }
     if (event.actionId === 'cancel') {
@@ -535,7 +535,7 @@ getDeliveredCount(): number {
   }
 
   openViewModal(request: ProcurementRequest): void {
-    this.router.navigate(['/commerce/requests', request.id]);
+    this.router.navigate(['/admin/sales/commerce/requests', request.id]);
   }
 
   exportRowAs(format: 'PDF' | 'EXCEL' | 'CSV'): void {

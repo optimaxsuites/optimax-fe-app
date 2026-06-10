@@ -82,7 +82,7 @@ export class RequestEditFormComponent implements OnInit, OnDestroy {
           console.error('Error loading request:', error);
           this.isLoading = false;
           alert('Failed to load request. Please try again.');
-          this.router.navigate(['/commerce/requests']);
+          this.router.navigate(['/admin/sales/commerce/requests']);
         }
       });
   }
@@ -273,7 +273,7 @@ export class RequestEditFormComponent implements OnInit, OnDestroy {
           } else {
             this.isSubmitting = false;
             alert('Request updated successfully!');
-            this.router.navigate(['/commerce/requests', this.requestId]);
+            this.router.navigate(['/admin/sales/commerce/requests', this.requestId]);
           }
         },
         error: (error) => {
@@ -304,11 +304,11 @@ export class RequestEditFormComponent implements OnInit, OnDestroy {
         }
         this.isSubmitting = false;
         alert('Request updated successfully with new attachments!');
-        this.router.navigate(['/commerce/requests', requestId]);
+        this.router.navigate(['/admin/sales/commerce/requests', requestId]);
       },
       error: () => {
         this.isSubmitting = false;
-        this.router.navigate(['/commerce/requests', requestId]);
+        this.router.navigate(['/admin/sales/commerce/requests', requestId]);
       }
     });
   }
@@ -316,10 +316,10 @@ export class RequestEditFormComponent implements OnInit, OnDestroy {
   cancelEdit(): void {
     if (this.hasChanges()) {
       if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
-        this.router.navigate(['/commerce/requests', this.requestId]);
+        this.router.navigate(['/admin/sales/commerce/requests', this.requestId]);
       }
     } else {
-      this.router.navigate(['/commerce/requests', this.requestId]);
+      this.router.navigate(['/admin/sales/commerce/requests', this.requestId]);
     }
   }
 
