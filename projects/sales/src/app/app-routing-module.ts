@@ -16,11 +16,11 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
 const routes: Routes = [
   // Procurement requests — specific segments before dynamic ones
   {
-    path: 'commerce/requests/new',
+    path: 'commerce/requests/new/:uuid',
     component: ProductRequestFormComponent,
   },
   {
-    path: 'commerce/requests/drafts',
+    path: 'commerce/requests/drafts/:uuid',
     component: RequestDraftsComponent,
   },
   {
@@ -47,11 +47,7 @@ const routes: Routes = [
     component: VendorPortalComponent,
   },
 
-  // Multi-item orders — with UUID for sidebar entry, without for internal nav
-  {
-    path: 'commerce/orders/new',
-    component: MultiItemRequestFormComponent,
-  },
+  // Multi-item orders
   {
     path: 'commerce/orders/new/:uuid',
     component: MultiItemRequestFormComponent,
