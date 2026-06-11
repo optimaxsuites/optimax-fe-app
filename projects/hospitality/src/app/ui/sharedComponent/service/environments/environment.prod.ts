@@ -5,8 +5,6 @@ export const environment = {
   env:"production",
 
   project: 'ERP',
-  apiKey: '',
-  clientId: 'optimax-hospitality-web',
-  appVersion: '2026.05.30',
+  apiKey: 'ApiKey 3196c9c0ab4f6b69ab91e276edd06071',
   tenantId: 'optimax'
 };

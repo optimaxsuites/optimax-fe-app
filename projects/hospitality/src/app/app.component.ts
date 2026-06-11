@@ -37,13 +37,13 @@ export class AppComponent implements OnInit {
       username: 'developer',
       password: '123456',
       project: 'ERP',
-      clientId: environment.clientId,
-      appVersion: environment.appVersion,
+      apiKey: environment.apiKey,
     };
 
     try {
       this.authenticationService.userLogin(loginDetails).subscribe({
         next: (data) => {
+          console.log('Login success:', data);
           if (data) {
             this.loadInitParam(data);
             this.loginComplete = true;
@@ -72,7 +72,8 @@ export class AppComponent implements OnInit {
   }
 
   loadInitParam(data: any) {
-    if (!data) {
+    if (!data || !data.accessToken) {
+      console.error('No accessToken in response:', data);
       return;
     }
 
@@ -82,7 +83,35 @@ export class AppComponent implements OnInit {
     if (data.email) sessionStorage.setItem('email', data.email);
     if (data.id) sessionStorage.setItem('userid', data.id);
 
-    const safeUserData = { ...data, accessToken: undefined, token: undefined };
-    sessionStorage['userRegData'] = JSON.stringify(safeUserData);
+    // Handle both cookie format and direct token format
+    let token = data.accessToken;
+    
+    try {
+        // If it's a cookie string (contains '='), extract the token part
+        if (token.includes('=') && token.includes(';')) {
+            const tokenStartIndex = token.indexOf('=') + 1;
+            token = token.substring(
+                tokenStartIndex,
+                token.indexOf(';') !== -1 ? token.indexOf(';') : token.length
+            );
+        } else if (token.includes('=')) {
+            // Format: optimaxcookie=token; Path=/api; ...
+            const tokenStartIndex = token.indexOf('=') + 1;
+            token = token.substring(tokenStartIndex).split(';')[0].trim();
+        }
+        
+        console.log('Token extracted:', token.substring(0, 20) + '...');
+        sessionStorage.setItem('Token', token);
+        localStorage.setItem('Token2', token);
+        sessionStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('accessToken2', data.accessToken);
+    } catch (e) {
+        console.error('Token extraction error:', e);
+        // Fallback: use the entire accessToken
+        sessionStorage.setItem('Token', data.accessToken);
+        localStorage.setItem('Token2', data.accessToken);
+    }
+
+    sessionStorage['userRegData'] = JSON.stringify(data);
   }
 }

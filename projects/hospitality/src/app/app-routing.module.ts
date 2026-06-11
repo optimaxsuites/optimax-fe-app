@@ -22,11 +22,19 @@ import { ServicesListComponent } from './ui/view/room-management/services/servic
 import { BookingsShellComponent } from './ui/bookings/bookings-shell/bookings-shell.component';
 
 const routes: Routes = [
-  // { path: '', redirectTo: 'hospitality', pathMatch: 'full' },
-  
-  // Outer path for hospitality that carries the uuid
-      { path: '', redirectTo: 'bookings', pathMatch: 'full' },
-      
+  { path: '', redirectTo: 'user/landing', pathMatch: 'full' },
+  { path: 'user', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
+  { path: 'error', component: ErrorPageComponent },
+  { path: '404', component: ErrorPageComponent },
+  { path: '401', component: ErrorPageComponent },
+  { path: '403', component: ErrorPageComponent },
+  { path: '500', component: ErrorPageComponent },
+  {
+    path: 'hospitality',
+    component: HospitalityShellComponent,
+    children: [
+      { path: '', redirectTo: 'bookings/default', pathMatch: 'full' },
+
       // List pages
       { path: 'room-types/:uuid',       component: RoomTypesListComponent },
       { path: 'rooms/:uuid',            component: RoomsListComponent },
@@ -40,14 +48,11 @@ const routes: Routes = [
       { path: 'guests/:uuid/:id',  component: GuestProfileComponent },
       { path: 'guests/:uuid',      component: GuestsListComponent },
 
-      // Bookings 
-      // { path: 'bookings/create/:uuid',      component: BookingCreateComponent },
-      // { path: 'bookings/room-select/:uuid', component: BookingRoomFirstComponent },
-      // { path: 'bookings/:id/:uuid',         component: BookingDetailComponent },
-      // { path: 'bookings/:uuid',             component: BookingsListComponent },
-      
       // Admin Table (Room view)
       { path: 'room-view/:uuid', component: HotelAdmintableComponent },
+    ]
+  },
+  { path: '**', component: ErrorPageComponent }
 ];
 
 @NgModule({

@@ -33,6 +33,8 @@ const routes: Routes = [
     path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
+
+  // everything anything
   {
     path: '',
     component: BookingsShellComponent,
@@ -48,8 +50,9 @@ const routes: Routes = [
       { path: 'e-bookings/confirmation/:uuid', component: EBookingConfirmationComponent },
       { path: 'e-bookings/auth/login/:uuid', component: EBookingLoginComponent },
       { path: 'e-bookings/auth/register/:uuid', component: EBookingRegisterComponent },
-      ]
-    },
+    ]
+
+  },
 
   { path: 'bookings/create/:uuid',       component: BookingCreateComponent },
   { path: 'bookings/room-select/:uuid',  component: BookingRoomFirstComponent },
@@ -62,6 +65,7 @@ const routes: Routes = [
   imports: [
     CommonModule, 
     RouterModule.forChild(routes),
+    BookingsShellComponent // Standalone component used in routes
   ],
   exports: [RouterModule],
 })
