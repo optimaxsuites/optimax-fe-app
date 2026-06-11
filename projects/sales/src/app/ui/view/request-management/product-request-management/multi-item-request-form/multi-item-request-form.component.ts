@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { v4 as uuidV4 } from 'uuid';
 import { ProcurementRequestService } from '../../../../service/procurement-request-management/product-request-management/procurement-request.service';
 import { VendorService } from '../../../../service/vendor-portal/vendor.service';
 import { ApprovalService } from '../../../../service/approval-inbox/approval.service'
@@ -31,7 +32,10 @@ interface CartItem {
   styleUrls: ['./multi-item-request-form.component.scss']
 })
 export class MultiItemRequestFormComponent implements OnInit, OnDestroy {
-  
+
+  readonly singleRequestLink = '/admin/sales/commerce/requests/new/' + uuidV4();
+  readonly backToListLink = '/admin/sales/commerce/requests/home/' + uuidV4();
+
   mainForm: FormGroup;
   isSubmitting = false;
   currentStep = 1;

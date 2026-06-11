@@ -118,14 +118,14 @@ export class MenuItemsService {
           icon: 'pi pi-file',
           description: 'View and manage vendor purchase requests.'
         },*/
-         {
-          label: 'Reports',
-          code: 'COM_REPORT',
-          route: this.navigationLink.getLink('VPLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'fa fa-envelope',
-          description: 'View and manage vendor quotations.'
-        },
+        //  {
+        //   label: 'Reports',
+        //   code: 'COM_REPORT',
+        //   route: this.navigationLink.getLink('VPLink'), 
+        //   roles: ['ROLE_USER'],
+        //   icon: 'fa fa-envelope',
+        //   description: 'View and manage vendor quotations.'
+        // },
         {
           label: 'Reports & Analytics',
           code: 'REPORT_ANALYSIS',

@@ -2109,6 +2109,11 @@ export class CommunicationComponent
       if (!employee) return;
       const key = Number(employee.user?.userId || employee.user?.id || employee.id || 0);
       if (!key || merged.has(key)) return;
+      // Exclude suspended/closed/deactivated accounts from mention suggestions
+      const state = this.normalizeIdentityText(
+        employee.accountState || employee.user?.accountState || '',
+      );
+      if (state === 'suspended' || state === 'closed') return;
       merged.set(key, employee);
     };
     this.allEmployees.forEach(collect);
@@ -6903,13 +6908,7 @@ export class CommunicationComponent
         return;
       }
 
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.0001, ctx.currentTime);
       const peakGain = urgent ? 0.42 : 0.24;
-      const decayAt = urgent ? 1.05 : 0.68;
-      master.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + 0.02);
-      master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + decayAt);
-      master.connect(ctx.destination);
       const tones =
         urgent
           ? [
@@ -6937,13 +6936,26 @@ export class CommunicationComponent
                   { type: 'triangle' as OscillatorType, frequency: 740, start: 0, stop: 0.28 },
                   { type: 'sine' as OscillatorType, frequency: 988, start: 0.03, stop: 0.22 },
                 ];
-      tones.forEach((tone, index) => {
-        const oscillator = ctx.createOscillator();
-        oscillator.type = tone.type;
-        oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + tone.start);
-        oscillator.connect(master);
-        oscillator.start(ctx.currentTime + tone.start);
-        oscillator.stop(ctx.currentTime + tone.stop);
+
+      // Find the natural duration of one ring (max stop time of all tones)
+      const oneDuration = tones.reduce((max, t) => Math.max(max, t.stop), 0);
+      const ringGap = 0.12;
+      const ringOffsets = urgent ? [0] : [0, oneDuration + ringGap, (oneDuration + ringGap) * 2];
+
+      ringOffsets.forEach((ringOffset) => {
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.0001, ctx.currentTime + ringOffset);
+        master.gain.exponentialRampToValueAtTime(peakGain, ctx.currentTime + ringOffset + 0.02);
+        master.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ringOffset + oneDuration);
+        master.connect(ctx.destination);
+        tones.forEach((tone) => {
+          const oscillator = ctx.createOscillator();
+          oscillator.type = tone.type;
+          oscillator.frequency.setValueAtTime(tone.frequency, ctx.currentTime + ringOffset + tone.start);
+          oscillator.connect(master);
+          oscillator.start(ctx.currentTime + ringOffset + tone.start);
+          oscillator.stop(ctx.currentTime + ringOffset + tone.stop);
+        });
       });
       this.triggerMobileHaptics(urgent);
     } catch (_) {}
