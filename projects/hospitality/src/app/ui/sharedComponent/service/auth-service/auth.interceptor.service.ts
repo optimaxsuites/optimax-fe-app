@@ -17,6 +17,14 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
+        const accessToken = 
+            sessionStorage.getItem("Token") || 
+            sessionStorage.getItem("accessToken") ||
+            sessionStorage.getItem("token") ||
+            localStorage.getItem("Token2") ||
+            localStorage.getItem("accessToken2") ||
+            localStorage.getItem("token");
+
         // Determine tenant ID from URL path or hostname
         const url = window.location.pathname;
         const host = window.location.hostname;
@@ -58,11 +66,26 @@ export class AuthInterceptor implements HttpInterceptor {
 
         // Always add X-Tenant-ID header (including for login requests)
         let updatedRequest = request.clone({
-            withCredentials: true,
             setHeaders: {
                 'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
             },
         });
+
+        // Add Bearer token if available
+        if (accessToken) {
+            updatedRequest = updatedRequest.clone({
+                setHeaders: {
+                    ...updatedRequest.headers.keys().reduce((acc, key) => {
+                        acc[key] = updatedRequest.headers.get(key)!;
+                        return acc;
+                    }, {} as Record<string, string>),
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            });
+        }
+
+        // console.log(`Interceptor: ${request.url} - X-Tenant-ID: ${updatedRequest.headers.get('X-Tenant-ID')}`);
+        // if (accessToken) console.log(`Interceptor: Authorization header added for ${request.url}`);
 
         return next.handle(updatedRequest);
     }

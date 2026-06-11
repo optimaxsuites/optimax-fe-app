@@ -1,5 +1,6 @@
 $skeleton-color: #e0e0e0;
 $skeleton-highlight: #f0f0f0;
+$primary-color: #22c55e;
 
 @keyframes shimmer {
   0% {
@@ -7,6 +8,16 @@ $skeleton-highlight: #f0f0f0;
   }
   100% {
     background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-skeleton {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
   }
 }
 
@@ -34,6 +45,12 @@ $skeleton-highlight: #f0f0f0;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.3s ease-in;
+  border: 1px solid rgba($primary-color, 0.1);
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .skeleton-image {
@@ -93,6 +110,13 @@ $skeleton-highlight: #f0f0f0;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.3s ease-in;
+  border: 1px solid rgba($primary-color, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
 }
 
 .skeleton-image-large {
