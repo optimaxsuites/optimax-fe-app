@@ -1067,10 +1067,14 @@ export class MenuItemsService {
 
   return this.getUnlockedModulesObservable().pipe(
     map(modules => {
-      const allowedCodes = this.getUserPermissions();
+      const allowed = this.getUserPermissions();
 
       const filterSubmenu = (submenu: any[]) => {
-        return submenu.filter(item => item.doNotRegisterAsPermission || allowedCodes.includes(item.code));
+        return submenu.filter(item =>
+          item.doNotRegisterAsPermission ||
+          allowed.codes.includes(item.code) ||
+          allowed.labels.some(l => l.toLowerCase() === item.label?.toLowerCase())
+        );
       };
 
       const filteredMenus = modules
@@ -1078,8 +1082,6 @@ export class MenuItemsService {
           if (menu.code === 'dashboard') {
             return menu;
           }
-
-        
 
           if (menu.submenu) {
             const filteredSubmenu = filterSubmenu(menu.submenu);
@@ -1090,7 +1092,7 @@ export class MenuItemsService {
             }
           }
 
-          return menu.doNotRegisterAsPermission || allowedCodes.includes(menu.code ?? "") ? menu : null;
+          return menu.doNotRegisterAsPermission || allowed.codes.includes(menu.code ?? "") ? menu : null;
         })
         .filter(Boolean) as MenuItem[];
 
@@ -1099,15 +1101,17 @@ export class MenuItemsService {
   );
 }
 
-
-
-  getUserPermissions(): string[] {
+  getUserPermissions(): { codes: string[], labels: string[] } {
   const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
-  if (!user?.appRole?.appRolePermissionList) return [];
+  if (!user?.appRole?.appRolePermissionList) return { codes: [], labels: [] };
 
-  return user.appRole.appRolePermissionList
-    .filter((perm: any) => perm.canView || perm.superuser)
-    .map((perm: any) => perm.appRegister.appCode);  
+  const perms = user.appRole.appRolePermissionList
+    .filter((perm: any) => perm.canView || perm.superuser);
+
+  return {
+    codes:  perms.map((p: any) => p.appRegister?.appCode).filter(Boolean),
+    labels: perms.map((p: any) => p.appRegister?.appName).filter(Boolean),
+  };
 }
 
 isSuperUser(): boolean {
