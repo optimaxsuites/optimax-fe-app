@@ -1,0 +1,54 @@
+<div class="employee-change-requests-card">
+  <div class="card-header">
+    <p class="card-title">Profile Changes</p>
+    <span class="card-caption" *ngIf="!loading">{{ employeeRequests.length }} request(s)</span>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading requests...</p>
+  </div>
+
+  <div *ngIf="!loading && employeeRequests.length === 0" class="empty-state">
+    <i class="fas fa-inbox"></i>
+    <p>No profile change requests yet</p>
+  </div>
+
+  <div *ngIf="!loading && employeeRequests.length > 0" class="requests-summary">
+    <div class="stat-stack">
+      <div class="stat-card">
+        <span class="stat-label">Pending</span>
+        <span class="stat-value stat-pending">{{ pendingCount }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Approved</span>
+        <span class="stat-value stat-approved">{{ approvedCount }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Rejected</span>
+        <span class="stat-value stat-rejected">{{ rejectedCount }}</span>
+      </div>
+    </div>
+
+    <div class="requests-list">
+      <div class="request-item" *ngFor="let request of employeeRequests | slice:0:3" [ngClass]="'request-' + request.status">
+        <div class="request-header">
+          <span class="field-badge">{{ getFieldTypeLabel(request.fieldChangeType) }}</span>
+          <span [ngClass]="['status-badge', getStatusClass(request.status)]">
+            {{ getStatusLabel(request.status) }}
+          </span>
+        </div>
+        <p class="request-reason" *ngIf="request.reason">{{ request.reason }}</p>
+        <p class="request-date" *ngIf="request.submittedDate">
+          Submitted {{ request.submittedDate | date:'short' }}
+        </p>
+      </div>
+
+      <div *ngIf="employeeRequests.length > 3" class="view-more">
+        <a href="/admin/hr/profile-change-requests/224d408c-01e4-464e-83b6-1bef1a459c1e" class="view-more-link">
+          View all {{ employeeRequests.length }} requests →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,1125 @@
+<div
+  class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50"
+>
+  <div class="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-10">
+    <!-- Hero -->
+    <div
+      class="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl"
+    >
+      <div class="grid grid-cols-1 lg:grid-cols-3">
+        <div class="lg:col-span-2 p-6 md:p-8">
+          <div
+            class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+          >
+            <i class="pi pi-shield"></i>
+            Secure Vendor Onboarding
+          </div>
+
+          <h1
+            class="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl"
+          >
+            {{ tenantName }}
+          </h1>
+
+          <p
+            class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base"
+          >
+            Complete your onboarding to become an approved supplier. Provide
+            your company information, contacts, banking details, and compliance
+            documents so our procurement team can verify and approve your
+            profile.
+          </p>
+
+          <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div class="text-xs font-medium text-slate-500">Process</div>
+              <div class="text-sm font-semibold text-slate-900">
+                6-step registration
+              </div>
+            </div>
+            <div
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div class="text-xs font-medium text-slate-500">Review</div>
+              <div class="text-sm font-semibold text-slate-900">
+                Procurement validation
+              </div>
+            </div>
+            <div
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div class="text-xs font-medium text-slate-500">Outcome</div>
+              <div class="text-sm font-semibold text-slate-900">
+                Approved vendor profile
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="hidden lg:flex items-center justify-center bg-gradient-to-br from-emerald-600 to-teal-700 p-8 text-white"
+        >
+          <div class="max-w-xs text-center">
+            <div
+              class="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10"
+            >
+              <i class="pi pi-building text-3xl"></i>
+            </div>
+            <div class="mt-4 text-xl font-semibold">
+              Supplier Registration Portal
+            </div>
+            <p class="mt-2 text-sm leading-6 text-emerald-50">
+              Accurate submissions and complete documents help reduce review
+              time and speed up approval.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submitted state -->
+    <div
+      *ngIf="submitted"
+      class="rounded-3xl border border-green-200 bg-white p-6 shadow-lg"
+    >
+      <div class="flex items-start gap-4">
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100 text-green-600"
+        >
+          <i class="pi pi-check-circle text-xl"></i>
+        </div>
+        <div>
+          <div class="text-lg font-semibold text-slate-900">
+            Registration submitted successfully
+          </div>
+          <div class="mt-1 text-sm leading-6 text-slate-600">
+            Your profile and documents have been received. Your registration is
+            now under review by procurement. You may be contacted if additional
+            details or supporting documents are required.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div *ngIf="!submitted" class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <!-- Stepper -->
+      <div class="lg:col-span-4 xl:col-span-3">
+        <div
+          class="sticky top-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-semibold text-slate-900">
+                Onboarding Progress
+              </div>
+              <div class="text-xs text-slate-500">Step {{ step }} of 6</div>
+            </div>
+            <div
+              class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
+            >
+              {{ (step / 6) * 100 | number: "1.0-0" }}%
+            </div>
+          </div>
+
+          <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-300"
+              [style.width.%]="(step / 6) * 100"
+            ></div>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div
+              (click)="goTo(1)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 1
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 1
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  1
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Company Profile</div>
+                  <div class="text-xs opacity-80">Who you are</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              (click)="goTo(2)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 2
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 2
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  2
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Contacts</div>
+                  <div class="text-xs opacity-80">Who we talk to</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              (click)="goTo(3)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 3
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 3
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  3
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Services & Categories</div>
+                  <div class="text-xs opacity-80">What you provide</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              (click)="goTo(4)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 4
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 4
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  4
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Bank Details</div>
+                  <div class="text-xs opacity-80">Payment information</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              (click)="goTo(5)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 5
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 5
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  5
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Compliance Documents</div>
+                  <div class="text-xs opacity-80">Proof & verification</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              (click)="goTo(6)"
+              class="cursor-pointer rounded-2xl border p-4 transition-all"
+              [ngClass]="
+                step === 6
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50'
+              "
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
+                  [ngClass]="
+                    step === 6
+                      ? 'bg-white/15 text-white'
+                      : 'bg-slate-100 text-slate-700'
+                  "
+                >
+                  6
+                </div>
+                <div>
+                  <div class="text-sm font-semibold">Review & Submit</div>
+                  <div class="text-xs opacity-80">Confirm details</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div class="text-sm font-semibold text-amber-900">Tip</div>
+            <div class="mt-1 text-xs leading-5 text-amber-800">
+              Uploading complete and valid documents helps reduce review delays
+              and avoids back-and-forth with procurement.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="lg:col-span-8 xl:col-span-9">
+        <!-- STEP 1 -->
+        <div
+          *ngIf="step === 1"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Company Profile
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Establish your company identity for supplier records and
+                  compliance checks.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 1 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 md:p-8">
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-slate-700">
+                  Legal Name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.legalName"
+                  placeholder="Enter registered legal name"
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Trading Name</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.tradingName"
+                  placeholder="Enter trading name if different"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">
+                  Business Type <span class="text-red-500">*</span>
+                </label>
+                <p-dropdown
+                  [options]="businessTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="model.companyProfile.businessType"
+                  placeholder="Select business type"
+                  class="w-full"
+                ></p-dropdown>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Company Email</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.companyEmail"
+                  placeholder="info@company.com"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Company Phone</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.companyPhone"
+                  placeholder="+234..."
+                />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="mb-2 block text-sm font-medium text-slate-700">
+                  Address <span class="text-red-500">*</span>
+                </label>
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.address"
+                  placeholder="Street, city, landmarks"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >City</label
+                >
+                <input pInputText [(ngModel)]="model.companyProfile.city" />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">
+                  State <span class="text-red-500">*</span>
+                </label>
+                <input pInputText [(ngModel)]="model.companyProfile.state" />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700">
+                  Country <span class="text-red-500">*</span>
+                </label>
+                <input pInputText [(ngModel)]="model.companyProfile.country" />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Postal Code</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.postalCode"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Website</label
+                >
+                <input
+                  pInputText
+                  [(ngModel)]="model.companyProfile.website"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Year Established</label
+                >
+                <input
+                  pInputText
+                  type="number"
+                  [(ngModel)]="model.companyProfile.yearEstablished"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-medium text-slate-700"
+                  >Employee Count</label
+                >
+                <input
+                  pInputText
+                  type="number"
+                  [(ngModel)]="model.companyProfile.employeeCount"
+                />
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+              <button
+                pButton
+                type="button"
+                label="Continue"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!canProceed()"
+                (click)="next()"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div
+          *ngIf="step === 2"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Vendor Contacts
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Add the main contacts responsible for onboarding and
+                  communication.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 2 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 md:p-8">
+            <div class="space-y-4">
+              <div
+                *ngFor="let contact of model.contacts; let i = index"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+              >
+                <div class="mb-4 flex items-center justify-between">
+                  <div class="text-sm font-semibold text-slate-900">
+                    Contact {{ i + 1 }}
+                  </div>
+                  <button
+                    *ngIf="model.contacts.length > 1"
+                    pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeContact(i)"
+                  ></button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >First Name <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="contact.firstName" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Last Name <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="contact.lastName" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Email <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="contact.email" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Phone Number <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="contact.phoneNumber" />
+                  </div>
+
+                  <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Role <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="contact.role" />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Add Contact"
+                class="p-button-outlined p-button-rounded"
+                (click)="addContact()"
+              ></button>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+              <button
+                pButton
+                type="button"
+                label="Back"
+                icon="pi pi-arrow-left"
+                class="p-button-text"
+                (click)="back()"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Continue"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!canProceed()"
+                (click)="next()"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div
+          *ngIf="step === 3"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Services & Categories
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Help procurement understand what you supply and where you fit.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 3 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-5 p-6 md:p-8">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700"
+                >Vendor Categories <span class="text-red-500">*</span></label
+              >
+              <p-multiSelect
+                [options]="categories"
+                [(ngModel)]="model.category"
+                optionLabel="name"
+                display="chip"
+                placeholder="Select categories"
+              ></p-multiSelect>
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-700"
+                >Capability Statement <span class="text-red-500">*</span></label
+              >
+              <textarea
+                pInputTextarea
+                rows="7"
+                class="w-full rounded-md border border-slate-300 px-4 py-3 text-sm shadow-sm outline-none"
+                [(ngModel)]="model.capabilityStatement"
+                placeholder="Describe your services, operational capacity, locations served, turnaround time, certifications, and delivery strengths."
+              ></textarea>
+              <p class="mt-2 text-xs text-slate-500">
+                Keep it clear and practical. Focus on what you do, where you
+                operate, and what makes you reliable.
+              </p>
+            </div>
+
+            <div
+              class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+            >
+              <div class="font-semibold text-slate-900">Why we ask this</div>
+              <div class="mt-1">
+                Procurement uses this information to shortlist vendors for
+                requests and ensure the right suppliers are invited for relevant
+                opportunities.
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+              <button
+                pButton
+                type="button"
+                label="Back"
+                icon="pi pi-arrow-left"
+                class="p-button-text"
+                (click)="back()"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Continue"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!canProceed()"
+                (click)="next()"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div
+          *ngIf="step === 4"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Bank Details
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Provide your payment information for remittance and vendor
+                  settlement.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 4 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 md:p-8">
+            <div class="space-y-4">
+              <div
+                *ngFor="let bank of model.bankDetails; let i = index"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+              >
+                <div class="mb-4 flex items-center justify-between">
+                  <div class="text-sm font-semibold text-slate-900">
+                    Bank Detail {{ i + 1 }}
+                  </div>
+                  <button
+                    *ngIf="model.bankDetails.length > 1"
+                    pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeBankDetail(bank.id)"
+                  ></button>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Bank Name <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="bank.bankName" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Currency <span class="text-red-500">*</span></label
+                    >
+                    <p-dropdown
+                      [options]="currencies"
+                      optionLabel="label"
+                      optionValue="value"
+                      [(ngModel)]="bank.currency"
+                      placeholder="Select currency"
+                      class="w-full"
+                    ></p-dropdown>
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Account Name <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="bank.accountName" />
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-slate-700"
+                      >Account Number <span class="text-red-500">*</span></label
+                    >
+                    <input pInputText [(ngModel)]="bank.accountNumber" />
+                    <p class="mt-2 text-xs text-slate-500">
+                      Ensure this matches your official bank records.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Add Bank Detail"
+                class="p-button-outlined p-button-rounded"
+                (click)="addBankDetail()"
+              ></button>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+              <button
+                pButton
+                type="button"
+                label="Back"
+                icon="pi pi-arrow-left"
+                class="p-button-text"
+                (click)="back()"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Continue"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!canProceed()"
+                (click)="next()"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div
+          *ngIf="step === 5"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Compliance Documents
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Upload all required documents to support verification and
+                  approval.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 5 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4 p-6 md:p-8">
+            <div
+              *ngFor="let u of uploads"
+              class="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <div class="text-sm font-semibold text-slate-900">
+                    {{ u.label }}
+                    <span *ngIf="u.required" class="text-red-500">*</span>
+                  </div>
+                  <div class="mt-1 text-xs text-slate-500">{{ u.hint }}</div>
+                </div>
+
+                <div
+                  *ngIf="u.file"
+                  class="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
+                >
+                  Uploaded
+                </div>
+              </div>
+
+              <div class="mt-4 flex flex-wrap items-center gap-3">
+                <p-fileUpload
+                  mode="basic"
+                  name="file"
+                  chooseLabel="Choose File"
+                  [customUpload]="true"
+                  [auto]="false"
+                  (onSelect)="onPickFile(u, $event)"
+                ></p-fileUpload>
+
+                <div *ngIf="u.file" class="text-xs text-slate-600">
+                  {{ u.file.name }}
+                </div>
+
+                <button
+                  *ngIf="u.file"
+                  pButton
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-danger p-button-sm"
+                  (click)="removeFile(u)"
+                ></button>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+              <button
+                pButton
+                type="button"
+                label="Back"
+                icon="pi pi-arrow-left"
+                class="p-button-text"
+                (click)="back()"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Continue"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!canProceed()"
+                (click)="next()"
+              ></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6 -->
+        <div
+          *ngIf="step === 6"
+          class="rounded-3xl border border-slate-200 bg-white shadow-xl"
+        >
+          <div class="border-b border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xl font-semibold text-slate-900">
+                  Review & Submit
+                </div>
+                <div class="mt-1 text-sm text-slate-600">
+                  Review the information you have provided before final
+                  submission.
+                </div>
+              </div>
+              <div
+                class="rounded-full bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700"
+              >
+                Step 6 of 6
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 md:p-8">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div class="rounded-2xl border border-slate-200 p-4">
+                <div class="mb-3 text-sm font-semibold text-slate-900">
+                  Company Profile
+                </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                  <div>
+                    <span class="text-slate-500">Legal Name:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.legalName || "—"
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500">Trading Name:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.tradingName || "—"
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500">Business Type:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.businessType || "—"
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500">Email:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.companyEmail || "—"
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500">Phone:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.companyPhone || "—"
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-500">Address:</span>
+                    <span class="font-medium text-slate-900">{{
+                      model.companyProfile.address || "—"
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-200 p-4">
+                <div class="mb-3 text-sm font-semibold text-slate-900">
+                  Contacts
+                </div>
+                <div class="space-y-3 text-sm text-slate-600">
+                  <div
+                    *ngFor="let contact of model.contacts"
+                    class="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                  >
+                    <div class="font-semibold text-slate-900">
+                      {{ contact.firstName }} {{ contact.lastName }}
+                    </div>
+                    <div>{{ contact.role }}</div>
+                    <div>{{ contact.email }}</div>
+                    <div>{{ contact.phoneNumber }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="md:col-span-2 rounded-2xl border border-slate-200 p-4"
+              >
+                <div class="mb-3 text-sm font-semibold text-slate-900">
+                  Services & Categories
+                </div>
+                <div class="text-sm text-slate-600">
+                  <div>
+                    <span class="text-slate-500">Selected Categories:</span>
+                    <span class="font-medium text-slate-900">{{
+                      selectedCategoryNames || "—"
+                    }}</span>
+                  </div>
+                  <div class="mt-3">
+                    <div class="text-slate-500">Capability Statement</div>
+                    <div
+                      class="mt-1 whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-700"
+                    >
+                      {{ model.capabilityStatement || "—" }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="md:col-span-2 rounded-2xl border border-slate-200 p-4"
+              >
+                <div class="mb-3 text-sm font-semibold text-slate-900">
+                  Bank Details
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div
+                    *ngFor="let bank of model.bankDetails"
+                    class="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm text-slate-600"
+                  >
+                    <div>
+                      <span class="text-slate-500">Bank Name:</span>
+                      <span class="font-medium text-slate-900">{{
+                        bank.bankName || "—"
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-500">Account Name:</span>
+                      <span class="font-medium text-slate-900">{{
+                        bank.accountName || "—"
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-500">Account Number:</span>
+                      <span class="font-medium text-slate-900">{{
+                        bank.accountNumber || "—"
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-500">Currency:</span>
+                      <span class="font-medium text-slate-900">{{
+                        bank.currency || "—"
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="md:col-span-2 rounded-2xl border border-slate-200 p-4"
+              >
+                <div class="mb-3 text-sm font-semibold text-slate-900">
+                  Documents Submitted
+                </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                  <div
+                    *ngFor="let u of uploads"
+                    class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                  >
+                    <span>{{ u.label }}</span>
+                    <span class="font-medium text-slate-900">{{
+                      u.file ? "Uploaded" : "Not uploaded"
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              >
+                <div class="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    class="mt-1 h-4 w-4 rounded border-slate-300"
+                    [(ngModel)]="model.acceptsTerms"
+                  />
+                  <div class="text-sm text-slate-700">
+                    <div class="font-semibold text-slate-900">
+                      I confirm the information provided is accurate
+                    </div>
+                    <div class="text-xs text-slate-500">
+                      Submitting false or misleading information may result in
+                      rejection or removal from the vendor list.
+                    </div>
+                  </div>
+                  <div>
+                    <re-captcha
+                      siteKey="YOUR_SITE_KEY"
+                      (resolved)="onCaptchaResolved($event)"
+                    >
+                    </re-captcha>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+              <button
+                pButton
+                type="button"
+                label="Back"
+                icon="pi pi-arrow-left"
+                class="p-button-text"
+                (click)="back()"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Submit Registration"
+                icon="pi pi-send"
+                iconPos="right"
+                class="p-button-rounded"
+                [disabled]="!model.acceptsTerms"
+                (click)="submitVendor()"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

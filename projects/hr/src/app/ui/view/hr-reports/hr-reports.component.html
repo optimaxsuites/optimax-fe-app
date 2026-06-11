@@ -1,0 +1,134 @@
+<div class="rpt-page">
+
+  <!-- Header -->
+  <header class="rpt-hero">
+    <div>
+      <h1 class="rpt-hero__title">HR Reports</h1>
+      <p class="rpt-hero__sub">Overtime cost analysis and probation tracking</p>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div class="rpt-skeleton" *ngIf="loading">
+    <div class="rpt-sk-block" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <!-- Error -->
+  <div class="rpt-error" *ngIf="error && !loading">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>Unable to load report data. Please check your connection and retry.</p>
+    <button class="rpt-retry-btn" (click)="ngOnInit()">Retry</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- Tab bar -->
+    <div class="rpt-tabs">
+      <button class="rpt-tab" [class.rpt-tab--active]="activeTab === 'overtime'" (click)="activeTab = 'overtime'">
+        <i class="fas fa-clock"></i> Overtime Cost
+      </button>
+      <button class="rpt-tab" [class.rpt-tab--active]="activeTab === 'probation'" (click)="activeTab = 'probation'">
+        <i class="fas fa-user-clock"></i> Probation Tracking
+      </button>
+    </div>
+
+    <!-- OVERTIME COST -->
+    <div *ngIf="activeTab === 'overtime'">
+      <div class="rpt-stat-row">
+        <div class="rpt-stat-card">
+          <span class="rpt-stat-card__num">{{ overtimeCost?.totalConfigurations ?? 0 }}</span>
+          <span class="rpt-stat-card__lbl">Configurations</span>
+        </div>
+        <div class="rpt-stat-card rpt-stat-card--green">
+          <span class="rpt-stat-card__num">₦{{ (overtimeCost?.totalConfiguredCost ?? 0) | number:'1.2-2' }}</span>
+          <span class="rpt-stat-card__lbl">Total Configured Cost</span>
+        </div>
+      </div>
+
+      <div class="rpt-card">
+        <table class="rpt-table">
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Overtime Type</th>
+              <th>Max Hours</th>
+              <th>Rate (₦/hr)</th>
+              <th>Configured Cost (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of overtimeCost?.rows">
+              <td>{{ row.level }}</td>
+              <td>{{ row.overtimeType }}</td>
+              <td>{{ row.maxHours }}</td>
+              <td>{{ row.rate | number }}</td>
+              <td>{{ row.configuredCost | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="!overtimeCost?.rows?.length">
+              <td colspan="5" class="rpt-empty">No overtime configurations found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROBATION TRACKING -->
+    <div *ngIf="activeTab === 'probation'">
+      <div class="rpt-stat-row">
+        <div class="rpt-stat-card">
+          <span class="rpt-stat-card__num">{{ probation?.totalOnProbation ?? 0 }}</span>
+          <span class="rpt-stat-card__lbl">On Probation</span>
+        </div>
+        <div class="rpt-stat-card rpt-stat-card--orange">
+          <span class="rpt-stat-card__num">{{ probation?.probationDueSoon ?? 0 }}</span>
+          <span class="rpt-stat-card__lbl">Due Soon</span>
+        </div>
+        <div class="rpt-stat-card rpt-stat-card--red">
+          <span class="rpt-stat-card__num">{{ probation?.probationOverdue ?? 0 }}</span>
+          <span class="rpt-stat-card__lbl">Overdue</span>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="rpt-filter-row">
+        <button class="rpt-filter-btn" [class.rpt-filter-btn--active]="probationFilter === 'ALL'" (click)="probationFilter = 'ALL'">All</button>
+        <button class="rpt-filter-btn rpt-filter-btn--red" [class.rpt-filter-btn--active]="probationFilter === 'OVERDUE'" (click)="probationFilter = 'OVERDUE'">Overdue</button>
+        <button class="rpt-filter-btn rpt-filter-btn--orange" [class.rpt-filter-btn--active]="probationFilter === 'DUE_SOON'" (click)="probationFilter = 'DUE_SOON'">Due Soon</button>
+        <button class="rpt-filter-btn rpt-filter-btn--green" [class.rpt-filter-btn--active]="probationFilter === 'ACTIVE'" (click)="probationFilter = 'ACTIVE'">Active</button>
+      </div>
+
+      <div class="rpt-card">
+        <table class="rpt-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Level</th>
+              <th>End Date</th>
+              <th>Days Remaining</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredProbationRows">
+              <td>{{ row.employeeName }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.level }}</td>
+              <td>{{ row.probationEndDate }}</td>
+              <td>
+                <span [class.rpt-days--neg]="daysRemaining(row.probationEndDate) < 0">
+                  {{ daysRemaining(row.probationEndDate) }} days
+                </span>
+              </td>
+              <td><span [class]="statusClass(row.probationStatus)">{{ row.probationStatus }}</span></td>
+            </tr>
+            <tr *ngIf="filteredProbationRows.length === 0">
+              <td colspan="6" class="rpt-empty">No employees match this filter.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

@@ -1,0 +1,284 @@
+<!-- src/app/ui/view/procurement-request-management/request-drafts/request-drafts.component.html -->
+
+<div class="drafts-container">
+  <div class="drafts-wrapper">
+    
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-left">
+        <button class="btn-back" (click)="goBackToRequests()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Back to Requests
+        </button>
+        <h1 class="page-title">My Drafts</h1>
+        <p class="page-subtitle">Save and continue your incomplete requests</p>
+      </div>
+      <button class="btn-new-draft" (click)="createNewDraft()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Draft
+      </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" *ngIf="summary">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ summary.totalDrafts }}</span>
+          <span class="stat-label">Total Drafts</span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ summary.expiringSoon }}</span>
+          <span class="stat-label">Expiring Soon</span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ summary.completionRate | number:'1.0-0' }}%</span>
+          <span class="stat-label">Avg. Completion</span>
+        </div>
+      </div>
+      
+      <div class="stat-card" *ngIf="summary.mostRecentDraft">
+        <div class="stat-icon purple">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ formatDate(summary.mostRecentDraft.lastModified) }}</span>
+          <span class="stat-label">Last Activity</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-card">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label>Status</label>
+          <select [(ngModel)]="filters.status" (change)="onFilterChange()" class="filter-select">
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-group search-group">
+          <label>Search</label>
+          <div class="search-input-wrapper">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input type="text" 
+                   [(ngModel)]="filters.searchTerm" 
+                   (keyup.enter)="onSearch()"
+                   placeholder="Search by product or description..."
+                   class="search-input">
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button class="btn-reset" (click)="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drafts List -->
+    <div class="drafts-list" *ngIf="!isLoading">
+      <div *ngFor="let draft of drafts" class="draft-card">
+        <div class="draft-header">
+          <div class="draft-info">
+            <div class="draft-icon" [class]="getStatusClass(draft.status)">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </div>
+            <div class="draft-meta">
+              <h3 class="draft-title">{{ draft.productName || 'Untitled Draft' }}</h3>
+              <div class="draft-details">
+                <span class="draft-id">{{ draft.id }}</span>
+                <span class="separator">•</span>
+                <span class="draft-date">Last edited {{ formatDate(draft.lastModified) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="draft-status-badge" [class]="getStatusClass(draft.status)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="draft.status === 'IN_PROGRESS'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              <path *ngIf="draft.status === 'COMPLETION_STARTED'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path *ngIf="draft.status === 'AWAITING_INFO'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path *ngIf="draft.status === 'EXPIRED'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            {{ getStatusLabel(draft.status) }}
+          </div>
+        </div>
+        
+        <div class="draft-description">
+          <p>{{ draft.description | slice:0:100 }}{{ draft.description.length > 100 ? '...' : '' }}</p>
+        </div>
+        
+        <div class="draft-details-row">
+          <div class="detail-item">
+            <span class="label">Quantity:</span>
+            <span class="value">{{ draft.quantity }} units</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Budget:</span>
+            <span class="value budget">{{ formatCurrency(draft.budget, draft.currency) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Location:</span>
+            <span class="value">{{ draft.deliveryLocation }}</span>
+          </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Completion Progress</span>
+            <span class="progress-percent">{{ draft.progress }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="draft.progress" [style.background-color]="getProgressColor(draft.progress)"></div>
+          </div>
+          <div class="progress-hint" *ngIf="draft.progress < 100">
+            <span *ngIf="draft.progress < 30">Add product name and description to continue</span>
+            <span *ngIf="draft.progress >= 30 && draft.progress < 70">Add budget and delivery details</span>
+            <span *ngIf="draft.progress >= 70 && draft.progress < 100">Almost there! Review and submit</span>
+          </div>
+        </div>
+        
+        <!-- Tags -->
+        <div class="draft-tags" *ngIf="draft.tags && draft.tags.length">
+          <span *ngFor="let tag of draft.tags" class="tag">{{ tag }}</span>
+        </div>
+        
+        <!-- Actions -->
+        <div class="draft-actions">
+          <button class="action-btn continue" (click)="continueEditing(draft)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Continue Editing
+          </button>
+          <button class="action-btn submit" (click)="convertToRequest(draft)" [disabled]="isConverting && selectedDraft?.id === draft.id">
+            <div *ngIf="isConverting && selectedDraft?.id === draft.id" class="spinner-small"></div>
+            <svg *ngIf="!(isConverting && selectedDraft?.id === draft.id)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Submit Request
+          </button>
+          <button class="action-btn delete" (click)="confirmDelete(draft)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>
+      
+      <div *ngIf="drafts.length === 0" class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3>No drafts found</h3>
+        <p>Start a new request and save it as a draft to see it here</p>
+        <button class="btn-primary" (click)="createNewDraft()">Create New Draft</button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your drafts...</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section" *ngIf="totalPages > 0 && !isLoading">
+      <div class="pagination-info">
+        Showing {{ currentPage * pageSize + 1 }} - {{ getPaginationEnd() }} of {{ totalElements }} drafts
+      </div>
+      
+      <div class="pagination-controls">
+        <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)" class="page-size-select">
+          <option [value]="10">10 per page</option>
+          <option [value]="25">25 per page</option>
+          <option [value]="50">50 per page</option>
+        </select>
+        
+        <div class="pagination-buttons">
+          <button (click)="onPageChange(0)" [disabled]="currentPage === 0" class="page-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+            </svg>
+          </button>
+          <button (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0" class="page-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+          <button *ngFor="let page of getPageNumbers()" 
+                  (click)="onPageChange(page)"
+                  class="page-number" 
+                  [class.active]="page === currentPage">
+            {{ page + 1 }}
+          </button>
+          <button (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1" class="page-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+          <button (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1" class="page-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7m-8-14l-7 7 7 7"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Delete Draft</h3>
+          <button class="modal-close" (click)="cancelDelete()">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this draft?</p>
+          <p class="draft-preview" *ngIf="draftToDelete">
+            <strong>{{ draftToDelete.productName || 'Untitled Draft' }}</strong>
+          </p>
+          <p class="warning-text">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+          <button class="btn-delete" (click)="deleteDraft()">Delete Draft</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

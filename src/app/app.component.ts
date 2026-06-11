@@ -1,117 +1,447 @@
-import { Component, OnInit } from '@angular/core';
-import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
-import { HotelserviceService } from './ui/hospitality/hotelservice.service';
-import { environment } from './ui/sharedComponent/service/environments/environment';
-import { Router } from '@angular/router';
-import { NavigationLinksService } from './ui/sharedComponent/service/navigation-links/navigation-links.service';
+import { Component, computed, HostListener, signal, ViewEncapsulation, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
+import { ActivatedRoute, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
+import { firstValueFrom, lastValueFrom, Observable, BehaviorSubject } from 'rxjs';
+import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.service';
+import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
+import { TOUR_STEPS, TourStep } from './ui/onboarding/tour-guide';
+import { AuthenticationService } from './ui/auth/service/authentication.service';
+import { TenantService } from './ui/tenants/service/tenant.service';
+
+// damilola worked on this: root app boot/login session flow adjustments around the full application shell.
+declare global {
+  interface Window {
+    electronAPI: {
+      sendMessage: (message: string) => void;
+    };
+  }
+}
+
+type AppView = 'dashboard' | 'marketplace' | 'sales' | string;
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  encapsulation: ViewEncapsulation.None,
+  styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'hospitality';
-  public loginComplete = false;
-  private hasLoggedIn = false;
+  title = 'ERP-FE';
+  sidebarVisible2 = false;
+  syncInProgress = false;
+  syncMessage = '';
+  ellipsisInterval: any = null;
+  screenWidth: number;
+  isLoading = false;
+
+  private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+  isOffline$: Observable<boolean> = this._isOffline.asObservable();
+  
+  // Ensure this property exists and is initialized
+  clockedInTime: string | null = null;
+
+  currentView = signal<AppView>('dashboard');
+
+  // Tour State
+  showTour = signal(false);
+  currentStep = signal(0);
+  tourSteps = TOUR_STEPS;
+
+  // Computed Properties
+  currentTourStepData = computed(() => this.tourSteps[this.currentStep()]);
+
+  // Determines the Guide's position based on the current highlighted element
+  guidePosition = computed(() => {
+    if (!this.showTour()) return { left: 0, top: 0 };
+    const step = this.currentTourStepData();
+    if (!step) return { left: 0, top: 0 };
+    return this.calculateGuidePosition(step);
+  });
 
   constructor(
-    private authenticationService: AuthenticationService,
-    private hotelService: HotelserviceService,
+    private menuItemService: MenuItemsService,
     private router: Router,
-    private navigationLinksService: NavigationLinksService
+    private checkoutService: CheckoutService,
+    private offlineService: OfflineService,
+    private authenticationService: AuthenticationService,
+    private route: ActivatedRoute
   ) {
-    this.userLoginAction();
+    // Keep a single online/offline listener. Update the BehaviorSubject so consumers can react.
+    window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
+    
+    // this.cdr.detectChanges()
+    // Listen router events to show a loading indicator
+    this.screenWidth = window.innerWidth;
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.isLoading = true;
+      }
+      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.isLoading = false;
+      }
+    });
+
+    // When we go online, trigger offline sync once
+    window.addEventListener('online', () => this.syncOfflinePayments());
+
+    this.router.events.subscribe(e => {
+  });
   }
 
+  // Angular lifecycle hook must be lowercase
   ngOnInit(): void {
-  }
+    this.syncSessionAuthToLocalStorage();
+    this.checkEligibility();
+    this.checkOnboardingStatus();
+   const originalNavigate = this.router.navigate.bind(this.router);
+    const originalNavigateByUrl = this.router.navigateByUrl.bind(this.router);
 
-  async userLoginAction(): Promise<void> {
-    // Prevent multiple login attempts
-    if (this.hasLoggedIn) return;
-    this.hasLoggedIn = true;
-
-    console.log("logging in...");
-    const loginDetails = {
-      username: 'developer',
-      password: '123456',
-      project: 'ERP',
-      apiKey: environment.apiKey,
+    this.router.navigate = (commands: any[], extras?: any) => {
+      console.trace('🚨 router.navigate called with:', commands, extras);
+      return originalNavigate(commands, extras);
     };
 
-    try {
-      this.authenticationService.userLogin(loginDetails).subscribe({
+    this.router.navigateByUrl = (url: any, extras?: any) => {
+      console.trace('🚨 router.navigateByUrl called with:', url, extras);
+      return originalNavigateByUrl(url, extras);
+    };
+    // this.tenantService.loadFullTenants(); 
+
+  }
+
+  private syncSessionAuthToLocalStorage(): void {
+    const tenantId = sessionStorage.getItem('tenantId') || '';
+    const userId = sessionStorage.getItem('userid') || '';
+    const username = sessionStorage.getItem('username') || '';
+    const fullname = sessionStorage.getItem('fullname') || '';
+    const email = sessionStorage.getItem('email') || '';
+    const userRegData = sessionStorage.getItem('userRegData') || '';
+
+    if (tenantId) {
+      localStorage.setItem('tenantId', tenantId);
+    }
+    if (userId) {
+      localStorage.setItem('userid', userId);
+    }
+    if (username) {
+      localStorage.setItem('username', username);
+    }
+    if (fullname) {
+      localStorage.setItem('fullname', fullname);
+    }
+    if (email) {
+      localStorage.setItem('email', email);
+    }
+    if (userRegData) {
+      localStorage.setItem('userRegData', userRegData);
+    }
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onResize(_event: Event) {
+    this.screenWidth = window.innerWidth;
+    // You can react to changes here
+  }
+
+  checkEligibility(){
+
+      // Check if URL contains a token at all
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log(window.location)
+      console.log(urlParams)
+      const hasToken = urlParams.has('token');
+      console.log(hasToken)
+
+      // If token exists → skip redirect and skip tenant validation
+      if (hasToken) {
+        console.log('Token found in URL — skipping domain check.');
+        return;
+      }
+
+      const host = window.location.hostname;
+      const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+
+      let tenantId = 'optimax'; 
+      if (!isLocalhost) {
+        const parts = host.split('.');
+        tenantId = parts[0] || 'doesntexist';
+      }
+
+      console.log(tenantId);
+
+      this.authenticationService.checkIfDomainExists(tenantId).subscribe({
         next: (data) => {
-          console.log('Login success:', data);
-          if (data) {
-            this.loadInitParam(data);
-            this.loginComplete = true;
-            
-            // Redirect to hospitality only if at root/auth paths, NOT on guest pages or admin pages
-            const currentUrl = this.router.url;
-            const isGuestPage = currentUrl.startsWith('/bookings') || currentUrl.startsWith('/user/rooms') || currentUrl.startsWith('/user/booking-form');
-            const isAdminPage = currentUrl.startsWith('/hospitality') || currentUrl.startsWith('/rooms') || currentUrl.startsWith('/services') || currentUrl.startsWith('/room-types') || currentUrl.startsWith('/payments') || currentUrl.startsWith('/housekeeping') || currentUrl.startsWith('/guests') || currentUrl.startsWith('/room-view') || currentUrl.startsWith('/service-charges') || currentUrl.startsWith('/settings');
-            if (!isGuestPage && !isAdminPage && (currentUrl === '/' || currentUrl.includes('/user/auth/'))) {
-              // Navigate to hospitality rooms with UUID
-              const uuid = 'default';
-              this.router.navigate(['/hospitality/rooms']);
-            }
+          console.log('Tenant exists:', data);
+          if (!data) {
+            window.location.replace('https://www.optimaxsuites.com/get-started');
           }
         },
         error: (err) => {
-          console.error('Login failed:', err);
-          this.hasLoggedIn = false; // Reset on error to allow retry
-          this.loginComplete = true; // Still allow rendering so user can see error states or manually login
+          console.error('Tenant does not exist or error occurred:', err);
         }
-      });
-    } catch (error) {
-      console.error('Unexpected error during login:', error);
-      this.hasLoggedIn = false; // Reset on error to allow retry
+  });
+
+  }
+
+  sendMessage() {
+    // Safe check for electronAPI
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.sendMessage) {
+      window.electronAPI.sendMessage('Hello from Angular!');
     }
   }
 
-  loadInitParam(data: any) {
-    if (!data || !data.accessToken) {
-      console.error('No accessToken in response:', data);
-      return;
-    }
+  private async syncOfflinePayments() {
+    console.log('🌐 You are now online, preparing to sync...');
+    this.syncInProgress = true;
+    this.startEllipsisAnimation('🌐 Syncing offline data');
 
-    if (data.roles) sessionStorage.setItem('role', data.roles);
-    if (data.username) sessionStorage.setItem('username', data.username);
-    if (data.fullname) sessionStorage.setItem('fullname', data.fullname);
-    if (data.email) sessionStorage.setItem('email', data.email);
-    if (data.id) sessionStorage.setItem('userid', data.id);
+    // small delay so UI can update
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Handle both cookie format and direct token format
-    let token = data.accessToken;
-    
     try {
-        // If it's a cookie string (contains '='), extract the token part
-        if (token.includes('=') && token.includes(';')) {
-            const tokenStartIndex = token.indexOf('=') + 1;
-            token = token.substring(
-                tokenStartIndex,
-                token.indexOf(';') !== -1 ? token.indexOf(';') : token.length
-            );
-        } else if (token.includes('=')) {
-            // Format: optimaxcookie=token; Path=/api; ...
-            const tokenStartIndex = token.indexOf('=') + 1;
-            token = token.substring(tokenStartIndex).split(';')[0].trim();
-        }
-        
-        console.log('Token extracted:', token.substring(0, 20) + '...');
-        sessionStorage.setItem('Token', token);
-        localStorage.setItem('Token2', token);
-        sessionStorage.setItem('accessToken', data.accessToken);
-        localStorage.setItem('accessToken2', data.accessToken);
-    } catch (e) {
-        console.error('Token extraction error:', e);
-        // Fallback: use the entire accessToken
-        sessionStorage.setItem('Token', data.accessToken);
-        localStorage.setItem('Token2', data.accessToken);
+      const pendingPayments: any[] = await firstValueFrom(this.offlineService.getPendingPayments());
+
+      if (!pendingPayments || !pendingPayments.length) {
+        this.stopEllipsisAnimation('✅ Nothing to sync. All caught up!', true);
+        this.syncInProgress = false;
+        return;
+      }
+
+      console.log('🔄 Syncing offline payments:', pendingPayments);
+
+      const OUT_OF_STOCK_ERROR_MESSAGE = 'Insuffient order to service your request...';
+
+      // Iterate synchronously to keep ordering and error handling simpler
+      for (const payment of pendingPayments) {
+        const onlinePaymentPayload = {
+          id: payment.id,
+          totalAmount: payment.totalAmount,
+          transactionDate: payment.transactionDate,
+          status: payment.status,
+        };
+
+        // Use a promise wrapper so we can await each call sequentially
+        await new Promise<void>((resolvePayment) => {
+          this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
+            next: (paymentId: any) => {
+              let breakdownCount = 0;
+
+              if (!payment.breakdowns || !payment.breakdowns.length) {
+                // If there are no breakdowns, still save the order
+                payment.order.paymentId = paymentId;
+                this.checkoutService.saveOrder(payment.order).subscribe({
+                  next: async () => {
+                    console.log('✅ Offline payment synced (no breakdowns):', payment);
+                    await this.offlineService.removePendingPayment(payment.order.orderNumber);
+                    resolvePayment();
+                  },
+                  error: async (err) => {
+                    console.error('❌ Failed to save order:', err);
+                    resolvePayment();
+                  },
+                });
+                return;
+              }
+
+              for (const breakdown of payment.breakdowns) {
+                breakdown.paymentId = paymentId;
+                this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+                  next: () => {
+                    breakdownCount++;
+                    if (breakdownCount === payment.breakdowns.length) {
+                      payment.order.paymentId = paymentId;
+                      this.checkoutService.saveOrder(payment.order).subscribe({
+                        next: async () => {
+                          console.log('✅ Offline payment synced:', payment);
+                          await this.offlineService.removePendingPayment(payment.order.orderNumber);
+                          resolvePayment();
+                        },
+                        error: async (err) => {
+                          console.error(err);
+                          const errorMessage = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+
+                          if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
+                            console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict.`);
+
+                            const flaggedPayment = {
+                              ...payment,
+                              syncFailed: true,
+                              failureReason: 'One or more items were out of stock during sync. Resolve inventory before retrying.',
+                              __dbKey: payment.__dbKey,
+                            };
+
+                            // Persist flagged state
+                            await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment));
+                          } else {
+                            console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
+                          }
+
+                          resolvePayment();
+                        },
+                      });
+                    }
+                  },
+                  error: (err) => {
+                    console.error('❌ Failed to sync payment breakdown:', err);
+                  },
+                });
+              }
+            },
+            error: (err) => {
+              console.error('❌ Failed to sync payment:', err);
+              resolvePayment();
+            },
+          });
+        });
+      }
+
+      this.stopEllipsisAnimation('✅ All offline payments processed (see logs).', true);
+    } catch (err) {
+      console.error(err);
+      this.stopEllipsisAnimation('❌ Sync failed. Check logs.', true);
+    } finally {
+      this.syncInProgress = false;
+    }
+  }
+
+  private startEllipsisAnimation(baseMessage: string) {
+    let dots = 0;
+    this.syncMessage = baseMessage;
+
+    if (this.ellipsisInterval) {
+      clearInterval(this.ellipsisInterval);
     }
 
-    sessionStorage['userRegData'] = JSON.stringify(data);
+    this.ellipsisInterval = setInterval(() => {
+      dots = (dots + 1) % 4;
+      this.syncMessage = baseMessage + '.'.repeat(dots);
+    }, 500);
+  }
+
+  private stopEllipsisAnimation(finalMessage: string, autoClear = false) {
+    if (this.ellipsisInterval) {
+      clearInterval(this.ellipsisInterval);
+      this.ellipsisInterval = null;
+    }
+    this.syncMessage = finalMessage;
+
+    if (autoClear) {
+      setTimeout(() => {
+        this.syncMessage = '';
+      }, 3000);
+    }
+  }
+
+  private checkOnboardingStatus(): void {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('isOnboarded') !== 'true') {
+      this.showTour.set(true);
+      // Give the DOM a moment to render before positioning the guide
+      setTimeout(() => {
+        this.currentStep.set(0);
+        // guard against missing step data
+        const step = this.currentTourStepData();
+        if (step && step.view) {
+          this.goToView(step.view as AppView);
+        }
+      }, 0);
+    } else {
+      this.showTour.set(false);
+    }
+  }
+
+  goToView(view: AppView): void {
+    this.currentView.set(view);
+    // Recalculate position after view change by touching the computed
+    setTimeout(() => {
+      void this.guidePosition();
+    }, 50);
+  }
+
+  nextStep(): void {
+    if (this.currentStep() < this.tourSteps.length - 1) {
+      this.currentStep.update((c) => c + 1);
+
+      // Check if the new step requires navigating to a new view
+      const nextView = this.currentTourStepData()?.view as AppView | undefined;
+      if (nextView && nextView !== this.currentView()) {
+        this.goToView(nextView);
+      } else {
+        // Force recalculation if staying on the same view
+        setTimeout(() => void this.guidePosition(), 0);
+      }
+    } else {
+      this.completeTour();
+    }
+  }
+
+  prevStep(): void {
+    if (this.currentStep() > 0) {
+      this.currentStep.update((c) => c - 1);
+
+      const prevView = this.currentTourStepData()?.view as AppView | undefined;
+      if (prevView && prevView !== this.currentView()) {
+        this.goToView(prevView);
+      } else {
+        setTimeout(() => void this.guidePosition(), 0);
+      }
+    }
+  }
+
+  completeTour(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('isOnboarded', 'true');
+    }
+    this.showTour.set(false);
+    this.currentStep.set(0);
+    this.goToView('dashboard'); // Return user to a default safe view
+  }
+
+  /**
+   * Helper to check whether an element should be highlighted for the current step.
+   * Computed signals cannot accept runtime arguments, so this is a regular method used from templates.
+   */
+  isElementHighlighted(elementId: string | null): boolean {
+    if (!this.showTour()) return false;
+    const currentStep = this.currentTourStepData();
+    if (!currentStep) return false;
+    return !!elementId && currentStep.elementId === elementId && currentStep.view === this.currentView();
+  }
+
+  /**
+   * Calculates the position of the tour guide relative to the highlighted element.
+   */
+  private calculateGuidePosition(step: TourStep | undefined): { left: number; top: number } {
+    if (!step || !step.elementId) return { left: 200, top: 200 };
+
+    const targetElement = document.getElementById(step.elementId);
+    if (!targetElement) return { left: 200, top: 200 }; // Fallback
+
+    const rect = targetElement.getBoundingClientRect();
+    let left = 0;
+    let top = 0;
+
+    switch (step.position) {
+      case 'top-center':
+        left = rect.left + rect.width / 2 - 150; // Adjust so the guide centers visually
+        top = rect.top - 50;
+        break;
+      case 'bottom-center':
+        left = rect.left + rect.width / 2 - 150;
+        top = rect.bottom + 10;
+        break;
+      case 'top-right':
+        left = rect.right + 10;
+        top = rect.top + 10;
+        break;
+      case 'bottom-left':
+        left = rect.left - 300 - 100;
+        top = rect.bottom + 10;
+        break;
+      default:
+        left = rect.left + 50;
+        top = rect.top + 50;
+    }
+    return { left, top };
   }
 }

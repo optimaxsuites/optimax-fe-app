@@ -1,0 +1,54 @@
+<div *ngIf="onboardingStatus == 'inProgress'" class="drawer-state">
+  <div class="drawer-state-card">
+    <i class="fa-solid fa-lock"></i>
+    <div>
+      <h3>Guarantor records are not available yet</h3>
+      <p>Finish onboarding to capture guarantor contact details and uploaded identity evidence.</p>
+    </div>
+    <a class="drawer-link" routerLink="/onboarding/{{employeeInView.id}}/uthedhk45678j">Continue onboarding</a>
+  </div>
+</div>
+
+<div *ngIf="onboardingStatus == 'completed'" class="drawer-stack">
+  <section class="drawer-summary-grid">
+    <article class="drawer-summary-card">
+      <span class="drawer-summary-label">Guarantors</span>
+      <strong class="drawer-summary-value">{{ employeeInView?.guarantor?.length || 0 }}</strong>
+    </article>
+    <article class="drawer-summary-card">
+      <span class="drawer-summary-label">Evidence files</span>
+      <strong class="drawer-summary-value">{{ employeeInView?.guarantor?.length || 0 }}</strong>
+    </article>
+  </section>
+
+  <section class="drawer-grid">
+    <article *ngFor="let kin of employeeInView.guarantor; let i = index" class="drawer-card">
+      <div class="drawer-card-header">
+        <div>
+          <p class="drawer-card-eyebrow">Guarantor {{ i + 1 }}</p>
+          <h3>{{ kin.fullName || kin.name || ('Guarantor ' + (i + 1)) }}</h3>
+        </div>
+        <span class="drawer-badge">Verified file set</span>
+      </div>
+
+      <div class="drawer-detail-grid">
+        <div *ngFor="let key of getKeys(kin)" class="drawer-detail-item">
+          <span>{{ toTitleCaseWithSpace(key) | titlecase }}</span>
+          <ng-container *ngIf="isFile(kin[key]); else textField">
+            <div class="file-actions">
+              <button type="button" class="file-link-btn" (click)="previewFile(kin[key])">View</button>
+              <a [href]="kin[key]" download="{{employeeInView.firstName}}-guarantor-{{i+1}}-{{key}}.png" class="file-link-btn">Download</a>
+            </div>
+          </ng-container>
+          <ng-template #textField>
+            <strong>{{ kin[key] || '-' }}</strong>
+          </ng-template>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <app-modal *ngIf="showModal" (close)="closeModal()" class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+    <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+  </app-modal>
+</div>

@@ -1,0 +1,791 @@
+<div class="flex h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col transition-all duration-300" [ngClass]="sidebarCollapsed ? 'mr-0' : 'mr-80'">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="flex items-center justify-between p-6">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Bank Reconciliation
+          </h1>
+          <div class="flex items-center space-x-2 text-sm text-gray-500">
+            <!-- <span>⚡</span>
+            <span>Real-time sync enabled</span> -->
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button (click)="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <span>{{ sidebarCollapsed ? '←' : '→' }}</span>
+          </button>
+          <button (click)="toggleReportsModal()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+            <span><i class="fa-solid fa-file"></i></span>
+            <span>Reports</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="bg-white border-b border-gray-200 p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Account Selector -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-gray-700">Bank Account</label>
+          <select [value]="selectedAccount?.id || ''" (change)="onAccountChange($event)"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option *ngFor="let account of accounts" [value]="account.id">
+              {{ account.name }} ({{ account.number }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Date Range -->
+        <div class="lg:col-span-2 grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-700">From Date</label>
+            <div class="relative">
+              <input type="date" [value]="fromDate" (change)="onFromDateChange($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <span class="absolute right-3 top-2.5 text-gray-400 pointer-events-none"><i
+                  class="fa-solid fa-calendar"></i></span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-700">To Date</label>
+            <div class="relative">
+              <input type="date" [value]="toDate" (change)="onToDateChange($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <span class="absolute right-3 top-2.5 text-gray-400 pointer-events-none"><i
+                  class="fa-solid fa-calendar"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-2">
+          <button (click)="handleAutoMatch()" [disabled]="loading"
+            class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center space-x-2">
+            <span *ngIf="loading"><i class="fa-solid fa-rotate-right"></i></span>
+            <span *ngIf="!loading"><i class="fa-solid fa-paperclip"></i></span>
+            <span>Auto Match</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Enhanced Filter Bar -->
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-gray-400"><i class="fa-solid fa-search"></i></span>
+            <input type="text" placeholder="Search transactions..." [value]="searchTerm"
+              (input)="onSearchTermChange($event)"
+              class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
+          </div>
+
+          <select [value]="filterStatus" (change)="onFilterStatusChange($event)"
+            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="all">All Status</option>
+            <option value="matched">Matched</option>
+            <option value="unmatched">Unmatched</option>
+            <option value="pending">Pending</option>
+            <option value="disputed">Disputed</option>
+          </select>
+
+          <button (click)="toggleAdvancedFilters()"
+            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2">
+            <span><i class="fa-solid fa-caret-down"></i></span>
+            <span>Filters</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <span class="text-sm text-gray-600">View:</span>
+          <div class="flex bg-gray-100 rounded-lg p-1">
+            <button *ngFor="let mode of ['split', 'tabs', 'overlay']"
+              class="px-3 py-1 text-sm rounded-md transition-colors capitalize"
+              [ngClass]="viewMode === mode ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'">
+              {{ mode }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div *ngIf="showAdvancedFilters" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Amount Range</label>
+            <div class="flex space-x-2 mt-1">
+              <input type="number" placeholder="Min" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+              <input type="number" placeholder="Max" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700">Category</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded mt-1 text-sm">
+              <option>All Categories</option>
+              <option>Office Supplies</option>
+              <option>Revenue</option>
+              <option>Bank Fees</option>
+              <option>Utilities</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700">Confidence Level</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded mt-1 text-sm">
+              <option>All Levels</option>
+              <option>High (90%+)</option>
+              <option>Medium (70-89%)</option>
+              <option>Low (&lt;70%)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Actions -->
+      <div *ngIf="selectedTransactions.length > 0"
+        class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+        <span class="text-sm text-blue-800">
+          {{ selectedTransactions.length }} transaction{{ selectedTransactions.length > 1 ? 's' : '' }} selected
+        </span>
+        <div class="flex space-x-2">
+          <button (click)="handleBulkAction('match')"
+            class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+            Match All
+          </button>
+          <button (click)="handleBulkAction('unmatch')"
+            class="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
+            Unmatch All
+          </button>
+          <button (click)="handleBulkAction('dispute')"
+            class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+            Mark Disputed
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="p-6 bg-gray-50">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Total Transactions</p>
+              <p class="text-2xl font-bold text-gray-800">{{ stats.total }}</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-lg">
+              <span class="text-2xl text-blue-600">
+                <i class="fa-solid fa-chart-simple"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Match Rate</p>
+              <p class="text-2xl font-bold text-green-600">{{ stats.matchedPercentage }}%</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-lg">
+              <span class="text-2xl text-green-600"><i class="fa-solid fa-equals"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Total Credits</p>
+              <p class="text-2xl font-bold text-green-600">{{ formatCurrency(stats.totalCredits) }}</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-lg">
+              <span class="text-2xl text-green-600">
+                <i class="fa-solid fa-chart-line"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Total Debits</p>
+              <p class="text-2xl font-bold text-red-600">{{ formatCurrency(stats.totalDebits) }}</p>
+            </div>
+            <div class="p-3 bg-red-100 rounded-lg">
+              <span class="text-2xl text-red-600"><i class="fa-solid fa-chart-line"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Tables -->
+    <div class="flex-1 p-6 overflow-auto">
+      <!-- Split View -->
+      <div *ngIf="viewMode === 'split'" class="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full">
+        <!-- Bank Transactions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">Bank Transactions</h3>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">{{ filteredBankTransactions.length }} items</span>
+                <button class="p-1 hover:bg-gray-100 rounded">
+                  <span><i class="fa-solid fa-gear"></i></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                  <th class="w-8 px-4 py-3">
+                    <input type="checkbox" class="rounded border-gray-300" (change)="toggleAllTransactions($event)">
+                  </th>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Date</th>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Description</th>
+                  <th class="text-right px-4 py-3 text-sm font-medium text-gray-600">Amount</th>
+                  <th class="text-center px-4 py-3 text-sm font-medium text-gray-600">Status</th>
+                  <th class="text-center px-4 py-3 text-sm font-medium text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let transaction of filteredBankTransactions" class="hover:bg-gray-50 transition-colors"
+                  [ngClass]="{
+                      'bg-green-50': transaction.status === 'Matched',
+                      'bg-blue-50': isTransactionSelected(transaction.id)
+                    }">
+                  <td class="px-4 py-3">
+                    <input type="checkbox" [checked]="isTransactionSelected(transaction.id)"
+                      (change)="toggleTransactionSelection(transaction.id)" class="rounded border-gray-300">
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ formatDate(transaction.date) }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="text-sm text-gray-800">{{ transaction.description }}</div>
+                    <div *ngIf="transaction.reference" class="text-xs text-gray-500">{{ transaction.reference }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-right">
+                    <span *ngIf="transaction.debit" class="text-red-600 font-medium">
+                      -{{ formatCurrency(transaction.debit) }}
+                    </span>
+                    <span *ngIf="transaction.credit" class="text-green-600 font-medium">
+                      +{{ formatCurrency(transaction.credit) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border"
+                        [ngClass]="getStatusColor(transaction.status)">
+                        <span>{{ getStatusIcon(transaction.status) }}</span>
+                        <span class="ml-1">{{ transaction.status }}</span>
+                      </span>
+                    </div>
+                    <div *ngIf="transaction.confidence" class="text-xs text-gray-500 mt-1">
+                      {{ transaction.confidence }}% confidence
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="flex items-center justify-center space-x-1">
+                      <button *ngIf="transaction.status !== 'Matched'" (click)="handleManualMatch(transaction.id)"
+                        class="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Manual Match">
+                        <i class="fa-solid fa-paperclip"></i>
+                      </button>
+                      <button class="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        title="View Details">
+                        <i class="fa-solid fa-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ERP Transactions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">ERP Transactions</h3>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">{{ erpTransactions.length }} items</span>
+                <button class="p-1 hover:bg-gray-100 rounded">
+                  <span><i class="fa-solid fa-gear"></i></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Date</th>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Reference</th>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Description</th>
+                  <th class="text-right px-4 py-3 text-sm font-medium text-gray-600">Amount</th>
+                  <th class="text-left px-4 py-3 text-sm font-medium text-gray-600">Account</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr *ngFor="let transaction of erpTransactions" class="hover:bg-gray-50 transition-colors">
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ formatDate(transaction.date) }}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-800 font-medium">
+                    {{ transaction.reference }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="text-sm text-gray-800">{{ transaction.description }}</div>
+                    <div *ngIf="transaction.category" class="text-xs text-gray-500">{{ transaction.category }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-right">
+                    <span *ngIf="transaction.debit" class="text-red-600 font-medium">
+                      -{{ formatCurrency(transaction.debit) }}
+                    </span>
+                    <span *ngIf="transaction.credit" class="text-green-600 font-medium">
+                      +{{ formatCurrency(transaction.credit) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ transaction.account }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs View -->
+      <div *ngIf="viewMode === 'tabs'"
+        class="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
+        <div class="flex border-b border-gray-200">
+          <button *ngFor="let tab of ['bank', 'erp', 'pending']" (click)="setActiveTab(tab)"
+            class="px-6 py-4 text-sm font-medium transition-colors capitalize"
+            [ngClass]="activeTab === tab ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'">
+            {{ tab === 'bank' ? 'Bank Transactions' : tab === 'erp' ? 'ERP Transactions' : 'Pending Items' }}
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-auto p-6">
+          <!-- Bank Tab -->
+          <div *ngIf="activeTab === 'bank'" class="space-y-4">
+            <div *ngFor="let transaction of filteredBankTransactions"
+              class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" [checked]="isTransactionSelected(transaction.id)"
+                      (change)="toggleTransactionSelection(transaction.id)" class="rounded border-gray-300">
+                    <div>
+                      <h4 class="font-medium text-gray-800">{{ transaction.description }}</h4>
+                      <p class="text-sm text-gray-600">
+                        {{ formatDate(transaction.date) }} • {{ transaction.reference }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <div class="text-right">
+                    <span *ngIf="transaction.debit" class="text-red-600 font-medium">
+                      -{{ formatCurrency(transaction.debit) }}
+                    </span>
+                    <span *ngIf="transaction.credit" class="text-green-600 font-medium">
+                      +{{ formatCurrency(transaction.credit) }}
+                    </span>
+                  </div>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border"
+                    [ngClass]="getStatusColor(transaction.status)">
+                    <span>{{ getStatusIcon(transaction.status) }}</span>
+                    <span class="ml-1">{{ transaction.status }}</span>
+                  </span>
+                  <button *ngIf="transaction.status !== 'Matched'" (click)="handleManualMatch(transaction.id)"
+                    class="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                    <i class="fa-solid fa-paperclip"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ERP Tab -->
+          <div *ngIf="activeTab === 'erp'" class="space-y-4">
+            <div *ngFor="let transaction of erpTransactions"
+              class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-800">{{ transaction.description }}</h4>
+                  <p class="text-sm text-gray-600">
+                    {{ formatDate(transaction.date) }} • {{ transaction.reference }} • {{ transaction.account }}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span *ngIf="transaction.debit" class="text-red-600 font-medium">
+                    -{{ formatCurrency(transaction.debit) }}
+                  </span>
+                  <span *ngIf="transaction.credit" class="text-green-600 font-medium">
+                    +{{ formatCurrency(transaction.credit) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pending Tab -->
+          <div *ngIf="activeTab === 'pending'" class="space-y-4">
+            <div *ngFor="let item of pendingItems"
+              class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full" [ngClass]="getPendingTypeColor(item.type)"></div>
+                    <div>
+                      <h4 class="font-medium text-gray-800">{{ item.description }}</h4>
+                      <p class="text-sm text-gray-600">
+                        {{ formatDate(item.date) }} • {{ item.type.toUpperCase() }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <span class="font-medium text-gray-800">
+                    {{ formatCurrency(item.amount) }}
+                  </span>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" [checked]="item.onStatement" class="rounded border-gray-300" disabled>
+                    <span class="text-sm text-gray-600">On Statement</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlay View -->
+      <div *ngIf="viewMode === 'overlay'"
+        class="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
+        <div class="p-6 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-800">Transaction Matching View</h3>
+        </div>
+        <div class="flex-1 overflow-auto p-6">
+          <div class="space-y-6">
+            <div *ngFor="let bankTx of getUnmatchedTransactions()"
+              class="border border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-red-50 p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-medium text-gray-800">{{ bankTx.description }}</h4>
+                    <p class="text-sm text-gray-600">
+                      Bank • {{ formatDate(bankTx.date) }} •
+                      {{ bankTx.debit ? '-' + formatCurrency(bankTx.debit) : '+' + formatCurrency(bankTx.credit!) }}
+                    </p>
+                  </div>
+                  <span
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                    <span class="mr-1">✗</span>
+                    Unmatched
+                  </span>
+                </div>
+              </div>
+              <div class="p-4">
+                <h5 class="text-sm font-medium text-gray-700 mb-3">Potential ERP Matches:</h5>
+                <div class="space-y-2">
+                  <div *ngFor="let erpTx of getPotentialMatches(bankTx)"
+                    class="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors">
+                    <div>
+                      <p class="text-sm font-medium text-gray-800">{{ erpTx.description }}</p>
+                      <p class="text-xs text-gray-600">
+                        {{ formatDate(erpTx.date) }} • {{ erpTx.reference }} • {{ erpTx.account }}
+                      </p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                      <span class="text-sm font-medium text-gray-800">
+                        {{ erpTx.debit ? '-' + formatCurrency(erpTx.debit) : '+' + formatCurrency(erpTx.credit!) }}
+                      </span>
+                      <button (click)="handleManualMatch(bankTx.id)"
+                        class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                        Match
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhanced Sidebar -->
+  <div class="fixed right-0 top-0 h-full bg-white border-l border-gray-200 shadow-xl transition-all duration-300"
+    [ngClass]="sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80'">
+    <div class="p-6 h-full overflow-y-auto">
+      <div class="space-y-6">
+        <!-- Account Summary -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Account Summary</h3>
+          <div *ngIf="selectedAccount"
+            class="bg-gradient-to-r from-gray-300 to-gray-200 p-4 rounded-lg border border-blue-200">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-gray-800">{{ selectedAccount.name }}</span>
+              <span class="text-sm text-gray-600">{{ selectedAccount.number }}</span>
+            </div>
+            <div class="text-2xl font-bold text-blue-600 mb-1">
+              {{ formatCurrency(selectedAccount.balance) }}
+            </div>
+            <div class="text-sm text-gray-600">
+              Last reconciled: {{ selectedAccount.lastReconciled ? formatDate(selectedAccount.lastReconciled) : 'Never'
+              }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div>
+          <h4 class="font-medium text-gray-800 mb-3">Quick Stats</h4>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+              <div class="flex items-center space-x-2">
+                <span class="text-green-600">✓</span>
+                <span class="text-sm text-gray-700">Matched</span>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-green-600">{{ stats.matched }}</div>
+                <div class="text-xs text-green-600">{{ stats.matchedPercentage }}%</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div class="flex items-center space-x-2">
+                <span class="text-yellow-600">✗</span>
+                <span class="text-sm text-gray-700">Unmatched</span>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-yellow-600">{{ stats.unmatched }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div class="flex items-center space-x-2">
+                <span class="text-blue-600">⟳</span>
+                <span class="text-sm text-gray-700">Pending</span>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-blue-600">{{ stats.pending }}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+              <div class="flex items-center space-x-2">
+                <span class="text-red-600">
+                  <i class="fa-solid fa-warning"></i>
+                </span>
+                <span class="text-sm text-gray-700">Disputed</span>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-red-600">{{ stats.disputed }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Balance Summary -->
+        <div>
+          <h4 class="font-medium text-gray-800 mb-3">Balance Summary</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Total Credits:</span>
+              <span class="font-medium text-green-600">{{ formatCurrency(stats.totalCredits) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Total Debits:</span>
+              <span class="font-medium text-red-600">{{ formatCurrency(stats.totalDebits) }}</span>
+            </div>
+            <div class="flex justify-between pt-2 border-t border-gray-200">
+              <span class="text-gray-700 font-medium">Net Amount:</span>
+              <span class="font-bold" [ngClass]="stats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'">
+                {{ formatCurrency(stats.netAmount) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Items Summary -->
+        <div>
+          <h4 class="font-medium text-gray-800 mb-3">Pending Items</h4>
+          <div class="space-y-2">
+            <div *ngFor="let type of ['deposit', 'check', 'ach', 'wire']"
+              class="flex justify-between text-sm p-2 bg-gray-50 rounded">
+              <span class="text-gray-600 capitalize">{{ type }}s:</span>
+              <div class="text-right">
+                <div class="font-medium">{{ getPendingItemsByType(type).count }} items</div>
+                <div class="text-xs text-gray-500">{{ formatCurrency(getPendingItemsByType(type).total) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div>
+          <h4 class="font-medium text-gray-800 mb-3">Recent Activity</h4>
+          <div class="space-y-2">
+            <div class="text-sm p-2 bg-green-50 border border-green-200 rounded">
+              <div class="font-medium text-green-800">Auto-match completed</div>
+              <div class="text-xs text-green-600">2 minutes ago</div>
+            </div>
+            <div class="text-sm p-2 bg-blue-50 border border-blue-200 rounded">
+              <div class="font-medium text-blue-800">Data refreshed</div>
+              <div class="text-xs text-blue-600">5 minutes ago</div>
+            </div>
+            <div class="text-sm p-2 bg-yellow-50 border border-yellow-200 rounded">
+              <div class="font-medium text-yellow-800">Manual match created</div>
+              <div class="text-xs text-yellow-600">10 minutes ago</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div>
+          <h4 class="font-medium text-gray-800 mb-3">Quick Actions</h4>
+          <div class="space-y-2">
+            <button
+              class="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+              <span>⟳</span>
+              <span>Refresh Data</span>
+            </button>
+            <button
+              class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
+              <span>⬇️</span>
+              <span>Export Report</span>
+            </button>
+            <button
+              class="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2">
+              <span>⬆️</span>
+              <span>Import Data</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Modal -->
+  <div *ngIf="showReportsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800">Generate Reports</h3>
+          <button (click)="toggleReportsModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <span class="text-gray-500">✕</span>
+          </button>
+        </div>
+      </div>
+      <div class="p-6 space-y-3">
+        <button class="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-blue-600">📄</span>
+            <div>
+              <div class="font-medium text-gray-800">Reconciliation Summary</div>
+              <div class="text-sm text-gray-600">Complete reconciliation report</div>
+            </div>
+          </div>
+        </button>
+        <button class="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-yellow-600">⚠️</span>
+            <div>
+              <div class="font-medium text-gray-800">Discrepancy Report</div>
+              <div class="text-sm text-gray-600">Unmatched and disputed items</div>
+            </div>
+          </div>
+        </button>
+        <button class="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <div class="flex items-center space-x-3">
+            <span class="text-green-600">📊</span>
+            <div>
+              <div class="font-medium text-gray-800">Analytics Report</div>
+              <div class="text-sm text-gray-600">Trends and insights</div>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match Confirmation Modal -->
+  <div *ngIf="showMatchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden transform transition-all">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="text-lg font-semibold text-gray-800">Match Transaction</h3>
+        <button (click)="bypassMatch()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <span class="text-xl">×</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6">
+        <div class="flex items-start space-x-4 mb-6">
+          <div class="p-3 bg-blue-50 rounded-full flex-shrink-0">
+            <span class="text-blue-600 text-xl"><i class="fa-solid fa-link"></i></span>
+          </div>
+          <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">Confirm Match</h4>
+            <p class="text-gray-600 leading-relaxed">
+              Are you sure you want to match this transaction with the ERP record?
+            </p>
+
+            <!-- Transaction Details Preview -->
+            <div *ngIf="selectedTransactionMatch" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100 text-sm">
+              <div class="grid grid-cols-2 gap-2">
+                <span class="text-gray-500">Date:</span>
+                <span class="font-medium text-gray-800">{{ formatDate(selectedTransactionMatch.date) }}</span>
+
+                <span class="text-gray-500">Description:</span>
+                <span class="font-medium text-gray-800">{{ selectedTransactionMatch.description }}</span>
+
+                <span class="text-gray-500">Amount:</span>
+                <span class="font-medium"
+                  [ngClass]="selectedTransactionMatch.debit ? 'text-red-600' : 'text-green-600'">
+                  {{ selectedTransactionMatch.debit ? '-' + formatCurrency(selectedTransactionMatch.debit) : '+' +
+                  formatCurrency(selectedTransactionMatch.credit!) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-end pt-2">
+          <button (click)="bypassMatch()"
+            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+            Bypass
+          </button>
+
+          <button (click)="flagTransaction()"
+            class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+            <span><i class="fa-solid fa-flag"></i></span>
+            Flag for Review
+          </button>
+
+          <button (click)="confirmMatch()"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center justify-center gap-2">
+            <span><i class="fa-solid fa-check"></i></span>
+            Okay, Match
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

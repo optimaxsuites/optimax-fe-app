@@ -1,0 +1,238 @@
+<div class="income-statement-page" #statementContent>
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Endpoint Income Statement</p>
+      <h1>Profit and Loss Statement</h1>
+      <p class="subtitle">Cards and statement totals come from the income statement report DTO for {{ reportPeriodLabel }}. Included transaction makeup is shown separately.</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="period-control">
+        <button type="button" class="icon-btn" (click)="previousMonth()" aria-label="Previous month">
+          <i class="fa fa-chevron-left"></i>
+        </button>
+        <span>{{ (data?.period | date:'MMM yyyy') || 'Loading' }}</span>
+        <button type="button" class="icon-btn" (click)="nextMonth()" aria-label="Next month">
+          <i class="fa fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="action-buttons">
+        <app-income-statement-filter
+          [initialFilters]="activeFilters"
+          (filtersApplied)="onFiltersApplied($event)">
+        </app-income-statement-filter>
+        <button type="button" class="icon-btn" (click)="toggleArchivesModal()" aria-label="Saved statements"><i class="fa fa-archive"></i></button>
+        <button type="button" class="icon-btn" (click)="printPage()" aria-label="Print"><i class="fa fa-print"></i></button>
+        <button type="button" class="icon-btn" (click)="exportToCSV()" aria-label="Export CSV"><i class="fa fa-file-excel"></i></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="status-banner error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <section class="state-card" *ngIf="loading">
+    <h2>Loading income statement</h2>
+    <p>Requesting the selected period from the backend report endpoint.</p>
+  </section>
+
+  <section class="state-card" *ngIf="!loading && !errorMessage && data && !hasIncomeStatementData">
+    <h2>No endpoint data for {{ reportPeriodLabel }}</h2>
+    <p>The income statement endpoint returned no lines or totals for this period.</p>
+  </section>
+
+  <ng-container *ngIf="!loading && data && hasIncomeStatementData">
+    <section class="summary-grid">
+      <article class="summary-card" *ngFor="let card of summaryCards" [class.good]="card.tone === 'good'" [class.warning]="card.tone === 'warning'">
+        <span>{{ card.label }}</span>
+        <strong>{{ fmt.formatCurrency(card.value) }}</strong>
+        <small>{{ card.meta }}</small>
+      </article>
+    </section>
+
+    <section class="statement-card">
+      <div class="statement-header">
+        <div>
+          <p class="eyebrow">Income Statement</p>
+          <h2>{{ reportPeriodLabel }}</h2>
+        </div>
+        <div class="statement-meta">
+          <span>{{ activeFilters.reportType }}</span>
+          <span *ngIf="activeFilters.showVariance">Variance on</span>
+          <span *ngIf="activeFilters.showPercentages">Percentages on</span>
+        </div>
+      </div>
+
+      <div class="statement-table">
+        <article class="statement-section" *ngFor="let section of statementSections; trackBy: trackBySection">
+          <div class="section-heading">
+            <h3>{{ section.title }}</h3>
+            <span>{{ fmt.formatCurrency(section.total) }}</span>
+          </div>
+
+          <div class="line-row" *ngFor="let item of section.rows; trackBy: trackByLineItem">
+            <span class="line-name">{{ item.name }}</span>
+            <span class="line-amount" [class.expense]="section.amountTone === 'expense'" [class.income]="section.amountTone === 'income'">
+              {{ fmt.formatCurrency(getDisplayAmount(item)) }}
+            </span>
+            <span class="line-muted" *ngIf="getComparisonAmount(item) !== null">
+              {{ fmt.formatCurrency(getComparisonAmount(item) ?? 0) }}
+            </span>
+            <span class="line-variance" *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+              {{ fmt.formatCurrency(getVariance(item) ?? 0) }}
+              <small *ngIf="activeFilters.showPercentages">{{ fmt.formatPercentage(getVariancePercentage(item) ?? 0) }}</small>
+            </span>
+          </div>
+
+          <div class="total-row">
+            <span>{{ section.totalLabel }}</span>
+            <strong [class.expense]="section.amountTone === 'expense'" [class.income]="section.amountTone === 'income'">
+              {{ fmt.formatCurrency(section.total) }}
+            </strong>
+          </div>
+        </article>
+      </div>
+
+      <div class="profit-grid">
+        <article>
+          <span>Gross Profit</span>
+          <strong>{{ fmt.formatCurrency(grossProfit) }}</strong>
+          <small>{{ grossProfitMargin.toFixed(1) }}% margin</small>
+        </article>
+        <article>
+          <span>EBITDA</span>
+          <strong>{{ fmt.formatCurrency(ebitda) }}</strong>
+          <small>{{ ebitdaMargin.toFixed(1) }}% margin</small>
+        </article>
+        <article>
+          <span>Net Income Before Tax</span>
+          <strong>{{ fmt.formatCurrency(netIncomeBeforeTax) }}</strong>
+          <small>Tax rate {{ effectiveTaxRate.toFixed(1) }}%</small>
+        </article>
+        <article class="net-profit">
+          <span>Net Profit After Tax</span>
+          <strong>{{ fmt.formatCurrency(netIncome) }}</strong>
+          <small>{{ netProfitMargin.toFixed(1) }}% net margin</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="statement-card makeup-card" *ngIf="hasTransactionMakeup">
+      <div class="statement-header">
+        <div>
+          <p class="eyebrow">Transaction Makeup</p>
+          <h2>Included Transaction Drilldown</h2>
+        </div>
+        <div class="statement-meta">
+          <span>{{ transactionMakeupCount }} transactions</span>
+          <span>Not added to totals</span>
+        </div>
+      </div>
+
+      <div class="statement-table">
+        <article class="statement-section" *ngIf="transactionRevenueMakeup.length">
+          <div class="section-heading">
+            <h3>Interest Income Makeup</h3>
+            <span>{{ fmt.formatCurrency(transactionRevenueMakeupTotal) }}</span>
+          </div>
+
+          <div class="line-row makeup-row" *ngFor="let item of transactionRevenueMakeup; trackBy: trackByLineItem">
+            <span class="line-name">{{ item.name }}</span>
+            <span class="line-amount income">{{ fmt.formatCurrency(item.amount) }}</span>
+          </div>
+
+          <div class="total-row">
+            <span>Total Interest Makeup</span>
+            <strong class="income">{{ fmt.formatCurrency(transactionRevenueMakeupTotal) }}</strong>
+          </div>
+        </article>
+
+        <article class="statement-section" *ngIf="transactionPrincipalMakeup.length">
+          <div class="section-heading">
+            <h3>Loan Principal Makeup</h3>
+            <span>{{ fmt.formatCurrency(transactionPrincipalMakeupTotal) }}</span>
+          </div>
+
+          <div class="line-row makeup-row" *ngFor="let item of transactionPrincipalMakeup; trackBy: trackByLineItem">
+            <span class="line-name">{{ item.name }}</span>
+            <span class="line-amount expense">{{ fmt.formatCurrency(item.amount) }}</span>
+          </div>
+
+          <div class="total-row">
+            <span>Total Loan Principal Makeup</span>
+            <strong class="expense">{{ fmt.formatCurrency(transactionPrincipalMakeupTotal) }}</strong>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <app-income-statement-charts
+      [monthlyData]="monthlyData"
+      [expenseDistribution]="expenseDistribution">
+    </app-income-statement-charts>
+
+    <section class="insights-section">
+      <div class="section-heading standalone">
+        <h3>Key Insights</h3>
+      </div>
+      <div class="insights-grid">
+        <article class="insight-card" *ngFor="let insight of insights" [class.good]="insight.trend === 'positive'" [class.warning]="insight.trend === 'negative'">
+          <strong>{{ insight.title }}</strong>
+          <p>{{ insight.description }}</p>
+        </article>
+      </div>
+    </section>
+
+    <app-report-context [context]="data.reportContext"></app-report-context>
+
+    <div class="actions-bar">
+      <button type="button" class="text-btn" (click)="saveStatement()" [disabled]="isSaved">
+        {{ isSaved ? 'Saved' : 'Save Statement' }}
+      </button>
+      <button type="button" class="text-btn" (click)="toggleCommentsModal()">
+        <i class="fa fa-comment"></i> Comments
+      </button>
+    </div>
+  </ng-container>
+
+  <div class="modal-overlay" *ngIf="showCommentsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Comments</h3>
+        <button type="button" class="close-btn" (click)="toggleCommentsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="comment-list">
+          <div class="comment-item" *ngFor="let comment of comments">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.author }}</span>
+              <span class="comment-date">{{ comment.timestamp | date:'short' }}</span>
+            </div>
+            <div class="comment-text">{{ comment.text }}</div>
+          </div>
+        </div>
+        <div class="comment-input">
+          <textarea placeholder="Add your comment..." #newComment id="comment"></textarea>
+          <button class="text-btn primary" (click)="addComment(newComment.value); newComment.value=''">Add Comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showArchivesModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Saved Statements</h3>
+        <button type="button" class="close-btn" (click)="toggleArchivesModal()">&times;</button>
+      </div>
+      <div class="modal-body padded">
+        <div class="saved-statement" *ngIf="isSaved">
+          <strong>Saved Statement {{ getFormattedDate() }}</strong>
+          <span>Revenue: {{ fmt.formatCurrency(totalRevenue) }}</span>
+          <span>Net Income: {{ fmt.formatCurrency(netIncome) }}</span>
+        </div>
+        <div class="no-saved" *ngIf="!isSaved">No saved statements found</div>
+      </div>
+    </div>
+  </div>
+</div>

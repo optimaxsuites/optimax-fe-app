@@ -1,0 +1,87 @@
+<div class="hn-wrap">
+  <div class="hn-header">
+    <h3 class="hn-title">Notification Subscriptions</h3>
+    <p class="hn-sub">Choose which channels and events generate notifications for each HR project area.</p>
+  </div>
+
+  <!-- Per-project accordion -->
+  <div class="proj-list">
+    <div class="proj-card" *ngFor="let proj of projects" [class.open]="expandedProject === proj.projectKey">
+
+      <div class="proj-head" (click)="toggleProject(proj.projectKey)">
+        <div class="proj-head-left">
+          <i class="fas fa-folder-open proj-icon"></i>
+          <strong>{{ proj.projectLabel }}</strong>
+        </div>
+        <div class="proj-head-chips">
+          <span *ngFor="let ch of notifChannels" class="ch-chip"
+                [class.on]="proj.channels[ch.key]" [title]="ch.label">
+            <i [class]="'fas ' + ch.icon"></i>
+          </span>
+        </div>
+        <i class="fas" [class.fa-chevron-down]="expandedProject !== proj.projectKey"
+                       [class.fa-chevron-up]="expandedProject === proj.projectKey"
+                       style="color:#9ca3af;margin-left:8px"></i>
+      </div>
+
+      <div class="proj-body" *ngIf="expandedProject === proj.projectKey">
+
+        <!-- Channel toggles -->
+        <div class="sub-section">
+          <div class="sub-section-head">
+            <span class="sub-section-title">Notification Channels</span>
+            <div class="bulk-btns">
+              <button class="bulk-btn" (click)="toggleAllChannels(proj, true)">Enable all</button>
+              <button class="bulk-btn" (click)="toggleAllChannels(proj, false)">Disable all</button>
+            </div>
+          </div>
+          <div class="channel-grid">
+            <div class="channel-tile" *ngFor="let ch of notifChannels"
+                 [class.enabled]="proj.channels[ch.key]"
+                 (click)="proj.channels[ch.key] = !proj.channels[ch.key]">
+              <div class="ch-icon-wrap"><i [class]="'fas ' + ch.icon"></i></div>
+              <div class="ch-info">
+                <div class="ch-label">{{ ch.label }}</div>
+                <div class="ch-desc">{{ ch.desc }}</div>
+              </div>
+              <div class="ch-toggle">
+                <div class="toggle-pill" [class.on]="proj.channels[ch.key]">
+                  <div class="toggle-knob"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event toggles -->
+        <div class="sub-section">
+          <div class="sub-section-head">
+            <span class="sub-section-title">Events</span>
+            <div class="bulk-btns">
+              <button class="bulk-btn" (click)="toggleAllEvents(proj, true)">All on</button>
+              <button class="bulk-btn" (click)="toggleAllEvents(proj, false)">All off</button>
+            </div>
+          </div>
+          <div class="event-list">
+            <label class="event-row" *ngFor="let key of eventKeys">
+              <div class="event-label">
+                <i class="fas fa-dot-circle" style="color:#d1d5db;font-size:9px;margin-right:6px"></i>
+                {{ eventLabels[key] }}
+              </div>
+              <input type="checkbox" [checked]="projEvents(proj)[key]" (change)="projEvents(proj)[key] = $any($event.target).checked" class="event-check">
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Save bar -->
+  <div class="save-bar">
+    <span class="save-success" *ngIf="saveSuccess">&#10003; Preferences saved</span>
+    <button class="btn-primary" (click)="savePrefs()">
+      <i class="fas fa-save"></i> Save Notification Preferences
+    </button>
+  </div>
+</div>

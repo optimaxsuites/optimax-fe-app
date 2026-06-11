@@ -1,0 +1,239 @@
+// _loan-status-badges.scss
+// Simple badge styles matching .invite-status pattern
+
+@mixin advance-loan-status-badges($include-border: true) {
+  
+  // PENDING - Amber
+  &.status-pending {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #b45309 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // AWAITING_INTEREST_ACCEPTANCE - Light orange
+  &.status-awaiting_interest_acceptance {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(249, 115, 22, 0.12) !important;
+    color: #9a3412 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // APPROVED - Blue
+  &.status-approved {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(59, 130, 246, 0.12) !important;
+    color: #1e40af !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // READY_FOR_DISBURSEMENT - Cyan
+  &.status-ready_for_disbursement {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(8, 145, 178, 0.12) !important;
+    color: #0891b2 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // ACTIVE - Green (matching your invite-status)
+  &.status-active {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(46, 178, 112, 0.12) !important;
+    color: #1e7e4a !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // REJECTED - Red
+  &.status-rejected {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(220, 38, 38, 0.12) !important;
+    color: #991b1b !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // COMPLETED - Green (same as active)
+  &.status-completed {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(46, 178, 112, 0.12) !important;
+    color: #1e7e4a !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // SKIPPED - Gray
+  &.status-skipped {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(107, 114, 128, 0.12) !important;
+    color: #374151 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // OVERDUE - Orange
+  &.status-overdue {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(249, 115, 22, 0.12) !important;
+    color: #c2410c !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // DEFAULTED - Dark Red
+  &.status-defaulted {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(220, 38, 38, 0.12) !important;
+    color: #7f1d1d !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // PAUSED - Slate
+  &.status-paused {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    background: rgba(100, 116, 139, 0.12) !important;
+    color: #334155 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+
+  // PAID - Green (same as active)
+  &.status-paid {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(46, 178, 112, 0.12);
+    color: #1e7e4a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
+  }
+
+  // ONGOING - Blue (same as approved)
+  &.status-ongoing {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    color: #1e40af;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
+  }
+
+  // INACTIVE - Gray
+  &.status-inactive {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(107, 114, 128, 0.12);
+    color: #374151;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
+  }
+
+  // SUSPENDED - Red (same as rejected)
+  &.status-suspended {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(220, 38, 38, 0.12);
+    color: #991b1b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
+  }
+
+  // EXPIRED - Purple/Gray (new)
+  &.status-expired {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.12);
+    color: #6d28d9;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: none;
+  }
+
+  // Disabled state
+  &.disabled {
+    background: rgba(120, 128, 136, 0.14);
+    color: #56616d;
+  }
+}
+
+@mixin advanceLoanStatusBadges($include-border: true) {
+  @include advance-loan-status-badges($include-border);
+}
