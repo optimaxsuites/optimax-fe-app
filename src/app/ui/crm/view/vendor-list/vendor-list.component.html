@@ -1,0 +1,158 @@
+<div class="container-fluid" *ngIf="categoryTable">
+  <div class="container-header">
+    <h2>Category: {{ categoryFilter }}</h2>
+  </div>
+  <section class="selectClients">
+    <div class="asd">
+      <div class="top-products-container">
+        <div class="top-products">
+          <div class="top-products-table-container">
+            <table class="top-products-table w3-table w3-striped">
+              <thead>
+                <tr class="top-products-table-row">
+                  <th class="top-products-table-head checkbox"></th>
+                  <th class="top-products-table-head col-1">Name</th>
+                  <th class="top-products-table-head col-1">Contact</th>
+                  <th class="top-products-table-head col-1">Phone Number</th>
+                  <th class="top-products-table-head col-1">Email</th>
+                  <th class="top-products-table-head col-1">Category</th>
+                  <th class="top-products-table-head col-1">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class="top-products-table-row"
+                  *ngFor="let vendor of filteredVendorList"
+                >
+                  <td class="top-products-table-data">
+                    <input type="checkbox" class="check" />
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ vendor.individualVendorName }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ vendor.individualVendorContactPerson }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ vendor.individualVendorNumber }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ vendor.individualVendorEmail }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ vendor.categoryType }}
+                  </td>
+                  <td class="top-products-table-data col-1">
+                    <div class="actionDiv">
+                      <div class="image-container">
+                        <img
+                          (click)="viewVendor(vendor)"
+                          class="actionTags"
+                          src="../../../assets/view.svg"
+                          alt="View"
+                        />
+                        <span class="tooltip">View</span>
+                      </div>
+                      <div class="image-container">
+                        <img
+                          class="actionTags"
+                          src="../../../assets/Edit.svg"
+                          alt="Edit"
+                        />
+                        <span class="tooltip">Edit</span>
+                      </div>
+                      <div class="image-container">
+                        <img
+                          class="actionTags"
+                          src="../../../assets/delete (1).svg"
+                          alt="Delete"
+                        />
+                        <span class="tooltip">Delete</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<ng-container *ngIf="dataService.vendorDetails">
+  <article class="viewVendor">
+    <div class="viewFlex">
+      <p>Name:</p>
+      <span>{{ dataService.selectedVendor.individualVendorName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Contact Person:</p>
+      <span>{{
+        dataService.selectedVendor.individualVendorContactPerson
+      }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Phone Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorNumber }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Job Position:</p>
+      <span>{{ dataService.selectedVendor.individualVendorJobPosition }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Email:</p>
+      <span>{{ dataService.selectedVendor.individualVendorEmail }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Website:</p>
+      <span>{{ dataService.selectedVendor.individualVendorWebsite }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Industry:</p>
+      <span>{{ dataService.selectedVendor.individualVendorIndustry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Address:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAddress }}</span>
+    </div>
+
+    <div class="viewFlex">
+      <p>Country:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCountry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>State:</p>
+      <span>{{ dataService.selectedVendor.individualVendorState }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>City:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCity }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Postal Code:</p>
+      <span>{{ dataService.selectedVendor.individualVendorPostalCode }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>CAC Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCACNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>TIN Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorTINNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>BVN:</p>
+      <span>{{ dataService.selectedVendor.individualVendorBVN }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Bank:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Account Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctNum }}</span>
+    </div>
+  </article>
+</ng-container>

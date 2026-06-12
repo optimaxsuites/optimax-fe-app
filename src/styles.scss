@@ -1,107 +1,134 @@
-/* You can add global styles to this file, and also import other style files */
 
-@import "assets/theme/theme.scss";
-@import "./app/ui/view/loan-management/_loan-status-badges.scss";
-@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
-@import "../node_modules/primeng/resources/primeng.css";
-@import "../node_modules/primeng/resources/primeng.min.css";
-@import "../node_modules/primeicons/primeicons.css";
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use "@angular/material" as mat;
+// Plus imports for other components in your app.
 
 @import "@ng-select/ng-select/themes/default.theme.css";
 
-@import "../node_modules/quill/dist/quill.core.css";
-@import "../node_modules/quill/dist/quill.snow.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 
-html{
-  font-size: 10px;
+// custom primeUI
+@import "primeicons/primeicons.css";
+@import "primeng/resources/themes/saga-green/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeng/resources/primeng.min.css";
+
+/* Custom css */
+@import "assets/theme/theme.scss";
+// @import "../projects/POS/src/styles.scss";
+// @import "assets/layout/layout.css";
+
+// QUILL CSS
+@import "quill/dist/quill.core.css";
+@import "quill/dist/quill.snow.css";
+
+@import "leaflet/dist/leaflet.css";
+
+
+// Be sure that you only ever include this mixin once!
+@include mat.core();
+
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+$ERP-FE-primary: mat.define-palette(mat.$green-palette, 700);
+$ERP-FE-accent: mat.define-palette(mat.$cyan-palette, 900);
+
+// // The warn palette is optional (defaults to red).
+$ERP-FE-warn: mat.define-palette(mat.$red-palette);
+
+// // Create the theme object. A theme consists of configurations for individual
+// // theming systems such as "color" or "typography".
+$ERP-FE-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $ERP-FE-primary,
+      accent: $ERP-FE-accent,
+      warn: $ERP-FE-warn,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0,
+  )
+
+);
+
+// // Include theme styles for core and each component used in your app.
+// // Alternatively, you can import and @include the theme mixins for each component
+// // that you are using.
+@include mat.all-component-themes($ERP-FE-theme);
+.my-outlined-dialog {
+  outline: 2px solid rgb(28, 0, 128);
 }
 
-/* Final uniform loan badge palette (advance + cooperative) */
-.status-badge.status-pending,
-.status-badge-small.status-pending,
-.loan-status-badge.status-pending,
-.status-pill.status-pending,
-.current-status-badge.status-pending,
-.status-tag.status-pending {
-  background-color: rgba(231, 222, 101, 0.2) !important;
-  color: #8f8500 !important;
-  border: 1px solid rgba(231, 222, 101, 0.3) !important;
-}
-
-.status-badge.status-approved,
-.status-badge-small.status-approved,
-.loan-status-badge.status-approved,
-.status-pill.status-approved,
-.current-status-badge.status-approved,
-.status-tag.status-approved {
-  background-color: rgba(79, 124, 255, 0.14) !important;
-  color: #4f7cff !important;
-  border: 1px solid rgba(79, 124, 255, 0.28) !important;
-}
-
-.status-badge.status-active,
-.status-badge-small.status-active,
-.loan-status-badge.status-active,
-.status-pill.status-active,
-.current-status-badge.status-active,
-.status-tag.status-active {
-  background-color: rgba(56, 189, 248, 0.14) !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.32) !important;
-}
-
-.status-badge.status-rejected,
-.status-badge-small.status-rejected,
-.loan-status-badge.status-rejected,
-.status-pill.status-rejected,
-.current-status-badge.status-rejected,
-.status-tag.status-rejected,
-.status-badge.status-overdue,
-.status-badge-small.status-overdue,
-.loan-status-badge.status-overdue,
-.status-pill.status-overdue,
-.current-status-badge.status-overdue,
-.status-tag.status-overdue,
-.status-badge.status-defaulted,
-.status-badge-small.status-defaulted,
-.loan-status-badge.status-defaulted,
-.status-pill.status-defaulted,
-.current-status-badge.status-defaulted,
-.status-tag.status-defaulted {
-  background-color: rgba(233, 55, 55, 0.1) !important;
-  color: #b30000 !important;
-  border: 1px solid rgba(233, 55, 55, 0.3) !important;
-}
-
-.status-badge.status-completed,
-.status-badge-small.status-completed,
-.loan-status-badge.status-completed,
-.status-pill.status-completed,
-.current-status-badge.status-completed,
-.status-tag.status-completed {
-  background-color: rgba(46, 178, 112, 0.1) !important;
-  color: #1e7e4a !important;
-  border: 1px solid rgba(46, 178, 112, 0.3) !important;
-}
-
-.card{
-  border: 1px solid rgb(224, 224, 224);
-  border-radius: 5px;
-}
-
-* {
+*{
+  font-size: 12px ;
+  font-family: "Roboto Slab", serif;
   list-style: none;
   outline: none;
-  text-decoration: none;
-  font-family: "Roboto Slab", serif;
 }
 
-html{
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a:hover,
+a:focus,
+a:active,
+a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+
+
+.my-outlined-dialog {
+  outline: 2px solid rgb(28, 0, 128);
+}
+
+
+
+
+// // regular style toast
+// @import 'ngx-toastr/toastr';
+
+// // bootstrap style toast
+// // or import a bootstrap 4 alert styled design (SASS ONLY)
+// // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
+// @import 'ngx-toastr/toastr-bs4-alert';
+
+// // if you'd like to use it without importing all of bootstrap it requires
+// @import 'bootstrap/scss/functions';
+// @import 'bootstrap/scss/variables';
+// @import 'bootstrap/scss/mixins';
+// // bootstrap 4
+// @import 'ngx-toastr/toastr-bs4-alert';
+// // boostrap 5
+// @import 'ngx-toastr/toastr-bs5-alert';
+
+
+
+
+
+
+
+
+
+
+
+// /* You can add global styles to this file, and also import other style files */
+// *, h1,h2,h3,h4,h5,h6{
+//   font-family: "Roboto Slab", serif;
+// }
+
+html,
+body {
   height: 100%;
   font-size: 10px;
 }
-
 body {
+  // margin: 0;
   font-family: "Roboto Slab", serif;
 }
 
@@ -110,27 +137,121 @@ h1,h2,h3,h4,h5,h6{
 }
 
 @media screen and (min-width: 1200px){
-  
+  html,
+body {
+  font-size: 10px;
+}
 }
 
-fieldset {
-  border: 2px solid #4A4A4A;
-  border-radius: 8px;       
-  padding: 10px;          
-  margin-bottom: 1rem;       
-}
-
-.p-toast{
+.p-toast {
   font-size: 1em;
+  opacity: 1;
 }
 
+.p-toast .p-toast-message {
+  border: 0;
+  border-radius: 1.4rem;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1.6rem 4rem rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.p-toast .p-toast-message .p-toast-message-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.p-toast .p-toast-icon-close {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  color: #64748b;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.p-toast .p-toast-icon-close:hover {
+  background: rgba(148, 163, 184, 0.14);
+  color: #0f172a;
+}
+
+.p-toast .p-toast-message-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-top: 0.1rem;
+}
+
+.p-toast .p-toast-summary {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+  font-size: 1.22rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.p-toast .p-toast-detail {
+  margin: 0;
+  color: #475569;
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
+
+.p-toast .p-toast-message-success {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #16a34a;
+}
+
+.p-toast .p-toast-message-success .p-toast-message-icon {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.p-toast .p-toast-message-info {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #2563eb;
+}
+
+.p-toast .p-toast-message-info .p-toast-message-icon {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.p-toast .p-toast-message-warn {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #d97706;
+}
+
+.p-toast .p-toast-message-warn .p-toast-message-icon {
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+}
+
+.p-toast .p-toast-message-error {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 0.38rem solid #dc2626;
+}
+
+.p-toast .p-toast-message-error .p-toast-message-icon {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
 .p-dialog{
   font-size: 1em;
 }
-
 .p-panel{
   font-size: 1.1em;
 }
+
+
 
 .p-divider{
   margin: 0;
@@ -158,669 +279,94 @@ fieldset {
   margin-bottom: 1rem;
   padding: 0;
 }
-
 .custom-header > a {
   color: #224957; 
   font-weight: bold;
   text-decoration: none ;
 }
-
 .custom-header > a[aria-selected="true"] {
   background-color: rgb(37 146 91 / 0.6);
   color: white;
   border-radius: 1rem;
 }
+fieldset {
+  border: 2px solid #4A4A4A;
+  border-radius: 8px;       
+  padding: 10px;          
+  margin-bottom: 1rem;       
+}
+input[type="checkbox"]{
+  @apply accent-customBlue
 
+}
+input[type="radio"]{
+  @apply accent-customBlue
 
-
-:root {
-  --table-bg: #ffffff;
-  --table-border: #e6edf2;
-  --table-header-bg: #f4f7f9;
-  --table-header-text: #224957;
-  --table-row-hover: #f7fafc;
-  --table-text: #2a3a43;
 }
 
-.p-datatable .p-datatable-table {
-  border: 1px solid var(--table-border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--table-bg);
-  color: var(--table-text);
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12px;
+  text-align: left;
 }
 
-.p-datatable .p-datatable-thead > tr > th {
-  background: var(--table-header-bg);
-  color: var(--table-header-text);
-  font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  /* text-transform: uppercase; */
-  border-bottom: 1px solid var(--table-border);
+.styled-table thead tr {
+  // background-color: #009879;
+  color: #ffffff;
+  font-weight: bold;
 }
 
-.p-datatable .p-datatable-tbody > tr > td {
-  border-bottom: 1px solid var(--table-border);
+.styled-table th,
+.styled-table td {
+  padding: 8px;
+  border: 1px solid #dddddd;
 }
 
-.p-datatable .p-datatable-tbody > tr:hover > td {
-  background: var(--table-row-hover);
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
 }
 
-/* Loan Management table design parity with app-table */
-app-loan-approval-ui,
-app-cooperative-members,
-app-repayment-schedule-view,
-app-cooperative-member-dashboard,
-app-cooperative-dashboard,
-app-loan-reports,
-app-employee-history,
-app-cooperative-member-detail,
-app-employee-dashboard,
-app-employee-repayment-schedule,
-app-loan-dashboard,
-app-cooperative-loan-detail,
-app-cooperative-loans {
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: #ffffff;
-    border: 1px solid #e6edf2;
-    border-radius: 12px;
-    overflow: hidden;
-    color: #2a3a43;
-  }
-
-  thead th {
-    background: #f4f7f9;
-    color: #224957;
-    font-weight: 600;
-    font-size: 0.85rem;
-    letter-spacing: 0.01em;
-    border-bottom: 1px solid #e6edf2;
-    padding: 0.75rem 0.9rem;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    text-transform: none;
-  }
-
-  tbody td {
-    padding: 0.75rem 0.9rem;
-    border-bottom: 1px solid #eef2f6;
-    background: #ffffff;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: 0;
-  }
-
-  tbody tr:hover td {
-    background: #f8fbfc;
-  }
-
-  thead th.actions-col,
-  tbody td.actions-col {
-    text-align: center;
-    width: 110px;
-    white-space: nowrap;
-  }
-
-  tbody td.actions-col .table-actions,
-  tbody td.actions-col .action-buttons,
-  tbody td.actions-col .row-actions {
-    justify-content: center;
-  }
-
-  td[colspan],
-  .no-data,
-  .empty-state {
-    text-align: center;
-    color: #64748b;
-  }
-
-  table.compact thead th,
-  table.compact tbody td {
-    padding: 0.55rem 0.7rem;
-    font-size: 0.95em;
-  }
+.p-confirm-dialog .p-dialog-header {
+  background-color: #f0f0f0;
+  color: #333;
 }
 
-app-cooperative-dashboard,
-app-cooperative-member-dashboard,
-app-cooperative-loans,
-app-employee-dashboard,
-app-employee-history,
-app-cooperative-members,
-app-loan-reports,
-app-loan-dashboard {
-  table.simple-table tbody tr:nth-child(even) td,
-  table.loans-table tbody tr:nth-child(even) td,
-  table.history-table tbody tr:nth-child(even) td,
-  table.members-table tbody tr:nth-child(even) td,
-  table.reports-table tbody tr:nth-child(even) td,
-  table.loan-table tbody tr:nth-child(even) td {
-    background: #f9fbfc;
-  }
-
-  table.simple-table tbody tr:hover td,
-  table.loans-table tbody tr:hover td,
-  table.history-table tbody tr:hover td,
-  table.members-table tbody tr:hover td,
-  table.reports-table tbody tr:hover td,
-  table.loan-table tbody tr:hover td {
-    background: #f8fbfc;
-  }
+.p-confirm-dialog .p-dialog-content {
+  font-size: 1.1em;
 }
 
-/* Loan Management: align loan + employee dashboard badge colors with approval/rejection UI */
-app-loan-dashboard .status-badge.status-pending,
-app-employee-dashboard .status-badge.status-pending {
-  background-color: rgba(231, 222, 101, 0.2) !important;
-  color: #8f8500 !important;
-  border: 1px solid rgba(231, 222, 101, 0.3) !important;
+.p-confirm-dialog .p-dialog-footer .p-confirm-dialog-accept {
+  background-color: #2EB270;
+  color: white;
+  // margin-right: 1rem;
+  padding: 0.5rem 1rem;
 }
 
-app-loan-dashboard .status-badge.status-approved,
-app-employee-dashboard .status-badge.status-approved {
-  background-color: rgba(79, 124, 255, 0.14) !important;
-  color: #4f7cff !important;
-  border: 1px solid rgba(79, 124, 255, 0.28) !important;
+.p-confirm-dialog .p-dialog-footer .p-confirm-dialog-reject {
+  background-color: red;
+  color: white;
+  margin-right: 1rem;
+  padding: 0.5rem 1rem;
 }
 
-app-loan-dashboard .status-badge.status-active,
-app-employee-dashboard .status-badge.status-active {
-  background-color: rgba(56, 189, 248, 0.14) !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.32) !important;
+/* Focus glow */
+.tour-highlight {
+  position: relative;
+  z-index: 96;
+  outline: 3px solid #4f46e5;
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
-app-loan-dashboard .status-badge.status-rejected,
-app-employee-dashboard .status-badge.status-rejected {
-  background-color: rgba(233, 55, 55, 0.1) !important;
-  color: #b30000 !important;
-  border: 1px solid rgba(233, 55, 55, 0.3) !important;
+/* Prevent other elements from being interacted with during tour */
+body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
+  pointer-events: none !important;
 }
 
-app-loan-dashboard .status-badge.status-completed,
-app-employee-dashboard .status-badge.status-completed {
-  background-color: rgba(46, 178, 112, 0.1) !important;
-  color: #1e7e4a !important;
-  border: 1px solid rgba(46, 178, 112, 0.3) !important;
-}
 
-@media (max-width: 768px) {
-  app-loan-approval-ui,
-  app-cooperative-members,
-  app-repayment-schedule-view,
-  app-cooperative-member-dashboard,
-  app-cooperative-dashboard,
-  app-loan-reports,
-  app-employee-history,
-  app-cooperative-member-detail,
-  app-employee-dashboard,
-  app-employee-repayment-schedule,
-  app-loan-dashboard,
-  app-cooperative-loan-detail,
-  app-cooperative-loans {
-    table thead th,
-    table tbody td {
-      padding: 0.55rem 0.7rem;
-    }
-  }
-}
 
-/* Loan Management standard header card design */
-app-loan-dashboard .lm-header-card,
-app-cooperative-dashboard .lm-header-card,
-app-cooperative-member-dashboard .lm-header-card,
-app-loan-reports .lm-header-card,
-app-cooperative-loans .lm-header-card,
-app-cooperative-members .lm-header-card,
-app-cooperative-member-detail .lm-header-card,
-app-loan-approval-ui .lm-header-card,
-app-employee-dashboard .lm-header-card,
-app-employee-history .lm-header-card,
-app-loan-details .lm-header-card,
-app-cooperative-member-form .lm-header-card,
-app-cooperative-loan-detail .lm-header-card,
-app-cooperative-loan-groups .lm-header-card,
-app-cooperative-member-loans .lm-header-card,
-app-loan-request-form .lm-header-card,
-app-cooperative-loan-application .lm-header-card {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  gap: 12px;
-  margin-bottom: 24px !important;
-  padding: 20px !important;
-  background: #fff !important;
-  border: 1px solid #e3eef0 !important;
-  border-left: 4px solid #2E6276 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-}
-
-app-loan-dashboard .lm-header-card h1,
-app-cooperative-dashboard .lm-header-card h1,
-app-cooperative-member-dashboard .lm-header-card h1,
-app-loan-reports .lm-header-card h1,
-app-cooperative-loans .lm-header-card h1,
-app-cooperative-members .lm-header-card h1,
-app-cooperative-member-detail .lm-header-card h1,
-app-loan-approval-ui .lm-header-card h1,
-app-employee-dashboard .lm-header-card h1,
-app-employee-history .lm-header-card h1,
-app-loan-details .lm-header-card h1,
-app-cooperative-member-form .lm-header-card h1,
-app-cooperative-loan-detail .lm-header-card h1,
-app-cooperative-loan-groups .lm-header-card h1,
-app-cooperative-member-loans .lm-header-card h1,
-app-loan-request-form .lm-header-card h1,
-app-cooperative-loan-application .lm-header-card h1 {
-  color: #2E6276 !important;
-  font-size: 2.2rem !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-app-loan-dashboard .lm-header-card h1 i,
-app-cooperative-dashboard .lm-header-card h1 i,
-app-cooperative-member-dashboard .lm-header-card h1 i,
-app-loan-reports .lm-header-card h1 i,
-app-cooperative-loans .lm-header-card h1 i,
-app-cooperative-members .lm-header-card h1 i,
-app-cooperative-member-detail .lm-header-card h1 i,
-app-loan-approval-ui .lm-header-card h1 i,
-app-employee-dashboard .lm-header-card h1 i,
-app-employee-history .lm-header-card h1 i,
-app-loan-details .lm-header-card h1 i,
-app-cooperative-member-form .lm-header-card h1 i,
-app-cooperative-loan-detail .lm-header-card h1 i,
-app-cooperative-loan-groups .lm-header-card h1 i,
-app-cooperative-member-loans .lm-header-card h1 i,
-app-loan-request-form .lm-header-card h1 i,
-app-cooperative-loan-application .lm-header-card h1 i {
-  color: #39ba78 !important;
-}
-
-app-loan-dashboard .lm-header-card h1:not(:has(i))::before,
-app-cooperative-dashboard .lm-header-card h1:not(:has(i))::before,
-app-cooperative-member-dashboard .lm-header-card h1:not(:has(i))::before,
-app-loan-reports .lm-header-card h1:not(:has(i))::before,
-app-cooperative-loans .lm-header-card h1:not(:has(i))::before,
-app-cooperative-members .lm-header-card h1:not(:has(i))::before,
-app-cooperative-member-detail .lm-header-card h1:not(:has(i))::before,
-app-loan-approval-ui .lm-header-card h1:not(:has(i))::before,
-app-employee-dashboard .lm-header-card h1:not(:has(i))::before,
-app-employee-history .lm-header-card h1:not(:has(i))::before,
-app-loan-details .lm-header-card h1:not(:has(i))::before,
-app-cooperative-member-form .lm-header-card h1:not(:has(i))::before,
-app-cooperative-loan-detail .lm-header-card h1:not(:has(i))::before,
-app-cooperative-loan-groups .lm-header-card h1:not(:has(i))::before,
-app-cooperative-member-loans .lm-header-card h1:not(:has(i))::before,
-app-loan-request-form .lm-header-card h1:not(:has(i))::before,
-app-cooperative-loan-application .lm-header-card h1:not(:has(i))::before {
-  font-family: "Font Awesome 6 Free";
-  font-weight: 900;
-  content: "\f4be";
-  color: #39ba78;
-  font-size: 0.92em;
-}
-
-/* Loan management card icon subtle gradients */
-app-loan-dashboard .stat-card .card-icon,
-// app-cooperative-dashboard .stat-card .stat-icon,
-app-cooperative-member-dashboard .stat-card .stat-icon,
-app-employee-dashboard .stat-card .stat-icon,
-app-loan-reports .summary-card .card-icon,
-app-loan-approval-ui .stats-grid .stat-card .stat-icon,
-app-employee-repayment-schedule .summary-card .card-icon {
-  background: linear-gradient(135deg, #3a7187 0%, #5aa4c0 60%, #8fc4d8 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 9px rgba(46, 98, 118, 0.13);
-}
-
-/* Loan Management unified status badge colors */
-// app-loan-dashboard .status-badge,
-// app-cooperative-dashboard .status-badge,
-// app-cooperative-member-dashboard .status-badge,
-// app-loan-reports .status-badge,
-// app-cooperative-loans .status-badge,
-// app-cooperative-members .status-badge,
-// app-cooperative-member-detail .status-badge,
-// app-loan-approval-ui .status-badge,
-// app-employee-dashboard .status-badge,
-// app-employee-history .status-badge,
-// app-loan-details .status-badge,
-// app-cooperative-member-form .status-badge,
-// app-cooperative-loan-detail .status-badge,
-// app-cooperative-loan-groups .status-badge,
-// app-cooperative-member-loans .status-badge,
-// app-loan-request-form .status-badge,
-// app-cooperative-loan-application .status-badge,
-// app-employee-repayment-schedule .loan-status-badge,
-// app-repayment-schedule-view .status-badge {
-//   display: inline-block;
-//   border-radius: 20px;
-//   font-weight: 600;
-//   /* text-transform: uppercase; */
+// input[type="text"], textarea {
+//   text-transform: capitalize;
 // }
-
-// app-loan-dashboard .status-badge.status-pending,
-// app-cooperative-dashboard .status-badge.status-pending,
-// app-cooperative-member-dashboard .status-badge.status-pending,
-// app-loan-reports .status-badge.status-pending,
-// app-cooperative-loans .status-badge.status-pending,
-// app-cooperative-members .status-badge.status-pending,
-// app-cooperative-member-detail .status-badge.status-pending,
-// app-loan-approval-ui .status-badge.status-pending,
-// app-employee-dashboard .status-badge.status-pending,
-// app-employee-history .status-badge.status-pending,
-// app-loan-details .status-badge.status-pending,
-// app-cooperative-member-form .status-badge.status-pending,
-// app-cooperative-loan-detail .status-badge.status-pending,
-// app-cooperative-loan-groups .status-badge.status-pending,
-// app-cooperative-member-loans .status-badge.status-pending,
-// app-loan-request-form .status-badge.status-pending,
-// app-cooperative-loan-application .status-badge.status-pending,
-// app-employee-repayment-schedule .loan-status-badge.status-pending,
-// app-repayment-schedule-view .status-badge.status-pending {
-//   background-color: rgba(231, 222, 101, 0.2) !important;
-//   color: #8f8500 !important;
-//   border: 1px solid rgba(231, 222, 101, 0.3) !important;
-// }
-
-// app-loan-dashboard .status-badge.status-approved,
-// app-cooperative-dashboard .status-badge.status-approved,
-// app-cooperative-member-dashboard .status-badge.status-approved,
-// app-loan-reports .status-badge.status-approved,
-// app-cooperative-loans .status-badge.status-approved,
-// app-cooperative-members .status-badge.status-approved,
-// app-cooperative-member-detail .status-badge.status-approved,
-// app-loan-approval-ui .status-badge.status-approved,
-// app-employee-dashboard .status-badge.status-approved,
-// app-employee-history .status-badge.status-approved,
-// app-loan-details .status-badge.status-approved,
-// app-cooperative-member-form .status-badge.status-approved,
-// app-cooperative-loan-detail .status-badge.status-approved,
-// app-cooperative-loan-groups .status-badge.status-approved,
-// app-cooperative-member-loans .status-badge.status-approved,
-// app-loan-request-form .status-badge.status-approved,
-// app-cooperative-loan-application .status-badge.status-approved,
-// app-employee-repayment-schedule .loan-status-badge.status-approved,
-// app-repayment-schedule-view .status-badge.status-approved {
-//   background-color: rgba(79, 124, 255, 0.14) !important;
-//   color: #4f7cff !important;
-//   border: 1px solid rgba(79, 124, 255, 0.28) !important;
-// }
-
-// app-loan-dashboard .status-badge.status-active,
-// app-cooperative-dashboard .status-badge.status-active,
-// app-cooperative-member-dashboard .status-badge.status-active,
-// app-loan-reports .status-badge.status-active,
-// app-cooperative-loans .status-badge.status-active,
-// app-cooperative-members .status-badge.status-active,
-// app-cooperative-member-detail .status-badge.status-active,
-// app-loan-approval-ui .status-badge.status-active,
-// app-employee-dashboard .status-badge.status-active,
-// app-employee-history .status-badge.status-active,
-// app-loan-details .status-badge.status-active,
-// app-cooperative-member-form .status-badge.status-active,
-// app-cooperative-loan-detail .status-badge.status-active,
-// app-cooperative-loan-groups .status-badge.status-active,
-// app-cooperative-member-loans .status-badge.status-active,
-// app-loan-request-form .status-badge.status-active,
-// app-cooperative-loan-application .status-badge.status-active,
-// app-employee-repayment-schedule .loan-status-badge.status-active,
-// app-repayment-schedule-view .status-badge.status-active {
-//   background-color: rgba(56, 189, 248, 0.14) !important;
-//   color: #38bdf8 !important;
-//   border: 1px solid rgba(56, 189, 248, 0.32) !important;
-// }
-
-// app-loan-dashboard .status-badge.status-completed,
-// app-cooperative-dashboard .status-badge.status-completed,
-// app-cooperative-member-dashboard .status-badge.status-completed,
-// app-loan-reports .status-badge.status-completed,
-// app-cooperative-loans .status-badge.status-completed,
-// app-cooperative-members .status-badge.status-completed,
-// app-cooperative-member-detail .status-badge.status-completed,
-// app-loan-approval-ui .status-badge.status-completed,
-// app-employee-dashboard .status-badge.status-completed,
-// app-employee-history .status-badge.status-completed,
-// app-loan-details .status-badge.status-completed,
-// app-cooperative-member-form .status-badge.status-completed,
-// app-cooperative-loan-detail .status-badge.status-completed,
-// app-cooperative-loan-groups .status-badge.status-completed,
-// app-cooperative-member-loans .status-badge.status-completed,
-// app-loan-request-form .status-badge.status-completed,
-// app-cooperative-loan-application .status-badge.status-completed,
-// app-employee-repayment-schedule .loan-status-badge.status-completed,
-// app-repayment-schedule-view .status-badge.status-completed {
-//   background-color: rgba(128, 128, 128, 0.1) !important;
-//   color: #4d4d4d !important;
-//   border: 1px solid rgba(128, 128, 128, 0.3) !important;
-// }
-
-// app-loan-dashboard .status-badge.status-rejected,
-// app-cooperative-dashboard .status-badge.status-rejected,
-// app-cooperative-member-dashboard .status-badge.status-rejected,
-// app-loan-reports .status-badge.status-rejected,
-// app-cooperative-loans .status-badge.status-rejected,
-// app-cooperative-members .status-badge.status-rejected,
-// app-cooperative-member-detail .status-badge.status-rejected,
-// app-loan-approval-ui .status-badge.status-rejected,
-// app-employee-dashboard .status-badge.status-rejected,
-// app-employee-history .status-badge.status-rejected,
-// app-loan-details .status-badge.status-rejected,
-// app-cooperative-member-form .status-badge.status-rejected,
-// app-cooperative-loan-detail .status-badge.status-rejected,
-// app-cooperative-loan-groups .status-badge.status-rejected,
-// app-cooperative-member-loans .status-badge.status-rejected,
-// app-loan-request-form .status-badge.status-rejected,
-// app-cooperative-loan-application .status-badge.status-rejected,
-// app-employee-repayment-schedule .loan-status-badge.status-rejected,
-// app-repayment-schedule-view .status-badge.status-rejected {
-//   background-color: rgba(233, 55, 55, 0.1) !important;
-//   color: #b30000 !important;
-//   border: 1px solid rgba(233, 55, 55, 0.3) !important;
-// }
-
-// app-cooperative-dashboard .status-badge.status-defaulted,
-// app-cooperative-loans .status-badge.status-defaulted,
-// app-cooperative-loan-detail .status-badge.status-defaulted,
-// app-cooperative-member-loans .status-badge.status-defaulted {
-//   background-color: rgba(217, 83, 79, 0.16) !important;
-//   color: #a11f1b !important;
-//   border: 1px solid rgba(217, 83, 79, 0.35) !important;
-// }
-
-// @media (max-width: 768px) {
-//   app-loan-dashboard .lm-header-card,
-//   app-cooperative-dashboard .lm-header-card,
-//   app-cooperative-member-dashboard .lm-header-card,
-//   app-loan-reports .lm-header-card,
-//   app-cooperative-loans .lm-header-card,
-//   app-cooperative-members .lm-header-card,
-//   app-cooperative-member-detail .lm-header-card,
-//   app-loan-approval-ui .lm-header-card,
-//   app-employee-dashboard .lm-header-card,
-//   app-employee-history .lm-header-card,
-//   app-loan-details .lm-header-card,
-//   app-cooperative-member-form .lm-header-card,
-//   app-cooperative-loan-detail .lm-header-card,
-//   app-cooperative-loan-groups .lm-header-card,
-//   app-cooperative-member-loans .lm-header-card,
-//   app-loan-request-form .lm-header-card,
-//   app-cooperative-loan-application .lm-header-card {
-//     flex-direction: column !important;
-//     align-items: stretch !important;
-//     padding: 16px !important;
-//   }
-
-//   app-loan-dashboard .lm-header-card h1,
-//   app-cooperative-dashboard .lm-header-card h1,
-//   app-cooperative-member-dashboard .lm-header-card h1,
-//   app-loan-reports .lm-header-card h1,
-//   app-cooperative-loans .lm-header-card h1,
-//   app-cooperative-members .lm-header-card h1,
-//   app-cooperative-member-detail .lm-header-card h1,
-//   app-loan-approval-ui .lm-header-card h1,
-//   app-employee-dashboard .lm-header-card h1,
-//   app-employee-history .lm-header-card h1,
-//   app-loan-details .lm-header-card h1,
-//   app-cooperative-member-form .lm-header-card h1,
-//   app-cooperative-loan-detail .lm-header-card h1,
-//   app-cooperative-loan-groups .lm-header-card h1,
-//   app-cooperative-member-loans .lm-header-card h1,
-//   app-loan-request-form .lm-header-card h1,
-//   app-cooperative-loan-application .lm-header-card h1 {
-//     font-size: 1.6rem !important;
-//   }
-// }
-
-// ==========================================
-// REMOVE ALL FOCUS RINGS & NOTIFICATION LINES
-// Added to fix notification lines on admin buttons
-// ==========================================
-
-// Remove PrimeNG focus rings completely
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active,
-.p-focus,
-.p-component:focus,
-.p-component:focus-visible,
-.p-inputtext:focus,
-.p-dropdown:focus,
-.p-multiselect:focus,
-.p-calendar:focus,
-.p-checkbox:focus,
-.p-radiobutton:focus,
-button:focus,
-button:focus-visible,
-a:focus,
-a:focus-visible,
-[role="button"]:focus,
-[role="button"]:focus,
-[role="button"]:focus-visible {
-  outline: none !important;
-  outline-width: 0 !important;
-  box-shadow: none !important;
-  box-shadow: 0 0 0 0 rgba(0,0,0,0) !important;
-  /* ring and ring-width removed: not valid CSS */
-}
-
-// Specifically target PrimeNG button focus rings
-.p-button:focus {
-  box-shadow: none !important;
-  outline: 0 none !important;
-  outline-offset: 0 !important;
-}
-
-// Remove the PrimeNG focus trap indicator
-.p-focusable:focus,
-.p-focusable:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Remove any focus ring from card and panel components
-.p-card:focus,
-.p-card:focus-visible,
-.p-panel:focus,
-.p-panel:focus-visible,
-.p-dialog:focus,
-.p-dialog:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Target command-pill specifically
-.command-pill,
-.command-pill:focus,
-.command-pill:focus-visible,
-.command-pill:active {
-  outline: none !important;
-  box-shadow: none !important;
-  /* ring: none !important; removed: not valid CSS */
-}
-
-// Remove focus rings from all buttons in dashboard containers
-.dashboard-container button:focus,
-.dashboard-container button:focus-visible,
-.dashboard-container [role="button"]:focus,
-.dashboard-container [role="button"]:focus-visible,
-.loan-management-surface button:focus,
-.loan-management-surface button:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Override PrimeNG's default focus ring for all components
-.p-component *:focus,
-.p-component *:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Remove the blue ring that appears on click/tap
-* {
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-// Firefox specific removal
-button::-moz-focus-inner,
-[type="button"]::-moz-focus-inner,
-[type="reset"]::-moz-focus-inner,
-[type="submit"]::-moz-focus-inner {
-  border: none !important;
-  outline: none !important;
-  padding: 0 !important;
-}
-
-// Chrome/Safari specific
-:focus {
-  outline: -webkit-focus-ring-color auto 0 !important;
-  outline: none !important;
-}
-
-// Disable focus ring when using mouse (but keep for keyboard if needed)
-:focus:not(:focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Remove any possible pseudo-element lines
-button::before,
-button::after,
-a::before,
-a::after,
-[role="button"]::before,
-[role="button"]::after {
-  display: none !important;
-  content: none !important;
-}
-
-// Target all action buttons
-.icon-btn:focus,
-.icon-btn:focus-visible,
-.table-action:focus,
-.table-action:focus-visible,
-.view-all:focus,
-.view-all:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-// Ensure modal buttons don't have focus rings
-.modal-actions button:focus,
-.modal-actions button:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}

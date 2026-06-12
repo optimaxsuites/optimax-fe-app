@@ -1,0 +1,44 @@
+:host {
+  display: block;
+}
+
+.badge-primary {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+.badge-success {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.badge-info {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.badge-neutral {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Smooth transitions */
+.transition-colors {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.transition-shadow {
+  transition: box-shadow 0.2s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}

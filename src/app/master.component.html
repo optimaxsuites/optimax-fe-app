@@ -1,1 +1,40 @@
+<!-- dami just modified this to support the upgraded enterprise header and shell layout. -->
+<div
+    class="master-container d-flex"
+    [class.mobile-sidebar-open]="!sidebarHidden && isMobileViewport()"
+>
+    <button
+        *ngIf="!sidebarHidden && isMobileViewport()"
+        type="button"
+        class="mobile-sidebar-backdrop"
+        (click)="toggleSidebar()"
+        aria-label="Close navigation"
+    ></button>
 
+    <div
+        class="sidebar-container relative"
+        [ngClass]="{
+            'min-w-[13%]': !sidebarHidden && !isMobileViewport(),
+            'mobile-open': !sidebarHidden && isMobileViewport()
+        }"
+    >
+        <app-sidebar2 [sidebarHidden]="sidebarHidden"   (toggleSidebar)="toggleSidebar()"></app-sidebar2>
+      
+      
+    </div>
+  
+    <div class="main-container">
+        <div class="navbar-container">
+            <app-navbar [sidebarHidden]="sidebarHidden" (toggleSidebar)="toggleSidebar()"></app-navbar>
+        </div>
+        <div class="main">
+            <div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+                <span class="text-[#2EB270] font-bold text-xl animate-pulse">Loading...</span>
+              </div>
+              
+            <router-outlet></router-outlet>
+        </div>
+        <app-dashboard-footer></app-dashboard-footer>
+    </div>
+</div>
+<p-toast position="top-right" key="tf" />

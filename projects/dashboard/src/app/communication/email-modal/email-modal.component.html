@@ -1,0 +1,264 @@
+<div
+  *ngIf="state.open"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  (click)="closed.emit()"
+>
+  <div class="absolute inset-0 bg-black/25 backdrop-blur-sm"></div>
+  <div
+    class="relative bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+    [style.width.px]="state.width"
+    style="height: 85vh; min-height: 600px; max-height: 92vh"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Left resize handle -->
+    <div
+      class="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize z-20 hover:bg-[#2e6276]/15 transition-colors rounded-l-2xl"
+      (mousedown)="startResize($event)"
+    ></div>
+
+    <!-- Header — replace existing -->
+    <div
+      class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white flex-shrink-0"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-7 h-7 rounded-lg flex items-center justify-center"
+          style="background: rgba(46, 98, 118, 0.08)"
+        >
+          <svg
+            style="color: #2e6276"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.8"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+        <div>
+          <!-- was font-bold text-gray-900, now lighter -->
+          <h2 class="text-[15px] font-medium text-gray-700 leading-none">
+            New message
+          </h2>
+          <p class="text-[11px] text-gray-400 mt-0.5">Draft</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          (click)="aiCompose.emit()"
+          [disabled]="state.sending || !state.body.trim()"
+          class="flex items-center gap-1.5 px-3 py-1.5 border border-[#2e6276]/20 bg-[#2e6276]/5 text-[#2e6276] text-[12px] font-medium rounded-lg hover:bg-[#2e6276]/10 disabled:opacity-40 transition-colors"
+        >
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+            />
+          </svg>
+          AI Compose
+        </button>
+        <button (click)="closed.emit()" class="panel-close-btn">
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- To field -->
+    <div class="flex items-start gap-0 border-b border-gray-100 flex-shrink-0">
+      <span
+        class="text-[12px] text-gray-400 font-semibold uppercase tracking-wider pt-3.5 pb-3 pl-6 pr-3 flex-shrink-0 w-16"
+        >To</span
+      >
+      <div
+        class="flex-1 flex flex-wrap items-center gap-1.5 py-2.5 pr-4 min-h-[46px]"
+      >
+        <!-- Recipient pills — all removable now -->
+        <span
+          *ngFor="let r of state.recipients; let idx = index"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium leading-none transition-colors"
+          style="
+            background: rgba(46, 98, 118, 0.07);
+            color: #2e6276;
+            border: 0.5px solid rgba(46, 98, 118, 0.2);
+          "
+        >
+          <span>{{r.email }}</span>
+          <button
+            (click)="recipientRemoved.emit(idx)"
+            class="flex-shrink-0 rounded-full flex items-center justify-center transition-colors"
+            style="color: rgba(46, 98, 118, 0.5); margin-left: 2px"
+            title="Remove"
+          >
+            <svg
+              width="10"
+              height="10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </span>
+
+        <!-- Add email input -->
+        <!-- <input
+          type="email"
+          [value]="state.toInput"
+          (input)="toInputChange.emit($any($event.target).value)"
+          (keydown)="onToInputKeydown($event)"
+          placeholder="Add email and press Enter…"
+          class="border-0 outline-none bg-transparent text-[13px] text-gray-700 placeholder-gray-300 py-1 min-w-[180px] flex-1"
+        /> -->
+      </div>
+    </div>
+
+    <!-- Subject -->
+    <div class="flex items-center gap-0 border-b border-gray-100 flex-shrink-0">
+      <input
+        type="text"
+        [value]="state.subject"
+        (input)="subjectChange.emit($any($event.target).value)"
+        placeholder="Enter subject…"
+        class="flex-1 border-0 outline-none bg-transparent text-[15px] text-gray-800 placeholder-gray-400 pl-6 font-medium py-3 pr-4"
+      />
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <textarea
+        [value]="state.body"
+        (input)="bodyChange.emit($any($event.target).value)"
+        placeholder="Write your message…"
+        class="flex-1 w-full border-0 outline-none resize-none bg-transparent text-[15px] text-gray-700 leading-relaxed placeholder-gray-400 px-6 py-4"
+        style="min-height: 0"
+      ></textarea>
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="px-6 py-3.5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between flex-shrink-0 gap-3"
+    >
+      <div class="flex items-center gap-2.5">
+        <button
+          (click)="sent.emit()"
+          [disabled]="
+            state.sending ||
+            (!state.recipients.length && !state.toInput.trim()) ||
+            !state.body.trim()
+          "
+          class="flex items-center gap-2 px-5 py-2.5 bg-[#2e6276] text-white text-[13px] font-semibold rounded-lg hover:bg-[#255264] disabled:opacity-50 transition-colors"
+        >
+          <svg
+            *ngIf="state.sending"
+            class="animate-spin"
+            width="13"
+            height="13"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            ></path>
+          </svg>
+          <svg
+            *ngIf="!state.sending"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+            />
+          </svg>
+          {{ state.sending ? "Sending…" : "Send" }}
+        </button>
+        <button
+          (click)="closed.emit()"
+          class="px-4 py-2.5 border border-gray-200 text-gray-600 text-[13px] font-medium rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          Discard
+        </button>
+        <div class="h-4 w-px bg-gray-100 mx-1"></div>
+        <span class="text-[11px] text-gray-300">Plain text</span>
+      </div>
+      <div
+        *ngIf="state.result"
+        class="px-3 py-1.5 rounded-lg text-[12px] font-medium border"
+        [ngClass]="
+          state.result.startsWith('Sent')
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-red-50 text-red-600 border-red-200'
+        "
+      >
+        {{ state.result }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .panel-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+  .panel-close-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+</style>

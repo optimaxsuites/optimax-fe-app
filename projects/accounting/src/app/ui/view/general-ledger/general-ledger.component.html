@@ -1,0 +1,336 @@
+<div class="min-h-screen bg-gray-50 font-sans pb-20">
+
+  <!-- ═══════════════════════════════════════════════════════
+       🔝 STICKY FILTER BAR
+  ════════════════════════════════════════════════════════════ -->
+  <div class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm px-8 py-6">
+
+    <!-- Header Row -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-5">
+        <div class="w-16 h-16 rounded-xl bg-customBlue/10 flex items-center justify-center text-customBlue shadow-inner">
+          <i class="pi pi-book text-3xl"></i>
+        </div>
+        <div>
+          <h1 class="text-5xl font-extrabold text-gray-900 tracking-tight leading-none">General Ledger</h1>
+          <p class="text-xl text-gray-500 font-semibold mt-2 flex items-center gap-2">
+            <i class="pi pi-chart-line text-customBlue"></i>
+            Account-level running balances · <span class="text-customBlue">{{ filteredEntries.length }} entries</span>
+          </p>
+        </div>
+      </div>
+
+        <div class="flex items-center gap-4">
+          <button (click)="printLedger()"
+            class="flex items-center gap-3 bg-white text-[#2E6276] border-2 border-[#2E6276]/20 px-8 py-3.5 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+            <i class="pi pi-print text-xl"></i> Print Ledger
+          </button>
+          <button (click)="exportLedger()"
+            class="flex items-center gap-3 bg-[#2E6276] text-white px-8 py-3.5 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-[#2E6276]/30">
+            <i class="pi pi-download text-xl"></i> Export CSV
+          </button>
+        </div>
+    </div>
+
+    <!-- Filters Row -->
+    <div class="flex flex-wrap items-end gap-6">
+
+      <!-- From Date -->
+      <div class="flex flex-col gap-2">
+        <label class="text-lg font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+          <i class="pi pi-calendar-plus text-customBlue"></i> From
+        </label>
+        <input type="date" [(ngModel)]="fromDate" (change)="applyFilters()"
+          class="bg-gray-50 border-2 border-gray-200 text-gray-800 text-xl font-bold rounded-xl px-5 py-3 focus:ring-4 focus:ring-customBlue/20 focus:border-customBlue outline-none transition-all w-56 shadow-sm">
+      </div>
+
+      <!-- To Date -->
+      <div class="flex flex-col gap-2">
+        <label class="text-lg font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+          <i class="pi pi-calendar text-customBlue"></i> To
+        </label>
+        <input type="date" [(ngModel)]="toDate" (change)="applyFilters()"
+          class="bg-gray-50 border-2 border-gray-200 text-gray-800 text-xl font-bold rounded-xl px-5 py-3 focus:ring-4 focus:ring-customBlue/20 focus:border-customBlue outline-none transition-all w-56 shadow-sm">
+      </div>
+
+      <!-- Divider -->
+      <div class="h-16 w-1 bg-gray-100 hidden lg:block mx-2"></div>
+
+      <!-- Account Dropdown -->
+      <div class="flex flex-col gap-2">
+        <label class="text-lg font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+          <i class="pi pi-id-card text-customBlue"></i> Account
+        </label>
+        <select [(ngModel)]="selectedAccountId" (change)="applyFilters()"
+          class="bg-gray-50 border-2 border-gray-200 text-gray-800 text-xl font-bold rounded-xl px-5 py-3 focus:ring-4 focus:ring-customBlue/20 focus:border-customBlue outline-none transition-all min-w-[280px] cursor-pointer shadow-sm">
+          <option value="">All Primary Accounts</option>
+          <option *ngFor="let acc of accounts" [value]="acc.id">{{ acc.accountCode }} - {{ acc.accountName }}</option>
+        </select>
+      </div>
+
+      <!-- Source Module -->
+      <div class="flex flex-col gap-2">
+        <label class="text-lg font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+          <i class="pi pi-box text-customBlue"></i> Module
+        </label>
+        <select [(ngModel)]="selectedModule" (change)="applyFilters()"
+          class="bg-gray-50 border-2 border-gray-200 text-gray-800 text-xl font-bold rounded-xl px-5 py-3 focus:ring-4 focus:ring-customBlue/20 focus:border-customBlue outline-none transition-all min-w-[220px] cursor-pointer shadow-sm">
+          <option value="">All Flow Modules</option>
+          <option *ngFor="let mod of sourceModules" [value]="mod">{{ mod }}</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div class="flex flex-col gap-2 flex-1 min-w-[350px]">
+        <div class="relative group">
+          <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl transition-colors group-focus-within:text-customBlue"></i>
+          <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()"
+            placeholder="Search by ID, Ref, or Description..."
+            class="w-full bg-gray-50 border-2 border-gray-200 text-gray-800 text-xl font-bold rounded-xl pl-12 pr-6 py-3 focus:ring-4 focus:ring-customBlue/20 focus:border-customBlue outline-none transition-all shadow-sm">
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="flex flex-col gap-2">
+        <button (click)="resetFilters()"
+          class="flex items-center gap-3 text-gray-600 hover:text-customBlue text-xl font-bold px-6 py-3 rounded-xl hover:bg-customBlue/5 transition-all border-2 border-gray-200 hover:border-customBlue/30 shadow-sm">
+          <i class="pi pi-refresh"></i> Clear
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       📊 SUMMARY STRIP
+  ════════════════════════════════════════════════════════════ -->
+  <div class="px-8 pt-8 pb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-all transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-xl bg-customGreen/10 flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-arrow-up-right text-4xl text-customGreen"></i>
+        </div>
+        <div>
+          <p class="text-lg font-extrabold text-gray-400 uppercase tracking-widest">Total Debits</p>
+          <p class="text-3xl font-black text-gray-900 mt-1">
+            ₦{{ getTotalDebits() | number:'1.0-0' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-all transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-arrow-down-right text-4xl text-red-500"></i>
+        </div>
+        <div>
+          <p class="text-lg font-extrabold text-gray-400 uppercase tracking-widest">Total Credits</p>
+          <p class="text-3xl font-black text-gray-900 mt-1">
+            ₦{{ getTotalCredits() | number:'1.0-0' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-all transform hover:-translate-y-1 border-l-4 border-l-customBlue">
+        <div class="w-16 h-16 rounded-xl bg-customBlue/10 flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-sitemap text-4xl text-customBlue"></i>
+        </div>
+        <div>
+          <p class="text-lg font-extrabold text-gray-400 uppercase tracking-widest">Primary Accounts</p>
+          <p class="text-3xl font-black text-gray-900 mt-1">{{ groupedLedger.length }}</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex items-center gap-5 hover:shadow-md transition-all transform hover:-translate-y-1">
+        <div class="w-16 h-16 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+          <i class="pi pi-wallet text-4xl text-amber-500"></i>
+        </div>
+        <div>
+          <p class="text-lg font-extrabold text-gray-400 uppercase tracking-widest">Global Entries</p>
+          <p class="text-3xl font-black text-gray-900 mt-1">{{ filteredEntries.length }}</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       📋 LEDGER CONTENT
+  ════════════════════════════════════════════════════════════ -->
+  <div class="px-8 py-6">
+
+    <!-- ── Empty State ── -->
+    <div *ngIf="groupedLedger.length === 0"
+      class="flex flex-col items-center justify-center py-40 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+      <div class="w-32 h-32 bg-gray-50 rounded-full flex items-center justify-center mb-8 shadow-inner">
+        <i class="pi pi-inbox text-6xl text-gray-200"></i>
+      </div>
+      <h3 class="text-4xl font-black text-gray-400 mb-2 tracking-tight">No ledger entries found</h3>
+      <p class="text-2xl text-gray-400 font-bold mb-8">Refine your search or dates to see activity.</p>
+      <button (click)="resetFilters()"
+        class="px-10 py-5 bg-customBlue text-white rounded-xl text-2xl font-black shadow-md shadow-customBlue/10 hover:bg-customBlueHover transition-all">
+        Reset Global View
+      </button>
+    </div>
+
+    <!-- ── Account Groups ── -->
+    <div *ngFor="let group of groupedLedger; trackBy: trackByAccount" class="mb-12">
+
+      <!-- Account Card -->
+      <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+
+        <!-- Card Header -->
+        <div class="px-8 py-8 bg-white border-b border-gray-100 flex items-center justify-between">
+          <div class="flex items-center gap-6">
+            <div class="w-16 h-16 rounded-xl bg-customBlue flex items-center justify-center shadow-md shadow-customBlue/10">
+              <i class="pi pi-building text-white text-3xl"></i>
+            </div>
+            <div>
+              <h2 class="text-4xl font-black text-gray-900 tracking-tight leading-tight">{{ group.accountName }}</h2>
+              <p class="text-xl text-gray-400 font-bold flex items-center gap-2 mt-1">
+                <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">ID: {{ group.accountId }}</span>
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                <span>{{ group.entries.length }} Total Transactions</span>
+              </p>
+            </div>
+          </div>
+          <div class="text-right bg-gray-50 px-8 py-4 rounded-xl border border-gray-100">
+            <p class="text-base font-black text-gray-400 uppercase tracking-widest mb-1">Current Book Balance</p>
+            <p class="text-5xl font-black tracking-tighter"
+              [ngClass]="getClosingBalance(group) >= 0 ? 'text-customBlue' : 'text-red-600'">
+              ₦{{ getClosingBalance(group) | number:'1.2-2' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Table Container (General App Style - Gray background wrapper) -->
+        <div class="bg-gray-50 border-t border-gray-100 pt-1 pb-6">
+          <div class="overflow-x-auto bg-white rounded-lg mx-8 mt-6 border border-gray-200 shadow-sm">
+            <table class="w-full text-xl">
+
+              <!-- Table Head -->
+              <thead>
+                <tr class="bg-customBlue text-white border-b border-customBlueHover">
+                  <th class="py-6 px-8 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-calendar mr-2 opacity-70"></i> Date</th>
+                  <th class="py-6 px-8 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-hashtag mr-2 opacity-70"></i> Ref</th>
+                  <th class="py-6 px-8 text-left text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-align-left mr-2 opacity-70"></i> Description</th>
+                  <th class="py-6 px-8 text-center text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-clone mr-2 opacity-70"></i> Module</th>
+                  <th class="py-6 px-8 text-right text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-minus-circle mr-2 opacity-70"></i> Debit</th>
+                  <th class="py-6 px-8 text-right text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-plus-circle mr-2 opacity-70"></i> Credit</th>
+                  <th class="py-6 px-8 text-right text-xl font-bold uppercase tracking-widest whitespace-nowrap"><i class="pi pi-calculator mr-2 opacity-70"></i> Balance</th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-gray-100">
+
+                <!-- Opening Balance Row (App Style Highlight) -->
+                <tr class="bg-amber-50/50 border-l-4 border-l-amber-400">
+                  <td class="py-6 px-8 text-lg font-bold text-gray-400 italic">Carryforward</td>
+                  <td class="py-6 px-8 text-lg font-bold text-gray-400 italic">S/O</td>
+                  <td class="py-6 px-8">
+                    <div class="flex items-center gap-3">
+                      <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                      <span class="text-2xl font-black text-amber-800 tracking-tight">Opening Carry-forward Balance</span>
+                    </div>
+                  </td>
+                  <td class="py-6 px-8 text-center text-lg font-bold text-gray-400 italic">SYSTEM</td>
+                  <td class="py-6 px-8 text-right text-lg font-bold text-gray-400 italic">—</td>
+                  <td class="py-6 px-8 text-right text-lg font-bold text-gray-400 italic">—</td>
+                  <td class="py-6 px-8 text-right font-black text-gray-900 font-mono text-2xl">
+                    ₦{{ group.openingBalance | number:'1.2-2' }}
+                  </td>
+                </tr>
+
+                <!-- Entry Rows (App Style Rows) -->
+                <tr *ngFor="let entry of group.entries; trackBy: trackByEntry"
+                  (click)="onRowClick(entry)"
+                  class="hover:bg-gray-50 cursor-pointer transition-colors group border-b border-gray-100 ledger-row">
+
+                  <!-- Date -->
+                  <td class="py-6 px-8 text-gray-600 font-bold whitespace-nowrap uppercase">
+                    {{ entry.entryDate | date:'dd MMM yyyy' }}
+                  </td>
+
+                  <!-- Reference -->
+                  <td class="py-6 px-8">
+                    <span class="font-mono text-xl font-black text-customBlue bg-customBlue/5 px-4 py-2 rounded-lg group-hover:bg-customBlue group-hover:text-white transition-colors border border-customBlue/10">
+                      {{ entry.transactionReference }}
+                    </span>
+                  </td>
+
+                  <!-- Description -->
+                  <td class="py-6 px-8 text-gray-800 font-bold max-w-md">
+                     {{ entry.description }}
+                  </td>
+
+                  <!-- Module -->
+                  <td class="py-6 px-8 text-center">
+                    <span class="text-lg font-black px-4 py-1 rounded-lg shadow-sm tracking-widest" [ngClass]="getModuleBadgeClass(entry.sourceModule || '')">
+                      {{ entry.sourceModule }}
+                    </span>
+                  </td>
+
+                  <!-- Debit -->
+                  <td class="py-6 px-8 text-right font-black text-2xl"
+                    [ngClass]="entry.debit > 0 ? 'text-customGreen' : 'text-gray-200'">
+                    {{ entry.debit > 0 ? ('₦' + (entry.debit | number:'1.2-2')) : '—' }}
+                  </td>
+
+                  <!-- Credit -->
+                  <td class="py-6 px-8 text-right font-black text-2xl"
+                    [ngClass]="entry.credit > 0 ? 'text-red-500' : 'text-gray-200'">
+                    {{ entry.credit > 0 ? ('₦' + (entry.credit | number:'1.2-2')) : '—' }}
+                  </td>
+
+                  <!-- Balance -->
+                  <td class="py-6 px-8 text-right font-black text-2xl font-mono tracking-tighter"
+                    [ngClass]="entry.balanceAfter >= 0 ? 'text-gray-900' : 'text-red-600'">
+                    ₦{{ entry.balanceAfter | number:'1.2-2' }}
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+              <!-- Table Footer (App Style Summary) -->
+              <tfoot>
+                <tr class="bg-gray-50 border-t-2 border-gray-200">
+                  <td colspan="4" class="py-8 px-8 text-xl font-black text-gray-400 uppercase tracking-widest">
+                    Group Sub-totals
+                  </td>
+                  <td class="py-8 px-8 text-right text-3xl font-black text-customGreen">
+                    ₦{{ getGroupDebits(group) | number:'1.2-2' }}
+                  </td>
+                  <td class="py-8 px-8 text-right text-3xl font-black text-red-500">
+                    ₦{{ getGroupCredits(group) | number:'1.2-2' }}
+                  </td>
+                  <td class="py-8 px-8 text-right text-3xl font-black text-gray-900 bg-gray-100">
+                     ₦{{ getClosingBalance(group) | number:'1.2-2' }}
+                  </td>
+                </tr>
+              </tfoot>
+
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    
+    <div *ngIf="filteredEntries.length > 0"
+      class="bg-white rounded-2xl shadow-md border border-gray-100 mt-8 px-6 py-4 flex justify-center">
+      <p-paginator
+        [rows]="rows"
+        [totalRecords]="totalRecords"
+        [rowsPerPageOptions]="rowsPerPageOptions"
+        [first]="first"
+        (onPageChange)="onPageChange($any($event))"
+        styleClass="ledger-paginator-giant"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Displaying results {first} to {last} · Total Registry: {totalRecords}">
+      </p-paginator>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,188 @@
+<div
+  class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4"
+>
+  <div
+    class="bg-white/95 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scaleIn border border-white/20 bg-gradient-to-br from-white to-gray-50"
+  >
+    <!-- Header (sticky) -->
+    <div class="sticky top-0 z-10">
+      <div
+        class="h-32 bg-gradient-to-r from-blue-900 to-emerald-800 flex items-end p-6"
+      >
+        <div>
+          <h2 class="text-3xl font-bold text-white">Add Charges</h2>
+          <p class="text-lg mt-2 text-white/90">Room {{ room?.id }}</p>
+        </div>
+        <button
+          (click)="goBack()"
+          class="absolute right-6 top-6 text-white/80 hover:text-white text-2xl transition-all duration-300 bg-black/20 p-2 rounded-full hover:bg-black/30 hover:scale-110"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="h-[70vh] flex flex-col">
+      <!-- Category Selection -->
+      <div
+        class="px-6 pt-6 pb-4 bg-white sticky top-32 z-10 border-b border-gray-200/50"
+      >
+        <label class="block text-lg font-medium text-gray-700 mb-2"
+          >Service Category</label
+        >
+        <select
+          [(ngModel)]="selectedCategory"
+          class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 shadow-sm transition-all duration-300 hover:shadow-md"
+        >
+          <option value="kitchen">Kitchen</option>
+          <option value="mini bar">Mini Bar</option>
+          <option value="laundry">Laundry</option>
+          <option value="bar">Bar</option>
+        </select>
+      </div>
+
+      <!-- Services List (scrollable) -->
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <ul class="space-y-3">
+          <li
+            *ngFor="
+              let service of servicesForCategory;
+              trackBy: trackByServiceName
+            "
+            class="p-4 rounded-xl transition-all duration-300 hover:shadow-md"
+            [ngClass]="{
+              'bg-blue-50/50 border border-blue-200':
+                selectedServices[service.name],
+              'bg-white': !selectedServices[service.name]
+            }"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="relative">
+                  <input
+                    type="checkbox"
+                    [id]="'service-' + service.name"
+                    class="absolute opacity-0 h-0 w-0 peer"
+                    [checked]="!!selectedServices[service.name]"
+                    (change)="handleServiceSelect(service.name, service.price)"
+                  />
+                  <label
+                    [for]="'service-' + service.name"
+                    class="flex items-center justify-center h-5 w-5 rounded border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-focus:ring-2 peer-focus:ring-blue-200 transition-all duration-200 cursor-pointer"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </label>
+                </div>
+                <div>
+                  <label
+                    [for]="'service-' + service.name"
+                    class="block text-lg font-medium text-gray-800 cursor-pointer"
+                  >
+                    {{ service.name }}
+                  </label>
+                  <p class="text-gray-600">₦{{ service.price.toFixed(2) }}</p>
+                </div>
+              </div>
+
+              <div
+                *ngIf="selectedServices[service.name]"
+                class="flex items-center bg-white rounded-full shadow-inner border border-gray-200"
+              >
+                <button
+                  (click)="
+                    handleQuantityChange(
+                      service.name,
+                      (quantities[service.name] || 1) - 1
+                    )
+                  "
+                  class="w-8 h-8 flex items-center justify-center rounded-l-full text-gray-700 hover:bg-gray-100 transition-colors duration-200 active:scale-95"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  [value]="quantities[service.name] || 1"
+                  (change)="onQuantityInputChange($event, service.name)"
+                  class="w-12 h-8 text-center border-t border-b border-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-transparent"
+                />
+                <button
+                  (click)="
+                    handleQuantityChange(
+                      service.name,
+                      (quantities[service.name] || 1) + 1
+                    )
+                  "
+                  class="w-8 h-8 flex items-center justify-center rounded-r-full text-gray-700 hover:bg-gray-100 transition-colors duration-200 active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Selected Services Summary (sticky bottom) -->
+      <div
+        *ngIf="selectedServicesCount > 0"
+        class="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 shadow-lg"
+      >
+        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+          <h3 class="text-lg font-medium text-gray-800 mb-3">
+            Selected Charges
+          </h3>
+          <ul class="space-y-2">
+            <li
+              *ngFor="let service of selectedServices | keyvalue"
+              class="flex justify-between items-center"
+            >
+              <span class="text-gray-700">
+                {{ service.key }} × {{ service.value.quantity }}
+              </span>
+              <span class="font-medium text-blue-700">
+                ₦{{ (service.value.price * service.value.quantity).toFixed(2) }}
+              </span>
+            </li>
+          </ul>
+          <div
+            class="mt-3 pt-3 border-t border-blue-200 flex justify-between text-lg font-bold text-blue-900"
+          >
+            <span>Total:</span>
+            <span>₦{{ totalAmount.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-4 mt-4">
+          <button
+            (click)="close()"
+            class="px-6 py-3 rounded-xl font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all duration-300 hover:shadow-md active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="addCharges()"
+            [disabled]="selectedServicesCount === 0"
+            class="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add Charges
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

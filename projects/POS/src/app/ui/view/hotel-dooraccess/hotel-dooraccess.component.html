@@ -1,0 +1,86 @@
+<!-- hotel-dooraccess.component.html -->
+<div class="door-access p-card p-p-3" *ngIf="room">
+  <h3>Room {{ room.number }} Smart Lock</h3>
+
+  <div class="p-grid">
+    <div class="p-col-12 p-md-6">
+      <div class="access-control">
+        <div class="p-inputgroup">
+          <input
+            type="text"
+            pInputText
+            [(ngModel)]="keyCardId"
+            placeholder="Scan Key Card"
+            [disabled]="isProcessing"
+            (keyup.enter)="tryAccess()"
+          />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-key"
+            label="Try Access"
+            (click)="tryAccess()"
+            [disabled]="!keyCardId || isProcessing"
+          ></button>
+        </div>
+
+        <div class="p-mt-3">
+          <p-button
+            icon="pi pi-mobile"
+            label="Use Mobile Key"
+            (click)="useMobileKey()"
+            styleClass="p-button-help"
+          ></p-button>
+        </div>
+      </div>
+
+      <div class="access-feedback p-mt-4" *ngIf="lastAccessGranted !== null">
+        <div class="access-indicator">
+          <div class="access-light" [ngClass]="{ on: lastAccessGranted }"></div>
+          <div
+            class="access-message"
+            [ngClass]="{
+              granted: lastAccessGranted,
+              denied: !lastAccessGranted
+            }"
+          >
+            {{ lastAccessMessage }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-col-12 p-md-6">
+      <div class="smart-lock-status p-card p-p-3">
+        <h4>Smart Lock Status</h4>
+        <p>
+          <strong>Lock ID:</strong> LK-{{ room.id.toString().padStart(4, "0") }}
+        </p>
+        <p><strong>Battery:</strong> 85% <i class="pi pi-bolt"></i></p>
+        <p><strong>Last Sync:</strong> {{ lastSync | date : "short" }}</p>
+        <p>
+          <strong>Connection:</strong>
+          <span
+            [ngClass]="{
+              'status-online': isOnline,
+              'status-offline': !isOnline
+            }"
+          >
+            {{ isOnline ? "Online" : "Offline" }}
+          </span>
+        </p>
+
+        <div class="p-mt-3">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-sync"
+            label="Sync Now"
+            (click)="syncLock()"
+            class="p-button-sm"
+          ></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

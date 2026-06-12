@@ -1,0 +1,51 @@
+<!-- Overlay -->
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" (click)="closeModal()"></div>
+
+<!-- Modal panel -->
+<div class="fixed top-0 right-0 w-[40rem] h-full bg-white shadow-2xl z-50 overflow-y-auto">
+  <div class="p-6">
+    <div class="flex justify-between items-center border-b pb-4 mb-4">
+      <h2 class="text-2xl font-semibold text-gray-700">Transaction Details</h2>
+      <button (click)="closeModal()" class="text-gray-500 hover:text-red-600">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Check if data exists -->
+    <div *ngIf="transaction; else noData">
+      <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-600 mb-2">Customer Information</h3>
+        <p><strong>ID:</strong> {{ transaction.id }}</p>
+        <p><strong>Customer:</strong> {{ transaction.customer }}</p>
+        <p><strong>Date:</strong> {{ transaction.date }}</p>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="text-lg font-medium text-gray-600 mb-2">Payment Details</h3>
+        <p><strong>Amount:</strong> ₦{{ transaction.amount | number }}</p>
+        <p><strong>Status:</strong>
+          <span [ngClass]="{
+            'text-green-600 font-semibold': transaction.status === 'Completed',
+            'text-yellow-600 font-semibold': transaction.status === 'Pending',
+            'text-red-600 font-semibold': transaction.status === 'Refunded'
+          }">
+            {{ transaction.status }}
+          </span>
+        </p>
+      </div>
+
+      <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+        <h3 class="text-md font-medium mb-2">Description</h3>
+        <p class="text-gray-700">
+          This transaction was processed successfully on {{ transaction.date }} by {{ transaction.customer }}.
+          Reference ID: {{ transaction.id }}.
+        </p>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <ng-template #noData>
+      <p class="text-gray-500 text-center mt-10">No transaction details available.</p>
+    </ng-template>
+  </div>
+</div>

@@ -1,0 +1,156 @@
+<div class="ps-wrap">
+
+  <!-- Header -->
+  <div class="ps-header">
+    <div>
+      <h2 class="ps-title">Business Profile</h2>
+      <p class="ps-subtitle">Update your contact, business and regional details</p>
+    </div>
+    <button type="button" (click)="toggleEditMode()" class="ps-btn"
+            [class.ps-btn-primary]="!isEditMode"
+            [class.ps-btn-ghost]="isEditMode">
+      {{ isEditMode ? 'Cancel' : 'Edit Profile' }}
+    </button>
+  </div>
+
+  <!-- Form -->
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="ps-body">
+
+      <!-- Contact -->
+      <div class="ps-section">
+        <div class="ps-section-label">Contact</div>
+        <div class="ps-grid-2">
+
+          <div class="ps-field">
+            <label class="ps-label">Full Name <span class="ps-req">*</span></label>
+            <input type="text" formControlName="fullname" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="John Doe" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Username</label>
+            <input type="text" formControlName="username" class="ps-input" [readOnly]="true" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Email <span class="ps-req">*</span></label>
+            <input type="email" formControlName="email" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="john@example.com" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Phone <span class="ps-req">*</span></label>
+            <input type="tel" formControlName="phoneNumber" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="+2349011234567" />
+          </div>
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">Address <span class="ps-req">*</span></label>
+            <input type="text" formControlName="address" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="123 Main Street, Apt 4B" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Country <span class="ps-req">*</span></label>
+            <ng-select formControlName="country" [items]="countries" bindLabel="name" bindValue="name"
+                       (change)="onCountrySelect($event)" class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">State <span class="ps-req">*</span></label>
+            <ng-select formControlName="state" [items]="states" bindLabel="name" bindValue="name"
+                       (change)="onStateSelect($event)" class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">City <span class="ps-req">*</span></label>
+            <ng-select formControlName="city" [items]="cities" bindLabel="name" bindValue="name"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Postal Code</label>
+            <input type="text" formControlName="postalCode" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="90210" />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Business -->
+      <div class="ps-section">
+        <div class="ps-section-label">Business</div>
+        <div class="ps-grid-2">
+
+          <div class="ps-field">
+            <label class="ps-label">Company Name <span class="ps-req">*</span></label>
+            <input type="text" formControlName="companyName" class="ps-input"
+                   [readOnly]="!isEditMode" placeholder="Acme Ltd." />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Industry <span class="ps-req">*</span></label>
+            <ng-select formControlName="industry" [items]="industries" bindLabel="name" bindValue="name"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Client Type <span class="ps-req">*</span></label>
+            <ng-select formControlName="clientType" [items]="['Company', 'Client', 'Individual', 'Group']"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Domain</label>
+            <input type="text" formControlName="companyName" class="ps-input" [readOnly]="true" />
+          </div>
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">Bio</label>
+            <textarea rows="3" formControlName="bio" class="ps-input"
+                      [readOnly]="!isEditMode" placeholder="Tell us about your business…"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Regional -->
+      <div class="ps-section">
+        <div class="ps-section-label">Regional</div>
+        <div class="ps-grid-3">
+
+          <div class="ps-field">
+            <label class="ps-label">Currency <span class="ps-req">*</span></label>
+            <ng-select formControlName="currency" [items]="currencies" bindLabel="label" bindValue="code"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Language <span class="ps-req">*</span></label>
+            <ng-select formControlName="language" [items]="languages"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Time Zone <span class="ps-req">*</span></label>
+            <ng-select formControlName="timeZone" [items]="timeZones" bindLabel="label" bindValue="value"
+                       class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="ps-footer">
+      <button type="submit" class="ps-btn ps-btn-primary"
+              [disabled]="form.invalid || !isEditMode">
+        <i class="fas fa-check"></i>
+        Save Changes
+      </button>
+    </div>
+  </form>
+
+</div>

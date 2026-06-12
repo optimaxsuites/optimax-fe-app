@@ -1,0 +1,20 @@
+
+.editDetails > p {
+  @apply capitalize;
+}
+
+.imageDiv {
+  @apply w-[55%] p-3;
+}
+
+p {
+  @apply pb-0 mb-0;
+}
+
+label {
+  @apply pb-1;
+}
+
+.error {
+  @apply text-red-400 text-[12px];
+}

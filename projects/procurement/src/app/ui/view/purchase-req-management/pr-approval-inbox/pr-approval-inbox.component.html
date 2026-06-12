@@ -1,0 +1,618 @@
+<p-toast class="table-item"></p-toast>
+
+<div class="">
+  <div class="card p-3">
+    <p-toolbar styleClass="bg-white mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <div class="d-flex align-items-center text-sm gap-2">
+          <span class="fw-semibold">Approver:</span>
+          <select
+            class="w-full rounded border p-2"
+            [(ngModel)]="currentUserId"
+            (ngModelChange)="refresh()"
+          >
+            <option value="u-dept-head-1">Department Head</option>
+            <option value="u-finance-1">Finance</option>
+            <option value="u-proc-1">Procurement</option>
+            <option value="u-admin-1">Admin (Escalation)</option>
+          </select>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <div class="table-item text-muted text-xs">
+          Pending approvals:
+          <span class="fw-semibold">{{ pendingList.length }}</span>
+        </div>
+      </ng-template>
+    </p-toolbar>
+
+    <app-table
+      [columns]="columns"
+      [rows]="pendingList"
+      [actions]="actions"
+      [paginator]="true"
+      [rowsPerPage]="10"
+      [(selection)]="selectedPendingList"
+      dataKey="id"
+      (rowClick)="viewPr($event)"
+      (actionClick)="onAction($event)"
+      (selectionChange)="selectedPendingList = $event"
+    ></app-table>
+  </div>
+</div>
+
+
+<div
+  *ngIf="showRejectModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+>
+
+  <div
+    class="w-full text-sm max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+  >
+    <div
+      class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100"
+    >
+      <div class="flex gap-3">
+        <div
+          class="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 ring-1 ring-red-100"
+        >
+          <i class="pi pi-times text-red-600"></i>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-slate-900">Reject Purchase Requisition</h3>
+          <p class="mt-1 text-slate-500">
+            You’re rejecting
+            <span class="text-slate-700">{{ activePr?.prmNo }}</span>
+            <span class="text-slate-300">•</span>
+            <span class="text-slate-700">{{ activePr?.title }}</span>
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="cancelReject()"
+        class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-700"
+        aria-label="Close"
+      >
+        ✕
+      </button>
+    </div>
+
+
+    <div class="px-6 py-5">
+      <div
+        class="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-100"
+      >
+        <div class="flex gap-2">
+          <i class="pi pi-exclamation-triangle mt-0.5"></i>
+          <div>
+            <div class="font-semibold">
+              This action is final for this approval step.
+            </div>
+            <div class="text-amber-800/90">
+              The PR status will become
+              <span class="font-semibold">Rejected</span>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <label class="block text-sm font-semibold text-slate-700">
+        Rejection reason <span class="text-red-600">*</span>
+      </label>
+
+      <textarea
+        class="mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100"
+        rows="5"
+        [(ngModel)]="rejectReason"
+        placeholder="Explain why you’re rejecting this PR (e.g., budget mismatch, incomplete justification, wrong cost center)..."
+      ></textarea>
+
+      <div class="mt-2 flex items-center justify-between">
+        <p class="text-xs text-slate-500">
+          Tip: Be specific so the requester can correct and resubmit.
+        </p>
+        <p class="text-xs text-slate-400">
+          {{ (rejectReason || "").length }}/500
+        </p>
+      </div>
+    </div>
+
+    <div
+      class="flex items-center justify-end gap-2 px-6 py-4 bg-slate-50 border-t border-slate-100"
+    >
+      <button
+        type="button"
+        (click)="cancelReject()"
+        class="h-10 rounded-xl bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        (click)="confirmReject()"
+        [disabled]="!(rejectReason && rejectReason.trim().length)"
+        class="h-10 rounded-xl px-4 text-sm font-semibold text-white transition bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed"
+      >
+        Reject PR
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+<app-large-side-modal
+  *ngIf="displayPrView && activePr"
+  header="Purchase Requisition Details"
+  subheader="Review requisition information, items, and approval details."
+  (close)="closePrView()"
+>
+  <div class="space-y-6">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          PRM No
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ activePr.prmNo || '---' }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Title
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ activePr.title || '---' }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Department
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ getDepartmentName(activePr.department) || '---' }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Status
+        </p>
+        <span
+          class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+          [ngClass]="statusBadgeClass(activePr.status)"
+        >
+          {{ activePr.status || '---' }}
+        </span>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Cost Center
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ activePr.costCenterId || '---' }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Budget Code
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ activePr.budgetCodeId || '---' }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Required By
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ formatDate(activePr.requiredByDate) }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Created At
+        </p>
+        <p class="text-sm font-medium text-slate-800">
+          {{ formatDate(activePr.createdAt) }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Justification
+        </p>
+        <p class="text-sm leading-6 text-slate-700">
+          {{ activePr.justification || '---' }}
+        </p>
+      </div>
+
+      <div
+        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2"
+      >
+        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Comment
+        </p>
+        <p class="text-sm leading-6 text-slate-700">
+          {{ activePr.comment || '---' }}
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <div class="mb-3 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-800">Requested Items</h3>
+        <span class="text-sm font-medium text-slate-500">
+          Total Budget Cap: {{ getTotalBudgetCap(activePr.items || []) | number:'1.0-2' }}
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div
+          *ngFor="let item of activePr.items || []; let i = index"
+          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <div class="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-slate-800">
+                Item {{ i + 1 }} - {{ item.name || 'Unnamed Item' }}
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ item.description || 'No description provided' }}
+              </p>
+            </div>
+
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+              {{ item.category || 'No Category' }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Quantity
+              </p>
+              <p class="mt-1 text-sm font-medium text-slate-800">
+                {{ item.quantity || 0 }}
+              </p>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Unit of Measure
+              </p>
+              <p class="mt-1 text-sm font-medium text-slate-800">
+                {{ item.unitOfMeasure || '---' }}
+              </p>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-3">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Budget Cap
+              </p>
+              <p class="mt-1 text-sm font-medium text-slate-800">
+                {{ item.budgetCap || 0 | number:'1.0-2' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="!activePr.items || !activePr.items.length"
+          class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500"
+        >
+          No items found for this requisition.
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="activePr.approval"
+      class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+    >
+      <h3 class="mb-3 text-base font-semibold text-emerald-900">
+        Approval Information
+      </h3>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Current Step
+          </p>
+          <p class="mt-1 text-sm text-emerald-900">
+            <!-- {{ activePr.approval.currentStep || '---' }} -->
+          </p>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Final Status
+          </p>
+          <p class="mt-1 text-sm text-emerald-900">
+            <!-- {{ activePr.approval.status || '---' }} -->
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-4">
+      <button
+        type="button"
+        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        (click)="closePrView()"
+      >
+        Close
+      </button>
+
+      <button
+        type="button"
+        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+        (click)="openReject(activePr)"
+        *ngIf="activePr.status === 'Submitted' || activePr.status === 'UnderReview'"
+      >
+        Reject
+      </button>
+
+      <button
+        type="button"
+        class="rounded-lg bg-[#2E6276] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#245060]"
+        (click)="approve(activePr)"
+        *ngIf="activePr.status === 'Submitted' || activePr.status === 'UnderReview'"
+      >
+        Approve
+      </button>
+    </div>
+  </div>
+</app-large-side-modal>
+
+
+<app-large-side-modal
+  *ngIf="displayPrView && activePr"
+  header="Purchase Requisition Details"
+  subheader="View requisition summary, request details, and requested items."
+  (close)="closePrView()"
+>
+  <div class="p-3 text-sm text-slate-700">
+    <div class="space-y-4">
+      <div
+        class="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-5 shadow-sm"
+      >
+        <div
+          class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+        >
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2E6276]/10 text-[#2E6276]"
+              >
+                <i class="pi pi-file-edit text-base"></i>
+              </div>
+
+              <div>
+                <div class="text-lg font-semibold text-slate-900">
+                  {{ activePr.title || 'Untitled PR' }}
+                </div>
+                <div class="text-sm text-slate-500">
+                  {{ activePr.prmNo || '---' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-1">
+              <span
+                [ngClass]="
+                  'px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center ' +
+                  statusBadgeClass(activePr.status)
+                "
+              >
+                {{ activePr.status || '---' }}
+              </span>
+
+              <span
+                class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+              >
+                {{ getDepartmentName(activePr.department) || '---' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 lg:min-w-[280px]">
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              <div class="text-xs text-slate-500">Required By</div>
+              <div class="mt-1 font-semibold text-slate-800">
+                {{ formatDate(activePr.requiredByDate) }}
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              <div class="text-xs text-slate-500">Items</div>
+              <div class="mt-1 font-semibold text-slate-800">
+                {{ activePr.items.length || 0 }}
+              </div>
+            </div>
+
+            <div
+              class="col-span-2 rounded-xl border border-slate-200 bg-white p-3"
+            >
+              <div class="text-xs text-slate-500">Total Budget Cap</div>
+              <div class="mt-1 text-lg font-semibold text-[#2E6276]">
+                {{ getTotalBudgetCap(activePr.items || []) | number: '1.0-0' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activePr.comment" class="">
+        rejection reason: {{ activePr.comment }}
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        <div class="mb-4 flex items-center gap-2 font-semibold text-slate-700">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2E6276]/10 text-[#2E6276]"
+          >
+            <i class="pi pi-info-circle"></i>
+          </div>
+          Requisition Information
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">Title</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ activePr.title || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">PRM No</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ activePr.prmNo || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">Department</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ getDepartmentName(activePr.department) || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">Cost Center</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ activePr.costCenterId || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">Required By</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ formatDate(activePr.requiredByDate) }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-slate-600">Created At</label>
+            <div class="rounded-xl border border-slate-200 bg-white p-3">
+              {{ formatDate(activePr.createdAt) }}
+            </div>
+          </div>
+
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-sm font-medium text-slate-600">Justification</label>
+            <div class="min-h-[92px] rounded-xl border border-slate-200 bg-white p-3">
+              {{ activePr.justification || '---' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        <div class="mb-4 flex items-center gap-2 font-semibold text-slate-700">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2E6276]/10 text-[#2E6276]"
+          >
+            <i class="pi pi-list"></i>
+          </div>
+          Requested Items
+        </div>
+
+        <div class="space-y-3" *ngIf="activePr.items.length; else emptyItems">
+          <div
+            *ngFor="let item of activePr.items; let i = index"
+            class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+          >
+            <div class="mb-3 flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div
+                  class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2E6276]/10 text-sm font-semibold text-[#2E6276]"
+                >
+                  {{ i + 1 }}
+                </div>
+
+                <div>
+                  <div class="font-semibold text-slate-900">
+                    {{ item?.name || '---' }}
+                  </div>
+                  <div class="mt-1 text-xs text-slate-500">
+                    {{ item?.category || 'Uncategorized' }}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700"
+              >
+                {{ item?.budgetCap || 0 | number: '1.0-0' }}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-xs text-slate-500">Quantity</div>
+                <div class="mt-1 font-medium text-slate-800">
+                  {{ item?.quantity || '---' }}
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-xs text-slate-500">UoM</div>
+                <div class="mt-1 font-medium text-slate-800">
+                  {{ item?.unitOfMeasure || '---' }}
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-xs text-slate-500">Budget Cap</div>
+                <div class="mt-1 font-medium text-slate-800">
+                  {{ item?.budgetCap || 0 | number: '1.0-0' }}
+                </div>
+              </div>
+
+              <div class="md:col-span-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div class="text-xs text-slate-500">Description</div>
+                  <div class="mt-1 whitespace-pre-line text-slate-800">
+                    {{ item?.description || '---' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #emptyItems>
+          <div
+            class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500"
+          >
+            No items found for this requisition.
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="mt-4 flex flex-wrap justify-end gap-3">
+        <button
+          pButton
+          type="button"
+          label="Close"
+          (click)="closePrView()"
+          class="!rounded-xl !border-slate-300 !bg-white !px-4 !py-2 !text-slate-700 hover:!bg-slate-50"
+        ></button>
+      </div>
+    </div>
+  </div>
+</app-large-side-modal>
