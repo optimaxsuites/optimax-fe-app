@@ -74,7 +74,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private logger: LoggerService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 'default';
@@ -122,7 +122,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const images = (room.imageURLs && room.imageURLs.length > 0)
         ? room.imageURLs
         : [this.fallbackImages[i % this.fallbackImages.length], ...this.fallbackImages.filter((_, idx) => idx !== (i % this.fallbackImages.length))];
-
+      
       return {
         id: room.id,
         roomNumber: room.roomNumber,
@@ -151,7 +151,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const name = typeof a === 'string' ? a : (a.name || 'Amenity');
       const lower = name.toLowerCase();
       let icon = 'fa-solid fa-check-circle';
-
+      
       for (const [key, value] of Object.entries(this.amenityIcons)) {
         if (lower.includes(key)) {
           icon = value;
@@ -176,7 +176,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       ...d,
       typeId: (d.id % 4) + 1, // Mock typeId for dummy rooms
       amenities: this.mapAmenities(d.amenities),
-      images: [this.fallbackImages[i % 3], this.fallbackImages[(i + 1) % 3], this.fallbackImages[(i + 2) % 3]],
+      images: [this.fallbackImages[i % 3], this.fallbackImages[(i+1)%3], this.fallbackImages[(i+2)%3]],
       activeImageIndex: 0,
       available: true
     }));
@@ -238,11 +238,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   viewRoomDetails(room: DisplayRoom): void {
-    this.router.navigate(['/user/hospitality/e-bookings/rooms/details', room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: DisplayRoom): void {
-    this.router.navigate(['/user/hospitality/e-bookings/booking-form', room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/booking-form', room.id, this.uuid]);
   }
 
   openAuthModal(room: DisplayRoom): void {
@@ -260,14 +260,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     if (mode === 'guest') {
       if (!this.selectedRoomForAuth) return;
-      this.router.navigate(['/user/hospitality/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
+      this.router.navigate(['/user/e-bookings/checkout', this.selectedRoomForAuth.id, this.uuid]);
     } else {
       const authPath = mode === 'signin' ? 'login' : 'register';
       const returnUrl = this.selectedRoomForAuth
-        ? `/user/hospitality/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
-        : `/user/hospitality/e-bookings/home/${this.uuid}`;
+        ? `/user/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
+        : `/user/e-bookings/home/${this.uuid}`;
 
-      this.router.navigate(['/user/hospitality/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }
@@ -290,7 +290,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const priceMatch = room.price <= this.maxPrice;
 
       // Amenities Filter
-      const amenityMatch = this.selectedAmenities.length === 0 ||
+      const amenityMatch = this.selectedAmenities.length === 0 || 
         this.selectedAmenities.every(sa => room.amenities.some(ra => ra.name.toLowerCase().includes(sa.toLowerCase())));
 
       return categoryMatch && priceMatch && amenityMatch;

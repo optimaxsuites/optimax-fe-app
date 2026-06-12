@@ -23,9 +23,8 @@
       <section class="slider-section" *ngIf="room">
         <div class="main-preview">
           <img [src]="room.images[activeImageIndex]" alt="Room preview">
-
-          <button class="nav-btn prev"
-            (click)="setActiveImage((activeImageIndex - 1 + room.images.length) % room.images.length)">
+          
+          <button class="nav-btn prev" (click)="setActiveImage((activeImageIndex - 1 + room.images.length) % room.images.length)">
             <i class="fa-solid fa-chevron-left"></i>
           </button>
           <button class="nav-btn next" (click)="setActiveImage((activeImageIndex + 1) % room.images.length)">
@@ -33,14 +32,16 @@
           </button>
 
           <div class="slider-dots">
-            <span *ngFor="let img of room.images; let i = index" [class.active]="i === activeImageIndex"
-              (click)="setActiveImage(i)"></span>
+            <span *ngFor="let img of room.images; let i = index" 
+                  [class.active]="i === activeImageIndex"
+                  (click)="setActiveImage(i)"></span>
           </div>
         </div>
 
         <div class="thumbnails-grid">
-          <div class="thumbnail" *ngFor="let img of room.images; let i = index" [class.active]="i === activeImageIndex"
-            (click)="setActiveImage(i)">
+          <div class="thumbnail" *ngFor="let img of room.images; let i = index" 
+               [class.active]="i === activeImageIndex"
+               (click)="setActiveImage(i)">
             <img [src]="img" alt="Thumbnail">
           </div>
         </div>
@@ -61,8 +62,8 @@
             </div>
             <h1 class="room-title">Room {{ room.roomNumber }}</h1>
             <p class="location-mock">
-              <i class="fa-solid fa-door-open"></i> {{ room.roomTypeName }} •
-              <i class="fa-solid fa-layer-group"></i> Floor: {{ room.floorNumber }} •
+              <i class="fa-solid fa-door-open"></i> {{ room.roomTypeName }} • 
+              <i class="fa-solid fa-layer-group"></i> Floor: {{ room.floorNumber }} • 
               <i class="fa-solid fa-bed"></i> {{ room.bedsCount }} Beds
             </p>
           </div>
@@ -98,17 +99,17 @@
               <h2 class="section-title">Enhance Your Stay</h2>
               <p class="section-subtitle">Add little luxuries to make your stay unforgettable.</p>
             </div>
-
+            
             <div class="services-grid">
-              <div class="service-card" *ngFor="let s of additionalServices"
-                [class.selected]="selectedServices.has(s.id)" (click)="toggleService(s.id)">
+              <div class="service-card" *ngFor="let s of additionalServices" 
+                   [class.selected]="selectedServices.has(s.id)"
+                   (click)="toggleService(s.id)">
                 <div class="card-overlay" *ngIf="selectedServices.has(s.id)">
                   <i class="fa-solid fa-circle-check"></i>
                 </div>
                 <div class="card-content">
                   <div class="icon-box">
-                    <i
-                      [class]="'fa-solid ' + (s.name.toLowerCase().includes('breakfast') ? 'fa-utensils' : 
+                    <i [class]="'fa-solid ' + (s.name.toLowerCase().includes('breakfast') ? 'fa-utensils' : 
                                                 s.name.toLowerCase().includes('spa') ? 'fa-spa' : 
                                                 s.name.toLowerCase().includes('laundry') ? 'fa-shirt' : 
                                                 s.name.toLowerCase().includes('airport') ? 'fa-plane-arrival' : 'fa-plus')"></i>
@@ -130,11 +131,11 @@
         <aside class="cta-column">
           <div class="cta-card shadow-premium">
             <div class="price-box">
-              <span class="price">₦{{ totalPrice | number }}</span>
-              <span class="period">/ Total</span>
+               <span class="price">₦{{ totalPrice | number }}</span>
+               <span class="period">/ Total</span>
             </div>
             <p class="base-price" *ngIf="selectedServices.size > 0">Base price: ₦{{ room.displayPrice | number }}</p>
-
+            
             <div class="details-summary">
               <div class="item">
                 <i class="fa-solid fa-users"></i>
@@ -166,7 +167,7 @@
         <p class="section-sub">Other premium rooms available for your dates</p>
         <div class="recommended-grid">
           <div class="rec-card" *ngFor="let rec of recommendedRooms"
-            [routerLink]="['/user/hospitality/e-bookings/rooms/details', rec.id, uuid]">
+               [routerLink]="['/e-bookings/rooms/details', rec.id, uuid]">
             <div class="rec-image">
               <img [src]="rec.coverImage" [alt]="'Room ' + rec.roomNumber">
               <span class="rec-pill">{{ rec.roomTypeName }}</span>

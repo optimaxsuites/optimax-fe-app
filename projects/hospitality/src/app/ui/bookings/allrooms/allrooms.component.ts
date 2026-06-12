@@ -36,11 +36,11 @@ export class AllroomsComponent implements OnInit {
 
   rooms: Room[] = [];
 
-  constructor(
+   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private hotelService: HotelserviceService
-  ) { }
+  ) {}
 
   uuid = '';
 
@@ -74,11 +74,11 @@ export class AllroomsComponent implements OnInit {
 
   viewRoomDetails(room: any): void {
     // Navigate to the NEW dedicated room details page
-    this.router.navigate(['/user/hospitality/e-bookings/rooms/details', room.id, this.uuid]);
+    this.router.navigate(['/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: Room): void {
-    this.router.navigate(['/user/hospitality/bookings', 'room-select', this.uuid]);
+    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
   }
 
   getStarRating(rating: number): string {
@@ -89,7 +89,7 @@ export class AllroomsComponent implements OnInit {
   }
 
   navigateTobooking() {
-    this.router.navigate([`/user/hospitality/e-bookings/multiple-rooms/${this.uuid}`]);
+    this.router.navigate([`/e-bookings/multiple-rooms/${this.uuid}`]);
   }
 
   getBedType(capacity: number): string {

@@ -37,7 +37,7 @@ export class RoomDetailsComponent implements OnInit, OnDestroy {
     private router: Router,
     private hotelService: HotelserviceService,
     private logger: LoggerService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     const roomId = this.route.snapshot.paramMap.get('id');
@@ -160,23 +160,23 @@ export class RoomDetailsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rooms: any[]) => {
-          const testImages = [
-            'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=600',
-            'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=600',
-            'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=600',
-            'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=600',
-          ];
-          this.recommendedRooms = rooms
-            .filter(r => r.id !== currentRoomId && r.roomStatus === 'AVAILABLE')
-            .slice(0, 4)
-            .map((r, i) => ({
-              ...r,
-              roomTypeName: this.hotelService.getRoomTypeNameById(r.roomType),
-              displayPrice: r.rate || 0,
-              coverImage: (r.imageURLs && r.imageURLs[0]) || testImages[i % testImages.length],
-            }));
-        }
-      });
+        const testImages = [
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=600',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=600',
+        ];
+        this.recommendedRooms = rooms
+          .filter(r => r.id !== currentRoomId && r.roomStatus === 'AVAILABLE')
+          .slice(0, 4)
+          .map((r, i) => ({
+            ...r,
+            roomTypeName: this.hotelService.getRoomTypeNameById(r.roomType),
+            displayPrice: r.rate || 0,
+            coverImage: (r.imageURLs && r.imageURLs[0]) || testImages[i % testImages.length],
+          }));
+      }
+    });
   }
 
   openAuthModal(): void {
@@ -243,11 +243,11 @@ export class RoomDetailsComponent implements OnInit, OnDestroy {
 
   bookNow(): void {
     if (!this.room) return;
-    this.router.navigate(['/user/hospitality/e-bookings/booking-form', this.room.id, this.uuid]);
+    this.router.navigate(['e-bookings/booking-form', this.room.id, this.uuid]);
   }
 
   goBack(): void {
-    this.router.navigate(['/user/hospitality/e-bookings/home', this.uuid]);
+    this.router.navigate(['/e-bookings/home', this.uuid]);
   }
 
   toggleMenu(): void {
