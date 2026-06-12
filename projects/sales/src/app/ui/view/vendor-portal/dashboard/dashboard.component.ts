@@ -3,12 +3,13 @@ import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
 import { VendorService } from '../../../service/vendor-portal/vendor.service';
-import { Rfq, Quotation, QuotationItem, VendorStats } from '../../../domain/vendor-portal/vendor.dto';
-
-// TableColumn drives the <th> header row inside app-table.
-// Adjust this import path to wherever your shared library resolves in the project,
-// e.g. 'src/app/shared/view/table/table.component'
-import { TableColumn } from '../../../shared-component/view/table/table.component';
+import {
+  Rfq,
+  Quotation,
+  QuotationItem,
+  VendorStats,
+} from '../../../domain/vendor-portal/vendor.dto';
+import { TableColumn } from 'src/app/ui/shared-component/view/table/table.component';
 
 type ActiveTable = 'rfqs' | 'quotations';
 
@@ -18,66 +19,114 @@ type ActiveTable = 'rfqs' | 'quotations';
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-
   private destroy$ = new Subject<void>();
 
-  // ── Data ─────────────────────────────────────────────────────────────────────
-  rfqs:       Rfq[]       = [];
+  rfqs: Rfq[] = [];
   quotations: Quotation[] = [];
-  stats:      VendorStats | null = null;
+  stats: VendorStats | null = null;
 
-  // ── Table toggle ──────────────────────────────────────────────────────────────
   activeTable: ActiveTable = 'rfqs';
 
-  // ── RFQ detail panel ─────────────────────────────────────────────────────────
+  // ── RFQ side panel ────────────────────────────────────────────────────────────
   showRfqPanel = false;
   selectedRfq: Rfq | null = null;
 
-  // ── Quotation editor/viewer modal ─────────────────────────────────────────────
-  showQuotationModal   = false;
-  editingQuotation:    Quotation | null = null;
-  isQuotationReadOnly  = false;
+  // ── Quotation side panel ──────────────────────────────────────────────────────
+  showQuotationPanel = false;
+  selectedQuotation: Quotation | null = null;
 
-  // ── Send-confirm modal ────────────────────────────────────────────────────────
-  showSendConfirm  = false;
+  // ── Quotation editor centre modal (shared for both Convert and Edit flows) ────
+  showQuotationModal = false;
+  editingQuotation: Quotation | null = null;
+  isQuotationReadOnly = false;
+
+  // ── Send confirm modal ────────────────────────────────────────────────────────
+  showSendConfirm = false;
   quotationToSend: Quotation | null = null;
 
-  // ── Column definitions (header row only — cells are in the custom template) ───
-  // We pass empty actions:[] so app-table doesn't render its own Actions <th>.
-  // Our appTableBody template includes the actions <td> itself.
+  // ── RFQ columns
+  // Each column has a formatter so resolveCell() always returns a value.
+  // appTableBody overrides the <td> rendering but the headers must match exactly.
+  // 6 columns → 6 <td>s in the template.
   rfqColumns: TableColumn[] = [
-    { header: 'RFQ No.',    field: 'rfqNumber',  sortable: true },
-    { header: 'Client',     field: 'clientName', sortable: true },
-    { header: 'Category',   field: 'category',   sortable: true },
-    { header: 'Items',      align: 'center' },
-    { header: 'Due Date',   sortField: 'dueDate', sortable: true },
-    { header: 'Est. Value', align: 'right' },
-    { header: 'Status',     field: 'status',     sortable: true },
-    { header: 'Actions' },
+    {
+      header: 'RFQ No.',
+      field: 'rfqNumber',
+      sortable: true,
+    },
+    {
+      header: 'Client',
+      field: 'clientName',
+      sortable: true,
+    },
+    {
+      header: 'Category',
+      field: 'category',
+      sortable: true,
+    },
+    {
+      header: 'Due Date',
+      sortable: true,
+      sortField: 'dueDate',
+      formatter: (row: Rfq) => this.fmtDate(row.dueDate),
+    },
+    {
+      header: 'Est. Value',
+      align: 'right',
+      formatter: (row: Rfq) =>
+        row.totalEstimatedValue ? this.fmtCurrency(row.totalEstimatedValue, row.currency) : '—',
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      sortable: true,
+    },
   ];
 
+  // ── Quotation columns
+  // 5 columns → 5 <td>s in the template.
   quotationColumns: TableColumn[] = [
-    { header: 'Quotation No.', field: 'quotationNumber', sortable: true },
-    { header: 'RFQ Ref.',      field: 'rfqNumber',       sortable: true },
-    { header: 'Client',        field: 'clientName',      sortable: true },
-    { header: 'Created',       sortField: 'createdDate', sortable: true },
-    { header: 'Valid Until' },
-    { header: 'Total',         align: 'right' },
-    { header: 'Status',        field: 'status',          sortable: true },
-    { header: 'Actions' },
+    {
+      header: 'Quotation No.',
+      field: 'quotationNumber',
+      sortable: true,
+    },
+    {
+      header: 'Client',
+      field: 'clientName',
+      sortable: true,
+    },
+    {
+      header: 'Due / Created',
+      sortable: true,
+      sortField: 'createdDate',
+      formatter: (row: Quotation) => this.fmtDate(row.createdDate),
+    },
+    {
+      header: 'Total',
+      align: 'right',
+      formatter: (row: Quotation) =>
+        row.total > 0 ? this.fmtCurrency(row.total, row.currency) : '—',
+    },
+    {
+      header: 'Status',
+      field: 'status',
+      sortable: true,
+    },
   ];
 
   constructor(private vendorService: VendorService) {}
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────────
   ngOnInit(): void {
-    this.vendorService.getRfqs()
+    this.vendorService
+      .getRfqs()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(list => this.rfqs = list);
+      .subscribe((list) => (this.rfqs = list));
 
-    this.vendorService.getQuotations()
+    this.vendorService
+      .getQuotations()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(list => this.quotations = list);
+      .subscribe((list) => (this.quotations = list));
 
     this.refreshStats();
   }
@@ -88,66 +137,93 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private refreshStats(): void {
-    this.vendorService.getVendorStats().pipe(take(1)).subscribe(s => this.stats = s);
+    this.vendorService
+      .getVendorStats()
+      .pipe(take(1))
+      .subscribe((s) => (this.stats = s));
   }
 
-  // ── Table toggle ──────────────────────────────────────────────────────────────
-  switchTable(t: ActiveTable): void { this.activeTable = t; }
+  switchTable(t: ActiveTable): void {
+    this.activeTable = t;
+  }
 
-  get unreadCount():  number { return this.rfqs.filter(r => !r.isRead).length; }
-  get draftCount():   number { return this.quotations.filter(q => q.status === 'draft').length; }
+  get unreadCount(): number {
+    return this.rfqs.filter((r) => !r.isRead).length;
+  }
+  get draftCount(): number {
+    return this.quotations.filter((q) => q.status === 'draft').length;
+  }
 
   // ── RFQ panel ─────────────────────────────────────────────────────────────────
-  openRfqPanel(rfq: Rfq): void {
-    this.selectedRfq  = rfq;
+  onRfqRowClick(rfq: Rfq): void {
+    this.selectedRfq = rfq;
     this.showRfqPanel = true;
-    if (!rfq.isRead) { this.vendorService.markRfqAsRead(rfq.id); }
+    if (!rfq.isRead) {
+      this.vendorService.markRfqAsRead(rfq.id);
+    }
   }
 
   closeRfqPanel(): void {
     this.showRfqPanel = false;
-    this.selectedRfq  = null;
+    this.selectedRfq = null;
   }
 
   rfqHasQuotation(rfqId: string): boolean {
     return this.vendorService.rfqHasQuotation(rfqId);
   }
 
-  // ── RFQ → Quotation ───────────────────────────────────────────────────────────
-  convertToQuotation(rfq: Rfq): void {
+  openConvertModal(rfq: Rfq): void {
     const q = this.vendorService.createQuotationFromRfq(rfq);
     this.refreshStats();
-    this.closeRfqPanel();
-    this.activeTable = 'quotations';
-    this.openQuotationEditor(q);
-  }
-
-  goToQuotationTab(): void {
-    this.activeTable = 'quotations';
-    this.closeRfqPanel();
-  }
-
-  // ── Quotation modal ───────────────────────────────────────────────────────────
-  openQuotationEditor(q: Quotation): void {
-    this.editingQuotation    = JSON.parse(JSON.stringify(q)); // deep clone
+    this.editingQuotation = JSON.parse(JSON.stringify(q));
     this.isQuotationReadOnly = false;
-    this.showQuotationModal  = true;
+    this.showQuotationModal = true;
+  }
+
+  viewQuotationFromRfq(rfq: Rfq): void {
+    const q = this.quotations.find((x) => x.rfqId === rfq.id) ?? null;
+    this.closeRfqPanel();
+    this.activeTable = 'quotations';
+    if (q) {
+      this.openQuotationSidePanel(q);
+    }
+  }
+
+  // ── Quotation panel ───────────────────────────────────────────────────────────
+  onQuotationRowClick(q: Quotation): void {
+    this.openQuotationSidePanel(q);
+  }
+
+  openQuotationSidePanel(q: Quotation): void {
+    this.selectedQuotation = q;
+    this.showQuotationPanel = true;
+  }
+
+  closeQuotationPanel(): void {
+    this.showQuotationPanel = false;
+    this.selectedQuotation = null;
+  }
+
+  openQuotationEditor(q: Quotation): void {
+    this.editingQuotation = JSON.parse(JSON.stringify(q));
+    this.isQuotationReadOnly = false;
+    this.showQuotationModal = true;
   }
 
   openQuotationViewer(q: Quotation): void {
-    this.editingQuotation    = JSON.parse(JSON.stringify(q));
+    this.editingQuotation = JSON.parse(JSON.stringify(q));
     this.isQuotationReadOnly = true;
-    this.showQuotationModal  = true;
+    this.showQuotationModal = true;
   }
 
   closeQuotationModal(): void {
     this.showQuotationModal = false;
-    this.editingQuotation   = null;
+    this.editingQuotation = null;
   }
 
   // ── Item editing ──────────────────────────────────────────────────────────────
   onPriceChange(item: QuotationItem, raw: string): void {
-    const v        = parseFloat(raw);
+    const v = parseFloat(raw.replace(/,/g, ''));
     item.unitPrice = isNaN(v) || v < 0 ? null : v;
     item.totalPrice = item.unitPrice !== null ? item.unitPrice * item.quantity : null;
     this.recalcEditing();
@@ -155,23 +231,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   toggleUnavailable(item: QuotationItem): void {
     item.availability = item.availability === 'available' ? 'unavailable' : 'available';
-    if (item.availability === 'unavailable') { item.unitPrice = null; item.totalPrice = null; }
+    if (item.availability === 'unavailable') {
+      item.unitPrice = null;
+      item.totalPrice = null;
+    }
     this.recalcEditing();
   }
 
   private recalcEditing(): void {
     if (!this.editingQuotation) return;
-    const q        = this.editingQuotation;
-    const subtotal = q.items.reduce((s, i) =>
-      i.availability === 'available' && i.unitPrice !== null
-        ? s + i.unitPrice * i.quantity : s, 0);
+    const q = this.editingQuotation;
+    const subtotal = q.items.reduce(
+      (s, i) =>
+        i.availability === 'available' && i.unitPrice !== null ? s + i.unitPrice * i.quantity : s,
+      0,
+    );
     q.subtotal = subtotal;
-    q.tax      = subtotal * 0.075;
-    q.total    = subtotal + q.tax;
+    q.tax = subtotal * 0.075;
+    q.total = subtotal + q.tax;
   }
 
   isComplete(q: Quotation): boolean {
-    return q.items.some(i => i.availability === 'available' && i.unitPrice !== null);
+    return q.items.some((i) => i.availability === 'available' && i.unitPrice !== null);
   }
 
   get editingComplete(): boolean {
@@ -182,6 +263,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   saveDraft(): void {
     if (!this.editingQuotation) return;
     this.vendorService.updateQuotation(this.editingQuotation);
+    if (this.selectedQuotation?.id === this.editingQuotation.id) {
+      this.selectedQuotation = JSON.parse(JSON.stringify(this.editingQuotation));
+    }
     this.refreshStats();
     this.closeQuotationModal();
   }
@@ -189,6 +273,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   openSendConfirm(q: Quotation): void {
     this.quotationToSend = q;
     this.showSendConfirm = true;
+  }
+  cancelSend(): void {
+    this.showSendConfirm = false;
+    this.quotationToSend = null;
   }
 
   requestSendFromModal(): void {
@@ -198,62 +286,86 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  cancelSend(): void { this.showSendConfirm = false; this.quotationToSend = null; }
-
   executeSend(): void {
     if (!this.quotationToSend) return;
     this.vendorService.sendQuotation(this.quotationToSend.id);
-    this.showSendConfirm   = false;
-    this.quotationToSend   = null;
+    this.showSendConfirm = false;
+    this.quotationToSend = null;
     this.closeQuotationModal();
+    this.closeQuotationPanel();
     this.refreshStats();
   }
 
-  // ── Downloads (stub) ──────────────────────────────────────────────────────────
-  downloadRfq(rfq: Rfq, event: MouseEvent): void {
-    event.stopPropagation();
-    console.log('[VendorPortal] Download RFQ:', rfq.rfqNumber);
+  // ── Downloads ─────────────────────────────────────────────────────────────────
+  downloadRfq(rfq: Rfq, e: MouseEvent): void {
+    e.stopPropagation();
+    console.log('Download RFQ', rfq.rfqNumber);
   }
-
-  downloadQuotation(q: Quotation, event: MouseEvent): void {
-    event.stopPropagation();
-    console.log('[VendorPortal] Download Quotation:', q.quotationNumber);
+  downloadQuotation(q: Quotation, e: MouseEvent): void {
+    e.stopPropagation();
+    console.log('Download Quotation', q.quotationNumber);
   }
 
   // ── Formatting ────────────────────────────────────────────────────────────────
   fmtDate(d: Date | undefined): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-NG', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   fmtCurrency(n: number, cur = 'NGN'): string {
     return new Intl.NumberFormat('en-NG', {
-      style: 'currency', currency: cur, minimumFractionDigits: 2
+      style: 'currency',
+      currency: cur,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(n);
   }
 
-  // ── Date helpers ──────────────────────────────────────────────────────────────
-  isExpired(d: Date):  boolean { return new Date(d) < new Date(); }
-  isDueSoon(d: Date):  boolean {
-    const t = new Date(d).getTime(), now = Date.now();
+  fmtNumber(n: number | null): string {
+    if (n === null || n === undefined) return '';
+    return new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(n);
+  }
+
+  isExpired(d: Date): boolean {
+    return new Date(d) < new Date();
+  }
+  isDueSoon(d: Date): boolean {
+    const t = new Date(d).getTime(),
+      now = Date.now();
     return t >= now && t <= now + 3 * 24 * 60 * 60 * 1000;
   }
 
   dueDateClass(rfq: Rfq): string {
-    if (rfq.status !== 'open')         return '';
-    if (this.isExpired(rfq.dueDate))   return 'text-danger';
-    if (this.isDueSoon(rfq.dueDate))   return 'text-warning';
+    if (rfq.status !== 'open') return '';
+    if (this.isExpired(rfq.dueDate)) return 'text-danger';
+    if (this.isDueSoon(rfq.dueDate)) return 'text-warning';
     return '';
   }
 
-  // ── Badge classes ─────────────────────────────────────────────────────────────
-  rfqBadge(status: string): string {
-    const m: Record<string, string> = { open: 'badge-open', converted: 'badge-converted', expired: 'badge-expired', closed: 'badge-closed' };
-    return `badge ${m[status] ?? ''}`;
+  rfqBadge(s: string): string {
+    const m: Record<string, string> = {
+      open: 'badge-open',
+      converted: 'badge-converted',
+      expired: 'badge-expired',
+      closed: 'badge-closed',
+    };
+    return `badge ${m[s] ?? ''}`;
   }
 
-  quotBadge(status: string): string {
-    const m: Record<string, string> = { draft: 'badge-draft', sent: 'badge-sent', accepted: 'badge-accepted', rejected: 'badge-rejected' };
-    return `badge ${m[status] ?? ''}`;
+  quotBadge(s: string): string {
+    const m: Record<string, string> = {
+      draft: 'badge-draft',
+      sent: 'badge-sent',
+      accepted: 'badge-accepted',
+      rejected: 'badge-rejected',
+    };
+    return `badge ${m[s] ?? ''}`;
   }
 }

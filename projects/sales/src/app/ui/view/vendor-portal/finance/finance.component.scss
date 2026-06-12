@@ -1,0 +1,35 @@
+.panel-slide {
+  animation: panelSlide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+@keyframes panelSlide {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  white-space: nowrap;
+
+  &-draft     { background: #f3f4f6; color: #6b7280; }
+  &-submitted { background: #eff6ff; color: #2563eb; }
+  &-approved  { background: #f0fdf4; color: #16a34a; }
+  &-paid      { background: #f0fdf4; color: #15803d; }
+  &-overdue   { background: #fef2f2; color: #dc2626; }
+  &-disputed  { background: #fff7ed; color: #ea580c; }
+}
+
+:host ::ng-deep {
+  .p-datatable .p-datatable-tbody > tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    &:hover td { background-color: #f5f7f9 !important; }
+  }
+  .app-table-actions-col:empty { display: none; }
+}

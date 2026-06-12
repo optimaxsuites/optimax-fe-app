@@ -1,1 +1,258 @@
-<p>finance works!</p>
+<!-- ═══════════════════════════════════════════════════
+     FINANCE PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <div class="mb-7">
+    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Finance</h1>
+    <p class="text-sm text-[#5a7380] mt-0.5">Track your invoices, payments and outstanding balances</p>
+  </div>
+
+  <!-- ── Stats ─────────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Total Invoiced</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-[#224957] mb-1">{{ fmtCurrency(stats.totalInvoiced) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.invoiceCount }}</strong> invoices total</p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Total Paid</span>
+        <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-green-600 mb-1">{{ fmtCurrency(stats.totalPaid) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.paidCount }}</strong> invoices cleared</p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Outstanding</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-amber-600 mb-1">{{ fmtCurrency(stats.totalOutstanding) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.pendingCount }}</strong> awaiting payment</p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Overdue</span>
+        <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-red-600 mb-1">{{ fmtCurrency(stats.totalOverdue) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.overdueCount }}</strong> overdue · avg <strong class="text-[#1a2c35]">{{ stats.avgPaymentDays }}d</strong> to pay</p>
+    </div>
+
+  </div>
+
+  <!-- ── Recent payments strip ──────────────────────────── -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl p-4 mb-5 shadow-sm" *ngIf="stats?.recentPayments?.length">
+    <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-3">Recent Payments</h3>
+    <div class="flex flex-col gap-2">
+      <div *ngFor="let pay of stats!.recentPayments"
+        class="flex items-center justify-between py-2 border-b border-[#f0f4f7] last:border-0">
+        <div class="flex items-center gap-3">
+          <span class="w-7 h-7 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ pay.clientName }}</p>
+            <p class="text-xs text-[#5a7380]">{{ pay.invoiceNumber }} · {{ fmtDate(pay.paidDate) }} · Ref: {{ pay.reference }}</p>
+          </div>
+        </div>
+        <span class="text-sm font-bold text-green-600">+{{ fmtCurrency(pay.amount, pay.currency) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       INVOICE TABLE
+  ═════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
+      <h2 class="text-sm font-semibold text-[#1a2c35]">Invoices</h2>
+      <!-- Status filter pills -->
+      <div class="flex gap-1.5 flex-wrap">
+        <button *ngFor="let f of statusFilters"
+          (click)="setFilter(f.value)"
+          class="px-3 py-1 rounded-full text-xs font-medium transition-all border"
+          [class.bg-[#224957]]="statusFilter === f.value"
+          [class.text-white]="statusFilter === f.value"
+          [class.border-[#224957]]="statusFilter === f.value"
+          [class.bg-white]="statusFilter !== f.value"
+          [class.text-[#5a7380]]="statusFilter !== f.value"
+          [class.border-[#e6edf2]]="statusFilter !== f.value"
+        >{{ f.label }}</button>
+      </div>
+    </div>
+
+    <div class="p-4">
+      <!-- 5 columns → 5 <td>s -->
+      <app-table
+        [columns]="invoiceColumns"
+        [rows]="invoices"
+        [actions]="[]"
+        [rowClickable]="true"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        emptyMessage="No invoices found for the selected filter."
+        (rowClick)="onRowClick($event)"
+      >
+        <ng-template appTableBody let-row>
+
+          <!-- 1. Invoice No. -->
+          <td class="app-table-main-col">
+            <p class="font-semibold text-[#1a2c35] text-sm">{{ row.invoiceNumber }}</p>
+            <p *ngIf="row.lpoNumber" class="text-[10px] text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
+          </td>
+
+          <!-- 2. Client -->
+          <td class="text-sm text-[#1a2c35]">{{ row.clientName }}</td>
+
+          <!-- 3. Issued / Due -->
+          <td>
+            <p class="text-sm text-[#1a2c35]">{{ fmtDate(row.issuedDate) }}</p>
+            <p class="text-xs" [class.text-red-500]="row.status==='overdue'" [class.text-[#5a7380]]="row.status!=='overdue'">
+              Due {{ fmtDate(row.dueDate) }}
+            </p>
+          </td>
+
+          <!-- 4. Total + outstanding -->
+          <td class="text-right">
+            <p class="text-sm font-semibold text-[#224957]">{{ fmtCurrency(row.total, row.currency) }}</p>
+            <p *ngIf="row.amountOutstanding > 0" class="text-xs text-amber-600">{{ fmtCurrency(row.amountOutstanding, row.currency) }} due</p>
+          </td>
+
+          <!-- 5. Status badge -->
+          <td><span [ngClass]="invoiceBadge(row.status)">{{ row.status }}</span></td>
+
+        </ng-template>
+      </app-table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     INVOICE SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showPanel && selectedInvoice">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closePanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[620px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedInvoice.invoiceNumber }}</h2>
+            <span [ngClass]="invoiceBadge(selectedInvoice.status)">{{ selectedInvoice.status }}</span>
+          </div>
+          <p class="text-xs text-[#5a7380]">{{ selectedInvoice.clientName }}<span *ngIf="selectedInvoice.clientEmail"> · {{ selectedInvoice.clientEmail }}</span></p>
+        </div>
+        <button (click)="closePanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+        <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedInvoice.issuedDate) }}</strong></span>
+        <span [class.text-red-500]="selectedInvoice.status==='overdue'">Due <strong>{{ fmtDate(selectedInvoice.dueDate) }}</strong></span>
+        <span *ngIf="selectedInvoice.paidDate">Paid <strong class="text-green-600">{{ fmtDate(selectedInvoice.paidDate) }}</strong></span>
+        <span *ngIf="selectedInvoice.lpoNumber">LPO: <strong class="text-[#1a2c35]">{{ selectedInvoice.lpoNumber }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Payment progress -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4">
+        <div class="flex justify-between text-xs text-[#5a7380] mb-2">
+          <span>Payment progress</span>
+          <span><strong class="text-[#1a2c35]">{{ paymentProgress(selectedInvoice) }}%</strong> paid</span>
+        </div>
+        <div class="w-full h-2 bg-[#e6edf2] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all"
+            [style.width.%]="paymentProgress(selectedInvoice)"
+            [class.bg-green-500]="selectedInvoice.status==='paid'"
+            [class.bg-amber-400]="selectedInvoice.status!=='paid' && paymentProgress(selectedInvoice)>0"
+            [class.bg-[#e6edf2]]="paymentProgress(selectedInvoice)===0"
+          ></div>
+        </div>
+        <div class="flex justify-between text-xs mt-2">
+          <span class="text-green-600 font-medium">Paid: {{ fmtCurrency(selectedInvoice.amountPaid, selectedInvoice.currency) }}</span>
+          <span class="text-amber-600 font-medium" *ngIf="selectedInvoice.amountOutstanding > 0">Outstanding: {{ fmtCurrency(selectedInvoice.amountOutstanding, selectedInvoice.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Line Items</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedInvoice.items" class="flex items-start justify-between gap-3 border border-[#e6edf2] rounded-xl p-3.5">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-[#1a2c35]">{{ item.description }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
+            </div>
+            <span class="text-sm font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span>Total</span><span class="text-[#224957] text-base">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span></div>
+      </div>
+
+      <!-- Bank details -->
+      <div *ngIf="selectedInvoice.bankDetails">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Payment Details</h3>
+        <div class="border border-[#e6edf2] rounded-xl p-4 grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Bank Name</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.bankName }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Account Name</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.accountName }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Account Number</span>
+            <span class="text-sm text-[#1a2c35] font-medium font-mono tracking-wider">{{ selectedInvoice.bankDetails.accountNumber }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div *ngIf="selectedInvoice.notes">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Notes</h3>
+        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedInvoice.notes }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-end gap-2 sticky bottom-0">
+      <button (click)="downloadInvoice(selectedInvoice, $event)"
+        class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+        ↓ Download Invoice
+      </button>
+    </div>
+
+  </aside>
+</ng-container>
