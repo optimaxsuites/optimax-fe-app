@@ -8,7 +8,7 @@ import { Rfq, Quotation, QuotationItem, VendorStats } from '../../../domain/vend
 // TableColumn drives the <th> header row inside app-table.
 // Adjust this import path to wherever your shared library resolves in the project,
 // e.g. 'src/app/shared/view/table/table.component'
-import { TableColumn } from 'src/app/ui/shared-component/view/table/table.component';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 type ActiveTable = 'rfqs' | 'quotations';
 

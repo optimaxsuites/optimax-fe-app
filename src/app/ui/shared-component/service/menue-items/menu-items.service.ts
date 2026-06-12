@@ -129,7 +129,6 @@ export class MenuItemsService {
         icon: 'pi pi-check', 
         submenu: [
           { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-   
         ],
       },
       {
