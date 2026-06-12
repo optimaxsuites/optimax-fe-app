@@ -1,26 +1,11 @@
-interface VendorProfile {
-  id: string;
-  businessName: string;
-  registrationNumber: string;
-  capabilities: string[];  // categories they can supply
-  deliveryRegions: string[];
-  averageResponseTime: number;  // hours
-  rating: number;  // 1-5
-  totalQuotationsSubmitted: number;
-  quotationAcceptanceRate: number;  // %
-  onTimeDeliveryRate: number;  // %
-  certifications: Certification[];
-}
+// ─── Shared ───────────────────────────────────────────────────────────────────
+export type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR';
 
-interface Certification {
-  id: string;
-  name: string;
-  fileUrl: string;
-  expiryDate?: Date;
-}
+// ─── RFQ ─────────────────────────────────────────────────────────────────────
 export type RfqStatus        = 'open' | 'converted' | 'expired' | 'closed';
 export type QuotationStatus  = 'draft' | 'sent' | 'accepted' | 'rejected';
 export type ItemAvailability = 'available' | 'unavailable';
+export type LpoStatus        = 'pending' | 'accepted' | 'rejected' | 'fulfilled' | 'cancelled';
 
 export interface RfqImage {
   id:     string;
@@ -56,6 +41,7 @@ export interface Rfq {
   totalEstimatedValue?: number;
 }
 
+// ─── Quotation ────────────────────────────────────────────────────────────────
 export interface QuotationItem {
   rfqItemId:    string;
   name:         string;
@@ -85,6 +71,176 @@ export interface Quotation {
   currency:        string;
 }
 
+// ─── LPO ─────────────────────────────────────────────────────────────────────
+export interface LpoItem {
+  id:          string;
+  name:        string;
+  description: string;
+  quantity:    number;
+  unit:        string;
+  unitPrice:   number;
+  totalPrice:  number;
+}
+
+export interface Lpo {
+  id:                 string;
+  lpoNumber:          string;
+  quotationId?:       string;
+  quotationNumber?:   string;
+  rfqNumber?:         string;
+  clientName:         string;
+  clientEmail?:       string;
+  issuedDate:         Date;
+  deliveryDate:       Date;
+  status:             LpoStatus;
+  isRead:             boolean;
+  items:              LpoItem[];
+  deliveryAddress:    string;
+  paymentTerms:       string;
+  currency:           string;
+  subtotal:           number;
+  tax:                number;
+  total:              number;
+  specialConditions?: string;
+  rejectionReason?:   string;
+}
+
+// ─── Finance — Invoice ────────────────────────────────────────────────────────
+export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'overdue' | 'disputed';
+
+export interface InvoiceLineItem {
+  id:          string;
+  description: string;
+  quantity:    number;
+  unit:        string;
+  unitPrice:   number;
+  totalPrice:  number;
+}
+
+export interface Invoice {
+  id:              string;
+  invoiceNumber:   string;
+  lpoId?:          string;
+  lpoNumber?:      string;
+  quotationNumber?: string;
+  clientName:      string;
+  clientEmail?:    string;
+  issuedDate:      Date;
+  dueDate:         Date;
+  paidDate?:       Date;
+  status:          InvoiceStatus;
+  items:           InvoiceLineItem[];
+  subtotal:        number;
+  tax:             number;
+  total:           number;
+  amountPaid:      number;
+  amountOutstanding: number;
+  currency:        string;
+  notes?:          string;
+  bankDetails?:    BankDetails;
+}
+
+export interface BankDetails {
+  bankName:      string;
+  accountName:   string;
+  accountNumber: string;
+  sortCode?:     string;
+}
+
+export interface Payment {
+  id:            string;
+  invoiceId:     string;
+  invoiceNumber: string;
+  clientName:    string;
+  amount:        number;
+  currency:      string;
+  paidDate:      Date;
+  method:        'bank_transfer' | 'cheque' | 'cash' | 'online';
+  reference:     string;
+  notes?:        string;
+}
+
+export interface FinanceStats {
+  totalInvoiced:    number;
+  totalPaid:        number;
+  totalOutstanding: number;
+  totalOverdue:     number;
+  invoiceCount:     number;
+  paidCount:        number;
+  overdueCount:     number;
+  pendingCount:     number;
+  avgPaymentDays:   number;
+  recentPayments:   Payment[];
+}
+
+// ─── Documents ────────────────────────────────────────────────────────────────
+export type DocumentStatus   = 'active' | 'expiring_soon' | 'expired' | 'pending_review';
+export type DocumentCategory = 'registration' | 'tax' | 'licence' | 'insurance' | 'certification' | 'other';
+
+export interface VendorDocument {
+  id:           string;
+  name:         string;
+  category:     DocumentCategory;
+  fileUrl:      string;
+  fileName:     string;
+  fileSize:     string;
+  fileType:     string;
+  uploadedDate: Date;
+  expiryDate?:  Date;
+  status:       DocumentStatus;
+  notes?:       string;
+  isRequired:   boolean;
+}
+
+export interface DocumentStats {
+  total:         number;
+  active:        number;
+  expiringSoon:  number;
+  expired:       number;
+  pendingReview: number;
+}
+
+// ─── Performance ──────────────────────────────────────────────────────────────
+export interface MonthlyMetric {
+  month:     string;  // e.g. 'Jan 2026'
+  rfqs:      number;
+  quoted:    number;
+  won:       number;
+  revenue:   number;
+}
+
+export interface ClientPerformance {
+  clientName:      string;
+  totalOrders:     number;
+  totalRevenue:    number;
+  onTimeRate:      number;
+  acceptanceRate:  number;
+}
+
+export interface PerformanceStats {
+  // Response
+  avgRfqResponseHours:     number;
+  rfqResponseRate:         number;   // % RFQs quoted vs received
+  // Quality
+  quotationAcceptanceRate: number;   // % won
+  onTimeDeliveryRate:      number;
+  // Revenue
+  totalRevenueYtd:         number;
+  totalRevenueAllTime:     number;
+  revenueGrowthPct:        number;   // vs prior period
+  // Volume
+  totalRfqsReceived:       number;
+  totalQuotationsSubmitted:number;
+  totalLposAccepted:       number;
+  totalLposFulfilled:      number;
+  // Rating
+  overallRating:           number;   // 1-5
+  // Breakdown
+  monthlyMetrics:          MonthlyMetric[];
+  topClients:              ClientPerformance[];
+}
+
+// ─── Stats (dashboard + lpo) ──────────────────────────────────────────────────
 export interface VendorStats {
   totalRfqs:              number;
   unreadRfqs:             number;
@@ -95,4 +251,14 @@ export interface VendorStats {
   acceptedQuotations:     number;
   conversionRate:         number;
   pendingResponseDueSoon: number;
+}
+
+export interface LpoStats {
+  total:      number;
+  pending:    number;
+  accepted:   number;
+  rejected:   number;
+  fulfilled:  number;
+  unread:     number;
+  totalValue: number;
 }

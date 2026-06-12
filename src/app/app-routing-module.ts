@@ -16,7 +16,7 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
 const routes: Routes = [
   {
     path: "",
-    redirectTo: 'procurement-management/requests/:uuid',
+    redirectTo: 'vendor-portal',
     pathMatch: 'full'
   },
   // {
@@ -79,7 +79,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule {}

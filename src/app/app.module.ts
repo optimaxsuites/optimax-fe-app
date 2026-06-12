@@ -91,6 +91,8 @@ import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
+import { PerformanceComponent } from './ui/view/vendor-portal/performance/performance.component';
+import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.component';
 
 
 
@@ -111,10 +113,12 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
     FinanceComponent,
     LpoComponent,
     VendorPortalComponent,
+    PerformanceComponent,
+    DocumentsComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     TableModule,
