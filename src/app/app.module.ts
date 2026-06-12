@@ -113,8 +113,8 @@ import { ServiceCheckoutComponent } from './ui/view/room-management/service-chec
     ServiceCheckoutComponent,
   ],
   imports: [
-    BrowserAnimationsModule,
-    BrowserModule,
+    // BrowserAnimationsModule,
+    // BrowserModule,
     MenuModule,
     ConfirmDialogModule,
     DropdownModule,
