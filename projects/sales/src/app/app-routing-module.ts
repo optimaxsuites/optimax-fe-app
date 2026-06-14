@@ -9,71 +9,107 @@ import { DeliveryTrackingMapComponent } from './ui/view/request-management/produ
 import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
 import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';
 import { ServiceRequestDetailComponent } from './ui/view/request-management/service-request-management/service-request-detail/service-request-detail.component';
-import { MultiItemRequestFormComponent } from './ui/view/request-management/product-request-management/multi-item-request-form/multi-item-request-form.component';
 import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
+import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
+import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
+import { QuoteListComponent } from './ui/view/sales-hub/quotations/quote-list/quote-list.component';
+import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
+import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 
+
 const routes: Routes = [
-  // Procurement requests — specific segments before dynamic ones
+  // {
+  //   path: "",
+  //   redirectTo: 'commerce/requests',
+  //   pathMatch: 'full'
+  // },
   {
-    path: 'commerce/requests/new/:uuid',
-    component: ProductRequestFormComponent,
+    path: '',
+    redirectTo: 'hub',
+    pathMatch: 'full'
   },
   {
-    path: 'commerce/requests/drafts/:uuid',
-    component: RequestDraftsComponent,
+    path: 'hub',
+    component: SalesHubComponent,
+    data: { title: 'Sales Hub' }
   },
   {
-    path: 'commerce/requests/:id/edit',
-    component: RequestEditFormComponent,
+    path: 'sales/quotes',
+    component: QuoteListComponent
   },
   {
-    path: 'commerce/requests/:id/tracking',
-    component: DeliveryTrackingMapComponent,
+    path: 'sales/quotes/new',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'sales/quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'sales/quotes/:id/edit',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'commerce/requests',
+    component: RequestManagementComponent
+  },
+  {
+    path: 'commerce/requests/new',
+    component: ProductRequestFormComponent  
+  },
+  {
+    path: 'commerce/requests/drafts',
+    component: RequestDraftsComponent
   },
   {
     path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent,
-  },
-  // Sidebar entry point — UUID here satisfies UuidGuard on the parent admin/sales route
-  {
-    path: 'commerce/requests/home/:uuid',
-    component: RequestManagementComponent,
-  },
-
-  // Vendor portal
-  {
-    path: 'vendor-portal/:uuid',
-    component: VendorPortalComponent,
-  },
-
-  // Multi-item orders
-  {
-    path: 'commerce/orders/new/:uuid',
-    component: MultiItemRequestFormComponent,
+    component: ProductRequestDetailComponent  
   },
   {
-    path: 'commerce/orders/:id',
-    component: OrderDetailComponent,
+  path: 'commerce/requests/:id/edit',
+  component: RequestEditFormComponent
   },
-
-  // Service requests
+  {
+    path: 'commerce/requests/:id/tracking',
+    component: DeliveryTrackingMapComponent
+  },
+  {
+    path: 'commerce/service-requests',
+    component: RequestManagementComponent
+  },
   {
     path: 'commerce/service-requests/new',
-    component: ServiceRequestFormComponent,
+    component: ServiceRequestFormComponent
   },
   {
     path: 'commerce/service-requests/:id/edit',
-    component: ServiceRequestFormComponent,
+    component: ServiceRequestFormComponent
   },
   {
     path: 'commerce/service-requests/:id',
-    component: ServiceRequestDetailComponent,
+    component: ServiceRequestDetailComponent
   },
-];
+  {
+    path: 'commerce/orders/new',
+    redirectTo: 'commerce/requests/new',
+    pathMatch: 'full'
+  },
+  {
+    path: 'commerce/orders/:id',
+    component: OrderDetailComponent
+  },
+   // Vendor portal
+  {
+    path: 'vendor-portal/:uuid',
+    component: VendorPortalComponent,
+    // path: 'commerce/requests/:id/tracking',
+  },
+
+]
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }
