@@ -1,0 +1,283 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
+import { SalesService } from '../../../../service/sales/sales.service';
+import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+
+@Component({
+  selector: 'app-quote-list',
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule],
+  templateUrl: './quote-list.component.html',
+  styleUrls: ['./quote-list.component.scss']
+})
+export class QuoteListComponent implements OnInit, OnDestroy {
+  protected readonly Math = Math;
+  
+  quotes: Quote[] = [];
+  isLoading = true;
+  selectedQuoteIds: string[] = [];
+  
+  // Filters
+  filters = {
+    status: 'ALL',
+    searchTerm: '',
+    dateFrom: '',
+    dateTo: '',
+    page: 0,
+    size: 10
+  };
+  
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  
+  // Stats
+  stats = {
+    total: 0,
+    draft: 0,
+    sent: 0,
+    accepted: 0,
+    declined: 0,
+    expired: 0,
+    converted: 0
+  };
+  
+  statusOptions: { value: QuoteStatus | 'ALL'; label: string; icon: string; color: string }[] = [
+    { value: 'ALL', label: 'All Quotes', icon: 'M4 6h16M4 12h16M4 18h16', color: 'gray' },
+    { value: 'DRAFT', label: 'Draft', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'gray' },
+    { value: 'SENT', label: 'Sent', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'blue' },
+    { value: 'ACCEPTED', label: 'Accepted', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'green' },
+    { value: 'DECLINED', label: 'Declined', icon: 'M6 18L18 6M6 6l12 12', color: 'red' },
+    { value: 'EXPIRED', label: 'Expired', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'orange' },
+    { value: 'CONVERTED', label: 'Converted', icon: 'M13 7l5 5m0 0l-5 5m5-5H6', color: 'purple' }
+  ];
+  
+  private destroy$ = new Subject<void>();
+
+  constructor(private salesService: SalesService) {}
+
+  ngOnInit(): void {
+    this.loadQuotes();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadQuotes(): void {
+    this.isLoading = true;
+    
+    this.salesService.getQuotes(this.filters).subscribe({
+      next: (response) => {
+        this.quotes = response.data;
+        this.totalElements = response.total;
+        this.totalPages = Math.ceil(response.total / this.filters.size);
+        this.calculateStats();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading quotes:', error);
+        this.setMockQuotes();
+        this.calculateStats();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private calculateStats(): void {
+    this.stats = {
+      total: this.quotes.length,
+      draft: this.quotes.filter(q => q.status === 'DRAFT').length,
+      sent: this.quotes.filter(q => q.status === 'SENT').length,
+      accepted: this.quotes.filter(q => q.status === 'ACCEPTED').length,
+      declined: this.quotes.filter(q => q.status === 'DECLINED').length,
+      expired: this.quotes.filter(q => q.status === 'EXPIRED').length,
+      converted: this.quotes.filter(q => q.status === 'CONVERTED').length
+    };
+  }
+
+  applyFilters(): void {
+    this.filters.page = 0;
+    this.loadQuotes();
+  }
+
+  resetFilters(): void {
+    this.filters = {
+      status: 'ALL',
+      searchTerm: '',
+      dateFrom: '',
+      dateTo: '',
+      page: 0,
+      size: 10
+    };
+    this.loadQuotes();
+  }
+
+  onPageChange(page: number): void {
+    this.filters.page = page;
+    this.loadQuotes();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.filters.size = size;
+    this.filters.page = 0;
+    this.loadQuotes();
+  }
+
+  getStatusBadgeClass(status: QuoteStatus): string {
+    const classes: Record<QuoteStatus, string> = {
+      'DRAFT': 'status-draft',
+      'SENT': 'status-sent',
+      'ACCEPTED': 'status-accepted',
+      'DECLINED': 'status-declined',
+      'EXPIRED': 'status-expired',
+      'CONVERTED': 'status-converted'
+    };
+    return classes[status] || 'status-draft';
+  }
+
+  getStatusLabel(status: QuoteStatus): string {
+    const labels: Record<QuoteStatus, string> = {
+      'DRAFT': 'Draft',
+      'SENT': 'Sent',
+      'ACCEPTED': 'Accepted',
+      'DECLINED': 'Declined',
+      'EXPIRED': 'Expired',
+      'CONVERTED': 'Converted'
+    };
+    return labels[status];
+  }
+
+  getStatusIcon(status: QuoteStatus): string {
+    const icon = this.statusOptions.find(o => o.value === status);
+    return icon?.icon || '';
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+  }
+
+  formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  isExpiringSoon(expiryDate: Date): boolean {
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysRemaining <= 3 && daysRemaining > 0;
+  }
+
+  getDaysRemaining(expiryDate: Date): number {
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  getPageNumbers(): number[] {
+    const maxVisible = 5;
+    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible);
+    
+    if (end - start < maxVisible) {
+      start = Math.max(0, end - maxVisible);
+    }
+    
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+
+  toggleSelection(quoteId: string, event: any): void {
+  if (event.target.checked) {
+    this.selectedQuoteIds.push(quoteId);
+  } else {
+    this.selectedQuoteIds = this.selectedQuoteIds.filter(id => id !== quoteId);
+  }
+}
+
+toggleSelectAll(event: any): void {
+  if (event.target.checked) {
+    this.selectedQuoteIds = this.quotes.map(q => q.id);
+  } else {
+    this.selectedQuoteIds = [];
+  }
+}
+
+isSelected(quoteId: string): boolean {
+  return this.selectedQuoteIds.includes(quoteId);
+}
+
+isAllSelected(): boolean {
+  return this.quotes.length > 0 && this.selectedQuoteIds.length === this.quotes.length;
+}
+
+  sendQuote(quote: Quote): void {
+    if (confirm(`Send quote ${quote.quoteNumber} to ${quote.customerName}?`)) {
+      // Call service to send quote
+      console.log('Sending quote:', quote.id);
+      alert(`Quote ${quote.quoteNumber} has been sent to ${quote.customerName}`);
+    }
+  }
+
+  deleteQuote(quote: Quote): void {
+    if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
+      // Call service to delete quote
+      console.log('Deleting quote:', quote.id);
+      this.quotes = this.quotes.filter(q => q.id !== quote.id);
+      this.calculateStats();
+    }
+  }
+
+  // Mock data for development
+  private setMockQuotes(): void {
+    this.quotes = [
+      {
+        id: '1', quoteNumber: 'QT-001', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
+        items: [], subtotal: 500000, taxAmount: 0, discountAmount: 0, totalAmount: 500000,
+        currency: 'NGN', status: 'ACCEPTED', validUntil: new Date('2026-07-15'),
+        createdAt: new Date('2026-06-10'), expiresAt: new Date('2026-07-15'), notes: '', terms: ''
+      },
+      {
+        id: '2', quoteNumber: 'QT-002', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
+        items: [], subtotal: 1250000, taxAmount: 0, discountAmount: 0, totalAmount: 1250000,
+        currency: 'NGN', status: 'SENT', validUntil: new Date('2026-07-05'),
+        createdAt: new Date('2026-06-09'), expiresAt: new Date('2026-07-05'), notes: '', terms: ''
+      },
+      {
+        id: '3', quoteNumber: 'QT-003', customerId: 'CUST-003', customerName: 'Global Services NG',
+        items: [], subtotal: 350000, taxAmount: 0, discountAmount: 0, totalAmount: 350000,
+        currency: 'NGN', status: 'DRAFT', validUntil: new Date('2026-06-28'),
+        createdAt: new Date('2026-06-08'), expiresAt: new Date('2026-06-28'), notes: '', terms: ''
+      },
+      {
+        id: '4', quoteNumber: 'QT-004', customerId: 'CUST-004', customerName: 'Furniture Hub',
+        items: [], subtotal: 750000, taxAmount: 0, discountAmount: 0, totalAmount: 750000,
+        currency: 'NGN', status: 'DECLINED', validUntil: new Date('2026-06-25'),
+        createdAt: new Date('2026-06-07'), expiresAt: new Date('2026-06-25'), notes: '', terms: ''
+      },
+      {
+        id: '5', quoteNumber: 'QT-005', customerId: 'CUST-005', customerName: 'Office Supplies Ltd',
+        items: [], subtotal: 250000, taxAmount: 0, discountAmount: 0, totalAmount: 250000,
+        currency: 'NGN', status: 'EXPIRED', validUntil: new Date('2026-06-01'),
+        createdAt: new Date('2026-05-20'), expiresAt: new Date('2026-06-01'), notes: '', terms: ''
+      },
+      {
+        id: '6', quoteNumber: 'QT-006', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
+        items: [], subtotal: 1800000, taxAmount: 0, discountAmount: 0, totalAmount: 1800000,
+        currency: 'NGN', status: 'CONVERTED', validUntil: new Date('2026-06-20'),
+        createdAt: new Date('2026-05-25'), expiresAt: new Date('2026-06-20'), notes: '', terms: ''
+      }
+    ];
+    this.totalElements = this.quotes.length;
+    this.totalPages = 1;
+  }
+}

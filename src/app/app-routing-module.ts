@@ -9,77 +9,98 @@ import { DeliveryTrackingMapComponent } from './ui/view/request-management/produ
 import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
 import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';
 import { ServiceRequestDetailComponent } from './ui/view/request-management/service-request-management/service-request-detail/service-request-detail.component';
-import { MultiItemRequestFormComponent } from './ui/view/request-management/product-request-management/multi-item-request-form/multi-item-request-form.component';
 import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
-import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
+import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
+import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
+import { QuoteListComponent } from './ui/view/sales-hub/quotations/quote-list/quote-list.component';
+import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
+import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
 
 const routes: Routes = [
-  {
-    path: "",
-    redirectTo: 'vendor-portal',
-    pathMatch: 'full'
-  },
   // {
   //   path: "",
   //   redirectTo: 'commerce/requests',
   //   pathMatch: 'full'
   // },
   {
-    path: 'commerce/requests',
-    component: RequestManagementComponent,
+    path: '',
+    redirectTo: 'hub',
+    pathMatch: 'full'
   },
   {
-    path: 'vendor-portal',
-    component: VendorPortalComponent,
+    path: 'hub',
+    component: SalesHubComponent,
+    data: { title: 'Sales Hub' }
+  },
+  {
+    path: 'sales/quotes',
+    component: QuoteListComponent
+  },
+  {
+    path: 'sales/quotes/new',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'sales/quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'sales/quotes/:id/edit',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'commerce/requests',
+    component: RequestManagementComponent
   },
   {
     path: 'commerce/requests/new',
-    component: ProductRequestFormComponent,
+    component: ProductRequestFormComponent  
   },
   {
     path: 'commerce/requests/drafts',
-    component: RequestDraftsComponent,
+    component: RequestDraftsComponent
   },
   {
     path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent,
+    component: ProductRequestDetailComponent  
   },
   {
-    path: 'commerce/requests/:id/edit',
-    component: RequestEditFormComponent,
+  path: 'commerce/requests/:id/edit',
+  component: RequestEditFormComponent
   },
   {
     path: 'commerce/requests/:id/tracking',
-    component: DeliveryTrackingMapComponent,
+    component: DeliveryTrackingMapComponent
   },
   {
     path: 'commerce/service-requests',
-    component: RequestManagementComponent,
+    component: RequestManagementComponent
   },
   {
     path: 'commerce/service-requests/new',
-    component: ServiceRequestFormComponent,
+    component: ServiceRequestFormComponent
   },
   {
     path: 'commerce/service-requests/:id/edit',
-    component: ServiceRequestFormComponent,
+    component: ServiceRequestFormComponent
   },
   {
     path: 'commerce/service-requests/:id',
-    component: ServiceRequestDetailComponent,
+    component: ServiceRequestDetailComponent
   },
   {
     path: 'commerce/orders/new',
-    component: MultiItemRequestFormComponent,
+    redirectTo: 'commerce/requests/new',
+    pathMatch: 'full'
   },
   {
     path: 'commerce/orders/:id',
-    component: OrderDetailComponent,
-  },
-];
+    component: OrderDetailComponent
+  }
+]
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }
