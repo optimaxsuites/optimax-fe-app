@@ -128,8 +128,8 @@ import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detai
     QuoteDetailComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     TableModule,
