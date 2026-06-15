@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
 } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Message } from '../communication.component';
 
 interface HoverPersonCard {
@@ -51,8 +52,10 @@ export class MessageFeedComponent {
   imageViewerIndex = 0;
   documentViewerOpen = false;
   documentViewerTitle = '';
-  documentViewerUrl = '';
+  documentViewerUrl: SafeResourceUrl = '';
   documentViewerType: 'pdf' | 'office' | 'file' = 'file';
+
+  constructor(private sanitizer: DomSanitizer) {}
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -393,9 +396,11 @@ export class MessageFeedComponent {
 
   openDocumentViewer(attachment: Message['attachment'] | undefined, event?: Event): void {
     event?.stopPropagation();
-    if (!attachment?.previewUrl) return;
-    this.documentViewerTitle = attachment.name || 'Document preview';
-    this.documentViewerUrl = attachment.previewUrl;
+    const url = attachment?.previewUrl || attachment?.downloadUrl;
+    if (!url) return;
+    this.documentViewerTitle = attachment!.name || 'Document preview';
+    this.documentViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.documentViewerRawUrl = url;
     this.documentViewerType = this.isPdfAttachment(attachment)
       ? 'pdf'
       : this.isOfficeAttachment(attachment)
@@ -404,10 +409,13 @@ export class MessageFeedComponent {
     this.documentViewerOpen = true;
   }
 
+  documentViewerRawUrl = '';
+
   closeDocumentViewer(): void {
     this.documentViewerOpen = false;
     this.documentViewerTitle = '';
     this.documentViewerUrl = '';
+    this.documentViewerRawUrl = '';
     this.documentViewerType = 'file';
   }
 
@@ -444,7 +452,37 @@ export class MessageFeedComponent {
     return (msg.replies || []).slice(0, 2);
   }
 
+  isIssueCard(msg: Message): boolean {
+    return msg.messageType === 'ISSUE_CARD';
+  }
+
+  parseIssueCard(msg: Message): { id: number; title: string; module: string; priority: string; status: string; description: string; reporterName: string } | null {
+    try {
+      return JSON.parse(msg.content);
+    } catch {
+      return null;
+    }
+  }
+
+  issueCardPriorityClass(priority: string): string {
+    const p = (priority || '').toUpperCase();
+    if (p === 'CRITICAL') return 'issue-priority-critical';
+    if (p === 'HIGH') return 'issue-priority-high';
+    if (p === 'MEDIUM') return 'issue-priority-medium';
+    return 'issue-priority-low';
+  }
+
+  issueCardStatusClass(status: string): string {
+    const s = (status || '').toUpperCase();
+    if (s === 'OPEN') return 'issue-status-open';
+    if (s === 'IN_PROGRESS') return 'issue-status-progress';
+    if (s === 'BLOCKED') return 'issue-status-blocked';
+    if (s === 'DONE') return 'issue-status-done';
+    return 'issue-status-default';
+  }
+
   isStructuredMessage(msg: Message): boolean {
+    if (this.isIssueCard(msg)) return false;
     return this.structuredMessageKind(msg) !== 'plain';
   }
 

@@ -186,6 +186,25 @@
 
         <!-- Normal content -->
         <ng-template #normalContent>
+          <!-- Issue card -->
+          <ng-container *ngIf="isIssueCard(msg)">
+            <ng-container *ngIf="parseIssueCard(msg) as issue">
+              <div class="issue-card-msg">
+                <div class="issue-card-header">
+                  <span class="issue-card-module-badge">{{ issue.module }}</span>
+                  <span class="issue-card-id">#{{ issue.id }}</span>
+                </div>
+                <p class="issue-card-title">{{ issue.title }}</p>
+                <p *ngIf="issue.description" class="issue-card-desc">{{ issue.description | slice:0:180 }}{{ issue.description.length > 180 ? '…' : '' }}</p>
+                <div class="issue-card-meta">
+                  <span class="issue-card-badge" [ngClass]="issueCardPriorityClass(issue.priority)">{{ issue.priority }}</span>
+                  <span class="issue-card-badge" [ngClass]="issueCardStatusClass(issue.status)">{{ issue.status | titlecase }}</span>
+                  <span *ngIf="issue.reporterName" class="issue-card-reporter">by {{ issue.reporterName }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+          <ng-container *ngIf="!isIssueCard(msg)">
           <ng-container *ngIf="isStructuredMessage(msg); else plainMessageContent">
             <div class="message-output-shell mt-1">
               <div class="message-output-toolbar">
@@ -278,35 +297,40 @@
               </button>
             </div>
 
-            <div class="mt-3 grid gap-3" *ngIf="previewableDocumentAttachments(msg).length">
-              <button
-                type="button"
+            <div class="mt-3 flex flex-col gap-2" *ngIf="previewableDocumentAttachments(msg).length">
+              <div
                 *ngFor="let attachment of previewableDocumentAttachments(msg)"
-                class="chat-doc-preview-card"
-                (click)="openDocumentViewer(attachment, $event)"
+                class="chat-attachment-card"
               >
-                <span *ngIf="isPdfAttachment(attachment) && attachment.downloadUrl" class="chat-doc-preview-surface pdf">
-                  <iframe
-                    [src]="attachment.previewUrl || ''"
-                    class="chat-doc-preview-frame"
-                    title="PDF preview"
-                  ></iframe>
-                </span>
-                <span *ngIf="!isPdfAttachment(attachment)" class="chat-doc-preview-surface office">
-                  <span class="chat-doc-preview-icon" [class.office-doc]="isOfficeAttachment(attachment)">
-                    <i class="pi" [ngClass]="isOfficeAttachment(attachment) ? 'pi-file-word' : 'pi-file'"></i>
-                  </span>
-                  <span class="chat-doc-preview-surface-copy">
-                    <strong>{{ attachmentBadge(attachment) }}</strong>
-                    <small>Open in viewer</small>
-                  </span>
-                </span>
-                <span class="chat-doc-preview-copy">
-                  <strong>{{ attachment.name }}</strong>
-                  <small>{{ attachmentBadge(attachment) }} PREVIEW</small>
-                </span>
-                <i class="pi pi-eye"></i>
-              </button>
+                <div class="chat-attachment-icon">
+                  <i class="pi" [ngClass]="attachmentFileIcon(attachment)"></i>
+                </div>
+                <div class="chat-attachment-info min-w-0">
+                  <p class="chat-attachment-name">{{ attachment.name }}</p>
+                  <p class="chat-attachment-size">{{ attachmentBadge(attachment) }}</p>
+                </div>
+                <div class="chat-attachment-actions">
+                  <button
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Preview"
+                    (click)="openDocumentViewer(attachment, $event)"
+                  >
+                    <i class="pi pi-eye"></i>
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    *ngIf="attachment.downloadUrl"
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Download"
+                    (click)="attachmentDownload.emit({ attachment: attachment, event: $event })"
+                  >
+                    <i class="pi pi-download"></i>
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="mt-3 flex flex-col gap-2" *ngIf="genericAttachments(msg).length">
@@ -322,6 +346,16 @@
                   <p *ngIf="attachment.size" class="chat-attachment-size">{{ attachment.size }}</p>
                 </div>
                 <div class="chat-attachment-actions">
+                  <button
+                    *ngIf="attachment.previewUrl || attachment.downloadUrl"
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Preview"
+                    (click)="openDocumentViewer(attachment, $event)"
+                  >
+                    <i class="pi pi-eye"></i>
+                    <span>Preview</span>
+                  </button>
                   <button
                     *ngIf="attachment.downloadUrl"
                     type="button"
@@ -410,15 +444,17 @@
                 <div *ngIf="documentViewerType !== 'pdf'" class="document-viewer-card">
                   <span class="document-viewer-badge">{{ documentViewerType === 'office' ? 'OFFICE' : 'FILE' }}</span>
                   <strong>{{ documentViewerTitle }}</strong>
-                  <p>Preview card for uploaded document. Use open or download to inspect the full file.</p>
+                  <p>Preview is not available for this file type. Use Open or Download below.</p>
                   <div class="document-viewer-actions">
-                    <a *ngIf="documentViewerUrl" [href]="documentViewerUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
-                    <a *ngIf="documentViewerUrl" [href]="documentViewerUrl" download class="toolbar-action">Download</a>
+                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
+                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action">Download</a>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          </ng-container><!-- end !isIssueCard -->
 
           <!-- Action buttons -->
           <div class="flex items-center gap-0 mt-2 flex-wrap">

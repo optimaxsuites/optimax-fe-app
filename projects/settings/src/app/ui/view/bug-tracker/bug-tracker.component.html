@@ -97,6 +97,7 @@
             <div class="bt-bug-title">{{ issue.title }}</div>
             <div class="bt-bug-meta">
               <span class="bt-module-tag">{{ issue.module }}</span>
+              <span *ngFor="let tag of parseTags(issue.tags)" class="bt-tag bt-tag-inline">{{ tag }}</span>
               <span *ngIf="issue.assigneeEmail" class="bt-meta-item">
                 <i class="fas fa-user"></i> {{ issue.assigneeName || issue.assigneeEmail }}
               </span>
@@ -233,6 +234,35 @@
     <div class="bt-field">
       <label>Description</label>
       <textarea [(ngModel)]="form.description" rows="4" placeholder="Steps to reproduce, context, root cause…"></textarea>
+    </div>
+    <div class="bt-field">
+      <label>Tags / Labels</label>
+      <input pInputText [(ngModel)]="form.tags" placeholder="e.g. UI, API, DB, regression (comma-separated)" />
+      <div class="bt-tags-preview" *ngIf="parseTags(form.tags).length">
+        <span class="bt-tag" *ngFor="let tag of parseTags(form.tags)">{{ tag }}</span>
+      </div>
+    </div>
+    <div class="bt-field">
+      <label>Work Log / Progress Notes</label>
+      <div class="bt-wl-form-add">
+        <input pInputText [(ngModel)]="formLogEmail" placeholder="Your email (optional)" style="max-width:180px" />
+        <input pInputText [(ngModel)]="formLogNote" placeholder="Add a progress note…" (keyup.enter)="addFormLog()" />
+        <button type="button" class="bt-btn bt-btn-sm" (click)="addFormLog()">Add</button>
+      </div>
+      <div class="bt-wl-form-entries" *ngIf="tempFormLog.length || form.workLog?.length">
+        <div class="bt-wl-entry" *ngFor="let log of tempFormLog; let i = index">
+          <span class="bt-wl-time bt-wl-new-badge">NEW</span>
+          <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByEmail }}</span>
+          <span class="bt-wl-note">{{ log.note }}</span>
+          <button type="button" class="bt-wl-remove" (click)="removeFormLog(i)"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="bt-wl-entry" *ngFor="let log of form.workLog">
+          <span class="bt-wl-time">{{ log.createdAt | date:'dd MMM HH:mm' }}</span>
+          <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByName || log.loggedByEmail }}</span>
+          <span class="bt-wl-note">{{ log.note }}</span>
+        </div>
+      </div>
+      <div class="bt-wl-empty" *ngIf="!tempFormLog.length && !form.workLog?.length">No log entries yet. Add one above.</div>
     </div>
   </div>
 
