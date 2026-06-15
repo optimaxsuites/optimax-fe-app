@@ -711,7 +711,8 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('settingsLink'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-sliders-h',
-      locked: true
+      locked: true,
+      doNotRegisterAsPermission: true
     },
   ];
 
@@ -1048,8 +1049,14 @@ export class MenuItemsService {
   }
 
   getUnlockedSettingsModules(): MenuItem[] {
-    const alwaysShow = ['General Settings', 'User and Roles Management', 'Module Registry', 'Bug Tracker'];
-    return this.settingsMenuItems.filter(module => !module.locked || alwaysShow.includes(module.label));
+    const isAdmin = this.isSuperUser();
+    const alwaysShowAll = ['General Settings', 'Bug Tracker'];
+    const adminOnly = ['User and Roles Management', 'Module Registry'];
+    return this.settingsMenuItems.filter(module => {
+      if (adminOnly.includes(module.label)) return isAdmin;
+      if (alwaysShowAll.includes(module.label)) return true;
+      return !module.locked;
+    });
   }
   
   getAllModules() {

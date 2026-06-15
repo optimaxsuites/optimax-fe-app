@@ -111,6 +111,21 @@ export class IssueTrackerApiService {
       { headers: this.authHeaders() }).pipe(catchError(this.err));
   }
 
+  postIssueCardMessage(channelId: number, senderUserId: number, issue: any) {
+    const content = JSON.stringify({
+      id: issue.id,
+      title: issue.title,
+      module: issue.module,
+      priority: issue.priority,
+      status: issue.status,
+      description: issue.description || '',
+      reporterName: issue.reporterName || '',
+    });
+    return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/message`,
+      { channelId, senderUserId, content, messageType: 'ISSUE_CARD' },
+      { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
   getDmChannels() {
     return this.http.get<any[]>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
       { headers: this.authHeaders() }).pipe(catchError(this.err));

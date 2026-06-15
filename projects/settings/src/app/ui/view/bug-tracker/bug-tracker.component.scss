@@ -708,3 +708,84 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
 }
+
+// Tags
+.bt-tags-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.bt-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.bt-tag-inline {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+
+// Form-level work log
+.bt-wl-form-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    font-size: 12px;
+    outline: none;
+    &:focus { border-color: #2e6276; }
+    &::placeholder { color: #94a3b8; }
+  }
+}
+
+.bt-wl-form-entries {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #f1f5f9;
+  border-radius: 7px;
+  padding: 4px 8px;
+  background: #f8fafc;
+}
+
+.bt-wl-new-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+  padding: 1px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.bt-wl-remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  &:hover { color: #ef4444; }
+}
+
+.bt-wl-who {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
