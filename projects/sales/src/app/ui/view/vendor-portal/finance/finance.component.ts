@@ -7,7 +7,7 @@ import {
   Lpo, Invoice, FinanceStats, LpoStats,
   InvoiceLineItem,
 } from '../../../domain/vendor-portal/vendor.dto';
-import { TableColumn } from 'src/app/ui/shared-component/view/table/table.component';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 type ActiveTable = 'lpos' | 'invoices';
 
