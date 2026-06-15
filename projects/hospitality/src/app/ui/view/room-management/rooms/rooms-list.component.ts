@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   HotelserviceService,
@@ -12,7 +12,7 @@ import {
   selector: 'app-rooms-list',
   templateUrl: './rooms-list.component.html',
 })
-export class RoomsListComponent implements OnInit {
+export class RoomsListComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
   filteredRooms: Room[] = [];
   roomTypes: RoomTypeDTO[] = [];
@@ -30,6 +30,14 @@ export class RoomsListComponent implements OnInit {
     return status.split('_')
                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                  .join(' ');
+  }
+
+  sanitizeText(text: string): string {
+    if (!text) return '';
+    // Remove all HTML tags and entities to prevent XSS
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   // Filters
@@ -83,6 +91,7 @@ export class RoomsListComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -94,14 +103,35 @@ export class RoomsListComponent implements OnInit {
     this.initForm();
     this.loadRooms();
     this.loadRoomTypes();
+    this.initializeSearch();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubject$.complete();
+  }
+
+  private initializeSearch(): void {
+    this.searchSubject$
+      .pipe(
+        debounceTime(300),
+        takeUntil(this.searchSubject$)
+      )
+      .subscribe(() => {
+        this.applyFilters();
+      });
+  }
+
+  onSearch(searchValue: string): void {
+    this.searchText = searchValue;
+    this.searchSubject$.next(searchValue);
   }
 
   initForm(): void {
     this.form = this.fb.group({
-      roomNumber: [null, [Validators.required, Validators.min(1)]],
+      roomNumber: [null, [Validators.required, Validators.min(1)], this.duplicateRoomNumberValidator.bind(this)],
       roomStatus: ['AVAILABLE', Validators.required],
       floor: [1, [Validators.required, Validators.min(0)]],
-      rate: [0, [Validators.required, Validators.min(0)]],
+      rate: [0, [Validators.required, Validators.min(1)]],
       beds: [1, [Validators.required, Validators.min(1)]],
       maxOccupancy: [1, [Validators.required, Validators.min(1)]],
       description: ['', [Validators.required, Validators.minLength(3)]],
@@ -110,7 +140,30 @@ export class RoomsListComponent implements OnInit {
       accessible: [false],
       roomType: [null, Validators.required],
       isSmokingAllowed: [false],
-    });
+    }, { validators: this.occupancyValidator() });
+  }
+
+  occupancyValidator() {
+    return (form: AbstractControl) => {
+      const beds = form.get('beds');
+      const maxOccupancy = form.get('maxOccupancy');
+      if (!beds || !maxOccupancy) return null;
+      const bedsValue = beds.value;
+      const maxValue = maxOccupancy.value;
+      if (bedsValue && maxValue && maxValue < bedsValue) {
+        return { occupancyInvalid: true };
+      }
+      return null;
+    };
+  }
+
+  duplicateRoomNumberValidator(control: AbstractControl) {
+    if (!control.value) return null;
+    const roomNumber = control.value;
+    const isDuplicate = this.rooms.some(
+      r => r.roomNumber === roomNumber && r.id !== this.selectedRoom?.id
+    );
+    return isDuplicate ? { duplicateRoomNumber: true } : null;
   }
 
   loadRooms(): void {
@@ -152,8 +205,22 @@ export class RoomsListComponent implements OnInit {
       const matchFloor = !this.filterFloor || r.floor === +this.filterFloor;
       const matchType =
         !this.filterRoomType || r.roomType === +this.filterRoomType;
-      return matchStatus && matchFloor && matchType;
+
+      // Search: room number, room type, amenities
+      const searchTerm = this.searchText.toLowerCase();
+      let matchSearch = true;
+      if (searchTerm) {
+        const roomNumber = String(r.roomNumber).toLowerCase();
+        const roomTypeName = this.getRoomTypeName(r.roomType).toLowerCase();
+        const amenitiesStr = (r.amenities || []).join(' ').toLowerCase();
+        matchSearch = roomNumber.includes(searchTerm) ||
+                      roomTypeName.includes(searchTerm) ||
+                      amenitiesStr.includes(searchTerm);
+      }
+
+      return matchStatus && matchFloor && matchType && matchSearch;
     });
+    this.updatePagination();  // Update pagination when filters change
   }
 
   clearFilters(): void {
@@ -163,8 +230,53 @@ export class RoomsListComponent implements OnInit {
     this.applyFilters();
   }
 
+  updatePagination(): void {
+    // Calculate total pages from filtered results
+    this.totalPages = Math.ceil(this.filteredRooms.length / this.pageSize);
+    // Reset to first page when filters change
+    this.currentPage = 0;
+    // Update display
+    this.setPaginatedRooms();
+  }
+
+  setPaginatedRooms(): void {
+    // Calculate start and end indices
+    const startIndex = this.currentPage * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    // Slice the filtered rooms to get current page
+    this.paginatedRooms = this.filteredRooms.slice(startIndex, endIndex);
+  }
+
+  goToPage(page: number): void {
+    // Validate page number
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.setPaginatedRooms();
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages - 1) {
+      this.currentPage++;
+      this.setPaginatedRooms();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+      this.setPaginatedRooms();
+    }
+  }
+
+  changePageSize(newSize: number): void {
+    this.pageSize = newSize;
+    this.updatePagination();
+  }
+
   getRoomTypeName(id: number): string {
-    return this.hotelService.getRoomTypeNameById(id);
+    const name = this.hotelService.getRoomTypeNameById(id);
+    return this.sanitizeText(name);
   }
 
   getStatusClass(status: string): string {

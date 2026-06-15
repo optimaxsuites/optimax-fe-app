@@ -35,11 +35,11 @@
                 <tbody class="divide-y divide-gray-50">
                     <tr *ngFor="let type of roomTypes" class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-6 py-4">
-                            <span class="text-sm font-bold text-gray-800">{{ type.name }}</span>
+                            <span class="text-sm font-bold text-gray-800" [innerText]="sanitizeText(type.name)"></span>
                             <span class="ml-2 bg-blue-50 text-customBlue text-[10px] px-2 py-0.5 rounded font-bold uppercase">#{{ type.id }}</span>
                         </td>
                         <td class="px-6 py-4">
-                            <p class="text-sm text-gray-500 line-clamp-1 max-w-md">{{ type.description }}</p>
+                            <p class="text-sm text-gray-500 line-clamp-1 max-w-md" [innerText]="sanitizeText(type.description || '')"></p>
                         </td>
                         <td class="px-6 py-4 text-right">
                           <div class="flex justify-end gap-2">
@@ -78,16 +78,31 @@
             <form [formGroup]="form" class="space-y-6">
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Type Name *</label>
-                    <input formControlName="name" type="text" placeholder="e.g., Deluxe Suite" 
-                        class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
-                    <span *ngIf="form.get('name')?.touched && form.get('name')?.invalid" class="text-xs text-red-500">Required</span>
+                    <input formControlName="name" type="text" placeholder="e.g., Deluxe Suite"
+                        class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                        [ngClass]="form.get('name')?.invalid && form.get('name')?.touched ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'" />
+                    <span *ngIf="form.get('name')?.hasError('duplicateName') && form.get('name')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Room type name already exists
+                    </span>
+                    <span *ngIf="form.get('name')?.hasError('required') && form.get('name')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Type name is required
+                    </span>
+                    <span *ngIf="form.get('name')?.hasError('minlength') && form.get('name')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Type name must be at least 2 characters
+                    </span>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Description *</label>
-                    <textarea formControlName="description" rows="5" placeholder="Describe the features and amenities of this room type..." 
-                        class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all resize-none"></textarea>
-                    <span *ngIf="form.get('description')?.touched && form.get('description')?.invalid" class="text-xs text-red-500">Required (min 5 chars)</span>
+                    <textarea formControlName="description" rows="5" placeholder="Describe the features and amenities of this room type..."
+                        class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none"
+                        [ngClass]="form.get('description')?.invalid && form.get('description')?.touched ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'"></textarea>
+                    <span *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Description is required
+                    </span>
+                    <span *ngIf="form.get('description')?.hasError('minlength') && form.get('description')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Description must be at least 5 characters
+                    </span>
                 </div>
             </form>
         </div>
@@ -115,7 +130,7 @@
             <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
         </div>
         <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Room Type?</h3>
-        <p class="text-sm text-gray-500 leading-relaxed mb-6">Are you sure you want to delete <strong>{{ selectedRoomType?.name }}</strong>? This will affect all rooms assigned to this type.</p>
+        <p class="text-sm text-gray-500 leading-relaxed mb-6">Are you sure you want to delete <strong [innerText]="sanitizeText(selectedRoomType?.name || '')"></strong>? This will affect all rooms assigned to this type.</p>
         <div class="flex gap-3">
             <button (click)="showDeleteModal = false" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
             <button (click)="deleteRoomType()" class="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">Delete</button>

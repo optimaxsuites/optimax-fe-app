@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { DomSanitizer } from '@angular/platform-browser';
 import { HotelserviceService, RoomTypeDTO, Room } from '../../../hospitality/hotelservice.service';
 
 @Component({
@@ -26,8 +27,16 @@ export class RoomTypesListComponent implements OnInit {
   constructor(
     private hotelService: HotelserviceService,
     private fb: FormBuilder,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private sanitizer: DomSanitizer
   ) {}
+
+  sanitizeText(text: string): string {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
   ngOnInit(): void {
     this.uuid = this.route.snapshot.paramMap.get('uuid') || 
@@ -39,9 +48,18 @@ export class RoomTypesListComponent implements OnInit {
 
   initForm(): void {
     this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      description: [''],
+      name: ['', [Validators.required, Validators.minLength(2)], this.duplicateNameValidator.bind(this)],
+      description: ['', [Validators.required, Validators.minLength(5)]],
     });
+  }
+
+  duplicateNameValidator(control: AbstractControl) {
+    if (!control.value) return null;
+    const name = control.value.toLowerCase().trim();
+    const isDuplicate = this.roomTypes.some(
+      rt => rt.name.toLowerCase().trim() === name && rt.id !== this.selectedRoomType?.id
+    );
+    return isDuplicate ? { duplicateName: true } : null;
   }
 
   loadRoomTypes(): void {
