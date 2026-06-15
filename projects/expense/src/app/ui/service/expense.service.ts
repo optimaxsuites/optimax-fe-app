@@ -234,7 +234,7 @@ export class ExpenseService {
     return (
       sessionStorage.getItem('tenantId') ||
       localStorage.getItem('tenantId')   ||
-      'mod'
+      'optimax'
     );
   }
 
