@@ -15,9 +15,12 @@ export class AppComponent implements OnInit {
   constructor(private authenticationService: AuthenticationService) {
     const isExpiredOrMissing = this.authenticationService.isAuthenticated() === false;
     if (isExpiredOrMissing) {
+
       // Clear stale expired tokens before re-logging in
       sessionStorage.removeItem('Token');
       localStorage.removeItem('Token2');
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('token');
       sessionStorage.removeItem('accessToken');
       localStorage.removeItem('accessToken2');
       this.userLoginAction();

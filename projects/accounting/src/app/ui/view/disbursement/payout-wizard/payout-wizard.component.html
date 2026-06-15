@@ -55,7 +55,7 @@
             </div>
             <span class="text-xs font-bold text-emerald-500 uppercase tracking-widest" *ngIf="currentStep > 1">Selected</span>
           </div>
-          
+
           <div class="source-grid" *ngIf="currentStep === 1">
             <div
               *ngFor="let source of sources"
@@ -72,6 +72,7 @@
               <div class="source-card__body">
                 <p class="source-card__name font-bold">{{ source.name }}</p>
                 <p class="source-card__desc text-xs text-gray-400">{{ source.description }}</p>
+                <p class="source-card__label text-xs font-black mt-2" style="color:#2E6276">{{ source.accountLabel }}</p>
               </div>
             </div>
           </div>
@@ -176,7 +177,7 @@
                 <h3 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Batch Recipients ({{ recipients.length }})</h3>
                 <span class="text-2xl font-black text-gray-900">{{ totalAmount | currency:'NGN':'symbol-narrow':'1.0-0' }}</span>
               </div>
-              
+
               <div class="space-y-3">
                 <div *ngFor="let r of recipients" class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl">
                   <div class="flex items-center gap-4">

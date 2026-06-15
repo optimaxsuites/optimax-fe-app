@@ -20,6 +20,7 @@ import { AccountingQueueComponent } from './ui/view/accounting-queue/accounting-
 import { PayoutComponent } from './ui/view/disbursement/payout-wizard/payout-wizard.component';
 import { PaystackComponent } from './ui/view/paystack/paystack.component';
 import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-transfer/paystack-initiate-transfer.component';
+import { DisbursementFlowComponent } from './ui/view/disbursement/disbursement-flow/disbursement-flow.component';
 
 const routes: Routes = [
   {
@@ -31,13 +32,17 @@ const routes: Routes = [
     component: PaystackComponent
   },
   {
-    path: 'paystack/initiate-transfer/:uuid',
+    path: 'admin/accounting/paystack/initiate-transfer/:uuid',
     component: PaystackInitiateTransferComponent
   },
   {
-    path: 'paystack/initiate-transfer',
-    redirectTo: 'paystack/initiate-transfer/default',
+    path: 'admin/accounting/paystack/initiate-transfer',
+    redirectTo: 'admin/accounting/paystack/initiate-transfer/default',
     pathMatch: 'full'
+  },
+  {
+    path: 'disbursement-flow',
+    component: DisbursementFlowComponent
   },
   {
     path: '',
