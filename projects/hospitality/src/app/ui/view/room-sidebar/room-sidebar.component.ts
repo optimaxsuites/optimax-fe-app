@@ -163,19 +163,16 @@ export class RoomSidebarComponent {
   selectService(type: string, path: string): void {
     if (this.selectedService === type) {
       this.selectedService = null;
-      this.router.navigate(['/user/hospitality/services/:uuid']);
+      this.router.navigate(['/hospitality/services', 'default']);
     } else {
-      // Select - navigate to the service
       this.selectedService = type;
+      const queryParams: any = { serviceType: path };
 
       if (this.selectedRooms && this.selectedRooms.length > 0) {
-        const roomNumbers = this.selectedRooms.map((room) => room.number);
-        this.router.navigate(['/user/hospitality/services/:uuid', path], {
-          queryParams: { rooms: roomNumbers.join(',') },
-        });
-      } else {
-        this.router.navigate(['/user/hospitality/services/:uuid', path]);
+        queryParams.rooms = this.selectedRooms.map((room) => room.number).join(',');
       }
+
+      this.router.navigate(['/hospitality/services', 'default'], { queryParams });
     }
   }
 

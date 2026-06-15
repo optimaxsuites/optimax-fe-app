@@ -87,7 +87,7 @@ export class HousekeepingFoundComponent implements OnInit {
   }
 
   addNewFoundItem() {
-    this.router.navigate(['/housekeeping/found/add']);
+    this.router.navigate(['/hospitality/housekeeping/found/add']);
   }
 
   viewDetails(item: FoundItem) {

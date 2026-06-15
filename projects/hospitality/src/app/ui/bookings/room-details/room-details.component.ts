@@ -201,7 +201,7 @@ export class RoomDetailsComponent implements OnInit, OnDestroy {
       const checkoutUrl = this.room ? `/user/e-bookings/checkout/${this.room.id}/${this.uuid}` : `/user/e-bookings/home/${this.uuid}`;
       const returnUrl = (this.room && serviceIds) ? `${checkoutUrl}?services=${serviceIds}` : checkoutUrl;
 
-      this.router.navigate(['/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }
@@ -243,11 +243,11 @@ export class RoomDetailsComponent implements OnInit, OnDestroy {
 
   bookNow(): void {
     if (!this.room) return;
-    this.router.navigate(['e-bookings/booking-form', this.room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/booking-form', this.room.id, this.uuid]);
   }
 
   goBack(): void {
-    this.router.navigate(['/e-bookings/home', this.uuid]);
+    this.router.navigate(['/user/e-bookings/home', this.uuid]);
   }
 
   toggleMenu(): void {
