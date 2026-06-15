@@ -4,7 +4,7 @@ import { takeUntil, take } from 'rxjs/operators';
 
 import { VendorService } from '../../../service/vendor-portal/vendor.service';
 import { Lpo, LpoStats } from '../../../domain/vendor-portal/vendor.dto';
-import { TableColumn } from 'src/app/ui/shared-component/view/table/table.component';
+import { TableColumn } from '../../../shared-component/view/table/table.component';
 
 @Component({
   selector: 'app-lpo',
