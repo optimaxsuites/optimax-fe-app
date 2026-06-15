@@ -29,7 +29,7 @@ const routes: Routes = [
   // },
   {
     path: '',
-    redirectTo: 'sales-hub',
+    redirectTo: '/sales-hub',
     pathMatch: 'full'
   },
   {
@@ -111,7 +111,7 @@ const routes: Routes = [
   },
   {
     path: 'commerce/orders/new',
-    redirectTo: 'commerce/requests/new',
+    redirectTo: '/commerce/requests/new',
     pathMatch: 'full'
   },
   {
@@ -128,7 +128,7 @@ const routes: Routes = [
 ]
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
