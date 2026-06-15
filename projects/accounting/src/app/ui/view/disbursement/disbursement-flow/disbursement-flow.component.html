@@ -1,0 +1,546 @@
+<!-- disbursement-flow.component.html -->
+<div class="df-page">
+
+  <!-- ═══ TOP HEADER ══════════════════════════════════════════════════ -->
+  <div class="df-page__header">
+    <div class="df-header-left">
+      <div class="df-header-icon">
+        <i class="fa-solid fa-money-bill-transfer"></i>
+      </div>
+      <div>
+        <h1 class="df-header-title">Disbursement Tray</h1>
+        <p class="df-header-sub">Payment lifecycle · Review, approve and disburse</p>
+      </div>
+    </div>
+    <div class="df-header-right">
+      <div class="df-stat-pill">
+        <span class="df-stat-pill__dot df-stat-pill__dot--pending"></span>
+        {{ countByStatus('pending') }} Pending
+      </div>
+      <div class="df-stat-pill">
+        <span class="df-stat-pill__dot df-stat-pill__dot--processing"></span>
+        {{ countByStatus('processing') }} Processing
+      </div>
+      <button class="df-export-btn">
+        <i class="fa-solid fa-file-export"></i> Export
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ PILL TAB BAR (mirroring nav-tab style) ══════════════════════ -->
+  <div class="df-tab-shell">
+    <div class="df-tab-bar">
+      <button class="df-tab-btn" [class.df-tab-btn--active]="screen === 'tray'" (click)="screen='tray'">
+        <i class="pi pi-inbox"></i> <span>Tray</span>
+      </button>
+      <button class="df-tab-btn"
+              [class.df-tab-btn--active]="screen === 'detail'"
+              [disabled]="!selectedRequest"
+              (click)="selectedRequest && (screen='detail')">
+        <i class="pi pi-file-edit"></i> <span>Review</span>
+        <span class="df-tab-badge" *ngIf="selectedRequest">1</span>
+      </button>
+      <button class="df-tab-btn"
+              [class.df-tab-btn--active]="screen === 'pay'"
+              [disabled]="!selectedRequest || selectedRequest.status === 'pending'"
+              (click)="selectedRequest && selectedRequest.status !== 'pending' && (screen='pay')">
+        <i class="pi pi-credit-card"></i> <span>Pay</span>
+      </button>
+      <button class="df-tab-btn"
+              [class.df-tab-btn--active]="screen === 'confirm'"
+              [disabled]="!selectedMethod"
+              (click)="selectedMethod && (screen='confirm')">
+        <i class="pi pi-check-circle"></i> <span>Confirm</span>
+      </button>
+      <button class="df-tab-btn"
+              [class.df-tab-btn--active]="screen === 'ledger'"
+              [disabled]="ledgerHistory.length <= 2"
+              (click)="ledgerHistory.length > 2 && (screen='ledger')">
+        <i class="pi pi-book"></i> <span>Ledger</span>
+      </button>
+    </div>
+
+    <!-- ── Progress Tracker ────────────────────────────── -->
+    <div class="df-progress" *ngIf="screen !== 'tray'">
+      <div *ngFor="let step of steps; let i = index; let last = last" class="df-progress__item">
+        <div class="df-progress__bubble"
+             [class.df-progress__bubble--done]="getStepState(step.key)==='done'"
+             [class.df-progress__bubble--active]="getStepState(step.key)==='active'">
+          <i *ngIf="getStepState(step.key)==='done'" class="fa-solid fa-check text-[10px]"></i>
+          <span *ngIf="getStepState(step.key)!=='done'">{{i+1}}</span>
+        </div>
+        <span class="df-progress__label"
+              [class.df-progress__label--done]="getStepState(step.key)==='done'"
+              [class.df-progress__label--active]="getStepState(step.key)==='active'">{{step.label}}</span>
+        <div class="df-progress__line" *ngIf="!last"
+             [class.df-progress__line--done]="getStepState(step.key)==='done'"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCREEN: TRAY
+  ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="screen === 'tray'" class="df-content df-anim">
+
+    <div class="df-tray-layout">
+
+      <!-- Left: Cards -->
+      <div class="df-tray-left">
+        <div class="df-section-header">
+          <h2 class="df-section-title">Incoming Requests</h2>
+          <span class="df-section-count">{{requests.length}} total</span>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-12 bg-white border border-gray-100 rounded-2xl">
+          <i class="pi pi-spin pi-spinner text-[#2E6276] text-3xl mb-3"></i>
+          <p class="text-sm text-gray-500 font-bold">Loading incoming requests...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!isLoading && requests.length === 0" class="flex flex-col items-center justify-center py-12 bg-white border border-gray-100 rounded-2xl">
+          <i class="fa-solid fa-inbox text-gray-200 text-5xl mb-3"></i>
+          <p class="text-sm text-gray-500 font-bold">No pending requests</p>
+          <p class="text-xs text-gray-400 mt-1">You're all caught up for now.</p>
+        </div>
+
+        <!-- Data State -->
+        <ng-container *ngIf="!isLoading && requests.length > 0">
+          <div *ngFor="let req of requests"
+               class="df-request-card"
+               [class.df-request-card--disabled]="req.status === 'processing'"
+               (click)="openRequest(req)">
+
+          <div class="df-request-card__stripe"
+               [class.df-request-card__stripe--pending]="req.status==='pending'"
+               [class.df-request-card__stripe--processing]="req.status==='processing'"
+               [class.df-request-card__stripe--approved]="req.status==='approved'">
+          </div>
+
+          <div class="df-request-card__body">
+            <div class="df-request-card__top">
+              <div class="df-request-card__avatar">{{req.employee.slice(0,2).toUpperCase()}}</div>
+              <div class="df-request-card__info">
+                <p class="df-request-card__name">{{req.employee}}</p>
+                <p class="df-request-card__meta">{{req.department}} · {{req.loanType}}</p>
+              </div>
+              <span class="df-badge"
+                    [class.df-badge--pending]="req.status==='pending'"
+                    [class.df-badge--processing]="req.status==='processing'"
+                    [class.df-badge--approved]="req.status==='approved'"
+                    [class.df-badge--rejected]="req.status==='rejected'">
+                {{req.status | titlecase}}
+              </span>
+            </div>
+
+            <div class="df-request-card__footer">
+              <div>
+                <p class="df-request-card__amount">{{formatNaira(req.amount)}}</p>
+                <p class="df-request-card__date"><i class="pi pi-calendar mr-1"></i>{{req.submitted}}</p>
+              </div>
+              <div class="df-request-card__ref">
+                <span class="font-mono text-xs text-[#2E6276] font-bold">{{req.id}}</span>
+                <span *ngIf="req.status==='pending'" class="df-request-card__cta">
+                  Review <i class="fa-solid fa-arrow-right text-[9px] ml-1"></i>
+                </span>
+                <span *ngIf="req.status==='processing'" class="df-chip">In Progress</span>
+                <span *ngIf="req.status==='approved'" class="df-chip df-chip--green">Disbursed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        </ng-container>
+      </div>
+
+      <!-- Right: Stats panel -->
+      <div class="df-tray-right">
+        <div class="df-stat-card df-stat-card--blue">
+          <div class="df-stat-card__icon"><i class="fa-solid fa-inbox"></i></div>
+          <p class="df-stat-card__label">Total Pending</p>
+          <p class="df-stat-card__value">{{requests.length}}</p>
+          <p class="df-stat-card__sub">Awaiting review</p>
+        </div>
+
+        <div class="df-stat-card df-stat-card--green">
+          <div class="df-stat-card__icon"><i class="fa-solid fa-naira-sign"></i></div>
+          <p class="df-stat-card__label">Total Value</p>
+          <p class="df-stat-card__value">₦{{getTotalValue() | number}}</p>
+          <p class="df-stat-card__sub">All requests</p>
+        </div>
+
+        <div class="df-stat-card df-stat-card--amber">
+          <div class="df-stat-card__icon"><i class="fa-solid fa-spinner"></i></div>
+          <p class="df-stat-card__label">Processing</p>
+          <p class="df-stat-card__value">1</p>
+          <p class="df-stat-card__sub">In progress now</p>
+        </div>
+
+        <div class="df-info-box">
+          <i class="fa-solid fa-circle-info text-[#2E6276] text-xl mb-2"></i>
+          <p class="text-sm font-bold text-gray-700 mb-1">Lifecycle Flow</p>
+          <p class="text-xs text-gray-500 leading-relaxed">Select a pending request to begin the review &rarr; approve &rarr; pay &rarr; confirm &rarr; ledger workflow.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCREEN: DETAIL
+  ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="screen === 'detail' && selectedRequest" class="df-content df-anim">
+    <div class="df-two-col">
+
+      <!-- Left -->
+      <div class="df-col-main">
+        <div class="df-card">
+          <div class="df-card__header">
+            <i class="pi pi-file-edit df-card__icon"></i>
+            <span>Request Details</span>
+          </div>
+
+          <div class="df-detail-grid">
+            <div class="df-detail-cell">
+              <label>Employee</label>
+              <span>{{selectedRequest.employee}}</span>
+            </div>
+            <div class="df-detail-cell">
+              <label>Department</label>
+              <span>{{selectedRequest.department}}</span>
+            </div>
+            <div class="df-detail-cell">
+              <label>Loan Type</label>
+              <span>{{selectedRequest.loanType}}</span>
+            </div>
+            <div class="df-detail-cell">
+              <label>Amount</label>
+              <span class="df-detail-cell__amount">{{formatNaira(selectedRequest.amount)}}</span>
+            </div>
+            <div class="df-detail-cell">
+              <label>Submitted</label>
+              <span>{{selectedRequest.submitted}}</span>
+            </div>
+            <div class="df-detail-cell">
+              <label>Reference</label>
+              <span class="font-mono text-xs text-[#2E6276] font-black">{{selectedRequest.id}}</span>
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div class="df-reason-box">
+            <p class="df-reason-box__label">Reason / Notes</p>
+            <p class="df-reason-box__text">{{selectedRequest.reason}}</p>
+          </div>
+        </div>
+
+        <!-- Bank details -->
+        <div class="df-card mt-4">
+          <div class="df-card__header">
+            <i class="pi pi-building df-card__icon"></i>
+            <span>Recipient Bank Details</span>
+          </div>
+          <div class="df-bank-row"><span>Bank</span><span>{{selectedRequest.bankName}}</span></div>
+          <div class="df-bank-row"><span>Account No.</span><span class="font-mono font-black text-[#2E6276]">{{selectedRequest.accountNumber}}</span></div>
+          <div class="df-bank-row"><span>Account Name</span><span class="font-bold">{{selectedRequest.employee}}</span></div>
+          <div class="df-bank-row"><span>Amount</span><span class="font-black text-[#2EB270]">{{formatNaira(selectedRequest.amount)}}</span></div>
+        </div>
+
+        <div class="df-action-bar">
+          <button class="df-btn df-btn--approve" (click)="approveRequest()">
+            <i class="fa-solid fa-circle-check"></i> Approve &amp; Proceed to Payment
+          </button>
+          <button class="df-btn df-btn--reject" (click)="rejectRequest()">
+            <i class="fa-solid fa-ban"></i> Reject
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Summary -->
+      <div class="df-col-side">
+        <div class="df-summary-card">
+          <div class="df-summary-card__hero">
+            <p class="df-summary-card__label">Disbursement Amount</p>
+            <p class="df-summary-card__amount">{{formatNaira(selectedRequest.amount)}}</p>
+            <span class="df-badge df-badge--pending">Pending Review</span>
+          </div>
+          <div class="df-summary-row"><span>Employee</span><span>{{selectedRequest.employee}}</span></div>
+          <div class="df-summary-row"><span>Dept</span><span>{{selectedRequest.department}}</span></div>
+          <div class="df-summary-row"><span>Submitted</span><span>{{selectedRequest.submitted}}</span></div>
+          <div class="df-summary-row"><span>Ref</span><span class="font-mono text-xs text-[#2E6276]">{{selectedRequest.id}}</span></div>
+          <div class="df-security-strip">
+            <i class="fa-solid fa-shield-halved text-[#2EB270]"></i>
+            <span>All approvals are audit-logged and timestamped.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCREEN: PAY
+  ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="screen === 'pay' && selectedRequest" class="df-content df-anim">
+    <div class="df-two-col">
+
+      <div class="df-col-main">
+        <div class="df-approved-banner">
+          <div class="df-approved-banner__icon"><i class="fa-solid fa-circle-check"></i></div>
+          <div>
+            <p class="font-black text-[#0f4c36]">Request Approved</p>
+            <p class="text-sm text-[#166534]">Disburse <strong>{{formatNaira(selectedRequest.amount)}}</strong> to <strong>{{selectedRequest.employee}}</strong></p>
+          </div>
+        </div>
+
+        <div class="df-card">
+          <div class="df-card__header">
+            <i class="pi pi-credit-card df-card__icon"></i>
+            <span>Select Payment Method</span>
+          </div>
+
+          <div class="df-method-grid">
+            <button *ngFor="let m of paymentMethods" type="button"
+                    class="df-method-card"
+                    [class.df-method-card--selected]="selectedMethod === m.id"
+                    (click)="selectMethod(m.id)">
+              <div class="df-method-card__check" *ngIf="selectedMethod===m.id">
+                <i class="fa-solid fa-check text-[10px] text-white"></i>
+              </div>
+              <i [class]="'fa-solid ' + m.icon + ' df-method-card__icon'"></i>
+              <p class="df-method-card__name">{{m.label}}</p>
+              <p class="df-method-card__sub">{{m.sub}}</p>
+            </button>
+          </div>
+
+          <!-- Paystack hint -->
+          <div class="df-hint-box df-hint-box--blue" *ngIf="selectedMethod==='paystack'">
+            <i class="fa-solid fa-bolt"></i>
+            Paystack will process this automatically with real-time webhook confirmation.
+          </div>
+
+          <!-- Bank transfer instructions -->
+          <div class="df-bank-instructions" *ngIf="isBankTransfer()">
+            <p class="df-bank-instructions__title">Transfer Instructions</p>
+            <div class="df-bank-row"><span>Bank</span><span>{{selectedMethod==='sterling' ? 'Sterling Bank' : 'Zenith Bank'}}</span></div>
+            <div class="df-bank-row"><span>Account No.</span><span class="font-mono font-black text-[#2E6276]">{{selectedRequest.accountNumber}}</span></div>
+            <div class="df-bank-row"><span>Account Name</span><span>{{selectedRequest.employee}}</span></div>
+            <div class="df-bank-row"><span>Amount</span><span class="font-black text-[#2EB270]">{{formatNaira(selectedRequest.amount)}}</span></div>
+            <div class="df-bank-row"><span>Reference</span><span class="font-mono text-xs">{{selectedRequest.id}}</span></div>
+            <p class="text-xs text-gray-400 mt-3">Complete the transfer in your banking app, then return here to confirm.</p>
+          </div>
+
+          <div class="df-hint-box df-hint-box--amber" *ngIf="selectedMethod==='cash'">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            Ensure the physical cash amount matches exactly before confirming disbursement.
+          </div>
+        </div>
+
+        <div class="df-action-bar">
+          <button class="df-btn df-btn--approve" [class.df-btn--disabled]="!selectedMethod" [disabled]="!selectedMethod" (click)="sendPayment()">
+            <i class="fa-solid fa-paper-plane"></i> Send Payment
+          </button>
+          <button class="df-btn df-btn--ghost" (click)="screen='tray'">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Right summary -->
+      <div class="df-col-side">
+        <div class="df-summary-card">
+          <div class="df-summary-card__hero">
+            <p class="df-summary-card__label">To Disburse</p>
+            <p class="df-summary-card__amount">{{formatNaira(selectedRequest.amount)}}</p>
+            <span class="df-badge df-badge--approved">Approved</span>
+          </div>
+          <div class="df-summary-row"><span>Recipient</span><span>{{selectedRequest.employee}}</span></div>
+          <div class="df-summary-row"><span>Bank</span><span>{{selectedRequest.bankName}}</span></div>
+          <div class="df-summary-row"><span>Method</span>
+            <span class="text-[#2E6276] font-bold">{{selectedMethod ? paymentMethodLabel : '— Not selected'}}</span>
+          </div>
+          <div class="df-summary-row"><span>Fee</span><span class="text-[#2EB270] font-bold">₦0.00</span></div>
+          <div class="df-summary-total">
+            <span>Total</span>
+            <span>{{formatNaira(selectedRequest.amount)}}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCREEN: CONFIRM
+  ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="screen === 'confirm' && selectedRequest" class="df-content df-anim">
+    <div class="df-confirm-layout">
+
+      <div class="df-confirm-card">
+        <div class="df-confirm-card__top">
+          <div class="df-confirm-card__icon-wrap">
+            <i class="fa-solid fa-paper-plane text-4xl text-white"></i>
+          </div>
+          <h2 class="df-confirm-card__title">Confirm Payment Sent</h2>
+          <p class="df-confirm-card__body">Only confirm after the money has physically left your account. This creates a <strong>permanent</strong> journal entry and updates the general ledger.</p>
+        </div>
+
+        <div class="df-confirm-summary">
+          <div class="df-confirm-row">
+            <span>Amount</span>
+            <span class="df-confirm-row__value">{{formatNaira(selectedRequest.amount)}}</span>
+          </div>
+          <div class="df-confirm-row">
+            <span>Recipient</span>
+            <span class="font-bold">{{selectedRequest.employee}}</span>
+          </div>
+          <div class="df-confirm-row">
+            <span>Account</span>
+            <span class="font-mono text-[#2E6276] font-black">{{selectedRequest.accountNumber}}</span>
+          </div>
+          <div class="df-confirm-row">
+            <span>Method</span>
+            <span class="text-[#2EB270] font-bold">{{paymentMethodLabel}}</span>
+          </div>
+          <div class="df-confirm-row">
+            <span>Reference</span>
+            <span class="font-mono text-xs text-gray-500">{{selectedRequest.id}}</span>
+          </div>
+        </div>
+
+        <!-- Upload -->
+        <div class="df-upload" [class.df-upload--done]="proofUploaded" (click)="fakeUpload()">
+          <ng-container *ngIf="!proofUploaded">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" style="color:#2E6276;opacity:0.4"></i>
+            <p class="text-sm font-bold text-gray-500">Upload proof of payment</p>
+            <p class="text-xs text-gray-400 mt-1">PNG · JPG · PDF &nbsp;·&nbsp; Optional</p>
+          </ng-container>
+          <ng-container *ngIf="proofUploaded">
+            <i class="fa-solid fa-circle-check text-3xl mb-2 text-[#2EB270]"></i>
+            <p class="text-sm font-bold text-[#2EB270]">Receipt uploaded successfully</p>
+          </ng-container>
+        </div>
+
+        <div class="df-action-bar df-action-bar--centered">
+          <button class="df-btn df-btn--approve df-btn--lg" (click)="confirmPayment()">
+            <i class="fa-solid fa-check"></i> Yes, Payment Sent
+          </button>
+          <button class="df-btn df-btn--reject" (click)="screen='pay'">
+            <i class="fa-solid fa-arrow-left"></i> No, Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SCREEN: LEDGER
+  ════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="screen === 'ledger' && selectedRequest" class="df-content df-anim">
+
+    <div class="df-success-banner">
+      <i class="fa-solid fa-circle-check text-2xl"></i>
+      <div>
+        <p class="font-black text-lg">Payment Confirmed &amp; Recorded</p>
+        <p class="text-sm opacity-80">Journal entry posted · Ledger updated · Audit trail saved</p>
+      </div>
+    </div>
+
+    <div class="df-ledger-grid">
+
+      <!-- Journal Entry Card -->
+      <div class="df-card">
+        <div class="df-card__header df-card__header--space">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-book df-card__icon"></i>
+            <div>
+              <p class="font-black text-gray-900">Journal Entry — {{selectedRequest.journalRef}}</p>
+              <div class="df-je-meta">
+                <span><i class="pi pi-calendar"></i> 09 Jun 2026</span>
+                <span><i class="pi pi-hashtag"></i> {{selectedRequest.id}}</span>
+                <span><i class="pi pi-bolt"></i> {{paymentMethodLabel}}</span>
+              </div>
+            </div>
+          </div>
+          <span class="df-badge df-badge--approved">Posted</span>
+        </div>
+
+        <table class="df-table">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Description</th>
+              <th class="text-right">Debit (₦)</th>
+              <th class="text-right">Credit (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="font-bold">1200 – Staff Loans Receivable</td>
+              <td class="df-table__sub">Loan to {{selectedRequest.employee}}</td>
+              <td class="text-right font-black text-red-500">{{formatNaira(selectedRequest.amount)}}</td>
+              <td class="text-right text-gray-300">—</td>
+            </tr>
+            <tr>
+              <td class="font-bold">{{creditAccountLabel}}</td>
+              <td class="df-table__sub">Disbursed via {{paymentMethodLabel}}</td>
+              <td class="text-right text-gray-300">—</td>
+              <td class="text-right font-black text-[#2EB270]">{{formatNaira(selectedRequest.amount)}}</td>
+            </tr>
+            <tr class="df-table__total">
+              <td colspan="2" class="text-gray-400">Totals</td>
+              <td class="text-right font-black">{{formatNaira(selectedRequest.amount)}}</td>
+              <td class="text-right font-black">{{formatNaira(selectedRequest.amount)}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- General Ledger Card -->
+      <div class="df-card">
+        <div class="df-card__header df-card__header--space">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-list df-card__icon"></i>
+            <p class="font-black text-gray-900">General Ledger — Staff Loans Receivable</p>
+          </div>
+          <span class="df-badge df-badge--approved">Updated</span>
+        </div>
+
+        <table class="df-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reference</th>
+              <th class="text-right">Debit</th>
+              <th class="text-right">Credit</th>
+              <th class="text-right">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of ledgerHistory"
+                [class.df-table__new-row]="entry.reference === selectedRequest.journalRef">
+              <td class="df-table__sub">{{entry.date}}</td>
+              <td class="font-mono text-xs font-black text-[#2E6276]">{{entry.reference}}</td>
+              <td class="text-right font-bold" [class.text-red-500]="entry.debit" [class.text-gray-300]="!entry.debit">
+                {{entry.debit ? formatNaira(entry.debit) : '—'}}
+              </td>
+              <td class="text-right font-bold" [class.text-[#2EB270]]="entry.credit" [class.text-gray-300]="!entry.credit">
+                {{entry.credit ? formatNaira(entry.credit) : '—'}}
+              </td>
+              <td class="text-right font-black text-gray-900">{{formatNaira(entry.balance)}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="df-action-bar">
+      <button class="df-btn df-btn--approve" (click)="reset()">
+        <i class="fa-solid fa-rotate-left"></i> Back to Tray
+      </button>
+      <button class="df-btn df-btn--ghost">
+        <i class="fa-solid fa-download"></i> Export Entry
+      </button>
+    </div>
+  </div>
+
+</div>

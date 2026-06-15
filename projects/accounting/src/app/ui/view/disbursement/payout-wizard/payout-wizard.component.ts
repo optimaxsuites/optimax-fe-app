@@ -214,7 +214,7 @@ export class PayoutComponent implements OnInit {
   confirmPayout(): void {
     const tx = this.selectedTransactionData;
     const meta = tx?.metadata || tx?.accountingEvent?.metadata || tx?.mappingMetadata?.metadata;
-    
+
     this.transaction = {
       ...this.transaction,
       reference: tx?.transactionReference || (tx as any)?.uuid || tx?.id?.toString() || 'REF-PENDING',

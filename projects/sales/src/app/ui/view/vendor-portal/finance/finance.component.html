@@ -561,7 +561,7 @@
                 </div>
               </div>
               <!-- Remove item -->
-              <button *ngIf="(invoiceForm.items?.length ?? 0) > 1" (click)="removeInvoiceItem(i)"
+              <button *ngIf="(invoiceForm.items.length) > 1" (click)="removeInvoiceItem(i)"
                 class="w-6 h-6 flex items-center justify-center text-[#94a9b3] hover:text-red-500 transition-colors shrink-0 mt-0.5">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>

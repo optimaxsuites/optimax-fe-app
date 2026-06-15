@@ -26,12 +26,6 @@ export class NavigationLinksService {
     this.links['rfqFormLink'] = '/admin/procurement/rfq-form/' +uuidV4();
 
 
-
-
-
-
-
-
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
 
 
