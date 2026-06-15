@@ -356,7 +356,7 @@ sendToAccounting(): void {
                       'System';
 
   // Record disbursement initiation
-  this.disbursementInitiatedAt = new Date().toISOString();
+  this.disbursementInitiatedAt = new Date().toISOString().replace('Z', '');
   this.disbursementInitiatedBy = currentUser;
   this.disbursementInstructionReference = this.generateUniqueDisbursementReference(this.selectedDisbursementLoan);
 
@@ -380,7 +380,7 @@ sendToAccounting(): void {
     next: (confirmation) => {
       // Step 2: Send accounting event to /x/api/v2/accounting/events
       const accountingPayload = {
-        id: 0,
+        id: null,
         sourceModule: 'HR',
         eventType: 'LOAN_DISBURSEMENT',
         amount: approvedAmount,
@@ -421,9 +421,6 @@ sendToAccounting(): void {
         'Authorization': `Bearer ${token}`,
         'X-Tenant-ID': tenantId
       });
-
-      console.log('Sending to accounting with headers:', headers.keys());
-      console.log('Payload:', accountingPayload);
 
       this.http.post(url, accountingPayload, { headers }).subscribe({
         next: () => {
@@ -479,7 +476,7 @@ sendToAccounting(): void {
                       localStorage.getItem('username') || 
                       'System';
 
-  const initiatedAt = new Date().toISOString();
+  const initiatedAt = new Date().toISOString().replace('Z', '');
   const initiatedBy = currentUser;
   this.emailNotesError = false;
   this.isSubmittingDisbursement = true;
@@ -513,7 +510,7 @@ sendToAccounting(): void {
           ? String(approvedByRaw.fullname || approvedByRaw.username || 'Unknown')
           : String(approvedByRaw || 'Unknown');
         return {
-          id: 0,
+          id: null,
           sourceModule: 'HR',
           eventType: 'LOAN_DISBURSEMENT',
           amount: approvedAmount,
@@ -556,10 +553,7 @@ sendToAccounting(): void {
         'X-Tenant-ID': tenantId
       });
 
-      console.log('Sending batch to accounting with headers:', headers.keys());
-      console.log('Batch payload size:', batchPayload.length);
-
-      this.http.post(url, batchPayload, { headers }).subscribe({
+      forkJoin(batchPayload.map(p => this.http.post(url, p, { headers }))).subscribe({
         next: () => {
           // Step 3: Update each loan status individually
           const statusUpdates = loanRefs.map(({ loan, reference }) => {
@@ -638,9 +632,6 @@ sendToAccounting(): void {
 
     // Ensure date fields are in ISO 8601 format with time (backend expects this)
     const isoDisbursementInitiatedAt = this.disbursementInitiatedAt ? new Date(this.disbursementInitiatedAt).toISOString() : new Date().toISOString();
-
-    // Debugger for inspecting payload before sending to backend
-    debugger;
 
     this.loanApprovalService.updateApplicationStatus(this.selectedDisbursementLoan.id, {
       status: 'READY_FOR_DISBURSEMENT',

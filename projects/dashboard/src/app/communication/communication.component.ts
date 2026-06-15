@@ -85,6 +85,7 @@ export interface Message {
   threadSummary?: string;
   threadReplyCount?: number;
   threadLastActivityRaw?: string | number[];
+  messageType?: string;
   retryMeta?: {
     mode: 'channel' | 'dm' | 'thread';
     backendChannelId: number;
@@ -3481,6 +3482,7 @@ export class CommunicationComponent
         senderUserId: m.senderUserId,
         replyToMessageId: m.replyToMessageId,
         threadRootMessageId: m.threadRootMessageId,
+        messageType: m.messageType,
         deliveryState:
           Number(m.senderUserId) === Number(this.me.userId)
             ? 'DELIVERED'
@@ -6475,6 +6477,7 @@ export class CommunicationComponent
         senderUserId: m.senderUserId,
         replyToMessageId: m.replyToMessageId,
         threadRootMessageId: m.threadRootMessageId,
+        messageType: m.messageType,
         deliveryState:
           Number(m.senderUserId) === Number(this.me.userId)
             ? 'DELIVERED'

@@ -33,6 +33,7 @@ interface Issue {
   module: string;
   priority: Priority;
   status: Status;
+  tags?: string;
   reporterUserId?: number;
   reporterEmail?: string;
   reporterName?: string;
@@ -213,6 +214,9 @@ export class BugTrackerComponent implements OnInit {
   openForm(issue?: Issue): void {
     this.editingIssue = issue || null;
     this.form = issue ? { ...issue } : this.blankForm();
+    this.tempFormLog = [];
+    this.formLogNote = '';
+    this.formLogEmail = '';
     this.showForm = true;
   }
 
@@ -220,6 +224,7 @@ export class BugTrackerComponent implements OnInit {
     if (!this.form.title || !this.form.module || !this.form.priority) return;
     this.saving = true;
     const payload = { ...this.form, status: this.form.status || 'OPEN' };
+    const logsToPost = [...this.tempFormLog];
 
     const req = this.editingIssue?.id
       ? this.api.update(this.editingIssue.id, payload)
@@ -237,6 +242,26 @@ export class BugTrackerComponent implements OnInit {
         this.showForm = false;
         this.saving = false;
         this.toast('success', this.editingIssue?.id ? 'Issue updated' : 'Issue created — notifications sent');
+
+        // Post any work log entries added in the form
+        const meId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+        logsToPost.forEach(log => {
+          this.api.addWorkLog(saved.id!, {
+            note: log.note,
+            loggedByUserId: meId,
+            loggedByEmail: log.loggedByEmail || '',
+            loggedByName: log.loggedByName || ''
+          }).subscribe({
+            next: (newLog) => {
+              const issue = this.issues.find(i => i.id === saved.id);
+              if (issue) {
+                if (!issue.workLog) issue.workLog = [];
+                issue.workLog.unshift(newLog);
+              }
+            },
+            error: () => {}
+          });
+        });
       },
       error: (err) => { this.toast('error', err); this.saving = false; }
     });
@@ -351,9 +376,6 @@ export class BugTrackerComponent implements OnInit {
     const issue = this.sharingIssue;
     const id = issue.id!;
     const senderUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
-    const issueMsg = `📌 *Issue #${id} shared* — [${issue.module}] ${issue.title}\n` +
-      `Priority: ${issue.priority} | Status: ${issue.status}` +
-      (issue.description ? `\n${issue.description.slice(0, 200)}${issue.description.length > 200 ? '…' : ''}` : '');
 
     const shareCalls = this.shareTab === 'CHANNEL'
       ? selectedChannels.map(c => this.api.shareIssue(id, {
@@ -366,17 +388,17 @@ export class BugTrackerComponent implements OnInit {
 
     forkJoin(shareCalls).subscribe({
       next: () => {
-        // Post collaboration messages so the share is visible in chat
+        // Post structured issue card messages so the share is visible in chat
         const msgCalls = this.shareTab === 'CHANNEL'
           ? selectedChannels.map(c =>
-              this.api.postCollabMessage(c.id, senderUserId, issueMsg))
+              this.api.postIssueCardMessage(c.id, senderUserId, issue))
           : selectedUsers.map(u => {
               // Find the DM channel between current user and target user
               const uid1 = Math.min(senderUserId, u.userId!);
               const uid2 = Math.max(senderUserId, u.userId!);
               const dmChannel = this.dmChannelMap[`${uid1}-${uid2}`];
               return dmChannel
-                ? this.api.postCollabMessage(dmChannel, senderUserId, issueMsg)
+                ? this.api.postIssueCardMessage(dmChannel, senderUserId, issue)
                 : this.api.shareIssue(id, {}); // fallback no-op
             });
 
@@ -530,8 +552,33 @@ export class BugTrackerComponent implements OnInit {
     return { OPEN: 'Open', IN_PROGRESS: 'In Progress', BLOCKED: 'Blocked', DONE: 'Done', WONT_FIX: "Won't Fix" }[s] || s;
   }
 
+  formLogNote = '';
+  formLogEmail = '';
+  tempFormLog: WorkLog[] = [];
+
+  addFormLog(): void {
+    if (!this.formLogNote.trim()) return;
+    this.tempFormLog = [{
+      note: this.formLogNote.trim(),
+      loggedByEmail: this.formLogEmail.trim(),
+      loggedByName: '',
+      createdAt: new Date().toISOString()
+    }, ...this.tempFormLog];
+    this.formLogNote = '';
+  }
+
+  removeFormLog(index: number): void {
+    this.tempFormLog.splice(index, 1);
+  }
+
+  parseTags(tags?: string): string[] {
+    if (!tags) return [];
+    return tags.split(',').map(t => t.trim()).filter(Boolean);
+  }
+
   private blankForm(): Partial<Issue> {
     return { title: '', module: '', priority: 'MEDIUM', status: 'OPEN',
+      tags: '',
       reporterEmail: '', reporterName: '', assigneeEmail: '', assigneeName: '',
       supervisorEmail: '', supervisorName: '', description: '' };
   }
