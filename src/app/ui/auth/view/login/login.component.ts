@@ -452,7 +452,7 @@ async posLoginAction(): Promise<void> {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("accessToken2");
     }
-    const tenantId = data.tenantId || data.tenant || 'mod';
+    const tenantId = data.tenantId || data.tenant || 'optimax';
     sessionStorage.setItem("tenantId", tenantId);
     localStorage.setItem("tenantId", tenantId);
     const safeUserData = { ...data, accessToken: undefined, token: undefined };
