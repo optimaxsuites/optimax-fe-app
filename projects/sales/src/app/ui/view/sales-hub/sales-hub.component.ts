@@ -3,11 +3,12 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { SalesDashboardComponent } from './sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogComponent } from './product-service-catalog/product-service-catalog.component';
 import { SalesOrdersComponent } from './sales-orders/sales-orders.component';
-import { InvoiceGenerationComponent } from './invoice-generation/invoice-generation.component';
 import { PaymentProcessingComponent } from './payment-processing/payment-processing.component';
 import { CustomerManagementComponent } from './customer-management/customer-management.component';
 import { DeliveryManagementComponent } from './delivery-management/delivery-management.component';
 import { QuoteListComponent } from './quotations/quote-list/quote-list.component';
+import { InvoiceListComponent } from './invoices/invoice-list/invoice-list.component';
+
 
 @Component({
   selector: 'app-sales-hub',
@@ -31,6 +32,11 @@ export class SalesHubComponent {
       name: 'See Quotes',
       component: QuoteListComponent,
       icon: 'fa-solid fa-file',
+    },
+    {
+      name: 'Invoices',
+      component: InvoiceListComponent,
+      icon: 'fa-solid fa-file-invoice-dollar',
     },
     {
       name: 'Order History',

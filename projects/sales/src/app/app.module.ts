@@ -92,7 +92,6 @@ import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog.component';
-import { InvoiceGenerationComponent } from './ui/view/sales-hub/invoice-generation/invoice-generation.component';
 import { CustomerManagementComponent } from './ui/view/sales-hub/customer-management/customer-management.component';
 import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
 import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
@@ -100,6 +99,11 @@ import { SalesOrdersComponent } from './ui/view/sales-hub/sales-orders/sales-ord
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
 import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
+import { PerformanceComponent } from './ui/view/vendor-portal/performance/performance.component';
+import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.component';
+import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
+import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
+import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 
 @NgModule({
   declarations: [
@@ -118,7 +122,6 @@ import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detai
     LpoComponent,
     VendorPortalComponent,
     // SalesDashboardComponent,
-    InvoiceGenerationComponent,
     CustomerManagementComponent,
     DeliveryManagementComponent,
     PaymentProcessingComponent,
@@ -126,6 +129,9 @@ import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detai
     SalesHubComponent,
     ProductServiceCatalogComponent,
     QuoteDetailComponent,
+    PerformanceComponent,
+    DocumentsComponent,
+    InvoiceDetailComponent,
   ],
   imports: [
     // BrowserModule,
@@ -197,6 +203,8 @@ import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detai
     ServiceRequestFormComponent,
     OrderDetailComponent,
     QuoteFormComponent,
+    InvoiceListComponent,
+    InvoiceFormComponent,
   ],
   exports: [TableComponent],
   providers: [

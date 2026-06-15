@@ -15,6 +15,9 @@ import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteListComponent } from './ui/view/sales-hub/quotations/quote-list/quote-list.component';
 import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
 import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
+import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
+import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
+import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 
 
@@ -49,6 +52,22 @@ const routes: Routes = [
   {
     path: 'sales/quotes/:id/edit',
     component: QuoteFormComponent
+  },
+  {
+    path: 'sales/invoices',
+    component: InvoiceListComponent
+  },
+  {
+    path: 'sales/invoices/new',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'sales/invoices/:id',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'sales/invoices/:id/edit',
+    component: InvoiceFormComponent
   },
   {
     path: 'commerce/requests',
