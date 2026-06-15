@@ -1,11 +1,13 @@
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-large-side-modal',
   templateUrl: './large-side-modal.component.html',
   styleUrl: './large-side-modal.component.scss',
   standalone: true,
+  imports: [NgIf],
   animations: [
     trigger('openClose', [
       state('open', style({

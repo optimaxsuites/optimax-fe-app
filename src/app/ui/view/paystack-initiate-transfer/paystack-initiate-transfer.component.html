@@ -176,7 +176,7 @@
       <label class="field-label" for="amount-input">Amount <span class="field-currency">(NGN)</span></label>
       <div class="amount-wrap">
         <span class="amount-wrap__symbol">₦</span>
-        <input id="amount-input" class="amount-wrap__input" type="number" min="1" placeholder="0.00" [(ngModel)]="amountNaira" />
+        <input id="amount-input" class="amount-wrap__input" type="number" min="0.01" placeholder="0.00" [(ngModel)]="amountNaira" />
       </div>
       <div class="field-hint" *ngIf="walletBalance != null">
         Available: <strong>{{ formatNaira(walletBalance) }}</strong>
@@ -198,7 +198,7 @@
 
     <div class="step-actions">
       <button class="btn-outline" (click)="goBack()"><i class="pi pi-arrow-left"></i> Back</button>
-      <button class="btn-primary" [disabled]="!amountNaira || amountNaira <= 0 || !reason.trim()" (click)="proceedFromAmount()" id="btn-proceed-amount">
+      <button class="btn-primary" [disabled]="!amountNaira || amountNaira <= 0 || !reason.trim() || insufficientBalance" (click)="proceedFromAmount()" id="btn-proceed-amount">
         Review Transfer <i class="pi pi-arrow-right"></i>
       </button>
     </div>

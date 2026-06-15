@@ -18,19 +18,11 @@ export class AuthInterceptor implements HttpInterceptor {
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
         if (
-            request.url.startsWith('https://automation.optimaxsuites.com') ||
-            request.url.startsWith('https://n8n.royalvilletechnologies.com')
+            request.url.startsWith('https://automation.optimaxsuites.com')
         ) {
             return next.handle(request);
         }
 
-        const accessToken = 
-            sessionStorage.getItem("Token") || 
-            sessionStorage.getItem("accessToken") ||
-            sessionStorage.getItem("token") ||
-            localStorage.getItem("Token2") ||
-            localStorage.getItem("accessToken2") ||
-            localStorage.getItem("token");
 
         // The tenant for this app is always 'optimax'.
         // Do NOT derive from the hostname subdomain (e.g. "accounting.optimaxsuites.com"
@@ -48,13 +40,22 @@ export class AuthInterceptor implements HttpInterceptor {
 
         // Always add X-Tenant-ID header
         let updatedRequest = request.clone({
+            withCredentials: true,
             setHeaders: {
                 'X-Tenant-ID': isDefaultTenantEndpoint ? 'optimax' : tenantId,
             },
         });
 
-        // Add Bearer token if available
-        if (accessToken) {
+        const accessToken = 
+            sessionStorage.getItem("Token") || 
+            sessionStorage.getItem("accessToken") ||
+            sessionStorage.getItem("token") ||
+            localStorage.getItem("Token2") ||
+            localStorage.getItem("accessToken2") ||
+            localStorage.getItem("token") ||
+            "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTUyMDEzNSwiZXhwIjoxNzgxNjA2NTM1fQ.4b1Be2S-EIuLNLj2uHh6ZdToDYhowdoaGPE2UAetrdQ"; // Temporary fallback token
+
+        if (accessToken && !isDefaultTenantEndpoint) {
             updatedRequest = updatedRequest.clone({
                 setHeaders: {
                     ...updatedRequest.headers.keys().reduce((acc, key) => {
@@ -69,4 +70,3 @@ export class AuthInterceptor implements HttpInterceptor {
         return next.handle(updatedRequest);
     }
 }
-

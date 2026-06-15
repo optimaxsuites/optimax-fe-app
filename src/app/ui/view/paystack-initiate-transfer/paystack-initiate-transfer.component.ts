@@ -209,8 +209,18 @@ export class PaystackInitiateTransferComponent implements OnInit, OnDestroy {
   }
 
   proceedFromAmount(): void {
-    if (!this.amountNaira || this.amountNaira <= 0) { this.toastService.warn('Please enter a valid amount greater than zero.'); return; }
-    if (!this.reason.trim()) { this.toastService.warn('Please enter a reason / narration for the transfer.'); return; }
+    if (!this.amountNaira || this.amountNaira <= 0) {
+      this.toastService.warn('Please enter a valid amount greater than zero.');
+      return;
+    }
+    if (!this.reason.trim()) {
+      this.toastService.warn('Please enter a reason / narration for the transfer.');
+      return;
+    }
+    if (this.insufficientBalance) {
+      this.toastService.warn('You have insufficient balance to complete this transfer.');
+      return;
+    }
     this.generatedReference = this.generateReference();
     this.currentStep = 'confirm';
   }
@@ -235,14 +245,17 @@ export class PaystackInitiateTransferComponent implements OnInit, OnDestroy {
     this.isSubmitting  = true;
     this.transferError = null;
 
-    const payload = {
+    const payload: any = {
       source:    'balance',
       amount:    Math.round(this.amountNaira * 100),   // kobo
       recipient: this.selectedRecipient.recipientCode,
       reference: this.generatedReference,
-      reason:    this.reason.trim(),
-      currency:  'NGN'
+      reason:    this.reason.trim()
     };
+
+    if (this.selectedRecipient.currency && this.selectedRecipient.currency !== 'NGN') {
+      payload.currency = this.selectedRecipient.currency;
+    }
 
     this.paystackService.initiateDirectTransfer(payload)
       .pipe(takeUntil(this.destroy$))
@@ -253,7 +266,9 @@ export class PaystackInitiateTransferComponent implements OnInit, OnDestroy {
           this.handleTransferStatus(this.transferResponse?.status);
         },
         error: (err) => {
-          this.transferError  = err?.error?.message || 'Transfer initiation failed. Please try again.';
+          console.error('[Paystack Transfer Error] Details:', err);
+          const errMsg = err?.error?.message || err?.error || err?.message || 'Transfer initiation failed. Please try again.';
+          this.transferError  = typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg);
           this.transferResult = 'failed';
           this.isSubmitting   = false;
           this.currentStep    = 'result';
