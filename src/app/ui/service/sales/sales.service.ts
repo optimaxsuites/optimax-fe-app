@@ -1,5 +1,3 @@
-// src/app/ui/service/sales-module/sales.service.ts
-
 import { Injectable } from '@angular/core';
 import { Observable, of, delay } from 'rxjs';
 import { 
@@ -196,7 +194,6 @@ export class SalesService {
   getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
     let quotes: Quote[] = JSON.parse(localStorage.getItem(this.QUOTES_KEY) || '[]');
     
-    // Convert dates
     quotes = quotes.map(q => ({
       ...q,
       createdAt: new Date(q.createdAt),
@@ -204,12 +201,10 @@ export class SalesService {
       expiresAt: q.expiresAt ? new Date(q.expiresAt) : new Date(q.validUntil)
     }));
 
-    // Status filter
     if (filters && filters.status && filters.status !== 'ALL') {
       quotes = quotes.filter(q => q.status === filters.status);
     }
 
-    // Search filter
     if (filters && filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       quotes = quotes.filter(q => 
@@ -219,8 +214,6 @@ export class SalesService {
     }
 
     const total = quotes.length;
-    
-    // Pagination
     const page = filters?.page || 0;
     const size = filters?.size || 10;
     const paginatedData = quotes.slice(page * size, (page + 1) * size);
@@ -264,7 +257,7 @@ export class SalesService {
       terms: data.terms || ''
     };
 
-    quotes.unshift(newQuote); // Show newest first
+    quotes.unshift(newQuote);
     localStorage.setItem(this.QUOTES_KEY, JSON.stringify(quotes));
     return of(newQuote).pipe(delay(300));
   }
@@ -286,31 +279,99 @@ export class SalesService {
       return of(updatedQuote).pipe(delay(300));
     }
     
-    return of({} as Quote).pipe(delay(300));
+    throw new Error('Quote not found');
   }
 
   // Invoices
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
-    const invoices = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
-    return of({ data: invoices, total: invoices.length }).pipe(delay(300));
+    let invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
+    invoices = invoices.map(i => ({
+      ...i,
+      issueDate: new Date(i.issueDate),
+      dueDate: new Date(i.dueDate),
+      paidAt: i.paidAt ? new Date(i.paidAt) : undefined
+    }));
+
+    if (filters && filters.status && filters.status !== 'ALL') {
+      invoices = invoices.filter(i => i.status === filters.status);
+    }
+
+    if (filters && filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      invoices = invoices.filter(i => 
+        i.invoiceNumber.toLowerCase().includes(term) || 
+        i.customerName.toLowerCase().includes(term)
+      );
+    }
+
+    const total = invoices.length;
+    const page = filters?.page || 0;
+    const size = filters?.size || 10;
+    const paginatedData = invoices.slice(page * size, (page + 1) * size);
+
+    return of({ data: paginatedData, total }).pipe(delay(300));
   }
 
   getInvoiceById(id: string): Observable<Invoice | null> {
     const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
     const invoice = invoices.find(i => i.id === id);
-    return of(invoice || null).pipe(delay(300));
+    if (invoice) {
+      return of({
+        ...invoice,
+        issueDate: new Date(invoice.issueDate),
+        dueDate: new Date(invoice.dueDate),
+        paidAt: invoice.paidAt ? new Date(invoice.paidAt) : undefined
+      }).pipe(delay(300));
+    }
+    return of(null).pipe(delay(300));
   }
 
   createInvoice(data: Partial<Invoice>): Observable<Invoice> {
     const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
-    const newInvoice = {
+    const newInvoice: Invoice = {
       id: Math.random().toString(36).substr(2, 9),
       invoiceNumber: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
-      ...data
-    } as Invoice;
+      orderId: data.orderId || '',
+      customerId: data.customerId || '',
+      customerName: data.customerName || '',
+      items: data.items || [],
+      subtotal: data.subtotal || 0,
+      taxAmount: data.taxAmount || 0,
+      discountAmount: data.discountAmount || 0,
+      totalAmount: data.totalAmount || 0,
+      amountPaid: data.amountPaid || 0,
+      balanceDue: data.totalAmount || 0,
+      currency: data.currency || 'NGN',
+      status: data.status || 'DRAFT',
+      issueDate: data.issueDate || new Date(),
+      dueDate: data.dueDate || new Date(),
+      paidAt: data.paidAt,
+      notes: data.notes || '',
+      paymentTerms: data.paymentTerms || 'Net 30'
+    };
     invoices.push(newInvoice);
     localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
     return of(newInvoice).pipe(delay(300));
+  }
+
+  updateInvoice(id: string, data: Partial<Invoice>): Observable<Invoice> {
+    let invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
+    const index = invoices.findIndex(i => i.id === id);
+    
+    if (index !== -1) {
+      const updatedInvoice = {
+        ...invoices[index],
+        ...data,
+        id: invoices[index].id,
+        invoiceNumber: invoices[index].invoiceNumber
+      } as Invoice;
+      
+      invoices[index] = updatedInvoice;
+      localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+      return of(updatedInvoice).pipe(delay(300));
+    }
+    
+    throw new Error('Invoice not found');
   }
 
   // Customers
@@ -339,7 +400,17 @@ export class SalesService {
   // Products
   getProducts(filters: any): Observable<{ data: Product[]; total: number }> {
     const products = JSON.parse(localStorage.getItem(this.PRODUCTS_KEY) || '[]');
-    return of({ data: products, total: products.length }).pipe(delay(300));
+    let filtered = products;
+    
+    if (filters?.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = products.filter((p: any) => 
+        p.name.toLowerCase().includes(term) || 
+        p.sku.toLowerCase().includes(term)
+      );
+    }
+    
+    return of({ data: filtered, total: filtered.length }).pipe(delay(300));
   }
 
   getProductById(id: string): Observable<Product | null> {

@@ -3,6 +3,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil, forkJoin, filter } from 'rxjs';
 import { saveAs } from 'file-saver';
 import { ProcurementRequestService } from '../../../../service/procurement-request-management/product-request-management/procurement-request.service';
@@ -17,6 +18,10 @@ import { ExportService } from '../../../../service/procurement-request-managemen
 })
 export class ProductRequestListComponent implements OnInit, OnDestroy {
   Math = Math;
+
+  readonly newRequestLink = '/admin/sales/commerce/requests/new/' + uuidV4();
+  readonly draftsLink = '/admin/sales/commerce/requests/drafts/' + uuidV4();
+  readonly multiOrderLink = '/admin/sales/commerce/orders/new/' + uuidV4();
   tableColumns: TableColumn<any>[] = [];
   tableActions: TableAction<any>[] = [];
   selectedRequests: ProcurementRequest[] = [];

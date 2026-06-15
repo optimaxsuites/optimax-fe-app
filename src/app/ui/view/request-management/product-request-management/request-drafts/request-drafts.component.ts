@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { v4 as uuidV4 } from 'uuid';
 import { RequestDraftService } from '../../../../service/procurement-request-management/product-request-management/request-draft.service';
 import { RequestDraft, DraftSummary, DraftFilters, DraftStatus } from '../../../../domain/procurement-request/product-requests/request-draft.dto';
 
@@ -186,11 +187,11 @@ export class RequestDraftsComponent implements OnInit, OnDestroy {
   }
   
   createNewDraft(): void {
-    this.router.navigate(['/commerce/requests/new'], { queryParams: { draft: true } });
+    this.router.navigate(['/admin/sales/commerce/requests/new/' + uuidV4()], { queryParams: { draft: true } });
   }
 
   goBackToRequests(): void {
-    this.router.navigate(['/commerce/requests']);
+    this.router.navigate(['/admin/sales/commerce/requests/home/' + uuidV4()]);
   }
   
   getStatusIcon(status: DraftStatus): string {
