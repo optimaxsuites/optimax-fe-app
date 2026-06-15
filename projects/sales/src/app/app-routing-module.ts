@@ -26,11 +26,11 @@ const routes: Routes = [
   // },
   {
     path: '',
-    redirectTo: 'hub',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
   {
-    path: 'hub',
+    path: 'sales-hub',
     component: SalesHubComponent,
     data: { title: 'Sales Hub' }
   },
