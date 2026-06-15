@@ -139,7 +139,6 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
     AppRoutingModule,
     CommonModule,
     TableModule,
-    RouterModule,
     RippleModule,
     AngularEditorModule,
     DialogModule,
