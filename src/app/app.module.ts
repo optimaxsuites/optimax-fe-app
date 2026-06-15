@@ -134,8 +134,8 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
     InvoiceDetailComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     TableModule,
