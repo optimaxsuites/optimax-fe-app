@@ -109,11 +109,11 @@ export class GuestProfileComponent implements OnInit {
   }
 
   viewBooking(booking: Booking): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings', booking.id]);
+    this.router.navigate(['/hospitality/bookings', booking.id, this.uuid]);
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality', this.uuid, 'guests']);
+    this.router.navigate(['/hospitality/guests', this.uuid]);
   }
 
   getStatusColor(status: BookingStatus): string {

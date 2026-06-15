@@ -87,7 +87,7 @@ export class GuestsListComponent implements OnInit {
   }
 
   viewProfile(guest: Guest): void {
-    this.router.navigate(['/hospitality', this.uuid, 'guests', guest.id]);
+    this.router.navigate(['/hospitality/guests', guest.id, this.uuid]);
   }
 
   openCreateDrawer(): void {

@@ -118,13 +118,13 @@ export class HousekeepingLostitemComponent implements OnInit {
   }
 
   onAddNew() {
-    this.router.navigate(['/housekeeping/lost-form']);
+    this.router.navigate(['/hospitality/housekeeping/lost-form']);
   }
 
   onEdit(item: LostItem) {
     this.selectedItem = item;
 
-    this.router.navigate(['/housekeeping/lost-form']);
+    this.router.navigate(['/hospitality/housekeeping/lost-form']);
   }
 
   getStatusClass(status: string) {

@@ -267,7 +267,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         ? `/user/e-bookings/checkout/${this.selectedRoomForAuth.id}/${this.uuid}`
         : `/user/e-bookings/home/${this.uuid}`;
 
-      this.router.navigate(['/e-bookings/auth', authPath, this.uuid], {
+      this.router.navigate(['/user/e-bookings/auth', authPath, this.uuid], {
         queryParams: { returnUrl: returnUrl }
       });
     }

@@ -77,12 +77,12 @@ export class RoomsCarouselComponent implements OnInit, OnDestroy {
 
   navigateToRoom() {
     const uuid = 'abc123';
-    this.router.navigate([`/user/rooms/uuid`]);
+    this.router.navigate(['/user/e-bookings/home', uuid]);
   }
 
   navigateTobooking() {
     const uuid = 'abc123';
-    this.router.navigate([`/user/booking-form/uuid`]);
+    this.router.navigate(['/user/e-bookings/booking-form', uuid]);
   }
 
   ngOnDestroy() {

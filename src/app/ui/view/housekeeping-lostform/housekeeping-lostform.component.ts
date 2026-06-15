@@ -150,13 +150,11 @@ export class HousekeepingLostformComponent implements OnInit {
     localStorage.setItem('lostItems', JSON.stringify(items));
 
     // Navigate back to the list
-    setTimeout(() => {
-      this.router.navigate(['/housekeeping/Lost Items']);
-    }, 1500);
+    this.router.navigate(['/hospitality/housekeeping/lost-items']);
   }
 
   cancelForm() {
-    this.router.navigate(['/housekeeping/Lost Items']);
+    this.router.navigate(['/hospitality/housekeeping/lost-items']);
   }
 
   uuidv4(): string {

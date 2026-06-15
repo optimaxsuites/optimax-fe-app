@@ -74,11 +74,11 @@ export class AllroomsComponent implements OnInit {
 
   viewRoomDetails(room: any): void {
     // Navigate to the NEW dedicated room details page
-    this.router.navigate(['/e-bookings/rooms/details', room.id, this.uuid]);
+    this.router.navigate(['/user/e-bookings/rooms/details', room.id, this.uuid]);
   }
 
   bookRoom(room: Room): void {
-    this.router.navigate(['/hospitality', 'bookings', 'room-select', this.uuid]);
+    this.router.navigate(['/hospitality/bookings/room-select', this.uuid]);
   }
 
   getStarRating(rating: number): string {
@@ -89,7 +89,7 @@ export class AllroomsComponent implements OnInit {
   }
 
   navigateTobooking() {
-    this.router.navigate([`/e-bookings/multiple-rooms/${this.uuid}`]);
+    this.router.navigate([`/user/e-bookings/multiple-rooms/${this.uuid}`]);
   }
 
   getBedType(capacity: number): string {

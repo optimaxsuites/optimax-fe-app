@@ -707,7 +707,7 @@ export class BookingDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings']);
+    this.router.navigate(['/hospitality/bookings', this.uuid]);
   }
 
   showToastMessage(message: string, type: 'success' | 'error'): void {
