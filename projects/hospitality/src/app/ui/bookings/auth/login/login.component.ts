@@ -131,6 +131,6 @@ export class EBookingLoginComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/e-bookings/home', this.uuid]);
+    this.router.navigate(['/user/e-bookings/home', this.uuid]);
   }
 }

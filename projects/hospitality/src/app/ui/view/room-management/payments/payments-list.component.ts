@@ -144,7 +144,7 @@ export class PaymentsListComponent implements OnInit {
   }
 
   viewBooking(bookingId: number): void {
-    this.router.navigate(['/hospitality', this.uuid, 'bookings', bookingId]);
+    this.router.navigate(['/hospitality/bookings', bookingId, this.uuid]);
   }
 
   private showToastMessage(message: string, type: 'success' | 'error'): void {

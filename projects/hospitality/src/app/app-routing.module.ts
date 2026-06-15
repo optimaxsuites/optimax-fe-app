@@ -20,10 +20,16 @@ import { ServiceChargesListComponent } from './ui/view/room-management/service-c
 import { SettingsComponent } from './ui/view/room-management/settings/settings.component';
 import { ServicesListComponent } from './ui/view/room-management/services/services-list.component';
 import { BookingsShellComponent } from './ui/bookings/bookings-shell/bookings-shell.component';
+import { ServiceCheckoutComponent } from './ui/view/room-management/service-checkout/service-checkout.component';
+import { HousekeepingFormComponent } from './ui/view/housekeeping-form/housekeeping-form.component';
+import { HousekeepingFoundComponent } from './ui/view/housekeeping-found/housekeeping-found.component';
+import { HousekeepingLostformComponent } from './ui/view/housekeeping-lostform/housekeeping-lostform.component';
+import { HousekeepingLostitemComponent } from './ui/view/housekeeping-lostitem/housekeeping-lostitem.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'user/landing', pathMatch: 'full' },
   { path: 'user', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
+  { path: 'career', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
   { path: 'error', component: ErrorPageComponent },
   { path: '404', component: ErrorPageComponent },
   { path: '401', component: ErrorPageComponent },
@@ -41,7 +47,21 @@ const routes: Routes = [
       { path: 'services/:uuid',         component: ServicesListComponent },
       { path: 'service-charges',  component: ServiceChargesListComponent },
       { path: 'payments/:uuid',         component: PaymentsListComponent },
+
+      // Housekeeping
       { path: 'housekeeping/:uuid',     component: HousekeepingComponent },
+      { path: 'housekeeping/found',     component: HousekeepingFoundComponent },
+      { path: 'housekeeping/found/add', component: HousekeepingFormComponent },
+      { path: 'housekeeping/lost-items', component: HousekeepingLostitemComponent },
+      { path: 'housekeeping/lost-form', component: HousekeepingLostformComponent },
+
+      // Bookings sub-routes
+      { path: 'bookings/create/:uuid',       component: BookingCreateComponent },
+      { path: 'bookings/room-select/:uuid',  component: BookingRoomFirstComponent },
+      { path: 'bookings/sell-service/:uuid', component: ServiceCheckoutComponent },
+      { path: 'bookings/:id/:uuid',          component: BookingDetailComponent },
+      { path: 'bookings/:uuid',              component: BookingsListComponent },
+
       { path: 'settings',         component: SettingsComponent },
 
       // Guests

@@ -55,7 +55,7 @@ export class AppComponent implements OnInit {
             if (!isGuestPage && !isAdminPage && (currentUrl === '/' || currentUrl.includes('/user/auth/'))) {
               // Navigate to hospitality rooms with UUID
               const uuid = 'default';
-              this.router.navigate(['/hospitality/rooms']);
+              this.router.navigate(['/hospitality/rooms', uuid]);
             }
           }
         },

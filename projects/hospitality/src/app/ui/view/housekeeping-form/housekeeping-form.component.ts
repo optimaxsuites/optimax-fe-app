@@ -106,7 +106,7 @@ export class HousekeepingFormComponent implements OnInit {
       this.resetForm();
 
       // Navigate to found items view
-      this.router.navigate(['/housekeeping/found']);
+      this.router.navigate(['/hospitality/housekeeping/found']);
     } else {
       this.messageService.add({
         severity: 'error',
@@ -124,7 +124,7 @@ export class HousekeepingFormComponent implements OnInit {
 
   cancelForm() {
     // Navigate back or to found items view
-    this.router.navigate(['/housekeeping/found']);
+    this.router.navigate(['/hospitality/housekeeping/found']);
   }
 
   // Helper methods

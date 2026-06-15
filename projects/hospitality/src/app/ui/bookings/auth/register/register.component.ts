@@ -135,7 +135,7 @@ export class EBookingRegisterComponent implements OnInit, OnDestroy {
 
     this.logger.info('Registration successful');
     this.loading = false;
-    this.router.navigate(['/e-bookings/auth/login', this.uuid], extras);
+    this.router.navigate(['/user/e-bookings/auth/login', this.uuid], extras);
   }
 
   private handleRegistrationError(error: any): void {
@@ -163,6 +163,6 @@ export class EBookingRegisterComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/e-bookings/home', this.uuid]);
+    this.router.navigate(['/user/e-bookings/home', this.uuid]);
   }
 }

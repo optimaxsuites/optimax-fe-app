@@ -76,7 +76,6 @@ import { RequestManagementComponent } from './ui/view/request-management/request
 import { ProductRequestFormComponent } from './ui/view/request-management/product-request-management/product-request-form/product-request-form.component';
 import { ProductRequestDetailComponent } from './ui/view/request-management/product-request-management/product-request-detail/product-request-detail.component';
 import { RequestEditFormComponent } from './ui/view/request-management/product-request-management/request-edit-form/request-edit-form.component';
-import { MultiItemRequestFormComponent } from './ui/view/request-management/product-request-management/multi-item-request-form/multi-item-request-form.component';
 import { DeliveryTrackingMapComponent } from './ui/view/request-management/product-request-management/delivery-tracking-map/delivery-tracking-map.component';
 import { VendorRatingComponent } from './ui/view/request-management/product-request-management/vendor-rating/vendor-rating.component';
 import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
@@ -91,9 +90,20 @@ import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
-
-
-
+import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
+import { ProductServiceCatalogComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog.component';
+import { CustomerManagementComponent } from './ui/view/sales-hub/customer-management/customer-management.component';
+import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
+import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
+import { SalesOrdersComponent } from './ui/view/sales-hub/sales-orders/sales-orders.component';
+import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
+import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
+import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
+import { PerformanceComponent } from './ui/view/vendor-portal/performance/performance.component';
+import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.component';
+import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
+import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
+import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 
 @NgModule({
   declarations: [
@@ -111,6 +121,17 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
     FinanceComponent,
     LpoComponent,
     VendorPortalComponent,
+    // SalesDashboardComponent,
+    CustomerManagementComponent,
+    DeliveryManagementComponent,
+    PaymentProcessingComponent,
+    SalesOrdersComponent,
+    SalesHubComponent,
+    ProductServiceCatalogComponent,
+    QuoteDetailComponent,
+    PerformanceComponent,
+    DocumentsComponent,
+    InvoiceDetailComponent,
   ],
   imports: [
     // BrowserModule,
@@ -118,7 +139,6 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
     AppRoutingModule,
     CommonModule,
     TableModule,
-    RouterModule,
     RippleModule,
     AngularEditorModule,
     DialogModule,
@@ -172,7 +192,6 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
     UserInterfaceComponent,
     BackButtonComponent,
     ProductRequestFormComponent,
-    MultiItemRequestFormComponent,
     ProductRequestDetailComponent,
     RequestEditFormComponent,
     DeliveryTrackingMapComponent,
@@ -181,7 +200,10 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
     RequestReorderComponent,
     ExportDropdownComponent,
     ServiceRequestFormComponent,
-    OrderDetailComponent
+    OrderDetailComponent,
+    QuoteFormComponent,
+    InvoiceListComponent,
+    InvoiceFormComponent,
   ],
   exports: [TableComponent],
   providers: [
