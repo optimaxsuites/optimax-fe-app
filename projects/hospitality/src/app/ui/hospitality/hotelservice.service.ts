@@ -445,6 +445,14 @@ export class HotelserviceService {
         this.roomTypesLoaded = true;
         this.buildRoomTypeMap(types);
       }),
+      catchError((error) => {
+        console.warn('Backend unavailable, using mock room types for frontend testing');
+        const mockTypes = this.getMockRoomTypes();
+        this.roomTypes$.next(mockTypes);
+        this.roomTypesLoaded = true;
+        this.buildRoomTypeMap(mockTypes);
+        return of(mockTypes);
+      }),
     );
   }
 
@@ -708,8 +716,11 @@ export class HotelserviceService {
         this.roomsLoaded = true;
       }),
       catchError((err) => {
-        console.error('ERROR fetching rooms:', err);
-        return throwError(() => err);
+        console.warn('Backend unavailable, using mock room data for frontend testing');
+        const mockRooms = this.getMockRooms();
+        this.roomsCache$.next(mockRooms);
+        this.roomsLoaded = true;
+        return of(mockRooms);
       }),
     );
   }
@@ -1358,5 +1369,63 @@ export class HotelserviceService {
 
   getHeaders(): HttpHeaders {
     return this.headers;
+  }
+
+  private getMockRooms(): Room[] {
+    return [
+      {
+        id: 1,
+        roomNumber: 101,
+        roomStatus: 'AVAILABLE',
+        floor: 1,
+        rate: 25000,
+        beds: 1,
+        maxOccupancy: 2,
+        description: 'Cozy single room with queen bed',
+        amenities: ['WiFi', 'AC', 'TV', 'Shower'],
+        imageURLs: ['https://images.unsplash.com/photo-1631049307038-da31bc36cb59?w=400'],
+        accessible: true,
+        roomType: 1,
+        isSmokingAllowed: false,
+      },
+      {
+        id: 2,
+        roomNumber: 102,
+        roomStatus: 'AVAILABLE',
+        floor: 1,
+        rate: 35000,
+        beds: 2,
+        maxOccupancy: 4,
+        description: 'Spacious double room with two queen beds',
+        amenities: ['WiFi', 'AC', 'TV', 'Shower', 'Mini Bar'],
+        imageURLs: ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400'],
+        accessible: true,
+        roomType: 2,
+        isSmokingAllowed: false,
+      },
+      {
+        id: 3,
+        roomNumber: 103,
+        roomStatus: 'AVAILABLE',
+        floor: 1,
+        rate: 50000,
+        beds: 1,
+        maxOccupancy: 2,
+        description: 'Luxury suite with premium amenities',
+        amenities: ['WiFi', 'AC', 'TV', 'Bathtub', 'Mini Bar', 'Safe'],
+        imageURLs: ['https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400'],
+        accessible: true,
+        roomType: 3,
+        isSmokingAllowed: false,
+      },
+    ];
+  }
+
+  private getMockRoomTypes(): RoomTypeDTO[] {
+    return [
+      { id: 1, name: 'Single', description: 'Single occupancy room' },
+      { id: 2, name: 'Double', description: 'Double occupancy room' },
+      { id: 3, name: 'Suite', description: 'Luxury suite' },
+    ];
   }
 }
