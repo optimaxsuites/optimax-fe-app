@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
-import { buildSalesLink } from '../../../shared-component/service/route-context/route-context';
+import { v4 as uuidV4 } from 'uuid';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -14,7 +14,6 @@ import { buildSalesLink } from '../../../shared-component/service/route-context/
   styleUrls: ['./sales-dashboard.component.scss']
 })
 export class SalesDashboardComponent implements OnInit, OnDestroy {
-  buildLink = buildSalesLink;
   
   // Dashboard Stats
   stats = {
@@ -42,7 +41,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private salesService: SalesService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -54,13 +56,12 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getMaxRevenue(): number {
-  return Math.max(...this.revenueData.map(d => d.amount));
-}
+    return Math.max(...this.revenueData.map(d => d.amount));
+  }
 
   private loadDashboardData(): void {
     this.isLoading = true;
     
-    // Load all dashboard data in parallel
     this.salesService.getDashboardStats(this.dateRange).subscribe({
       next: (stats) => {
         this.stats = stats;
@@ -119,6 +120,46 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     this.loadDashboardData();
   }
 
+  // ============================================
+  // NAVIGATION METHODS (Like HR Loans pattern)
+  // ============================================
+  
+  navigateToNewQuote(): void {
+    this.router.navigate(['/sales/quotes/new']);
+  }
+
+  navigateToNewInvoice(): void {
+    this.router.navigate(['/sales/invoices/new']);
+  }
+
+  navigateToNewCustomer(): void {
+    this.router.navigate(['/sales/customers/new']);
+  }
+
+  navigateToNewProduct(): void {
+    this.router.navigate(['/sales/products/new']);
+  }
+
+  navigateToQuoteList(): void {
+    this.router.navigate(['/sales/quotes']);
+  }
+
+  navigateToInvoiceList(): void {
+    this.router.navigate(['/sales/invoices']);
+  }
+
+  navigateToQuoteDetail(quoteId: string): void {
+    this.router.navigate(['/sales/quotes', quoteId]);
+  }
+
+  navigateToInvoiceDetail(invoiceId: string): void {
+    this.router.navigate(['/sales/invoices', invoiceId]);
+  }
+
+  // ============================================
+  // HELPER METHODS
+  // ============================================
+
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   }
@@ -163,7 +204,13 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return labels[status] || status;
   }
 
-  // Mock data methods (for development)
+  navigateToProductList(): void {
+    this.router.navigate(['/sales/products']);
+  }
+  // ============================================
+  // MOCK DATA (for development)
+  // ============================================
+
   private setMockStats(): void {
     this.stats = {
       totalRevenue: 2845000,
