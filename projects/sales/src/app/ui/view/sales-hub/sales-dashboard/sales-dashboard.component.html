@@ -14,7 +14,7 @@
           <button class="range-btn" [class.active]="dateRange === 'quarter'" (click)="changeDateRange('quarter')">Quarter</button>
           <button class="range-btn" [class.active]="dateRange === 'year'" (click)="changeDateRange('year')">Year</button>
         </div>
-        <a routerLink="/sales/quotes/new" class="btn-primary">
+        <a [routerLink]="buildLink('/sales/quotes/new')" class="btn-primary">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
@@ -89,7 +89,7 @@
 
       <!-- Stats Cards Row 2 - Quick Actions -->
       <div class="quick-actions">
-        <div class="action-card" routerLink="/sales/quotes/new">
+        <div class="action-card" [routerLink]="buildLink('/sales/quotes/new')">
           <div class="action-icon green">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -97,7 +97,7 @@
           </div>
           <span>Create Quote</span>
         </div>
-        <div class="action-card" routerLink="/sales/invoices/new">
+        <div class="action-card" [routerLink]="buildLink('/sales/invoices/new')">
           <div class="action-icon blue">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -105,7 +105,7 @@
           </div>
           <span>Create Invoice</span>
         </div>
-        <div class="action-card" routerLink="/sales/customers/new">
+        <div class="action-card" [routerLink]="buildLink('/sales/customers/new')">
           <div class="action-icon orange">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
@@ -113,7 +113,7 @@
           </div>
           <span>Add Customer</span>
         </div>
-        <div class="action-card" routerLink="/sales/products/new">
+        <div class="action-card" [routerLink]="buildLink('/sales/products/new')">
           <div class="action-icon purple">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
@@ -149,7 +149,7 @@
         <div class="products-card">
           <div class="card-header">
             <h3>Top Selling Products</h3>
-            <a routerLink="/sales/products" class="view-link">View All →</a>
+            <a [routerLink]="buildLink('/sales/products')" class="view-link">View All →</a>
           </div>
           <div class="products-list">
             <div *ngFor="let product of topProducts; let i = index" class="product-item">
@@ -171,7 +171,7 @@
         <div class="data-table-card">
           <div class="card-header">
             <h3>Recent Quotes</h3>
-            <a routerLink="/sales/quotes" class="view-link">View All →</a>
+            <a [routerLink]="buildLink('/sales/quotes')" class="view-link">View All →</a>
           </div>
           <div class="table-responsive">
             <table class="data-table">
@@ -193,7 +193,7 @@
                   <td><span class="status-badge" [class]="getStatusBadgeClass(quote.status)">{{ getStatusLabel(quote.status) }}</span></td>
                   <td>{{ formatDate(quote.date) }}</td>
                   <td class="actions">
-                    <a [routerLink]="['/sales/quotes', quote.id]" class="action-icon-link">
+                    <a [routerLink]="buildLink('/sales/quotes', quote.id)" class="action-icon-link">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -210,7 +210,7 @@
         <div class="data-table-card">
           <div class="card-header">
             <h3>Recent Invoices</h3>
-            <a routerLink="/sales/invoices" class="view-link">View All →</a>
+            <a [routerLink]="buildLink('/sales/invoices')" class="view-link">View All →</a>
           </div>
           <div class="table-responsive">
             <table class="data-table">
@@ -232,7 +232,7 @@
                   <td><span class="status-badge" [class]="getStatusBadgeClass(invoice.status)">{{ getStatusLabel(invoice.status) }}</span></td>
                   <td [class.overdue]="invoice.status === 'OVERDUE'">{{ formatDate(invoice.dueDate) }}</td>
                   <td class="actions">
-                    <a [routerLink]="['/sales/invoices', invoice.id]" class="action-icon-link">
+                    <a [routerLink]="buildLink('/sales/invoices', invoice.id)" class="action-icon-link">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>

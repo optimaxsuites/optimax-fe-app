@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-quote-list',
@@ -14,6 +15,7 @@ import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
   styleUrls: ['./quote-list.component.scss']
 })
 export class QuoteListComponent implements OnInit, OnDestroy {
+  buildLink = buildSalesLink;
   protected readonly Math = Math;
   
   quotes: Quote[] = [];

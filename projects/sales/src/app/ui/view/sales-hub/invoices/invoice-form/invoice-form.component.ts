@@ -6,7 +6,8 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
+import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-invoice-form',
@@ -19,6 +20,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   
   invoiceForm: FormGroup;
   isSubmitting = false;
+  buildLink = buildSalesLink;
   isLoading = false;
   isEditMode = false;
   invoiceId: string = '';
@@ -419,7 +421,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
-        this.router.navigate(['/sales/invoices', response.id]);
+        this.router.navigate(this.buildLink('/sales/invoices', response.id));
       },
       error: (error) => {
         console.error('Error saving invoice:', error);

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote } from '../../../../domain/sales/sales.dto';
+import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-quote-detail',
@@ -11,6 +12,7 @@ import { Quote } from '../../../../domain/sales/sales.dto';
 export class QuoteDetailComponent implements OnInit {
   quote: Quote | null = null;
   isLoading = true;
+  buildLink = buildSalesLink;
 
   constructor(
     private route: ActivatedRoute,
@@ -119,13 +121,13 @@ export class QuoteDetailComponent implements OnInit {
           const updated = res.data.filter(q => q.id !== this.quote!.id);
           localStorage.setItem('sales_quotes', JSON.stringify(updated));
           alert(`Quote ${this.quote!.quoteNumber} deleted successfully`);
-          this.router.navigate(['/hub']);
+          this.router.navigate(this.buildLink('/sales-hub'));
         }
       });
     }
   }
 
   goBack(): void {
-    this.router.navigate(['/hub']);
+    this.router.navigate(this.buildLink('/sales-hub'));
   }
 }

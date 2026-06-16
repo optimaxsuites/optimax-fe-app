@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
+import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-invoice-list',
@@ -16,6 +17,7 @@ import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
   styleUrls: ['./invoice-list.component.scss']
 })
 export class InvoiceListComponent implements OnInit, OnDestroy {
+  buildLink = buildSalesLink;
   
   // Expose Math to template
   Math = Math;  // ← ADD THIS LINE

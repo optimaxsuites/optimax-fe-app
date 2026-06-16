@@ -4,7 +4,7 @@ import { SalesDashboardComponent } from './sales-dashboard/sales-dashboard.compo
 import { ProductServiceCatalogComponent } from './product-service-catalog/product-service-catalog.component';
 import { SalesOrdersComponent } from './sales-orders/sales-orders.component';
 import { PaymentProcessingComponent } from './payment-processing/payment-processing.component';
-import { CustomerManagementComponent } from './customer-management/customer-management.component';
+import { CustomerListComponent } from './customer-management/customer-list/customer-list.component';
 import { DeliveryManagementComponent } from './delivery-management/delivery-management.component';
 import { QuoteListComponent } from './quotations/quote-list/quote-list.component';
 import { InvoiceListComponent } from './invoices/invoice-list/invoice-list.component';
@@ -45,8 +45,9 @@ export class SalesHubComponent {
     },
     {
       name: 'Customer List',
-      component: CustomerManagementComponent,
-      icon: 'fa-solid fa-list',
+      component: CustomerListComponent,
+      icon: 'fa-solid fa-users',
+      // icon: 'fa-solid fa-list',
     }
   ];
 

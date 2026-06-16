@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice } from '../../../../domain/sales/sales.dto';
+import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -11,6 +12,7 @@ import { Invoice } from '../../../../domain/sales/sales.dto';
 export class InvoiceDetailComponent implements OnInit {
   invoice: Invoice | null = null;
   isLoading = true;
+  buildLink = buildSalesLink;
 
   constructor(
     private route: ActivatedRoute,
@@ -91,6 +93,6 @@ export class InvoiceDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/hub']);
+    this.router.navigate(this.buildLink('/sales-hub'));
   }
 }
