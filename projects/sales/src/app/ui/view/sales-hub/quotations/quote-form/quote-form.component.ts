@@ -7,7 +7,6 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../domain/sales/sales.dto';
-import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-quote-form',
@@ -20,7 +19,6 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   
   quoteForm: FormGroup;
   isSubmitting = false;
-  buildLink = buildSalesLink;
   isLoading = false;
   isEditMode = false;
   quoteId: string = '';
@@ -216,10 +214,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Load data
   private loadCustomers(): void {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.customers = response.data;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
       }
@@ -228,11 +226,11 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   private loadProducts(): void {
     this.salesService.getProducts({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.products = response.data;
         this.filteredProducts = this.products;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
       }
@@ -242,13 +240,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private loadQuote(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
-      next: (quote) => {
+      next: (quote: Quote | null) => {
         if (quote) {
           this.populateForm(quote);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quote:', error);
         this.isLoading = false;
       }
@@ -272,7 +270,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     
     // Add items from quote
-    quote.items.forEach(item => {
+    quote.items.forEach((item: QuoteItem) => {
       this.addLineItem();
       const index = this.items.length - 1;
       const itemForm = this.items.at(index);
@@ -345,12 +343,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     
     request.subscribe({
-      next: (response) => {
+      next: (response: Quote) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
-        this.router.navigate(this.buildLink('/sales/quotes', response.id));
+        this.router.navigate(['/sales/quotes', response.id]);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error saving quote:', error);
         this.isSubmitting = false;
         alert('Failed to save quote. Please try again.');

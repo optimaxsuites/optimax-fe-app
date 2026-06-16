@@ -1,3 +1,5 @@
+// src/app/ui/view/sales-module/customer-list/customer-list.component.ts
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -6,8 +8,6 @@ import { Subject, takeUntil } from 'rxjs';
 import { Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
-import { v4 as uuidv4 } from 'uuid';
-import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-customer-list',
@@ -17,7 +17,7 @@ import { buildSalesLink } from '../../../../shared-component/service/route-conte
   styleUrls: ['./customer-list.component.scss']
 })
 export class CustomerListComponent implements OnInit, OnDestroy {
-  buildLink = buildSalesLink;
+  
   Math = Math;
   customers: Customer[] = [];
   isLoading = true;
@@ -73,14 +73,14 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     this.salesService.getCustomers(this.filters).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.customers = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
         this.calculateStats();
@@ -208,10 +208,9 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
+  // ✅ FIXED: Removed UUID and buildLink
   createQuote(customer: Customer): void {
-    // Generate a UUID for the quote
-    const quoteId = uuidv4();
-    this.router.navigate(this.buildLink('/sales/quotes', quoteId), { queryParams: { customerId: customer.id } });
+    this.router.navigate(['/sales/quotes/new'], { queryParams: { customerId: customer.id } });
   }
 
   // Mock data for development

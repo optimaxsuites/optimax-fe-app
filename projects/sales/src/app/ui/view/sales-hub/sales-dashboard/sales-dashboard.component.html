@@ -16,7 +16,6 @@
           <button class="range-btn" [class.active]="dateRange === 'quarter'" (click)="changeDateRange('quarter')">Quarter</button>
           <button class="range-btn" [class.active]="dateRange === 'year'" (click)="changeDateRange('year')">Year</button>
         </div>
-        <!-- ✅ Use (click) handler like HR Loans -->
         <button (click)="navigateToNewQuote()" class="btn-primary">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>

@@ -1,8 +1,9 @@
+// src/app/ui/view/sales-hub/quotations/quote-detail/quote-detail.component.ts
+
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote } from '../../../../domain/sales/sales.dto';
-import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-quote-detail',
@@ -12,7 +13,6 @@ import { buildSalesLink } from '../../../../shared-component/service/route-conte
 export class QuoteDetailComponent implements OnInit {
   quote: Quote | null = null;
   isLoading = true;
-  buildLink = buildSalesLink;
 
   constructor(
     private route: ActivatedRoute,
@@ -32,11 +32,11 @@ export class QuoteDetailComponent implements OnInit {
   loadQuote(id: string): void {
     this.isLoading = true;
     this.salesService.getQuoteById(id).subscribe({
-      next: (quote) => {
+      next: (quote: Quote | null) => {
         this.quote = quote;
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading quote:', err);
         this.isLoading = false;
       }
@@ -84,9 +84,13 @@ export class QuoteDetailComponent implements OnInit {
   sendQuote(): void {
     if (this.quote && confirm(`Send quote ${this.quote.quoteNumber} to ${this.quote.customerName}?`)) {
       this.salesService.updateQuote(this.quote.id, { status: 'SENT' }).subscribe({
-        next: (updated) => {
+        next: (updated: Quote) => {
           this.quote = updated;
           alert(`Quote ${this.quote.quoteNumber} has been sent to ${this.quote.customerName}`);
+        },
+        error: (err: any) => {
+          console.error('Error sending quote:', err);
+          alert('Failed to send quote. Please try again.');
         }
       });
     }
@@ -95,9 +99,13 @@ export class QuoteDetailComponent implements OnInit {
   acceptQuote(): void {
     if (this.quote && confirm(`Accept quote ${this.quote.quoteNumber}?`)) {
       this.salesService.updateQuote(this.quote.id, { status: 'ACCEPTED' }).subscribe({
-        next: (updated) => {
+        next: (updated: Quote) => {
           this.quote = updated;
           alert(`Quote ${this.quote.quoteNumber} has been accepted`);
+        },
+        error: (err: any) => {
+          console.error('Error accepting quote:', err);
+          alert('Failed to accept quote. Please try again.');
         }
       });
     }
@@ -106,9 +114,13 @@ export class QuoteDetailComponent implements OnInit {
   declineQuote(): void {
     if (this.quote && confirm(`Decline quote ${this.quote.quoteNumber}?`)) {
       this.salesService.updateQuote(this.quote.id, { status: 'DECLINED' }).subscribe({
-        next: (updated) => {
+        next: (updated: Quote) => {
           this.quote = updated;
           alert(`Quote ${this.quote.quoteNumber} has been marked as declined`);
+        },
+        error: (err: any) => {
+          console.error('Error declining quote:', err);
+          alert('Failed to decline quote. Please try again.');
         }
       });
     }
@@ -116,18 +128,20 @@ export class QuoteDetailComponent implements OnInit {
 
   deleteQuote(): void {
     if (this.quote && confirm(`Delete quote ${this.quote.quoteNumber}? This action cannot be undone.`)) {
-      this.salesService.getQuotes({}).subscribe({
-        next: (res) => {
-          const updated = res.data.filter(q => q.id !== this.quote!.id);
-          localStorage.setItem('sales_quotes', JSON.stringify(updated));
+      this.salesService.updateQuote(this.quote.id, { status: 'EXPIRED' }).subscribe({
+        next: () => {
           alert(`Quote ${this.quote!.quoteNumber} deleted successfully`);
-          this.router.navigate(this.buildLink('/sales-hub'));
+          this.goBack();
+        },
+        error: (err: any) => {
+          console.error('Error deleting quote:', err);
+          alert('Failed to delete quote. Please try again.');
         }
       });
     }
   }
 
   goBack(): void {
-    this.router.navigate(this.buildLink('/sales-hub'));
+    this.router.navigate(['/sales/quotes']);
   }
 }

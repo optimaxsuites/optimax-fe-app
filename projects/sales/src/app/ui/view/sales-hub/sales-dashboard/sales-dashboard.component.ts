@@ -1,10 +1,11 @@
+// src/app/ui/view/sales-hub/sales-dashboard/sales-dashboard.component.ts
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
-import { v4 as uuidV4 } from 'uuid';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -63,51 +64,51 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     this.salesService.getDashboardStats(this.dateRange).subscribe({
-      next: (stats) => {
+      next: (stats: any) => {
         this.stats = stats;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading stats:', error);
         this.setMockStats();
       }
     });
     
     this.salesService.getRecentQuotes(5).subscribe({
-      next: (quotes) => {
+      next: (quotes: any[]) => {
         this.recentQuotes = quotes;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quotes:', error);
         this.setMockQuotes();
       }
     });
     
     this.salesService.getRecentInvoices(5).subscribe({
-      next: (invoices) => {
+      next: (invoices: any[]) => {
         this.recentInvoices = invoices;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading invoices:', error);
         this.setMockInvoices();
       }
     });
     
     this.salesService.getTopProducts(5).subscribe({
-      next: (products) => {
+      next: (products: any[]) => {
         this.topProducts = products;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
       }
     });
     
     this.salesService.getRevenueChart(this.dateRange).subscribe({
-      next: (data) => {
+      next: (data: any[]) => {
         this.revenueData = data;
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading chart:', error);
         this.setMockChartData();
         this.isLoading = false;
@@ -146,6 +147,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
 
   navigateToInvoiceList(): void {
     this.router.navigate(['/sales/invoices']);
+  }
+
+  navigateToProductList(): void {
+    this.router.navigate(['/sales/products']);
   }
 
   navigateToQuoteDetail(quoteId: string): void {
@@ -204,9 +209,6 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     return labels[status] || status;
   }
 
-  navigateToProductList(): void {
-    this.router.navigate(['/sales/products']);
-  }
   // ============================================
   // MOCK DATA (for development)
   // ============================================
