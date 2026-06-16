@@ -2,7 +2,6 @@ export function getRouteContext() {
   const pathname = window.location.pathname;
   const isLive = pathname.startsWith('/admin/sales');
   
-  // Extract UUID from pathname (8-4-4-4-12 pattern)
   const uuidMatch = pathname.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/);
   let uuid = uuidMatch ? uuidMatch[1] : '';
 
@@ -19,36 +18,43 @@ export function getRouteContext() {
 
 export function buildSalesLink(basePath: string, uuidOrId?: string, extra?: string): any[] {
   const context = getRouteContext();
+  
+  // Determine if this is a collection or new route (no ID)
+  const isCollectionRoute = 
+    basePath === '/sales-hub' ||
+    basePath === '/sales/quotes' ||
+    basePath === '/sales/quotes/new' ||
+    basePath === '/sales/invoices' ||
+    basePath === '/sales/invoices/new' ||
+    basePath === '/sales/customers' ||
+    basePath === '/sales/customers/new' ||
+    basePath === '/sales/products' ||
+    basePath === '/sales/products/new';
+  
   if (context.isLive) {
-    // 1. Collections & new paths: prefix + basePath + :uuid
-    if (
-      basePath === '/sales-hub' ||
-      basePath === '/sales/quotes' ||
-      basePath === '/sales/quotes/new' ||
-      basePath === '/sales/invoices' ||
-      basePath === '/sales/invoices/new'
-    ) {
+    // For collection routes: prefix + basePath + UUID
+    if (isCollectionRoute) {
       return [context.prefix + basePath, context.uuid];
     }
     
-    // 2. Edit path: prefix + basePath + :id + 'edit' + :uuid
+    // For edit routes: prefix + basePath + id + 'edit' + UUID
     if (extra === 'edit' && uuidOrId) {
       return [context.prefix + basePath, uuidOrId, 'edit', context.uuid];
     }
     
-    // 3. Detail path: prefix + basePath + :id + :uuid
-    if (uuidOrId) {
+    // For detail routes: prefix + basePath + id + UUID
+    if (uuidOrId && !isCollectionRoute) {
       return [context.prefix + basePath, uuidOrId, context.uuid];
     }
     
     return [context.prefix + basePath];
   }
 
-  // Localhost standalone
+  // Local development
   if (extra === 'edit' && uuidOrId) {
     return [basePath, uuidOrId, 'edit'];
   }
-  if (uuidOrId) {
+  if (uuidOrId && !isCollectionRoute) {
     return [basePath, uuidOrId];
   }
   return [basePath];

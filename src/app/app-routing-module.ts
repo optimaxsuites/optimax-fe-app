@@ -32,37 +32,39 @@ const routes: Routes = [
     redirectTo: '/sales-hub',
     pathMatch: 'full'
   },
+  
   // --- Sales Hub ---
   {
     path: 'sales-hub',
-    component: SalesHubComponent,
-    data: { title: 'Sales Hub' }
-  },
-  {
-    path: 'sales-hub/:uuid',
-    component: SalesHubComponent,
-    data: { title: 'Sales Hub' }
+    component: SalesHubComponent
   },
   {
     path: 'admin/sales/sales-hub',
-    component: SalesHubComponent,
-    data: { title: 'Sales Hub' }
+    component: SalesHubComponent
   },
   {
     path: 'admin/sales/sales-hub/:uuid',
-    component: SalesHubComponent,
-    data: { title: 'Sales Hub' }
+    component: SalesHubComponent
   },
 
-  // --- Quotes List ---
+  // --- Quotes ---
   {
     path: 'sales/quotes',
     component: QuoteListComponent
   },
   {
-    path: 'sales/quotes/:uuid',
-    component: QuoteListComponent
+    path: 'sales/quotes/new',
+    component: QuoteFormComponent
   },
+  {
+    path: 'sales/quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'sales/quotes/:id/edit',
+    component: QuoteFormComponent
+  },
+  // Admin routes
   {
     path: 'admin/sales/sales/quotes',
     component: QuoteListComponent
@@ -70,32 +72,6 @@ const routes: Routes = [
   {
     path: 'admin/sales/sales/quotes/:uuid',
     component: QuoteListComponent
-  },
-  {
-    path: 'quotes',
-    component: QuoteListComponent
-  },
-  {
-    path: 'quotes/:uuid',
-    component: QuoteListComponent
-  },
-  {
-    path: 'admin/sales/quotes',
-    component: QuoteListComponent
-  },
-  {
-    path: 'admin/sales/quotes/:uuid',
-    component: QuoteListComponent
-  },
-
-  // --- Quote Form (New) ---
-  {
-    path: 'sales/quotes/new',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'sales/quotes/new/:uuid',
-    component: QuoteFormComponent
   },
   {
     path: 'admin/sales/sales/quotes/new',
@@ -106,64 +82,12 @@ const routes: Routes = [
     component: QuoteFormComponent
   },
   {
-    path: 'quotes/new',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'quotes/new/:uuid',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'admin/sales/quotes/new',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'admin/sales/quotes/new/:uuid',
-    component: QuoteFormComponent
-  },
-
-  // --- Quote Detail ---
-  {
-    path: 'sales/quotes/:id',
-    component: QuoteDetailComponent
-  },
-  {
-    path: 'sales/quotes/:id/:uuid',
-    component: QuoteDetailComponent
-  },
-  {
     path: 'admin/sales/sales/quotes/:id',
     component: QuoteDetailComponent
   },
   {
     path: 'admin/sales/sales/quotes/:id/:uuid',
     component: QuoteDetailComponent
-  },
-  {
-    path: 'quotes/:id',
-    component: QuoteDetailComponent
-  },
-  {
-    path: 'quotes/:id/:uuid',
-    component: QuoteDetailComponent
-  },
-  {
-    path: 'admin/sales/quotes/:id',
-    component: QuoteDetailComponent
-  },
-  {
-    path: 'admin/sales/quotes/:id/:uuid',
-    component: QuoteDetailComponent
-  },
-
-  // --- Quote Form (Edit) ---
-  {
-    path: 'sales/quotes/:id/edit',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'sales/quotes/:id/edit/:uuid',
-    component: QuoteFormComponent
   },
   {
     path: 'admin/sales/sales/quotes/:id/edit',
@@ -173,32 +97,25 @@ const routes: Routes = [
     path: 'admin/sales/sales/quotes/:id/edit/:uuid',
     component: QuoteFormComponent
   },
-  {
-    path: 'quotes/:id/edit',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'quotes/:id/edit/:uuid',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'admin/sales/quotes/:id/edit',
-    component: QuoteFormComponent
-  },
-  {
-    path: 'admin/sales/quotes/:id/edit/:uuid',
-    component: QuoteFormComponent
-  },
 
-  // --- Invoices List ---
+  // --- Invoices ---
   {
     path: 'sales/invoices',
     component: InvoiceListComponent
   },
   {
-    path: 'sales/invoices/:uuid',
-    component: InvoiceListComponent
+    path: 'sales/invoices/new',
+    component: InvoiceFormComponent
   },
+  {
+    path: 'sales/invoices/:id',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'sales/invoices/:id/edit',
+    component: InvoiceFormComponent
+  },
+  // Admin routes
   {
     path: 'admin/sales/sales/invoices',
     component: InvoiceListComponent
@@ -206,32 +123,6 @@ const routes: Routes = [
   {
     path: 'admin/sales/sales/invoices/:uuid',
     component: InvoiceListComponent
-  },
-  {
-    path: 'invoices',
-    component: InvoiceListComponent
-  },
-  {
-    path: 'invoices/:uuid',
-    component: InvoiceListComponent
-  },
-  {
-    path: 'admin/sales/invoices',
-    component: InvoiceListComponent
-  },
-  {
-    path: 'admin/sales/invoices/:uuid',
-    component: InvoiceListComponent
-  },
-
-  // --- Invoice Form (New) ---
-  {
-    path: 'sales/invoices/new',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'sales/invoices/new/:uuid',
-    component: InvoiceFormComponent
   },
   {
     path: 'admin/sales/sales/invoices/new',
@@ -242,64 +133,12 @@ const routes: Routes = [
     component: InvoiceFormComponent
   },
   {
-    path: 'invoices/new',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'invoices/new/:uuid',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'admin/sales/invoices/new',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'admin/sales/invoices/new/:uuid',
-    component: InvoiceFormComponent
-  },
-
-  // --- Invoice Detail ---
-  {
-    path: 'sales/invoices/:id',
-    component: InvoiceDetailComponent
-  },
-  {
-    path: 'sales/invoices/:id/:uuid',
-    component: InvoiceDetailComponent
-  },
-  {
     path: 'admin/sales/sales/invoices/:id',
     component: InvoiceDetailComponent
   },
   {
     path: 'admin/sales/sales/invoices/:id/:uuid',
     component: InvoiceDetailComponent
-  },
-  {
-    path: 'invoices/:id',
-    component: InvoiceDetailComponent
-  },
-  {
-    path: 'invoices/:id/:uuid',
-    component: InvoiceDetailComponent
-  },
-  {
-    path: 'admin/sales/invoices/:id',
-    component: InvoiceDetailComponent
-  },
-  {
-    path: 'admin/sales/invoices/:id/:uuid',
-    component: InvoiceDetailComponent
-  },
-
-  // --- Invoice Form (Edit) ---
-  {
-    path: 'sales/invoices/:id/edit',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'sales/invoices/:id/edit/:uuid',
-    component: InvoiceFormComponent
   },
   {
     path: 'admin/sales/sales/invoices/:id/edit',
@@ -309,29 +148,15 @@ const routes: Routes = [
     path: 'admin/sales/sales/invoices/:id/edit/:uuid',
     component: InvoiceFormComponent
   },
-  {
-    path: 'invoices/:id/edit',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'invoices/:id/edit/:uuid',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'admin/sales/invoices/:id/edit',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'admin/sales/invoices/:id/edit/:uuid',
-    component: InvoiceFormComponent
-  },
+
+  // --- Other routes ---
   {
     path: 'commerce/requests',
     component: RequestManagementComponent
   },
   {
-    path: 'commerce/requests/new/:uuid',
-    component: ProductRequestFormComponent  
+    path: 'commerce/requests/new',
+    component: ProductRequestFormComponent
   },
   {
     path: 'commerce/requests/drafts',
@@ -339,11 +164,11 @@ const routes: Routes = [
   },
   {
     path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent  
+    component: ProductRequestDetailComponent
   },
   {
-  path: 'commerce/requests/:id/edit',
-  component: RequestEditFormComponent
+    path: 'commerce/requests/:id/edit',
+    component: RequestEditFormComponent
   },
   {
     path: 'commerce/requests/:id/tracking',
@@ -366,26 +191,17 @@ const routes: Routes = [
     component: ServiceRequestDetailComponent
   },
   {
-    path: 'commerce/orders/new/:uuid',
-    component: ProductRequestFormComponent
-    //redirectTo: '/commerce/requests/new/:uuid',
-    //pathMatch: 'full'
-  },
-  {
     path: 'commerce/orders/:id',
     component: OrderDetailComponent
   },
-   // Vendor portal
   {
     path: 'vendor-portal/:uuid',
-    component: VendorPortalComponent,
-    // path: 'commerce/requests/:id/tracking',
-  },
-
-]
+    component: VendorPortalComponent
+  }
+];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
