@@ -7,7 +7,6 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
-import { buildSalesLink } from '../../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-invoice-form',
@@ -20,7 +19,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   
   invoiceForm: FormGroup;
   isSubmitting = false;
-  buildLink = buildSalesLink;
   isLoading = false;
   isEditMode = false;
   invoiceId: string = '';
@@ -250,10 +248,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Load data
   private loadCustomers(): void {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.customers = response.data;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
       }
@@ -262,11 +260,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private loadProducts(): void {
     this.salesService.getProducts({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.products = response.data;
         this.filteredProducts = this.products;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
       }
@@ -276,13 +274,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private loadInvoice(): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(this.invoiceId).subscribe({
-      next: (invoice) => {
+      next: (invoice: Invoice | null) => {
         if (invoice) {
           this.populateForm(invoice);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading invoice:', error);
         this.isLoading = false;
       }
@@ -292,20 +290,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private loadQuoteForInvoice(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
-      next: (quote) => {
+      next: (quote: Quote | null) => {
         if (quote) {
           this.populateFromQuote(quote);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quote:', error);
         this.isLoading = false;
       }
     });
   }
 
-  private populateFromQuote(quote: any): void {
+  private populateFromQuote(quote: Quote): void {
     this.invoiceForm.patchValue({
       customerId: quote.customerId,
       customerName: quote.customerName,
@@ -418,12 +416,12 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
     
     request.subscribe({
-      next: (response) => {
+      next: (response: Invoice) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
-        this.router.navigate(this.buildLink('/sales/invoices', response.id));
+        this.router.navigate(['/sales/invoices', response.id]);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error saving invoice:', error);
         this.isSubmitting = false;
         alert('Failed to save invoice. Please try again.');
