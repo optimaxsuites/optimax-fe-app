@@ -1,0 +1,469 @@
+:host {
+  --form-surface: #ffffff;
+  --form-border: #e2e8f0;
+  --form-text: #0f172a;
+  --form-muted: #202021;
+  --form-accent: #2E6276;
+  --form-accent-hover: #4291b1;
+}
+
+.recruitment-form {
+  padding: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--form-border);
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.form-title {
+  font-family: "Sora", "Manrope", sans-serif;
+  font-size: 1.3rem;
+  color: var(--form-text);
+}
+
+.form-subtitle {
+  margin: 0;
+  color: var(--form-muted);
+  font-size: 0.9rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.form-panel {
+  background: var(--form-surface);
+  border: 1px solid var(--form-border);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.panel-title {
+  font-weight: 700;
+  color: var(--form-text);
+  margin-bottom: 0.75rem;
+}
+
+.form-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.form-fields label {
+  margin-top: 0.35rem;
+  color: var(--form-muted);
+  font-size: 1.2rem;
+}
+
+.form-input {
+  border-radius: 10px;
+}
+
+.form-select {
+  border-radius: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.form-row {
+  margin-top: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.form-field label {
+  color: var(--form-muted);
+  font-size: 0.85rem;
+}
+
+.custom-fields {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--form-border);
+}
+
+.custom-field-card {
+  margin-top: 0.5rem;
+  background: #f8fafc;
+  border: 1px dashed var(--form-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.form-help {
+  color: var(--form-muted);
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.note {
+  font-size: var(--sm-font);
+}
+
+.remove-mb {
+  margin: 0;
+}
+
+.btn-container-btn {
+  display: flex;
+  justify-content: end;
+}
+
+.btn-container {
+  display: flex;
+  justify-content: end;
+  position: fixed;
+  bottom: 0;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+:host ::ng-deep .vacancy-editor .p-editor-container {
+  border-radius: 12px;
+  border-color: var(--form-border);
+  overflow: hidden;
+}
+
+:host ::ng-deep .vacancy-editor .p-editor-content {
+  min-height: 320px;
+}
+
+
+::ng-deep .ng-select .ng-select-container {
+    border-radius: 10px 0 0 10px !important;
+    min-height: 36px;
+    border: 1px solid #ccc;
+}
+
+
+::ng-deep .ng-select.ng-select-opened .ng-select-container {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+// ─── Recruitment Form ────────────────────────────────────────────────────────
+
+.recruitment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────────
+
+.form-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.back-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.form-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.form-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.form-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+// ─── Body Layout ─────────────────────────────────────────────────────────────
+
+.form-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ─── Sections ────────────────────────────────────────────────────────────────
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 2px;
+}
+
+// ─── Fields ──────────────────────────────────────────────────────────────────
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.field-input {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:focus {
+    border-color: #6b7280;
+  }
+
+  &:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+}
+
+// ─── Select + Add Button ──────────────────────────────────────────────────────
+
+.select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+
+  .field-select {
+    flex: 1;
+    min-width: 0;
+
+    // override ng-select to match input height
+    .ng-select-container {
+      height: 36px !important;
+      border-radius: 6px 0 0 6px !important;
+      border-right: none !important;
+      font-size: 13px;
+    }
+  }
+}
+
+.add-icon-btn {
+  height: 36px;
+  width: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--form-accent);
+  border: 1px solid var(--form-accent);
+  border-radius: 0 6px 6px 0;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--form-accent-hover);
+    border-color: var(--form-accent-hover);
+  }
+}
+
+// ─── Custom Fields ────────────────────────────────────────────────────────────
+
+.custom-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-field-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.custom-field-label {
+  font-weight: 500;
+  color: #111827;
+  flex: 1;
+}
+
+.custom-field-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.custom-field-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  background: transparent;
+
+  &--required {
+    border-color: #fca5a5;
+    color: #dc2626;
+    background: #fef2f2;
+  }
+}
+
+.add-field-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #374151;
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  align-self: flex-start;
+
+  i {
+    font-size: 11px;
+  }
+
+  &:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+  }
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-secondary {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+}
+
+.btn-primary {
+  height: 36px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: var(--form-accent);
+  border: 1px solid var(--form-accent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--form-accent-hover);
+    border-color: var(--form-accent-hover);
+  }
+}

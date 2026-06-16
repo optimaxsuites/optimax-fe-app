@@ -1,0 +1,101 @@
+<div class="join-cooperative-group-modal">
+  <div class="intro-panel">
+    <div>
+      <span class="eyebrow">Group Access</span>
+      <h3>Choose a cooperative group with full visibility</h3>
+      <p>Review the active contribution rules, withdrawal cap, pricing, guarantor policy, and late-fee terms for each group before you submit your request.</p>
+    </div>
+    <button type="button" class="close-btn" (click)="onClose()" aria-label="Close join group modal">&times;</button>
+  </div>
+
+  <div class="group-list" *ngIf="availableGroups.length > 0; else emptyState">
+    <article class="group-card" *ngFor="let group of availableGroups">
+      <div class="group-card-top">
+        <div class="group-identity">
+          <span class="group-badge">{{ group.name | slice:0:1 }}</span>
+          <div>
+            <h4>{{ group.name }}</h4>
+            <p>{{ group.description }}</p>
+          </div>
+        </div>
+
+        <span class="eligibility-pill" [class.open]="isEligible(group.id.toString())">
+          {{ isEligible(group.id.toString()) ? 'Open for application' : 'Not eligible' }}
+        </span>
+      </div>
+
+      <div class="group-metrics">
+        <div>
+          <span>Monthly contribution</span>
+          <strong>{{ formatCurrency(group.monthlyContributionAmount) }}</strong>
+        </div>
+        <div>
+          <span>Withdrawal cap</span>
+          <strong>{{ getBorrowCapPercentage(group) }}%</strong>
+        </div>
+        <div>
+          <span>Interest rate</span>
+          <strong>{{ group.interestRate }}%</strong>
+        </div>
+        <div>
+          <span>Member limit</span>
+          <strong>{{ getMemberLimitSummary(group) }}</strong>
+        </div>
+      </div>
+
+      <div class="group-policy-grid">
+        <div class="policy-card">
+          <span class="policy-label">Guarantor rule</span>
+          <strong>{{ getGuarantorSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Late fee policy</span>
+          <strong>{{ getLateFeeSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Borrowing rule</span>
+          <strong>{{ getBorrowCapSummary(group) }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Patronage</span>
+          <strong>{{ group.patronageEligible ? (group.patronageRate + '% patronage eligible') : 'Not enabled' }}</strong>
+        </div>
+        <div class="policy-card">
+          <span class="policy-label">Accounting</span>
+          <strong>{{ getAccountingSummary(group) }}</strong>
+        </div>
+      </div>
+
+      <div class="group-card-footer">
+        <div class="supporting-copy">
+          <span>{{ group.code || 'No group code' }}</span>
+          <span>{{ getGuarantorSummary(group) }}</span>
+          <span>{{ group.accountingEmail || 'Accounting email shared after approval' }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="apply-btn"
+          [disabled]="!isEligible(group.id.toString()) || loadingGroupId === group.id.toString()"
+          (click)="onApply(group.id.toString())">
+          <ng-container *ngIf="loadingGroupId === group.id.toString(); else applyText">
+            <i class="pi pi-spin pi-spinner"></i> Applying...
+          </ng-container>
+          <ng-template #applyText>
+            {{ isEligible(group.id.toString()) ? 'Apply to Join' : 'Unavailable' }}
+          </ng-template>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-users-slash"></i>
+      </div>
+      <h3>No open groups right now</h3>
+      <p>You have already joined or requested the available groups. Check back when new groups are added.</p>
+    </div>
+  </ng-template>
+</div>

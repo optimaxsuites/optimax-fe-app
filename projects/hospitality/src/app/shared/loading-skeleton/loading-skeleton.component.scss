@@ -1,0 +1,180 @@
+$skeleton-color: #e0e0e0;
+$skeleton-highlight: #f0f0f0;
+$primary-color: #22c55e;
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-skeleton {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.skeleton-text,
+.skeleton-image,
+.skeleton-image-large,
+.skeleton-button,
+.skeleton-badge,
+.skeleton-circle {
+  background: linear-gradient(
+    90deg,
+    $skeleton-color 25%,
+    $skeleton-highlight 50%,
+    $skeleton-color 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* Card Skeleton */
+.skeleton-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.3s ease-in;
+  border: 1px solid rgba($primary-color, 0.1);
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.skeleton-image {
+  width: 100%;
+  height: 200px;
+  display: block;
+  border-radius: 0;
+}
+
+.skeleton-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 70%;
+  border-radius: 4px;
+}
+
+.skeleton-subtitle {
+  height: 14px;
+  width: 50%;
+  border-radius: 4px;
+}
+
+.skeleton-line {
+  height: 12px;
+  width: 100%;
+  border-radius: 4px;
+
+  &.short {
+    width: 80%;
+  }
+}
+
+.skeleton-button {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* Room Grid Skeleton */
+.skeleton-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+.skeleton-room-item {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.3s ease-in;
+  border: 1px solid rgba($primary-color, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+.skeleton-image-large {
+  width: 100%;
+  height: 250px;
+  display: block;
+  border-radius: 0;
+}
+
+.skeleton-info {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-badge {
+  height: 28px;
+  width: 100px;
+  border-radius: 20px;
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+/* Text Block Skeleton */
+.skeleton-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Circle Skeleton */
+.skeleton-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 8px;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .skeleton-room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-card {
+    margin-bottom: 12px;
+  }
+}

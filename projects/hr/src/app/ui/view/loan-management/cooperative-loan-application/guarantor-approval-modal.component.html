@@ -1,0 +1,19 @@
+<div class="guarantor-approval-modal" *ngIf="visible">
+  <div class="modal-backdrop" (click)="onClose()"></div>
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Guarantor Approval Request</h2>
+    <div class="loan-summary">
+      <div><strong>Applicant:</strong> {{ loanSummary?.applicantName }}</div>
+      <div><strong>Loan Amount:</strong> {{ loanSummary?.amount | currency:'NGN' }}</div>
+      <div><strong>Purpose:</strong> {{ loanSummary?.purpose }}</div>
+      <div><strong>Repayment Period:</strong> {{ loanSummary?.repaymentTime }} months</div>
+      <div><strong>Monthly Repayment:</strong> {{ loanSummary?.repaymentAmount | currency:'NGN' }}</div>
+      <div><strong>Total Repayable:</strong> {{ loanSummary?.totalRepayable | currency:'NGN' }}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="approve-btn" (click)="onApprove()">Accept / Approve</button>
+      <button class="reject-btn" (click)="onReject()">Reject</button>
+      <button class="close-btn" (click)="onClose()">Close</button>
+    </div>
+  </div>
+</div>

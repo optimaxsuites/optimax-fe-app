@@ -1,0 +1,134 @@
+ <!-- <div class="modal-header flex justify-between items-center text-gray-700"> -->
+    <!-- <h2 class="font-semibold pb-0 mb-0">Discount</h2>
+
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false">
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addDiscount()">
+        Save
+      </button>
+    </div>
+  </div> -->
+<div class="m-6">
+  <div class="mt-5 flex flex-col gap-4 bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6" >
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input class="name editInput" type="text" id="e-price" [(ngModel)]="discount.name" placeholder="Discount name" />
+    </div>
+
+    <div class="flex justify-between items-center w-full gap-4">
+ <div class="detailDiv w-full">
+      <label for="discount">Discount percentage (%)</label>
+      <input id="discount" [(ngModel)]="discount.value" class="name editInput" placeholder="Discount value" />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discountType">Discount Type</label>
+      <ng-select [items]="discountTypes" bindLabel="name" bindValue="id" [(ngModel)]="discount.discountType"
+        [multiple]="true" placeholder="Select discount types">
+      </ng-select>
+    </div>
+    </div>
+   
+
+    <div  *ngIf="discount?.discountType?.includes(1)">
+    <div>
+      <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
+        Discount validity period
+      </p>
+
+        <div class="flex gap-4 items-center w-full">
+          <div class="detailDiv w-full">
+            <label for="start">Start date</label>
+            <input type="date" [(ngModel)]="discount.startDate" id="start" class="name editInput" />
+          </div>
+          <div class="detailDiv w-full">
+            <label for="end">End date</label>
+            <input type="date" [(ngModel)]="discount.endDate" id="end" class="name editInput" />
+          </div>
+        </div>
+      </div>
+    </div> 
+
+    <div *ngIf="discount?.discountType?.includes(2)">
+      <div>
+        <div class="detailDiv w-full">
+          <label for="minQuantity">Minimum quantity</label>
+          <input type="text" id="minQuantity" [(ngModel)]="discount.discountType" class="name editInput" />
+        </div>
+      </div>
+    </div>
+
+      <div *ngIf="discount?.discountType?.includes(2)">
+    <div>
+      <div class="detailDiv w-full">
+        <label for="minQuantity">Minimum quantity</label>
+        <input
+          type="text"
+          id="minQuantity"
+          formControlName="discountMinQuantity"
+          class="name editInput"
+        />
+      </div>
+    </div>
+    </div>
+
+    <div class="flex justify-end mt-4 gap-3">
+       <button
+        *ngIf="editingDiscount.id !== undefined"
+        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition flex items-center gap-2"
+        (click)="cancelEdit()"
+      >
+        <i class="fa-solid fa-times"></i> Cancel
+      </button>
+         <button
+        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+        (click)="editingDiscount.id !== undefined ? updateDiscount() : addDiscount()"
+        [disabled]="savingDiscount"
+      >
+        <i class="fa-solid" [ngClass]="editingDiscount.id !== undefined ? 'fa-save' : 'fa-plus'"></i>
+        {{ editingDiscount.id !== undefined ? 'Update Discount' : 'Add Discount' }}
+        <span *ngIf="savingDiscount" class="spinner-border spinner-border-sm ml-2"></span>
+      </button>
+      </div>
+  </div>
+
+
+     <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">
+        Existing Discounts
+      </h3>
+
+      <div *ngIf="discounts.length === 0" class="text-center py-4 text-gray-500">
+        No categories found. Create your first category above.
+      </div>
+
+      <ul *ngIf="discounts.length > 0" class="divide-y divide-gray-200">
+        <li *ngFor="let discount of discounts" class="py-3 flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-folder"></i>
+            </div>
+            <span class="font-medium text-gray-700">{{ discount.name }}</span>
+          </div>
+
+          <div>
+          <button 
+            class="p-2 mr-4 text-customBlue hover:text-customBlue hover:bg-customBlueHover rounded transition"
+            (click)="editDiscount(discount)"
+            title="Edit Discount"
+          >
+            <i class="fa-solid fa-edit"></i>
+          </button>
+          <button class="text-red-500 hover:text-red-700 transition" (click)="removeDiscount(discount.id)">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+          </div>
+         
+        </li>
+      </ul>
+    </div>
+</div>
+  

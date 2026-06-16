@@ -1,0 +1,41 @@
+<div class="sc-page">
+
+  <div class="sc-header">
+    <div>
+      <h2 class="sc-title">Point of Sale Settings</h2>
+      <p class="sc-sub">Configure e-store, payment gateways and product metadata.</p>
+    </div>
+  </div>
+
+  <div class="sc-search">
+    <i class="fas fa-search sc-search-icon"></i>
+    <input type="text" placeholder="Search settings…"
+           [(ngModel)]="searchTerm" (ngModelChange)="filterSettings()" />
+  </div>
+
+  <div class="sc-list">
+    <div class="sc-row"
+         *ngFor="let setting of filteredSettings; let i = index"
+         [class.sc-disabled]="!setting.component"
+         [attr.data-ci]="i % 8"
+         (click)="openSideBar(setting)">
+      <div class="sc-row-icon"><i [class]="setting.icon"></i></div>
+      <div class="sc-row-body">
+        <p class="sc-row-name">{{ setting.name }}</p>
+        <p class="sc-row-desc">{{ setting.subSetting.join(' · ') }}</p>
+      </div>
+      <div class="sc-row-action">
+        <span class="sc-row-cta">{{ setting.component ? 'Configure' : 'Coming soon' }}</span>
+        <div class="sc-row-arrow"><i class="fas fa-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<app-side-modal *ngIf="sidebar" (close)="sidebar = false">
+  <ng-container *ngIf="selectedComp; else noComp">
+    <ng-container *ngComponentOutlet="selectedComp"></ng-container>
+  </ng-container>
+  <ng-template #noComp><p style="padding:16px">Coming soon</p></ng-template>
+</app-side-modal>

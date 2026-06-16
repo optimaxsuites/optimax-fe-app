@@ -1,0 +1,505 @@
+
+<div class="table-item">
+  <div class="form-header">
+    <div>
+      <p class="text-customBlue text-[18px] font-semibold">Create New Employee</p>
+      <p class="text-xs text-slate-500">Add personal and employment details, then review before submitting.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button class="btn-secondary" (click)="openBulkInstruction()">Bulk Add</button>
+      <button class="btn-ghost" (click)="close()">Cancel</button>
+    </div>
+  </div>
+
+  <hr class="border-slate-100">
+
+  <div class="form-steps">
+    <div *ngFor="let tab of tabs; let i = index"
+      class="step-item"
+      [ngClass]="{
+        'text-slate-400': currentTab < i + 1,
+        'text-customGreen font-semibold': currentTab > i + 1,
+        'text-customBlue font-semibold': currentTab === i + 1
+      }">
+      <span *ngIf="i < tabs.length - 1" class="step-line" [ngClass]="{
+        'bg-slate-200': currentTab < i + 1,
+        'bg-customBlue': currentTab === i + 1,
+        'bg-customGreen': currentTab > i + 1
+      }"></span>
+      <span class="step-circle" [ngClass]="{
+        'bg-slate-200 text-slate-500': currentTab < i + 1,
+        'bg-customGreen text-white': currentTab > i + 1,
+        'bg-customBlue text-white': currentTab === i + 1
+      }">{{ i + 1 }}</span>
+      <span class="step-label">{{ tab }}</span>
+    </div>
+  </div>
+
+  <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1" class="form-section mt-6">
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="firstName" class="form-label">First Name <span class="required">*</span></label>
+          <input type="text" formControlName="firstName" id="firstName" class="input-modern w-full" />
+          <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
+          </small>
+        </div>
+  
+        <div class="form-field">
+          <label for="lastName" class="form-label">Last Name <span class="required">*</span></label>
+          <input type="text" formControlName="lastName" id="lastName" class="input-modern w-full" />
+          <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
+          </small>
+        </div>
+  
+        <div class="form-field">
+          <label for="email" class="form-label">Email <span class="required">*</span></label>
+          <input type="email" formControlName="email" id="email" class="input-modern w-full" />
+          <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("email"),'email') }}
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="workemail" class="form-label">Work Email Address <span class="required">*</span></label>
+          <input type="workemail" formControlName="workemail" id="workemail" class="input-modern w-full" />
+          <small *ngIf="basicForm.get('workemail')?.touched && basicForm.get('workemail')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("workemail"),'workemail') }}
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="gender" class="form-label">Gender <span class="required">*</span></label>
+          <div class="select-with-action">
+            <ng-select 
+              [items]="gender" 
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select Gender"
+              formControlName="gender"
+              class="select-modern flex-1"></ng-select>
+            <button type="button" class="icon-button" (click)="openMetaModal('gender')" title="Add gender">
+              <span class="fa-solid fa-plus"></span>
+            </button>
+          </div>
+          <small *ngIf="basicForm.get('gender')?.touched && basicForm.get('gender')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("gender"),'gender') }}
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="title" class="form-label">Job Title <span class="required">*</span></label>
+          <input type="text" formControlName="title" id="title" class="input-modern w-full" />
+          <small *ngIf="basicForm.get('title')?.touched && basicForm.get('title')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("title"), 'title') }}
+          </small>
+        </div>
+          
+        <div class="form-field">
+          <label for="department" class="form-label">Departments <span class="required">*</span></label>
+          <div class="select-with-action">
+            <ng-select 
+              [items]="departments" 
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select Department"
+              formControlName="department"
+              class="select-modern flex-1"></ng-select>
+            <button type="button" class="icon-button" (click)="openMetaModal('department')" title="Add department">
+              <span class="fa-solid fa-plus"></span>
+            </button>
+          </div>
+          <small *ngIf="basicForm.get('department')?.touched && basicForm.get('department')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("department"),'department') }}
+          </small>
+        </div>
+          
+        <div class="form-field">
+          <label for="jobType" class="form-label">Employment Type <span class="required">*</span></label>
+          <div class="select-with-action">
+            <ng-select 
+              [items]="employments" 
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select Employment Type"
+              formControlName="jobType"
+              class="select-modern flex-1"></ng-select>
+            <button type="button" class="icon-button" (click)="openMetaModal('employment')" title="Add employment type">
+              <span class="fa-solid fa-plus"></span>
+            </button>
+          </div>
+          <small *ngIf="basicForm.get('jobType')?.touched && basicForm.get('jobType')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("jobType"),'jobType') }}
+          </small>
+        </div>
+          
+        <div class="form-field">
+          <label for="level" class="form-label">Level <span class="required">*</span></label>
+          <div class="select-with-action">
+            <ng-select 
+              [items]="levels" 
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select Level"
+              formControlName="level"
+              class="select-modern flex-1"></ng-select>
+            <button type="button" class="icon-button" (click)="openMetaModal('level')" title="Add level">
+              <span class="fa-solid fa-plus"></span>
+            </button>
+          </div>
+          <small *ngIf="basicForm.get('level')?.touched && basicForm.get('level')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("level"),'level') }}
+          </small>
+        </div>
+          
+        <div class="form-field">
+          <label for="supervisor" class="form-label">Supervisor/Manager <span class="required">*</span></label>
+          <!-- <ng-select 
+            [items]="salaryStructure" 
+            bindLabel="level"
+            bindValue="level"
+            placeholder="Select Supervisor"
+            formControlName="supervisor"
+            class="select-modern w-full"></ng-select> -->
+          <ng-select
+            [items]="employees"
+            bindLabel="fullName"
+            bindValue="fullName"
+            placeholder="Select Supervisor/Manager"
+            formControlName="supervisor"
+            class="select-modern w-full"></ng-select>
+          <small *ngIf="basicForm.get('supervisor')?.touched && basicForm.get('supervisor')?.invalid" class="form-error">
+            {{ getErrorMessage(basicForm.get("supervisor"),'supervisor') }}
+          </small>
+        </div>
+
+      </div>
+
+      <div class="mt-6 flex justify-end" *ngIf="!basicForm.get('createLogin')?.value">
+        <button type="button" (click)="nextTab()" class="btn-primary">
+          Next
+        </button>
+      </div>
+    </div>
+  </form>  
+
+
+  <form [formGroup]="employeeForm" *ngIf="currentTab === 2" class="form-section">
+    <div class="form-card">
+      <div class="form-field">
+        <label class="form-label">Employee Status <span class="required">*</span></label>
+        <div class="grid grid-cols-2 gap-3 text-sm text-slate-600">
+          <label class="flex items-center gap-2">
+            <input type="radio" id="joining" formControlName="status" value="joining" class="accent-customBlue"/>
+            <span>Joining</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" id="active" formControlName="status" value="active" class="accent-customBlue"/>
+            <span>Active</span>
+          </label>
+        </div>
+        <small *ngIf="employeeForm.get('status')?.touched && employeeForm.get('status')?.invalid" class="form-error">
+          {{ getErrorMessage(employeeForm.get("status"), 'Employee Status') }}
+        </small>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="startDate" class="form-label">Employment Start Date<span class="required">*</span></label>
+          <input type="date" formControlName="startDate" id="startDate" class="input-modern w-full" />
+        </div> 
+
+        <div class="form-field">
+          <label for="endDate" class="form-label">Employment End date</label>
+          <input type="date" formControlName="endDate" id="endDate" class="input-modern w-full" />
+          <small *ngIf="employeeForm.get('endDate')?.touched && employeeForm.get('endDate')?.invalid" class="form-error">
+            {{ getErrorMessage(employeeForm.get("endDate"),'endDate') }}
+          </small>
+        </div> 
+      </div>
+
+      <div class="form-field">
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input type="checkbox" id="isProbation" formControlName="isProbation" class="accent-customBlue"/>
+          <span class="font-medium">On Probation</span>
+        </label>
+      </div>
+          
+      <div *ngIf="employeeForm.get('isProbation')?.value" class="form-grid">
+        <div class="form-field">
+          <label for="probationStartDate" class="form-label">Probation Start Date<span class="required">*</span></label>
+          <input type="date" formControlName="probationStartDate" id="probationStartDate" class="input-modern w-full" />
+          <small *ngIf="employeeForm.get('probationStartDate')?.touched && employeeForm.get('probationStartDate')?.invalid" class="form-error">
+            {{ getErrorMessage(employeeForm.get("probationStartDate"), 'Probation Start Date') }}
+          </small>
+        </div>
+  
+        <div class="form-field">
+          <label for="probationEndDate" class="form-label">Probation End Date<span class="required">*</span></label>
+          <input type="date" formControlName="probationEndDate" id="probationEndDate" class="input-modern w-full" />
+          <small *ngIf="employeeForm.get('probationEndDate')?.touched && employeeForm.get('probationEndDate')?.invalid" class="form-error">
+            {{ getErrorMessage(employeeForm.get("probationEndDate"), 'Probation End Date') }}
+          </small>
+        </div>
+      </div>
+  
+      <div class="form-field">
+        <label for="appraisalDueDate" class="form-label">Appraisal Due Date<span class="required">*</span></label>
+        <input type="date" formControlName="appraisalDueDate" id="appraisalDueDate" class="input-modern w-full" />
+        <small *ngIf="employeeForm.get('appraisalDueDate')?.touched && employeeForm.get('appraisalDueDate')?.invalid" class="form-error">
+          {{ getErrorMessage(employeeForm.get("appraisalDueDate"), 'Appraisal Due Date') }}
+        </small>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" (click)="previousTab()" class="btn-ghost">Previous</button>
+        <button type="button" (click)="nextTab()" class="btn-primary">Next</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- <form [formGroup]="leaveForm"  *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
+
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+     
+      <div class="mb-4">
+          <table class="styled-table">
+            <thead class="bg-customBlue text-white">
+              <td>Leave Types</td>
+              <td>Assigned number of day(s)</td>
+            </thead>
+            <tbody class="w-full">
+              <tr class="w-full" *ngFor="let leave of selectedLeaves; let i = index">
+                <td class="w-1/2">{{getLeaveNameWithId(leave.name)}}</td>
+                <td class="w-1/2">
+                   <div class="flex w-full justify-between items-center gap-1 px-2">
+                    <p class="">{{leave.amount}} day(s)</p>
+                    <i (click)="removeLeave(i)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-2xl " ></i>
+                   </div>
+                </td>
+              </tr>
+            
+              <tr *ngIf="selectedLeaves.length > 0" >
+                <td>Total</td>
+                <td class="px-4">
+                  {{totalLeaveDays}}
+                </td>
+              </tr>
+
+              <tr class="">
+                <td>
+                  <div class="w-full">
+                    <ng-select 
+                    [items]="leaves" 
+                    bindLabel="label"
+                    bindValue="value"
+                    placeholder="Select leave"
+                    formControlName="leaveType"
+                    class="w-full rounded-md"></ng-select>
+          
+                  </div>
+                </td>
+
+                <td>
+                  <input type="number" min="0" (keydown.enter)="addLeave()" (change)="errorMessage = ''"  class="outline-none w-full p-2" placeholder="0" formControlName="leaveAmount">
+                  <small *ngIf="isAmountTouched" class="text-red-600">
+                   {{getLeaveAmountErrorMessage()}}
+                    </small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+         
+    
+      </div>
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !leaveForm.valid">
+          Next
+        </button>
+      </div>
+    
+    </div>
+  </form> -->
+
+
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 3" class="form-section" >
+    <div class="form-card">
+      <div class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col gap-1">
+          <p class="text-sm font-semibold text-slate-700">Has access to OptiMax</p>
+          <p class="text-xs text-slate-500">
+            A user account will be created for this employee. Their username and password will be included in their onboarding email.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" formControlName="optimaxAccess" aria-label="Has access to OptiMax"/>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <p class="section-title mt-6">Role & Permissions</p>
+      <p class="text-xs text-slate-500 mt-1" *ngIf="!guarantorForm.get('optimaxAccess')?.value">
+        Enable OptiMax access to assign a role and permissions.
+      </p>
+      <div class="form-field mt-4" *ngIf="guarantorForm.get('optimaxAccess')?.value">
+        <label class="form-label">Role-based Access <span class="required">*</span></label>
+        <div class="select-with-action">
+          <ng-select 
+            [items]="roles" 
+            bindLabel="name"
+            bindValue="id"
+            placeholder="Select role"
+            formControlName="roleId"
+            class="select-modern flex-1"></ng-select>
+          <button type="button" class="icon-button" [routerLink]="navigationLink.getLink('userRoles')" title="Manage roles and permissions">
+            <span class="fa-solid fa-gear"></span>
+          </button>
+        </div>
+        <small *ngIf="guarantorForm.get('roleId')?.touched && guarantorForm.get('roleId')?.invalid" class="form-error">
+          Role is required.
+        </small>
+        <p class="text-xs text-slate-500">Need a new role or permission? Manage roles in Settings.</p>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" (click)="previousTab()" class="btn-ghost">Previous</button>
+        <button type="button" (click)="nextTab()" class="btn-primary">Next</button>
+      </div>
+    </div>
+  </form>
+
+
+  <form (ngSubmit)="onSubmit()" *ngIf="currentTab === 4" class="form-section">
+    <div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-title">Basic Information</p>
+          <div *ngFor="let control of getFormControls('basicForm')" >
+            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-title">Employment Information</p>
+          <div *ngFor="let control of getFormControls('employeeForm')">
+            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
+          </div>
+        </div>
+      
+        <div class="summary-card">
+          <p class="summary-title">Leave Information</p>
+          <div *ngFor="let control of getFormControls('leaveForm')">
+            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <p class="summary-title">Access Information</p>
+          <p class="capitalize"><strong>Has access to OptiMax:</strong>
+            <span class="ml-1">{{ guarantorForm.get('optimaxAccess')?.value ? 'Yes' : 'No' }}</span>
+          </p>
+          <p class="capitalize" *ngIf="guarantorForm.get('optimaxAccess')?.value">
+            <strong>Role:</strong>
+            <span class="ml-1">{{ getRoleNameById(guarantorForm.get('roleId')?.value) || '—' }}</span>
+          </p>
+        </div>
+      </div>
+    
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" (click)="previousTab()" class="btn-ghost">Previous</button>
+        <button type="button" (click)="onSubmit(true)" class="btn-success" [disabled]="employeeForm.invalid || isSubmitting">
+          <span [ngClass]="submitContinueLoading ? 'animate-ping' : ''">
+            {{submitContinueLoading ? "Loading..." : "Submit and Continue"}}
+          </span>
+        </button>   
+        <button type="button" (click)="onSubmit()" class="btn-success"  [disabled]="employeeForm.invalid || isSubmitting">
+          <span [ngClass]="submitLoading ? 'animate-ping' : ''">
+            {{submitLoading ? "Loading..." : "Submit"}}
+          </span>
+        </button>
+      </div>
+    </div>
+  </form>
+
+<app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+      <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+  </app-modal>
+
+  <!-- <app-modal *ngIf="showMetaModal" [header]="metaTitle" (close)="closeMetaModal()"> -->
+      <div 
+    class="w-[50vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center" 
+    *ngIf="showMetaModal" 
+    (click)="closeMetaModal()">
+        <div 
+      class="bg-white p-4 rounded shadow-md" 
+      (click)="$event.stopPropagation()">
+
+    <form [formGroup]="metaForm" class="meta-form">
+      <div class="form-field">
+        <label class="form-label">Name <span class="required">*</span></label>
+        <input type="text" formControlName="name" class="input-modern w-full" placeholder="Enter name" />
+        <small *ngIf="metaForm.get('name')?.touched && metaForm.get('name')?.invalid" class="form-error">
+          Name is required.
+        </small>
+      </div>
+
+      <div class="form-field" *ngIf="activeMetaType === 'level' || activeMetaType === 'department' || activeMetaType === 'employment'">
+        <label class="form-label">Code <span class="required" *ngIf="activeMetaType === 'level'">*</span></label>
+        <input
+          type="text"
+          formControlName="code"
+          class="input-modern w-full"
+          [attr.placeholder]="activeMetaType === 'level' ? 'e.g. LVL-01' : 'e.g. CODE-01'"
+        />
+        <small *ngIf="activeMetaType === 'level' && metaForm.get('code')?.touched && metaForm.get('code')?.invalid" class="form-error">
+          Code is required.
+        </small>
+      </div>
+
+      <div class="form-field" *ngIf="activeMetaType === 'level' || activeMetaType === 'department' || activeMetaType === 'employment'">
+        <label class="form-label">Description <span class="required" *ngIf="activeMetaType === 'level'">*</span></label>
+        <textarea
+          formControlName="description"
+          rows="3"
+          class="input-modern w-full"
+          [attr.placeholder]="activeMetaType === 'level' ? 'Describe this level' : 'Describe this item'"
+        ></textarea>
+        <small *ngIf="activeMetaType === 'level' && metaForm.get('description')?.touched && metaForm.get('description')?.invalid" class="form-error">
+          Description is required.
+        </small>
+      </div>
+
+      <div class="mt-4 flex justify-end gap-2">
+        <button type="button" class="btn-ghost" (click)="closeMetaModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="saveMeta()" [disabled]="metaForm.invalid || savingMeta">
+          {{ savingMeta ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </form>
+    </div>
+      </div>
+
+  <!-- </app-modal> -->
+  
+  
+
+  <div 
+    class="w-[50vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center" 
+    *ngIf="openInfoModal" 
+    (click)="openInfoModal = false">
+    
+    <div 
+      class="bg-white p-4 rounded shadow-md" 
+      (click)="$event.stopPropagation()">
+      <app-bulk-employee-instruction (close)="openInfoModal =false"></app-bulk-employee-instruction>
+    </div>
+  </div>
+
+
+</div>
+
+
+<p-toast position="top-right" key="tl" />

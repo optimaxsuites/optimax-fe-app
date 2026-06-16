@@ -1,0 +1,55 @@
+<app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
+
+<div class="gap-3 w-full flex justify-between items-center px-10 mt-10">
+    <!-- <p class="back" ><i class="fa-solid fa-arrow-left"></i> Back</p> -->
+   
+    <div class="w-1/3">
+        <app-searchbar></app-searchbar>
+    
+    </div>
+
+</div>
+<p class="text-3xl font-bold" *ngIf="orders.length === 0">No orders here</p>
+<div *ngIf="orders.length > 0" class="px-8 mt-10">
+    <section class="selectClients">
+      <div class="asd">
+        <div class="top-products-container">
+          <div class="top-products">
+            <div class="top-products-table-container">
+              <table class="top-products-table w3-table w3-striped">
+                <thead>
+                  <tr class="top-products-table-row">
+                    <th class="top-products-table-head col-1">
+                      Date
+                    </th>
+                    <th class="top-products-table-head col-1">Status</th>
+                    <th class="top-products-table-head col-1">Order Name</th>
+                    <th class="top-products-table-head col-1">Total Sales</th>
+                    <th class="top-products-table-head col-1">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let order of orders"  style="cursor: pointer;">
+                    <!-- {{ order?.timestamp | date: 'shortTime' }} -->
+                    <td>{{ order?.timestamp }}</td>
+                    <td>
+                            <p [ngClass]="{'text-green-700': order.state === 'Paid'}"  class="mb-0 capitalize font-bold text-yellow-600"    >{{order.state}}</p>
+                    </td>
+                    <td class="capitalize">{{order.name}}</td>
+                    <td>₦{{order.total}}</td>
+                    <td>
+                      <div class="flex gap-3 text-[18px]" >
+                        <i *ngIf="order.state == 'Open'"   class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" (click)="reOpenCart(order)"></i>
+                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" (click)="orderDetails(order)"></i>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  

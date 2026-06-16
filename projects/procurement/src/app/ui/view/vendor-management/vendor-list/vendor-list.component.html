@@ -1,0 +1,478 @@
+<p-confirmDialog class="table-item" header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast class="table-item"></p-toast>
+
+
+
+<!-- <div class="btn-wrapper mb-5">
+  <app-button
+    text="Add Vendor"
+    class="btn-navigate"
+    (click)="openForm()"
+  ></app-button>
+</div> -->
+
+<app-table
+  [columns]="columns"
+  [rows]="vendors"
+  [actions]="actions"
+  [paginator]="true"
+  [rowsPerPage]="10"
+  [(selection)]="selectVendor"
+  dataKey="id"
+  (rowClick)="openItem($event)"
+  (actionClick)="onAction($event)"
+  (selectionChange)="selectVendor = $event"
+></app-table>
+
+<!-- <app-large-side-modal
+  *ngIf="displayVendorForm!"
+ [header]="isEditMode ? 'Edit Vendor' : 'Add Vendor'"
+  [subheader]="
+    isEditMode
+      ? 'Update vendor details below.'
+      : 'Enter vendor details below. This information will be used for records and communication.'
+  "
+  (close)="this.displayVendorForm = false"
+>
+  <div class="p-2">
+    <form [formGroup]="vendorForm" (ngSubmit)="saveVendor()">
+      <div class="space-y-2">
+        <div
+          class="text-sm bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4"
+        >
+          <div class="flex items-center gap-2 font-semibold text-gray-700">
+            <i class="pi pi-building text-primary"></i>
+            Company Information
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Company Name</label
+            >
+            <input
+              pInputText
+              formControlName="legalName"
+              class="w-full border p-2"
+              placeholder="e.g. Acme Ltd."
+            />
+            <p class="text-xs text-gray-400">Registered business name</p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Company Email</label
+            >
+            <input
+              pInputText
+              type="email"
+              formControlName="companyEmail"
+              class="w-full border p-2"
+              placeholder="company@email.com"
+            />
+            <p class="text-xs text-gray-400">Main official email address</p>
+          </div>
+        </div>
+
+        <div
+          class="text-sm bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4"
+        >
+          <div class="flex items-center gap-2 font-semibold text-gray-700">
+            <i class="pi pi-user text-primary"></i>
+            Contact Person
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">First Name</label>
+            <input
+              pInputText
+              formControlName="firstName"
+              class="w-full border p-2"
+              placeholder="Samuel Alli"
+            />
+          </div>
+
+                    <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Last Name</label>
+            <input
+              pInputText
+              formControlName="lastName"
+              class="w-full border p-2"
+              placeholder="Samuel Alli"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700"
+              >Phone Number</label
+            >
+            <input
+              pInputText
+              formControlName="phoneNumber"
+              class="w-full border p-2"
+              placeholder="+234..."
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Email</label>
+            <input
+              pInputText
+              type="email"
+              formControlName="contactEmail"
+              class="w-full border p-2"
+              placeholder="contact@email.com"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Role</label>
+            <input
+              pInputText
+              formControlName="role"
+              class="w-full border p-2"
+              placeholder="Admin / Owner"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="text-sm flex justify-end gap-3">
+          <button
+            pButton
+            type="button"
+            label="Cancel"
+            (click)="displayVendorForm = false"
+            class="!bg-red-500 !border-red-500 hover:!bg-red-600 hover:!border-red-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+          ></button>
+
+          <button
+            pButton
+            type="submit"
+            [label]="isEditMode ? 'Update Vendor' : 'Add Vendor'"
+            class="!bg-green-500 !border-green-500 hover:!bg-green-600 hover:!border-green-600 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+          ></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</app-large-side-modal> -->
+
+<!-- <app-large-side-modal
+  *ngIf="displayVendorView && selectedVendor"
+  header="Vendor Details"
+  subheader="View vendor information and contact details."
+  (close)="closeVendorView()"
+>
+  <div class="p-2 text-sm">
+    <div class="space-y-2">
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-building text-primary"></i>
+          Company Information
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Company Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.companyProfile.legalName || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Company Email</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.companyProfile.companyEmail || '---' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-user text-primary"></i>
+          Contact Person
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Last Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.contacts.lastName || '---' }}
+            </div>
+          </div>
+
+                    <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">first Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.contacts.firstName || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Phone Number</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.contacts.phoneNumber || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Email</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.contacts.email || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Role</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor.contacts.role || '---' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button
+          pButton
+          type="button"
+          label="Close"
+          (click)="closeVendorView()"
+          class="!bg-gray-700 !border-gray-700 hover:!bg-gray-800 hover:!border-gray-800 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+        ></button>
+      </div>
+    </div>
+  </div>
+</app-large-side-modal> -->
+
+
+
+<!-- <app-large-side-modal
+  *ngIf="displayVendorView && selectedVendor"
+  header="Vendor Details"
+  subheader="View vendor information and contact details."
+  (close)="closeVendorView()"
+>
+  <div class="p-2 text-sm">
+    <div class="space-y-2">
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-building text-primary"></i>
+          Company Information
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Company Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.legalName || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Company Email</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.companyEmail || '---' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-user text-primary"></i>
+          Contact Person
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">First Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.contacts?.[0]?.firstName || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Last Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.contacts?.[0]?.lastName || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Phone Number</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.contacts?.[0]?.phoneNumber || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Email</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.contacts?.[0]?.email || '---' }}
+            </div>
+          </div>
+
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-sm font-medium text-gray-700">Role</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.contacts?.[0]?.role || '---' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex justify-end">
+        <button
+          pButton
+          type="button"
+          label="Close"
+          (click)="closeVendorView()"
+          class="!bg-gray-700 !border-gray-700 hover:!bg-gray-800 hover:!border-gray-800 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+        ></button>
+      </div>
+    </div>
+  </div>
+</app-large-side-modal> -->
+
+
+<app-large-side-modal
+  *ngIf="displayVendorView && selectedVendor"
+  header="Vendor Details"
+  subheader="View vendor company profile information."
+  (close)="closeVendorView()"
+>
+  <div class="p-2 text-sm">
+    <div class="space-y-2">
+      
+      <!-- Company Information -->
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-2 font-semibold text-gray-700">
+          <i class="pi pi-building text-primary"></i>
+          Company Information
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Legal Name -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Legal Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.legalName || '---' }}
+            </div>
+          </div>
+
+          <!-- Trading Name -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Trading Name</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.tradingName || '---' }}
+            </div>
+          </div>
+
+          <!-- Business Type -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Business Type</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.businessType || '---' }}
+            </div>
+          </div>
+
+          <!-- Company Email -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Company Email</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.companyEmail || '---' }}
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Phone</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.companyPhone || '---' }}
+            </div>
+          </div>
+
+          <!-- Website -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Website</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.website || '---' }}
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-sm font-medium text-gray-700">Address</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.address || '---' }}
+            </div>
+          </div>
+
+          <!-- City -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">City</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.city || '---' }}
+            </div>
+          </div>
+
+          <!-- State -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">State</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.state || '---' }}
+            </div>
+          </div>
+
+          <!-- Country -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Country</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.country || '---' }}
+            </div>
+          </div>
+
+          <!-- Postal Code -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Postal Code</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.postalCode || '---' }}
+            </div>
+          </div>
+
+          <!-- Year Established -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Year Established</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.yearEstablished || '---' }}
+            </div>
+          </div>
+
+          <!-- Employee Count -->
+          <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700">Employee Count</label>
+            <div class="w-full border rounded-lg p-2 bg-white">
+              {{ selectedVendor?.companyProfile?.employeeCount || '---' }}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-4 flex justify-end">
+        <button
+          pButton
+          type="button"
+          label="Close"
+          (click)="closeVendorView()"
+          class="!bg-gray-700 !border-gray-700 hover:!bg-gray-800 hover:!border-gray-800 !text-white !px-4 !py-2 !rounded-lg !shadow-sm transition"
+        ></button>
+      </div>
+
+    </div>
+  </div>
+</app-large-side-modal>

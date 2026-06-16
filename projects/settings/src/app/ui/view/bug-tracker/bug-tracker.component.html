@@ -1,0 +1,473 @@
+<p-toast key="tl" position="top-right"></p-toast>
+
+<div class="bt-page">
+
+  <!-- Header -->
+  <div class="bt-header">
+    <div>
+      <h2 class="bt-title">Issue Tracker</h2>
+      <p class="bt-sub">Track, assign and resolve issues across all OptimaX modules. Emails sent to assignees and supervisors on raise.</p>
+    </div>
+    <div class="bt-header-actions">
+      <button class="bt-btn bt-btn-ghost" (click)="exportCsv()"><i class="fas fa-download"></i> CSV</button>
+      <button class="bt-btn bt-btn-primary" (click)="openForm()"><i class="fas fa-plus"></i> New Issue</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="bt-stats">
+    <div class="bt-stat">
+      <div class="bt-stat-val">{{ stats.total }}</div>
+      <div class="bt-stat-label">Total</div>
+    </div>
+    <div class="bt-stat bt-stat-danger">
+      <div class="bt-stat-val">{{ stats.critical }}</div>
+      <div class="bt-stat-label">Critical Open</div>
+    </div>
+    <div class="bt-stat bt-stat-warn">
+      <div class="bt-stat-val">{{ stats.open }}</div>
+      <div class="bt-stat-label">Open</div>
+    </div>
+    <div class="bt-stat bt-stat-amber">
+      <div class="bt-stat-val">{{ stats.blocked }}</div>
+      <div class="bt-stat-label">Blocked</div>
+    </div>
+    <div class="bt-stat bt-stat-green">
+      <div class="bt-stat-val">{{ stats.done }}</div>
+      <div class="bt-stat-label">Resolved</div>
+    </div>
+    <div class="bt-stat-progress">
+      <div class="bt-prog-label">{{ stats.pct }}% resolved</div>
+      <div class="bt-prog-bar"><div class="bt-prog-fill" [style.width.%]="stats.pct"></div></div>
+    </div>
+  </div>
+
+  <!-- Module tabs -->
+  <div class="bt-tabs">
+    <button class="bt-tab" *ngFor="let m of modules"
+            [class.active]="activeModule === m"
+            (click)="selectModule(m)">{{ m }}</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bt-filters">
+    <div class="bt-search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search issues…" [(ngModel)]="searchText" (ngModelChange)="applyFilters()" />
+    </div>
+    <select [(ngModel)]="filterStatus" (ngModelChange)="applyFilters()">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) }}</option>
+    </select>
+    <select [(ngModel)]="filterPriority" (ngModelChange)="applyFilters()">
+      <option value="">All Priorities</option>
+      <option *ngFor="let p of priorities">{{ p }}</option>
+    </select>
+    <select [(ngModel)]="sortBy" (ngModelChange)="applyFilters()">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="priority">By Priority</option>
+      <option value="status">By Status</option>
+    </select>
+    <button class="bt-btn bt-btn-ghost bt-btn-sm" (click)="load()">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="bt-loading" *ngIf="loading">
+    <mat-spinner diameter="28"></mat-spinner>
+    <span>Loading issues…</span>
+  </div>
+
+  <!-- Issue list -->
+  <div class="bt-list" *ngIf="!loading">
+
+    <div class="bt-empty" *ngIf="filtered.length === 0">
+      <i class="fas fa-bug"></i>
+      <p>No issues found. Click <b>New Issue</b> to add one.</p>
+    </div>
+
+    <div class="bt-row" *ngFor="let issue of filtered" [class]="'pri-border-' + issue.priority.toLowerCase()">
+      <div class="bt-row-main" (click)="toggleExpand(issue.id!)">
+
+        <div class="bt-row-left">
+          <span class="bt-id">#{{ issue.id }}</span>
+          <div class="bt-row-body">
+            <div class="bt-bug-title">{{ issue.title }}</div>
+            <div class="bt-bug-meta">
+              <span class="bt-module-tag">{{ issue.module }}</span>
+              <span *ngFor="let tag of parseTags(issue.tags)" class="bt-tag bt-tag-inline">{{ tag }}</span>
+              <span *ngIf="issue.assigneeEmail" class="bt-meta-item">
+                <i class="fas fa-user"></i> {{ issue.assigneeName || issue.assigneeEmail }}
+              </span>
+              <span class="bt-meta-item">
+                <i class="fas fa-clock"></i> {{ issue.createdAt | date:'dd MMM yyyy' }}
+              </span>
+              <span *ngIf="issue.workLog?.length" class="bt-meta-item">
+                <i class="fas fa-comment-alt"></i> {{ issue.workLog!.length }} log{{ issue.workLog!.length !== 1 ? 's' : '' }}
+              </span>
+              <span *ngIf="issue.workTaskId" class="bt-link-badge" title="Linked to Work Task">
+                <i class="fas fa-tasks"></i> Task #{{ issue.workTaskId }}
+              </span>
+              <span *ngIf="issue.performanceGoalId" class="bt-link-badge bt-link-perf" title="Linked to Performance Goal">
+                <i class="fas fa-chart-line"></i> Goal #{{ issue.performanceGoalId }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bt-row-right" (click)="$event.stopPropagation()">
+          <span class="bt-priority" [class]="priorityClass(issue.priority)">{{ issue.priority }}</span>
+          <select class="bt-status-select" [class]="statusClass(issue.status)"
+                  [(ngModel)]="issue.status" (change)="updateStatus(issue, issue.status)">
+            <option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) }}</option>
+          </select>
+          <button class="bt-btn-icon" title="Link to Task / Goal" (click)="openLinkPanel(issue)">
+            <i class="fas fa-link"></i>
+          </button>
+          <button class="bt-btn-icon" title="Share" (click)="openShare(issue)">
+            <i class="fas fa-share-alt"></i>
+          </button>
+          <button class="bt-btn-icon" title="Edit" (click)="openForm(issue)">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="bt-btn-icon bt-btn-danger" title="Delete" (click)="deleteIssue(issue.id!)">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+          <i class="fas expand-chevron"
+             [class.fa-chevron-down]="expandedId !== issue.id"
+             [class.fa-chevron-up]="expandedId === issue.id"></i>
+        </div>
+
+      </div>
+
+      <!-- Expanded detail -->
+      <div class="bt-detail" *ngIf="expandedId === issue.id">
+        <div class="bt-detail-desc" *ngIf="issue.description">
+          <b>Description:</b>
+          <p>{{ issue.description }}</p>
+        </div>
+        <div class="bt-detail-meta">
+          <span *ngIf="issue.reporterEmail">Reported by: <b>{{ issue.reporterName || issue.reporterEmail }}</b></span>
+          <span *ngIf="issue.supervisorEmail"> &nbsp;·&nbsp; Supervisor: <b>{{ issue.supervisorName || issue.supervisorEmail }}</b></span>
+        </div>
+
+        <div class="bt-worklog">
+          <div class="bt-wl-header">Work Log</div>
+          <div class="bt-wl-add">
+            <input type="text" placeholder="Your email…" [(ngModel)]="newLogEmail" style="max-width:180px" />
+            <input type="text" placeholder="Add a note or update…" [(ngModel)]="newLogNote" (keyup.enter)="addLog(issue)" />
+            <button class="bt-btn bt-btn-sm" (click)="addLog(issue)">Add</button>
+          </div>
+          <div class="bt-wl-empty" *ngIf="!issue.workLog?.length">No work log entries yet.</div>
+          <div class="bt-wl-entry" *ngFor="let log of issue.workLog">
+            <span class="bt-wl-time">{{ log.createdAt | date:'dd MMM yyyy HH:mm' }}</span>
+            <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByName || log.loggedByEmail }}</span>
+            <span class="bt-wl-note">{{ log.note }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Add/Edit Dialog -->
+<p-dialog header="{{ editingIssue ? 'Edit Issue' : 'New Issue' }}"
+          [(visible)]="showForm"
+          [modal]="true" [style]="{width:'600px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="bt-form">
+    <div class="bt-field">
+      <label>Title <span class="bt-req">*</span></label>
+      <input pInputText [(ngModel)]="form.title" placeholder="Brief description of the issue" />
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Module <span class="bt-req">*</span></label>
+        <select [(ngModel)]="form.module">
+          <option value="">Select module…</option>
+          <option *ngFor="let m of modules.slice(1)" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+      <div class="bt-field">
+        <label>Priority <span class="bt-req">*</span></label>
+        <select [(ngModel)]="form.priority">
+          <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Status</label>
+        <select [(ngModel)]="form.status">
+          <option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) }}</option>
+        </select>
+      </div>
+      <div class="bt-field">
+        <label>Reporter Email</label>
+        <input pInputText [(ngModel)]="form.reporterEmail" placeholder="reporter@company.com" />
+      </div>
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Assignee Name</label>
+        <input pInputText [(ngModel)]="form.assigneeName" placeholder="Full name" />
+      </div>
+      <div class="bt-field">
+        <label>Assignee Email</label>
+        <input pInputText [(ngModel)]="form.assigneeEmail" placeholder="assignee@company.com" />
+      </div>
+    </div>
+    <div class="bt-field-row">
+      <div class="bt-field">
+        <label>Supervisor Name</label>
+        <input pInputText [(ngModel)]="form.supervisorName" placeholder="Full name" />
+      </div>
+      <div class="bt-field">
+        <label>Supervisor Email</label>
+        <input pInputText [(ngModel)]="form.supervisorEmail" placeholder="supervisor@company.com" />
+      </div>
+    </div>
+    <div class="bt-field">
+      <label>Description</label>
+      <textarea [(ngModel)]="form.description" rows="4" placeholder="Steps to reproduce, context, root cause…"></textarea>
+    </div>
+    <div class="bt-field">
+      <label>Tags / Labels</label>
+      <input pInputText [(ngModel)]="form.tags" placeholder="e.g. UI, API, DB, regression (comma-separated)" />
+      <div class="bt-tags-preview" *ngIf="parseTags(form.tags).length">
+        <span class="bt-tag" *ngFor="let tag of parseTags(form.tags)">{{ tag }}</span>
+      </div>
+    </div>
+    <div class="bt-field">
+      <label>Work Log / Progress Notes</label>
+      <div class="bt-wl-form-add">
+        <input pInputText [(ngModel)]="formLogEmail" placeholder="Your email (optional)" style="max-width:180px" />
+        <input pInputText [(ngModel)]="formLogNote" placeholder="Add a progress note…" (keyup.enter)="addFormLog()" />
+        <button type="button" class="bt-btn bt-btn-sm" (click)="addFormLog()">Add</button>
+      </div>
+      <div class="bt-wl-form-entries" *ngIf="tempFormLog.length || form.workLog?.length">
+        <div class="bt-wl-entry" *ngFor="let log of tempFormLog; let i = index">
+          <span class="bt-wl-time bt-wl-new-badge">NEW</span>
+          <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByEmail }}</span>
+          <span class="bt-wl-note">{{ log.note }}</span>
+          <button type="button" class="bt-wl-remove" (click)="removeFormLog(i)"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="bt-wl-entry" *ngFor="let log of form.workLog">
+          <span class="bt-wl-time">{{ log.createdAt | date:'dd MMM HH:mm' }}</span>
+          <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByName || log.loggedByEmail }}</span>
+          <span class="bt-wl-note">{{ log.note }}</span>
+        </div>
+      </div>
+      <div class="bt-wl-empty" *ngIf="!tempFormLog.length && !form.workLog?.length">No log entries yet. Add one above.</div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="bt-btn bt-btn-ghost" (click)="showForm = false">Cancel</button>
+    <button class="bt-btn bt-btn-primary" [disabled]="saving" (click)="saveForm()">
+      <i class="fas fa-spinner fa-spin" *ngIf="saving"></i>
+      {{ editingIssue ? 'Save Changes' : 'Create Issue' }}
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- Share Dialog -->
+<p-dialog header="Share Issue"
+          [(visible)]="showShareDialog"
+          [modal]="true" [style]="{width:'480px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="bt-form" *ngIf="sharingIssue">
+
+    <!-- Tab switcher -->
+    <div class="bt-share-tabs">
+      <button class="bt-share-tab" [class.active]="shareTab === 'DM'" (click)="shareTab = 'DM'">
+        <i class="fas fa-user"></i> Direct Message
+        <span class="bt-share-badge" *ngIf="selectedUserCount">{{ selectedUserCount }}</span>
+      </button>
+      <button class="bt-share-tab" [class.active]="shareTab === 'CHANNEL'" (click)="shareTab = 'CHANNEL'">
+        <i class="fas fa-hashtag"></i> Channel
+        <span class="bt-share-badge" *ngIf="selectedChannelCount">{{ selectedChannelCount }}</span>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="bt-share-loading" *ngIf="shareLoading">
+      <mat-spinner diameter="20"></mat-spinner>
+      <span>Loading…</span>
+    </div>
+
+    <!-- DM tab -->
+    <ng-container *ngIf="!shareLoading && shareTab === 'DM'">
+      <div class="bt-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search people…" [(ngModel)]="userSearch" />
+      </div>
+      <div class="bt-share-list">
+        <div class="bt-share-empty" *ngIf="filteredDmUsers.length === 0">No users found.</div>
+        <div class="bt-share-item" *ngFor="let user of filteredDmUsers"
+             [class.selected]="user.selected"
+             (click)="toggleUserSelect(user)">
+          <div class="bt-share-avatar">{{ (user.fullname || user.email || '?')[0].toUpperCase() }}</div>
+          <div class="bt-share-info">
+            <div class="bt-share-name">{{ user.fullname || 'Unknown' }}</div>
+            <div class="bt-share-email">{{ user.email }}</div>
+          </div>
+          <i class="fas" [class.fa-check-circle]="user.selected" [class.fa-circle]="!user.selected"
+             [style.color]="user.selected ? '#2e6276' : '#d1d5db'"></i>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Channel tab -->
+    <ng-container *ngIf="!shareLoading && shareTab === 'CHANNEL'">
+      <div class="bt-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search channels…" [(ngModel)]="channelSearch" />
+      </div>
+      <div class="bt-share-list">
+        <div class="bt-share-empty" *ngIf="filteredChannels.length === 0">No channels found.</div>
+        <div class="bt-share-item" *ngFor="let ch of filteredChannels"
+             [class.selected]="ch.selected"
+             (click)="toggleChannelSelect(ch)">
+          <div class="bt-share-avatar bt-share-avatar-ch"><i class="fas fa-hashtag"></i></div>
+          <div class="bt-share-info">
+            <div class="bt-share-name">{{ ch.name }}</div>
+          </div>
+          <i class="fas" [class.fa-check-circle]="ch.selected" [class.fa-circle]="!ch.selected"
+             [style.color]="ch.selected ? '#2e6276' : '#d1d5db'"></i>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="bt-btn bt-btn-ghost" (click)="showShareDialog = false">Cancel</button>
+    <button class="bt-btn bt-btn-primary"
+            [disabled]="shareSubmitting || (shareTab === 'DM' ? selectedUserCount === 0 : selectedChannelCount === 0)"
+            (click)="submitShare()">
+      <i class="fas fa-spinner fa-spin" *ngIf="shareSubmitting"></i>
+      <i class="fas fa-share-alt" *ngIf="!shareSubmitting"></i>
+      <ng-container *ngIf="shareTab === 'DM' && selectedUserCount > 0">
+        Share with {{ selectedUserCount }} person{{ selectedUserCount !== 1 ? 's' : '' }}
+      </ng-container>
+      <ng-container *ngIf="shareTab === 'CHANNEL' && selectedChannelCount > 0">
+        Share to {{ selectedChannelCount }} channel{{ selectedChannelCount !== 1 ? 's' : '' }}
+      </ng-container>
+      <ng-container *ngIf="(shareTab === 'DM' && selectedUserCount === 0) || (shareTab === 'CHANNEL' && selectedChannelCount === 0)">
+        Share
+      </ng-container>
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- Link to Work Task Dialog -->
+<p-dialog header="Link to Work Task"
+          [(visible)]="showLinkPanel"
+          [modal]="true" [style]="{width:'500px'}"
+          [draggable]="false" [resizable]="false">
+
+  <div class="bt-form" *ngIf="linkingIssue">
+
+    <!-- Loading -->
+    <div class="bt-share-loading" *ngIf="linkPanelLoading">
+      <mat-spinner diameter="20"></mat-spinner>
+      <span>Loading tasks…</span>
+    </div>
+
+    <ng-container *ngIf="!linkPanelLoading">
+
+      <!-- Currently linked task -->
+      <div class="bt-linked-task" *ngIf="selectedTaskId">
+        <div class="bt-linked-task-info">
+          <i class="fas fa-link"></i>
+          <span><b>Task #{{ selectedTaskId }}</b> — {{ linkedTaskTitle }}</span>
+        </div>
+        <button class="bt-btn-icon bt-btn-danger" title="Remove link" (click)="clearTaskLink()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="bt-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search tasks…" [(ngModel)]="taskSearch" />
+      </div>
+
+      <!-- Task list -->
+      <div class="bt-share-list bt-task-list">
+        <div class="bt-share-empty" *ngIf="filteredTasks.length === 0">
+          No tasks found. Create one below.
+        </div>
+        <div class="bt-task-item" *ngFor="let task of filteredTasks"
+             [class.selected]="selectedTaskId === task.id"
+             (click)="selectTask(task)">
+          <div class="bt-task-item-left">
+            <span class="bt-id">#{{ task.id }}</span>
+            <div>
+              <div class="bt-task-title">{{ task.title }}</div>
+              <div class="bt-task-meta">
+                <span class="bt-priority" [class]="priorityClass(task.priority)">{{ task.priority }}</span>
+                <span class="bt-module-tag">{{ taskStatusLabel(task.status) }}</span>
+              </div>
+            </div>
+          </div>
+          <i class="fas fa-check-circle" *ngIf="selectedTaskId === task.id" style="color:#2e6276"></i>
+        </div>
+      </div>
+
+      <!-- Create new task -->
+      <div class="bt-create-task">
+        <button class="bt-btn bt-btn-ghost" style="width:100%; justify-content:center; font-size:12px; padding:6px 14px;"
+                (click)="showCreateTask = !showCreateTask">
+          <i class="fas" [class.fa-plus]="!showCreateTask" [class.fa-minus]="showCreateTask"></i>
+          {{ showCreateTask ? 'Cancel New Task' : 'Create New Task' }}
+        </button>
+
+        <div class="bt-create-task-form" *ngIf="showCreateTask">
+          <div class="bt-field">
+            <label>Task Title <span class="bt-req">*</span></label>
+            <input pInputText [(ngModel)]="newTaskTitle" placeholder="Short task description…" />
+          </div>
+          <div class="bt-field-row">
+            <div class="bt-field">
+              <label>Priority</label>
+              <select [(ngModel)]="newTaskPriority">
+                <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+              </select>
+            </div>
+            <div class="bt-field">
+              <label>Status</label>
+              <select [(ngModel)]="newTaskStatus">
+                <option value="TO_DO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="IN_REVIEW">In Review</option>
+                <option value="DONE">Done</option>
+              </select>
+            </div>
+          </div>
+          <button class="bt-btn bt-btn-primary" style="align-self:flex-start;"
+                  [disabled]="creatingTask || !newTaskTitle.trim()"
+                  (click)="createAndLinkTask()">
+            <i class="fas fa-spinner fa-spin" *ngIf="creatingTask"></i>
+            <i class="fas fa-plus" *ngIf="!creatingTask"></i>
+            Create &amp; Link
+          </button>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="bt-btn bt-btn-ghost" (click)="showLinkPanel = false">Cancel</button>
+    <button class="bt-btn bt-btn-primary" (click)="saveLinks()">
+      <i class="fas fa-save"></i> Save Link
+    </button>
+  </ng-template>
+</p-dialog>

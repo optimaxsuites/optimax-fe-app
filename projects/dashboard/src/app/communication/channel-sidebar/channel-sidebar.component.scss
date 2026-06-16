@@ -1,0 +1,15 @@
+.birthday-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.birthday-cal-target {
+  background: #f59e0b;
+  border-radius: 50%;
+}
+
+.birthday-cal-today {
+  background: rgba(46, 98, 118, 0.1);
+  border-radius: 50%;
+}

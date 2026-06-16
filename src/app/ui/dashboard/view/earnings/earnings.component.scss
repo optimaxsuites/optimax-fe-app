@@ -1,0 +1,48 @@
+.earnings{
+    width: 100%;
+    // height: 285px;
+    padding: 1rem;
+    box-sizing: border-box;
+    background-color: #fff;
+    border-radius: 10px;
+    // background-color: #2EB772;
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+}
+.earnings-title{
+    color: #224957;
+    font-weight: bolder;
+    font-size: x-large;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+.earnings-subtitle{
+    color: black;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+}
+.chart{
+    height: fit-content;
+}
+.earnings-amount{
+    font-weight: bolder;
+    font-size: xx-large;
+    color: #25925B;
+    padding: 0.5rem 0;
+}
+.earnings-content{
+    color: black;
+    font-size: large;
+    font-weight: 400;
+    /* z-index: 1; */
+    /* top: 50px; */
+    /* position: absolute; */
+    
+}
+
+
+@media screen and (max-width: 767px){
+    .earnings-title{
+        font-size: 1.3em;
+    }
+}

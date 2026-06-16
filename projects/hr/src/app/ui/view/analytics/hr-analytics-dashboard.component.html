@@ -1,0 +1,368 @@
+<div class="ana-page">
+
+  <!-- ── Loading ──────────────────────────────────────────────────────────── -->
+  <ng-container *ngIf="loading">
+    <div class="ana-hero">
+      <div class="ana-sk ana-sk-title"></div>
+      <div class="ana-sk ana-sk-sub"></div>
+    </div>
+    <div class="ana-kpi-row">
+      <div *ngFor="let i of [1,2,3,4,5,6]" class="ana-kpi-card">
+        <div class="ana-sk ana-sk-num"></div>
+        <div class="ana-sk ana-sk-lbl"></div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── Error ─────────────────────────────────────────────────────────────── -->
+  <div *ngIf="error && !loading" class="ana-error">
+    <i class="fas fa-triangle-exclamation"></i>
+    <p>Could not load analytics data. Check your connection and try again.</p>
+    <button (click)="ngOnInit()" class="ana-btn ana-btn-primary">Retry</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- ── Hero ────────────────────────────────────────────────────────────── -->
+    <div class="ana-hero">
+      <div class="ana-hero-left">
+        <div class="ana-hero-icon"><i class="fas fa-chart-line"></i></div>
+        <div>
+          <h1 class="ana-hero-title">HR Analytics</h1>
+          <p class="ana-hero-sub">Executive overview · Workforce · Payroll · Leave · Risk</p>
+        </div>
+      </div>
+      <div class="ana-hero-date">
+        <i class="fas fa-calendar-alt"></i>
+        {{ today | date:'MMMM d, yyyy' }}
+      </div>
+    </div>
+
+    <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
+    <div class="ana-kpi-row">
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(46,98,118,.1)">
+          <i class="fas fa-users" style="color:#2E6276"></i>
+        </div>
+        <div class="ana-kpi-num">{{ executive?.totalEmployees | number }}</div>
+        <div class="ana-kpi-lbl">Total Employees</div>
+        <div class="ana-kpi-sub">{{ executive?.activeEmployees | number }} active</div>
+      </div>
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(46,178,112,.1)">
+          <i class="fas fa-money-bill-wave" style="color:#2EB270"></i>
+        </div>
+        <div class="ana-kpi-num">{{ formatCurrency(executive?.totalPayroll) }}</div>
+        <div class="ana-kpi-lbl">Total Payroll</div>
+        <div class="ana-kpi-sub">Net gross this period</div>
+      </div>
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(245,158,11,.1)">
+          <i class="fas fa-hand-holding-dollar" style="color:#f59e0b"></i>
+        </div>
+        <div class="ana-kpi-num">{{ formatCurrency(executive?.totalOutstandingBalance) }}</div>
+        <div class="ana-kpi-lbl">Loan Exposure</div>
+        <div class="ana-kpi-sub">{{ executive?.totalOverdueLoanRecords | number }} overdue</div>
+      </div>
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(239,68,68,.1)">
+          <i class="fas fa-exclamation-circle" style="color:#ef4444"></i>
+        </div>
+        <div class="ana-kpi-num">{{ risk?.gracePeriodRequests | number }}</div>
+        <div class="ana-kpi-lbl">Grace Period Requests</div>
+        <div class="ana-kpi-sub">{{ risk?.totalDefaultedLoans | number }} defaulted</div>
+      </div>
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(66,145,177,.1)">
+          <i class="fas fa-briefcase" style="color:#4291b1"></i>
+        </div>
+        <div class="ana-kpi-num">{{ vacancies?.totalVacancies | number }}</div>
+        <div class="ana-kpi-lbl">Open Vacancies</div>
+        <div class="ana-kpi-sub">Avg {{ vacancies?.averageDaysOpen | number:'1.0-0' }} days open</div>
+      </div>
+
+      <div class="ana-kpi-card">
+        <div class="ana-kpi-icon" style="background:rgba(139,92,246,.1)">
+          <i class="fas fa-user-clock" style="color:#8b5cf6"></i>
+        </div>
+        <div class="ana-kpi-num">{{ probation?.totalOnProbation | number }}</div>
+        <div class="ana-kpi-lbl">On Probation</div>
+        <div class="ana-kpi-sub">{{ probation?.probationDueSoon | number }} due soon</div>
+      </div>
+
+    </div>
+
+    <!-- ── Row 1: Workforce + Leave Donut ─────────────────────────────────── -->
+    <div class="ana-row">
+
+      <div class="ana-card ana-card--wide">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(46,98,118,.1)">
+            <i class="fas fa-sitemap" style="color:#2E6276"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Workforce by Department</div>
+            <div class="ana-card-sub">Total {{ workforce?.totalHeadcount | number }} · {{ workforce?.totalJoins | number }} joins · {{ workforce?.totalExits | number }} exits</div>
+          </div>
+        </div>
+        <apx-chart
+          [series]="workforceChart.series!"
+          [chart]="workforceChart.chart!"
+          [xaxis]="workforceChart.xaxis!"
+          [plotOptions]="workforceChart.plotOptions!"
+          [dataLabels]="workforceChart.dataLabels!"
+          [colors]="workforceChart.colors!"
+          [grid]="workforceChart.grid!"
+          [tooltip]="workforceChart.tooltip!">
+        </apx-chart>
+      </div>
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(46,178,112,.1)">
+            <i class="fas fa-calendar-check" style="color:#2EB270"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Leave Requests</div>
+            <div class="ana-card-sub">{{ leave?.totalRequests | number }} total · {{ leave?.totalLeaveDays | number }} days</div>
+          </div>
+        </div>
+        <apx-chart
+          [series]="leaveDonutChart.series!"
+          [chart]="leaveDonutChart.chart!"
+          [labels]="leaveDonutChart.labels!"
+          [colors]="leaveDonutChart.colors!"
+          [legend]="leaveDonutChart.legend!"
+          [dataLabels]="leaveDonutChart.dataLabels!"
+          [plotOptions]="leaveDonutChart.plotOptions!"
+          [tooltip]="leaveDonutChart.tooltip!">
+        </apx-chart>
+
+        <!-- Leave type breakdown -->
+        <div class="ana-leave-rows">
+          <div *ngFor="let row of leave?.rows | slice:0:5" class="ana-leave-row">
+            <span class="ana-leave-type">{{ row.leaveType }}</span>
+            <span class="ana-leave-count">{{ row.requestCount }}</span>
+            <span class="ana-leave-days">{{ row.totalDays }} days</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Row 2: Payroll + Turnover ──────────────────────────────────────── -->
+    <div class="ana-row">
+
+      <div class="ana-card ana-card--wide">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(46,178,112,.1)">
+            <i class="fas fa-money-check-alt" style="color:#2EB270"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Payroll Summary by Department</div>
+            <div class="ana-card-sub">
+              Gross {{ formatCurrency(payroll?.totalGrossPay) }} ·
+              Net {{ formatCurrency(payroll?.totalNetPayable) }} ·
+              Deductions {{ formatCurrency(payroll?.totalDeductions) }}
+            </div>
+          </div>
+        </div>
+        <apx-chart
+          [series]="payrollChart.series!"
+          [chart]="payrollChart.chart!"
+          [xaxis]="payrollChart.xaxis!"
+          [plotOptions]="payrollChart.plotOptions!"
+          [dataLabels]="payrollChart.dataLabels!"
+          [colors]="payrollChart.colors!"
+          [grid]="payrollChart.grid!"
+          [tooltip]="payrollChart.tooltip!"
+          [legend]="payrollChart.legend!">
+        </apx-chart>
+      </div>
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(239,68,68,.1)">
+            <i class="fas fa-arrow-right-from-bracket" style="color:#ef4444"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Employee Turnover</div>
+            <div class="ana-card-sub">
+              {{ (turnover?.turnoverRate ?? 0) * 100 | number:'1.1-1' }}% overall ·
+              {{ turnover?.totalJoins | number }} joins · {{ turnover?.totalExits | number }} exits
+            </div>
+          </div>
+        </div>
+        <apx-chart
+          [series]="turnoverChart.series!"
+          [chart]="turnoverChart.chart!"
+          [xaxis]="turnoverChart.xaxis!"
+          [plotOptions]="turnoverChart.plotOptions!"
+          [dataLabels]="turnoverChart.dataLabels!"
+          [colors]="turnoverChart.colors!"
+          [grid]="turnoverChart.grid!"
+          [tooltip]="turnoverChart.tooltip!"
+          [legend]="turnoverChart.legend!">
+        </apx-chart>
+      </div>
+
+    </div>
+
+    <!-- ── Row 3: Probation + Vacancy Aging ───────────────────────────────── -->
+    <div class="ana-row">
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(139,92,246,.1)">
+            <i class="fas fa-user-clock" style="color:#8b5cf6"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Probation Tracking</div>
+            <div class="ana-card-sub">
+              {{ probation?.probationDueSoon }} due soon ·
+              {{ probation?.probationOverdue }} overdue
+            </div>
+          </div>
+        </div>
+        <div class="ana-table-wrap">
+          <table class="ana-table">
+            <thead>
+              <tr><th>Employee</th><th>Department</th><th>End Date</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of probation?.rows | slice:0:8">
+                <td class="td-name">{{ row.employeeName }}</td>
+                <td>{{ row.department }}</td>
+                <td>{{ row.probationEndDate | date:'mediumDate' }}</td>
+                <td><span class="ana-badge" [class]="probationStatusClass(row.probationStatus)">{{ row.probationStatus }}</span></td>
+              </tr>
+              <tr *ngIf="!probation?.rows?.length">
+                <td colspan="4" class="td-empty">No employees on probation</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(66,145,177,.1)">
+            <i class="fas fa-briefcase" style="color:#4291b1"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Vacancy Aging</div>
+            <div class="ana-card-sub">
+              {{ vacancies?.expiredVacancies }} expired ·
+              avg {{ vacancies?.averageDaysOpen | number:'1.0-0' }} days open
+            </div>
+          </div>
+        </div>
+        <div class="ana-table-wrap">
+          <table class="ana-table">
+            <thead>
+              <tr><th>Job Title</th><th>Location</th><th>Type</th><th>Days Open</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of vacancies?.rows | slice:0:8" [class.row-expired]="row.expired">
+                <td class="td-name">{{ row.jobTitle }}</td>
+                <td>{{ row.location }}</td>
+                <td>{{ row.jobType }}</td>
+                <td>
+                  <span class="ana-badge" [class]="row.expired ? 'badge-red' : row.daysOpen > 30 ? 'badge-amber' : 'badge-blue'">
+                    {{ row.daysOpen }}d
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="!vacancies?.rows?.length">
+                <td colspan="4" class="td-empty">No open vacancies</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Row 4: Risk Summary + Bonus ────────────────────────────────────── -->
+    <div class="ana-row">
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(239,68,68,.1)">
+            <i class="fas fa-shield-halved" style="color:#ef4444"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">HR Risk Summary</div>
+            <div class="ana-card-sub">Loan exposure and compliance indicators</div>
+          </div>
+        </div>
+        <div class="ana-risk-grid">
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#2E6276">{{ risk?.totalEmployees | number }}</div>
+            <div class="ana-risk-lbl">Total Employees</div>
+          </div>
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#2EB270">{{ risk?.activeEmployees | number }}</div>
+            <div class="ana-risk-lbl">Active</div>
+          </div>
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#f59e0b">{{ formatCurrency(risk?.totalLoanExposure) }}</div>
+            <div class="ana-risk-lbl">Loan Exposure</div>
+          </div>
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#ef4444">{{ formatCurrency(risk?.totalOverdueLoans) }}</div>
+            <div class="ana-risk-lbl">Overdue Loans</div>
+          </div>
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#ef4444">{{ risk?.totalDefaultedLoans | number }}</div>
+            <div class="ana-risk-lbl">Defaulted Loans</div>
+          </div>
+          <div class="ana-risk-item">
+            <div class="ana-risk-num" style="color:#8b5cf6">{{ risk?.gracePeriodRequests | number }}</div>
+            <div class="ana-risk-lbl">Grace Requests</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ana-card">
+        <div class="ana-card-header">
+          <div class="ana-card-icon" style="background:rgba(245,158,11,.1)">
+            <i class="fas fa-gift" style="color:#f59e0b"></i>
+          </div>
+          <div>
+            <div class="ana-card-title">Bonus Report</div>
+            <div class="ana-card-sub">
+              {{ bonus?.totalBonuses | number }} records ·
+              {{ formatCurrency(bonus?.totalBonusAmount) }} total
+            </div>
+          </div>
+        </div>
+        <div class="ana-table-wrap">
+          <table class="ana-table">
+            <thead>
+              <tr><th>Level</th><th>Type</th><th>Count</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of bonus?.rows | slice:0:8">
+                <td>{{ row.level }}</td>
+                <td class="td-name">{{ row.bonusType }}</td>
+                <td>{{ row.count }}</td>
+                <td>{{ formatCurrency(row.totalAmount) }}</td>
+              </tr>
+              <tr *ngIf="!bonus?.rows?.length">
+                <td colspan="4" class="td-empty">No bonus records found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </ng-container>
+</div>

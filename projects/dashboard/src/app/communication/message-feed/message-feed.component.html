@@ -1,0 +1,673 @@
+<!-- dami just modified this to fix reply previews, attachment snippets, and read-receipt rendering. -->
+<!-- Loading skeletons -->
+<div *ngIf="loading" class="flex flex-col gap-5">
+  <div *ngFor="let i of [1,2,3,4]" class="flex gap-4 px-3">
+    <div class="w-10 h-10 rounded-full bg-gray-100 animate-pulse flex-shrink-0"></div>
+    <div class="flex-1 flex flex-col gap-2 pt-1">
+      <div class="h-3.5 bg-gray-100 animate-pulse rounded w-32"></div>
+      <div class="h-4 bg-gray-100 animate-pulse rounded w-full"></div>
+      <div class="h-4 bg-gray-100 animate-pulse rounded w-3/4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Empty state -->
+<div
+  *ngIf="!loading && !messages.length"
+  class="flex flex-col items-center justify-center py-24 text-center"
+>
+  <div class="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-gray-300 mb-5">
+    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+      />
+    </svg>
+  </div>
+  <p class="text-[15px] font-semibold text-gray-600 mb-1.5">
+    <ng-container *ngIf="activeView === 'channel'">{{ activeChannelName }}</ng-container>
+    <ng-container *ngIf="activeView === 'dm'">{{ activeDmName }}</ng-container>
+    <ng-container *ngIf="activeView === 'threads'">Thread activity</ng-container>
+  </p>
+  <p class="text-[14px] text-gray-400 max-w-xs leading-relaxed">
+    <ng-container *ngIf="activeView === 'channel'">{{ activeChannelDescription || 'Start the conversation.' }}</ng-container>
+    <ng-container *ngIf="activeView === 'dm'">Say hello to {{ activeDmName }}.</ng-container>
+    <ng-container *ngIf="activeView === 'threads'">Replies from channels and direct messages will appear here.</ng-container>
+  </p>
+</div>
+
+<!-- Thread inbox -->
+<div *ngIf="!loading && activeView === 'threads' && messages.length" class="thread-inbox">
+  <article
+    *ngFor="let msg of messages; trackBy: trackById"
+    class="thread-summary-card"
+    [class.active]="activeThreadId === msg.id"
+    (click)="threadOpened.emit({ msg, event: $event })"
+  >
+    <div class="thread-summary-topline">
+      <span class="thread-source-pill" [class.dm]="msg.sourceType === 'dm'">
+        {{ threadSourceLabel(msg) }}
+      </span>
+      <span class="thread-summary-time">
+        {{ msg.threadLastActivityRaw ? getDayLabel(msg.threadLastActivityRaw) || msg.time : msg.time }}
+      </span>
+    </div>
+    <div class="thread-summary-header">
+      <div class="thread-summary-avatar" [style.background]="msg.avatarColor">
+        <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" />
+        <span *ngIf="!msg.avatarUrl">{{ msg.initials }}</span>
+      </div>
+      <div class="thread-summary-copy">
+        <strong>{{ msg.sourceLabel || msg.author }}</strong>
+        <span>{{ msg.sourceSecondaryLabel || msg.author }}</span>
+      </div>
+      <div class="thread-summary-stats">
+        <strong>{{ threadReplyCountLabel(msg) }}</strong>
+      </div>
+    </div>
+    <div class="thread-summary-body">
+      <p class="thread-summary-root">{{ msg.author }}: {{ msg.content }}</p>
+      <p class="thread-summary-preview" *ngIf="msg.threadSummary">{{ msg.threadSummary }}</p>
+    </div>
+    <div class="thread-summary-replies" *ngIf="threadPreviewReplies(msg).length">
+      <div class="thread-preview-line" *ngFor="let reply of threadPreviewReplies(msg)">
+        <strong>{{ reply.author }}</strong>
+        <span>{{ reply.content }}</span>
+      </div>
+    </div>
+  </article>
+</div>
+
+<!-- Message list -->
+<ng-container *ngIf="!loading && activeView !== 'threads'">
+  <ng-container *ngFor="let msg of messages; let i = index; trackBy: trackById">
+    <!-- Day separator -->
+    <div *ngIf="shouldShowDaySeparator(messages, i)" class="flex items-center gap-3 my-4">
+      <div class="flex-1 h-px bg-gray-100"></div>
+      <span class="text-[12px] font-semibold text-gray-400 uppercase tracking-wider px-3 py-1 bg-white rounded-full border border-gray-200">
+        {{ getDayLabel(msg.sentAtRaw) || 'Today' }}
+      </span>
+      <div class="flex-1 h-px bg-gray-100"></div>
+    </div>
+
+    <!-- System message -->
+    <div *ngIf="msg.isSystem" class="flex items-center gap-3 my-4">
+      <div class="flex-1 h-px bg-gray-100"></div>
+      <span class="text-[12px] text-gray-400 italic px-2">{{ msg.content }}</span>
+      <div class="flex-1 h-px bg-gray-100"></div>
+    </div>
+
+    <!-- Regular message -->
+    <div
+      *ngIf="!msg.isSystem"
+      [id]="'msg-' + msg.id"
+      class="msg-row group flex gap-4 px-3 py-3 rounded-xl mb-0.5 transition-all relative"
+      [ngClass]="{
+        'thread-active': activeThreadId === msg.id,
+        'flash': isFlashing(msg.id),
+        'opacity-40': msg.deleting
+      }"
+      (click)="deleteDismissed.emit()"
+    >
+      <!-- Pinned indicator -->
+      <div *ngIf="msg.pinned" class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"></div>
+
+      <!-- Avatar -->
+      <div class="flex-shrink-0 mt-0.5">
+        <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover" />
+        <div
+          *ngIf="!msg.avatarUrl"
+          class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+          [style.background]="msg.avatarColor"
+        >{{ msg.initials }}</div>
+      </div>
+
+      <div class="flex-1 min-w-0">
+        <!-- Header row -->
+        <div class="flex items-baseline gap-2.5 mb-1 flex-wrap">
+          <span class="text-[15px] font-medium text-gray-800">{{ msg.author }}</span>
+          <span
+            *ngIf="msg.role"
+            class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide bg-gray-100 px-2 py-0.5 rounded-md"
+          >{{ msg.role }}</span>
+          <span
+            class="text-[12px] text-gray-400 cursor-default"
+            [title]="msg.sentAtRaw ? parseServerDate(msg.sentAtRaw)?.toLocaleString() || msg.time : msg.time"
+          >{{ msg.time }}</span>
+          <button
+            *ngIf="isOwnMessage(msg) && msg.deliveryState === 'FAILED'"
+            type="button"
+            class="text-[11px] font-semibold text-rose-500 hover:text-rose-600"
+            (click)="retryFailed(msg, $event)"
+          >
+            Retry
+          </button>
+          <span *ngIf="msg.pinned" class="flex items-center gap-1 text-[12px] text-amber-500 font-semibold">
+            <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>Pinned
+          </span>
+          <span *ngIf="savingEdit && isEditing(msg.id)" class="text-[11px] text-[#2e6276] animate-pulse">Saving…</span>
+        </div>
+
+        <!-- Edit mode -->
+        <ng-container *ngIf="isEditing(msg.id); else normalContent">
+          <div class="flex flex-col gap-2 mt-1">
+            <textarea
+              [value]="editDraft"
+              (input)="editDraftChange.emit($any($event.target).value)"
+              (keydown)="onEditKey($event, msg)"
+              rows="2"
+              [disabled]="savingEdit"
+              class="w-full resize-none border border-[#2e6276]/40 rounded-xl px-3 py-2 text-[14px] text-gray-800 outline-none leading-relaxed focus:ring-2 focus:ring-[#2e6276]/20"
+            ></textarea>
+            <div class="flex items-center gap-2">
+              <button
+                (click)="editSaved.emit(msg)"
+                [disabled]="savingEdit || !editDraft.trim()"
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2e6276] text-white text-[12px] font-semibold rounded-lg hover:bg-[#255264] disabled:opacity-50"
+              >
+                <svg *ngIf="!savingEdit" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+                <svg *ngIf="savingEdit" class="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Save
+              </button>
+              <button
+                (click)="editCancelled.emit()"
+                class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] font-medium rounded-lg hover:bg-gray-50"
+              >Cancel</button>
+              <span class="text-[11px] text-gray-400">Enter to save · Esc to cancel</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Normal content -->
+        <ng-template #normalContent>
+          <!-- Issue card -->
+          <ng-container *ngIf="isIssueCard(msg)">
+            <ng-container *ngIf="parseIssueCard(msg) as issue">
+              <div class="issue-card-msg">
+                <div class="issue-card-header">
+                  <span class="issue-card-module-badge">{{ issue.module }}</span>
+                  <span class="issue-card-id">#{{ issue.id }}</span>
+                </div>
+                <p class="issue-card-title">{{ issue.title }}</p>
+                <p *ngIf="issue.description" class="issue-card-desc">{{ issue.description | slice:0:180 }}{{ issue.description.length > 180 ? '…' : '' }}</p>
+                <div class="issue-card-meta">
+                  <span class="issue-card-badge" [ngClass]="issueCardPriorityClass(issue.priority)">{{ issue.priority }}</span>
+                  <span class="issue-card-badge" [ngClass]="issueCardStatusClass(issue.status)">{{ issue.status | titlecase }}</span>
+                  <span *ngIf="issue.reporterName" class="issue-card-reporter">by {{ issue.reporterName }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+          <ng-container *ngIf="!isIssueCard(msg)">
+          <ng-container *ngIf="isStructuredMessage(msg); else plainMessageContent">
+            <div class="message-output-shell mt-1">
+              <div class="message-output-toolbar">
+                <span class="message-output-badge">{{ structuredMessageLabel(msg) }}</span>
+                <div class="message-output-actions">
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="copyMessageContent(msg, $event)"
+                    title="Copy"
+                  >
+                    <i class="pi pi-copy"></i>
+                    <span>Copy</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="downloadMessageContent(msg, $event)"
+                    title="Download"
+                  >
+                    <i class="pi pi-download"></i>
+                    <span>Download</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="message-output-action"
+                    (click)="openStructuredViewer(msg, $event)"
+                    title="Zoom"
+                  >
+                    <i class="pi pi-window-maximize"></i>
+                    <span>Zoom</span>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="message-output-body"
+                [class.html-output]="structuredMessageKind(msg) === 'html'"
+                [innerHTML]="structuredMessageHtml(msg)"
+              ></div>
+            </div>
+          </ng-container>
+
+          <ng-template #plainMessageContent>
+            <div
+              class="text-[15px] text-gray-700 leading-relaxed break-words message-rich-html"
+              (click)="onRenderedContentClick($event)"
+              (mouseover)="onRenderedContentHover($event)"
+              (mouseout)="onRenderedContentLeave($event)"
+              [innerHTML]="messageHtml(msg.content)"
+            ></div>
+          </ng-template>
+
+          <a
+            *ngIf="messageLinkPreview(msg) as preview"
+            [href]="preview.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-3 flex items-center gap-3 max-w-xl rounded-2xl border border-gray-200 bg-white px-3 py-3 hover:border-[#2e6276]/30 transition-colors"
+          >
+            <img
+              [src]="preview.thumbnailUrl"
+              [alt]="preview.title"
+              class="w-16 h-16 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+            />
+            <span class="min-w-0 flex-1">
+              <strong class="block text-[13px] text-gray-700 truncate">{{ preview.title }}</strong>
+              <small class="block text-[12px] text-gray-500 truncate">{{ preview.subtitle }}</small>
+              <em class="block text-[11px] text-[#2e6276] truncate not-italic">{{ preview.displayUrl }}</em>
+            </span>
+          </a>
+
+          <!-- Attachment -->
+          <div *ngIf="messageAttachments(msg).length" class="mt-3">
+            <div
+              *ngIf="imageAttachments(msg).length"
+              class="chat-image-collage"
+              [ngClass]="chatMediaGridClass(imageAttachments(msg).length)"
+            >
+              <button
+                type="button"
+                class="chat-image-collage-item"
+                *ngFor="let attachment of imageAttachments(msg); let imageIndex = index"
+                (click)="openImageViewer(msg, $event)"
+              >
+                <img
+                  [src]="attachmentImageSrc(attachment)"
+                  [alt]="attachment.name"
+                  class="chat-image-preview"
+                />
+              </button>
+            </div>
+
+            <div class="mt-3 flex flex-col gap-2" *ngIf="previewableDocumentAttachments(msg).length">
+              <div
+                *ngFor="let attachment of previewableDocumentAttachments(msg)"
+                class="chat-attachment-card"
+              >
+                <div class="chat-attachment-icon">
+                  <i class="pi" [ngClass]="attachmentFileIcon(attachment)"></i>
+                </div>
+                <div class="chat-attachment-info min-w-0">
+                  <p class="chat-attachment-name">{{ attachment.name }}</p>
+                  <p class="chat-attachment-size">{{ attachmentBadge(attachment) }}</p>
+                </div>
+                <div class="chat-attachment-actions">
+                  <button
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Preview"
+                    (click)="openDocumentViewer(attachment, $event)"
+                  >
+                    <i class="pi pi-eye"></i>
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    *ngIf="attachment.downloadUrl"
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Download"
+                    (click)="attachmentDownload.emit({ attachment: attachment, event: $event })"
+                  >
+                    <i class="pi pi-download"></i>
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 flex flex-col gap-2" *ngIf="genericAttachments(msg).length">
+              <div
+                *ngFor="let attachment of genericAttachments(msg)"
+                class="chat-attachment-card"
+              >
+                <div class="chat-attachment-icon">
+                  <i class="pi" [ngClass]="attachmentFileIcon(attachment)"></i>
+                </div>
+                <div class="chat-attachment-info min-w-0">
+                  <p class="chat-attachment-name">{{ attachment.name }}</p>
+                  <p *ngIf="attachment.size" class="chat-attachment-size">{{ attachment.size }}</p>
+                </div>
+                <div class="chat-attachment-actions">
+                  <button
+                    *ngIf="attachment.previewUrl || attachment.downloadUrl"
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Preview"
+                    (click)="openDocumentViewer(attachment, $event)"
+                  >
+                    <i class="pi pi-eye"></i>
+                    <span>Preview</span>
+                  </button>
+                  <button
+                    *ngIf="attachment.downloadUrl"
+                    type="button"
+                    class="chat-attachment-btn"
+                    title="Download"
+                    (click)="attachmentDownload.emit({ attachment: attachment, event: $event })"
+                  >
+                    <i class="pi pi-download"></i>
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            *ngIf="imageViewerOpen && currentViewerImage() as viewerImage"
+            class="chat-image-viewer"
+            (click)="closeImageViewer()"
+          >
+            <button
+              *ngIf="imageViewerItems.length > 1"
+              type="button"
+              class="chat-image-nav prev"
+              (click)="$event.stopPropagation(); previousImage()"
+            >
+              <i class="pi pi-angle-left"></i>
+            </button>
+            <div class="chat-image-viewer-shell" (click)="$event.stopPropagation()">
+              <button type="button" class="chat-image-viewer-close" (click)="closeImageViewer()">
+                <i class="pi pi-times"></i>
+              </button>
+              <img [src]="viewerImage.url" [alt]="viewerImage.label" class="chat-image-viewer-image" />
+              <div class="chat-image-viewer-meta">
+                <strong>{{ viewerImage.label }}</strong>
+                <span *ngIf="imageViewerItems.length > 1">
+                  {{ imageViewerIndex + 1 }} / {{ imageViewerItems.length }}
+                </span>
+              </div>
+            </div>
+            <button
+              *ngIf="imageViewerItems.length > 1"
+              type="button"
+              class="chat-image-nav next"
+              (click)="$event.stopPropagation(); nextImage()"
+            >
+              <i class="pi pi-angle-right"></i>
+            </button>
+          </div>
+
+          <div
+            *ngIf="structuredViewerOpen"
+            class="structured-output-viewer"
+            (click)="closeStructuredViewer()"
+          >
+            <div class="structured-output-viewer-shell" (click)="$event.stopPropagation()">
+              <div class="structured-output-viewer-toolbar">
+                <strong>{{ structuredViewerTitle }}</strong>
+                <button type="button" class="structured-output-viewer-close" (click)="closeStructuredViewer()">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="structured-output-viewer-body" [innerHTML]="structuredViewerHtml"></div>
+            </div>
+          </div>
+
+          <div
+            *ngIf="documentViewerOpen"
+            class="structured-output-viewer"
+            (click)="closeDocumentViewer()"
+          >
+            <div class="structured-output-viewer-shell doc-shell" (click)="$event.stopPropagation()">
+              <div class="structured-output-viewer-toolbar">
+                <strong>{{ documentViewerTitle }}</strong>
+                <button type="button" class="structured-output-viewer-close" (click)="closeDocumentViewer()">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+              <div class="document-viewer-body">
+                <iframe
+                  *ngIf="documentViewerType === 'pdf' && documentViewerUrl"
+                  [src]="documentViewerUrl"
+                  class="document-viewer-frame"
+                  title="PDF preview"
+                ></iframe>
+                <div *ngIf="documentViewerType !== 'pdf'" class="document-viewer-card">
+                  <span class="document-viewer-badge">{{ documentViewerType === 'office' ? 'OFFICE' : 'FILE' }}</span>
+                  <strong>{{ documentViewerTitle }}</strong>
+                  <p>Preview is not available for this file type. Use Open or Download below.</p>
+                  <div class="document-viewer-actions">
+                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" target="_blank" rel="noopener noreferrer" class="toolbar-action primary">Open file</a>
+                    <a *ngIf="documentViewerRawUrl" [href]="documentViewerRawUrl" download class="toolbar-action">Download</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          </ng-container><!-- end !isIssueCard -->
+
+          <!-- Action buttons -->
+          <div class="flex items-center gap-0 mt-2 flex-wrap">
+            <!-- Reply / Thread -->
+            <button
+              *ngIf="activeView === 'channel'|| activeView === 'dm' || activeView === 'threads'"
+              (click)="threadOpened.emit({ msg, event: $event })"
+              class="action-btn flex items-center gap-1.5"
+              [ngClass]="{ 'action-active': activeThreadId === msg.id }"
+            >
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              {{ totalReplyCount(msg) ? totalReplyCount(msg) + ' ' + (totalReplyCount(msg) === 1 ? 'reply' : 'replies') : 'Reply' }}
+            </button>
+
+            <!-- Like -->
+            <button
+              (click)="likeToggled.emit({ msg, event: $event })"
+              class="action-btn flex items-center gap-1.5"
+              [ngClass]="{ 'action-liked': msg.liked, 'opacity-60': isReacting(msg.id) }"
+              [disabled]="isReacting(msg.id)"
+            >
+              <svg *ngIf="isReacting(msg.id)" class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <svg *ngIf="!isReacting(msg.id)" width="14" height="14" [attr.fill]="msg.liked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+              {{ msg.likeCount || '' }}
+            </button>
+            <div class="flex items-center gap-1 ml-1">
+              <button
+                type="button"
+                *ngFor="let reaction of reactionOptions"
+                (click)="likeToggled.emit({ msg, event: $event, reactionCode: reaction.code })"
+                class="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-[14px]"
+                [title]="reaction.label"
+              >
+                {{ reaction.emoji }}
+              </button>
+            </div>
+
+            <!-- Pin -->
+            <button
+              *ngIf="activeView === 'channel'"
+              (click)="pinToggled.emit({ msg, event: $event })"
+              class="action-btn flex items-center gap-1.5"
+              [ngClass]="{ 'action-pinned': msg.pinned }"
+            >
+              <svg width="14" height="14" [attr.fill]="msg.pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              {{ msg.pinned ? 'Unpin' : 'Pin' }}
+            </button>
+
+            <!-- Edit / Delete (own messages only) -->
+            <ng-container *ngIf="isOwnMessage(msg)">
+              <button
+                (click)="editStarted.emit({ msg, event: $event })"
+                class="action-btn flex items-center gap-1.5"
+                [ngClass]="{ 'action-active': isEditing(msg.id) }"
+              >
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>Edit
+              </button>
+
+              <div class="relative" (click)="$event.stopPropagation()">
+                <button
+                  (click)="deleteRequested.emit({ msg, event: $event })"
+                  class="action-btn flex items-center gap-1.5 action-danger"
+                  [ngClass]="{ 'opacity-50': isDeleting(msg.id) }"
+                  [disabled]="isDeleting(msg.id)"
+                >
+                  <svg *ngIf="!isDeleting(msg.id)" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  <svg *ngIf="isDeleting(msg.id)" class="animate-spin" width="13" height="13" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Delete
+                </button>
+                <!-- Delete confirm popover -->
+                <div
+                  *ngIf="confirmDeleteId === msg.id"
+                  class="absolute bottom-full left-0 mb-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-3 w-56"
+                >
+                  <p class="text-[13px] font-semibold text-gray-800 mb-0.5">Delete message?</p>
+                  <p class="text-[12px] text-gray-500 mb-3 leading-snug">This cannot be undone.</p>
+                  <div class="flex gap-2">
+                    <button
+                      (click)="deleteConfirmed.emit({ msg, event: $event })"
+                      class="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white text-[12px] font-semibold rounded-lg"
+                    >Delete</button>
+                    <button
+                      (click)="deleteDismissed.emit()"
+                      class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] rounded-lg hover:bg-gray-50"
+                    >Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+
+          <div
+            *ngIf="isOwnMessage(msg)"
+            class="mt-1 text-[11px] font-medium seen-by-chip"
+            [ngClass]="getReadCount(msg) > 0 ? 'text-emerald-600' : 'text-gray-400'"
+          >
+            {{ readReceiptLabel(msg) }}
+            <span class="hover-people-card" *ngIf="getReadCount(msg) > 0 && readUserCards(msg).length">
+              <span class="hover-people-title">Seen by</span>
+              <span class="hover-people-row" *ngFor="let person of readUserCards(msg)">
+                <img *ngIf="person.avatarUrl" [src]="person.avatarUrl" alt="" class="hover-people-avatar" />
+                <span *ngIf="!person.avatarUrl" class="hover-people-avatar fallback">{{ person.initials }}</span>
+                <span>{{ person.name }}</span>
+              </span>
+            </span>
+          </div>
+
+          <!-- Thread preview: first 2 replies inline -->
+          <ng-container *ngIf="msg.replies.length && activeView === 'channel'">
+            <div class="mt-2.5 pl-3 border-l-2 border-gray-100 flex flex-col gap-1.5">
+              <div *ngFor="let r of getTopReplies(msg)" class="flex items-start gap-2">
+                <img *ngIf="r.avatarUrl" [src]="r.avatarUrl" alt="" class="w-5 h-5 rounded-full object-cover flex-shrink-0 mt-0.5" />
+                <div
+                  *ngIf="!r.avatarUrl"
+                  class="w-5 h-5 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center text-white text-[7px] font-bold"
+                  [style.background]="r.avatarColor"
+                >{{ r.initials }}</div>
+                <p class="text-[13px] text-gray-600 leading-snug">
+                  <span class="font-semibold text-gray-700 mr-1">{{ r.author }}</span>{{ r.content | slice:0:100 }}{{ r.content.length > 100 ? '…' : '' }}
+                </p>
+              </div>
+            </div>
+            <button
+              (click)="threadOpened.emit({ msg, event: $event })"
+              class="mt-1 ml-3 text-[12px] text-[#2e6276] font-medium hover:underline flex items-center gap-1 w-fit"
+            >
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              {{ totalReplyCount(msg) === 1 ? 'View 1 reply' : 'View all ' + totalReplyCount(msg) + ' replies' }}
+              <span class="text-[11px] text-gray-400 font-normal ml-1">· {{ msg.replies[msg.replies.length - 1].time }}</span>
+            </button>
+          </ng-container>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+</ng-container>
+
+<div
+  *ngIf="activeMentionProfile && mentionCardPosition"
+  class="mention-profile-card"
+  [style.top.px]="mentionCardPosition.top"
+  [style.left.px]="mentionCardPosition.left"
+  (mouseenter)="$event.stopPropagation()"
+  (mouseleave)="closeMentionCard()"
+>
+  <div class="mention-profile-card__avatar" [style.background]="activeMentionProfile.online ? '#0f766e' : '#334155'">
+    <img *ngIf="activeMentionProfile.avatarUrl" [src]="activeMentionProfile.avatarUrl" alt="" />
+    <span *ngIf="!activeMentionProfile.avatarUrl">{{ activeMentionProfile.initials }}</span>
+  </div>
+  <div class="mention-profile-card__copy">
+    <div class="mention-profile-card__topline">
+      <strong>{{ activeMentionProfile.name }}</strong>
+      <span [class.online]="activeMentionProfile.online">{{ activeMentionProfile.online ? 'Online' : 'Offline' }}</span>
+    </div>
+    <p *ngIf="activeMentionProfile.jobTitle || activeMentionProfile.department">
+      {{ activeMentionProfile.jobTitle || 'Team member' }}<span *ngIf="activeMentionProfile.department"> · {{ activeMentionProfile.department }}</span>
+    </p>
+    <p *ngIf="activeMentionProfile.email">{{ activeMentionProfile.email }}</p>
+    <small>{{ activeMentionProfile.lastSeenLabel }}</small>
+  </div>
+</div>
+
+<style>
+  .msg-row:hover { background: #f9fafb; }
+  .msg-row.thread-active {
+    background: #f0f7ff;
+    border-left: 3px solid #2e6276;
+    padding-left: 10px;
+  }
+  .msg-row.flash {
+    animation: flash-fade 2.4s ease-out forwards;
+    box-shadow: inset 0 0 0 1px rgba(46, 98, 118, 0.2);
+  }
+  @keyframes flash-fade {
+    0% { background: #b7d7e3; }
+    45% { background: #dbeaf1; }
+    100% { background: transparent; }
+  }
+  .action-btn {
+    padding: 4px 10px;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .action-btn:hover { background: #f3f4f6; color: #374151; }
+  .action-btn.action-active { color: #2e6276; font-weight: 600; }
+  .action-btn.action-liked { color: #f43f5e; font-weight: 600; }
+  .action-btn.action-pinned { color: #f59e0b; font-weight: 600; }
+  .action-btn.action-danger:hover { background: #fef2f2; color: #dc2626; }
+</style>

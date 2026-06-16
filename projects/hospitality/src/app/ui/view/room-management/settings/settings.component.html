@@ -1,0 +1,143 @@
+<div class="p-6  mx-auto">
+    <header class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800">Settings</h1>
+        <p class="text-gray-500 text-sm">Manage your hotel's branding and configuration</p>
+    </header>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-200 mb-6">
+        <button (click)="activeTab = 'brand'" [class.border-customBlue]="activeTab === 'brand'"
+            [class.text-customBlue]="activeTab === 'brand'"
+            class="px-6 py-3 border-b-2 font-medium text-sm transition-all border-transparent text-gray-400 hover:text-gray-600">
+            Branding & Socials
+        </button>
+        <button (click)="activeTab = 'config'" [class.border-customBlue]="activeTab === 'config'"
+            [class.text-customBlue]="activeTab === 'config'"
+            class="px-6 py-3 border-b-2 font-medium text-sm transition-all border-transparent text-gray-400 hover:text-gray-600">
+            Room Configuration
+        </button>
+    </div>
+
+    <!-- BRANDING TAB -->
+    <div *ngIf="activeTab === 'brand'" class="space-y-6 animate-in fade-in duration-300">
+
+        <!-- Logo Section -->
+        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Company Logo</h3>
+            <div class="flex items-start gap-6">
+                <div
+                    class="w-32 h-32 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden relative group">
+                    <img *ngIf="logoPreview" [src]="logoPreview" class="w-full h-full object-contain">
+                    <div *ngIf="!logoPreview" class="text-center p-2">
+                        <i class="fa-solid fa-image text-gray-200 text-2xl mb-1"></i>
+                        <p class="text-[10px] text-gray-300 font-bold uppercase">No Logo</p>
+                    </div>
+                </div>
+                <div class="flex-1 space-y-4">
+                    <div>
+                        <input type="file" (change)="onLogoUpload($event)" accept="image/*" class="hidden" #logoInput>
+                        <button (click)="logoInput.click()"
+                            class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-black transition-all">
+                            Upload New Logo
+                        </button>
+                        <button *ngIf="logoPreview" (click)="resetLogo()"
+                            class="ml-3 text-red-500 text-xs font-bold uppercase hover:underline">
+                            Remove
+                        </button>
+                    </div>
+                    <div [formGroup]="brandForm">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Logo Alignment on
+                            Homepage</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" formControlName="logoPosition" value="left"
+                                    class="accent-customBlue">
+                                <span class="text-sm text-gray-600">Left</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" formControlName="logoPosition" value="center"
+                                    class="accent-customBlue">
+                                <span class="text-sm text-gray-600">Center</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" formControlName="logoPosition" value="right"
+                                    class="accent-customBlue">
+                                <span class="text-sm text-gray-600">Right</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- content & Socials -->
+        <form [formGroup]="brandForm" class="space-y-6">
+            <!-- Footer Content -->
+            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Footer Content</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Company Name</label>
+                        <input formControlName="companyName" type="text"
+                            class="w-full p-3 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-customBlue/20">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Brand Description (Footer)</label>
+                        <textarea formControlName="footerDescription" rows="3"
+                            class="w-full p-3 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-customBlue/20"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Social Media Links</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div *ngFor="let social of socialIcons">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 flex items-center gap-2">
+                            <i [class]="social.icon"></i> {{ social.name }}
+                        </label>
+                        <input [formControlName]="social.name.split('/')[0].toLowerCase().replace(' ', '')" type="text"
+                            [placeholder]="social.placeholder"
+                            class="w-full p-3 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-customBlue/20">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4">
+                <button (click)="saveSettings()"
+                    class="px-10 py-4 bg-customBlue text-white font-black rounded-2xl shadow-xl shadow-customBlue/10 hover:bg-customBlueHover transition-all">
+                    SAVE SETTINGS
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- CONFIGURATION TAB (Redirects to existing lists) -->
+    <div *ngIf="activeTab === 'config'" class="space-y-4 animate-in fade-in duration-300">
+        <div class="grid grid-cols-2 gap-4">
+            <a [routerLink]="['/hospitality/room-types', uuid]"
+                class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-customBlue/30 transition-all flex items-center gap-4 group">
+                <div
+                    class="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800">Room Types</h4>
+                    <p class="text-xs text-gray-400">Manage categories and pricing</p>
+                </div>
+            </a>
+            <a [routerLink]="['/hospitality/service-charges', uuid]"
+                class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-customBlue/30 transition-all flex items-center gap-4 group">
+                <div
+                    class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800">Service Charges</h4>
+                    <p class="text-xs text-gray-400">Manage taxes and extra fees</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>

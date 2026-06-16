@@ -1,0 +1,87 @@
+<div class="repayment-schedule-container loan-management-surface">
+  <h2>Repayment Schedule</h2>
+  
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <h3>Total Loan</h3>
+      <p class="amount">₦{{ loan.amount | number:'1.2-2' }}</p>    </div>
+    <div class="summary-card">
+      <h3>Monthly Payment</h3>
+      <p class="amount">₦{{ loan.repaymentAmount | number:'1.2-2' }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Interest</h3>
+      <p class="amount">₦{{ getTotalInterest() | number:'1.2-2' }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Payable</h3>
+      <p class="amount">₦{{ getTotalPayment() | number:'1.2-2' }}</p>
+    </div>
+  </div>
+  
+  <!-- Simple Visualization - Payment Breakdown Bars -->
+  <div class="visualization-container" *ngIf="paymentBreakdown.length > 0">
+    <h3>Payment Breakdown (Principal vs Interest)</h3>
+    <div class="visualization-legend">
+      <div class="legend-item">
+        <span class="legend-color principal"></span>
+        <span>Principal</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color interest"></span>
+        <span>Interest</span>
+      </div>
+    </div>
+    
+    <div class="bars-container">
+      <div *ngFor="let payment of paymentBreakdown.slice(0, 12)" class="month-bar">
+        <div class="bar-label">Installment {{ payment.installmentNo }}</div>
+        <div class="bar-wrapper">
+          <div class="bar-segment principal" 
+               [style.height.%]="calculateBarHeight(payment.principalAmount)"
+               [title]="'Principal: ₦' + payment.principalAmount">
+          </div>
+          <div class="bar-segment interest" 
+               [style.height.%]="calculateBarHeight(payment.interestAmount)"
+               [title]="'Interest: ₦' + payment.interestAmount">
+          </div>
+        </div>
+        <div class="bar-total">
+          ₦{{ (payment.principalAmount + payment.interestAmount) | number:'1.0-0' }}
+        </div>
+      </div>
+    </div>
+    
+    <div class="visualization-note" *ngIf="paymentBreakdown.length > 12">
+      Showing first 12 months. Total period: {{ loan.repaymentTime }} months
+    </div>
+  </div>
+  
+  <!-- Timeline Visualization -->
+  <div class="timeline-visual">
+    <h3>Payment Timeline</h3>
+    <div class="timeline">
+      <div *ngFor="let month of loan.repaymentSchedule; let i = index" class="timeline-item">
+        <div class="timeline-dot" [ngClass]="getStatusClass(month.status)"></div>
+        <div class="timeline-content">
+          <span>Installment {{ month.installmentNo }}</span>
+          <small>{{ month.dueDate | date:'MMM yyyy' }}</small>
+          <div class="timeline-amount">₦{{ month.totalAmount | number:'1.2-2' }}</div>
+        </div>
+        <div class="timeline-line" *ngIf="i < loan!.repaymentSchedule.length - 1"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Detailed Table -->
+  <div class="schedule-table">
+    <h3>Monthly Breakdown</h3>
+    <div class="table-container">
+      <app-table
+        [columns]="repaymentColumns"
+        [rows]="repaymentRows"
+      ></app-table>
+    </div>
+  </div>
+</div>

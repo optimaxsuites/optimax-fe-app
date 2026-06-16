@@ -1,0 +1,80 @@
+<div class="border-2  rounded-3xl m-5">
+    <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+        <div class="flex gap-3 text-gray-700 items-center">
+            <p class="text-gray-700  text-[20px]">Payroll for {{data?.name}}</p>
+        </div>
+         
+          </ng-template>
+      <ng-template pTemplate="right">
+        <app-button  text="Download CSV"  class="btn-navigate gap-2" ><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="flex w-full justify-between gap-4 px-3"> 
+    <div class="flex gap-4 w-1/2">
+      <div class="w-full">
+        <ng-select 
+          [items]="monthNames"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by month"
+          [(ngModel)]="selectedMonth"
+          (ngModelChange)="filterBySelectedMonth()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select 
+          [items]="year"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by year"
+          [(ngModel)]="selectedYear"
+          (ngModelChange)="filterBySelectedYear()">
+        </ng-select>
+      </div>
+
+      <!-- <div class="w-full">
+        <ng-select 
+          [items]="level"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by level"
+          [(ngModel)]="selectedLevel"
+          (ngModelChange)="filterBySelectedLevel()">
+        </ng-select>
+      </div> -->
+    </div>
+      <div class="search-bar w-[70%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterPayroll()"
+          class="editInput w-full bg-gray-50 outline-none"
+        />
+      </div>
+    </div>
+   
+
+    <app-table 
+        [columns]="payslipColumns"
+        [rows]="data.detail"
+        [actions]="payslipActions"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        [rowClickable]="true"
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
+        [emptyMessage]="'No request made yet'"
+        (rowClick)="viewPayrollDetails($event)"
+        (actionClick)="handlePayslipAction($event)"
+        >
+    </app-table>
+  
+  </div>
+
+
+  <app-large-side-modal *ngIf="viewSlip" (close)="viewSlip = false">
+    <app-payslip-view [payslip]="activeSlip"></app-payslip-view>
+    </app-large-side-modal>
