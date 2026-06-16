@@ -26,7 +26,7 @@
           <button *ngIf="invoice.status !== 'PAID'" (click)="markAsPaid()" class="action-btn send">
             Mark as Paid
           </button>
-          <a *ngIf="invoice.status === 'DRAFT'" [routerLink]="['/sales/invoices', invoice.id, 'edit']" class="action-btn edit">
+          <a *ngIf="invoice.status === 'DRAFT'" [routerLink]="buildLink('/sales/invoices', invoice.id, 'edit')" class="action-btn edit">
             Edit
           </a>
         </div>

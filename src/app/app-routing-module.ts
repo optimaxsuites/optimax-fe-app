@@ -38,11 +38,20 @@ const routes: Routes = [
     data: { title: 'Sales Hub' }
   },
   {
+    path: 'sales-hub/:uuid',
+    component: SalesHubComponent,
+    data: { title: 'Sales Hub' }
+  },
+  {
     path: 'sales/quotes',
     component: QuoteListComponent
   },
   {
     path: 'sales/quotes/new',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'sales/quotes/new/:uuid',
     component: QuoteFormComponent
   },
   {
@@ -58,7 +67,15 @@ const routes: Routes = [
     component: InvoiceListComponent
   },
   {
+    path: 'sales/invoices/:uuid',
+    component: InvoiceListComponent
+  },
+  {
     path: 'sales/invoices/new',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'sales/invoices/new/:uuid',
     component: InvoiceFormComponent
   },
   {

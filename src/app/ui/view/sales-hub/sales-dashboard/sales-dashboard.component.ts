@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
+import { buildSalesLink } from '../../../shared-component/service/route-context/route-context';
 
 @Component({
   selector: 'app-sales-dashboard',
@@ -13,6 +14,7 @@ import { SalesService } from '../../../service/sales/sales.service';
   styleUrls: ['./sales-dashboard.component.scss']
 })
 export class SalesDashboardComponent implements OnInit, OnDestroy {
+  buildLink = buildSalesLink;
   
   // Dashboard Stats
   stats = {
