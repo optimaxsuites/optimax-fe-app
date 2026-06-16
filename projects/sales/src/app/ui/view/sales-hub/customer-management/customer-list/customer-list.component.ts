@@ -9,10 +9,21 @@ import { Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
 
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { CustomerFormComponent } from '../customer-form/customer-form.component';
+import { QuoteFormComponent } from '../../quotations/quote-form/quote-form.component';
+
 @Component({
   selector: 'app-customer-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    CustomerFormComponent,
+    QuoteFormComponent
+  ],
   templateUrl: './customer-list.component.html',
   styleUrls: ['./customer-list.component.scss']
 })
@@ -22,6 +33,48 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   customers: Customer[] = [];
   isLoading = true;
   selectedCustomerIds: string[] = [];
+
+  showCustomerModal = false;
+  showCustomerDetails = false;
+  showQuoteModal = false;
+  selectedCustomerId?: string;
+  selectedCustomerForEdit?: Customer;
+  selectedCustomerDetail?: Customer;
+
+  openCustomerModal(customer?: Customer): void {
+    this.selectedCustomerForEdit = customer;
+    this.showCustomerModal = true;
+  }
+
+  closeCustomerModal(): void {
+    this.showCustomerModal = false;
+    this.selectedCustomerForEdit = undefined;
+  }
+
+  openCustomerDetails(customer: Customer): void {
+    this.selectedCustomerDetail = customer;
+    this.showCustomerDetails = true;
+  }
+
+  closeCustomerDetails(): void {
+    this.showCustomerDetails = false;
+    this.selectedCustomerDetail = undefined;
+  }
+
+  onCustomerSaved(): void {
+    this.closeCustomerModal();
+    this.loadCustomers();
+  }
+
+  closeQuoteModal(): void {
+    this.showQuoteModal = false;
+    this.selectedCustomerId = undefined;
+  }
+
+  onQuoteSaved(): void {
+    this.closeQuoteModal();
+    this.loadCustomers();
+  }
   
   filters = {
     status: 'ALL',
@@ -210,7 +263,8 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   // ✅ FIXED: Removed UUID and buildLink
   createQuote(customer: Customer): void {
-    this.router.navigate(['/sales/quotes/new'], { queryParams: { customerId: customer.id } });
+    this.selectedCustomerId = customer.id;
+    this.showQuoteModal = true;
   }
 
   // Mock data for development

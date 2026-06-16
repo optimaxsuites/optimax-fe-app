@@ -1,6 +1,6 @@
 // src/app/ui/view/sales-module/quote-form/quote-form.component.ts
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -15,7 +15,12 @@ import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../do
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
-export class QuoteFormComponent implements OnInit, OnDestroy {
+export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
+  @Input() editId?: string;
+  @Input() customerId?: string;
+  @Output() saved = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
   
   quoteForm: FormGroup;
   isSubmitting = false;
@@ -74,7 +79,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.quoteId = this.route.snapshot.paramMap.get('id') || '';
+    this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
     
     this.loadCustomers();
@@ -88,7 +93,20 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngAfterViewInit(): void {
+    try {
+      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
+        this.dialogRef.nativeElement.showModal();
+      } else if (this.dialogRef?.nativeElement) {
+        this.dialogRef.nativeElement.setAttribute('open', '');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   ngOnDestroy(): void {
+    this.closeDialog();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -216,10 +234,24 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
       next: (response: any) => {
         this.customers = response.data;
+        if (this.customerId) {
+          this.quoteForm.patchValue({ customerId: this.customerId });
+          const customer = this.customers.find(c => c.id === this.customerId);
+          if (customer) {
+            this.quoteForm.patchValue({ customerName: customer.name });
+          }
+        }
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
+        if (this.customerId) {
+          this.quoteForm.patchValue({ customerId: this.customerId });
+          const customer = this.customers.find(c => c.id === this.customerId);
+          if (customer) {
+            this.quoteForm.patchValue({ customerName: customer.name });
+          }
+        }
       }
     });
   }
@@ -346,7 +378,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       next: (response: Quote) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
-        this.router.navigate(['/sales/quotes', response.id]);
+        this.closeDialog();
+        if (this.saved.observed) {
+          this.saved.emit();
+        } else {
+          this.router.navigate(['/sales/quotes', response.id]);
+        }
       },
       error: (error: any) => {
         console.error('Error saving quote:', error);
@@ -354,6 +391,29 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         alert('Failed to save quote. Please try again.');
       }
     });
+  }
+
+  cancel(): void {
+    this.closeDialog();
+    if (this.cancelled.observed) {
+      this.cancelled.emit();
+    } else {
+      this.router.navigate(['/sales-hub']);
+    }
+  }
+
+  private closeDialog(): void {
+    try {
+      if (this.dialogRef?.nativeElement) {
+        if (typeof this.dialogRef.nativeElement.close === 'function') {
+          this.dialogRef.nativeElement.close();
+        } else {
+          this.dialogRef.nativeElement.removeAttribute('open');
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   // Helper methods

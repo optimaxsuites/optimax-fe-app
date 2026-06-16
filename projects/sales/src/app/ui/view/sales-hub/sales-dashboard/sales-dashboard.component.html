@@ -1,5 +1,3 @@
-<!-- src/app/ui/view/sales-hub/sales-dashboard/sales-dashboard.component.html -->
-
 <div class="sales-dashboard">
   <div class="dashboard-wrapper">
     
@@ -250,3 +248,67 @@
     </ng-container>
   </div>
 </div>
+
+<!-- Overlay Modals -->
+<app-modal *ngIf="showQuoteModal" [header]="selectedItemId ? 'Edit Quote' : 'New Quote'" (close)="closeQuoteModal()">
+  <app-quote-form [editId]="selectedItemId" (saved)="onQuoteSaved()" (cancelled)="closeQuoteModal()"></app-quote-form>
+</app-modal>
+
+<app-modal *ngIf="showInvoiceModal" [header]="selectedItemId ? 'Edit Invoice' : 'New Invoice'" (close)="closeInvoiceModal()">
+  <app-invoice-form [editId]="selectedItemId" (saved)="onInvoiceSaved()" (cancelled)="closeInvoiceModal()"></app-invoice-form>
+</app-modal>
+
+<app-modal *ngIf="showCustomerModal" header="Add New Customer" (close)="closeCustomerModal()">
+  <app-customer-form (saved)="onCustomerSaved()" (cancelled)="closeCustomerModal()"></app-customer-form>
+</app-modal>
+
+<app-modal *ngIf="showProductModal" header="Add New Product" (close)="closeProductModal()">
+  <form (submit)="saveProduct(); $event.preventDefault()" class="p-6 space-y-4" style="max-width: 500px; padding: 1.5rem;">
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Product Name *</label>
+      <input type="text" [(ngModel)]="productForm.name" name="name" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;" required>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">SKU *</label>
+      <input type="text" [(ngModel)]="productForm.sku" name="sku" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;" required>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Description</label>
+      <textarea [(ngModel)]="productForm.description" name="description" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; min-height: 80px;"></textarea>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+      <div>
+        <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Unit Price (NGN) *</label>
+        <input type="number" [(ngModel)]="productForm.unitPrice" name="unitPrice" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;" required>
+      </div>
+      <div>
+        <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Cost Price (NGN)</label>
+        <input type="number" [(ngModel)]="productForm.costPrice" name="costPrice" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;">
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+      <div>
+        <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Stock Quantity</label>
+        <input type="number" [(ngModel)]="productForm.stockQuantity" name="stockQuantity" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;">
+      </div>
+      <div>
+        <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">Category</label>
+        <input type="text" [(ngModel)]="productForm.category" name="category" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem;">
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+      <button type="button" (click)="closeProductModal()" class="btn-cancel" style="padding: 0.5rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; background: transparent; cursor: pointer;">Cancel</button>
+      <button type="submit" [disabled]="isSavingProduct" class="btn-primary" style="padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; background: #2E6276; color: white; cursor: pointer;">
+        {{ isSavingProduct ? 'Saving...' : 'Save Product' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-side-modal *ngIf="showQuoteDetail" (close)="closeQuoteDetail()">
+  <app-quote-detail [detailId]="selectedItemId" (closed)="closeQuoteDetail()" (edit)="closeQuoteDetail(); navigateToNewQuote()"></app-quote-detail>
+</app-side-modal>
+
+<app-side-modal *ngIf="showInvoiceDetail" (close)="closeInvoiceDetail()">
+  <app-invoice-detail [detailId]="selectedItemId" (closed)="closeInvoiceDetail()"></app-invoice-detail>
+</app-side-modal>

@@ -34,9 +34,9 @@
           <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="action-btn edit">
             Decline
           </button>
-          <a *ngIf="quote.status === 'DRAFT'" [routerLink]="['/sales/quotes', quote.id, 'edit']" class="action-btn edit">
+          <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="action-btn edit" style="cursor: pointer;">
             Edit
-          </a>
+          </button>
           <button (click)="deleteQuote()" class="action-btn more delete">
             Delete
           </button>

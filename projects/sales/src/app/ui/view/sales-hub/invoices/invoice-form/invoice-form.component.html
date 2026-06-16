@@ -1,318 +1,461 @@
 <!-- src/app/ui/view/sales-module/invoice-form/invoice-form.component.html -->
 
-<div class="invoice-form-container">
-  <div class="form-wrapper">
-    
-    <!-- Header -->
-    <div class="form-header">
-      <div>
-        <a routerLink="/sales/invoices" class="back-link">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          Back to Invoices
-        </a>
-        <h1 class="form-title">{{ isEditMode ? 'Edit Invoice' : (quoteId ? 'Create Invoice from Quote' : 'Create New Invoice') }}</h1>
-        <p class="form-subtitle">Create a professional invoice for your customer</p>
-      </div>
-      <div class="invoice-number" *ngIf="isEditMode">
-        <span>Invoice #</span>
-        <strong>{{ invoiceId }}</strong>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading invoice data...</p>
-    </div>
-
-    <!-- Form -->
-    <form [formGroup]="invoiceForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+<dialog #dialog class="custom-dialog">
+  <div class="invoice-form-container">
+    <div class="form-wrapper">
       
-      <!-- Two Column Layout -->
-      <div class="form-grid">
+      <!-- Header -->
+      <div class="form-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1>Create New Invoice</h1>
+            <p>Add Invoice Details <span class="header-divider">•</span> Design &amp; Share <span class="optional-tag">optional</span></p>
+          </div>
+        </div>
+        <button type="button" class="dialog-close-btn" (click)="cancel()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading invoice data...</p>
+      </div>
+
+      <!-- Form -->
+      <form [formGroup]="invoiceForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
         
-        <!-- Left Column -->
-        <div class="form-left">
+        <!-- Two Column Grid -->
+        <div class="form-grid">
           
-          <!-- Invoice Items Card -->
-          <div class="form-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
-                </svg>
+          <!-- LEFT COLUMN -->
+          <div class="form-column">
+            
+            <!-- Section 1: Invoice Information -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                </div>
+                <h3>Invoice Information</h3>
               </div>
-              <h3>Invoice Items</h3>
-              <button type="button" class="btn-add-item" (click)="addLineItem()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                Add Item
-              </button>
+              
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Invoice No</label>
+                    <input type="text" formControlName="invoiceNumber" class="form-control" placeholder="A00001">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Invoice Date</label>
+                    <input type="date" formControlName="issueDate" class="form-control">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" formControlName="dueDate" class="form-control">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label">Currency</label>
+                    <select formControlName="currency" class="form-control">
+                      <option *ngFor="let curr of currencies" [value]="curr">{{ getCurrencyLabel(curr) }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Payment Terms</label>
+                    <select formControlName="paymentTerms" class="form-control">
+                      <option value="Net 15">Net 15 days</option>
+                      <option value="Net 30">Net 30 days</option>
+                      <option value="Net 45">Net 45 days</option>
+                      <option value="Due on Receipt">Due on Receipt</option>
+                    </select>
+                  </div>
+                  <div class="form-group flex-1" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn-link">+ Add Custom Fields</button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="items-table">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th style="width: 25%">Product</th>
-                      <th style="width: 40%">Description</th>
-                      <th style="width: 10%">Qty</th>
-                      <th style="width: 15%">Unit Price</th>
-                      <th style="width: 10%">Total</th>
-                      <th style="width: 5%"></th>
-                    </tr>
-                  </thead>
-                  <tbody formArrayName="items">
-                    <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i">
-                      <td>
-                        <div class="product-cell">
-                          <select formControlName="productId" class="form-select-sm" (change)="onProductSelect(i, $any($event.target).value)">
-                            <option value="">Select product...</option>
-                            <option *ngFor="let product of products" [value]="product.id">
-                              {{ product.name }}
-                            </option>
-                          </select>
-                          <button type="button" class="btn-search-product" (click)="showProductModal = true; currentItemIndex = i">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+
+            <!-- Section 2: Business Logo -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                </div>
+                <h3>Business Logo</h3>
+              </div>
+              <div class="card-body">
+                <div class="logo-drop-zone">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Drop your logo here or click to browse</span>
+                  <small>PNG or JPEG, up to 1080×1080px</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Parties -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                </div>
+                <h3>Parties</h3>
+              </div>
+              <div class="card-body">
+                <!-- Billed By -->
+                <div class="subsection">
+                  <label class="subsection-label">Billed By</label>
+                  <div class="billed-details">
+                    <div class="billed-avatar">EO</div>
+                    <div class="billed-info">
+                      <strong>Eseose Odion</strong>
+                      <span>Nigeria</span>
+                    </div>
+                    <button type="button" class="btn-edit">Edit</button>
+                  </div>
+                </div>
+
+                <!-- Billed To -->
+                <div class="subsection" style="margin-top: 1rem;">
+                  <label class="subsection-label required">Billed To</label>
+                  <div class="form-group">
+                    <div class="customer-select">
+                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($any($event.target).value)">
+                        <option value="">Select a client...</option>
+                        <option *ngFor="let customer of customers" [value]="customer.id">
+                          {{ customer.name }}
+                        </option>
+                      </select>
+                      <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">+ New Client</button>
+                    </div>
+                    <div class="form-error" *ngIf="isFieldInvalid('customerId')">Please select a client</div>
+                  </div>
+                  <div class="form-group">
+                    <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
+                  </div>
+                </div>
+
+                <!-- Shipping -->
+                <div class="subsection" style="margin-top: 1rem;">
+                  <button type="button" class="btn-link">+ Add Shipping Details</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 4: Notes & Terms -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </div>
+                <h3>Notes &amp; Terms</h3>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <button type="button" class="btn-link" (click)="showTerms = !showTerms">+ Add Terms &amp; Conditions</button>
+                  <textarea *ngIf="showTerms" formControlName="terms" rows="3" class="form-control" placeholder="Enter terms and conditions..."></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 0.75rem;">
+                  <button type="button" class="btn-link" (click)="showNotes = !showNotes">+ Add Notes</button>
+                  <textarea *ngIf="showNotes" formControlName="notes" rows="3" class="form-control" placeholder="Enter additional notes..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="form-column">
+            
+            <!-- Section 5: Line Items -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+                  </svg>
+                </div>
+                <h3>Line Items</h3>
+                <button type="button" class="btn-add-item" (click)="addLineItem()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 4v16m8-8H4"></path>
+                  </svg>
+                  Add Item
+                </button>
+              </div>
+              <div class="card-body">
+                
+                <!-- Tax Config -->
+                <div class="tax-config">
+                  <span>Configure TAX</span>
+                  <span class="tax-currency">Nigerian Naira (NGN, ₦)</span>
+                </div>
+
+                <!-- Items Table -->
+                <div class="items-table-wrapper">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 22%">Item</th>
+                        <th style="width: 10%">TAX Rate</th>
+                        <th style="width: 8%">Qty</th>
+                        <th style="width: 12%">Rate</th>
+                        <th style="width: 12%">Amount</th>
+                        <th style="width: 12%">TAX</th>
+                        <th style="width: 12%">Total</th>
+                        <th style="width: 4%"></th>
+                      </tr>
+                    </thead>
+                    <tbody formArrayName="items">
+                      <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-row">
+                        <td>
+                          <div class="product-cell">
+                            <select formControlName="productId" class="form-control-sm" (change)="onProductSelect(i, $any($event.target).value)">
+                              <option value="">Select item...</option>
+                              <option *ngFor="let product of products" [value]="product.id">
+                                {{ product.name }}
+                              </option>
+                            </select>
+                            <div class="item-actions-cell">
+                              <button type="button" class="btn-icon-sm" title="Add Description">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                              </button>
+                              <button type="button" class="btn-icon-sm" title="Add Image">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                              </button>
+                              <button type="button" class="btn-icon-sm" title="Add Unit">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <input type="number" formControlName="taxRate" class="form-control-sm" placeholder="0">
+                        </td>
+                        <td>
+                          <input type="number" formControlName="quantity" class="form-control-sm" step="1" min="1" value="1">
+                        </td>
+                        <td>
+                          <input type="number" formControlName="unitPrice" class="form-control-sm" step="0.01" min="0" placeholder="0.00">
+                        </td>
+                        <td class="item-amount">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                        <td class="item-tax">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
+                        <td class="item-total">{{ formatCurrency((item.get('total')?.value || 0) + (item.get('taxAmount')?.value || 0)) }}</td>
+                        <td class="item-remove">
+                          <button type="button" class="btn-remove" (click)="removeLineItem(i)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
                           </button>
-                        </div>
-                      </td>
-                      <td>
-                        <input type="text" formControlName="description" class="form-input-sm" placeholder="Description">
-                      </td>
-                      <td>
-                        <input type="number" formControlName="quantity" class="form-input-sm" step="1" min="1">
-                      </td>
-                      <td>
-                        <input type="number" formControlName="unitPrice" class="form-input-sm" step="0.01" min="0">
-                      </td>
-                      <td class="item-total">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                      <td class="item-remove">
-                        <button type="button" class="btn-remove" (click)="removeLineItem(i)">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                          </svg>
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr class="total-row">
-                      <td colspan="4" class="text-right"><strong>Subtotal:</strong></td>
-                      <td colspan="2"><strong>{{ formatCurrency(subtotal) }}</strong></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-              <div class="empty-items" *ngIf="items.length === 0">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
-                </svg>
-                <p>No items added yet</p>
-                <button type="button" class="btn-primary-sm" (click)="addLineItem()">Add First Item</button>
-              </div>
-            </div>
-          </div>
-        </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-        <!-- Right Column -->
-        <div class="form-right">
-          
-          <!-- Customer Information Card -->
-          <div class="form-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
+                <!-- Line Actions -->
+                <div class="line-actions">
+                  <button type="button" class="btn-link" (click)="addLineItem()">+ Add New Line</button>
+                  <button type="button" class="btn-link">+ Add New Group</button>
+                </div>
               </div>
-              <h3>Customer Information</h3>
             </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label required">Select Customer</label>
-                <div class="customer-select">
-                  <select formControlName="customerId" class="form-select" (change)="onCustomerSelect($any($event.target).value)">
-                    <option value="">Select a customer...</option>
-                    <option *ngFor="let customer of customers" [value]="customer.id">
-                      {{ customer.name }} - {{ customer.email }}
-                    </option>
-                  </select>
-                  <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+
+            <!-- Section 6: Summary -->
+            <div class="form-card summary-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                  </svg>
+                </div>
+                <h3>Summary</h3>
+              </div>
+              <div class="card-body">
+                <!-- Totals -->
+                <div class="summary-grid">
+                  <div class="summary-item">
+                    <span class="summary-label">Subtotal</span>
+                    <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
+                  </div>
+                  <div class="summary-item" *ngIf="discountAmount > 0">
+                    <span class="summary-label">Discount</span>
+                    <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tax</span>
+                    <span class="summary-value">{{ formatCurrency(totalTax) }}</span>
+                  </div>
+                  <div class="summary-item total">
+                    <span class="summary-label">Grand Total</span>
+                    <span class="summary-value grand-total">{{ formatCurrency(grandTotal) }}</span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="summary-actions">
+                  <button type="button" class="btn-link">+ Add Discounts</button>
+                  <button type="button" class="btn-link">+ Add Additional Charges</button>
+                </div>
+
+                <div class="summary-quantity">
+                  <span>Total Quantity</span>
+                  <span class="quantity-value">{{ getTotalQuantity() }}</span>
+                </div>
+
+                <!-- Total in Words -->
+                <div class="words-display">
+                  <span class="words-label">Total in words</span>
+                  <span>{{ getTotalInWords(grandTotal) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 7: Additional Options -->
+            <div class="form-card">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                  </svg>
+                </div>
+                <h3>Additional Options</h3>
+              </div>
+              <div class="card-body">
+                <div class="options-grid">
+                  <button type="button" class="btn-link">+ Add Signature</button>
+                  <button type="button" class="btn-link">+ Add Attachments</button>
+                  <button type="button" class="btn-link">+ Add Additional Info</button>
+                  <button type="button" class="btn-link">+ Add Contact Details</button>
+                </div>
+
+                <!-- Recurring -->
+                <div class="recurring-section">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="isRecurring">
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">This is a Recurring invoice</span>
+                  </label>
+                  <p class="recurring-hint">A draft invoice will be created with the same details every next period.</p>
+                </div>
+
+                <!-- Advanced -->
+                <div class="advanced-section">
+                  <button type="button" class="btn-link" (click)="showAdvanced = !showAdvanced">
+                    Advanced options
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [style.transform]="showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)'">
+                      <path d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </button>
+                  <div *ngIf="showAdvanced" class="advanced-panel">
+                    <div class="form-group">
+                      <label class="form-label">Display unit as</label>
+                      <select class="form-control">
+                        <option>Merge with quantity</option>
+                        <option>Show tax summary in invoice</option>
+                        <option>Do not show</option>
+                        <option>Hide place/country of supply</option>
+                      </select>
+                    </div>
+                    <div class="checkbox-grid">
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Add original images in line items</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show thumbnails in separate column</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show description in full width</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Hide subtotal for group items</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show SKU in Invoice</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show Serial Numbers in Invoice</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Display Batch Details in columns</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                <div class="form-error" *ngIf="isFieldInvalid('customerId')">
-                  Please select a customer
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Customer Name</label>
-                <input type="text" formControlName="customerName" class="form-input" readonly placeholder="Will auto-fill">
               </div>
             </div>
-          </div>
 
-          <!-- Invoice Details Card -->
-          <div class="form-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+              <button type="button" class="btn-secondary" (click)="cancel()">Cancel</button>
+              <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+                <div *ngIf="isSubmitting" class="spinner-small"></div>
+                <svg *ngIf="!isSubmitting" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 13l4 4L19 7"></path>
                 </svg>
-              </div>
-              <h3>Invoice Details</h3>
+                {{ isSubmitting ? 'Creating...' : 'Save & Continue' }}
+              </button>
+              <button type="button" class="btn-secondary">Save &amp; Create New</button>
+              <button type="button" class="btn-secondary">Save As Draft</button>
             </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label required">Invoice Number</label>
-                <input type="text" formControlName="invoiceNumber" class="form-input" readonly>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label required">Issue Date</label>
-                  <input type="date" formControlName="issueDate" class="form-input">
-                </div>
-                <div class="form-group flex-1">
-                  <label class="form-label required">Due Date</label>
-                  <input type="date" formControlName="dueDate" class="form-input">
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Payment Terms</label>
-                <select formControlName="paymentTerms" class="form-select">
-                  <option value="Net 15">Net 15 days</option>
-                  <option value="Net 30">Net 30 days</option>
-                  <option value="Net 45">Net 45 days</option>
-                  <option value="Due on Receipt">Due on Receipt</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Currency</label>
-                <select formControlName="currency" class="form-select">
-                  <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Discount & Tax Card -->
-          <div class="form-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <h3>Discount & Tax</h3>
-            </div>
-            <div class="card-body">
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label">Discount Type</label>
-                  <select formControlName="discountType" class="form-select">
-                    <option value="PERCENTAGE">Percentage (%)</option>
-                    <option value="FIXED">Fixed Amount</option>
-                  </select>
-                </div>
-                <div class="form-group flex-1">
-                  <label class="form-label">Discount Value</label>
-                  <input type="number" formControlName="discountValue" class="form-input" step="0.01" min="0">
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tax Rate (%)</label>
-                <input type="number" formControlName="taxRate" class="form-input" step="0.1" min="0" max="100">
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes Card -->
-          <div class="form-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-              </div>
-              <h3>Notes</h3>
-            </div>
-            <div class="card-body">
-              <textarea formControlName="notes" rows="3" class="form-textarea" 
-                        placeholder="Add any notes or payment instructions for the customer..."></textarea>
-            </div>
-          </div>
-
-          <!-- Summary Card -->
-          <div class="form-card summary-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                </svg>
-              </div>
-              <h3>Summary</h3>
-            </div>
-            <div class="card-body">
-              <div class="summary-row">
-                <span>Subtotal:</span>
-                <span>{{ formatCurrency(subtotal) }}</span>
-              </div>
-              <div class="summary-row" *ngIf="discountAmount > 0">
-                <span>Discount ({{ invoiceForm.get('discountType')?.value === 'PERCENTAGE' ? invoiceForm.get('discountValue')?.value + '%' : formatCurrency(invoiceForm.get('discountValue')?.value) }}):</span>
-                <span class="discount">-{{ formatCurrency(discountAmount) }}</span>
-              </div>
-              <div class="summary-row" *ngIf="taxAmount > 0">
-                <span>Tax ({{ invoiceForm.get('taxRate')?.value }}%):</span>
-                <span>{{ formatCurrency(taxAmount) }}</span>
-              </div>
-              <div class="summary-row total">
-                <span>Total:</span>
-                <span class="total-amount">{{ formatCurrency(grandTotal) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button type="button" class="btn-secondary" (click)="router.navigate(['/sales/invoices'])">
-              Cancel
-            </button>
-            <button type="submit" class="btn-primary" [disabled]="isSubmitting">
-              <div *ngIf="isSubmitting" class="spinner-small"></div>
-              <svg *ngIf="!isSubmitting" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              {{ isSubmitting ? 'Creating...' : (isEditMode ? 'Update Invoice' : 'Create Invoice') }}
-            </button>
           </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
+</dialog>
 
 <!-- Product Search Modal -->
 <div class="modal-overlay" *ngIf="showProductModal" (click)="showProductModal = false">
-  <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Select Product</h3>
       <button class="modal-close" (click)="showProductModal = false">×</button>
     </div>
     <div class="modal-body">
       <div class="search-box">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
         <input type="text" [(ngModel)]="searchProductTerm" (input)="filterProducts()" placeholder="Search products...">
       </div>

@@ -8,10 +8,21 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
 
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
+import { InvoiceDetailComponent } from '../invoice-detail/invoice-detail.component';
+
 @Component({
   selector: 'app-invoice-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    InvoiceFormComponent,
+    InvoiceDetailComponent
+  ],
   templateUrl: './invoice-list.component.html',
   styleUrls: ['./invoice-list.component.scss']
 })
@@ -23,6 +34,40 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   invoices: Invoice[] = [];
   isLoading = true;
   selectedInvoiceIds: string[] = [];
+
+  showInvoiceModal = false;
+  showInvoiceDetail = false;
+  selectedInvoiceId?: string;
+
+  openNewInvoiceModal(): void {
+    this.selectedInvoiceId = undefined;
+    this.showInvoiceModal = true;
+  }
+
+  openEditInvoiceModal(invoiceId: string): void {
+    this.selectedInvoiceId = invoiceId;
+    this.showInvoiceModal = true;
+  }
+
+  openInvoiceDetail(invoiceId: string): void {
+    this.selectedInvoiceId = invoiceId;
+    this.showInvoiceDetail = true;
+  }
+
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.selectedInvoiceId = undefined;
+  }
+
+  closeInvoiceDetail(): void {
+    this.showInvoiceDetail = false;
+    this.selectedInvoiceId = undefined;
+  }
+
+  onInvoiceSaved(): void {
+    this.closeInvoiceModal();
+    this.loadInvoices();
+  }
   
   // Filters
   filters = {

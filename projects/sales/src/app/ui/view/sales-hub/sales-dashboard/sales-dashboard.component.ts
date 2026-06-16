@@ -7,10 +7,27 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../service/sales/sales.service';
 
+import { SharedOverlayModule } from '../../../../shared-overlay.module';
+import { QuoteFormComponent } from '../quotations/quote-form/quote-form.component';
+import { InvoiceFormComponent } from '../invoices/invoice-form/invoice-form.component';
+import { CustomerFormComponent } from '../customer-management/customer-form/customer-form.component';
+import { QuoteDetailComponent } from '../quotations/quote-detail/quote-detail.component';
+import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detail.component';
+
 @Component({
   selector: 'app-sales-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    QuoteFormComponent,
+    InvoiceFormComponent,
+    CustomerFormComponent,
+    QuoteDetailComponent,
+    InvoiceDetailComponent
+  ],
   templateUrl: './sales-dashboard.component.html',
   styleUrls: ['./sales-dashboard.component.scss']
 })
@@ -39,6 +56,28 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // Filters
   dateRange = 'month';
   isLoading = true;
+
+  showQuoteModal = false;
+  showInvoiceModal = false;
+  showCustomerModal = false;
+  showProductModal = false;
+  showQuoteDetail = false;
+  showInvoiceDetail = false;
+  selectedItemId?: string;
+
+  // Simple Product Form Data
+  productForm = {
+    name: '',
+    sku: '',
+    description: '',
+    unitPrice: 0,
+    costPrice: 0,
+    currency: 'NGN',
+    stockQuantity: 10,
+    category: 'General',
+    taxRate: 7.5
+  };
+  isSavingProduct = false;
   
   private destroy$ = new Subject<void>();
 
@@ -126,19 +165,21 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   // ============================================
   
   navigateToNewQuote(): void {
-    this.router.navigate(['/sales/quotes/new']);
+    this.selectedItemId = undefined;
+    this.showQuoteModal = true;
   }
 
   navigateToNewInvoice(): void {
-    this.router.navigate(['/sales/invoices/new']);
+    this.selectedItemId = undefined;
+    this.showInvoiceModal = true;
   }
 
   navigateToNewCustomer(): void {
-    this.router.navigate(['/sales/customers/new']);
+    this.showCustomerModal = true;
   }
 
   navigateToNewProduct(): void {
-    this.router.navigate(['/sales/products/new']);
+    this.showProductModal = true;
   }
 
   navigateToQuoteList(): void {
@@ -154,11 +195,88 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateToQuoteDetail(quoteId: string): void {
-    this.router.navigate(['/sales/quotes', quoteId]);
+    this.selectedItemId = quoteId;
+    this.showQuoteDetail = true;
   }
 
   navigateToInvoiceDetail(invoiceId: string): void {
-    this.router.navigate(['/sales/invoices', invoiceId]);
+    this.selectedItemId = invoiceId;
+    this.showInvoiceDetail = true;
+  }
+
+  closeQuoteModal(): void {
+    this.showQuoteModal = false;
+    this.selectedItemId = undefined;
+  }
+
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.selectedItemId = undefined;
+  }
+
+  closeCustomerModal(): void {
+    this.showCustomerModal = false;
+  }
+
+  closeProductModal(): void {
+    this.showProductModal = false;
+  }
+
+  closeQuoteDetail(): void {
+    this.showQuoteDetail = false;
+    this.selectedItemId = undefined;
+  }
+
+  closeInvoiceDetail(): void {
+    this.showInvoiceDetail = false;
+    this.selectedItemId = undefined;
+  }
+
+  onQuoteSaved(): void {
+    this.closeQuoteModal();
+    this.loadDashboardData();
+  }
+
+  onInvoiceSaved(): void {
+    this.closeInvoiceModal();
+    this.loadDashboardData();
+  }
+
+  onCustomerSaved(): void {
+    this.closeCustomerModal();
+    this.loadDashboardData();
+  }
+
+  saveProduct(): void {
+    if (!this.productForm.name || !this.productForm.sku) {
+      alert('Product Name and SKU are required');
+      return;
+    }
+    this.isSavingProduct = true;
+    this.salesService.createProduct(this.productForm).subscribe({
+      next: () => {
+        this.isSavingProduct = false;
+        alert('Product created successfully!');
+        this.showProductModal = false;
+        this.productForm = {
+          name: '',
+          sku: '',
+          description: '',
+          unitPrice: 0,
+          costPrice: 0,
+          currency: 'NGN',
+          stockQuantity: 10,
+          category: 'General',
+          taxRate: 7.5
+        };
+        this.loadDashboardData();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSavingProduct = false;
+        alert('Failed to create product.');
+      }
+    });
   }
 
   // ============================================

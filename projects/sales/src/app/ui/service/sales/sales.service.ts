@@ -456,4 +456,23 @@ export class SalesService {
   getDeliveryNoteById(id: string): Observable<DeliveryNote | null> {
     return of(null).pipe(delay(300));
   }
+
+  updateCustomer(id: string, data: Partial<Customer>): Observable<Customer> {
+  let customers: Customer[] = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
+  const index = customers.findIndex(c => c.id === id);
+  
+  if (index !== -1) {
+    const updatedCustomer = {
+      ...customers[index],
+      ...data,
+      id: customers[index].id
+    } as Customer;
+    
+    customers[index] = updatedCustomer;
+    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    return of(updatedCustomer).pipe(delay(300));
+  }
+  
+  throw new Error('Customer not found');
+}
 }
