@@ -8,10 +8,23 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { QuoteFormComponent } from '../quote-form/quote-form.component';
+import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
+import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
+
 @Component({
   selector: 'app-quote-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    QuoteFormComponent,
+    QuoteDetailComponent,
+    InvoiceFormComponent
+  ],
   templateUrl: './quote-list.component.html',
   styleUrls: ['./quote-list.component.scss']
 })
@@ -21,6 +34,57 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   quotes: Quote[] = [];
   isLoading = true;
   selectedQuoteIds: string[] = [];
+
+  showQuoteModal = false;
+  showQuoteDetail = false;
+  selectedQuoteId?: string;
+
+  openNewQuoteModal(): void {
+    this.selectedQuoteId = undefined;
+    this.showQuoteModal = true;
+  }
+
+  openEditQuoteModal(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showQuoteModal = true;
+  }
+
+  openQuoteDetail(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showQuoteDetail = true;
+  }
+
+  closeQuoteModal(): void {
+    this.showQuoteModal = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  closeQuoteDetail(): void {
+    this.showQuoteDetail = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  onQuoteSaved(): void {
+    this.closeQuoteModal();
+    this.loadQuotes();
+  }
+
+  showInvoiceModal = false;
+
+  openInvoiceModal(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showInvoiceModal = true;
+  }
+
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  onInvoiceSaved(): void {
+    this.closeInvoiceModal();
+    this.loadQuotes();
+  }
   
   // Filters
   filters = {

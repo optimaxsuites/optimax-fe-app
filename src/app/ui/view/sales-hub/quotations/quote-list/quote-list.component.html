@@ -9,12 +9,12 @@
         <h1 class="page-title">Quotes</h1>
         <p class="page-subtitle">Manage and track all customer quotes</p>
       </div>
-      <a routerLink="/sales/quotes/new" class="btn-primary">
+      <button (click)="openNewQuoteModal()" class="btn-primary" style="cursor: pointer; border: none;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
         New Quote
-      </a>
+      </button>
     </div>
 
     <!-- Stats Cards -->
@@ -110,13 +110,13 @@
                 </span>
               </td>
               <td class="actions" style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; border-bottom: 1px solid #f0f0f0;">
-                <a [routerLink]="['/sales/quotes', quote.id]" class="btn-primary-sm" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; background: #2E6276; color: white;">
+                <button (click)="openQuoteDetail(quote.id)" class="btn-primary-sm" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem; background: #2E6276; color: white; border: none; cursor: pointer;">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 0.875rem; height: 0.875rem;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                   </svg>
                   View
-                </a>
+                </button>
                 <div class="action-dropdown">
                   <button class="action-trigger">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,25 +124,25 @@
                     </svg>
                   </button>
                   <div class="dropdown-menu">
-                    <a [routerLink]="['/sales/quotes', quote.id]">
+                    <button (click)="openQuoteDetail(quote.id)">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                       </svg>
                       View Details
-                    </a>
-                    <a *ngIf="quote.status === 'DRAFT'" [routerLink]="['/sales/quotes', quote.id, 'edit']">
+                    </button>
+                    <button *ngIf="quote.status === 'DRAFT'" (click)="openEditQuoteModal(quote.id)">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                       Edit Quote
-                    </a>
-                    <a *ngIf="quote.status === 'ACCEPTED'" [routerLink]="['/sales/invoices/new']" [queryParams]="{quoteId: quote.id}">
+                    </button>
+                    <button *ngIf="quote.status === 'ACCEPTED'" (click)="openInvoiceModal(quote.id)">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                       </svg>
                       Create Invoice
-                    </a>
+                    </button>
                     <button *ngIf="quote.status === 'DRAFT'" (click)="sendQuote(quote)">
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
@@ -166,7 +166,7 @@
                 </svg>
                 <h3>No quotes found</h3>
                 <p>Create your first quote to get started</p>
-                <a routerLink="/sales/quotes/new" class="btn-primary-sm">Create Quote</a>
+                <button (click)="openNewQuoteModal()" class="btn-primary-sm" style="cursor: pointer; border: none;">Create Quote</button>
               </td>
             </tr>
           </tbody>
@@ -219,3 +219,16 @@
     </div>
   </div>
 </div>
+
+<!-- Modals -->
+<app-modal *ngIf="showQuoteModal" [header]="selectedQuoteId ? 'Edit Quote' : 'New Quote'" (close)="closeQuoteModal()">
+  <app-quote-form [editId]="selectedQuoteId" (saved)="onQuoteSaved()" (cancelled)="closeQuoteModal()"></app-quote-form>
+</app-modal>
+
+<app-side-modal *ngIf="showQuoteDetail" (close)="closeQuoteDetail()">
+  <app-quote-detail [detailId]="selectedQuoteId" (closed)="closeQuoteDetail()" (edit)="closeQuoteDetail(); openEditQuoteModal($event)"></app-quote-detail>
+</app-side-modal>
+
+<app-modal *ngIf="showInvoiceModal" header="Create Invoice" (close)="closeInvoiceModal()">
+  <app-invoice-form [fromQuoteId]="selectedQuoteId" (saved)="onInvoiceSaved()" (cancelled)="closeInvoiceModal()"></app-invoice-form>
+</app-modal>

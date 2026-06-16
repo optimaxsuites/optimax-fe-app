@@ -57,11 +57,10 @@ import { ButtonComponent } from './ui/shared-component/view/button/button.compon
 import { ProfileCardComponent } from './ui/shared-component/view/profile-card/profile-card.component';
 import { ProfileInfoComponent } from './ui/shared-component/view/profile-info/profile-info.component';
 import { UserInterfaceComponent } from './ui/shared-component/view/user-interface/user-interface.component';
-import { SideModalComponent } from './ui/shared-component/view/side-modal/side-modal.component';
 import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
-import { ModalComponent } from './ui/shared-component/view/modal/modal.component';
+import { SharedOverlayModule } from './shared-overlay.module';
 
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -103,6 +102,7 @@ import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.
 import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
 import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
+// CustomModalComponent is a standalone component; no AppModule import needed
 import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 
@@ -110,8 +110,6 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
   declarations: [
     App,
     TableComponent,
-    ModalComponent,
-    SideModalComponent,
     SidebarComponent,
     NavTabComponent,
     ProductRequestListComponent,
@@ -128,17 +126,16 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
     SalesOrdersComponent,
     SalesHubComponent,
     ProductServiceCatalogComponent,
-    QuoteDetailComponent,
     PerformanceComponent,
     DocumentsComponent,
-    InvoiceDetailComponent,
-    CustomerFormComponent,
+    
   ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
+    SharedOverlayModule,
     TableModule,
     RippleModule,
     AngularEditorModule,
@@ -206,7 +203,9 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
     InvoiceListComponent,
     InvoiceFormComponent,
     CustomerListComponent,
-
+    QuoteDetailComponent,
+    InvoiceDetailComponent,
+    CustomerFormComponent,
   ],
   exports: [TableComponent],
   providers: [

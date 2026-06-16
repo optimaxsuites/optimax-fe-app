@@ -1,16 +1,24 @@
 // src/app/ui/view/sales-hub/quotations/quote-detail/quote-detail.component.ts
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote } from '../../../../domain/sales/sales.dto';
 
+import { CommonModule } from '@angular/common';
+
 @Component({
   selector: 'app-quote-detail',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
 export class QuoteDetailComponent implements OnInit {
+  @Input() detailId?: string;
+  @Output() closed = new EventEmitter<void>();
+  @Output() edit = new EventEmitter<string>();
+
   quote: Quote | null = null;
   isLoading = true;
 
@@ -21,7 +29,7 @@ export class QuoteDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    const id = this.detailId || this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadQuote(id);
     } else {
@@ -142,6 +150,18 @@ export class QuoteDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/sales/quotes']);
+    if (this.closed.observed) {
+      this.closed.emit();
+    } else {
+      this.router.navigate(['/sales/quotes']);
+    }
+  }
+
+  editQuote(): void {
+    if (this.edit.observed) {
+      this.edit.emit(this.quote!.id);
+    } else {
+      this.router.navigate(['/sales/quotes', this.quote!.id, 'edit']);
+    }
   }
 }
