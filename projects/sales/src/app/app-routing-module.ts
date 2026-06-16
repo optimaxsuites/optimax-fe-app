@@ -33,7 +33,7 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   {
-    path: 'sales-hub',
+    path: 'sales-hub/:uuid',
     component: SalesHubComponent,
     data: { title: 'Sales Hub' }
   },
@@ -100,10 +100,6 @@ const routes: Routes = [
   },
   {
     path: 'sales/invoices/:id/edit',
-    component: InvoiceFormComponent
-  },
-  {
-    path: 'sales/invoices/:id/edit/:uuid',
     component: InvoiceFormComponent
   },
   {
