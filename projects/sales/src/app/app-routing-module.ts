@@ -33,7 +33,7 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   {
-    path: 'sales-hub/:uuid',
+    path: 'sales-hub',
     component: SalesHubComponent,
     data: { title: 'Sales Hub' }
   },
@@ -47,7 +47,11 @@ const routes: Routes = [
     component: QuoteListComponent
   },
   {
-    path: 'sales/quotes/new/:uuid',
+    path: 'sales/quotes/:uuid',
+    component: QuoteListComponent
+  },
+  {
+    path: 'sales/quotes/new',
     component: QuoteFormComponent
   },
   {
@@ -59,11 +63,19 @@ const routes: Routes = [
     component: QuoteDetailComponent
   },
   {
+    path: 'sales/quotes/:id/:uuid',
+    component: QuoteDetailComponent
+  },
+  {
     path: 'sales/quotes/:id/edit',
     component: QuoteFormComponent
   },
   {
-    path: 'sales/invoices/:uuid',
+    path: 'sales/quotes/:id/edit/:uuid',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'sales/invoices',
     component: InvoiceListComponent
   },
   {
@@ -83,7 +95,15 @@ const routes: Routes = [
     component: InvoiceDetailComponent
   },
   {
+    path: 'sales/invoices/:id/:uuid',
+    component: InvoiceDetailComponent
+  },
+  {
     path: 'sales/invoices/:id/edit',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'sales/invoices/:id/edit/:uuid',
     component: InvoiceFormComponent
   },
   {

@@ -20,21 +20,33 @@ export function getRouteContext() {
 export function buildSalesLink(basePath: string, uuidOrId?: string, extra?: string): any[] {
   const context = getRouteContext();
   if (context.isLive) {
-    if (basePath === '/sales/quotes/new' || basePath === '/sales/invoices/new' || basePath === '/sales-hub' || basePath === '/sales/invoices') {
-      return [context.prefix + basePath, uuidOrId || context.uuid];
+    // 1. Collections & new paths: prefix + basePath + :uuid
+    if (
+      basePath === '/sales-hub' ||
+      basePath === '/sales/quotes' ||
+      basePath === '/sales/quotes/new' ||
+      basePath === '/sales/invoices' ||
+      basePath === '/sales/invoices/new'
+    ) {
+      return [context.prefix + basePath, context.uuid];
     }
-    if (extra) {
-      return [context.prefix + basePath, uuidOrId, extra];
+    
+    // 2. Edit path: prefix + basePath + :id + 'edit' + :uuid
+    if (extra === 'edit' && uuidOrId) {
+      return [context.prefix + basePath, uuidOrId, 'edit', context.uuid];
     }
+    
+    // 3. Detail path: prefix + basePath + :id + :uuid
     if (uuidOrId) {
-      return [context.prefix + basePath, uuidOrId];
+      return [context.prefix + basePath, uuidOrId, context.uuid];
     }
+    
     return [context.prefix + basePath];
   }
 
   // Localhost standalone
-  if (extra) {
-    return [basePath, uuidOrId, extra];
+  if (extra === 'edit' && uuidOrId) {
+    return [basePath, uuidOrId, 'edit'];
   }
   if (uuidOrId) {
     return [basePath, uuidOrId];
