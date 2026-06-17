@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment.prod';
 
 @Injectable({ providedIn: 'root' })
@@ -129,6 +129,44 @@ export class IssueTrackerApiService {
   getDmChannels() {
     return this.http.get<any[]>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
       { headers: this.authHeaders() }).pipe(catchError(this.err));
+  }
+
+  getOrCreateDmChannel(senderUserId: number, recipientUserId: number) {
+    const uid1 = Math.min(senderUserId, recipientUserId);
+    const uid2 = Math.max(senderUserId, recipientUserId);
+    return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
+      {
+        name: `dm-${uid1}-${uid2}`,
+        channelType: 'PRIVATE',
+        createdBy: senderUserId,
+        description: `DM between ${uid1} and ${uid2}`,
+      },
+      { headers: this.authHeaders() },
+    ).pipe(
+      switchMap(channel => {
+        const channelId = channel.id ?? channel.channelId;
+        return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel-member`,
+          { channelId, userId: recipientUserId, role: 'MEMBER' },
+          { headers: this.authHeaders() },
+        ).pipe(
+          catchError(() => of(null)),
+          map(() => channel),
+        );
+      }),
+      catchError(this.err),
+    );
+  }
+
+  sendEmail(payload: { name: string; receiverEmail: string; subject: string; body: string }) {
+    const rawKey = String(environment.apiKey || '').trim();
+    const apiKey = rawKey.startsWith('ApiKey ') ? rawKey : `ApiKey ${rawKey}`;
+    const promise = fetch(environment.emailEndpoint, {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      body: JSON.stringify({ name: payload.name, recieverEmail: payload.receiverEmail, subject: payload.subject, body: payload.body }),
+    }).catch(() => null);
+    return of(promise);
   }
 
   private err(error: HttpErrorResponse) {
