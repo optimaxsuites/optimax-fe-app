@@ -2,84 +2,108 @@
   <div class="max-w-[1600px] mx-auto space-y-8">
 
     <!-- ── Hero Header ── -->
-    <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+    <div
+      class="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
       <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl"></div>
       <div class="relative z-10">
         <div class="flex items-center gap-4 mb-3">
-          <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
             <i class="pi pi-history text-amber-600 text-xl"></i>
           </div>
-          <h1 class="text-4xl font-black text-gray-900 tracking-tight">Accounting Transactions</h1>
+          <h1 class="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">Accounting Transactions</h1>
         </div>
-        <p class="text-gray-500 font-semibold text-lg">
+        <p class="text-gray-500 font-semibold text-sm sm:text-lg">
           Review, approve, and audit financial events before they are finalized in the ledger.
         </p>
       </div>
 
-      <!-- ── Stats Strip ── -->
-      <div class="flex items-center gap-4 flex-wrap relative z-10">
-        <div class="flex flex-col items-center bg-amber-50 px-6 py-3 rounded-2xl border border-amber-100">
-          <span class="text-2xl font-black text-amber-700">{{ pendingCount }}</span>
-          <span class="text-lg font-black text-amber-500 uppercase tracking-widest">Pending</span>
-        </div>
-        <div class="flex flex-col items-center bg-emerald-50 px-6 py-3 rounded-2xl border border-emerald-100">
-          <span class="text-2xl font-black text-emerald-700">{{ approvedCount }}</span>
-          <span class="text-lg font-black text-emerald-500 uppercase tracking-widest">Approved</span>
-        </div>
-        <div class="flex flex-col items-center bg-rose-50 px-6 py-3 rounded-2xl border border-rose-100">
-          <span class="text-2xl font-black text-rose-700">{{ rejectedCount }}</span>
-          <span class="text-lg font-black text-rose-500 uppercase tracking-widest">Rejected</span>
-        </div>
+      <!-- ── Header Controls ── -->
+      <div class="relative z-10 flex items-center gap-4 w-full md:w-auto justify-start md:justify-end">
         <button (click)="loadEvents()"
-          class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-xl font-bold text-lg uppercase tracking-widest hover:bg-customBlueHover transition-all shadow-md shadow-customBlue/20 active:scale-95">
+          class="w-full md:w-auto flex items-center justify-center gap-2 bg-white text-gray-700 px-6 py-2.5 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-gray-50 border border-gray-200 transition-all shadow-sm active:scale-95">
           <i class="pi pi-refresh"></i> Refresh
         </button>
       </div>
     </div>
 
-    <!-- ── Filter Bar ── -->
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6 mb-8">
-      <div class="relative flex-1 w-full">
-        <i class="pi pi-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        <input [(ngModel)]="searchTerm" type="text" placeholder="Search by reference or description..."
-          class="w-full pl-12 pr-5 py-4 bg-white border border-gray-200 rounded-xl font-bold text-lg text-gray-700 outline-none focus:ring-4 focus:ring-customBlue/10 transition-all placeholder:text-gray-300">
-      </div>
+    <!-- ── Summary Cards ── -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
       
-      <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+      <!-- Pending Card -->
+      <div class="relative overflow-hidden rounded-xl px-6 py-6 min-h-[110px] flex flex-col justify-between bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] border-l-[5px] border-l-[#dc2626] shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+        <div class="absolute -right-4 -bottom-4 w-28 h-28 opacity-10">
+          <i class="pi pi-clock text-8xl"></i>
+        </div>
+        <span class="block text-[0.95rem] font-bold uppercase tracking-[0.08em] text-gray-500 mb-2">Pending Review</span>
+        <p class="text-[2rem] font-extrabold leading-tight tracking-[-0.03em] text-red-600">{{ pendingCount }}</p>
+      </div>
+
+      <!-- Approved Card -->
+      <div class="relative overflow-hidden rounded-xl px-6 py-6 min-h-[110px] flex flex-col justify-between bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border-l-[5px] border-l-[#16a34a] shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+        <div class="absolute -right-4 -bottom-4 w-28 h-28 opacity-10">
+          <i class="pi pi-check-circle text-8xl"></i>
+        </div>
+        <span class="block text-[0.95rem] font-bold uppercase tracking-[0.08em] text-gray-500 mb-2">Approved</span>
+        <p class="text-[2rem] font-extrabold leading-tight tracking-[-0.03em] text-green-700">{{ approvedCount }}</p>
+      </div>
+
+      <!-- Rejected Card -->
+      <div class="relative overflow-hidden rounded-xl px-6 py-6 min-h-[110px] flex flex-col justify-between bg-gradient-to-br from-[#faf5ff] to-[#ede9fe] border-l-[5px] border-l-[#7c3aed] shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+        <div class="absolute -right-4 -bottom-4 w-28 h-28 opacity-10">
+          <i class="pi pi-times-circle text-8xl"></i>
+        </div>
+        <span class="block text-[0.95rem] font-bold uppercase tracking-[0.08em] text-gray-500 mb-2">Rejected</span>
+        <p class="text-[2rem] font-extrabold leading-tight tracking-[-0.03em] text-purple-700">{{ rejectedCount }}</p>
+      </div>
+    </div>
+
+    <!-- ── Filter Bar ── -->
+    <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-200 flex flex-col md:flex-row items-center gap-3 mb-6">
+      <div class="relative flex-1 w-full border border-gray-200 rounded-md">
+        <input [(ngModel)]="searchTerm" type="text" placeholder="Search by reference, amount, or description..."
+          class="w-full pl-4 pr-16 py-2 bg-transparent text-sm text-gray-700 outline-none focus:ring-1 focus:ring-customBlue/30">
+        <i *ngIf="searchTerm" (click)="searchTerm = ''" class="pi pi-times absolute right-10 top-1/2 -translate-y-1/2 text-gray-400 text-xs cursor-pointer hover:text-gray-600 z-10"></i>
+        <i class="pi pi-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
         <!-- Type Filter -->
-        <div class="relative flex-1 md:w-64">
+        <div class="relative w-full md:w-40">
           <select [(ngModel)]="selectedType"
-            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
-            <option value="">All Types</option>
-            <option *ngFor="let type of eventTypes" [value]="type">{{ formatLabel(type) }}</option>
+            class="w-full appearance-none bg-transparent border border-gray-200 rounded-md pl-3 pr-10 py-2 text-sm text-gray-700 font-bold uppercase outline-none focus:ring-1 focus:ring-customBlue/30 cursor-pointer">
+            <option value="">TYPE</option>
+            <option *ngFor="let type of eventTypes" [value]="type">{{ formatLabel(type) | uppercase }}</option>
           </select>
-          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+          <i *ngIf="selectedType" (click)="selectedType = ''" class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] cursor-pointer hover:text-gray-600 z-10"></i>
+          <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
         </div>
 
         <!-- Module Filter -->
-        <div class="relative flex-1 md:w-56">
+        <div class="relative w-full md:w-32">
           <select [(ngModel)]="selectedModule"
-            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
-            <option value="">All Modules</option>
-            <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+            class="w-full appearance-none bg-transparent border border-gray-200 rounded-md pl-3 pr-10 py-2 text-sm text-gray-700 font-bold uppercase outline-none focus:ring-1 focus:ring-customBlue/30 cursor-pointer">
+            <option value="">MODULE</option>
+            <option *ngFor="let mod of modules" [value]="mod">{{ mod | uppercase }}</option>
           </select>
-          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+          <i *ngIf="selectedModule" (click)="selectedModule = ''" class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] cursor-pointer hover:text-gray-600 z-10"></i>
+          <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
         </div>
 
         <!-- Status Filter -->
-        <div class="relative flex-1 md:w-56">
+        <div class="relative w-full md:w-40">
           <select [(ngModel)]="selectedStatus"
-            class="w-full appearance-none bg-white border border-gray-200 rounded-xl px-6 py-4 font-black uppercase tracking-widest text-lg text-customBlue outline-none focus:ring-4 focus:ring-customBlue/10 transition-all cursor-pointer">
-            <option value="">All Statuses</option>
-            <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+            class="w-full appearance-none bg-transparent border border-gray-200 rounded-md pl-3 pr-10 py-2 text-sm text-gray-700 font-bold uppercase outline-none focus:ring-1 focus:ring-customBlue/30 cursor-pointer">
+            <option value="">STATUS</option>
+            <option *ngFor="let status of statuses" [value]="status">{{ status | uppercase }}</option>
           </select>
-          <i class="pi pi-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-customBlue pointer-events-none"></i>
+          <i *ngIf="selectedStatus" (click)="selectedStatus = ''" class="pi pi-times absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] cursor-pointer hover:text-gray-600 z-10"></i>
+          <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
         </div>
 
         <!-- Clear Button -->
         <button (click)="clearFilters()"
-          class="px-6 py-4 text-gray-400 font-black uppercase tracking-widest text-lg hover:text-gray-900 transition-colors flex items-center gap-2">
-          <i class="pi pi-filter-slash"></i> Clear
+          class="px-4 py-2 bg-white border border-gray-200 rounded-md text-gray-700 font-bold text-sm uppercase hover:bg-gray-50 transition-colors flex items-center gap-1.5 whitespace-nowrap active:scale-95">
+          <i class="pi pi-times text-xs"></i> CLEAR FILTERS
         </button>
       </div>
     </div>
@@ -87,11 +111,30 @@
     <!-- ── Table Card ── -->
     <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
 
-      <!-- Loading State -->
-      <div *ngIf="loading" class="flex items-center justify-center py-32 gap-3">
-        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce"></div>
-        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce [animation-delay:-0.15s]"></div>
-        <div class="w-3 h-3 rounded-full bg-customBlue animate-bounce [animation-delay:-0.3s]"></div>
+      <!-- Loading State Skeleton -->
+      <div *ngIf="loading" class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr class="bg-[#112a46] border-b border-gray-300">
+              <th *ngFor="let i of [1,2,3,4,5,6,7,8,9]" class="px-5 py-4">
+                <div class="h-3 bg-[#1e4572] rounded animate-pulse" [ngClass]="i === 4 ? 'w-24' : 'w-16'"></div>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr *ngFor="let row of [1,2,3,4,5]" class="bg-white">
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-28 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-6 bg-gray-200 rounded-full w-12 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-40 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-20 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-6 bg-gray-200 rounded-full w-28 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-24 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-gray-200 rounded w-24 animate-pulse"></div></td>
+              <td class="px-5 py-4"><div class="flex gap-2 justify-end"><div class="h-5 w-5 bg-gray-200 rounded animate-pulse"></div><div class="h-5 w-5 bg-gray-200 rounded animate-pulse"></div></div></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Empty State -->
@@ -103,129 +146,113 @@
       </div>
 
       <!-- Table -->
-      <div *ngIf="!loading && filteredEvents.length > 0" class="overflow-x-auto">
-        <table class="w-full border-collapse">
+      <div *ngIf="!loading && filteredEvents.length > 0" class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table class="w-full border-collapse text-sm">
           <thead>
-            <tr class="bg-customBlue text-left border-b border-gray-100">
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest text-nowrap">Date / Time</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Reference</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest text-nowrap">Source Module</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Description</th>
-              <th class="px-6 py-5 text-right text-lg font-black text-white uppercase tracking-widest">Amount</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Status</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Suggested Debit</th>
-              <th class="px-6 py-5 text-lg font-black text-white uppercase tracking-widest">Suggested Credit</th>
-              <th class="px-6 py-5 text-right text-lg font-black text-white uppercase tracking-widest">Actions</th>
+            <tr class="bg-[#112a46] text-left text-white border-b border-gray-300">
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Date / Time</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Reference</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Source Module</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Description</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap cursor-pointer hover:bg-white/10" (click)="sortBy('amount')">
+                <div class="flex items-center gap-1">
+                  Amount
+                  <i class="pi text-[10px]" [ngClass]="sortField === 'amount' ? (sortOrder === 1 ? 'pi-sort-amount-up-alt' : 'pi-sort-amount-down') : 'pi-sort text-white/50'"></i>
+                </div>
+              </th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Status</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Suggested Debit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Suggested Credit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr *ngFor="let ev of filteredEvents"
-              class="hover:bg-gray-50/60 transition-all group"
+          <tbody class="divide-y divide-gray-100">
+            <tr *ngFor="let ev of filteredEvents; let i = index" 
+              class="transition-colors group hover:bg-gray-100"
+              [ngClass]="i % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]'"
               [class.opacity-50]="ev.status === 'REJECTED'">
 
-              <!-- Date / Time (first column) -->
-              <td class="px-6 py-5 text-nowrap">
+              <!-- Date / Time -->
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-800 font-medium">
                 <ng-container *ngIf="ev.transactionDate || ev.createdAt; else noDate">
-                  <p class="text-base font-bold text-gray-800">
-                    {{ formatEventDate(ev.transactionDate || ev.createdAt).split('·')[0].trim() }}
-                  </p>
-                  <p class="text-sm text-gray-400 font-medium">
-                    {{ formatEventDate(ev.transactionDate || ev.createdAt).split('·')[1]?.trim() }}
-                  </p>
+                  {{ (ev.transactionDate || ev.createdAt) | date:'dd MMM yyyy hh:mm a' }}
                 </ng-container>
-                <ng-template #noDate>
-                  <span class="text-gray-300 text-xl italic">—</span>
-                </ng-template>
+                <ng-template #noDate><span class="text-gray-400 italic">—</span></ng-template>
               </td>
 
               <!-- Reference -->
-              <td class="px-6 py-5">
-                <span class="font-mono font-black text-customBlue text-xl bg-customBlue/5 px-3 py-1 rounded-lg">
-                  {{ ev.reference || ('#EV-' + ev.id) }}
-                </span>
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-800 font-medium">
+                {{ ev.reference || ('#EV-' + ev.id) }}
               </td>
 
               <!-- Source Module -->
-              <td class="px-6 py-5">
-                <span class="px-3 py-1 rounded-xl text-lg font-black tracking-widest uppercase" [ngClass]="getModuleBadge(ev.sourceModule)">
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <span class="inline-flex items-center justify-center bg-[#E6E0F8] text-[#7154B8] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider min-w-[3rem]">
                   {{ ev.sourceModule }}
                 </span>
               </td>
 
               <!-- Description -->
-              <td class="px-6 py-5">
-                <p class="text-xl font-bold text-gray-800 max-w-xs truncate">{{ ev.description || '—' }}</p>
-                <p class="text-lg text-gray-400 font-medium mt-0.5">{{ formatLabel(ev.eventType) }}</p>
+              <td class="px-5 py-3.5 text-gray-800 font-medium" [title]="ev.description">
+                <div class="max-w-[220px] truncate">
+                  {{ ev.description || '—' }}
+                </div>
               </td>
 
               <!-- Amount -->
-              <td class="px-6 py-5 text-right">
-                <span class="text-lg font-black text-gray-900 italic">₦{{ ev.amount | number:'1.2-2' }}</span>
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-800 font-medium">
+                ₦{{ ev.amount | number:'1.2-2' }}
               </td>
 
               <!-- Status -->
-              <td class="px-6 py-5">
-                <span class="px-3 py-1 rounded-full text-lg font-black tracking-widest uppercase border"
-                  [ngClass]="getStatusClass(ev.status)">
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <span class="inline-flex items-center justify-center bg-[#FDF3C8] text-[#B08B1C] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                  *ngIf="ev.status === 'UNPROCESSED' || ev.status === 'UNREVIEWED'">
+                  PENDING APPROVAL
+                </span>
+                <span class="inline-flex items-center justify-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                  *ngIf="ev.status === 'APPROVED' || ev.status === 'POSTED' || ev.status === 'DISBURSED'">
                   {{ ev.status }}
+                </span>
+                <span class="inline-flex items-center justify-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                  *ngIf="ev.status === 'REJECTED'">
+                  REJECTED
                 </span>
               </td>
 
               <!-- Suggested Debit -->
-              <td class="px-6 py-5">
-                <span *ngIf="ev.suggestedDebit" class="text-xl font-bold text-red-600">{{ ev.suggestedDebit }}</span>
-                <span *ngIf="!ev.suggestedDebit" class="text-gray-300 text-xl italic">—</span>
+              <td class="px-5 py-3.5 whitespace-nowrap text-[#d32f2f] font-medium">
+                {{ ev.suggestedDebit || '—' }}
               </td>
 
               <!-- Suggested Credit -->
-              <td class="px-6 py-5">
-                <span *ngIf="ev.suggestedCredit" class="text-xl font-bold text-emerald-600">{{ ev.suggestedCredit }}</span>
-                <span *ngIf="!ev.suggestedCredit" class="text-gray-300 text-xl italic">—</span>
+              <td class="px-5 py-3.5 whitespace-nowrap text-[#2e7d32] font-medium">
+                {{ ev.suggestedCredit || '—' }}
               </td>
 
               <!-- Actions -->
-              <td class="px-6 py-5 border-l border-gray-50">
-                <div class="flex items-center justify-end gap-2 px-2">
-                  <!-- View (Always Visible) -->
-                  <button (click)="viewEvent(ev)"
-                    title="View Details"
-                    class="p-2 rounded-xl text-gray-400 bg-gray-50 hover:bg-gray-100 transition-all hover:scale-110 active:scale-95 shadow-sm">
-                    <i class="pi pi-eye text-base"></i>
+              <td class="px-5 py-3.5 whitespace-nowrap">
+                <div class="flex items-center justify-end gap-3 text-lg">
+                  <button (click)="viewEvent(ev)" title="View" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <i class="pi pi-eye"></i>
                   </button>
-
-                  <!-- Status-locked Modification Actions -->
+                  
                   <ng-container *ngIf="ev.status === 'UNPROCESSED' || ev.status === 'UNREVIEWED'">
-                    <!-- Approve -->
-                    <button (click)="approveEvent(ev)"
-                      title="Approve & Finalize"
-                      [disabled]="!ev.matchedMapping"
-                      class="p-2 rounded-xl transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed group/btn relative"
-                      [ngClass]="ev.matchedMapping ? 'text-emerald-600 bg-emerald-100 shadow-lg shadow-emerald-200/50 ring-2 ring-emerald-400 ring-offset-2 animate-pulse' : 'text-gray-400 bg-gray-50'">
-                      <i class="pi pi-check-circle text-xl"></i>
-                      <span *ngIf="ev.matchedMapping" class="absolute -top-1 -right-1 flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                      </span>
+                    <button (click)="approveEvent(ev)" title="Approve" [disabled]="!ev.matchedMapping" 
+                      class="transition-colors" [ngClass]="ev.matchedMapping ? 'text-[#2e7d32] hover:text-green-800' : 'text-gray-300 cursor-not-allowed'">
+                      <i class="pi pi-check"></i>
                     </button>
-                    <!-- Edit -->
-                    <button (click)="openEdit(ev)"
-                      title="Edit Mapping"
-                      class="p-2 rounded-xl text-customBlue bg-customBlue/5 hover:bg-customBlue/10 transition-all hover:scale-110 active:scale-95 shadow-sm">
-                      <i class="pi pi-pencil text-base"></i>
+                    <button (click)="openEdit(ev)" title="Edit" class="text-gray-600 hover:text-gray-900 transition-colors">
+                      <i class="pi pi-pencil"></i>
                     </button>
-                    <!-- Reject -->
-                    <button (click)="rejectEvent(ev)"
-                      title="Reject Event"
-                      class="p-2 rounded-xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all hover:scale-110 active:scale-95 shadow-sm">
-                      <i class="pi pi-times-circle text-base"></i>
+                    <button (click)="rejectEvent(ev)" title="Delete/Reject" class="text-[#d32f2f] hover:text-red-800 transition-colors">
+                      <i class="pi pi-trash"></i>
                     </button>
                   </ng-container>
-                  
-                  <!-- Compact View Indicator for Processed or Rejected -->
-                  <span *ngIf="ev.status === 'APPROVED' || ev.status === 'POSTED' || ev.status === 'DISBURSED' || ev.status === 'REJECTED'" 
-                        class="flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border shadow-sm"
-                        [ngClass]="ev.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'">
-                    <i class="pi pi-lock"></i> {{ ev.status === 'REJECTED' ? 'Rejected' : 'Posted' }}
+
+                  <span *ngIf="ev.status === 'APPROVED' || ev.status === 'POSTED' || ev.status === 'DISBURSED' || ev.status === 'REJECTED'"
+                    class="text-xs font-bold text-gray-400">
+                    <i class="pi pi-lock"></i>
                   </span>
                 </div>
               </td>
@@ -239,11 +266,7 @@
         <p class="text-gray-400 font-bold text-lg">
           Showing {{ events.length }} of {{ totalRecords }} events
         </p>
-        <p-paginator
-          [rows]="rows"
-          [totalRecords]="totalRecords"
-          [first]="first"
-          [rowsPerPageOptions]="[10, 20, 50]"
+        <p-paginator [rows]="rows" [totalRecords]="totalRecords" [first]="first" [rowsPerPageOptions]="[10, 20, 50]"
           (onPageChange)="onPageChange($event)">
         </p-paginator>
       </div>
@@ -253,37 +276,44 @@
 </div>
 
 <!-- ── Responsibility Confirmation Custom Modal ── -->
-<div *ngIf="isConfirmOpen" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-in-out">
-  
+<div *ngIf="isConfirmOpen"
+  class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ease-in-out">
+
   <!-- Backdrop (Glassmorphism) -->
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" (click)="!isProcessingPost && cancelConfirm()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300"
+    (click)="!isProcessingPost && cancelConfirm()"></div>
 
   <!-- Modal Container -->
-  <div class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
-    
+  <div
+    class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+
     <!-- Top Pattern/Accent -->
     <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-red-600 via-orange-500 to-red-600"></div>
 
-    <button *ngIf="!isProcessingPost" (click)="cancelConfirm()" class="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10">
+    <button *ngIf="!isProcessingPost" (click)="cancelConfirm()"
+      class="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors z-10">
       <i class="pi pi-times text-gray-400"></i>
     </button>
 
     <div class="px-10 pt-12 pb-10 flex flex-col items-center text-center">
-      
+
       <!-- Icon Header -->
-      <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-8 border border-red-100 shadow-inner group">
+      <div
+        class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-8 border border-red-100 shadow-inner group">
         <i class="pi pi-shield text-5xl text-red-600 group-hover:scale-110 transition-transform duration-500"></i>
       </div>
-      
+
       <!-- Branding & Title -->
       <h2 class="text-4xl font-black text-gray-900 mb-2 leading-tight tracking-tight italic">Fiduciary Control</h2>
       <p class="text-gray-500 text-lg font-medium mb-6 max-w-[340px]">
-        Review and approval of this transaction triggers an <span class="text-red-600 font-extrabold underline decoration-wavy underline-offset-4 text-sm">immutable posting</span> to the ledger.
+        Review and approval of this transaction triggers an <span
+          class="text-red-600 font-extrabold underline decoration-wavy underline-offset-4 text-sm">immutable
+          posting</span> to the ledger.
       </p>
 
       <!-- Transaction Preview Card -->
-      <div class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 mb-8 text-left relative overflow-hidden group">
+      <div
+        class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 mb-8 text-left relative overflow-hidden group">
         <div class="flex items-center gap-4 mb-4">
           <div class="p-3 bg-customBlue/10 rounded-xl">
             <i class="pi pi-file-edit text-customBlue font-bold"></i>
@@ -295,7 +325,7 @@
             </p>
           </div>
         </div>
-        
+
         <div class="flex justify-between items-end border-t border-gray-200 pt-4">
           <div>
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Reference</p>
@@ -314,20 +344,22 @@
           <i class="pi pi-lock text-orange-700 font-bold"></i>
         </div>
         <div>
-          <span class="text-orange-900 font-black uppercase tracking-[0.1em] text-[10px] mb-1 block">Security Protocol</span>
+          <span class="text-orange-900 font-black uppercase tracking-[0.1em] text-[10px] mb-1 block">Security
+            Protocol</span>
           <p class="text-orange-800 font-bold text-sm leading-snug">
-            This operation is cryptographically hashed and <span class="text-red-700 font-black uppercase">cannot be reversed</span>.
+            This operation is cryptographically hashed and <span class="text-red-700 font-black uppercase">cannot be
+              reversed</span>.
           </p>
         </div>
       </div>
 
       <!-- Actions -->
       <div class="flex items-center gap-4 w-full">
-        <button [disabled]="isProcessingPost" (click)="cancelConfirm()" 
+        <button [disabled]="isProcessingPost" (click)="cancelConfirm()"
           class="flex-1 px-8 py-5 bg-gray-100 text-gray-600 rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95 shadow-sm border-0 disabled:opacity-50">
           Discard
         </button>
-        <button [disabled]="isProcessingPost" (click)="executePostToLedger()" 
+        <button [disabled]="isProcessingPost" (click)="executePostToLedger()"
           class="flex-[2] px-8 py-5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 bg-[length:200%_auto] text-white rounded-2xl font-black text-lg uppercase tracking-widest hover:bg-right transition-all active:scale-95 shadow-lg shadow-red-500/20 border-0 flex items-center justify-center gap-3 disabled:opacity-80">
           <span *ngIf="!isProcessingPost">Accept & Post</span>
           <i *ngIf="isProcessingPost" class="pi pi-spin pi-spinner text-xl"></i>
@@ -342,39 +374,43 @@
 <div *ngIf="isEditOpen && editingEvent" class="fixed inset-0 z-50 flex justify-end">
   <!-- Backdrop -->
   <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-md" (click)="isEditOpen = false"></div>
-  
+
   <!-- Panel -->
-  <div class="relative w-full max-w-5xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-    
+  <div
+    class="relative w-full max-w-5xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
+
     <!-- Header -->
-    <div class="px-8 py-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+    <div class="px-6 md:px-8 py-6 md:py-8 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between sticky top-0 bg-white z-10 gap-4">
       <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-customBlue/5 flex items-center justify-center text-customBlue">
-          <i class="pi pi-sliders-h text-2xl"></i>
+        <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-customBlue/5 flex items-center justify-center text-customBlue flex-shrink-0">
+          <i class="pi pi-sliders-h text-xl md:text-2xl"></i>
         </div>
         <div>
-          <h2 class="text-3xl font-black text-gray-900 tracking-tight leading-none">{{ isViewOnly ? 'Event Insight' : 'Refine Mapping' }}</h2>
-          <p class="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Ref: {{ editingEvent.reference }}</p>
+          <h2 class="text-xl md:text-3xl font-black text-gray-900 tracking-tight leading-none">{{ isViewOnly ? 'Event Insight' :
+            'Refine Mapping' }}</h2>
+          <p class="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-widest mt-1.5">Ref: {{ editingEvent.reference }}
+          </p>
         </div>
       </div>
-      <div class="flex items-center gap-4">
-        <span *ngIf="isViewOnly" class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-black uppercase tracking-widest rounded-full border border-amber-200">
+      <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+        <span *ngIf="isViewOnly"
+          class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-black uppercase tracking-widest rounded-full border border-amber-200">
           Read Only
         </span>
         <button (click)="isEditOpen = false" class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-          <i class="pi pi-times text-2xl text-gray-400"></i>
+          <i class="pi pi-times text-xl md:text-2xl text-gray-400"></i>
         </button>
       </div>
     </div>
-    
+
     <!-- READ ONLY Banner -->
-    <div *ngIf="isViewOnly" class="bg-amber-50 border-b border-amber-100 px-8 py-3 flex items-center gap-3">
+    <div *ngIf="isViewOnly" class="bg-amber-50 border-b border-amber-100 px-6 md:px-8 py-3 flex items-center gap-3">
       <i class="pi pi-info-circle text-amber-600"></i>
       <p class="text-amber-800 font-bold text-sm">This transaction has been finalized and cannot be modified.</p>
     </div>
-    
-    <div class="px-8 py-8 space-y-10 pb-10 overflow-y-auto flex-1">
-  
+
+    <div class="px-6 md:px-8 py-6 md:py-8 space-y-8 md:space-y-10 pb-10 overflow-y-auto flex-1">
+
       <!-- Section: Core Mapping -->
       <section class="space-y-6">
         <div class="relative flex items-center">
@@ -382,70 +418,61 @@
             <div class="w-full border-t border-gray-200"></div>
           </div>
           <div class="relative flex justify-start">
-            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">General Mapping</span>
+            <span class="pr-3 bg-white text-base md:text-lg font-black text-gray-400 uppercase tracking-widest">General
+              Mapping</span>
           </div>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <div>
-            <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Event Type</label>
+            <label class="block text-xs md:text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Event Type</label>
             <input [value]="formatLabel(editingEvent.eventType)" disabled
-              class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-5 py-4 font-black text-[#2E6276] text-xl uppercase tracking-widest outline-none opacity-80 cursor-not-allowed">
+              class="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-4 md:px-5 py-3 md:py-4 font-black text-[#2E6276] text-sm md:text-lg uppercase tracking-widest outline-none opacity-80 cursor-not-allowed">
           </div>
-  
+
           <div>
-            <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Description</label>
+            <label class="block text-xs md:text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
             <div class="relative">
               <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-[#2E6276] rounded-l-xl"></div>
               <input [(ngModel)]="editingEvent.description" type="text" [disabled]="isViewOnly"
-                class="w-full bg-gray-50/80 border border-gray-200 rounded-xl pl-7 pr-5 py-4 font-bold text-gray-700 text-xl outline-none focus:ring-4 focus:ring-customBlue/5 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed">
+                class="w-full bg-gray-50/80 border border-gray-200 rounded-xl pl-6 pr-4 py-3 md:py-4 font-bold text-gray-700 text-sm md:text-lg outline-none focus:ring-4 focus:ring-customBlue/5 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed">
             </div>
           </div>
-  
+
           <div>
-            <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Debit Account Suggestion</label>
-            <ng-select 
-              [items]="accounts"
-              bindLabel="accountName"
-              bindValue="accountName"
-              [(ngModel)]="editingEvent.suggestedDebit"
-              [disabled]="isViewOnly"
-              placeholder="Search account..."
-              class="custom-ng-select-queue"
-              appendTo="body">
+            <label class="block text-xs md:text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Debit Account
+              Suggestion</label>
+            <ng-select [items]="accounts" bindLabel="accountName" bindValue="accountName"
+              [(ngModel)]="editingEvent.suggestedDebit" [disabled]="isViewOnly" placeholder="Search account..."
+              class="custom-ng-select-queue" appendTo="body">
               <ng-template ng-option-tmp let-item="item">
                 <div class="flex items-center gap-2 py-1">
-                  <span class="text-[#2E6276] font-bold">{{ item.accountCode }}</span>
+                  <span class="text-[#2E6276] font-bold text-xs md:text-sm">{{ item.accountCode }}</span>
                   <span class="text-gray-300">-</span>
-                  <span class="font-medium">{{ item.accountName }}</span>
+                  <span class="font-medium text-xs md:text-sm">{{ item.accountName }}</span>
                 </div>
               </ng-template>
             </ng-select>
           </div>
-  
+
           <div>
-            <label class="block text-lg font-black text-gray-400 uppercase tracking-widest mb-3">Credit Account Suggestion</label>
-            <ng-select 
-              [items]="accounts"
-              bindLabel="accountName"
-              bindValue="accountName"
-              [(ngModel)]="editingEvent.suggestedCredit"
-              [disabled]="isViewOnly"
-              placeholder="Search account..."
-              class="custom-ng-select-queue"
-              appendTo="body">
+            <label class="block text-xs md:text-sm font-black text-gray-400 uppercase tracking-widest mb-2">Credit Account
+              Suggestion</label>
+            <ng-select [items]="accounts" bindLabel="accountName" bindValue="accountName"
+              [(ngModel)]="editingEvent.suggestedCredit" [disabled]="isViewOnly" placeholder="Search account..."
+              class="custom-ng-select-queue" appendTo="body">
               <ng-template ng-option-tmp let-item="item">
                 <div class="flex items-center gap-2 py-1">
-                  <span class="text-[#2E6276] font-bold">{{ item.accountCode }}</span>
+                  <span class="text-[#2E6276] font-bold text-xs md:text-sm">{{ item.accountCode }}</span>
                   <span class="text-gray-300">-</span>
-                  <span class="font-medium">{{ item.accountName }}</span>
+                  <span class="font-medium text-xs md:text-sm">{{ item.accountName }}</span>
                 </div>
               </ng-template>
             </ng-select>
           </div>
         </div>
       </section>
-  
+
       <!-- Section: Transaction Detail Metadata -->
       <section *ngIf="editingEvent.metadata" class="space-y-6">
         <div class="relative flex items-center">
@@ -453,48 +480,50 @@
             <div class="w-full border-t border-gray-200"></div>
           </div>
           <div class="relative flex justify-start">
-            <span class="pr-3 bg-white text-lg font-black text-gray-400 uppercase tracking-widest">Transaction Metadata</span>
+            <span class="pr-3 bg-white text-base md:text-lg font-black text-gray-400 uppercase tracking-widest">Transaction
+              Metadata</span>
           </div>
         </div>
-        
+
         <div class="bg-white border border-gray-200 rounded-[2rem] overflow-hidden shadow-sm">
-          <div class="grid grid-cols-1 md:grid-cols-4 divide-x divide-y divide-gray-200 border-collapse">
-            
-            <div *ngFor="let item of editingEvent.metadata | keyvalue" 
-              class="p-6 flex flex-col gap-2 min-h-[120px]">
-              <span class="text-base font-black text-gray-400 uppercase tracking-widest">{{ formatLabel($any(item.key)) }}</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 border-collapse bg-white">
+
+            <div *ngFor="let item of editingEvent.metadata | keyvalue" class="p-5 md:p-6 flex flex-col gap-2 min-h-[100px] md:min-h-[120px]">
+              <span class="text-xs md:text-base font-black text-gray-400 uppercase tracking-widest">{{ formatLabel($any(item.key))
+                }}</span>
               <div class="flex-1 flex items-center">
                 <ng-container [ngSwitch]="true">
                   <!-- Date -->
                   <div *ngSwitchCase="isDateField($any(item.key))" class="flex flex-col gap-0.5">
-                    <span class="text-xl font-bold text-gray-800">{{ $any(item.value) | date:'yyyy-MM-dd' }}</span>
-                    <span class="text-lg font-medium text-gray-400 lowercase">{{ $any(item.value) | date:'h:mm a' }}</span>
+                    <span class="text-lg md:text-xl font-bold text-gray-800">{{ $any(item.value) | date:'yyyy-MM-dd' }}</span>
+                    <span class="text-xs md:text-lg font-medium text-gray-400 lowercase">{{ $any(item.value) | date:'h:mm a'
+                      }}</span>
                   </div>
-                  
+
                   <!-- Default -->
-                  <span *ngSwitchDefault class="text-xl font-bold text-gray-900 break-words">
+                  <span *ngSwitchDefault class="text-lg md:text-xl font-bold text-gray-900 break-words">
                     {{ item.value }}
                   </span>
                 </ng-container>
               </div>
             </div>
-            
+
           </div>
         </div>
       </section>
     </div>
-  
+
     <!-- Footer -->
-    <div class="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-8 flex items-center gap-4 justify-end">
-      <button (click)="isEditOpen = false" 
-        class="px-10 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all">
+    <div class="sticky bottom-0 bg-white border-t border-gray-100 px-6 md:px-8 py-6 md:py-8 flex flex-col sm:flex-row items-center gap-3 justify-end">
+      <button (click)="isEditOpen = false"
+        class="w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all text-center">
         {{ isViewOnly ? 'Dismiss' : 'Cancel' }}
       </button>
-      <button *ngIf="!isViewOnly" (click)="saveEdit()" 
-        class="px-12 py-4 bg-[#2E6276] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all">
+      <button *ngIf="!isViewOnly" (click)="saveEdit()"
+        class="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 bg-[#2E6276] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all text-center">
         Update Rule
       </button>
     </div>
-  
+
   </div>
 </div>

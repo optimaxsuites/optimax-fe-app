@@ -45,10 +45,14 @@ export class AccountingQueueComponent implements OnInit {
   selectedType = '';
   selectedModule = '';
   selectedStatus = '';
-  
+
+  // Sorting
+  sortField = '';
+  sortOrder = 1; // 1 for asc, -1 for desc
+
   modules = ['POS', 'HR', 'HOSPITALITY', 'BANK', 'EXPENSE', 'MANUAL'];
   statuses = ['UNPROCESSED', 'APPROVED', 'REJECTED', 'PROCESSING'];
-  
+
   eventTypes = [
     'LOAN_DISBURSEMENT',
     'PRINCIPLE_REPAYMENT',
@@ -71,7 +75,7 @@ export class AccountingQueueComponent implements OnInit {
   constructor(
     private accountingService: AccountingService,
     private toastService: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     console.log('[Optimax Accounting] AccountingQueueComponent initialized');
@@ -83,7 +87,7 @@ export class AccountingQueueComponent implements OnInit {
   loadEvents(): void {
     this.loading = true;
     const page = Math.floor(this.first / this.rows);
-    
+
     // Fetch both raw events and processed transactions to provide a unified view
     forkJoin({
       events: this.accountingService.getEvents(page, this.rows),
@@ -153,7 +157,7 @@ export class AccountingQueueComponent implements OnInit {
             ev.suggestedCreditId = m.suggestedCreditId;
             ev.suggestedDebit = m.suggestedDebitName;
             ev.suggestedCredit = m.suggestedCreditName;
-            
+
             // Reconstruct a synthetic mapping for the orchestration pipeline
             ev.matchedMapping = {
               sourceModule: ev.sourceModule,
@@ -185,7 +189,7 @@ export class AccountingQueueComponent implements OnInit {
       error: () => console.error('Failed to load account mappings')
     });
   }
-  
+
   loadAccounts(): void {
     this.accountingService.getAccounts(0, 100).subscribe({
       next: (res) => {
@@ -200,16 +204,34 @@ export class AccountingQueueComponent implements OnInit {
   }
 
   get filteredEvents(): QueueEvent[] {
-    return this.events.filter(event => {
-      const matchesSearch = !this.searchTerm || 
+    let list = this.events.filter(event => {
+      const matchesSearch = !this.searchTerm ||
         (event.reference?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
         (event.description?.toLowerCase().includes(this.searchTerm.toLowerCase()));
-      
+
       const matchesModule = !this.selectedModule || event.sourceModule === this.selectedModule;
       const matchesStatus = !this.selectedStatus || event.status === this.selectedStatus;
-      
-      return matchesSearch && matchesModule && matchesStatus;
+      const matchesType = !this.selectedType || event.eventType === this.selectedType;
+
+      return matchesSearch && matchesModule && matchesStatus && matchesType;
     });
+
+    if (this.sortField) {
+      list.sort((a, b) => {
+        let valA = (a as any)[this.sortField];
+        let valB = (b as any)[this.sortField];
+
+        if (valA === undefined || valA === null) valA = 0;
+        if (valB === undefined || valB === null) valB = 0;
+
+        if (typeof valA === 'string') {
+          return valA.localeCompare(valB) * this.sortOrder;
+        } else {
+          return (valA - valB) * this.sortOrder;
+        }
+      });
+    }
+    return list;
   }
 
 
@@ -236,7 +258,7 @@ export class AccountingQueueComponent implements OnInit {
       mapping: event.matchedMapping,
       createdBy: this.getCurrentUser()
     };
-    
+
     this.isConfirmOpen = true;
   }
 
@@ -259,7 +281,7 @@ export class AccountingQueueComponent implements OnInit {
     if (!this.pendingActionData) return;
 
     const { event, mapping, createdBy } = this.pendingActionData;
-    
+
     this.isProcessingPost = true; // Show loader
 
     // Reverting to Orchestration: This converts the raw Event into a full Ledger Transaction
@@ -269,7 +291,7 @@ export class AccountingQueueComponent implements OnInit {
         // Mark as approved locally to trigger locking
         event.status = 'APPROVED';
         this.toastService.success(`Event ${event.reference} successfully orchestrated and posted to the General Ledger.`);
-        
+
         const idx = this.events.findIndex(e => e.reference === event.reference);
         if (idx !== -1) {
           this.events[idx] = { ...event, status: 'APPROVED' };
@@ -398,10 +420,10 @@ export class AccountingQueueComponent implements OnInit {
 
     this.editingEvent.matchedMapping = {
       ...mapping,
-      debitAccount:  mapping.debitAccount  || this.accounts.find(a => a.id === mapping.debitAccountId),
+      debitAccount: mapping.debitAccount || this.accounts.find(a => a.id === mapping.debitAccountId),
       creditAccount: mapping.creditAccount || this.accounts.find(a => a.id === mapping.creditAccountId),
     } as AccountMappingDTO;
-    this.editingEvent.suggestedDebit  = debitName;
+    this.editingEvent.suggestedDebit = debitName;
     this.editingEvent.suggestedCredit = creditName;
 
     this.syncLocalState();
@@ -431,14 +453,26 @@ export class AccountingQueueComponent implements OnInit {
     this.selectedType = '';
     this.selectedModule = '';
     this.selectedStatus = '';
+    this.sortField = '';
+    this.sortOrder = 1;
     this.toastService.info('Filters cleared');
+  }
+
+  sortBy(field: string): void {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 1 ? -1 : 1;
+    } else {
+      this.sortField = field;
+      this.sortOrder = 1;
+    }
   }
 
   formatLabel(key: any): string {
     if (!key || typeof key !== 'string') return String(key || '');
     return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, str => str.toUpperCase())
       .trim();
   }
 
@@ -465,27 +499,27 @@ export class AccountingQueueComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'APPROVED':    return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'REJECTED':    return 'bg-rose-100 text-rose-800 border-rose-200';
-      case 'PROCESSING':  return 'bg-blue-100 text-blue-800 border-blue-200 animate-pulse';
+      case 'APPROVED': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'REJECTED': return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'PROCESSING': return 'bg-blue-100 text-blue-800 border-blue-200 animate-pulse';
       case 'UNPROCESSED': return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:            return 'bg-gray-100 text-gray-700 border-gray-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   }
 
   getModuleBadge(module: string): string {
     const map: Record<string, string> = {
-      POS:         'bg-blue-100 text-blue-800',
-      HR:          'bg-purple-100 text-purple-800',
+      POS: 'bg-blue-100 text-blue-800',
+      HR: 'bg-purple-100 text-purple-800',
       HOSPITALITY: 'bg-indigo-100 text-indigo-800',
-      BANK:        'bg-teal-100 text-teal-800',
-      EXPENSE:     'bg-orange-100 text-orange-800',
-      MANUAL:      'bg-gray-100 text-gray-700',
+      BANK: 'bg-teal-100 text-teal-800',
+      EXPENSE: 'bg-orange-100 text-orange-800',
+      MANUAL: 'bg-gray-100 text-gray-700',
     };
     return map[module?.toUpperCase()] || 'bg-gray-100 text-gray-700';
   }
 
-  get pendingCount(): number  { return this.events.filter(e => e.status === 'UNPROCESSED').length; }
+  get pendingCount(): number { return this.events.filter(e => e.status === 'UNPROCESSED').length; }
   get approvedCount(): number { return this.events.filter(e => e.status === 'APPROVED').length; }
   get rejectedCount(): number { return this.events.filter(e => e.status === 'REJECTED').length; }
 

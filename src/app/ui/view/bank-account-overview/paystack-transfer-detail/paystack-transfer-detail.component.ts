@@ -96,7 +96,7 @@ export class PaystackTransferDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     const uuid = this.route.snapshot.params['uuid'] || 'default';
-    this.router.navigate(['/bankaccountoverview', uuid], {
+    this.router.navigate(['/admin/accounting/bankaccountoverview', uuid], {
       queryParams: { source: 'paystack', tab: 'transactions' }
     });
   }

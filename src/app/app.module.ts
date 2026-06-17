@@ -187,8 +187,8 @@ import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-t
     PaystackInitiateTransferComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
