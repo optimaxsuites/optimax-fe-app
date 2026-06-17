@@ -415,8 +415,8 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
   ],
   imports: [
     AppHrRoutingModule,
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
