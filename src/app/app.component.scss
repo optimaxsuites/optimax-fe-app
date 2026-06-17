@@ -1,3 +1,19 @@
-// * h1,h2,h3,h4,h5,h6{
-//     font-family: "Roboto Slab", serif;
-//   }
+.master-container {
+	min-height: 100vh;
+	align-items: stretch;
+}
+
+.main-container {
+	min-width: 0;
+}
+
+.navbar-container {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: rgb(237, 241, 241);
+}
+
+.main {
+	min-width: 0;
+}
