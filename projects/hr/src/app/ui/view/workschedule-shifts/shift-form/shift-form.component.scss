@@ -80,6 +80,13 @@
   }
 }
 
+.required-label::after {
+  content: ' *';
+  color: #dc3545;
+  margin-left: 2px;
+  font-weight: 600;
+}
+
 /* FULL WIDTH FIELD */
 
 .full-width {

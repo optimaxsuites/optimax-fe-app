@@ -3,7 +3,6 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { ShiftListComponent } from './shift-list/shift-list.component';
 import { ShiftCalendarComponent } from './shift-calendar/shift-calendar.component';
 import { MyScheduleComponent } from './my-schedule/my-schedule.component';
-import { ShiftSummaryComponent } from './shift-summary/shift-summary.component';
 
 @Component({
   selector: 'app-workschedule-shifts',
@@ -17,9 +16,6 @@ export class WorkscheduleShiftsComponent {
       },
       { name: 'Shift List', 
         component: ShiftListComponent
-       },
-       { name: 'Shift Summary', 
-        component: ShiftSummaryComponent
        },
        {
         name: 'My Schedule',

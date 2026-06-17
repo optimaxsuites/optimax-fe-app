@@ -33,6 +33,9 @@ export class ShiftCalendarComponent implements OnInit {
   }
 
   selectedSummaryDate: string | null = null;
+  showDateWarning = false;
+
+  editingSchedule: ScheduleDTO | null = null;
   
   employees = [
     { id: 'emp-1', name: 'Afolabi Daniels' },
@@ -188,6 +191,7 @@ export class ShiftCalendarComponent implements OnInit {
     return this.selectedDate <= today;
 }
 
+
   isPastOrToday(date: Date): boolean {
   const today = new Date();
 
@@ -196,6 +200,39 @@ export class ShiftCalendarComponent implements OnInit {
   const t = this.formatDateLocal(today);
 
   return d <= t; // includes today
+}
+
+editSchedule(schedule: ScheduleDTO): void {
+  this.editingSchedule = schedule;
+  this.showAssignment = true;
+}
+
+deleteSchedule(schedule: ScheduleDTO): void {
+  if (schedule.assignmentGroupId) {
+    const deleteSeries = 
+    confirm('Delete entire recurring series?\n\nPress OK for entire series.\nPress Cancel for single occurrence.');
+
+    if (deleteSeries) {
+      this.scheduleService
+        .deleteScheduleSeries(
+          schedule.assignmentGroupId
+        );
+    } else {
+      this.scheduleService
+        .deleteSchedule(
+          schedule.id
+        );
+    }
+    return;
+  }
+  
+  const confirmed = confirm(
+    'Delete this schedule?'
+  );
+
+  if (!confirmed) return;
+
+  this.scheduleService.deleteSchedule(schedule.id);
 }
 
 onTableDateChange(event: any) {
@@ -249,7 +286,66 @@ get openSlots(): number {
   );
 }
 
-getDayDensity(date: Date): string {
+/*getDayShiftColors(date: Date): string[] {
+
+  const day = this.formatDateLocal(date);
+
+  return this.schedules
+    .filter(schedule => schedule.date === day)
+    .slice(0, 10) // maximum 10 dots
+    .map(schedule => {
+
+      const shift =
+        this.shiftService.getShiftById(
+          schedule.shiftId
+        );
+
+      return shift?.color || '#9ca3af';
+    });
+
+}*/
+
+getDayShiftColors(date: Date): string[] {
+
+  const day =
+    this.formatDateLocal(date);
+
+  const daySchedules =
+    this.schedules.filter(
+      s => s.date === day
+    );
+
+  const uniqueAssignments =
+    new Map<string, string>();
+
+  daySchedules.forEach(schedule => {
+
+    const key =
+      schedule.assignmentGroupId ??
+      schedule.id;
+
+    if (!uniqueAssignments.has(key)) {
+
+      const shift =
+        this.shiftService.getShiftById(
+          schedule.shiftId
+        );
+
+      uniqueAssignments.set(
+        key,
+        shift?.color || '#9ca3af'
+      );
+    }
+
+  });
+
+  return Array.from(
+    uniqueAssignments.values()
+  ).slice(0, 10);
+
+}
+
+/*getDayDensity(date: Date): string {
 
   const day = this.formatDateLocal(date);
 
@@ -264,7 +360,7 @@ getDayDensity(date: Date): string {
   if (count > 0) return 'low';
 
   return '';
-}
+}*/
 
 get employeeSummary() {
 
@@ -343,10 +439,18 @@ prevPage() {
     const selected = new Date(this.selectedDate);
 
     if(this.isSelectedDateLocked) {
-      alert('You can only assign shifts for future dates.');
+      this.showDateWarning = true;
+
+      setTimeout(() => {
+        this.showDateWarning = false;
+      }, 3000);
+      //alert('You can only assign shifts for future dates.');
       return;
     }
 
     this.showAssignment = true; }
-  closeAssignment() { this.showAssignment = false; }
+  closeAssignment() { 
+    this.showAssignment = false; 
+    this.editingSchedule = null;
+  }
 }

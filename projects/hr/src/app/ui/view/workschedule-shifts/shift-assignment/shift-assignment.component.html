@@ -3,9 +3,21 @@
 <div class="modal-container">
   <div class="modal-card">
     <div class="modal-header">
-      <h3>New Schedule</h3>
+      <h3>
+        {{ isEditMode ? 'Edit Schedule' : 'New Schedule' }}
+      </h3>
       <button class="close-btn" (click)="cancel()">✕</button>
     </div>
+    <label>
+    <input
+      type="radio"
+      name="editMode"
+      value="series"
+      [(ngModel)]="editMode"
+    />
+    Edit Schedule Series
+
+  </label>
 
     <div class="modal-body">
     
@@ -106,6 +118,7 @@
             type="text"
             class="search-input"
             placeholder="Search employees..."
+            [disabled]="isEditMode"
             (input)="onEmployeeSearch($event)"
           />
           <div class="selector-list">
@@ -184,6 +197,30 @@
         </div>
       </div>
 
+      <div
+        class="form-group"
+        *ngIf="
+          !hasEndDate &&
+          assignmentForm.value.recurrence !== 'none'
+        "
+      >
+        <label>
+          Number of Occurrences
+        </label>
+
+        <input
+          type="number"
+          min="1"
+          formControlName="repeatCount"
+        />
+
+        <div class="field-hint">
+          Daily: 3 = 3 days<br>
+          Weekly: 3 = 3 weeks<br>
+          Custom: 3 = selected days repeated for 3 weeks
+        </div>
+      </div>
+
       <div *ngIf="!hasEndDate && assignmentForm.value.recurrence === 'custom'" class="custom-recurrence">
         <div class="form-group">
           <label>Repeat every</label>
@@ -227,7 +264,7 @@
           class="assign-btn"
           [disabled]="assignmentForm.invalid || conflictMessage.length > 0 || selectedEmployeeIds.length === 0"
         >
-          Create Schedule
+          {{ isEditMode ? 'Save Changes' : 'Create Schedule' }}
         </button>
       </div>
 

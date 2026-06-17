@@ -42,8 +42,16 @@
           {{ day.date.getDate() }}
         </span>
 
-        <!-- small dot indicator -->
-        <span *ngIf="hasSchedule(day.date)" class="dot"></span>
+      <div
+        class="calendar-dots"
+        *ngIf="getDayShiftColors(day.date).length > 0"
+      >
+        <span
+          *ngFor="let color of getDayShiftColors(day.date)"
+          class="calendar-dot"
+          [style.background]="color"
+        ></span>
+      </div>
       </div>
     </div>
 
@@ -54,8 +62,51 @@
         <span class="day-label">{{ selectedDateLabel }}</span>
       </div>
 
-      <div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
+      <!--<div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
         ⚠ You have overlapping shifts!
+      </div>-->
+
+      <div class="my-conflict-card" [class.has-conflict]="hasConflict(selectedDate)">
+        <div class="my-card-header">
+          <i class="fa-solid"
+            [class.fa-triangle-exclamation]="hasConflict(selectedDate)"
+            [class.fa-calendar-check]="!hasConflict(selectedDate)"> 
+            >
+          </i>
+          <span>{{ hasConflict(selectedDate) ? 'You have overlapping shifts' : 'Shift conflicts' }}</span>
+        </div>
+
+        <!-- All clear -->
+        <div *ngIf="!hasConflict(selectedDate)" class="clear-body">
+          <div class="check-ring">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <span>No overlapping shifts on this day.</span>
+        </div>
+
+        <!-- Conflict pairs -->
+        <div *ngIf="hasConflict(selectedDate)" class="conflict-body">
+          <div *ngFor="let pair of conflictingShiftPairs" class="conflict-pair">
+            <span class="pair-label">Overlap detected</span>
+            <div class="shift-pill-row">
+              <span class="shift-pill">
+                <i class="fa-regular fa-clock"></i>
+                {{ pair.a.name }} · {{ pair.a.startTime }} – {{ pair.a.endTime }}
+              </span>
+              <span class="vs-dot">vs</span>
+              <span class="shift-pill">
+                <i class="fa-regular fa-clock"></i>
+                {{ pair.b.name }} · {{ pair.b.startTime }} – {{ pair.b.endTime }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <div *ngIf="hasConflict(selectedDate)" class="conflict-footer">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Contact your manager to resolve this conflict</span>
+        </div>
       </div>
 
       <div *ngIf="shiftsForSelectedDate.length === 0" class="empty-card">

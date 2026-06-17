@@ -23,11 +23,20 @@
     </button>
 
     <button 
+      *ngIf="viewMode !== 'summary'" 
       class="add-btn"         
       (click)="openAssignment()" 
       [disabled]="isSelectedDateLocked">
       + Assign Shift
     </button>
+  </div>
+  <div
+    *ngIf="showDateWarning"
+    class="date-warning-toast">
+    <i class="fa-solid fa-calendar-xmark"></i>
+    <span>
+      Shifts can only be assigned to future dates.
+    </span>
   </div>
 
   <!--<div class="summary-cards">
@@ -67,34 +76,58 @@
     <div class="date-grid">
       <div
         class="date-cell"
-        [ngClass]="getDayDensity(day.date)"
         *ngFor="let day of calendarDays"
         [class.other-month]="!day.inMonth"
         [class.today]="isToday(day.date)"
         [class.selected]="isSelected(day.date)"
-        [class.has-schedules]="hasSchedules(day.date)"
         [class.disabled]="isPastOrToday(day.date)"
         (click)="selectDate(day)"
       >
+      <span>
         {{ day.date.getDate() }}
+      </span>
+      <div
+        class="calendar-dots"
+        *ngIf="getDayShiftColors(day.date).length > 0"
+      >
+        <span
+          *ngFor="let color of getDayShiftColors(day.date)"
+          class="calendar-dot"
+          [style.background]="color"
+        ></span>
+      </div>
+        
       </div>
     </div>
 
-    <div class="conflict-card">
-  <div class="card-header">
-    <i class="fa-solid fa-triangle-exclamation"></i>
-    Schedule Conflicts
-  </div>
+    <div class="conflict-card" [class.all-clear]="conflicts.length === 0">
+      <div class="card-header">
+        <i class="fa-solid" [class.fa-triangle-exclamation]="conflicts.length > 0"
+       [class.fa-calendar-check]="conflicts.length === 0"></i>
+        <span>Schedule Conflicts</span>
+      </div>
 
-  <div *ngIf="conflicts.length === 0" class="empty-state">
-    No schedule conflicts detected nyaa~
-  </div>
+      <div *ngIf="conflicts.length === 0" class="empty-state">
+        <div class="check-circle">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <span>No schedule conflicts detected nyaa~</span>
+      </div>
 
-  <div *ngFor="let conflict of conflicts" class="conflict-item">
-    <strong>{{ conflict.employeeName }}</strong>
-    <span>{{ conflict.message }}</span>
-  </div>
-</div>
+      <div *ngIf="conflicts.length > 0" class="conflict-list"></div>
+      <div *ngFor="let conflict of conflicts" class="conflict-item">
+        <i class="fa-solid fa-clock conflict-icon"></i>
+        <div class="conflict-body">
+        <strong>{{ conflict.employeeName }}</strong>
+        <span>{{ conflict.message }}</span>
+      </div>
+    </div>
+    </div>
+
+     <div *ngIf="conflicts.length > 0" class="conflict-footer">
+      <i class="fa-solid fa-circle-info"></i>
+      <span>{{ conflicts.length }} conflict{{ conflicts.length > 1 ? 's' : '' }} on this date — review assignments</span>
+    </div>
 
     <!-- DAY DETAIL -->
     <div class="day-detail">
@@ -136,6 +169,20 @@
           <div class="schedule-description" *ngIf="group.schedule.description">
             {{ group.schedule.description }}
           </div>
+          <div class="schedule-actions">
+          <button
+            class="edit-btn"
+            (click)="editSchedule(group.schedule)">
+            <i class="fa-solid fa-pen"></i>
+            Edit
+          </button>
+          <button
+            class="delete-btn"
+            (click)="deleteSchedule(group.schedule)">
+            <i class="fa-solid fa-trash"></i>
+            Delete
+          </button>
+    </div>
         </div>
 
         <!-- EMPLOYEES -->
@@ -379,6 +426,7 @@
   <app-shift-assignment
     *ngIf="showAssignment"
     [preselectedDate]="selectedDate"
+    [scheduleToEdit]="editingSchedule"
     (closeModal)="closeAssignment()">
   </app-shift-assignment>
 
