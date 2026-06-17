@@ -33,17 +33,17 @@ export class MyScheduleComponent implements OnInit{
         s => s.employeeId === this.currentEmployeeId
       );
     }); */
+    this.scheduleService.schedules$
+        .subscribe(data => {
 
-    //Dummy schedules
-    this.schedules = [
-      {
-        id: 'sch-1',
-        employeeId: 'emp-1',
-        shiftId: 'shift-1',
-        date: '2026-04-13',
-        project: 'CivicLens Dashboard'
-      }
-    ];
+          this.schedules =
+            data.filter(
+              s =>
+                s.employeeId ===
+                this.currentEmployeeId
+            );
+
+        });
   }
 
   onDateChange(event: Event) {
@@ -135,12 +135,29 @@ export class MyScheduleComponent implements OnInit{
     }).filter(s => s.date === this.selectedDate);
   }
 
+  get conflictingShiftPairs(): { a: ShiftDTO; b: ShiftDTO }[] {
+    const pairs: { a: ShiftDTO; b: ShiftDTO }[] = [];
+    const daySchedules = this.schedules.filter(s => s.date === this.selectedDate);
+
+    for (let i = 0; i < daySchedules.length; i++) {
+      for (let j = i + 1; j < daySchedules.length; j++) {
+        const a = this.shiftService.getShiftById(daySchedules[i].shiftId);
+        const b = this.shiftService.getShiftById(daySchedules[j].shiftId);
+        if (!a || !b) continue;
+        if (this.isOverlapping(a.startTime, a.endTime, b.startTime, b.endTime)) {
+          pairs.push({ a, b });
+        }
+      }
+    }
+    return pairs;
+  }
+
   hasSchedule(date: Date): boolean {
     const d = this.formatDateLocal(date);
     return this.schedules.some(s => s.date === d);
   }
 
-  // 🔥 Conflict detection
+  //  Conflict detection
   hasConflict(date: string): boolean {
     const daySchedules = this.schedules.filter(s => s.date === date);
 
@@ -160,6 +177,30 @@ export class MyScheduleComponent implements OnInit{
 
     return false;
   }
+
+getDayShiftColors(date: Date): string[] {
+
+  const day = this.formatDateLocal(date);
+
+  const uniqueSchedules = Array.from(
+    new Map(
+      this.schedules
+        .filter(s => s.date === day)
+        .map(s => [s.assignmentGroupId, s])
+    ).values()
+  );
+
+  return uniqueSchedules
+    .slice(0, 10)
+    .map(schedule => {
+
+      const shift = this.shiftService.getShiftById(
+        schedule.shiftId
+      );
+
+      return shift?.color || '#9ca3af';
+    });
+}
 
   private isOverlapping(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
     const toMin = (t: string) => {

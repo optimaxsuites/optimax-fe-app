@@ -12,6 +12,7 @@ export class ShiftListComponent implements OnInit{
   filteredShifts: ShiftDTO[] = [];
 
   searchText = '';
+  shiftTypeFilter = '';
   //departmentFilter = '';
 
   morningCount = 0;
@@ -38,13 +39,19 @@ export class ShiftListComponent implements OnInit{
       !this.departmentFilter ||
       shift.department === this.departmentFilter;*/
 
-    return matchesName; // && matchesDepartment;
+      const matchesType =
+      !this.shiftTypeFilter ||
+      shift.type === this.shiftTypeFilter;
+
+    return matchesName && matchesType; // && matchesDepartment;
   });
 }
 
 resetFilter() {
   this.searchText = '';
   //this.departmentFilter = '';
+
+  this.shiftTypeFilter = '';
 
   this.filteredShifts = this.shifts;
 }

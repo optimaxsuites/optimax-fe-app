@@ -42,6 +42,23 @@
       placeholder="Search shift name..."
       [(ngModel)]="searchText"
     />
+    <select [(ngModel)]="shiftTypeFilter">
+      <option value="">
+        All Types
+      </option>
+
+      <option value="morning">
+        Morning
+      </option>
+
+      <option value="evening">
+        Evening
+      </option>
+
+      <option value="night">
+        Night
+      </option>
+    </select>
     <!--<select [(ngModel)]="departmentFilter">
       <option value="">All Departments</option>
       <option value="HR">HR</option>
@@ -58,6 +75,7 @@
       <thead>
         <tr>
           <th>Name</th>
+          <th>Type</th>
           <th>Start</th>
           <th>End</th>
           <th>Break</th>
@@ -75,9 +93,17 @@
             ></span>
             {{ shift.name }}
           </td>
+          <td>
+            <span
+              class="shift-type"
+              [ngClass]="shift.type"
+            >
+              {{ shift.type }}
+            </span>
+          </td>
           <td>{{ shift.startTime }}</td>
           <td>{{ shift.endTime }}</td>
-          <td>{{ shift.breakTime }} mins</td>
+          <!--<td>{{ shift.breakTime }} mins</td>-->
           <!--<td>{{ shift.department }}</td>-->
           <td>{{ shift.description }}</td>
 

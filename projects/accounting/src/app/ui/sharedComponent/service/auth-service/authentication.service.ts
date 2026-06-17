@@ -19,7 +19,7 @@ export class AuthenticationService {
     private router: Router,
     private jwtHelper: JwtHelperService
   ) {
-    const TEMPORARY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTUyMDEzNSwiZXhwIjoxNzgxNjA2NTM1fQ.4b1Be2S-EIuLNLj2uHh6ZdToDYhowdoaGPE2UAetrdQ";
+    const TEMPORARY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTYwMjg5MSwiZXhwIjoxNzgxNjg5MjkxfQ.yp9dS9w1OLMMH2HE8Eh1c2btPnX15uDhKsqb4ZvYSzc";
     
     const token = 
       localStorage.getItem('Token2') || 
@@ -55,10 +55,10 @@ export class AuthenticationService {
       localStorage.setItem('accessToken2', TEMPORARY_TOKEN);
       
       if (!sessionStorage.getItem('userid')) {
-        sessionStorage.setItem('userid', '1');
+        sessionStorage.setItem('userid', '63');
         sessionStorage.setItem('username', 'miracle');
         sessionStorage.setItem('role', 'admin');
-        sessionStorage.setItem('userRegData', JSON.stringify({ id: 1, username: 'miracle', roles: 'admin' }));
+        sessionStorage.setItem('userRegData', JSON.stringify({ id: 63, username: 'miracle', roles: 'admin' }));
       }
     }
   }
@@ -78,7 +78,7 @@ export class AuthenticationService {
     }
 
     // Bypass expiry check for the temporary development token
-    const TEMPORARY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTUyMDEzNSwiZXhwIjoxNzgxNjA2NTM1fQ.4b1Be2S-EIuLNLj2uHh6ZdToDYhowdoaGPE2UAetrdQ";
+    const TEMPORARY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTYwMjg5MSwiZXhwIjoxNzgxNjg5MjkxfQ.yp9dS9w1OLMMH2HE8Eh1c2btPnX15uDhKsqb4ZvYSzc";
     if (token === TEMPORARY_TOKEN) {
       return true;
     }
@@ -126,12 +126,22 @@ export class AuthenticationService {
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", loginPayload, { withCredentials: true })
         .pipe(
           tap((response: any) => {
-            sessionStorage.removeItem('Token');
-            localStorage.removeItem('Token2');
-            sessionStorage.removeItem('token');
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('accessToken');
-            localStorage.removeItem('accessToken2');
+            const token = response?.token || response?.accessToken;
+            if (token) {
+              sessionStorage.setItem('Token', token);
+              localStorage.setItem('Token2', token);
+              sessionStorage.setItem('token', token);
+              localStorage.setItem('token', token);
+              sessionStorage.setItem('accessToken', token);
+              localStorage.setItem('accessToken2', token);
+            } else {
+              sessionStorage.removeItem('Token');
+              localStorage.removeItem('Token2');
+              sessionStorage.removeItem('token');
+              localStorage.removeItem('token');
+              sessionStorage.removeItem('accessToken');
+              localStorage.removeItem('accessToken2');
+            }
 
             if (response.ecode && response.ecode !== 'null') {
               localStorage.setItem('tenantId', response.ecode);

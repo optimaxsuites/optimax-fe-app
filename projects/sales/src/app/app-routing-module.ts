@@ -32,17 +32,28 @@ const routes: Routes = [
     redirectTo: '/sales-hub',
     pathMatch: 'full'
   },
+  
+  // --- Sales Hub ---
   {
-    path: 'sales-hub/:uuid',
-    component: SalesHubComponent,
-    data: { title: 'Sales Hub' }
+    path: 'sales-hub',
+    component: SalesHubComponent
   },
+  {
+    path: 'admin/sales/sales-hub',
+    component: SalesHubComponent
+  },
+  {
+    path: 'admin/sales/sales-hub/:uuid',
+    component: SalesHubComponent
+  },
+
+  // --- Quotes ---
   {
     path: 'sales/quotes',
     component: QuoteListComponent
   },
   {
-    path: 'sales/quotes/new/:uuid',
+    path: 'sales/quotes/new',
     component: QuoteFormComponent
   },
   {
@@ -53,8 +64,43 @@ const routes: Routes = [
     path: 'sales/quotes/:id/edit',
     component: QuoteFormComponent
   },
+  // Admin routes
   {
-    path: 'sales/invoices/:uuid',
+    path: 'admin/sales/sales/quotes',
+    component: QuoteListComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/:uuid',
+    component: QuoteListComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/new',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/new/:uuid',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/:id/:uuid',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/:id/edit',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'admin/sales/sales/quotes/:id/edit/:uuid',
+    component: QuoteFormComponent
+  },
+
+  // --- Invoices ---
+  {
+    path: 'sales/invoices',
     component: InvoiceListComponent
   },
   {
@@ -69,13 +115,48 @@ const routes: Routes = [
     path: 'sales/invoices/:id/edit',
     component: InvoiceFormComponent
   },
+  // Admin routes
   {
-    path: 'commerce/requests/home/:uuid',
+    path: 'admin/sales/sales/invoices',
+    component: InvoiceListComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/:uuid',
+    component: InvoiceListComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/new',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/new/:uuid',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/:id',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/:id/:uuid',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/:id/edit',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'admin/sales/sales/invoices/:id/edit/:uuid',
+    component: InvoiceFormComponent
+  },
+
+  // --- Other routes ---
+  {
+    path: 'commerce/requests',
     component: RequestManagementComponent
   },
   {
-    path: 'commerce/requests/new/:uuid',
-    component: ProductRequestFormComponent  
+    path: 'commerce/requests/new',
+    component: ProductRequestFormComponent
   },
   {
     path: 'commerce/requests/drafts',
@@ -83,11 +164,11 @@ const routes: Routes = [
   },
   {
     path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent  
+    component: ProductRequestDetailComponent
   },
   {
-  path: 'commerce/requests/:id/edit',
-  component: RequestEditFormComponent
+    path: 'commerce/requests/:id/edit',
+    component: RequestEditFormComponent
   },
   {
     path: 'commerce/requests/:id/tracking',
@@ -110,26 +191,17 @@ const routes: Routes = [
     component: ServiceRequestDetailComponent
   },
   {
-    path: 'commerce/orders/new/:uuid',
-    component: ProductRequestFormComponent
-    //redirectTo: '/commerce/requests/new/:uuid',
-    //pathMatch: 'full'
-  },
-  {
     path: 'commerce/orders/:id',
     component: OrderDetailComponent
   },
-   // Vendor portal
   {
     path: 'vendor-portal/:uuid',
-    component: VendorPortalComponent,
-    // path: 'commerce/requests/:id/tracking',
-  },
-
-]
+    component: VendorPortalComponent
+  }
+];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

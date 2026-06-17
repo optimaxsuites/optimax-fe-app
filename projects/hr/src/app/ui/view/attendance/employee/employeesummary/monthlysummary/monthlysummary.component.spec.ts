@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ShiftSummaryComponent } from './shift-summary.component';
+import { MonthlysummaryComponent } from './monthlysummary.component';
 
-describe('ShiftSummaryComponent', () => {
-  let component: ShiftSummaryComponent;
-  let fixture: ComponentFixture<ShiftSummaryComponent>;
+describe('MonthlysummaryComponent', () => {
+  let component: MonthlysummaryComponent;
+  let fixture: ComponentFixture<MonthlysummaryComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ShiftSummaryComponent]
+      declarations: [MonthlysummaryComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(ShiftSummaryComponent);
+    fixture = TestBed.createComponent(MonthlysummaryComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

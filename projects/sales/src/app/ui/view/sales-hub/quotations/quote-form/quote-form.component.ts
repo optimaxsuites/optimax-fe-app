@@ -1,10 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+// src/app/ui/view/sales-module/quote-form/quote-form.component.ts
+
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, Product, Quote, QuoteItem, QuoteStatus } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../domain/sales/sales.dto';
 
 @Component({
   selector: 'app-quote-form',
@@ -13,7 +15,12 @@ import { Customer, Product, Quote, QuoteItem, QuoteStatus } from '../../../../do
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
-export class QuoteFormComponent implements OnInit, OnDestroy {
+export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
+  @Input() editId?: string;
+  @Input() customerId?: string;
+  @Output() saved = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
   
   quoteForm: FormGroup;
   isSubmitting = false;
@@ -32,23 +39,39 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   searchProductTerm = '';
   currentItemIndex = 0;
   
+  // Toggle states
+  showTerms = false;
+  showNotes = false;
+  showAdvanced = false;
+  
   // Currency
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
+  
+  // Calculated totals
+  subtotal: number = 0;
+  totalTax: number = 0;
+  discountAmount: number = 0;
+  grandTotal: number = 0;
+  
+  // Make router available to template
+  router: Router;
   
   private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
-    public router: Router,
     private route: ActivatedRoute,
-    private salesService: SalesService
+    private salesService: SalesService,
+    router: Router
   ) {
+    this.router = router;
     this.quoteForm = this.fb.group({
       customerId: ['', Validators.required],
       customerName: [''],
       quoteNumber: [{ value: 'Auto-generated', disabled: true }],
-      currency: ['NGN', Validators.required],
+      quoteDate: [this.formatDateForInput(new Date()), Validators.required],
       validUntil: ['', Validators.required],
+      currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
       items: this.fb.array([])
@@ -56,21 +79,43 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.quoteId = this.route.snapshot.paramMap.get('id') || '';
+    this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
+    
     this.loadCustomers();
     this.loadProducts();
+    this.setupFormListeners();
     
     if (this.isEditMode) {
       this.loadQuote();
     } else {
-      this.addLineItem(); // Start with one empty line item
+      this.addLineItem();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    try {
+      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
+        this.dialogRef.nativeElement.showModal();
+      } else if (this.dialogRef?.nativeElement) {
+        this.dialogRef.nativeElement.setAttribute('open', '');
+      }
+    } catch (e) {
+      // ignore
     }
   }
 
   ngOnDestroy(): void {
+    this.closeDialog();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private setupFormListeners(): void {
+    // Listen to item changes to recalculate totals
+    this.quoteForm.get('items')?.valueChanges.subscribe(() => {
+      this.calculateTotals();
+    });
   }
 
   // Form Arrays
@@ -85,58 +130,65 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
-      discount: [0, [Validators.min(0), Validators.max(100)]],
-      total: [{ value: 0, disabled: true }]
+      taxRate: [0, [Validators.min(0), Validators.max(100)]],
+      total: [{ value: 0, disabled: true }],
+      taxAmount: [{ value: 0, disabled: true }]
     });
     
     this.items.push(itemForm);
     
-    // Subscribe to changes for this item to calculate total
+    // Subscribe to changes for this item
     itemForm.get('quantity')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
     itemForm.get('unitPrice')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
-    itemForm.get('discount')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
+    itemForm.get('taxRate')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
   }
 
   removeLineItem(index: number): void {
     this.items.removeAt(index);
-    this.calculateGrandTotal();
+    this.calculateTotals();
   }
 
-  private calculateItemTotal(itemForm: FormGroup): void {
+  private calculateItemTotal(itemForm: AbstractControl): void {
     const quantity = itemForm.get('quantity')?.value || 0;
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
-    const discount = itemForm.get('discount')?.value || 0;
+    const taxRate = itemForm.get('taxRate')?.value || 0;
     
-    const subtotal = quantity * unitPrice;
-    const discountAmount = subtotal * (discount / 100);
-    const total = subtotal - discountAmount;
+    const total = quantity * unitPrice;
+    const taxAmount = total * (taxRate / 100);
     
-    itemForm.patchValue({ total: total }, { emitEvent: false });
-    this.calculateGrandTotal();
+    itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
+    this.calculateTotals();
   }
 
-  calculateGrandTotal(): void {
-    let subtotal = 0;
+  calculateTotals(): void {
+    this.subtotal = 0;
+    this.totalTax = 0;
+    
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i);
-      subtotal += item.get('total')?.value || 0;
+      const total = item.get('total')?.value || 0;
+      const taxAmount = item.get('taxAmount')?.value || 0;
+      
+      this.subtotal += total;
+      this.totalTax += taxAmount;
     }
-    // You can add tax calculation here if needed
-    this.grandTotal = subtotal;
+    
+    // For now, discount is 0 - can be expanded later
+    this.discountAmount = 0;
+    this.grandTotal = this.subtotal + this.totalTax - this.discountAmount;
   }
 
-  grandTotal: number = 0;
-
   // Product selection
-  onProductSelect(index: number, event: Event): void {
-    const productId = (event.target as HTMLSelectElement).value;
+  onProductSelect(index: number, event: any): void {
+    const productId = event.target.value;
     const product = this.products.find(p => p.id === productId);
     if (product) {
-      const itemForm = this.items.at(index) as FormGroup;
+      const itemForm = this.items.at(index);
       itemForm.patchValue({
         productName: product.name,
         description: product.description,
-        unitPrice: product.unitPrice
+        unitPrice: product.unitPrice,
+        taxRate: product.taxRate || 0
       });
       this.calculateItemTotal(itemForm);
     }
@@ -155,12 +207,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   selectProductFromModal(product: Product, index: number): void {
-    const itemForm = this.items.at(index) as FormGroup;
+    const itemForm = this.items.at(index);
     itemForm.patchValue({
       productId: product.id,
       productName: product.name,
       description: product.description,
-      unitPrice: product.unitPrice
+      unitPrice: product.unitPrice,
+      taxRate: product.taxRate || 0
     });
     this.calculateItemTotal(itemForm);
     this.showProductModal = false;
@@ -168,8 +221,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   // Customer selection
-  onCustomerSelect(event: Event): void {
-    const customerId = (event.target as HTMLSelectElement).value;
+  onCustomerSelect(event: any): void {
+    const customerId = event.target.value;
     const customer = this.customers.find(c => c.id === customerId);
     if (customer) {
       this.quoteForm.patchValue({ customerName: customer.name });
@@ -179,23 +232,37 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   // Load data
   private loadCustomers(): void {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.customers = response.data;
+        if (this.customerId) {
+          this.quoteForm.patchValue({ customerId: this.customerId });
+          const customer = this.customers.find(c => c.id === this.customerId);
+          if (customer) {
+            this.quoteForm.patchValue({ customerName: customer.name });
+          }
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
+        if (this.customerId) {
+          this.quoteForm.patchValue({ customerId: this.customerId });
+          const customer = this.customers.find(c => c.id === this.customerId);
+          if (customer) {
+            this.quoteForm.patchValue({ customerName: customer.name });
+          }
+        }
       }
     });
   }
 
   private loadProducts(): void {
     this.salesService.getProducts({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.products = response.data;
         this.filteredProducts = this.products;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
       }
@@ -205,13 +272,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   private loadQuote(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
-      next: (quote) => {
+      next: (quote: Quote | null) => {
         if (quote) {
           this.populateForm(quote);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quote:', error);
         this.isLoading = false;
       }
@@ -223,6 +290,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       customerId: quote.customerId,
       customerName: quote.customerName,
       currency: quote.currency,
+      quoteDate: this.formatDateForInput(quote.createdAt),
       validUntil: this.formatDateForInput(quote.validUntil),
       notes: quote.notes,
       terms: quote.terms
@@ -234,17 +302,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     
     // Add items from quote
-    quote.items.forEach(item => {
+    quote.items.forEach((item: QuoteItem) => {
       this.addLineItem();
       const index = this.items.length - 1;
-      const itemForm = this.items.at(index) as FormGroup;
+      const itemForm = this.items.at(index);
       itemForm.patchValue({
         productId: item.productId,
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        discount: item.discount
+        taxRate: 0 // Default tax rate
       });
       this.calculateItemTotal(itemForm);
     });
@@ -277,7 +345,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        discount: item.discount,
+        discount: 0,
         total: item.total
       });
     }
@@ -290,12 +358,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       notes: formValue.notes,
       terms: formValue.terms,
       items: items,
-      subtotal: this.grandTotal,
-      taxAmount: 0,
-      discountAmount: 0,
+      subtotal: this.subtotal,
+      taxAmount: this.totalTax,
+      discountAmount: this.discountAmount,
       totalAmount: this.grandTotal,
       status: 'DRAFT' as QuoteStatus,
-      createdAt: new Date(),
+      createdAt: new Date(formValue.quoteDate),
       expiresAt: new Date(formValue.validUntil)
     };
     
@@ -307,17 +375,45 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     
     request.subscribe({
-      next: (response) => {
+      next: (response: Quote) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
-        this.router.navigate(['/sales/quotes', response.id]);
+        this.closeDialog();
+        if (this.saved.observed) {
+          this.saved.emit();
+        } else {
+          this.router.navigate(['/sales/quotes', response.id]);
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error saving quote:', error);
         this.isSubmitting = false;
         alert('Failed to save quote. Please try again.');
       }
     });
+  }
+
+  cancel(): void {
+    this.closeDialog();
+    if (this.cancelled.observed) {
+      this.cancelled.emit();
+    } else {
+      this.router.navigate(['/sales-hub']);
+    }
+  }
+
+  private closeDialog(): void {
+    try {
+      if (this.dialogRef?.nativeElement) {
+        if (typeof this.dialogRef.nativeElement.close === 'function') {
+          this.dialogRef.nativeElement.close();
+        } else {
+          this.dialogRef.nativeElement.removeAttribute('open');
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   // Helper methods
@@ -341,17 +437,63 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency }).format(amount);
   }
 
+  getCurrencyLabel(code: string): string {
+    const labels: Record<string, string> = {
+      'NGN': 'Nigerian Naira (NGN, ₦)',
+      'USD': 'US Dollar (USD, $)',
+      'EUR': 'Euro (EUR, €)',
+      'GBP': 'British Pound (GBP, £)'
+    };
+    return labels[code] || code;
+  }
+
+  getTotalQuantity(): number {
+    let total = 0;
+    for (let i = 0; i < this.items.length; i++) {
+      total += this.items.at(i).get('quantity')?.value || 0;
+    }
+    return total;
+  }
+
+  getTotalInWords(amount: number): string {
+    if (amount === 0) return 'Zero Naira Only';
+    
+    const naira = Math.floor(amount);
+    const kobo = Math.round((amount - naira) * 100);
+    
+    let result = '';
+    if (naira > 0) {
+      result += this.numberToWords(naira) + ' Naira';
+    }
+    if (kobo > 0) {
+      result += (result ? ' ' : '') + this.numberToWords(kobo) + ' Kobo';
+    }
+    return result + ' Only';
+  }
+
+  private numberToWords(num: number): string {
+    if (num === 0) return 'Zero';
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (num < 20) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
+    if (num < 1000) return ones[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' and ' + this.numberToWords(num % 100) : '');
+    if (num < 1000000) return this.numberToWords(Math.floor(num / 1000)) + ' Thousand' + (num % 1000 ? ' ' + this.numberToWords(num % 1000) : '');
+    return this.numberToWords(Math.floor(num / 1000000)) + ' Million' + (num % 1000000 ? ' ' + this.numberToWords(num % 1000000) : '');
+  }
+
   isFieldInvalid(fieldName: string): boolean {
     const field = this.quoteForm.get(fieldName);
     return field ? (field.invalid && (field.dirty || field.touched)) : false;
   }
 
-  // Mock data for development
+  // Mock data
   private setMockCustomers(): void {
     this.customers = [
-      { id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@maman kechi.com', phone: '+234 123 456 789', address: 'Lagos, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' },
-      { id: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.com', phone: '+234 234 567 890', address: 'Abuja, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' },
-      { id: 'CUST-003', name: 'Global Services NG', email: 'hello@globalservices.com', phone: '+234 345 678 901', address: 'Port Harcourt, Nigeria', taxId: '', createdAt: new Date(), totalSpent: 0, totalOrders: 0, status: 'ACTIVE' }
+      { id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@mamankechi.com', phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001', createdAt: new Date(), totalSpent: 500000, totalOrders: 1, status: 'ACTIVE' },
+      { id: 'CUST-002', name: 'Tech Solutions Ltd', email: 'info@techsolutions.ng', phone: '+234 812 345 6789', address: 'Abuja, Nigeria', taxId: 'TAX-002', createdAt: new Date(), totalSpent: 1250000, totalOrders: 1, status: 'ACTIVE' }
     ];
   }
 
@@ -359,9 +501,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     this.products = [
       { id: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
       { id: 'PROD-002', name: 'Standing Desk', sku: 'DSK-001', description: 'Adjustable standing desk', unitPrice: 120000, costPrice: 80000, currency: 'NGN', stockQuantity: 30, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-004', name: 'Conference Table', sku: 'TBL-001', description: 'Large conference table', unitPrice: 250000, costPrice: 180000, currency: 'NGN', stockQuantity: 10, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
-      { id: 'PROD-005', name: 'Printer - HP LaserJet', sku: 'PRN-001', description: 'HP LaserJet printer', unitPrice: 150000, costPrice: 120000, currency: 'NGN', stockQuantity: 25, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
+      { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
     ];
     this.filteredProducts = this.products;
   }

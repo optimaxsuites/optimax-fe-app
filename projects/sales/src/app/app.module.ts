@@ -57,11 +57,10 @@ import { ButtonComponent } from './ui/shared-component/view/button/button.compon
 import { ProfileCardComponent } from './ui/shared-component/view/profile-card/profile-card.component';
 import { ProfileInfoComponent } from './ui/shared-component/view/profile-info/profile-info.component';
 import { UserInterfaceComponent } from './ui/shared-component/view/user-interface/user-interface.component';
-import { SideModalComponent } from './ui/shared-component/view/side-modal/side-modal.component';
 import { BackButtonComponent } from './ui/shared-component/view/back-button/back-button.component';
 import { TableComponent } from './ui/shared-component/view/table/table.component';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
-import { ModalComponent } from './ui/shared-component/view/modal/modal.component';
+import { SharedOverlayModule } from './shared-overlay.module';
 
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -92,7 +91,6 @@ import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog.component';
-import { CustomerManagementComponent } from './ui/view/sales-hub/customer-management/customer-management.component';
 import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
 import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
 import { SalesOrdersComponent } from './ui/view/sales-hub/sales-orders/sales-orders.component';
@@ -104,13 +102,14 @@ import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.
 import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
 import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
+// CustomModalComponent is a standalone component; no AppModule import needed
+import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
+import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 
 @NgModule({
   declarations: [
     App,
     TableComponent,
-    ModalComponent,
-    SideModalComponent,
     SidebarComponent,
     NavTabComponent,
     ProductRequestListComponent,
@@ -122,22 +121,21 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
     LpoComponent,
     VendorPortalComponent,
     // SalesDashboardComponent,
-    CustomerManagementComponent,
     DeliveryManagementComponent,
     PaymentProcessingComponent,
     SalesOrdersComponent,
     SalesHubComponent,
     ProductServiceCatalogComponent,
-    QuoteDetailComponent,
     PerformanceComponent,
     DocumentsComponent,
-    InvoiceDetailComponent,
+    
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
+    SharedOverlayModule,
     TableModule,
     RippleModule,
     AngularEditorModule,
@@ -204,6 +202,10 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
     QuoteFormComponent,
     InvoiceListComponent,
     InvoiceFormComponent,
+    CustomerListComponent,
+    QuoteDetailComponent,
+    InvoiceDetailComponent,
+    CustomerFormComponent,
   ],
   exports: [TableComponent],
   providers: [

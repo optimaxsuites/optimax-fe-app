@@ -8,21 +8,66 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
 
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { InvoiceFormComponent } from '../invoice-form/invoice-form.component';
+import { InvoiceDetailComponent } from '../invoice-detail/invoice-detail.component';
+
 @Component({
   selector: 'app-invoice-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    InvoiceFormComponent,
+    InvoiceDetailComponent
+  ],
   templateUrl: './invoice-list.component.html',
   styleUrls: ['./invoice-list.component.scss']
 })
 export class InvoiceListComponent implements OnInit, OnDestroy {
   
   // Expose Math to template
-  Math = Math;  // ← ADD THIS LINE
+  Math = Math;
   
   invoices: Invoice[] = [];
   isLoading = true;
   selectedInvoiceIds: string[] = [];
+
+  showInvoiceModal = false;
+  showInvoiceDetail = false;
+  selectedInvoiceId?: string;
+
+  openNewInvoiceModal(): void {
+    this.selectedInvoiceId = undefined;
+    this.showInvoiceModal = true;
+  }
+
+  openEditInvoiceModal(invoiceId: string): void {
+    this.selectedInvoiceId = invoiceId;
+    this.showInvoiceModal = true;
+  }
+
+  openInvoiceDetail(invoiceId: string): void {
+    this.selectedInvoiceId = invoiceId;
+    this.showInvoiceDetail = true;
+  }
+
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.selectedInvoiceId = undefined;
+  }
+
+  closeInvoiceDetail(): void {
+    this.showInvoiceDetail = false;
+    this.selectedInvoiceId = undefined;
+  }
+
+  onInvoiceSaved(): void {
+    this.closeInvoiceModal();
+    this.loadInvoices();
+  }
   
   // Filters
   filters = {
@@ -78,14 +123,14 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     this.salesService.getInvoices(this.filters).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.invoices = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading invoices:', error);
         this.setMockInvoices();
         this.calculateStats();
@@ -179,7 +224,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
       'OVERDUE': 'Overdue',
       'CANCELLED': 'Cancelled'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   formatCurrency(amount: number): string {
@@ -208,25 +253,51 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
 
   sendReminder(invoice: Invoice): void {
     if (confirm(`Send payment reminder for ${invoice.invoiceNumber} to ${invoice.customerName}?`)) {
-      console.log('Sending reminder for:', invoice.id);
-      alert(`Payment reminder sent to ${invoice.customerName}`);
+      this.salesService.updateInvoice(invoice.id, { status: 'SENT' }).subscribe({
+        next: () => {
+          alert(`Payment reminder sent to ${invoice.customerName}`);
+          this.loadInvoices();
+        },
+        error: (error: any) => {
+          console.error('Error sending reminder:', error);
+          alert('Failed to send reminder. Please try again.');
+        }
+      });
     }
   }
 
   markAsPaid(invoice: Invoice): void {
     if (confirm(`Mark ${invoice.invoiceNumber} as paid?`)) {
-      console.log('Marking as paid:', invoice.id);
-      alert(`Invoice ${invoice.invoiceNumber} marked as paid`);
-      this.loadInvoices();
+      this.salesService.updateInvoice(invoice.id, { 
+        status: 'PAID', 
+        amountPaid: invoice.totalAmount, 
+        balanceDue: 0,
+        paidAt: new Date()
+      }).subscribe({
+        next: () => {
+          alert(`Invoice ${invoice.invoiceNumber} marked as paid`);
+          this.loadInvoices();
+        },
+        error: (error: any) => {
+          console.error('Error marking invoice as paid:', error);
+          alert('Failed to mark invoice as paid. Please try again.');
+        }
+      });
     }
   }
 
   deleteInvoice(invoice: Invoice): void {
     if (confirm(`Delete invoice ${invoice.invoiceNumber}? This action cannot be undone.`)) {
-      console.log('Deleting invoice:', invoice.id);
-      this.invoices = this.invoices.filter(i => i.id !== invoice.id);
-      this.calculateStats();
-      alert(`Invoice ${invoice.invoiceNumber} deleted`);
+      this.salesService.updateInvoice(invoice.id, { status: 'CANCELLED' }).subscribe({
+        next: () => {
+          alert(`Invoice ${invoice.invoiceNumber} deleted successfully`);
+          this.loadInvoices();
+        },
+        error: (error: any) => {
+          console.error('Error deleting invoice:', error);
+          alert('Failed to delete invoice. Please try again.');
+        }
+      });
     }
   }
 

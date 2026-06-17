@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 import { ScheduleserviceService } from '../../../service/workschedule-shift/scheduleservice.service';
 import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { ScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
 import { debounceTime } from 'rxjs';
 
 export interface Department {
@@ -34,6 +35,7 @@ export class ShiftAssignmentComponent implements OnInit {
   selectedEmployeeIds: string[] = [];
   selectedDepartmentIds: string[] = [];
   employeeSearchQuery = '';
+  editMode: 'single' | 'series' = 'single';
 
   /* MOCK EMPLOYEES and RECURRENECE (replace later with employee service) */
   projects = [
@@ -68,6 +70,7 @@ export class ShiftAssignmentComponent implements OnInit {
   ];
 
   @Input() preselectedDate!: string;
+  @Input() scheduleToEdit: ScheduleDTO | null = null;
   @Output() closeModal = new EventEmitter<void>();
 
   constructor(
@@ -87,10 +90,29 @@ export class ShiftAssignmentComponent implements OnInit {
     location: [''],
     recurrence: ['none'],
     customDays: [[]], //for example, Mon, Wed
-    customInterval: [1] //every X days
+    customInterval: [1], //every X days
+    repeatCount: [1]
   });
 
-  if (this.preselectedDate) {
+  if (this.scheduleToEdit) {
+    this.selectionMode = 'individual';
+    this.selectedEmployeeIds = [
+      this.scheduleToEdit.employeeId
+    ];
+    this.assignmentForm.patchValue({
+      shiftId: this.scheduleToEdit.shiftId,
+      date: this.scheduleToEdit.date,
+      project: this.scheduleToEdit.project,
+      location: this.scheduleToEdit.location,
+      recurrence: this.scheduleToEdit.recurrence,
+      customDays: this.scheduleToEdit.customDays ?? [],
+      customInterval: this.scheduleToEdit.customInterval ?? 1,
+      repeatCount: this.scheduleToEdit.repeatCount ?? 1,
+      description: this.scheduleToEdit.description
+    });
+  }
+
+  if (!this.scheduleToEdit && this.preselectedDate) {
     this.assignmentForm.patchValue({
       date: this.preselectedDate
     });
@@ -111,7 +133,7 @@ export class ShiftAssignmentComponent implements OnInit {
       if (!this.selectedEmployeeIds.length || !values.date) return;
 
       //show exisitng assignments for selected employee
-      const primaryEmployee = this.selectedEmployeeIds[0];
+      /*const primaryEmployee = this.selectedEmployeeIds[0];
       const schedules = this.scheduleserviceService
         .getSchedulesByEmployee(primaryEmployee)
         .filter(s => s.date === values.date);
@@ -124,6 +146,44 @@ export class ShiftAssignmentComponent implements OnInit {
           endTime: shift?.endTime,
           color: shift?.color
         };
+      });*/
+
+      // show existing assignments for ALL selected employees
+      this.existingAssignments = [];
+
+      this.selectedEmployeeIds.forEach(empId => {
+
+        const employee = this.employees.find(
+          e => e.id === empId
+        );
+
+        const schedules = this.scheduleserviceService
+          .getSchedulesByEmployee(empId)
+          .filter(s => s.date === values.date);
+
+        schedules.forEach(schedule => {
+
+          const shift =
+            this.shiftserviceService.getShiftById(
+              schedule.shiftId
+            );
+
+          this.existingAssignments.push({
+
+            employeeName: employee?.name,
+
+            name: shift?.name,
+
+            startTime: shift?.startTime,
+
+            endTime: shift?.endTime,
+
+            color: shift?.color
+
+          });
+
+        });
+
       });
 
       if (!values.shiftId) return;
@@ -131,11 +191,13 @@ export class ShiftAssignmentComponent implements OnInit {
       //check conflict for selected employee
       this.selectedEmployeeIds.forEach(empId => {
         const conflict = this.scheduleserviceService.checkConflict({
-        id: 'temp',
+        id: this.scheduleToEdit?.id ?? 'temp',
         employeeId: empId,
         shiftId: values.shiftId,
         date: values.date
-      });
+      } as ScheduleDTO,
+      this.scheduleToEdit?.id
+    );
 
       if (conflict) {
         const emp = this.employees.find(e => e.id === empId);
@@ -241,6 +303,42 @@ export class ShiftAssignmentComponent implements OnInit {
  // ── Submit ────────────────────────────────────────────────────────────────
 
   assignShift() {
+    if (this.isEditMode) {
+      const form = this.assignmentForm.value;
+      const updatedSchedule: ScheduleDTO = {
+        ...this.scheduleToEdit!,
+        shiftId: form.shiftId,
+        date: form.date,
+        project: form.project,
+        location: form.location,
+        recurrence: form.recurrence,
+        customDays: form.customDays,
+        customInterval: form.customInterval,
+        repeatCount: form.repeatCount,
+        description: form.description
+      };
+
+      if (this.editMode === 'series' && this.scheduleToEdit?.assignmentGroupId) {
+        this.scheduleserviceService.updateScheduleSeries(
+          this.scheduleToEdit.assignmentGroupId,
+          {
+            shiftId: form.shiftId,
+            date: form.date,
+            project: form.project,
+            location: form.location,
+            recurrence: form.recurrence,
+            customDays: form.customDays,
+            customInterval: form.customInterval,
+            repeatCount: form.repeatCount,
+            description: form.description
+          });
+      } else {
+        this.scheduleserviceService.updateSchedule(updatedSchedule);
+      }
+      
+      this.closeModal.emit();
+      return;
+    }
     //custome recurrence validation
     if (this.assignmentForm.value.recurrence === 'custom' &&
       (!this.assignmentForm.value.customDays || this.assignmentForm.value.customDays.length === 0)
@@ -250,14 +348,17 @@ export class ShiftAssignmentComponent implements OnInit {
     }
     if (this.assignmentForm.invalid || !this.selectedEmployeeIds.length || this.conflictMessage.length) return;
 
-    const { shiftId, date, endDate, project, location, recurrence, description } = this.assignmentForm.value;
-    const datesToAssign = this.resolveDates(date, recurrence);
+    const { shiftId, date, endDate, project, location, recurrence, customDays, customInterval, repeatCount, description } = this.assignmentForm.value;
+    const datesToAssign = this.resolveDates(date, recurrence, repeatCount);
     const serviceConflicts: string[] = []; 
-
-    this.selectedEmployeeIds.forEach(empId => {
-      datesToAssign.forEach(d => {
-        const result = this.scheduleserviceService.assignShift({
+    
+        this.selectedEmployeeIds.forEach(empId => {
+        // one schedule group per date
+        const assignmentGroupId = crypto.randomUUID();
+          datesToAssign.forEach(d => {
+          const result = this.scheduleserviceService.assignShift({
           id: crypto.randomUUID(),
+          assignmentGroupId,
           employeeId: empId,
           shiftId,
           date: d,
@@ -265,24 +366,38 @@ export class ShiftAssignmentComponent implements OnInit {
           project,
           location,
           recurrence,
+          customDays,
+          customInterval,
+          repeatCount,
           description
         });
         // Catch any conflict the service detected that the pre-flight missed
         if (!result.success && result.message) {
           const emp = this.employees.find(e => e.id === empId);
           serviceConflicts.push(`${emp?.name} on ${d}: ${result.message}`);
-        }        
+        }      
+        });
+         
       });
-    });
 
      if (serviceConflicts.length) {
       this.conflictMessage = serviceConflicts;
       return; // Don't close — show the user what failed
     }
 
-    this.assignmentForm.reset({ recurrence: 'none' });
+    this.assignmentForm.reset({ recurrence: 'none', repeatCount: 1, customDays: [] });
     this.clearEmployees();
     this.closeModal.emit();
+  }
+
+  get isEditMode(): boolean {
+    return !!this.scheduleToEdit;
+  }
+
+  get isRecurringSchedule(): boolean {
+    return !!(
+      this.scheduleToEdit?.assignmentGroupId
+    );
   }
 
   cancel() { 
@@ -297,7 +412,153 @@ export class ShiftAssignmentComponent implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  private resolveDates(startDate: string, recurrence: string): string[] {
+  private resolveDates(
+  startDate: string,
+  recurrence: string,
+  repeatCount: number = 1
+): string[] {
+
+  const endDate =
+    this.assignmentForm.value.endDate;
+
+  if (endDate) {
+
+    const dates: string[] = [];
+
+    const current =
+      new Date(startDate);
+
+    const end =
+      new Date(endDate);
+
+    while (current <= end) {
+
+      dates.push(
+        this.formatDateLocal(
+          new Date(current)
+        )
+      );
+
+      current.setDate(
+        current.getDate() + 1
+      );
+    }
+
+    return dates;
+  }
+
+  const dates: string[] = [];
+
+  const start =
+    new Date(startDate);
+
+  if (recurrence === 'none') {
+
+    dates.push(startDate);
+
+    return dates;
+  }
+
+  if (recurrence === 'daily') {
+
+    for (let i = 0; i < repeatCount; i++) {
+
+      const d = new Date(start);
+
+      d.setDate(
+        start.getDate() + i
+      );
+
+      dates.push(
+        this.formatDateLocal(d)
+      );
+    }
+
+    return dates;
+  }
+
+  if (recurrence === 'weekly') {
+
+    for (let i = 0; i < repeatCount; i++) {
+
+      const d = new Date(start);
+
+      d.setDate(
+        start.getDate() + (i * 7)
+      );
+
+      dates.push(
+        this.formatDateLocal(d)
+      );
+    }
+
+    return dates;
+  }
+
+  if (recurrence === 'custom') {
+
+    const selectedDays =
+      this.assignmentForm.value.customDays || [];
+
+    if (!selectedDays.length) {
+      return [startDate];
+    }
+
+    const dayMap: any = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6
+    };
+
+    for (
+      let week = 0;
+      week < repeatCount;
+      week++
+    ) {
+
+      const weekStart =
+        new Date(start);
+
+      weekStart.setDate(
+        start.getDate() +
+        week * 7
+      );
+
+      selectedDays.forEach(
+        (dayName: string) => {
+
+          const targetDay =
+            dayMap[dayName];
+
+          const d =
+            new Date(weekStart);
+
+          while (
+            d.getDay() !== targetDay
+          ) {
+            d.setDate(
+              d.getDate() + 1
+            );
+          }
+
+          dates.push(
+            this.formatDateLocal(d)
+          );
+        }
+      );
+    }
+
+    return dates.sort();
+  }
+
+  return [startDate];
+}
+
+  /*private resolveDates(startDate: string, recurrence: string): string[] {
     const endDate = this.assignmentForm.value.endDate;
 
     // If end date is set, generate every day in the range
@@ -314,11 +575,11 @@ export class ShiftAssignmentComponent implements OnInit {
     }
 
      // Otherwise fall through to existing recurrence logic
-    //const dates: string[] = [startDate];
-    const dates: string[] = [];
+    const dates: string[] = [startDate];
+    //const dates: string[] = [];
     const start = new Date(startDate);
 
-    if (recurrence === 'none') return dates;
+  if (recurrence === 'none')    return dates;
 
     if (recurrence === 'daily') {
       for (let i = 1; i <= 30; i++) {
@@ -348,7 +609,7 @@ export class ShiftAssignmentComponent implements OnInit {
       const start = new Date(startDate);
 
       // Generate for next 30 days
-      for (let i = 0; i < 30; i++) {
+      for (let i = 1; i < 30; i++) {
         const d = new Date(start);
         d.setDate(start.getDate() + i);
 
@@ -371,8 +632,8 @@ export class ShiftAssignmentComponent implements OnInit {
         d.setDate(start.getDate() + i * interval);
         dates.push(this.formatDateLocal(d));
       }
-    }*/
+    }
 
     return dates;
-  }
+  }*/
 }

@@ -1,3 +1,5 @@
+<!-- src/app/ui/view/sales-hub/quotations/quote-detail/quote-detail.component.html -->
+
 <div class="quote-detail-container" *ngIf="!isLoading && quote">
   <div class="detail-wrapper">
     <!-- Header -->
@@ -32,9 +34,9 @@
           <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="action-btn edit">
             Decline
           </button>
-          <a *ngIf="quote.status === 'DRAFT'" [routerLink]="['/sales/quotes', quote.id, 'edit']" class="action-btn edit">
+          <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="action-btn edit" style="cursor: pointer;">
             Edit
-          </a>
+          </button>
           <button (click)="deleteQuote()" class="action-btn more delete">
             Delete
           </button>
@@ -178,5 +180,5 @@
 
 <div *ngIf="!isLoading && !quote" class="error-state" style="text-align: center; padding: 4rem 2rem;">
   <p style="color: #64748b; font-size: 1.125rem; margin-bottom: 1.5rem;">Quote not found</p>
-  <button (click)="goBack()" class="btn-cancel" style="background: #2E6276; color: white;">Back to Quotes</button>
+  <button (click)="goBack()" class="btn-cancel" style="background: #2E6276; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Back to Quotes</button>
 </div>

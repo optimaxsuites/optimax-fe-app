@@ -38,6 +38,16 @@
 
     <!-- Filter Bar -->
     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap items-end gap-6 text-sm">
+        <!-- Global Search -->
+        <div class="flex-1 min-w-[250px]">
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                <i class="fa-solid fa-magnifying-glass mr-1"></i>Search
+            </label>
+            <input type="text" [(ngModel)]="searchText" (input)="onSearch(searchText)"
+                placeholder="Search by room #, type, or amenities..."
+                class="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2 outline-none focus:bg-white focus:border-customBlue transition-all placeholder:text-gray-400" />
+        </div>
+
         <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Status</label>
             <select [(ngModel)]="filterStatus" (change)="applyFilters()"
@@ -67,7 +77,7 @@
             <i class="fa-solid fa-filter-circle-xmark"></i> Clear
         </button>
         <div class="ml-auto text-xs font-bold text-gray-400 uppercase tracking-widest">
-            {{ filteredRooms.length }} results
+            {{ filteredRooms.length }} results<span *ngIf="totalPages > 0"> | Page {{ currentPage + 1 }} of {{ totalPages }}</span>
         </div>
     </div>
 
@@ -101,7 +111,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    <tr *ngFor="let room of filteredRooms; let i = index" 
+                    <tr *ngFor="let room of paginatedRooms; let i = index" 
                         class="hover:bg-gray-50/50 transition-colors"
                         [ngClass]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'">
                         <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ room.roomNumber }}</td>
@@ -159,9 +169,9 @@
     </div>
 
     <!-- ===== GRID VIEW ===== -->
-    <div *ngIf="!loading && filteredRooms.length > 0 && viewMode === 'grid'" 
+    <div *ngIf="!loading && filteredRooms.length > 0 && viewMode === 'grid'"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <article *ngFor="let room of filteredRooms; let i = index" 
+        <article *ngFor="let room of paginatedRooms; let i = index" 
             class="rounded-3xl border-2 transition-all duration-300 overflow-hidden group shadow-sm hover:shadow-xl hover:-translate-y-1.5"
             [ngClass]="[getStatusColor(room.roomStatus), getStatusBg(room.roomStatus)]">
             
@@ -229,6 +239,48 @@
             </div>
         </article>
     </div>
+
+    <!-- PAGINATION CONTROLS -->
+    <div *ngIf="!loading && filteredRooms.length > 0 && totalPages > 0" class="mt-8 flex flex-col items-center gap-6">
+        <!-- Results Info -->
+        <div class="text-sm text-gray-600">
+            Showing <strong>{{ paginatedRooms.length }}</strong> of <strong>{{ filteredRooms.length }}</strong> rooms
+        </div>
+
+        <!-- Pagination Buttons -->
+        <div class="flex items-center gap-3">
+            <button (click)="previousPage()" [disabled]="currentPage === 0"
+                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fa-solid fa-chevron-left"></i> Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <div class="flex gap-1">
+                <button *ngFor="let p of [].constructor(totalPages); let pageNum = index"
+                    (click)="goToPage(pageNum)"
+                    [ngClass]="pageNum === currentPage ? 'bg-customBlue text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'"
+                    class="w-10 h-10 rounded-lg transition-colors">
+                    {{ pageNum + 1 }}
+                </button>
+            </div>
+
+            <button (click)="nextPage()" [disabled]="currentPage >= totalPages - 1"
+                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Items Per Page -->
+        <div class="flex items-center gap-3">
+            <label class="text-sm text-gray-600">Rooms per page:</label>
+            <select [(ngModel)]="pageSize" (change)="changePageSize(pageSize)" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
 </div>
 
 <!-- ===== DRAWER ===== -->
@@ -252,21 +304,32 @@
                 <div class="grid grid-cols-2 gap-6">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Room Number *</label>
-                        <input formControlName="roomNumber" type="number" placeholder="101" 
-                            class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
+                        <input formControlName="roomNumber" type="number" placeholder="101"
+                            class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                            [ngClass]="form.get('roomNumber')?.hasError('duplicateRoomNumber') ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'" />
+                        <span *ngIf="form.get('roomNumber')?.hasError('duplicateRoomNumber')" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Room number already exists
+                        </span>
+                        <span *ngIf="form.get('roomNumber')?.hasError('required') && form.get('roomNumber')?.touched" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Room number is required
+                        </span>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Floor *</label>
-                        <input formControlName="floor" type="number" placeholder="1" 
+                        <input formControlName="floor" type="number" placeholder="1"
                             class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Room Type *</label>
-                        <select formControlName="roomType" 
-                            class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all">
+                        <select formControlName="roomType"
+                            class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                            [ngClass]="form.get('roomType')?.invalid && form.get('roomType')?.touched ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'">
                             <option [ngValue]="null">Select type...</option>
                             <option *ngFor="let t of roomTypes" [value]="t.id">{{ t.name }}</option>
                         </select>
+                        <span *ngIf="form.get('roomType')?.hasError('required') && form.get('roomType')?.touched" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Room type is required
+                        </span>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Status *</label>
@@ -280,8 +343,12 @@
                 <div class="grid grid-cols-2 gap-6">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Rate (₦) *</label>
-                        <input formControlName="rate" type="number" placeholder="50000" 
-                            class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
+                        <input formControlName="rate" type="number" placeholder="50000"
+                            class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all"
+                            [ngClass]="form.get('rate')?.hasError('min') ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'" />
+                        <span *ngIf="form.get('rate')?.hasError('min') && form.get('rate')?.touched" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Rate must be greater than 0
+                        </span>
                     </div>
                     <div class="flex flex-col justify-center gap-3">
                         <label class="flex items-center gap-3 cursor-pointer group">
@@ -295,10 +362,36 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Beds *</label>
+                        <input formControlName="beds" type="number" placeholder="1"
+                            class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
+                        <span *ngIf="form.get('beds')?.hasError('min') && form.get('beds')?.touched" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Must have at least 1 bed
+                        </span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Max Occupancy *</label>
+                        <input formControlName="maxOccupancy" type="number" placeholder="2"
+                            class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all" />
+                        <span *ngIf="form.hasError('occupancyInvalid') && form.touched" class="text-xs text-red-500 font-medium">
+                            <i class="fa-solid fa-circle-exclamation mr-1"></i>Max occupancy must be ≥ beds
+                        </span>
+                    </div>
+                </div>
+
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest">Description *</label>
-                    <textarea formControlName="description" rows="4" placeholder="Brief description of the room..." 
-                        class="w-full border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 text-sm focus:bg-white focus:border-customBlue outline-none transition-all resize-none"></textarea>
+                    <textarea formControlName="description" rows="4" placeholder="Brief description of the room..."
+                        class="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all resize-none"
+                        [ngClass]="form.get('description')?.invalid && form.get('description')?.touched ? 'border-red-500 bg-red-50 focus:border-red-500' : 'border-gray-200 bg-gray-50 focus:bg-white focus:border-customBlue'"></textarea>
+                    <span *ngIf="form.get('description')?.hasError('required') && form.get('description')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Description is required
+                    </span>
+                    <span *ngIf="form.get('description')?.hasError('minlength') && form.get('description')?.touched" class="text-xs text-red-500 font-medium">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i>Description must be at least 3 characters
+                    </span>
                 </div>
 
                 <div class="space-y-4">
@@ -312,10 +405,10 @@
                             </button>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <span *ngFor="let a of form.get('amenities')?.value; let ai = index" 
+                            <span *ngFor="let a of form.get('amenities')?.value; let ai = index"
                                 class="inline-flex items-center gap-2 bg-blue-100 text-customBlue text-xs font-bold px-3 py-1.5 rounded-full">
-                                {{ a }}
-                                <button type="button" (click)="removeAmenity(ai)" class="hover:text-red-500 transition-colors">
+                                <span [innerText]="sanitizeText(a)"></span>
+                                <button type="button" (click)="removeAmenity(ai)" class="hover:text-red-500 transition-colors" title="Remove amenity">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </span>

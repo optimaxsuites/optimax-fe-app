@@ -1,3 +1,5 @@
+// src/app/ui/view/sales-module/quote-list/quote-list.component.ts
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -6,10 +8,23 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote, QuoteStatus } from '../../../../domain/sales/sales.dto';
 
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
+import { QuoteFormComponent } from '../quote-form/quote-form.component';
+import { QuoteDetailComponent } from '../quote-detail/quote-detail.component';
+import { InvoiceFormComponent } from '../../invoices/invoice-form/invoice-form.component';
+
 @Component({
   selector: 'app-quote-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    SharedOverlayModule,
+    QuoteFormComponent,
+    QuoteDetailComponent,
+    InvoiceFormComponent
+  ],
   templateUrl: './quote-list.component.html',
   styleUrls: ['./quote-list.component.scss']
 })
@@ -19,6 +34,57 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   quotes: Quote[] = [];
   isLoading = true;
   selectedQuoteIds: string[] = [];
+
+  showQuoteModal = false;
+  showQuoteDetail = false;
+  selectedQuoteId?: string;
+
+  openNewQuoteModal(): void {
+    this.selectedQuoteId = undefined;
+    this.showQuoteModal = true;
+  }
+
+  openEditQuoteModal(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showQuoteModal = true;
+  }
+
+  openQuoteDetail(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showQuoteDetail = true;
+  }
+
+  closeQuoteModal(): void {
+    this.showQuoteModal = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  closeQuoteDetail(): void {
+    this.showQuoteDetail = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  onQuoteSaved(): void {
+    this.closeQuoteModal();
+    this.loadQuotes();
+  }
+
+  showInvoiceModal = false;
+
+  openInvoiceModal(quoteId: string): void {
+    this.selectedQuoteId = quoteId;
+    this.showInvoiceModal = true;
+  }
+
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.selectedQuoteId = undefined;
+  }
+
+  onInvoiceSaved(): void {
+    this.closeInvoiceModal();
+    this.loadQuotes();
+  }
   
   // Filters
   filters = {
@@ -74,14 +140,14 @@ export class QuoteListComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     this.salesService.getQuotes(this.filters).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.quotes = response.data;
         this.totalElements = response.total;
         this.totalPages = Math.ceil(response.total / this.filters.size);
         this.calculateStats();
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quotes:', error);
         this.setMockQuotes();
         this.calculateStats();
@@ -151,7 +217,7 @@ export class QuoteListComponent implements OnInit, OnDestroy {
       'EXPIRED': 'Expired',
       'CONVERTED': 'Converted'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusIcon(status: QuoteStatus): string {
@@ -197,43 +263,56 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   }
 
   toggleSelection(quoteId: string, event: any): void {
-  if (event.target.checked) {
-    this.selectedQuoteIds.push(quoteId);
-  } else {
-    this.selectedQuoteIds = this.selectedQuoteIds.filter(id => id !== quoteId);
+    if (event.target.checked) {
+      this.selectedQuoteIds.push(quoteId);
+    } else {
+      this.selectedQuoteIds = this.selectedQuoteIds.filter(id => id !== quoteId);
+    }
   }
-}
 
-toggleSelectAll(event: any): void {
-  if (event.target.checked) {
-    this.selectedQuoteIds = this.quotes.map(q => q.id);
-  } else {
-    this.selectedQuoteIds = [];
+  toggleSelectAll(event: any): void {
+    if (event.target.checked) {
+      this.selectedQuoteIds = this.quotes.map(q => q.id);
+    } else {
+      this.selectedQuoteIds = [];
+    }
   }
-}
 
-isSelected(quoteId: string): boolean {
-  return this.selectedQuoteIds.includes(quoteId);
-}
+  isSelected(quoteId: string): boolean {
+    return this.selectedQuoteIds.includes(quoteId);
+  }
 
-isAllSelected(): boolean {
-  return this.quotes.length > 0 && this.selectedQuoteIds.length === this.quotes.length;
-}
+  isAllSelected(): boolean {
+    return this.quotes.length > 0 && this.selectedQuoteIds.length === this.quotes.length;
+  }
 
   sendQuote(quote: Quote): void {
     if (confirm(`Send quote ${quote.quoteNumber} to ${quote.customerName}?`)) {
-      // Call service to send quote
-      console.log('Sending quote:', quote.id);
-      alert(`Quote ${quote.quoteNumber} has been sent to ${quote.customerName}`);
+      this.salesService.updateQuote(quote.id, { status: 'SENT' }).subscribe({
+        next: (updated: Quote) => {
+          alert(`Quote ${updated.quoteNumber} has been sent to ${updated.customerName}`);
+          this.loadQuotes();
+        },
+        error: (error: any) => {
+          console.error('Error sending quote:', error);
+          alert('Failed to send quote. Please try again.');
+        }
+      });
     }
   }
 
   deleteQuote(quote: Quote): void {
     if (confirm(`Delete quote ${quote.quoteNumber}? This action cannot be undone.`)) {
-      // Call service to delete quote
-      console.log('Deleting quote:', quote.id);
-      this.quotes = this.quotes.filter(q => q.id !== quote.id);
-      this.calculateStats();
+      this.salesService.updateQuote(quote.id, { status: 'EXPIRED' }).subscribe({
+        next: () => {
+          alert(`Quote ${quote.quoteNumber} deleted successfully`);
+          this.loadQuotes();
+        },
+        error: (error: any) => {
+          console.error('Error deleting quote:', error);
+          alert('Failed to delete quote. Please try again.');
+        }
+      });
     }
   }
 

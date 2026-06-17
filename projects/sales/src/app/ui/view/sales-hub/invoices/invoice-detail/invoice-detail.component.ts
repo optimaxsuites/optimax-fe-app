@@ -1,14 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+// src/app/ui/view/sales-module/invoice-detail/invoice-detail.component.ts
+
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice } from '../../../../domain/sales/sales.dto';
 
+import { CommonModule } from '@angular/common';
+
 @Component({
   selector: 'app-invoice-detail',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
 export class InvoiceDetailComponent implements OnInit {
+  @Input() detailId?: string;
+  @Output() closed = new EventEmitter<void>();
+  @Output() edit = new EventEmitter<string>();
+
   invoice: Invoice | null = null;
   isLoading = true;
 
@@ -19,7 +29,7 @@ export class InvoiceDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    const id = this.detailId || this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadInvoice(id);
     } else {
@@ -30,11 +40,11 @@ export class InvoiceDetailComponent implements OnInit {
   loadInvoice(id: string): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(id).subscribe({
-      next: (invoice) => {
+      next: (invoice: Invoice | null) => {
         this.invoice = invoice;
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading invoice:', err);
         this.isLoading = false;
       }
@@ -81,16 +91,37 @@ export class InvoiceDetailComponent implements OnInit {
 
   markAsPaid(): void {
     if (this.invoice && confirm(`Mark invoice ${this.invoice.invoiceNumber} as paid?`)) {
-      this.salesService.createInvoice({ ...this.invoice, status: 'PAID', amountPaid: this.invoice.totalAmount, balanceDue: 0 }).subscribe({
-        next: (updated) => {
+      this.salesService.updateInvoice(this.invoice.id, { 
+        status: 'PAID', 
+        amountPaid: this.invoice.totalAmount, 
+        balanceDue: 0,
+        paidAt: new Date()
+      }).subscribe({
+        next: (updated: Invoice) => {
           this.invoice = updated;
           alert(`Invoice ${this.invoice.invoiceNumber} has been marked as paid`);
+        },
+        error: (err: any) => {
+          console.error('Error marking invoice as paid:', err);
+          alert('Failed to mark invoice as paid. Please try again.');
         }
       });
     }
   }
 
   goBack(): void {
-    this.router.navigate(['/hub']);
+    if (this.closed.observed) {
+      this.closed.emit();
+    } else {
+      this.router.navigate(['/sales/invoices']);
+    }
+  }
+
+  editInvoice(): void {
+    if (this.edit.observed) {
+      this.edit.emit(this.invoice!.id);
+    } else {
+      this.router.navigate(['/sales/invoices', this.invoice!.id, 'edit']);
+    }
   }
 }

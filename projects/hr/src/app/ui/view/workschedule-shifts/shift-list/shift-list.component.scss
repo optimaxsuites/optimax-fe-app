@@ -150,6 +150,29 @@
   margin-right: 8px;
 }
 
+.shift-type {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.shift-type.morning {
+  background: #fff4cc;
+  color: #b8860b;
+}
+
+.shift-type.evening {
+  background: #d9ecff;
+  color: #0066cc;
+}
+
+.shift-type.night {
+  background: #e7dcff;
+  color: #5a2ea6;
+}
+
 
 /* ACTION BUTTONS */
 

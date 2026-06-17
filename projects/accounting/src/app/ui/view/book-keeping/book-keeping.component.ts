@@ -28,6 +28,18 @@ export class BookKeepingComponent implements OnInit {
   first = 0;
   rows = 10;
 
+  // Filter state
+  searchQuery = '';
+  statusFilter = '';
+
+  // Sort state for lines (sidebar)
+  sortField = '';
+  sortOrder = 1; // 1 for asc, -1 for desc
+
+  // Sort state for main journals table
+  mainSortField = '';
+  mainSortOrder = 1; // 1 for asc, -1 for desc
+
   constructor(
     private accountingService: AccountingService,
     private toastService: ToastService
@@ -95,11 +107,110 @@ export class BookKeepingComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'POSTED': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'POSTED': return 'bg-customGreen/10 text-customGreen border-customGreen/20';
       case 'DRAFT': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'REVERSED': return 'bg-rose-100 text-rose-800 border-rose-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  }
+
+  // ── Computed sidebar helpers ─────────────────────────────
+  getSidebarTotalDebit(): number {
+    return this.selectedJournalLines.reduce((s, l) => s + (l.debitAmount || 0), 0);
+  }
+
+  getSidebarTotalCredit(): number {
+    return this.selectedJournalLines.reduce((s, l) => s + (l.creditAmount || 0), 0);
+  }
+
+  isSidebarBalanced(): boolean {
+    const d = this.getSidebarTotalDebit();
+    const c = this.getSidebarTotalCredit();
+    return Math.abs(d - c) < 0.01; // floating-point tolerance
+  }
+
+  // ── Stat helpers ───────────────────────────────────────
+  getPostedCount(): number {
+    return this.journalEntries.filter(e => e.status === 'POSTED').length;
+  }
+
+  getDraftCount(): number {
+    return this.journalEntries.filter(e => e.status === 'DRAFT').length;
+  }
+
+  get filteredJournalEntries(): any[] {
+    let list = [...this.journalEntries];
+    if (this.statusFilter) {
+      list = list.filter(e => e.status === this.statusFilter);
+    }
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(e =>
+        (e.transaction?.transactionReference || '').toLowerCase().includes(q) ||
+        (e.description || '').toLowerCase().includes(q) ||
+        String(e.entryNumber || e.id).includes(q)
+      );
+    }
+    if (this.mainSortField) {
+      list.sort((a, b) => {
+        let valA = this.getNestedValue(a, this.mainSortField);
+        let valB = this.getNestedValue(b, this.mainSortField);
+        
+        if (valA === undefined || valA === null) valA = 0;
+        if (valB === undefined || valB === null) valB = 0;
+
+        if (typeof valA === 'string') {
+          return valA.localeCompare(valB) * this.mainSortOrder;
+        } else {
+          return (valA - valB) * this.mainSortOrder;
+        }
+      });
+    }
+    return list;
+  }
+
+  getNestedValue(obj: any, path: string): any {
+    if (!obj) return undefined;
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  }
+
+  get sortedJournalLines(): JournalEntryLineDTO[] {
+    if (!this.sortField) return this.selectedJournalLines;
+    return [...this.selectedJournalLines].sort((a, b) => {
+      let valA = (a as any)[this.sortField] || 0;
+      let valB = (b as any)[this.sortField] || 0;
+      if (valA < valB) return -1 * this.sortOrder;
+      if (valA > valB) return 1 * this.sortOrder;
+      return 0;
+    });
+  }
+
+  sortBy(field: string) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 1 ? -1 : 1;
+    } else {
+      this.sortField = field;
+      this.sortOrder = 1;
+    }
+  }
+
+  sortMainBy(field: string) {
+    if (this.mainSortField === field) {
+      this.mainSortOrder = this.mainSortOrder === 1 ? -1 : 1;
+    } else {
+      this.mainSortField = field;
+      this.mainSortOrder = 1;
+    }
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.statusFilter = '';
+    this.sortField = '';
+    this.sortOrder = 1;
+    this.mainSortField = '';
+    this.mainSortOrder = 1;
+    this.toastService.info('Filters cleared');
   }
 
   downloadVoucher(): void {

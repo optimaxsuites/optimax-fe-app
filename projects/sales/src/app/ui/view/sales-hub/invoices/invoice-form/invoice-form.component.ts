@@ -1,12 +1,12 @@
 // src/app/ui/view/sales-module/invoice-form/invoice-form.component.ts
 
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
 
 @Component({
   selector: 'app-invoice-form',
@@ -15,7 +15,11 @@ import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem } from '../../..
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
-export class InvoiceFormComponent implements OnInit, OnDestroy {
+export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() editId?: string;
+  @Input() fromQuoteId?: string;
+  @Output() saved = new EventEmitter<void>();
+  @Output() cancelled = new EventEmitter<void>();
   
   invoiceForm: FormGroup;
   isSubmitting = false;
@@ -23,6 +27,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   isEditMode = false;
   invoiceId: string = '';
   quoteId: string = '';
+  showTerms = false;
+  showNotes = false;
+  showAdvanced = false;
   
   // Data
   customers: Customer[] = [];
@@ -43,14 +50,16 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   discountType: 'PERCENTAGE' | 'FIXED' = 'PERCENTAGE';
   discountValue = 0;
   
-  // Calculated totals
+  // Calculated totals - THESE ARE THE PROPERTIES
   subtotal: number = 0;
+  totalTax: number = 0;      // ← THIS WAS MISSING
   taxAmount: number = 0;
   discountAmount: number = 0;
   grandTotal: number = 0;
   
   // Make router available to template
   router: Router;
+  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
   
   private destroy$ = new Subject<void>();
 
@@ -69,17 +78,31 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       dueDate: ['', Validators.required],
       currency: ['NGN', Validators.required],
       notes: [''],
+      terms: [''],
       paymentTerms: ['Net 30'],
       items: this.fb.array([]),
       taxRate: [0],
       discountType: ['PERCENTAGE'],
-      discountValue: [0]
+      discountValue: [0],
+      isRecurring: [false]
     });
   }
 
+  ngAfterViewInit(): void {
+    try {
+      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
+        this.dialogRef.nativeElement.showModal();
+      } else if (this.dialogRef?.nativeElement) {
+        this.dialogRef.nativeElement.setAttribute('open', '');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   ngOnInit(): void {
-    this.invoiceId = this.route.snapshot.paramMap.get('id') || '';
-    this.quoteId = this.route.snapshot.queryParamMap.get('quoteId') || '';
+    this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
+    this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
     
     this.loadCustomers();
@@ -96,6 +119,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeDialog();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -148,7 +172,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
-      total: [{ value: 0, disabled: true }]
+      taxRate: [0],
+      total: [{ value: 0, disabled: true }],
+      taxAmount: [{ value: 0, disabled: true }]
     });
     
     this.items.push(itemForm);
@@ -156,6 +182,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     // Subscribe to changes for this item
     itemForm.get('quantity')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
     itemForm.get('unitPrice')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
+    itemForm.get('taxRate')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
   }
 
   removeLineItem(index: number): void {
@@ -166,17 +193,27 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private calculateItemTotal(itemForm: AbstractControl): void {
     const quantity = itemForm.get('quantity')?.value || 0;
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
+    const taxRate = itemForm.get('taxRate')?.value || 0;
+    
     const total = quantity * unitPrice;
-    itemForm.patchValue({ total: total }, { emitEvent: false });
+    const taxAmount = total * (taxRate / 100);
+    
+    itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
     this.calculateTotals();
   }
 
+  // ✅ SINGLE calculateTotals method - removed duplicate
   calculateTotals(): void {
-    // Calculate subtotal
     this.subtotal = 0;
+    this.totalTax = 0;
+    
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i);
-      this.subtotal += item.get('total')?.value || 0;
+      const total = item.get('total')?.value || 0;
+      const taxAmount = item.get('taxAmount')?.value || 0;
+      
+      this.subtotal += total;
+      this.totalTax += taxAmount;
     }
     
     // Calculate discount
@@ -189,16 +226,15 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.discountAmount = discountValue;
     }
     
-    // Calculate tax
+    // Calculate tax on after discount
     const taxRate = this.invoiceForm.get('taxRate')?.value || 0;
     const afterDiscount = this.subtotal - this.discountAmount;
     this.taxAmount = afterDiscount * (taxRate / 100);
     
-    // Calculate grand total
     this.grandTotal = afterDiscount + this.taxAmount;
   }
 
-  // Product selection - FIXED: Accept string, not Event
+  // Product selection
   onProductSelect(index: number, productId: string): void {
     const product = this.products.find(p => p.id === productId);
     if (product) {
@@ -206,7 +242,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       itemForm.patchValue({
         productName: product.name,
         description: product.description,
-        unitPrice: product.unitPrice
+        unitPrice: product.unitPrice,
+        taxRate: product.taxRate || 0
       });
       this.calculateItemTotal(itemForm);
     }
@@ -230,14 +267,15 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       productId: product.id,
       productName: product.name,
       description: product.description,
-      unitPrice: product.unitPrice
+      unitPrice: product.unitPrice,
+      taxRate: product.taxRate || 0
     });
     this.calculateItemTotal(itemForm);
     this.showProductModal = false;
     this.searchProductTerm = '';
   }
 
-  // Customer selection - FIXED: Accept string, not Event
+  // Customer selection
   onCustomerSelect(customerId: string): void {
     const customer = this.customers.find(c => c.id === customerId);
     if (customer) {
@@ -248,10 +286,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   // Load data
   private loadCustomers(): void {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.customers = response.data;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
       }
@@ -260,11 +298,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private loadProducts(): void {
     this.salesService.getProducts({ page: 0, size: 100 }).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.products = response.data;
         this.filteredProducts = this.products;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
       }
@@ -274,13 +312,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private loadInvoice(): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(this.invoiceId).subscribe({
-      next: (invoice) => {
+      next: (invoice: Invoice | null) => {
         if (invoice) {
           this.populateForm(invoice);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading invoice:', error);
         this.isLoading = false;
       }
@@ -290,25 +328,26 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private loadQuoteForInvoice(): void {
     this.isLoading = true;
     this.salesService.getQuoteById(this.quoteId).subscribe({
-      next: (quote) => {
+      next: (quote: Quote | null) => {
         if (quote) {
           this.populateFromQuote(quote);
         }
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading quote:', error);
         this.isLoading = false;
       }
     });
   }
 
-  private populateFromQuote(quote: any): void {
+  private populateFromQuote(quote: Quote): void {
     this.invoiceForm.patchValue({
       customerId: quote.customerId,
       customerName: quote.customerName,
       currency: quote.currency,
       notes: quote.notes,
+      terms: quote.terms,
       paymentTerms: quote.terms || 'Net 30'
     });
     
@@ -322,7 +361,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
-        unitPrice: item.unitPrice
+        unitPrice: item.unitPrice,
+        taxRate: 0
       });
       this.calculateItemTotal(itemForm);
     });
@@ -354,7 +394,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
-        unitPrice: item.unitPrice
+        unitPrice: item.unitPrice,
+        taxRate: 0
       });
       this.calculateItemTotal(itemForm);
     });
@@ -416,17 +457,49 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
     
     request.subscribe({
-      next: (response) => {
+      next: (response: Invoice) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
-        this.router.navigate(['/sales/invoices', response.id]);
+        this.closeDialog();
+        if (this.saved.observed) {
+          this.saved.emit();
+        } else {
+          this.router.navigate(['/sales/invoices', response.id]);
+        }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error saving invoice:', error);
         this.isSubmitting = false;
         alert('Failed to save invoice. Please try again.');
       }
     });
+  }
+
+  cancel(): void {
+    this.closeDialog();
+    if (this.cancelled.observed) {
+      this.cancelled.emit();
+    } else {
+      this.router.navigate(['/sales-hub']);
+    }
+  }
+
+  private closeDialog(): void {
+    try {
+      if (this.dialogRef?.nativeElement) {
+        if (typeof this.dialogRef.nativeElement.close === 'function') {
+          this.dialogRef.nativeElement.close();
+        } else {
+          this.dialogRef.nativeElement.removeAttribute('open');
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  navigateToInvoices(): void {
+    this.router.navigate(['/sales/invoices']);
   }
 
   // Helper methods
@@ -447,6 +520,53 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.invoiceForm.get(fieldName);
     return field ? (field.invalid && (field.dirty || field.touched)) : false;
+  }
+
+  getTotalQuantity(): number {
+    let total = 0;
+    for (let i = 0; i < this.items.length; i++) {
+      total += this.items.at(i).get('quantity')?.value || 0;
+    }
+    return total;
+  }
+
+  getCurrencyLabel(code: string): string {
+    const labels: Record<string, string> = {
+      'NGN': 'Nigerian Naira (NGN, ₦)',
+      'USD': 'US Dollar (USD, $)',
+      'EUR': 'Euro (EUR, €)',
+      'GBP': 'British Pound (GBP, £)'
+    };
+    return labels[code] || code;
+  }
+
+  getTotalInWords(amount: number): string {
+    if (amount === 0) return 'Zero Naira Only';
+    
+    const naira = Math.floor(amount);
+    const kobo = Math.round((amount - naira) * 100);
+    
+    let result = '';
+    if (naira > 0) {
+      result += this.numberToWords(naira) + ' Naira';
+    }
+    if (kobo > 0) {
+      result += (result ? ' ' : '') + this.numberToWords(kobo) + ' Kobo';
+    }
+    return result + ' Only';
+  }
+
+  private numberToWords(num: number): string {
+    if (num === 0) return 'Zero';
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (num < 20) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
+    if (num < 1000) return ones[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' and ' + this.numberToWords(num % 100) : '');
+    if (num < 1000000) return this.numberToWords(Math.floor(num / 1000)) + ' Thousand' + (num % 1000 ? ' ' + this.numberToWords(num % 1000) : '');
+    return this.numberToWords(Math.floor(num / 1000000)) + ' Million' + (num % 1000000 ? ' ' + this.numberToWords(num % 1000000) : '');
   }
 
   // Mock data

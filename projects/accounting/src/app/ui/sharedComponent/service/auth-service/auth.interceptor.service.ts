@@ -53,7 +53,7 @@ export class AuthInterceptor implements HttpInterceptor {
             localStorage.getItem("Token2") ||
             localStorage.getItem("accessToken2") ||
             localStorage.getItem("token") ||
-            "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTUyMDEzNSwiZXhwIjoxNzgxNjA2NTM1fQ.4b1Be2S-EIuLNLj2uHh6ZdToDYhowdoaGPE2UAetrdQ"; // Temporary fallback token
+            "eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoibWlyYWNsZSIsImlhdCI6MTc4MTYwMjg5MSwiZXhwIjoxNzgxNjg5MjkxfQ.yp9dS9w1OLMMH2HE8Eh1c2btPnX15uDhKsqb4ZvYSzc"; // Temporary fallback token
 
         if (accessToken && !isDefaultTenantEndpoint) {
             updatedRequest = updatedRequest.clone({
