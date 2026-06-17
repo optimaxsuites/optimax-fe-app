@@ -41,6 +41,10 @@ export class GeneralLedgerComponent implements OnInit {
   accounts: AccountDTO[] = [];
   loading = false;
 
+  // ── Entry Detail Drawer ───────────────────────────────
+  selectedEntry: LedgerEntryDTO | null = null;
+  isEntryOpen = false;
+
   constructor(
     private accountingService: AccountingService,
     private toastService: ToastService
@@ -180,8 +184,14 @@ export class GeneralLedgerComponent implements OnInit {
     this.rows = event.rows;
   }
 
-  onRowClick(entry: any): void {
-    console.log('[GeneralLedger] Drilling into:', entry.transactionReference);
+  onRowClick(entry: LedgerEntryDTO): void {
+    this.selectedEntry = entry;
+    this.isEntryOpen = true;
+  }
+
+  closeEntryDrawer(): void {
+    this.isEntryOpen = false;
+    this.selectedEntry = null;
   }
 
   // ── Export ────────────────────────────────────────────

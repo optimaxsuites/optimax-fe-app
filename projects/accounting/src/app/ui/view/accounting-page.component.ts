@@ -37,52 +37,48 @@ export interface DropdownOption {
 export class AccountingPageComponent {
 
   tabsConfig: TabConfig[] = [
-      {
-        name: 'Accounting Transactions',
-        component: AccountingQueueComponent,
-        icon: 'pi pi-inbox'
-      },
+    {
+      name: 'Accounting Transactions',
+      component: AccountingQueueComponent,
+      icon: 'pi pi-inbox'
+    },
 
-      {
-        name: 'Chart of Accounts',
-        component: ChartOfAccountsComponent,
-        icon: 'pi pi-sitemap'
-      },
+    {
+      name: 'Chart of Accounts',
+      component: ChartOfAccountsComponent,
+      icon: 'pi pi-sitemap'
+    },
 
-      {
-        name: 'Journal Entries',
-        component: BookKeepingComponent,
-        icon: 'pi pi-book'
-      },
+    {
+      name: 'Journal Entries',
+      component: BookKeepingComponent,
+      icon: 'pi pi-book'
+    },
 
-      {
-        name: 'General Ledger',
-        component: GeneralLedgerComponent,
-        icon: 'pi pi-list'
-      },
+    {
+      name: 'General Ledger',
+      component: GeneralLedgerComponent,
+      icon: 'pi pi-list'
+    },
 
-      {
-        name: 'Payments',
-        component: DisbursementComponent,
-        icon: 'pi pi-wallet'
-      },
 
-      {
-        name: 'Bank',
-        component: BankAccountOverviewComponent,
-        icon: 'pi pi-building'
-      },
 
-      {
-        name: 'Settings',
-        component: BankConnectionSettingsComponent,
-        icon: 'pi pi-cog'
-      },
+    {
+      name: 'Bank',
+      component: BankAccountOverviewComponent,
+      icon: 'pi pi-building'
+    },
 
-      {
-        name: 'Disburse',
-        component: DisbursementFlowComponent,
-        icon: 'pi pi-send'
-      }
-    ];
+    {
+      name: 'Settings',
+      component: BankConnectionSettingsComponent,
+      icon: 'pi pi-cog'
+    },
+
+    {
+      name: 'Disburse',
+      component: DisbursementFlowComponent,
+      icon: 'pi pi-send'
+    }
+  ];
 }

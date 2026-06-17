@@ -182,6 +182,14 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
+  getApprovedTxCount(): number {
+    return this.transactions.filter(tx => tx.reviewStatus === TransactionReviewStatus.APPROVED).length;
+  }
+
+  getUnreviewedTxCount(): number {
+    return this.transactions.filter(tx => tx.reviewStatus === TransactionReviewStatus.UNREVIEWED).length;
+  }
+
   // ── Transaction Detail Panel ─────────────────────────
   openTxDetail(tx: AccountingTransactionDTO): void {
     this.selectedTxDetail = tx;
