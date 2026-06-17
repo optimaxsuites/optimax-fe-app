@@ -23,11 +23,11 @@ export class VendorPortalComponent {
     component: FinanceComponent,
     icon: 'fa-solid fa-file-invoice-dollar',
   },
-  {
-    name: 'LPO',
-    component: LpoComponent,
-    icon: 'fa-solid fa-file-contract',
-  },
+  // {
+  //   name: 'LPO',
+  //   component: LpoComponent,
+  //   icon: 'fa-solid fa-file-contract',
+  // },
   {
     name: 'Performance',
     component: PerformanceComponent,
