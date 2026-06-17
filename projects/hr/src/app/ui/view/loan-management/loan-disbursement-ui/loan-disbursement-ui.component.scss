@@ -50,11 +50,6 @@ app-loan-disbursement-ui {
           align-items: center;
           gap: 12px;
 
-          // .title-icon {
-          //   color: #2EB270;
-          //   font-size: 1.7rem;
-          // }
-
           i {
             color: #2EB270;
             margin-right: 12px;
@@ -95,7 +90,7 @@ app-loan-disbursement-ui {
       }
     }
 
-    // Summary Wrapper - Two column layout
+    // Summary Wrapper - Three column layout (expanded)
     .summary-wrapper {
       display: flex;
       gap: 24px;
@@ -108,11 +103,6 @@ app-loan-disbursement-ui {
         grid-template-columns: repeat(3, 1fr);
         gap: 16px;
         min-width: 0;
-      }
-
-      .summary-right {
-        width: 620px;
-        flex-shrink: 0;
       }
 
       .summary-card {
@@ -155,9 +145,6 @@ app-loan-disbursement-ui {
           &.amount-icon {
             background: linear-gradient(135deg, #8b5cf6, #a78bfa);
           }
-          &.selected-icon {
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-          }
         }
 
         .card-copy {
@@ -195,10 +182,6 @@ app-loan-disbursement-ui {
             text-overflow: ellipsis;
           }
         }
-
-        &.selected-card {
-          width: 100%;
-        }
       }
     }
 
@@ -224,16 +207,19 @@ app-loan-disbursement-ui {
     }
 
     .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(620px, 1.1fr);
-      gap: 24px;
-      align-items: stretch;
+      display: block;
+      width: 100%;
     }
 
     .queue-column {
       display: flex;
       flex-direction: column;
       gap: 24px;
+      width: 100%;
+      
+      &.full-width {
+        max-width: 100%;
+      }
     }
 
     // Table Card
@@ -244,7 +230,6 @@ app-loan-disbursement-ui {
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
 
-      // Match Loan Purpose Management table design for left queue tables.
       .approved-loans-table {
         width: 100%;
         border-collapse: collapse;
@@ -566,527 +551,6 @@ app-loan-disbursement-ui {
       }
     }
 
-    // Action Rail
-    .action-rail {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      min-height: 100%;
-      height: 100%;
-    }
-
-    .surface-card {
-      background: white;
-      border-radius: 20px;
-      border: 1px solid #e3eef0;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
-
-      .section-head.compact {
-        padding: 20px 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-
-        &.batch-nav-head {
-          padding: 16px 18px;
-          gap: 8px;
-        }
-
-        .batch-nav-arrow {
-          flex-shrink: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid #d7e7ec;
-          background: #f4f9fb;
-          color: #2e6276;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.82rem;
-          transition: all 0.15s;
-
-          &:hover {
-            background: #e0f0f5;
-            border-color: #2e6276;
-          }
-        }
-
-        .heading-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 10px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          
-          i {
-            font-size: 1.12rem;
-            color: white;
-          }
-        }
-        
-        .section-copy {
-          flex: 1;
-          
-          .eyebrow {
-            font-size: 0.86rem;
-            text-transform: uppercase;
-            color: #8aadba;
-            letter-spacing: 0.08em;
-            font-weight: 700;
-          }
-          
-          h2 {
-            margin: 0;
-            font-size: 1.28rem;
-            font-weight: 700;
-            color: #1a4b5c;
-          }
-        }
-        
-        .status-badge {
-          flex-shrink: 0;
-        }
-      }
-    }
-
-    // Loan Details Card
-    .loan-details-card {
-      display: flex;
-      flex-direction: column;
-      min-height: 100%;
-
-      .batch-position-bar {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 10px 24px;
-        background: #eef7ff;
-        border-bottom: 1px solid #bfdbfe;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #1d4ed8;
-      }
-
-      .loan-info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        padding: 20px 24px;
-        border-bottom: 1px solid #eef3f6;
-
-        .info-group {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-
-          label {
-            font-size: 0.88rem;
-            text-transform: uppercase;
-            color: #8aadba;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-          }
-
-          .value {
-            font-size: 1.08rem;
-            font-weight: 500;
-            color: #1a4b5c;
-            word-break: break-word;
-
-            &.amount {
-              color: #2EB270;
-              font-weight: 700;
-            }
-
-            &.reference {
-              font-family: monospace;
-              font-size: 0.92rem;
-            }
-          }
-
-          &.full-width {
-            grid-column: span 2;
-          }
-        }
-      }
-
-      .approval-info, .bank-details, .disbursement-info {
-        padding: 20px 24px;
-        border-bottom: 1px solid #eef3f6;
-
-        h4 {
-          margin: 0 0 12px 0;
-          font-size: 1.1rem;
-          font-weight: 700;
-          color: #1a4b5c;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .info-grid-two-col {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 12px;
-
-          .info-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-
-            label {
-              font-size: 0.86rem;
-              text-transform: uppercase;
-              color: #8aadba;
-              font-weight: 600;
-              letter-spacing: 0.5px;
-            }
-
-            .value {
-              font-size: 1.04rem;
-              font-weight: 500;
-              color: #1a4b5c;
-              word-break: break-word;
-
-              &.reference {
-                font-family: monospace;
-                font-size: 0.92rem;
-              }
-            }
-
-            &.full-width {
-              grid-column: span 2;
-            }
-          }
-        }
-      }
-
-      .repayment-preview {
-        padding: 16px 20px;
-        margin-top: auto;
-
-        .preview-head {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: #1a4b5c;
-        }
-
-        .schedule-mini {
-          .schedule-item {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.88rem;
-            padding: 6px 0;
-            border-bottom: 1px solid #eef3f6;
-
-            .installment-no {
-              font-weight: 600;
-            }
-          }
-
-          .schedule-more {
-            font-size: 0.82rem;
-            color: #8aadba;
-            padding-top: 8px;
-            text-align: center;
-          }
-        }
-
-        .schedule-empty {
-          font-size: 0.88rem;
-          color: #6b8a97;
-          background: #f8fcfd;
-          border: 1px dashed #cbdde4;
-          border-radius: 10px;
-          padding: 12px;
-          line-height: 1.5;
-        }
-      }
-
-      .details-actions {
-        padding: 18px 24px;
-        border-top: 1px solid #eef3f6;
-        background: #fafdfe;
-
-        .send-btn {
-          width: 100%;
-          padding: 12px 22px;
-          border-radius: 40px;
-          font-weight: 600;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          border: none;
-          color: white;
-
-          &:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-
-          &:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        }
-      }
-    }
-
-    // Action Card
-    .action-card, .already-sent-card, .no-selection-card, .loading-card {
-      .email-form {
-        padding: 20px;
-
-        .form-group {
-          margin-bottom: 20px;
-
-          label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #1a4b5c;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-
-            .required-star {
-              color: #dc2626;
-              margin-left: 4px;
-            }
-          }
-
-          .form-textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d7e7ec;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-family: inherit;
-            resize: vertical;
-
-            &:focus {
-              outline: none;
-              border-color: #2E6276;
-              box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
-            }
-          }
-
-          .error-message {
-            margin-top: 6px;
-            font-size: 0.7rem;
-            color: #dc2626;
-          }
-
-          .field-hint {
-            display: block;
-            margin-top: 6px;
-            font-size: 0.65rem;
-            color: #8aadba;
-          }
-        }
-
-        .disbursement-reference {
-          margin-bottom: 20px;
-          padding: 12px;
-          background: #f8fcfd;
-          border-radius: 12px;
-
-          label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: #8aadba;
-          }
-
-          .reference-code {
-            font-family: monospace;
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #2E6276;
-            word-break: break-all;
-          }
-        }
-
-        .email-preview {
-          margin-top: 16px;
-          border: 1px solid #e3eef0;
-          border-radius: 12px;
-          overflow: hidden;
-
-          .preview-head {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            background: #f8fcfd;
-            border-bottom: 1px solid #eef3f6;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #1a4b5c;
-          }
-
-          .preview-body {
-            padding: 12px;
-            font-size: 0.7rem;
-            color: #4a6270;
-            line-height: 1.5;
-
-            p {
-              margin: 0 0 6px;
-              
-              strong {
-                color: #1a4b5c;
-              }
-            }
-          }
-        }
-      }
-
-      .action-buttons {
-        padding: 16px 20px;
-        border-top: 1px solid #eef3f6;
-        background: #fafdfe;
-
-        .send-btn, .primary-btn {
-          width: 100%;
-          padding: 10px 20px;
-          border-radius: 40px;
-          font-weight: 600;
-          font-size: 0.8rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-
-          i {
-            font-size: 0.8rem;
-          }
-        }
-
-        .send-btn {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          border: none;
-          color: white;
-
-          &:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-          }
-
-          &:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        }
-
-        .primary-btn {
-          background: linear-gradient(135deg, #2EB270, #239d60);
-          border: none;
-          color: white;
-
-          &:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(46, 178, 112, 0.3);
-          }
-        }
-      }
-    }
-
-    .sent-message {
-      text-align: center;
-      padding: 30px 20px;
-
-      i {
-        font-size: 3rem;
-        color: #10b981;
-        margin-bottom: 16px;
-        display: block;
-      }
-
-      h3 {
-        margin: 0 0 8px;
-        color: #1a4b5c;
-        font-size: 1.1rem;
-      }
-
-      p {
-        color: #6b8a97;
-        font-size: 0.92rem;
-        margin-bottom: 20px;
-      }
-
-      .sent-details {
-        text-align: left;
-        background: #f8fcfd;
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 20px;
-        font-size: 0.75rem;
-        font-size: 0.86rem;
-
-        div {
-          margin-bottom: 6px;
-          
-          strong {
-            color: #1a4b5c;
-          }
-        }
-      }
-    }
-
-    .empty-selection {
-      text-align: center;
-      padding: 40px 20px;
-
-      i {
-        font-size: 2.5rem;
-        color: #b6d0da;
-        margin-bottom: 12px;
-        display: block;
-      }
-
-      p {
-        color: #8aadba;
-        font-size: 1rem;
-        margin: 0;
-      }
-    }
-
-    .loading-spinner {
-      text-align: center;
-      padding: 40px 20px;
-
-      i {
-        font-size: 2rem;
-        color: #2E6276;
-        margin-bottom: 12px;
-        display: block;
-      }
-
-      p {
-        color: #8aadba;
-        font-size: 1rem;
-        margin: 0;
-      }
-    }
-
     // Status Badge Styles
     .status-badge {
       display: inline-flex;
@@ -1133,11 +597,238 @@ app-loan-disbursement-ui {
         border-color: #2E6276;
       }
     }
-
   }
 }
 
-// PrimeNG dialog is rendered outside the component container, so modal styles must be global.
+// ============================================
+// LOAN DETAILS MODAL STYLES
+// ============================================
+.loan-details-modal {
+  border-radius: 18px !important;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(15, 44, 56, 0.28) !important;
+  animation: loanDetailsModalIn 0.24s ease-out;
+
+  .p-dialog-header {
+    background: linear-gradient(135deg, #f8fcfd, #ffffff) !important;
+    border-bottom: 1px solid #e6edf2 !important;
+    padding: 16px 20px !important;
+    color: #1a4b5c !important;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .p-dialog-header .p-dialog-title {
+    color: #1a4b5c;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .p-dialog-header .p-dialog-header-icon {
+    color: #6b8a97;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+
+    &:hover {
+      background: #eef3f6;
+      color: #2e6276;
+    }
+  }
+
+  .p-dialog-content {
+    padding: 0 !important;
+    background: #ffffff;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .loan-details-modal-content {
+    padding: 24px;
+  }
+
+  .loan-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eef3f6;
+
+    .info-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: #8aadba;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #1a4b5c;
+        word-break: break-word;
+
+        &.amount {
+          color: #2EB270;
+          font-weight: 700;
+        }
+
+        &.reference {
+          font-family: monospace;
+          font-size: 0.88rem;
+        }
+      }
+
+      &.full-width {
+        grid-column: span 2;
+      }
+    }
+  }
+
+  .approval-info, .bank-details, .disbursement-info {
+    padding: 20px 0;
+    border-bottom: 1px solid #eef3f6;
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    h4 {
+      margin: 0 0 12px 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a4b5c;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      i {
+        color: #2E6276;
+      }
+    }
+
+    .info-grid-two-col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+
+      .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        label {
+          font-size: 0.76rem;
+          text-transform: uppercase;
+          color: #8aadba;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
+        .value {
+          font-size: 0.96rem;
+          font-weight: 500;
+          color: #1a4b5c;
+          word-break: break-word;
+        }
+
+        &.full-width {
+          grid-column: span 2;
+        }
+      }
+    }
+  }
+
+  .modal-actions {
+    padding: 18px 0 0;
+    border-top: 1px solid #eef3f6;
+    margin-top: 16px;
+
+    .send-btn {
+      width: 100%;
+      padding: 12px 22px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      color: white;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      &.activate-btn {
+        background: linear-gradient(135deg, #2EB270, #239d60);
+
+        &:hover:not(:disabled) {
+          box-shadow: 0 4px 12px rgba(46, 178, 112, 0.3);
+        }
+      }
+    }
+  }
+
+  .loading-spinner {
+    text-align: center;
+    padding: 60px 20px;
+
+    i {
+      font-size: 2.5rem;
+      color: #2E6276;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    p {
+      color: #8aadba;
+      font-size: 1rem;
+      margin: 0;
+    }
+  }
+}
+
+.loan-details-mask {
+  background: rgba(12, 34, 44, 0.52) !important;
+  backdrop-filter: blur(4px);
+  animation: loanDetailsMaskIn 0.2s ease-out;
+}
+
+@keyframes loanDetailsMaskIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes loanDetailsModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ============================================
+// SEND TO ACCOUNTING MODAL STYLES
+// ============================================
 .send-to-accounting-modal {
   border-radius: 18px !important;
   overflow: hidden;
@@ -1174,6 +865,62 @@ app-loan-disbursement-ui {
   .p-dialog-content {
     padding: 0 !important;
     background: #ffffff;
+  }
+
+  // ============================================
+  // SENDING LOADING STATE
+  // ============================================
+  .sending-loading {
+    padding: 48px 32px;
+    text-align: center;
+
+    .loading-content {
+      max-width: 400px;
+      margin: 0 auto;
+
+      i {
+        font-size: 3rem;
+        color: #3b82f6;
+        margin-bottom: 20px;
+        display: block;
+        animation: spin 1s linear infinite;
+      }
+
+      h3 {
+        margin: 0 0 8px;
+        color: #1a4b5c;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 0 24px;
+        color: #6b8a97;
+        font-size: 0.95rem;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: #eef3f6;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 8px;
+
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #3b82f6, #60a5fa);
+          border-radius: 999px;
+          transition: width 0.3s ease;
+        }
+      }
+
+      .progress-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #3b82f6;
+      }
+    }
   }
 
   .email-form {
@@ -1370,10 +1117,6 @@ app-loan-disbursement-ui {
           opacity: 0.6;
           cursor: not-allowed;
         }
-
-        &.activate-btn {
-          background: linear-gradient(135deg, #2EB270, #239d60);
-        }
       }
     }
   }
@@ -1386,13 +1129,8 @@ app-loan-disbursement-ui {
 }
 
 @keyframes sendToAccountingMaskIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes sendToAccountingModalIn {
@@ -1400,20 +1138,23 @@ app-loan-disbursement-ui {
     opacity: 0;
     transform: translateY(14px) scale(0.985);
   }
-
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// RESPONSIVE STYLES
+// ============================================
 @media (max-width: 1200px) {
   app-loan-disbursement-ui .loan-disbursement-container .layout {
     grid-template-columns: 1fr;
-  }
-  
-  .summary-wrapper .summary-right {
-    width: 100%;
   }
 }
 
@@ -1441,33 +1182,25 @@ app-loan-disbursement-ui {
       .summary-left {
         grid-template-columns: 1fr;
       }
-      
-      .summary-right {
-        width: 100%;
-      }
-    }
-
-    .layout {
-      grid-template-columns: 1fr;
     }
 
     .queue-toolbar {
       flex-direction: column;
       align-items: stretch;
     }
+  }
 
-    .loan-info-grid {
-      grid-template-columns: 1fr !important;
+  .loan-details-modal .loan-info-grid {
+    grid-template-columns: 1fr !important;
 
-      .info-group.full-width {
-        grid-column: span 1;
-      }
+    .info-group.full-width {
+      grid-column: span 1;
     }
+  }
 
-    .approval-info .info-grid-two-col,
-    .bank-details .info-grid-two-col,
-    .disbursement-info .info-grid-two-col {
-      grid-template-columns: 1fr;
-    }
+  .loan-details-modal .approval-info .info-grid-two-col,
+  .loan-details-modal .bank-details .info-grid-two-col,
+  .loan-details-modal .disbursement-info .info-grid-two-col {
+    grid-template-columns: 1fr;
   }
 }
