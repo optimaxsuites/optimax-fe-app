@@ -88,7 +88,7 @@
       <p>No issues found. Click <b>New Issue</b> to add one.</p>
     </div>
 
-    <div class="bt-row" *ngFor="let issue of filtered" [class]="'pri-border-' + issue.priority.toLowerCase()">
+    <div class="bt-row" *ngFor="let issue of filtered" [id]="'issue-' + issue.id" [class]="'pri-border-' + issue.priority.toLowerCase()">
       <div class="bt-row-main" (click)="toggleExpand(issue.id!)">
 
         <div class="bt-row-left">
@@ -214,21 +214,31 @@
     <div class="bt-field-row">
       <div class="bt-field">
         <label>Assignee Name</label>
-        <input pInputText [(ngModel)]="form.assigneeName" placeholder="Full name" />
+        <select [(ngModel)]="form.assigneeEmail" (ngModelChange)="onAssigneeSelect($event)">
+          <option value="">Select assignee…</option>
+          <option *ngFor="let u of userList" [value]="u.email">{{ u.fullname }}</option>
+        </select>
       </div>
       <div class="bt-field">
         <label>Assignee Email</label>
-        <input pInputText [(ngModel)]="form.assigneeEmail" placeholder="assignee@company.com" />
+        <input pInputText [value]="form.assigneeEmail || ''" readonly
+               placeholder="rolayo@optimaxsuites.com"
+               style="background:#f8fafc;color:#64748b;cursor:default;" />
       </div>
     </div>
     <div class="bt-field-row">
       <div class="bt-field">
         <label>Supervisor Name</label>
-        <input pInputText [(ngModel)]="form.supervisorName" placeholder="Full name" />
+        <select [(ngModel)]="form.supervisorEmail" (ngModelChange)="onSupervisorSelect($event)">
+          <option value="">Select supervisor…</option>
+          <option *ngFor="let u of userList" [value]="u.email">{{ u.fullname }}</option>
+        </select>
       </div>
       <div class="bt-field">
         <label>Supervisor Email</label>
-        <input pInputText [(ngModel)]="form.supervisorEmail" placeholder="supervisor@company.com" />
+        <input pInputText [value]="form.supervisorEmail || ''" readonly
+               placeholder="supervisor@optimaxsuites.com"
+               style="background:#f8fafc;color:#64748b;cursor:default;" />
       </div>
     </div>
     <div class="bt-field">
@@ -243,16 +253,13 @@
       </div>
     </div>
     <div class="bt-field">
-      <label>Work Log / Progress Notes</label>
-      <div class="bt-wl-form-add">
-        <input pInputText [(ngModel)]="formLogEmail" placeholder="Your email (optional)" style="max-width:180px" />
-        <input pInputText [(ngModel)]="formLogNote" placeholder="Add a progress note…" (keyup.enter)="addFormLog()" />
-        <button type="button" class="bt-btn bt-btn-sm" (click)="addFormLog()">Add</button>
-      </div>
-      <div class="bt-wl-form-entries" *ngIf="tempFormLog.length || form.workLog?.length">
+      <label>Progress Note</label>
+      <textarea [(ngModel)]="formLogNote" rows="4"
+                placeholder="Add an initial progress note, context, or steps to reproduce…"
+                style="width:100%;resize:vertical;"></textarea>
+      <div class="bt-wl-form-entries" *ngIf="tempFormLog.length || form.workLog?.length" style="margin-top:8px;">
         <div class="bt-wl-entry" *ngFor="let log of tempFormLog; let i = index">
           <span class="bt-wl-time bt-wl-new-badge">NEW</span>
-          <span class="bt-wl-who" *ngIf="log.loggedByEmail">{{ log.loggedByEmail }}</span>
           <span class="bt-wl-note">{{ log.note }}</span>
           <button type="button" class="bt-wl-remove" (click)="removeFormLog(i)"><i class="fas fa-times"></i></button>
         </div>
@@ -262,7 +269,6 @@
           <span class="bt-wl-note">{{ log.note }}</span>
         </div>
       </div>
-      <div class="bt-wl-empty" *ngIf="!tempFormLog.length && !form.workLog?.length">No log entries yet. Add one above.</div>
     </div>
   </div>
 
