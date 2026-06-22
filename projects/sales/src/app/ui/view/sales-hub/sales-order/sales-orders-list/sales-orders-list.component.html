@@ -1,0 +1,206 @@
+<div class="order-history-container">
+  <div class="history-wrapper">
+    
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Order History</h1>
+        <p class="page-subtitle">Manage and track all customer orders</p>
+      </div>
+      <a routerLink="/sales/quotes/new" class="btn-primary">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Order
+      </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card" (click)="filters.status = 'ALL'; applyFilters()">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      <div class="stat-card stat-pending" (click)="filters.status = 'PENDING'; applyFilters()">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card stat-processing" (click)="filters.status = 'PROCESSING'; applyFilters()">
+        <div class="stat-value">{{ stats.processing }}</div>
+        <div class="stat-label">Processing</div>
+      </div>
+      <div class="stat-card stat-shipped" (click)="filters.status = 'SHIPPED'; applyFilters()">
+        <div class="stat-value">{{ stats.shipped }}</div>
+        <div class="stat-label">Shipped</div>
+      </div>
+      <div class="stat-card stat-delivered" (click)="filters.status = 'DELIVERED'; applyFilters()">
+        <div class="stat-value">{{ stats.delivered }}</div>
+        <div class="stat-label">Delivered</div>
+      </div>
+      <div class="stat-card stat-revenue">
+        <div class="stat-value">{{ formatCurrency(stats.totalRevenue) }}</div>
+        <div class="stat-label">Total Revenue</div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()" placeholder="Search by order #, customer...">
+        </div>
+        
+        <div class="date-filters">
+          <input type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()" placeholder="From Date">
+          <span>to</span>
+          <input type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()" placeholder="To Date">
+        </div>
+        
+        <button class="btn-reset" (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading orders...</p>
+    </div>
+
+    <!-- Orders Table -->
+    <div *ngIf="!isLoading" class="table-container">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col">
+                <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
+              </th>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Items</th>
+              <th>Order Date</th>
+              <th>Est. Delivery</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of orders" [class]="getStatusBadgeClass(order.status)">
+              <td class="checkbox-col">
+                <input type="checkbox" [value]="order.id" (change)="toggleSelection(order.id, $event)" [checked]="isSelected(order.id)">
+              </td>
+              <td class="order-number">{{ order.orderNumber }}</td>
+              <td>{{ order.customerName }}</td>
+              <td class="amount">{{ formatCurrency(order.totalAmount) }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusBadgeClass(order.status)">
+                  {{ getStatusLabel(order.status) }}
+                </span>
+              </td>
+              <td>{{ order.items.length }}</td>
+              <td>{{ formatDate(order.orderDate) }}</td>
+              <td class="delivery-date" [class.overdue]="isOverdue(order.expectedDeliveryDate) && order.status !== 'DELIVERED'">
+                {{ formatDate(order.expectedDeliveryDate) }}
+                <span *ngIf="isOverdue(order.expectedDeliveryDate) && order.status !== 'DELIVERED'" class="overdue-badge">
+                  Overdue
+                </span>
+              </td>
+              <td class="actions-col" style="border-bottom: 1px solid #f0f0f0;">
+                <div class="actions-col justify-end" style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                  <!-- View Details -->
+                  <button class="action-btn view-btn" (click)="viewOrder(order.id)" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <!-- Delete Order -->
+                  <button class="action-btn cancel-btn" (click)="deleteOrder(order)" title="Delete">
+                    <i class="fas fa-times-circle"></i>
+                  </button>
+                  <!-- More Actions Dropdown -->
+                  <div class="action-dropdown" *ngIf="order.status !== 'DELIVERED' && order.status !== 'CANCELLED'">
+                    <button class="action-btn history-btn action-trigger" title="More Actions">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                      <button *ngIf="order.status === 'PENDING'" (click)="processOrder(order)">
+                        <i class="fas fa-cog" style="width: 0.875rem;"></i> Process Order
+                      </button>
+                      <button *ngIf="order.status === 'PROCESSING' || order.status === 'CONFIRMED'" (click)="shipOrder(order)">
+                        <i class="fas fa-shipping-fast" style="width: 0.875rem;"></i> Ship Order
+                      </button>
+                      <button *ngIf="order.status === 'SHIPPED'" (click)="deliverOrder(order)">
+                        <i class="fas fa-check-circle" style="width: 0.875rem;"></i> Mark Delivered
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="orders.length === 0">
+              <td colspan="9" class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+                <h3>No orders found</h3>
+                <p>Create your first order from an accepted quote</p>
+                <a routerLink="/sales/quotes" class="btn-primary-sm">View Quotes</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="totalPages > 0">
+        <div class="pagination-info">
+          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} orders
+        </div>
+        
+        <div class="pagination-controls">
+          <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+          </select>
+          
+          <div class="pagination-buttons">
+            <button class="page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <button *ngFor="let page of getPageNumbers()" 
+                    class="page-number" 
+                    [class.active]="page === currentPage"
+                    (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+            <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7m-8-14l-7 7 7 7"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Side Modal Details -->
+<app-side-modal *ngIf="showOrderDetail" (close)="closeOrderDetail()">
+  <app-sales-orders-detail [detailId]="selectedOrderId" (closed)="closeOrderDetail()"></app-sales-orders-detail>
+</app-side-modal>

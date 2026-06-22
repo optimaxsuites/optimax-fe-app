@@ -243,9 +243,16 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   deleteCustomer(customer: Customer): void {
     if (confirm(`Delete customer ${customer.name}? This action cannot be undone.`)) {
-      this.customers = this.customers.filter(c => c.id !== customer.id);
-      this.calculateStats();
-      alert(`Customer ${customer.name} deleted`);
+      this.salesService.deleteCustomer(customer.id).subscribe({
+        next: () => {
+          alert(`Customer ${customer.name} deleted successfully`);
+          this.loadCustomers();
+        },
+        error: (error: any) => {
+          console.error('Error deleting customer:', error);
+          alert('Failed to delete customer. Please try again.');
+        }
+      });
     }
   }
 
