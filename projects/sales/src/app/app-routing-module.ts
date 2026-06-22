@@ -34,14 +34,14 @@ const routes: Routes = [
   },
   
   // --- Sales Hub ---
-  // {
-  //   path: 'sales-hub',
-  //   component: SalesHubComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales-hub',
-  //   component: SalesHubComponent
-  // },
+  {
+    path: 'sales-hub',
+    component: SalesHubComponent
+  },
+  {
+    path: 'admin/sales/sales-hub',
+    component: SalesHubComponent
+  },
   {
     path: 'admin/sales/sales-hub/:uuid',
     component: SalesHubComponent
