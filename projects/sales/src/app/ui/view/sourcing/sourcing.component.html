@@ -1,0 +1,796 @@
+<!-- ═══════════════════════════════════════════════════
+     PROCUREMENT PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <div class="mb-7">
+    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Procurement</h1>
+    <p class="text-sm text-[#5a7380] mt-0.5">Review vendor quotations, compare prices, award contracts and issue purchase orders</p>
+  </div>
+
+  <!-- ── Stats cards ─────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Open RFQs</span>
+        <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.openRfqs }}</div>
+      <p class="text-xs" [class.text-amber-600]="stats.expiringSoon > 0" [class.text-[#5a7380]]="!stats.expiringSoon">
+        <ng-container *ngIf="stats.expiringSoon > 0"><strong>{{ stats.expiringSoon }}</strong> expiring within 3 days</ng-container>
+        <ng-container *ngIf="stats.expiringSoon === 0">No urgent deadlines</ng-container>
+      </p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Quotes Received</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.totalQuotes }}</div>
+      <p class="text-xs" [class.text-amber-600]="stats.pendingReview > 0" [class.text-[#5a7380]]="!stats.pendingReview">
+        <strong>{{ stats.pendingReview }}</strong> pending review
+      </p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Awards This Month</span>
+        <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.awardsThisMonth }}</div>
+      <p class="text-xs text-[#5a7380]">Contracts awarded this month</p>
+    </div>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">LPO Value Issued</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold text-amber-600 mb-1">{{ fmtCurrency(stats.totalLpoValue) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.totalLposIssued }}</strong> LPOs issued</p>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TABLE SECTION
+  ═════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+
+    <!-- Toggle header -->
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
+      <div class="flex bg-[#f5f7f9] border border-[#e6edf2] rounded-xl p-0.5">
+        <button class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
+          [class.bg-white]="activeTable==='rfqs'" [class.text-[#224957]]="activeTable==='rfqs'"
+          [class.font-semibold]="activeTable==='rfqs'" [class.shadow-sm]="activeTable==='rfqs'"
+          [class.text-[#5a7380]]="activeTable!=='rfqs'" (click)="switchTable('rfqs')">
+          RFQ Responses
+          <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold"
+            [class.bg-blue-600]="pendingQuoteCount > 0" [class.text-white]="pendingQuoteCount > 0"
+            [class.bg-[#e6edf2]]="pendingQuoteCount === 0" [class.text-[#5a7380]]="pendingQuoteCount === 0">
+            {{ rfqs.length }}
+          </span>
+        </button>
+        <button class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
+          [class.bg-white]="activeTable==='lpos'" [class.text-[#224957]]="activeTable==='lpos'"
+          [class.font-semibold]="activeTable==='lpos'" [class.shadow-sm]="activeTable==='lpos'"
+          [class.text-[#5a7380]]="activeTable!=='lpos'" (click)="switchTable('lpos')">
+          Issued LPOs
+          <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-[#e6edf2] text-[#5a7380]">
+            {{ lpos.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- New LPO (manual, not from quote) — only on LPO tab -->
+      <button *ngIf="activeTable === 'lpos'" (click)="openBlankLpoModal()"
+        class="flex items-center gap-2 px-4 py-2 bg-[#224957] text-white text-xs font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Issue LPO
+      </button>
+    </div>
+
+    <div class="p-4">
+
+      <!-- ── RFQ RESPONSES TABLE — 6 <td>s ── -->
+      <ng-container *ngIf="activeTable === 'rfqs'">
+        <app-table [columns]="rfqColumns" [rows]="rfqs" [actions]="[]"
+          [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
+          emptyMessage="No RFQs found. RFQs you send to vendors will appear here once vendors respond."
+          (rowClick)="onRfqRowClick($event)">
+          <ng-template appTableBody let-row>
+
+            <!-- 1. RFQ No. -->
+            <td class="app-table-main-col">
+              <p class="font-semibold text-[#1a2c35] text-sm">{{ row.rfqNumber }}</p>
+              <p class="text-[10px] text-[#5a7380]">{{ row.category }}</p>
+            </td>
+
+            <!-- 2. Title + order name -->
+            <td>
+              <p class="text-sm font-medium text-[#1a2c35]">{{ row.title }}</p>
+              <p class="text-[10px] text-[#5a7380]">{{ row.orderName }}</p>
+            </td>
+
+            <!-- 3. Department -->
+            <td class="text-sm text-[#5a7380]">{{ row.department }}</td>
+
+            <!-- 4. Expiry -->
+            <td class="text-sm whitespace-nowrap" [ngClass]="rfqExpiryClass(row)">
+              {{ fmtDate(row.expiryDate) }}
+              <span *ngIf="row.status === 'open' && isDueSoon(row.expiryDate) && !isExpired(row.expiryDate)"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600">Soon</span>
+              <span *ngIf="row.status === 'open' && isExpired(row.expiryDate)"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">Expired</span>
+            </td>
+
+            <!-- 5. Quotes received / invited -->
+            <td class="text-center">
+              <div class="inline-flex items-center gap-1">
+                <span class="text-sm font-bold text-[#224957]">{{ row.quotesReceived }}</span>
+                <span class="text-xs text-[#5a7380]">/ {{ row.vendorsInvited }}</span>
+              </div>
+              <div class="w-16 h-1 bg-[#e6edf2] rounded-full mx-auto mt-1 overflow-hidden">
+                <div class="h-full rounded-full bg-[#224957]"
+                  [style.width.%]="row.vendorsInvited > 0 ? (row.quotesReceived / row.vendorsInvited * 100) : 0"></div>
+              </div>
+            </td>
+
+            <!-- 6. Status -->
+            <td><span [ngClass]="rfqBadge(row.status)">{{ row.status }}</span></td>
+
+          </ng-template>
+        </app-table>
+      </ng-container>
+
+      <!-- ── ISSUED LPOs TABLE — 6 <td>s ── -->
+      <ng-container *ngIf="activeTable === 'lpos'">
+        <app-table [columns]="lpoColumns" [rows]="lpos" [actions]="[]"
+          [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
+          emptyMessage="No LPOs issued yet. Award a contract from an RFQ response to create your first LPO."
+          (rowClick)="onLpoRowClick($event)">
+          <ng-template appTableBody let-row>
+
+            <!-- 1. LPO No. + refs -->
+            <td class="app-table-main-col">
+              <p class="font-semibold text-[#1a2c35] text-sm">{{ row.lpoNumber }}</p>
+              <p *ngIf="row.rfqNumber" class="text-[10px] text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
+            </td>
+
+            <!-- 2. Vendor -->
+            <td>
+              <p class="text-sm font-medium text-[#1a2c35]">{{ row.vendorName }}</p>
+              <p *ngIf="row.vendorEmail" class="text-[10px] text-[#5a7380]">{{ row.vendorEmail }}</p>
+            </td>
+
+            <!-- 3. Order -->
+            <td>
+              <p class="text-sm text-[#1a2c35]">{{ row.orderName }}</p>
+              <p class="text-[10px] text-[#5a7380]">{{ row.department }}</p>
+            </td>
+
+            <!-- 4. Issued date -->
+            <td class="text-sm text-[#5a7380] whitespace-nowrap">{{ fmtDate(row.issuedDate) }}</td>
+
+            <!-- 5. Total -->
+            <td class="text-sm font-semibold text-[#224957] text-right whitespace-nowrap">{{ fmtCurrency(row.total, row.currency) }}</td>
+
+            <!-- 6. Status -->
+            <td><span [ngClass]="lpoBadge(row.status)">{{ row.status }}</span></td>
+
+          </ng-template>
+        </app-table>
+      </ng-container>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LAYER 1A — RFQ SIDE PANEL
+     Shows all vendor quotes for this RFQ as a comparison
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showRfqPanel && selectedRfq">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.42);backdrop-filter:blur(2px)" (click)="closeRfqPanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[720px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedRfq.rfqNumber }}</h2>
+            <span [ngClass]="rfqBadge(selectedRfq.status)">{{ selectedRfq.status }}</span>
+          </div>
+          <p class="text-xs text-[#5a7380]">{{ selectedRfq.title }} · {{ selectedRfq.department }}</p>
+        </div>
+        <button (click)="closeRfqPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <!-- Meta strip -->
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+        <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedRfq.issuedDate) }}</strong></span>
+        <span [class.text-red-600]="isExpired(selectedRfq.expiryDate)" [class.text-amber-600]="!isExpired(selectedRfq.expiryDate) && isDueSoon(selectedRfq.expiryDate)">
+          Expires <strong>{{ fmtDate(selectedRfq.expiryDate) }}</strong>
+        </span>
+        <span>Delivery by <strong class="text-[#1a2c35]">{{ fmtDate(selectedRfq.deliveryDeadline) }}</strong></span>
+        <span *ngIf="selectedRfq.totalBudgetEstimate">Budget: <strong class="text-[#1a2c35]">{{ fmtCurrency(selectedRfq.totalBudgetEstimate, selectedRfq.currency) }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- RFQ Items summary -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-2">Items Requested ({{ selectedRfq.items.length }})</h3>
+        <div class="flex flex-col gap-1.5">
+          <div *ngFor="let item of selectedRfq.items; let i = index"
+            class="flex items-center gap-3 border border-[#e6edf2] rounded-xl px-3.5 py-2.5">
+            <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-[#1a2c35] truncate">{{ item.name }}</p>
+              <p class="text-xs text-[#5a7380]">{{ item.description | slice:0:60 }}{{ item.description.length > 60 ? '…' : '' }}</p>
+            </div>
+            <span class="text-xs font-semibold text-[#5a7380] whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
+            <span *ngIf="item.budgetEstimate" class="text-xs font-semibold text-[#224957] whitespace-nowrap">{{ fmtCurrency(item.budgetEstimate, selectedRfq.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vendor quote comparison -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380]">
+            Vendor Quotations ({{ rfqQuotes.length }})
+          </h3>
+          <span class="text-[10px] text-[#5a7380]">Sorted cheapest first · Click any row to view full quote</span>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loadingQuotes" class="flex items-center justify-center py-8 text-[#5a7380]">
+          <div class="w-5 h-5 border-2 border-[#224957] border-t-transparent rounded-full animate-spin mr-2"></div>
+          <span class="text-sm">Loading quotes…</span>
+        </div>
+
+        <!-- No quotes -->
+        <div *ngIf="!loadingQuotes && rfqQuotes.length === 0"
+          class="text-center py-8 border-2 border-dashed border-[#e6edf2] rounded-xl">
+          <p class="text-sm font-medium text-[#1a2c35]">No quotations received yet</p>
+          <p class="text-xs text-[#5a7380] mt-1">Vendors have until {{ fmtDate(selectedRfq.expiryDate) }} to submit</p>
+        </div>
+
+        <!-- Quote comparison table -->
+        <div *ngIf="!loadingQuotes && rfqQuotes.length > 0" class="flex flex-col gap-2">
+          <div *ngFor="let quote of rfqQuotes"
+            class="border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-all group"
+            [class.border-green-200]="isCheapest(quote) && quote.status !== 'rejected'"
+            [class.bg-green-50]="isCheapest(quote) && quote.status !== 'rejected'"
+            [class.border-[#e6edf2]]="!isCheapest(quote) || quote.status === 'rejected'"
+            [class.bg-white]="!isCheapest(quote) || quote.status === 'rejected'"
+            [class.opacity-55]="quote.status === 'rejected'"
+            (click)="openQuotePanel(quote)">
+
+            <div class="px-4 py-3 flex items-center gap-3">
+              <!-- Price rank badge -->
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                [class.bg-green-100]="isCheapest(quote)"
+                [class.text-green-700]="isCheapest(quote)"
+                [class.bg-[#e8f2f7]]="!isCheapest(quote)"
+                [class.text-[#224957]]="!isCheapest(quote)">
+                #{{ quote.priceRank }}
+              </div>
+
+              <!-- Vendor info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <p class="text-sm font-semibold text-[#1a2c35]">{{ quote.vendorName }}</p>
+                  <span *ngIf="quote.vendorVerified" class="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">✓ Verified</span>
+                  <span *ngIf="isCheapest(quote) && quote.status !== 'rejected'" class="text-[10px] font-semibold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">Lowest Price</span>
+                </div>
+                <div class="flex items-center gap-3 mt-0.5">
+                  <span class="text-xs text-[#5a7380]">★ {{ quote.vendorRating }}</span>
+                  <span class="text-xs text-[#5a7380]">{{ quote.deliveryLeadDays }}d lead time</span>
+                  <span class="text-xs text-[#5a7380]">{{ quote.paymentTerms }}</span>
+                  <span class="text-xs text-[#5a7380]">Valid until {{ fmtDate(quote.validUntil) }}</span>
+                </div>
+              </div>
+
+              <!-- Total + savings -->
+              <div class="text-right shrink-0">
+                <p class="text-sm font-bold" [class.text-green-700]="isCheapest(quote)" [class.text-[#224957]]="!isCheapest(quote)">
+                  {{ fmtCurrency(quote.total, quote.currency) }}
+                </p>
+                <p *ngIf="!isCheapest(quote) && savingsVsHighest(quote) < 0" class="text-[10px] text-red-500">
+                  +{{ fmtCurrency(Math.abs(savingsVsHighest(quote)), quote.currency) }} vs cheapest
+                </p>
+              </div>
+
+              <!-- Status badge -->
+              <span [ngClass]="quoteBadge(quote.status)" class="shrink-0">{{ quote.status.replace('_',' ') }}</span>
+
+              <!-- Arrow -->
+              <svg class="w-4 h-4 text-[#94a9b3] group-hover:text-[#224957] transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+            </div>
+
+            <!-- Cheapest label bar -->
+            <div *ngIf="isCheapest(quote) && quote.status !== 'rejected'"
+              class="px-4 py-1.5 bg-green-100 border-t border-green-200 text-[10px] font-semibold text-green-700 flex items-center gap-1.5">
+              <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Recommended — lowest total price
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Special instructions -->
+      <div *ngIf="selectedRfq.specialInstructions">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Special Instructions Sent</h3>
+        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed">{{ selectedRfq.specialInstructions }}</div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] sticky bottom-0">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <p class="text-xs text-[#5a7380]">
+          <ng-container *ngIf="selectedRfq.status === 'open'">Select a vendor's quote to view details and award the contract</ng-container>
+          <ng-container *ngIf="selectedRfq.status === 'awarded'">This RFQ has been awarded — LPO has been issued</ng-container>
+        </p>
+        <button (click)="openBlankLpoModal()"
+          class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">
+          + Issue LPO Manually
+        </button>
+      </div>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LAYER 1B — QUOTE DETAIL SIDE PANEL
+     Full details of one vendor's quotation
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showQuotePanel && selectedQuote">
+  <div class="fixed inset-0 z-[1010]" style="background:rgba(15,30,36,0.25)" (click)="closeQuotePanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1011] w-[600px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide"
+    style="right: min(720px, 95vw)">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-2">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedQuote.vendorName }}</h2>
+            <span *ngIf="selectedQuote.vendorVerified" class="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">✓ Verified</span>
+          </div>
+          <p class="text-xs text-[#5a7380]">{{ selectedQuote.quotationNumber }} · RFQ: {{ selectedQuote.rfqNumber }}</p>
+        </div>
+        <button (click)="closeQuotePanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+        <span>★ {{ selectedQuote.vendorRating }}</span>
+        <span>Submitted {{ fmtDate(selectedQuote.submittedDate) }}</span>
+        <span>Valid until {{ fmtDate(selectedQuote.validUntil) }}</span>
+        <span>Lead time: <strong class="text-[#1a2c35]">{{ selectedQuote.deliveryLeadDays }} days</strong></span>
+        <span [ngClass]="quoteBadge(selectedQuote.status)">{{ selectedQuote.status.replace('_',' ') }}</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Price rank callout -->
+      <div *ngIf="isCheapest(selectedQuote) && selectedQuote.status !== 'rejected'"
+        class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+        <svg class="text-green-600 shrink-0" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <p class="text-sm text-green-700 font-medium">This is the lowest priced quotation for this RFQ</p>
+      </div>
+
+      <!-- Line items -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-2">Line Items</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedQuote.items"
+            class="border rounded-xl p-3.5 flex items-start gap-3"
+            [class.border-[#e6edf2]]="item.availability === 'available'"
+            [class.border-red-100]="item.availability === 'unavailable'"
+            [class.bg-red-50]="item.availability === 'unavailable'"
+            [class.opacity-60]="item.availability === 'unavailable'">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-[#1a2c35]">{{ item.itemName }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.description }}</p>
+              <p *ngIf="item.notes" class="text-xs text-amber-600 mt-1 italic">Note: {{ item.notes }}</p>
+              <p class="text-xs text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ item.unitPrice !== null ? fmtCurrency(item.unitPrice, selectedQuote.currency) : '—' }}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <ng-container *ngIf="item.availability === 'available' && item.totalPrice !== null">
+                <p class="text-sm font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice, selectedQuote.currency) }}</p>
+              </ng-container>
+              <span *ngIf="item.availability === 'unavailable'" class="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Unavailable</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuote.subtotal, selectedQuote.currency) }}</span></div>
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuote.tax, selectedQuote.currency) }}</span></div>
+        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <span>Total</span><span class="text-base text-[#224957]">{{ fmtCurrency(selectedQuote.total, selectedQuote.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Commercial terms -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-2">Commercial Terms</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Payment Terms</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedQuote.paymentTerms }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Delivery Lead Time</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedQuote.deliveryLeadDays }} working days</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Quote Valid Until</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ fmtDate(selectedQuote.validUntil) }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Vendor Rating</span>
+            <span class="text-sm text-[#1a2c35] font-medium">★ {{ selectedQuote.vendorRating }} / 5.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div *ngIf="selectedQuote.notes">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Vendor Notes</h3>
+        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedQuote.notes }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center gap-2 justify-end sticky bottom-0 flex-wrap">
+      <ng-container *ngIf="selectedQuote.status !== 'awarded' && selectedQuote.status !== 'rejected'">
+        <button *ngIf="selectedQuote.status !== 'shortlisted'" (click)="shortlistQuote(selectedQuote)"
+          class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#e8f2f7] text-[#224957] hover:bg-[#d2e8f2] transition-colors">
+          ★ Shortlist
+        </button>
+        <button (click)="rejectQuote(selectedQuote)"
+          class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+          Reject
+        </button>
+        <button (click)="openAwardModal(selectedQuote)"
+          class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors flex items-center gap-1.5">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Award Contract & Issue LPO
+        </button>
+      </ng-container>
+      <span *ngIf="selectedQuote.status === 'awarded'" class="text-xs font-semibold text-green-600 flex items-center gap-1">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Contract awarded — LPO issued
+      </span>
+      <span *ngIf="selectedQuote.status === 'rejected'" class="text-xs font-medium text-red-500">Quote rejected</span>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     AWARD CONFIRM MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showAwardModal && quoteToAward">
+  <div class="fixed inset-0 z-[1050]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeAwardModal()"></div>
+  <div class="fixed inset-0 z-[1051] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[440px] max-w-full p-8 text-center modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center mx-auto mb-4">
+        <svg width="26" height="26" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-2">Award Contract?</h3>
+      <p class="text-sm text-[#5a7380] leading-relaxed mb-2">
+        You are awarding the contract to <strong class="text-[#1a2c35]">{{ quoteToAward.vendorName }}</strong> for
+        <strong class="text-[#1a2c35]">{{ fmtCurrency(quoteToAward.total, quoteToAward.currency) }}</strong>.
+      </p>
+      <p class="text-xs text-[#5a7380] mb-6">All other quotes for this RFQ will be marked as rejected. You will then create the LPO to send to the vendor.</p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="closeAwardModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmAward()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors">Yes, Award & Create LPO</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LPO CREATION CENTRE MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showLpoModal">
+  <div class="fixed inset-0 z-[1060]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeLpoModal()"></div>
+  <div class="fixed inset-0 z-[1061] flex items-start justify-center pt-8 px-4 pb-4 overflow-y-auto pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto modal-pop flex flex-col pointer-events-auto" (click)="$event.stopPropagation()">
+
+      <!-- Head -->
+      <div class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#eef2f6]">
+        <div>
+          <h2 class="text-base font-bold text-[#1a2c35]">Issue Local Purchase Order</h2>
+          <p class="text-xs text-[#5a7380] mt-0.5">
+            <ng-container *ngIf="lpoFromQuote">Pre-filled from {{ lpoFromQuote.quotationNumber }} · {{ lpoFromQuote.vendorName }}</ng-container>
+            <ng-container *ngIf="!lpoFromQuote">Manual LPO — fill in vendor and order details</ng-container>
+          </p>
+        </div>
+        <button (click)="closeLpoModal()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="px-6 py-5 flex flex-col gap-4 overflow-y-auto max-h-[60vh]">
+
+        <!-- Vendor + Order -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Vendor Name <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="lpoForm.vendorName" class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all"
+              [class.border-red-400]="lpoFormErrors['vendorName']" [class.border-[#e6edf2]]="!lpoFormErrors['vendorName']"
+              placeholder="Vendor company name">
+            <p *ngIf="lpoFormErrors['vendorName']" class="text-xs text-red-500 mt-1">{{ lpoFormErrors['vendorName'] }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Vendor Email</label>
+            <input type="email" [(ngModel)]="lpoForm.vendorEmail" class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all" placeholder="vendor@email.com">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Order Name <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="lpoForm.orderName" class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all"
+              [class.border-red-400]="lpoFormErrors['orderName']" [class.border-[#e6edf2]]="!lpoFormErrors['orderName']" placeholder="e.g. Q3 IT Equipment">
+            <p *ngIf="lpoFormErrors['orderName']" class="text-xs text-red-500 mt-1">{{ lpoFormErrors['orderName'] }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Department</label>
+            <input type="text" [(ngModel)]="lpoForm.department" class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all" placeholder="e.g. Information Technology">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Delivery Deadline <span class="text-red-500">*</span></label>
+            <input type="date" [(ngModel)]="lpoForm.deliveryDeadline" [min]="today" class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all"
+              [class.border-red-400]="lpoFormErrors['deliveryDeadline']" [class.border-[#e6edf2]]="!lpoFormErrors['deliveryDeadline']">
+            <p *ngIf="lpoFormErrors['deliveryDeadline']" class="text-xs text-red-500 mt-1">{{ lpoFormErrors['deliveryDeadline'] }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Payment Terms</label>
+            <select [(ngModel)]="lpoForm.paymentTerms" class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all">
+              <option *ngFor="let t of paymentTermOptions" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Delivery Address <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="lpoForm.deliveryAddress" class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 transition-all"
+              [class.border-red-400]="lpoFormErrors['deliveryAddress']" [class.border-[#e6edf2]]="!lpoFormErrors['deliveryAddress']" placeholder="Full delivery address">
+            <p *ngIf="lpoFormErrors['deliveryAddress']" class="text-xs text-red-500 mt-1">{{ lpoFormErrors['deliveryAddress'] }}</p>
+          </div>
+        </div>
+
+        <!-- Line items -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold text-[#5a7380] uppercase tracking-wide">Line Items <span class="text-red-500">*</span></label>
+            <button type="button" (click)="addLpoItem()" class="flex items-center gap-1 text-xs font-semibold text-[#224957] hover:text-[#2d6478] transition-colors">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Item
+            </button>
+          </div>
+          <p *ngIf="lpoFormErrors['items']" class="text-xs text-red-500 mb-2">{{ lpoFormErrors['items'] }}</p>
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let item of lpoForm.items; let i = index"
+              class="border border-[#e6edf2] rounded-xl p-3.5">
+              <div class="flex gap-2 mb-2">
+                <input type="text" [(ngModel)]="item.name" placeholder="Item name" class="flex-1 border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957]">
+                <button type="button" *ngIf="lpoForm.items.length > 1" (click)="removeLpoItem(i)"
+                  class="w-8 h-9 flex items-center justify-center text-[#94a9b3] hover:text-red-500 transition-colors">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-2">
+                <div>
+                  <span class="text-[10px] text-[#94a9b3] font-medium uppercase block mb-1">Qty</span>
+                  <input type="number" [(ngModel)]="item.quantity" (ngModelChange)="recalcLpoItems()" min="1" class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm bg-[#f5f7f9] outline-none focus:border-[#224957]">
+                </div>
+                <div>
+                  <span class="text-[10px] text-[#94a9b3] font-medium uppercase block mb-1">Unit</span>
+                  <input type="text" [(ngModel)]="item.unit" class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm bg-[#f5f7f9] outline-none focus:border-[#224957]" placeholder="pcs">
+                </div>
+                <div>
+                  <span class="text-[10px] text-[#94a9b3] font-medium uppercase block mb-1">Unit Price</span>
+                  <input type="number" [(ngModel)]="item.unitPrice" (ngModelChange)="recalcLpoItems()" min="0" step="0.01" class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm font-semibold bg-[#f5f7f9] outline-none focus:border-[#224957]">
+                </div>
+                <div>
+                  <span class="text-[10px] text-[#94a9b3] font-medium uppercase block mb-1">Total</span>
+                  <div class="border border-[#eef2f6] rounded-lg px-3 py-2 text-sm font-bold text-[#224957] bg-[#f9fcfd]">
+                    {{ fmtCurrency(item.totalPrice, lpoForm.currency) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Special conditions + notes -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Special Conditions</label>
+            <textarea [(ngModel)]="lpoForm.specialConditions" rows="3" placeholder="Delivery requirements, packaging, compliance docs needed…" class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] resize-none outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Internal Notes</label>
+            <textarea [(ngModel)]="lpoForm.internalNotes" rows="3" placeholder="Notes not shared with the vendor…" class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] resize-none outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-end justify-between gap-4 px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] rounded-b-2xl flex-wrap">
+        <!-- Totals -->
+        <div class="flex flex-col gap-1 min-w-[200px]">
+          <div class="flex justify-between gap-8 text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(lpoSubtotal, lpoForm.currency) }}</span></div>
+          <div class="flex justify-between gap-8 text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(lpoTax, lpoForm.currency) }}</span></div>
+          <div class="flex justify-between gap-8 text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span>Total</span><span class="text-base text-[#224957]">{{ fmtCurrency(lpoTotal, lpoForm.currency) }}</span></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button (click)="closeLpoModal()" class="px-3 py-2 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+          <button (click)="submitLpo()" class="px-5 py-2 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors flex items-center gap-1.5">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Issue LPO
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     ISSUED LPO SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showLpoPanel && selectedLpo">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeLpoPanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[600px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
+            <span [ngClass]="lpoBadge(selectedLpo.status)">{{ selectedLpo.status }}</span>
+          </div>
+          <p class="text-xs text-[#5a7380]">{{ selectedLpo.vendorName }}<span *ngIf="selectedLpo.vendorEmail"> · {{ selectedLpo.vendorEmail }}</span></p>
+        </div>
+        <button (click)="closeLpoPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+        <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.issuedDate) }}</strong></span>
+        <span>Deliver by <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.deliveryDeadline) }}</strong></span>
+        <span *ngIf="selectedLpo.rfqNumber">RFQ: <strong class="text-[#1a2c35]">{{ selectedLpo.rfqNumber }}</strong></span>
+        <span *ngIf="selectedLpo.quotationNumber">Quot: <strong class="text-[#1a2c35]">{{ selectedLpo.quotationNumber }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Order info -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Order</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.orderName }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Department</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.department }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Payment Terms</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5 col-span-2">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Delivery Address</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.deliveryAddress }}</span>
+        </div>
+      </div>
+
+      <!-- Special conditions -->
+      <div *ngIf="selectedLpo.specialConditions">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Special Conditions</h3>
+        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed">{{ selectedLpo.specialConditions }}</div>
+      </div>
+
+      <!-- Items -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-2">Items ({{ selectedLpo.items.length }})</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedLpo.items; let i = index"
+            class="border border-[#e6edf2] rounded-xl p-3.5 flex items-center gap-3">
+            <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-[#1a2c35]">{{ item.name }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
+            </div>
+            <span class="text-sm font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <span>Total</span><span class="text-base text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center gap-2 justify-end sticky bottom-0">
+      <button (click)="downloadLpo(selectedLpo, $event)"
+        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
+        ↓ Download LPO
+      </button>
+      <button *ngIf="selectedLpo.status === 'sent' || selectedLpo.status === 'draft'"
+        (click)="openCancelLpoModal(selectedLpo)"
+        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+        Cancel LPO
+      </button>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     CANCEL LPO CONFIRM MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showCancelLpoModal && lpoToCancel">
+  <div class="fixed inset-0 z-[1100]" style="background:rgba(15,30,36,0.5)" (click)="closeCancelLpoModal()"></div>
+  <div class="fixed inset-0 z-[1101] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[400px] max-w-full p-8 text-center modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-2">Cancel LPO?</h3>
+      <p class="text-sm text-[#5a7380] leading-relaxed mb-6">
+        Are you sure you want to cancel <strong class="text-[#1a2c35]">{{ lpoToCancel.lpoNumber }}</strong> issued to
+        <strong class="text-[#1a2c35]">{{ lpoToCancel.vendorName }}</strong>? This action cannot be undone.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="closeCancelLpoModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Keep LPO</button>
+        <button (click)="confirmCancelLpo()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors">Yes, Cancel It</button>
+      </div>
+    </div>
+  </div>
+</ng-container>

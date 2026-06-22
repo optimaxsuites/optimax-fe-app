@@ -74,8 +74,8 @@
     </div>
 
     <div class="layout" *ngIf="hasQueueLoans()">
-      <!-- Left Section: Queue Tables -->
-      <div class="queue-column">
+      <!-- Left Section: Queue Tables (Takes Full Width) -->
+      <div class="queue-column full-width">
         <div *ngIf="isLoansLoading" class="loading-state">
           <div class="spinner"></div>
           <p>Loading loans...</p>
@@ -123,6 +123,7 @@
             <span class="batch-count"><i class="fas fa-check-square"></i> {{ batchSelectedLoanIds.size }} selected</span>
             <span class="batch-total" *ngIf="isBatchMode">{{ formatCurrency(getBatchTotalAmount()) }}</span>
             <button type="button" class="batch-select-all-btn" (click)="selectAllApprovedLoans()">Select All</button>
+            <button type="button" class="batch-review-btn" *ngIf="isBatchMode" (click)="openBatchLoanDetailsModal()">Review Details</button>
             <button type="button" class="batch-clear-btn" (click)="clearBatchSelection()">Clear</button>
           </div>
 
@@ -159,7 +160,7 @@
                   <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
                 </td>
                 <td>
-                  <button class="select-btn" [class.active]="selectedDisbursementLoan?.id === loan.id" (click)="toggleLoanSelection(loan); $event.stopPropagation()">
+                  <button class="select-btn" [class.active]="selectedDisbursementLoan?.id === loan.id" (click)="openLoanDetailsModal(loan); $event.stopPropagation()">
                     {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
                   </button>
                 </td>
@@ -190,13 +191,15 @@
 
           <div class="queue-toolbar">
             <div class="queue-metrics">
-              <div class="queue-metric-pill">
-                <span class="metric-label">Loans</span>
-                <strong>{{ getFilteredReadyForDisbursementLoans().length }}</strong>
-              </div>
-              <div class="queue-metric-pill accent-ready">
-                <span class="metric-label">Ready Total</span>
-                <strong>{{ formatCurrency(getFilteredReadyForDisbursementTotal()) }}</strong>
+              <div class="queue-metrics">
+                <div class="queue-metric-pill">
+                  <span class="metric-label">Loans</span>
+                  <strong>{{ getFilteredReadyForDisbursementLoans().length }}</strong>
+                </div>
+                <div class="queue-metric-pill accent-ready">
+                  <span class="metric-label">Ready Total</span>
+                  <strong>{{ formatCurrency(getFilteredReadyForDisbursementTotal()) }}</strong>
+                </div>
               </div>
             </div>
 
@@ -232,7 +235,7 @@
                   <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
                 </td>
                 <td>
-                  <button class="select-btn" [class.active]="selectedDisbursementLoan?.id === loan.id" (click)="toggleLoanSelection(loan); $event.stopPropagation()">
+                  <button class="select-btn" [class.active]="selectedDisbursementLoan?.id === loan.id" (click)="openLoanDetailsModal(loan); $event.stopPropagation()">
                     {{ selectedDisbursementLoan?.id === loan.id ? 'Selected' : 'Select' }}
                   </button>
                 </td>
@@ -250,170 +253,161 @@
           </div>
         </section>
       </div>
-
-      <!-- Right Section: Loan Details & Actions -->
-      <aside class="action-rail" *ngIf="selectedDisbursementLoan as loan; else noSelection">
-        <div *ngIf="isMembersLoading || isGroupsLoading" class="loading-card surface-card">
-          <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Loading member details...</p>
-          </div>
-        </div>
-
-        <!-- Loan Details Card -->
-        <section class="loan-details-card surface-card">
-          <div class="section-head compact" [class.batch-nav-head]="isBatchMode">
-            <button *ngIf="isBatchMode" type="button" class="batch-nav-arrow" (click)="navigateBatch(-1)">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="heading-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-              <i class="fas fa-id-card"></i>
-            </div>
-            <div class="section-copy">
-              <span class="eyebrow">Loan Details</span>
-              <h2>{{ getFullName(loan) }}</h2>
-            </div>
-            <span class="status-badge" [ngClass]="getQueueStatusClass(loan)">{{ getQueueStatusLabel(loan) }}</span>
-            <button *ngIf="isBatchMode" type="button" class="batch-nav-arrow" (click)="navigateBatch(1)">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-          <div *ngIf="isBatchMode" class="batch-position-bar">
-            <i class="fas fa-layer-group"></i>
-            Viewing {{ batchViewIndex + 1 }} of {{ batchSelectedLoans.length }} selected
-          </div>
-
-          <!-- Loan Information Grid - 2 columns -->
-          <div class="loan-info-grid">
-            <div class="info-group">
-              <label>Loan ID</label>
-              <span class="value">{{ loan.loanCode || loan.id }}</span>
-            </div>
-            <div class="info-group">
-              <label>Member ID</label>
-              <span class="value">{{ getFormattedMemberId(loan) }}</span>
-            </div>
-            <div class="info-group">
-              <label>Group Name</label>
-              <span class="value">{{ getGroupNameTpl(loan) }}</span>
-            </div>
-            <div class="info-group">
-              <label>Group Code</label>
-              <span class="value">{{ getGroupCodeTpl(loan) }}</span>
-            </div>
-            <div class="info-group">
-              <label>Approved Amount</label>
-              <span class="value amount">{{ formatCurrency(loan.approvedAmount || loan.amount) }}</span>
-            </div>
-            <div class="info-group">
-              <label>Interest Rate</label>
-              <span class="value">{{ selectedGroup?.interestRate || loan.interestRate || 0 }}%</span>
-            </div>
-            <div class="info-group">
-              <label>Duration</label>
-              <span class="value">{{ loan.duration || loan.repaymentTime }} months</span>
-            </div>
-            <div class="info-group">
-              <label>Membership ID</label>
-              <span class="value">{{ getFormattedMembershipId(loan) || 'N/A' }}</span>
-            </div>
-            <div class="info-group full-width">
-              <label>Purpose</label>
-              <span class="value">{{ loan.purpose }}</span>
-            </div>
-            <div class="info-group full-width">
-              <label>Admin Comment</label>
-              <span class="value">{{ loan.adminComment || 'No comment' }}</span>
-            </div>
-          </div>
-
-          <!-- Approval Information -->
-          <div class="approval-info">
-            <h4>Approval Information</h4>
-            <div class="info-grid-two-col">
-              <div class="info-group">
-                <label>Approved Date</label>
-                <span class="value">{{ formatDate(loan.approvedDate) }}</span>
-              </div>
-              <div class="info-group">
-                <label>Approved By</label>
-                <span class="value">{{ getApprovedByName(loan) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Employee Bank Details -->
-          <div class="bank-details" *ngIf="selectedEmployeeDetails || loan.memberBankName">
-            <h4>Member Bank Details</h4>
-            <div class="info-grid-two-col">
-              <div class="info-group">
-                <label>Bank Name</label>
-                <span class="value">{{ selectedEmployeeDetails?.bankName || loan.memberBankName || 'N/A' }}</span>
-              </div>
-              <div class="info-group">
-                <label>Account Number</label>
-                <span class="value">{{ selectedEmployeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A' }}</span>
-              </div>
-              <div class="info-group">
-                <label>Account Name</label>
-                <span class="value">{{ getFullName(loan) }}</span>
-              </div>
-              <div class="info-group">
-                <label>Member Email</label>
-                <span class="value">{{ selectedEmployeeDetails?.email || selectedEmployeeDetails?.workEmail || 'N/A' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Disbursement Initiation Info -->
-          <div class="disbursement-info" *ngIf="disbursementInitiatedAt">
-            <h4>Disbursement Initiation</h4>
-            <div class="info-grid-two-col">
-              <div class="info-group">
-                <label>Initiated Date</label>
-                <span class="value">{{ formatDate(disbursementInitiatedAt) }}</span>
-              </div>
-              <div class="info-group">
-                <label>Initiated By</label>
-                <span class="value">{{ disbursementInitiatedBy || 'Pending accounting handoff' }}</span>
-              </div>
-              <div class="info-group full-width">
-                <label>Instruction Reference</label>
-                <span class="value reference">{{ disbursementInstructionReference || 'Will be generated when sent to accounting' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Send to Accounting Button (for APPROVED loans) -->
-          <div class="details-actions" *ngIf="isBatchMode ? batchSelectedLoans.length >= 2 : (loan.status === 'APPROVED' || loan.status === 'READY_FOR_DISBURSEMENT')">
-            <button
-              type="button"
-              class="send-btn"
-              [class.activate-btn]="!isBatchMode && loan.status === 'READY_FOR_DISBURSEMENT'"
-              (click)="(!isBatchMode && loan.status === 'READY_FOR_DISBURSEMENT') ? setLoanActive(loan) : openSendToAccountingModal()"
-              [disabled]="isSubmitting">
-              <i class="fas" [ngClass]="(!isBatchMode && loan.status === 'READY_FOR_DISBURSEMENT') ? 'fa-circle-check' : 'fa-paper-plane'"></i>
-              {{ isBatchMode
-                ? 'Send ' + batchSelectedLoans.length + ' Loans to Accounting'
-                : (loan.status === 'READY_FOR_DISBURSEMENT' ? 'Set Loan to Active' : 'Send to Accounting') }}
-            </button>
-          </div>
-        </section>
-
-      </aside>
-
-      <ng-template #noSelection>
-        <aside class="action-rail">
-          <section class="no-selection-card surface-card">
-            <div class="empty-selection">
-              <i class="fas fa-hand-pointer"></i>
-              <p>Select a loan from the queue to view details</p>
-            </div>
-          </section>
-        </aside>
-      </ng-template>
     </div>
   </div>
+
+  <!-- Loan Details Modal -->
+  <p-dialog
+    [(visible)]="isLoanDetailsModalVisible"
+    [modal]="true"
+    [maskStyleClass]="'loan-details-mask'"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [dismissableMask]="true"
+    styleClass="loan-details-modal"
+    [style]="{ width: 'min(900px, 98vw)' }"
+    [header]="'Cooperative Loan Details'">
+    
+    <div class="loan-details-modal-content" *ngIf="selectedDisbursementLoan">
+      <div class="loan-details-nav" *ngIf="isBatchMode && batchSelectedLoans.length > 1">
+        <button type="button" class="loan-nav-btn loan-nav-btn-left" (click)="navigateBatch(-1)" aria-label="Previous loan">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="loan-nav-btn loan-nav-btn-right" (click)="navigateBatch(1)" aria-label="Next loan">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="batch-modal-summary" *ngIf="isBatchMode && batchSelectedLoans.length > 1">
+        <span>{{ batchViewIndex + 1 }} of {{ batchSelectedLoans.length }}</span>
+      </div>
+
+      <!-- Loan Information Grid -->
+      <div class="loan-info-grid">
+        <div class="info-group">
+          <label>Loan ID</label>
+          <span class="value">{{ selectedDisbursementLoan.loanCode || selectedDisbursementLoan.id }}</span>
+        </div>
+        <div class="info-group">
+          <label>Member ID</label>
+          <span class="value">{{ getFormattedMemberId(selectedDisbursementLoan) }}</span>
+        </div>
+        <div class="info-group">
+          <label>Member Name</label>
+          <span class="value">{{ getFullName(selectedDisbursementLoan) }}</span>
+        </div>
+        <div class="info-group">
+          <label>Current Status</label>
+          <span class="value">
+            <span class="status-badge" [ngClass]="getQueueStatusClass(selectedDisbursementLoan)">{{ getQueueStatusLabel(selectedDisbursementLoan) }}</span>
+          </span>
+        </div>
+        <div class="info-group">
+          <label>Approved Amount</label>
+          <span class="value amount">{{ formatCurrency(selectedDisbursementLoan.approvedAmount || selectedDisbursementLoan.amount) }}</span>
+        </div>
+        <div class="info-group">
+          <label>Interest Rate</label>
+          <span class="value">{{ selectedGroup?.interestRate || selectedDisbursementLoan.interestRate || 0 }}%</span>
+        </div>
+        <div class="info-group">
+          <label>Duration</label>
+          <span class="value">{{ selectedDisbursementLoan.duration || selectedDisbursementLoan.repaymentTime }} months</span>
+        </div>
+        <div class="info-group">
+          <label>Membership ID</label>
+          <span class="value">{{ getFormattedMembershipId(selectedDisbursementLoan) || 'N/A' }}</span>
+        </div>
+        <div class="info-group">
+          <label>Group Name</label>
+          <span class="value">{{ getGroupNameTpl(selectedDisbursementLoan) }}</span>
+        </div>
+        <div class="info-group">
+          <label>Group Code</label>
+          <span class="value">{{ getGroupCodeTpl(selectedDisbursementLoan) }}</span>
+        </div>
+        <div class="info-group full-width">
+          <label>Purpose</label>
+          <span class="value">{{ selectedDisbursementLoan.purpose }}</span>
+        </div>
+        <div class="info-group full-width">
+          <label>Admin Comment</label>
+          <span class="value">{{ selectedDisbursementLoan.adminComment || 'No comment' }}</span>
+        </div>
+      </div>
+
+      <!-- Approval Information -->
+      <div class="approval-info">
+        <h4><i class="fas fa-check-circle"></i> Approval Information</h4>
+        <div class="info-grid-two-col">
+          <div class="info-group">
+            <label>Approved Date</label>
+            <span class="value">{{ formatDate(selectedDisbursementLoan.approvedDate) }}</span>
+          </div>
+          <div class="info-group">
+            <label>Approved By</label>
+            <span class="value">{{ getApprovedByName(selectedDisbursementLoan) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member Bank Details -->
+      <div class="bank-details" *ngIf="selectedEmployeeDetails || selectedDisbursementLoan.memberBankName">
+        <h4><i class="fas fa-university"></i> Member Bank Details</h4>
+        <div class="info-grid-two-col">
+          <div class="info-group">
+            <label>Bank Name</label>
+            <span class="value">{{ selectedEmployeeDetails?.bankName || selectedDisbursementLoan.memberBankName || 'N/A' }}</span>
+          </div>
+          <div class="info-group">
+            <label>Account Number</label>
+            <span class="value">{{ selectedEmployeeDetails?.accountNumber || selectedDisbursementLoan.memberAccountNumber || 'N/A' }}</span>
+          </div>
+          <div class="info-group">
+            <label>Account Name</label>
+            <span class="value">{{ getFullName(selectedDisbursementLoan) }}</span>
+          </div>
+          <div class="info-group">
+            <label>Member Email</label>
+            <span class="value">{{ selectedEmployeeDetails?.email || selectedEmployeeDetails?.workEmail || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disbursement Initiation Info -->
+      <div class="disbursement-info" *ngIf="disbursementInitiatedAt">
+        <h4><i class="fas fa-paper-plane"></i> Disbursement Initiation</h4>
+        <div class="info-grid-two-col">
+          <div class="info-group">
+            <label>Initiated Date</label>
+            <span class="value">{{ formatDate(disbursementInitiatedAt) }}</span>
+          </div>
+          <div class="info-group">
+            <label>Initiated By</label>
+            <span class="value">{{ disbursementInitiatedBy || 'Pending accounting handoff' }}</span>
+          </div>
+          <div class="info-group full-width">
+            <label>Instruction Reference</label>
+            <span class="value reference">{{ disbursementInstructionReference || 'Will be generated when sent to accounting' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="modal-actions" *ngIf="selectedDisbursementLoan && (selectedDisbursementLoan.status === 'APPROVED' || selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT')">
+        <button
+          type="button"
+          class="send-btn"
+          [class.activate-btn]="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT'"
+          (click)="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? setLoanActive(selectedDisbursementLoan) : openSendToAccountingModal()"
+          [disabled]="isSubmitting">
+          <i class="fas" [ngClass]="selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? 'fa-circle-check' : 'fa-paper-plane'"></i>
+          {{ selectedDisbursementLoan.status === 'READY_FOR_DISBURSEMENT' ? 'Set Loan to Active' : 'Send to Accounting' }}
+        </button>
+      </div>
+    </div>
+  </p-dialog>
 
   <!-- Send to Accounting Modal -->
   <p-dialog
@@ -425,13 +419,29 @@
     [resizable]="false"
     [dismissableMask]="!isSubmitting"
     styleClass="send-to-accounting-modal"
-    [style]="{ width: 'min(720px, 96vw)' }"
+    [style]="{ width: 'min(820px, 98vw)' }"
     [header]="isBatchMode ? 'Send ' + batchSelectedLoans.length + ' Loans to Accounting' : 'Send Disbursement Request to Accounting'">
-    <div class="email-form" *ngIf="isBatchMode || selectedDisbursementLoan">
+    
+    <!-- Loading State -->
+    <div class="sending-loading" *ngIf="isSubmitting">
+      <div class="loading-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Sending loan details to accounting...</h3>
+        <p>Please wait while we process your request</p>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="submissionProgress"></div>
+        </div>
+        <span class="progress-text">{{ submissionProgress }}%</span>
+      </div>
+    </div>
+
+    <!-- Form Content -->
+    <div class="email-form" *ngIf="!isSubmitting && (isBatchMode || selectedDisbursementLoan)">
       <div class="form-group required">
         <label>Additional Notes <span class="required-star">*</span></label>
         <textarea
           [(ngModel)]="emailNotes"
+          (ngModelChange)="onCurrentLoanNoteChange($event)"
           rows="4"
           placeholder="Please provide details about this disbursement..."
           class="form-textarea"
@@ -454,7 +464,7 @@
 
       <div class="disbursement-reference">
         <label>Disbursement Reference</label>
-        <div class="reference-code">{{ disbursementInstructionReference || 'COOP-DISB-XXXXXX' }}</div>
+        <div class="reference-code">{{ disbursementInstructionReference }}</div>
         <small class="field-hint">This unique reference identifies this disbursement request</small>
       </div>
 
@@ -465,7 +475,7 @@
         </div>
         <!-- Single loan preview -->
         <div class="preview-body" *ngIf="!isBatchMode && selectedDisbursementLoan">
-          <p><strong>Reference:</strong> {{ disbursementInstructionReference || 'COOP-DISB-XXXXXX' }}</p>
+          <p><strong>Reference:</strong> {{ disbursementInstructionReference }}</p>
           <p><strong>Loan ID:</strong> {{ selectedDisbursementLoan.loanCode || selectedDisbursementLoan.id }}</p>
           <p><strong>Member:</strong> {{ getFullName(selectedDisbursementLoan) }} (ID: {{ getFormattedMemberId(selectedDisbursementLoan) }})</p>
           <p><strong>Approved Amount:</strong> {{ formatCurrency(selectedDisbursementLoan.approvedAmount || selectedDisbursementLoan.amount) }}</p>
@@ -476,14 +486,29 @@
         </div>
         <!-- Batch preview -->
         <div class="preview-body" *ngIf="isBatchMode">
+          <div class="batch-switcher" *ngIf="batchSelectedLoans.length > 1">
+            <button type="button" class="pager-btn" (click)="navigateBatch(-1)">Previous</button>
+            <span class="batch-switcher-label">{{ batchViewIndex + 1 }} / {{ batchSelectedLoans.length }}</span>
+            <button type="button" class="pager-btn" (click)="navigateBatch(1)">Next</button>
+          </div>
+
+          <ng-container *ngIf="batchSelectedLoans[batchViewIndex] as currentBatchLoan">
+            <p><strong>Current Loan:</strong> {{ currentBatchLoan.loanCode || currentBatchLoan.id }}</p>
+            <p><strong>Member:</strong> {{ getFullName(currentBatchLoan) }} (ID: {{ getFormattedMemberId(currentBatchLoan) }})</p>
+            <p><strong>Approved Amount:</strong> {{ formatCurrency(currentBatchLoan.approvedAmount || currentBatchLoan.amount) }}</p>
+            <p><strong>Bank:</strong> {{ batchEmployeeDetailsMap.get(currentBatchLoan.id)?.bankName || currentBatchLoan.memberBankName || 'N/A' }} - {{ batchEmployeeDetailsMap.get(currentBatchLoan.id)?.accountNumber || currentBatchLoan.memberAccountNumber || 'N/A' }}</p>
+            <p><strong>Group:</strong> {{ getGroupNameTpl(currentBatchLoan) }}</p>
+            <p><strong>Purpose:</strong> {{ currentBatchLoan.purpose }}</p>
+          </ng-container>
+
           <p><strong>Batch:</strong> {{ batchSelectedLoans.length }} loans</p>
           <p><strong>Total Amount:</strong> {{ formatCurrency(getBatchTotalAmount()) }}</p>
           <div class="batch-preview-list">
-            <div *ngFor="let batchLoan of batchSelectedLoans; let i = index" class="batch-preview-row">
+            <div *ngFor="let loan of batchSelectedLoans; let i = index" class="batch-preview-row">
               <span class="batch-preview-index">{{ i + 1 }}</span>
-              <span class="batch-preview-code">{{ batchLoan.loanCode || batchLoan.id }}</span>
-              <span class="batch-preview-name">{{ getFullName(batchLoan) }}</span>
-              <span class="batch-preview-amount">{{ formatCurrency(batchLoan.approvedAmount || batchLoan.amount) }}</span>
+              <span class="batch-preview-code">{{ loan.loanCode || loan.id }}</span>
+              <span class="batch-preview-name">{{ getFullName(loan) }}</span>
+              <span class="batch-preview-amount">{{ formatCurrency(loan.approvedAmount || loan.amount) }}</span>
             </div>
           </div>
           <p><strong>Notes (applied to all):</strong> {{ emailNotes || 'No notes provided' }}</p>

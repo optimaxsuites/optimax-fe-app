@@ -105,6 +105,7 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
 // CustomModalComponent is a standalone component; no AppModule import needed
 import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
+import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
 
 @NgModule({
   declarations: [
@@ -128,7 +129,7 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
     ProductServiceCatalogComponent,
     PerformanceComponent,
     DocumentsComponent,
-    
+    SourcingComponent,
   ],
   imports: [
     BrowserModule,

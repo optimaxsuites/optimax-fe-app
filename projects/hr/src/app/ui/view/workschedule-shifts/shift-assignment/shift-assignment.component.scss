@@ -417,3 +417,31 @@ h3 {
     cursor: not-allowed;
   }
 }
+
+.edit-series-toggle {
+  margin: 16px 24px 0;
+  padding: 12px;
+  border: 1px solid #d7ebe8;
+  background: #f6fbfa;
+  border-radius: 8px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #2a7a74;
+  }
+
+  small {
+    display: block;
+    margin-top: 6px;
+    color: #666;
+    font-size: 12px;
+  }
+
+  input[type='checkbox'] {
+    accent-color: #2a7a74;
+  }
+}

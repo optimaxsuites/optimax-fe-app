@@ -3,6 +3,7 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { ProductRequestListComponent } from './product-request-management/product-request-list/product-request-list.component';
 import { ServiceRequestListComponent } from './service-request-management/service-request-list/service-request-list.component';
 import { ApprovalInboxComponent } from '../approval-inbox/approval-inbox.component';
+import { SourcingComponent } from '../sourcing/sourcing.component';
 
 @Component({
   selector: 'app-request-management',
@@ -26,6 +27,11 @@ export class RequestManagementComponent {
     {
       name: 'Approval Inbox',
       component: ApprovalInboxComponent,
+      icon: 'fa-solid fa-inbox',
+    },
+    {
+      name: 'Sourcing',
+      component: SourcingComponent,
       icon: 'fa-solid fa-inbox',
     }
   ];

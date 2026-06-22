@@ -17,6 +17,7 @@ export class AppHrComponent {
   messageService: any;
   navigationLink: any;
   sidebarHidden: boolean = true;
+
   constructor(
     private authenticationService: AuthenticationService,
     private metadataService: MetadataService,
@@ -26,7 +27,7 @@ export class AppHrComponent {
   ngOnInit(): void {
     this.checkScreenWidth();
     this.userLoginAction();
-    this.exposeGlobalHelpers();  // Added by Ese to expose helper functions for console testing
+    this.exposeGlobalHelpers(); // Added by Eseto expose helper functions for console testing
 
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
@@ -38,100 +39,93 @@ export class AppHrComponent {
       }
     });
 
-  // if (this.authenticationService.isAuthenticated()) {
-  //   this.metadataService.fetchMetaData(true);
-  //   return;
-  // }
+    // if (this.authenticationService.isAuthenticated()) {
+    //   this.metadataService.fetchMetaData(true);
+    //   return;
+    // }
   }
 
   async userLoginAction(): Promise<void> {
     console.log("Signing in user with hardcoded credentials for testing...");
+    
     const loginDetails = {
       // username: 'Ayaobasheba',
-      username: 'developer',
-      password: '123456',
+      // username: 'developer',
+      // password: '123456',
+      username: 'Eseose',
+      password: 'soyBTY86b*rC',
       project: 'ERP',
       clientId: 'optimax-erp-web',
       appVersion: '2026.05.30'
-   };
+    };
 
-if (!loginDetails.username || !loginDetails.password) {
-  this.messageService.add({
-    severity: 'error',
-    summary: 'Error',
-    detail: 'Username and password are required',
-  });
-  return;
-}
+    if (!loginDetails.username || !loginDetails.password) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Username and password are required',
+      });
+      return;
+    }
 
-try {
-  const data = await this.authenticationService
-    .userLogin(loginDetails)
-    .toPromise();
+    try {
+      const data = await this.authenticationService
+        .userLogin(loginDetails)
+        .toPromise();
 
-  if (!data) {
-    return;
-  }
+      if (!data) {
+        return;
+      }
 
-  this.loadInitParam(data);
-  this.metadataService.fetchMetaData(true);
+      this.loadInitParam(data);
+      this.metadataService.fetchMetaData(true);
 
-} catch (error) {
-  // Do NOT call logout here — it would redirect to login and break shared task links
-  // opened in a new tab where the user is already authenticated via localStorage.
-  console.warn('Background auto-login skipped (likely a shared-link tab):', error);
-}
+    } catch (error) {
+      this.authenticationService.logout();
+    }
   }
 
   loadInitParam(data: any) {
-    const fullname = data.fullname || data.fullName || data.name || data.username;
     sessionStorage.setItem('role', data.roles);
     sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', fullname);
+    sessionStorage.setItem('fullname', data.fullname || data.fullName || data.name || data.username);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userid', data.id);
+    
     const token = this.extractToken(data.accessToken);
 
-if (!token) {
-  throw new Error('Unable to extract access token from login response');
-}
+    if (!token) {
+      throw new Error('Unable to extract access token from login response');
+    }
 
-sessionStorage.setItem('Token', token);
-sessionStorage.setItem('token', token);
-sessionStorage.setItem('accessToken', data.accessToken);
-sessionStorage.setItem('userRegData', JSON.stringify(data));
-
-// Persist all auth keys to localStorage so shared links opened in a new tab stay authenticated
-localStorage.setItem('Token', token);
-localStorage.setItem('token', token);
-localStorage.setItem('Token2', token);
-localStorage.setItem('accessToken2', data.accessToken);
-localStorage.setItem('userid', String(data.id || ''));
-localStorage.setItem('username', data.username || '');
-localStorage.setItem('fullname', fullname || '');
-localStorage.setItem('email', data.email || '');
-localStorage.setItem('role', data.roles || '');
-localStorage.setItem('userRegData', JSON.stringify(data));
+    sessionStorage.setItem('Token', token);
+    sessionStorage.setItem('token', token);
+    localStorage.setItem('Token', token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('Token2', token);
+    sessionStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('accessToken2', data.accessToken);
+    sessionStorage.setItem('userRegData', JSON.stringify(data));
   }
 
   private extractToken(accessToken: unknown): string {
     const rawToken = String(accessToken || '').trim();
 
-if (!rawToken) {
-  return '';
-}
+    if (!rawToken) {
+      return '';
+    }
 
-const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
-if (cookieMatch?.[1]) {
-  return cookieMatch[1].trim();
-}
+    const cookieMatch = rawToken.match(/=(.*?)(;|$)/);
+    if (cookieMatch?.[1]) {
+      return cookieMatch[1].trim();
+    }
 
-const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
-if (bearerMatch?.[1]) {
-  return bearerMatch[1].trim();
-}
+    const bearerMatch = rawToken.match(/^Bearer\s+(.+)$/i);
+    if (bearerMatch?.[1]) {
+      return bearerMatch[1].trim();
+    }
 
-return rawToken;
+    return rawToken;
   }
 
   toggleSidebar() {
@@ -154,6 +148,7 @@ return rawToken;
    */
   async switchToAdmin(): Promise<void> {
     console.log('Switching to admin account...');
+    
     const loginDetails = {
       username: 'damilola',
       password: 'Damilolar@123',
@@ -163,6 +158,7 @@ return rawToken;
 
     try {
       const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      
       if (data) {
         this.loadInitParam(data);
         this.metadataService.fetchMetaData(true);
@@ -180,17 +176,21 @@ return rawToken;
    */
   async switchToUser(): Promise<void> {
     console.log('Switching to user account...');
+    
     const loginDetails = {
-      username: 'developer',
-      password: '123456',
+      // username: 'developer',
+      // password: '123456',
+      username: 'Eseose',
+      password: 'soyBTY86b*rC',
       project: 'ERP',
       apiKey: environment.apiKey,
     };
-
-
+    
     // eyJhbGciOiJIUzI1NiJ9.eyJ0ZW5hbnQiOiJvcHRpbWF4Iiwic3ViIjoiZXNlb3NlIiwiaWF0IjoxNzgwNTY0OTY2LCJleHAiOjE3ODA2NTEzNjZ9.3ioaIPHGekrrS676pesQ27yDg25QP9Gpk_KMXWO9SOc
+    
     try {
       const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      
       if (data) {
         this.loadInitParam(data);
         this.metadataService.fetchMetaData(true);
@@ -216,10 +216,16 @@ return rawToken;
   /**
    * Get current user information from session
    */
-  getCurrentUserInfo(): { username: string | null; role: string | null; userId: string | null; isAdmin: boolean } {
+  getCurrentUserInfo(): { 
+    username: string | null; 
+    role: string | null; 
+    userId: string | null; 
+    isAdmin: boolean 
+  } {
     const username = sessionStorage.getItem('username');
     const role = sessionStorage.getItem('role');
     const userId = sessionStorage.getItem('userid');
+    
     return {
       username,
       role,
@@ -236,6 +242,7 @@ return rawToken;
     (window as any).switchToUser = () => this.switchToUser();
     (window as any).logout = () => this.logout();
     (window as any).getCurrentUser = () => this.getCurrentUserInfo();
+    
     console.log('Console helpers available: switchToAdmin(), switchToUser(), logout(), getCurrentUser()');
   }
 }

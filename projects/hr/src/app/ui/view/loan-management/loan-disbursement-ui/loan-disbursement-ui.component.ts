@@ -88,6 +88,8 @@ export class LoanDisbursementUiComponent implements OnInit {
   batchSelectedLoanIds: Set<number> = new Set();
   batchViewIndex: number = 0;
   batchEmployeeDetailsMap: Map<number, any> = new Map();
+  private batchLoanNotesMap: Map<number, string> = new Map();
+  private batchLoanReferenceMap: Map<number, string> = new Map();
 
   constructor(
     private route: ActivatedRoute,
@@ -166,9 +168,6 @@ export class LoanDisbursementUiComponent implements OnInit {
 
     // Open the loan details modal
     this.isLoanDetailsModalVisible = true;
-    this.batchSelectedLoanIds.clear();
-    this.batchEmployeeDetailsMap.clear();
-    this.batchViewIndex = 0;
 
     if (skipServerRefresh) {
       return;
@@ -209,6 +208,20 @@ export class LoanDisbursementUiComponent implements OnInit {
     this.selectLoan(loan);
   }
 
+  openBatchLoanDetailsModal(): void {
+    const loans = this.batchSelectedLoans;
+    if (!loans.length) {
+      return;
+    }
+
+    this.batchViewIndex = 0;
+    const currentLoan = loans[0];
+    this.selectedDisbursementLoan = currentLoan;
+    this.loadEmployeeDetails(currentLoan.employeeId);
+    this.populateDisbursementTrackingFromLoan(currentLoan);
+    this.isLoanDetailsModalVisible = true;
+  }
+
   private applySelectedLoan(loan: LoanApplication): void {
     this.selectedDisbursementLoan = loan;
     this.selectedEmployeeDetails = null;
@@ -218,7 +231,6 @@ export class LoanDisbursementUiComponent implements OnInit {
     this.disbursementAmount = loan.amount;
     this.paymentMethod = 'BANK_TRANSFER';
     this.disbursementReference = '';
-    this.emailNotes = '';
     this.emailNotesError = false;
     this.isSendToAccountingModalVisible = false;
   }
@@ -261,6 +273,14 @@ export class LoanDisbursementUiComponent implements OnInit {
     if (this.isBatchMode) {
       const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
       if (!allApproved) return;
+
+      this.batchViewIndex = Math.min(this.batchViewIndex, Math.max(0, this.batchSelectedLoans.length - 1));
+      const currentLoan = this.batchSelectedLoans[this.batchViewIndex];
+      if (currentLoan) {
+        this.selectedDisbursementLoan = currentLoan;
+        this.loadEmployeeDetails(currentLoan.employeeId);
+      }
+
       this.emailNotesError = false;
       this.isSendToAccountingModalVisible = true;
       this.submissionProgress = 0;
@@ -286,7 +306,6 @@ export class LoanDisbursementUiComponent implements OnInit {
   closeSendToAccountingModal(): void {
     if (!this.isSubmittingDisbursement) {
       this.isSendToAccountingModalVisible = false;
-      this.emailNotes = '';
       this.emailNotesError = false;
       this.submissionProgress = 0;
     }
@@ -497,16 +516,17 @@ export class LoanDisbursementUiComponent implements OnInit {
     }));
 
     // Step 1: Create disbursement confirmation records concurrently
-    const confirmationRequests = loanRefs.map(({ loan, reference }) =>
-      this.disbursementConfirmationService.createConfirmation({
+    const confirmationRequests = loanRefs.map(({ loan, reference }) => {
+      const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
+      return this.disbursementConfirmationService.createConfirmation({
         loanId: loan.id,
         disbursedAmount: this.getApprovedAmount(loan),
         disbursementInstructionReference: reference,
         disbursementReference: `PENDING-${reference}`,
         paymentMethod: this.paymentMethod,
-        notes: this.emailNotes
-      })
-    );
+        notes: loanNote
+      });
+    });
 
     this.submissionProgress = 30;
 
@@ -514,21 +534,32 @@ export class LoanDisbursementUiComponent implements OnInit {
       next: () => {
         this.submissionProgress = 50;
         
-        // Step 2: Build array payload and POST to accounting
-        const batchPayload = loanRefs.map(({ loan, reference, employeeDetails }) => {
+        // Step 2: Send one accounting event per loan (endpoint expects a single DTO)
+        const apiBaseUrl = environment.apiBaseUrl || '';
+        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+
+        const headers = new HttpHeaders({
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Tenant-ID': tenantId
+        });
+
+        const accountingRequests = loanRefs.map(({ loan, reference, employeeDetails }) => {
           const approvedAmount = this.getApprovedAmount(loan);
           const approvedByRaw = loan.approvedBy as any;
           const approvedByName = approvedByRaw && typeof approvedByRaw === 'object'
             ? String(approvedByRaw.fullname || approvedByRaw.username || 'Unknown')
             : String(approvedByRaw || 'Unknown');
-          return {
+          const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
+
+          const accountingPayload = {
             id: 0,
             sourceModule: 'HR',
             eventType: 'LOAN_DISBURSEMENT',
             amount: approvedAmount,
             currency: 'NGN',
             reference,
-            description: this.emailNotes,
+            description: loanNote,
             transactionDate: initiatedAt,
             metadata: {
               loanId: loan.id,
@@ -537,7 +568,7 @@ export class LoanDisbursementUiComponent implements OnInit {
               employeeId: loan.employeeId,
               employeeEmail: employeeDetails?.email || employeeDetails?.workEmail || '',
               department: loan.department,
-              approvedAmount,
+              approvedAmount: approvedAmount,
               interest: loan.interestRate,
               repaymentPeriod: loan.repaymentTime,
               modeOfPayment: loan.modeOfPayment,
@@ -550,32 +581,24 @@ export class LoanDisbursementUiComponent implements OnInit {
               paymentMethod: this.paymentMethod,
               initiatedBy,
               initiatedAt,
-              notes: this.emailNotes
+              notes: loanNote
             }
           };
+
+          return this.http.post(url, accountingPayload, { headers });
         });
 
-        const apiBaseUrl = environment.apiBaseUrl || '';
-        const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
-        
-        const headers = new HttpHeaders({
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Tenant-ID': tenantId
-        });
-
-        console.log('Sending batch to accounting with headers:', headers.keys());
-        console.log('Batch payload size:', batchPayload.length);
-
+        console.log('Sending batch accounting requests:', accountingRequests.length);
         this.submissionProgress = 70;
 
-        this.http.post(url, batchPayload, { headers }).subscribe({
+        forkJoin(accountingRequests).subscribe({
           next: () => {
             this.submissionProgress = 90;
             // Step 3: Update each loan status individually
             const statusUpdates = loanRefs.map(({ loan, reference }) => {
-              const notes = this.emailNotes?.trim()
-                ? `Sent to accounting for disbursement. Reference: ${reference}. Notes: ${this.emailNotes.trim()}`
+              const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
+              const notes = loanNote?.trim()
+                ? `Sent to accounting for disbursement. Reference: ${reference}. Notes: ${loanNote.trim()}`
                 : `Sent to accounting for disbursement. Reference: ${reference}.`;
               return this.loanApprovalService.updateApplicationStatus(loan.id, {
                 status: 'READY_FOR_DISBURSEMENT',
@@ -590,13 +613,19 @@ export class LoanDisbursementUiComponent implements OnInit {
             forkJoin(statusUpdates).subscribe({
               next: (updatedLoans) => {
                 this.submissionProgress = 100;
-                updatedLoans.forEach(updated => this.replaceQueueLoan(updated));
+                updatedLoans.forEach(updated => {
+                  this.replaceQueueLoan(updated);
+                  if (updated) {
+                    this.batchLoanNotesMap.delete(updated.id);
+                  }
+                });
                 this.isSendToAccountingModalVisible = false;
                 this.isLoanDetailsModalVisible = false;
                 this.clearBatchSelection();
                 this.isSubmittingDisbursement = false;
                 this.selectedDisbursementLoan = null;
                 this.selectedEmployeeDetails = null;
+                this.batchLoanNotesMap.clear();
                 this.messages = [{
                   severity: 'success',
                   summary: 'Batch Sent',
@@ -697,6 +726,9 @@ export class LoanDisbursementUiComponent implements OnInit {
         this.replaceQueueLoan(updatedLoan);
         this.isSendToAccountingModalVisible = false;
         this.isLoanDetailsModalVisible = false;
+        if (updatedLoan) {
+          this.batchLoanNotesMap.delete(updatedLoan.id);
+        }
         this.selectedDisbursementLoan = null;
         this.selectedEmployeeDetails = null;
         this.messages = [{
@@ -1079,11 +1111,14 @@ export class LoanDisbursementUiComponent implements OnInit {
         });
       }
     }
+
     const newSize = this.batchSelectedLoanIds.size;
     this.batchViewIndex = newSize > 0 ? Math.min(this.batchViewIndex, newSize - 1) : 0;
 
-    // Keep details panel in sync with whichever loan checkbox was interacted with.
-    this.selectLoan(loan, true);
+    if (newSize === 1) {
+      this.selectedDisbursementLoan = loan;
+      this.loadEmployeeDetails(loan.employeeId);
+    }
   }
 
   selectAllApprovedLoans(): void {
@@ -1114,6 +1149,9 @@ export class LoanDisbursementUiComponent implements OnInit {
     if (loan) {
       this.selectedDisbursementLoan = loan;
       this.selectedEmployeeDetails = this.batchEmployeeDetailsMap.get(loan.id) ?? null;
+      if (!this.selectedEmployeeDetails && !this.batchEmployeeDetailsMap.has(loan.id)) {
+        this.loadEmployeeDetails(loan.employeeId);
+      }
       this.populateDisbursementTrackingFromLoan(loan);
     }
   }
@@ -1276,8 +1314,33 @@ export class LoanDisbursementUiComponent implements OnInit {
     return `${this.viewStateStorageKeyPrefix}:${this.currentUuid}`;
   }
 
+  onCurrentLoanNoteChange(value: string): void {
+    this.emailNotes = value;
+
+    if (this.selectedDisbursementLoan) {
+      this.batchLoanNotesMap.set(this.selectedDisbursementLoan.id, value);
+    }
+  }
+
+  private getStoredLoanNote(loan: LoanApplication | null | undefined): string {
+    if (!loan) return '';
+    return this.batchLoanNotesMap.get(loan.id) || '';
+  }
+
+  private setStoredLoanReference(loan: LoanApplication | null | undefined, reference: string): void {
+    if (!loan || !reference.trim()) {
+      return;
+    }
+    this.batchLoanReferenceMap.set(loan.id, reference.trim());
+  }
+
+  private getStoredLoanReference(loan: LoanApplication | null | undefined): string {
+    if (!loan) return '';
+    return this.batchLoanReferenceMap.get(loan.id) || '';
+  }
+
   private populateDisbursementTrackingFromLoan(loan: LoanApplication): void {
-    this.emailNotes = '';
+    this.emailNotes = this.getStoredLoanNote(loan);
 
     // Map Initiated Date to the same value as Sent Date in the table
     this.disbursementInitiatedAt = this.getReadyForDisbursementDate(loan) || '';
@@ -1292,15 +1355,17 @@ export class LoanDisbursementUiComponent implements OnInit {
       readyEntry = readyEntries[0];
     }
 
+    const storedReference = this.getStoredLoanReference(loan);
+
     if (readyEntry) {
       this.disbursementInitiatedBy = typeof readyEntry.changedBy === 'string'
         ? readyEntry.changedBy
         : '';
       const referenceMatch = String(readyEntry.notes || '').match(/Reference:\s*([^\.]+)/i);
-      this.disbursementInstructionReference = referenceMatch?.[1]?.trim() || '';
+      this.disbursementInstructionReference = storedReference || referenceMatch?.[1]?.trim() || '';
     } else {
       this.disbursementInitiatedBy = '';
-      this.disbursementInstructionReference = '';
+      this.disbursementInstructionReference = storedReference || '';
     }
   }
 }

@@ -100,6 +100,7 @@
             <span class="batch-count"><i class="fas fa-check-square"></i> {{ batchSelectedLoanIds.size }} selected</span>
             <span class="batch-total" *ngIf="isBatchMode">{{ formatCurrency(getBatchTotalAmount()) }}</span>
             <button type="button" class="batch-select-all-btn" (click)="selectAllApprovedLoans()">Select All</button>
+            <button type="button" class="batch-review-btn" *ngIf="isBatchMode" (click)="openBatchLoanDetailsModal()">Review Details</button>
             <button type="button" class="batch-clear-btn" (click)="clearBatchSelection()">Clear</button>
           </div>
 
@@ -248,10 +249,23 @@
     [resizable]="false"
     [dismissableMask]="true"
     styleClass="loan-details-modal"
-    [style]="{ width: 'min(820px, 96vw)' }"
+    [style]="{ width: 'min(900px, 98vw)' }"
     [header]="'Loan Details'">
     
     <div class="loan-details-modal-content" *ngIf="selectedDisbursementLoan">
+      <div class="loan-details-nav" *ngIf="isBatchMode && batchSelectedLoans.length > 1">
+        <button type="button" class="loan-nav-btn loan-nav-btn-left" (click)="navigateBatch(-1)" aria-label="Previous loan">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="loan-nav-btn loan-nav-btn-right" (click)="navigateBatch(1)" aria-label="Next loan">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="batch-modal-summary" *ngIf="isBatchMode && batchSelectedLoans.length > 1">
+        <span>{{ batchViewIndex + 1 }} of {{ batchSelectedLoans.length }}</span>
+      </div>
+
       <!-- Loan Information Grid -->
       <div class="loan-info-grid">
         <div class="info-group">
@@ -398,7 +412,7 @@
     [resizable]="false"
     [dismissableMask]="!isSubmittingDisbursement"
     styleClass="send-to-accounting-modal"
-    [style]="{ width: 'min(720px, 96vw)' }"
+    [style]="{ width: 'min(820px, 98vw)' }"
     [header]="isBatchMode ? 'Send ' + batchSelectedLoans.length + ' Loans to Accounting' : 'Send Disbursement Request to Accounting'">
     
     <!-- Loading State -->
@@ -420,6 +434,7 @@
         <label>Additional Notes <span class="required-star">*</span></label>
         <textarea
           [(ngModel)]="emailNotes"
+          (ngModelChange)="onCurrentLoanNoteChange($event)"
           rows="4"
           placeholder="Please provide details about this disbursement..."
           class="form-textarea"
@@ -453,6 +468,20 @@
         </div>
         <!-- Batch preview -->
         <div class="preview-body" *ngIf="isBatchMode">
+          <div class="batch-switcher" *ngIf="batchSelectedLoans.length > 1">
+            <button type="button" class="pager-btn" (click)="navigateBatch(-1)">Previous</button>
+            <span class="batch-switcher-label">{{ batchViewIndex + 1 }} / {{ batchSelectedLoans.length }}</span>
+            <button type="button" class="pager-btn" (click)="navigateBatch(1)">Next</button>
+          </div>
+
+          <ng-container *ngIf="batchSelectedLoans[batchViewIndex] as currentBatchLoan">
+            <p><strong>Current Loan:</strong> {{ getFormattedLoanCode(currentBatchLoan) }}</p>
+            <p><strong>Employee:</strong> {{ currentBatchLoan.fullName }} (ID: {{ currentBatchLoan.employeeId }})</p>
+            <p><strong>Approved Amount:</strong> {{ formatCurrency(getApprovedAmount(currentBatchLoan)) }}</p>
+            <p><strong>Bank:</strong> {{ batchEmployeeDetailsMap.get(currentBatchLoan.id)?.bankName || 'N/A' }} - {{ batchEmployeeDetailsMap.get(currentBatchLoan.id)?.accountNumber || 'N/A' }}</p>
+            <p><strong>Purpose:</strong> {{ currentBatchLoan.purpose }}</p>
+          </ng-container>
+
           <p><strong>Batch:</strong> {{ batchSelectedLoans.length }} loans</p>
           <p><strong>Total Amount:</strong> {{ formatCurrency(getBatchTotalAmount()) }}</p>
           <div class="batch-preview-list">
