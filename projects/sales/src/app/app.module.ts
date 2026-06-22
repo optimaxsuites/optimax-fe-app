@@ -93,7 +93,7 @@ import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sal
 import { ProductServiceCatalogComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog.component';
 import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
 import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
-import { SalesOrdersComponent } from './ui/view/sales-hub/sales-orders/sales-orders.component';
+import { SalesOrdersListComponent } from './ui/view/sales-hub/sales-order/sales-orders-list/sales-orders-list.component';
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteFormComponent } from './ui/view/sales-hub/quotations/quote-form/quote-form.component';
 import { QuoteDetailComponent } from './ui/view/sales-hub/quotations/quote-detail/quote-detail.component';
@@ -124,7 +124,6 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     // SalesDashboardComponent,
     DeliveryManagementComponent,
     PaymentProcessingComponent,
-    SalesOrdersComponent,
     SalesHubComponent,
     ProductServiceCatalogComponent,
     PerformanceComponent,
@@ -132,8 +131,8 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     SourcingComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     SharedOverlayModule,
@@ -207,6 +206,8 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     QuoteDetailComponent,
     InvoiceDetailComponent,
     CustomerFormComponent,
+    SalesOrdersListComponent,
+
   ],
   exports: [TableComponent],
   providers: [

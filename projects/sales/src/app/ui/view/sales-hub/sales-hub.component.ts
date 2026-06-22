@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { SalesDashboardComponent } from './sales-dashboard/sales-dashboard.component';
 import { ProductServiceCatalogComponent } from './product-service-catalog/product-service-catalog.component';
-import { SalesOrdersComponent } from './sales-orders/sales-orders.component';
+import { SalesOrdersListComponent } from './sales-order/sales-orders-list/sales-orders-list.component';
 import { PaymentProcessingComponent } from './payment-processing/payment-processing.component';
 import { CustomerListComponent } from './customer-management/customer-list/customer-list.component';
 import { DeliveryManagementComponent } from './delivery-management/delivery-management.component';
@@ -40,11 +40,11 @@ export class SalesHubComponent {
     },
     {
       name: 'Order History',
-      component: SalesOrdersComponent,
+      component: SalesOrdersListComponent,
       icon: 'fa-solid fa-clock-rotate-left',
     },
     {
-      name: 'Customer List',
+      name: 'Manage Customers',
       component: CustomerListComponent,
       icon: 'fa-solid fa-users',
       // icon: 'fa-solid fa-list',

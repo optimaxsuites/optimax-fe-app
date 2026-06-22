@@ -32,7 +32,7 @@ const routes: Routes = [
     redirectTo: '/sales-hub',
     pathMatch: 'full'
   },
-  
+
   // --- Sales Hub ---
   {
     path: 'sales-hub',
@@ -69,10 +69,10 @@ const routes: Routes = [
   //   path: 'admin/sales/sales/quotes',
   //   component: QuoteListComponent
   // },
-  {
-    path: 'admin/sales/sales/quotes/:uuid',
-    component: QuoteListComponent
-  },
+  // {
+  //   path: 'admin/sales/sales/quotes/:uuid',
+  //   component: QuoteListComponent
+  // },
   // {
   //   path: 'admin/sales/sales/quotes/new',
   //   component: QuoteFormComponent
@@ -201,7 +201,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

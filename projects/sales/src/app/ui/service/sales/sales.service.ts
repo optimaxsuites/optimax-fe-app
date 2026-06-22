@@ -11,6 +11,7 @@ import {
   Customer, 
   Product,
   SalesOrder,
+  OrderStatus,
   Payment,
   DeliveryNote,
   QuoteItem,
@@ -26,12 +27,14 @@ export class SalesService {
   private readonly CUSTOMERS_KEY = 'sales_customers';
   private readonly PRODUCTS_KEY = 'sales_products';
   private readonly INVOICES_KEY = 'sales_invoices';
+  private readonly ORDERS_KEY = 'sales_orders';
 
   constructor() {
     this.initData();
   }
 
   private initData(): void {
+    // Initialize Customers
     if (!localStorage.getItem(this.CUSTOMERS_KEY)) {
       const mockCustomers: Customer[] = [
         { id: 'CUST-001', name: 'Mama Nkechi Enterprises', email: 'contact@maman-nkechi.com', phone: '+234 803 123 4567', address: 'Lagos, Nigeria', taxId: 'TAX-001', createdAt: new Date(), totalSpent: 500000, totalOrders: 1, status: 'ACTIVE' },
@@ -43,6 +46,7 @@ export class SalesService {
       localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(mockCustomers));
     }
 
+    // Initialize Products
     if (!localStorage.getItem(this.PRODUCTS_KEY)) {
       const mockProducts: Product[] = [
         { id: 'PROD-001', name: 'Executive Office Chair', sku: 'CHR-001', description: 'Ergonomic executive office chair', unitPrice: 50000, costPrice: 30000, currency: 'NGN', stockQuantity: 50, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
@@ -54,6 +58,7 @@ export class SalesService {
       localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(mockProducts));
     }
 
+    // Initialize Quotes
     if (!localStorage.getItem(this.QUOTES_KEY)) {
       const mockQuotes: Quote[] = [
         {
@@ -106,6 +111,7 @@ export class SalesService {
       localStorage.setItem(this.QUOTES_KEY, JSON.stringify(mockQuotes));
     }
 
+    // Initialize Invoices
     if (!localStorage.getItem(this.INVOICES_KEY)) {
       const mockInvoices: Invoice[] = [
         {
@@ -127,9 +133,110 @@ export class SalesService {
       ];
       localStorage.setItem(this.INVOICES_KEY, JSON.stringify(mockInvoices));
     }
+
+    // Initialize Orders
+    if (!localStorage.getItem(this.ORDERS_KEY)) {
+      const mockOrders: SalesOrder[] = [
+        {
+          id: '1',
+          orderNumber: 'SO-001',
+          customerId: 'CUST-001',
+          customerName: 'Mama Nkechi Enterprises',
+          items: [
+            { id: 'i1', productId: 'PROD-001', productName: 'Executive Office Chair', description: 'Ergonomic chair', quantity: 10, unitPrice: 50000, discount: 0, total: 500000 }
+          ],
+          subtotal: 500000,
+          taxAmount: 37500,
+          discountAmount: 0,
+          totalAmount: 537500,
+          currency: 'NGN',
+          status: 'DELIVERED' as OrderStatus,
+          orderDate: new Date('2026-06-10'),
+          expectedDeliveryDate: new Date('2026-06-20'),
+          actualDeliveryDate: new Date('2026-06-18'),
+          shippingAddress: 'Lagos, Nigeria'
+        },
+        {
+          id: '2',
+          orderNumber: 'SO-002',
+          customerId: 'CUST-002',
+          customerName: 'Tech Solutions Ltd',
+          items: [
+            { id: 'i2', productId: 'PROD-003', productName: 'Laptop - Dell XPS', description: 'Dell XPS 13', quantity: 1, unitPrice: 850000, discount: 0, total: 850000 }
+          ],
+          subtotal: 850000,
+          taxAmount: 63750,
+          discountAmount: 0,
+          totalAmount: 913750,
+          currency: 'NGN',
+          status: 'SHIPPED' as OrderStatus,
+          orderDate: new Date('2026-06-09'),
+          expectedDeliveryDate: new Date('2026-06-25'),
+          shippingAddress: 'Abuja, Nigeria'
+        },
+        {
+          id: '3',
+          orderNumber: 'SO-003',
+          customerId: 'CUST-003',
+          customerName: 'Global Services NG',
+          items: [
+            { id: 'i3', productId: 'PROD-005', productName: 'Printer - HP LaserJet', description: 'HP printer', quantity: 2, unitPrice: 150000, discount: 0, total: 300000 }
+          ],
+          subtotal: 300000,
+          taxAmount: 22500,
+          discountAmount: 0,
+          totalAmount: 322500,
+          currency: 'NGN',
+          status: 'PROCESSING' as OrderStatus,
+          orderDate: new Date('2026-06-08'),
+          expectedDeliveryDate: new Date('2026-06-28'),
+          shippingAddress: 'Port Harcourt, Nigeria'
+        },
+        {
+          id: '4',
+          orderNumber: 'SO-004',
+          customerId: 'CUST-004',
+          customerName: 'Aliko Dangote Wholesale',
+          items: [
+            { id: 'i4', productId: 'PROD-004', productName: 'Conference Table', description: 'Large conference table', quantity: 2, unitPrice: 250000, discount: 0, total: 500000 }
+          ],
+          subtotal: 500000,
+          taxAmount: 37500,
+          discountAmount: 0,
+          totalAmount: 537500,
+          currency: 'NGN',
+          status: 'PENDING' as OrderStatus,
+          orderDate: new Date('2026-06-07'),
+          expectedDeliveryDate: new Date('2026-06-30'),
+          shippingAddress: 'Kano, Nigeria'
+        },
+        {
+          id: '5',
+          orderNumber: 'SO-005',
+          customerId: 'CUST-005',
+          customerName: 'Obinna Electronics',
+          items: [
+            { id: 'i5', productId: 'PROD-001', productName: 'Office Chairs', description: 'Standard office chairs', quantity: 15, unitPrice: 40000, discount: 0, total: 600000 }
+          ],
+          subtotal: 600000,
+          taxAmount: 45000,
+          discountAmount: 0,
+          totalAmount: 645000,
+          currency: 'NGN',
+          status: 'CANCELLED' as OrderStatus,
+          orderDate: new Date('2026-06-01'),
+          expectedDeliveryDate: new Date('2026-06-15'),
+          shippingAddress: 'Onitsha, Nigeria'
+        }
+      ];
+      localStorage.setItem(this.ORDERS_KEY, JSON.stringify(mockOrders));
+    }
   }
 
-  // Dashboard
+  // ============================================
+  // DASHBOARD
+  // ============================================
+
   getDashboardStats(range: string): Observable<SalesSummary> {
     const quotes: Quote[] = JSON.parse(localStorage.getItem(this.QUOTES_KEY) || '[]');
     const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
@@ -190,7 +297,10 @@ export class SalesService {
     ]).pipe(delay(300));
   }
 
-  // Quotes
+  // ============================================
+  // QUOTES
+  // ============================================
+
   getQuotes(filters: any): Observable<{ data: Quote[]; total: number }> {
     let quotes: Quote[] = JSON.parse(localStorage.getItem(this.QUOTES_KEY) || '[]');
     
@@ -282,7 +392,17 @@ export class SalesService {
     throw new Error('Quote not found');
   }
 
-  // Invoices
+  deleteQuote(id: string): Observable<boolean> {
+    let quotes: Quote[] = JSON.parse(localStorage.getItem(this.QUOTES_KEY) || '[]');
+    quotes = quotes.filter(q => q.id !== id);
+    localStorage.setItem(this.QUOTES_KEY, JSON.stringify(quotes));
+    return of(true).pipe(delay(300));
+  }
+
+  // ============================================
+  // INVOICES
+  // ============================================
+
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
     let invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
     invoices = invoices.map(i => ({
@@ -374,10 +494,35 @@ export class SalesService {
     throw new Error('Invoice not found');
   }
 
-  // Customers
+  deleteInvoice(id: string): Observable<boolean> {
+    let invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
+    invoices = invoices.filter(i => i.id !== id);
+    localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+    return of(true).pipe(delay(300));
+  }
+
+  // ============================================
+  // CUSTOMERS
+  // ============================================
+
   getCustomers(filters: any): Observable<{ data: Customer[]; total: number }> {
     const customers = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
-    return of({ data: customers, total: customers.length }).pipe(delay(300));
+    let filtered = customers;
+
+    if (filters && filters.status && filters.status !== 'ALL') {
+      filtered = filtered.filter((c: any) => c.status === filters.status);
+    }
+
+    if (filters && filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter((c: any) => 
+        c.name.toLowerCase().includes(term) || 
+        c.email.toLowerCase().includes(term) ||
+        c.phone.toLowerCase().includes(term)
+      );
+    }
+
+    return of({ data: filtered, total: filtered.length }).pipe(delay(300));
   }
 
   getCustomerById(id: string): Observable<Customer | null> {
@@ -390,14 +535,46 @@ export class SalesService {
     const customers = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
     const newCustomer = {
       id: `CUST-${String(customers.length + 1).padStart(3, '0')}`,
-      ...data
+      ...data,
+      createdAt: new Date(),
+      totalSpent: 0,
+      totalOrders: 0
     } as Customer;
     customers.push(newCustomer);
     localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
     return of(newCustomer).pipe(delay(300));
   }
 
-  // Products
+  updateCustomer(id: string, data: Partial<Customer>): Observable<Customer> {
+    let customers: Customer[] = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
+    const index = customers.findIndex(c => c.id === id);
+    
+    if (index !== -1) {
+      const updatedCustomer = {
+        ...customers[index],
+        ...data,
+        id: customers[index].id
+      } as Customer;
+      
+      customers[index] = updatedCustomer;
+      localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+      return of(updatedCustomer).pipe(delay(300));
+    }
+    
+    throw new Error('Customer not found');
+  }
+
+  deleteCustomer(id: string): Observable<boolean> {
+    let customers: Customer[] = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
+    customers = customers.filter(c => c.id !== id);
+    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+    return of(true).pipe(delay(300));
+  }
+
+  // ============================================
+  // PRODUCTS
+  // ============================================
+
   getProducts(filters: any): Observable<{ data: Product[]; total: number }> {
     const products = JSON.parse(localStorage.getItem(this.PRODUCTS_KEY) || '[]');
     let filtered = products;
@@ -430,16 +607,150 @@ export class SalesService {
     return of(newProduct).pipe(delay(300));
   }
 
-  // Sales Orders
+  updateProduct(id: string, data: Partial<Product>): Observable<Product> {
+    let products: Product[] = JSON.parse(localStorage.getItem(this.PRODUCTS_KEY) || '[]');
+    const index = products.findIndex(p => p.id === id);
+    
+    if (index !== -1) {
+      const updatedProduct = {
+        ...products[index],
+        ...data,
+        id: products[index].id
+      } as Product;
+      
+      products[index] = updatedProduct;
+      localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(products));
+      return of(updatedProduct).pipe(delay(300));
+    }
+    
+    throw new Error('Product not found');
+  }
+
+  deleteProduct(id: string): Observable<boolean> {
+    let products: Product[] = JSON.parse(localStorage.getItem(this.PRODUCTS_KEY) || '[]');
+    products = products.filter(p => p.id !== id);
+    localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(products));
+    return of(true).pipe(delay(300));
+  }
+
+  // ============================================
+  // SALES ORDERS
+  // ============================================
+
   getSalesOrders(filters: any): Observable<{ data: SalesOrder[]; total: number }> {
-    return of({ data: [], total: 0 }).pipe(delay(300));
+    let orders: SalesOrder[] = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+    
+    // Convert date strings back to Date objects
+    orders = orders.map(o => ({
+      ...o,
+      orderDate: new Date(o.orderDate),
+      expectedDeliveryDate: o.expectedDeliveryDate ? new Date(o.expectedDeliveryDate) : undefined,
+      actualDeliveryDate: o.actualDeliveryDate ? new Date(o.actualDeliveryDate) : undefined
+    }));
+
+    // Apply status filter
+    if (filters && filters.status && filters.status !== 'ALL') {
+      orders = orders.filter(o => o.status === filters.status);
+    }
+
+    // Apply search filter
+    if (filters && filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      orders = orders.filter(o => 
+        o.orderNumber.toLowerCase().includes(term) || 
+        o.customerName.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply date filters
+    if (filters && filters.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      orders = orders.filter(o => o.orderDate >= from);
+    }
+    if (filters && filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      to.setHours(23, 59, 59, 999);
+      orders = orders.filter(o => o.orderDate <= to);
+    }
+
+    const total = orders.length;
+    const page = filters?.page || 0;
+    const size = filters?.size || 10;
+    const paginatedData = orders.slice(page * size, (page + 1) * size);
+
+    return of({ data: paginatedData, total }).pipe(delay(300));
   }
 
   getSalesOrderById(id: string): Observable<SalesOrder | null> {
+    const orders: SalesOrder[] = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+    const order = orders.find(o => o.id === id);
+    if (order) {
+      return of({
+        ...order,
+        orderDate: new Date(order.orderDate),
+        expectedDeliveryDate: order.expectedDeliveryDate ? new Date(order.expectedDeliveryDate) : undefined,
+        actualDeliveryDate: order.actualDeliveryDate ? new Date(order.actualDeliveryDate) : undefined
+      }).pipe(delay(300));
+    }
     return of(null).pipe(delay(300));
   }
 
-  // Payments
+  createSalesOrder(data: Partial<SalesOrder>): Observable<SalesOrder> {
+    const orders: SalesOrder[] = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+    const newOrder: SalesOrder = {
+      id: Math.random().toString(36).substr(2, 9),
+      orderNumber: `SO-${String(orders.length + 1).padStart(3, '0')}`,
+      customerId: data.customerId || '',
+      customerName: data.customerName || '',
+      items: data.items || [],
+      subtotal: data.subtotal || 0,
+      taxAmount: data.taxAmount || 0,
+      discountAmount: data.discountAmount || 0,
+      totalAmount: data.totalAmount || 0,
+      currency: data.currency || 'NGN',
+      status: data.status || 'PENDING',
+      orderDate: data.orderDate || new Date(),
+      expectedDeliveryDate: data.expectedDeliveryDate,
+      actualDeliveryDate: data.actualDeliveryDate,
+      notes: data.notes || '',
+      shippingAddress: data.shippingAddress || ''
+    };
+    orders.unshift(newOrder);
+    localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+    return of(newOrder).pipe(delay(300));
+  }
+
+  updateSalesOrder(id: string, data: Partial<SalesOrder>): Observable<SalesOrder> {
+    let orders: SalesOrder[] = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+    const index = orders.findIndex(o => o.id === id);
+    
+    if (index !== -1) {
+      const updatedOrder = {
+        ...orders[index],
+        ...data,
+        id: orders[index].id,
+        orderNumber: orders[index].orderNumber
+      } as SalesOrder;
+      
+      orders[index] = updatedOrder;
+      localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+      return of(updatedOrder).pipe(delay(300));
+    }
+    
+    throw new Error('Order not found');
+  }
+
+  deleteSalesOrder(id: string): Observable<boolean> {
+    let orders: SalesOrder[] = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+    orders = orders.filter(o => o.id !== id);
+    localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+    return of(true).pipe(delay(300));
+  }
+
+  // ============================================
+  // PAYMENTS
+  // ============================================
+
   getPayments(filters: any): Observable<{ data: Payment[]; total: number }> {
     return of({ data: [], total: 0 }).pipe(delay(300));
   }
@@ -448,7 +759,10 @@ export class SalesService {
     return of({} as Payment).pipe(delay(300));
   }
 
-  // Delivery Notes
+  // ============================================
+  // DELIVERY NOTES
+  // ============================================
+
   getDeliveryNotes(filters: any): Observable<{ data: DeliveryNote[]; total: number }> {
     return of({ data: [], total: 0 }).pipe(delay(300));
   }
@@ -456,23 +770,4 @@ export class SalesService {
   getDeliveryNoteById(id: string): Observable<DeliveryNote | null> {
     return of(null).pipe(delay(300));
   }
-
-  updateCustomer(id: string, data: Partial<Customer>): Observable<Customer> {
-  let customers: Customer[] = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
-  const index = customers.findIndex(c => c.id === id);
-  
-  if (index !== -1) {
-    const updatedCustomer = {
-      ...customers[index],
-      ...data,
-      id: customers[index].id
-    } as Customer;
-    
-    customers[index] = updatedCustomer;
-    localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
-    return of(updatedCustomer).pipe(delay(300));
-  }
-  
-  throw new Error('Customer not found');
-}
 }
