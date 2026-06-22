@@ -464,6 +464,7 @@ app-loan-disbursement-ui {
         }
 
         .batch-select-all-btn,
+        .batch-review-btn,
         .batch-clear-btn {
           padding: 3px 10px;
           font-size: 0.84rem;
@@ -474,7 +475,8 @@ app-loan-disbursement-ui {
           border: 1px solid;
         }
 
-        .batch-select-all-btn {
+        .batch-select-all-btn,
+        .batch-review-btn {
           background: white;
           border-color: #3b82f6;
           color: #1d4ed8;
@@ -644,7 +646,58 @@ app-loan-disbursement-ui {
   }
 
   .loan-details-modal-content {
-    padding: 24px;
+    padding: 22px 18px 18px;
+    position: relative;
+  }
+
+  .loan-details-nav {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+
+  .loan-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(15, 44, 56, 0.78);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    box-shadow: 0 6px 14px rgba(15, 44, 56, 0.16);
+    transition: background 0.2s ease;
+    font-size: 0.88rem;
+
+    &:hover {
+      background: rgba(15, 44, 56, 0.92);
+    }
+  }
+
+  .loan-nav-btn-left {
+    left: -6px;
+  }
+
+  .loan-nav-btn-right {
+    right: -6px;
+  }
+
+  .batch-modal-summary {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+    color: #2E6276;
+    font-size: 0.82rem;
+    font-weight: 700;
   }
 
   .loan-info-grid {

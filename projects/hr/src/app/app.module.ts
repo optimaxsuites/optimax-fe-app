@@ -10,6 +10,7 @@ import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
@@ -237,7 +238,6 @@ import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-managemen
 import { CooperativeRepaymentScheduleComponent } from './ui/view/loan-management/cooperative-repayment-schedule/cooperative-repayment-schedule.component';
 import { MyScheduleComponent } from './ui/view/workschedule-shifts/my-schedule/my-schedule.component';
 import { MySchedulesComponent } from './ui/view/scheduling/scheduling/my-schedules/my-schedules.component';
-import { BrowserModule } from '@angular/platform-browser';
 import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
 import { BankDetailsChangeRequestComponent } from './ui/view/profile-change-requests/bank-details-change-request/bank-details-change-request.component';
 import { NokChangeRequestComponent } from './ui/view/profile-change-requests/nok-change-request/nok-change-request.component';

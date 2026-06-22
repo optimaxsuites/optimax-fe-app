@@ -323,7 +323,7 @@ export class ShiftAssignmentComponent implements OnInit {
           this.scheduleToEdit.assignmentGroupId,
           {
             shiftId: form.shiftId,
-            date: form.date,
+            //date: form.date,
             project: form.project,
             location: form.location,
             recurrence: form.recurrence,
@@ -556,6 +556,23 @@ export class ShiftAssignmentComponent implements OnInit {
   }
 
   return [startDate];
+}
+
+toggleSeriesEdit(event: Event): void {
+  const checked =
+    (event.target as HTMLInputElement).checked;
+
+  this.editMode =
+    checked ? 'series' : 'single';
+}
+
+get showRecurrenceControls(): boolean {
+
+  if (!this.isEditMode) {
+    return true;
+  }
+
+  return this.editMode === 'series';
 }
 
   /*private resolveDates(startDate: string, recurrence: string): string[] {

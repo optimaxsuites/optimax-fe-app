@@ -8,16 +8,23 @@
       </h3>
       <button class="close-btn" (click)="cancel()">✕</button>
     </div>
-    <label>
-    <input
-      type="radio"
-      name="editMode"
-      value="series"
-      [(ngModel)]="editMode"
-    />
-    Edit Schedule Series
+   <div
+      class="edit-series-toggle"
+      *ngIf="isEditMode && isRecurringSchedule"
+    >
+      <label>
+        <input
+          type="checkbox"
+          [checked]="editMode === 'series'"
+          (change)="toggleSeriesEdit($event)"
+        />
+        Edit entire recurring series
+      </label>
 
-  </label>
+      <small>
+        Changes will be applied to all schedules in this series.
+      </small>
+    </div>
 
     <div class="modal-body">
     
@@ -179,7 +186,7 @@
 
 
       <!-- RECURRENCE -->
-      <div class="form-group" *ngIf="!hasEndDate">
+      <div class="form-group" *ngIf="!hasEndDate && showRecurrenceControls">
         <label>Recurrence</label>
         <div class="recurrence-options">
           <label
@@ -201,6 +208,7 @@
         class="form-group"
         *ngIf="
           !hasEndDate &&
+          showRecurrenceControls &&
           assignmentForm.value.recurrence !== 'none'
         "
       >
@@ -221,7 +229,7 @@
         </div>
       </div>
 
-      <div *ngIf="!hasEndDate && assignmentForm.value.recurrence === 'custom'" class="custom-recurrence">
+      <div *ngIf="!hasEndDate && showRecurrenceControls && assignmentForm.value.recurrence === 'custom'" class="custom-recurrence">
         <div class="form-group">
           <label>Repeat every</label>
           <div class="field-hint">Repeats weekly on selected days</div>
