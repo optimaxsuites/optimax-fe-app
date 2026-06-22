@@ -144,9 +144,24 @@
 
       <!-- Expanded detail -->
       <div class="bt-detail" *ngIf="expandedId === issue.id">
-        <div class="bt-detail-desc" *ngIf="issue.description">
+        <div class="bt-detail-desc" *ngIf="descriptionText(issue.description)">
           <b>Description:</b>
-          <p>{{ issue.description }}</p>
+          <p>{{ descriptionText(issue.description) }}</p>
+        </div>
+        <div class="bt-attach-detail" *ngIf="attachmentsFromDesc(issue.description).length">
+          <div class="bt-wl-header" style="margin-bottom:8px;">Attachments</div>
+          <div class="bt-attach-preview">
+            <div class="bt-attach-thumb" *ngFor="let att of attachmentsFromDesc(issue.description)">
+              <a [href]="att.dataUrl" [download]="att.name" target="_blank">
+                <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name" />
+                <div *ngIf="!att.type.startsWith('image/')" class="bt-attach-file-icon">
+                  <i class="fas fa-file-alt"></i>
+                  <span>{{ att.name.split('.').pop() }}</span>
+                </div>
+              </a>
+              <div class="bt-attach-name">{{ att.name }}</div>
+            </div>
+          </div>
         </div>
         <div class="bt-detail-meta">
           <span *ngIf="issue.reporterEmail">Reported by: <b>{{ issue.reporterName || issue.reporterEmail }}</b></span>
@@ -250,6 +265,33 @@
       <input pInputText [(ngModel)]="form.tags" placeholder="e.g. UI, API, DB, regression (comma-separated)" />
       <div class="bt-tags-preview" *ngIf="parseTags(form.tags).length">
         <span class="bt-tag" *ngFor="let tag of parseTags(form.tags)">{{ tag }}</span>
+      </div>
+    </div>
+    <div class="bt-field">
+      <label>Attachments</label>
+      <input type="file" #fileInput accept="image/*,video/*,application/pdf,text/*,.doc,.docx,.xls,.xlsx"
+             multiple style="display:none" (change)="onFileSelected($event)" />
+      <div class="bt-attach-zone"
+           [class.drag-over]="dragOverForm"
+           (dragover)="onFormDragOver($event)"
+           (dragleave)="onFormDragLeave()"
+           (drop)="onFormDrop($event)">
+        <i class="fas fa-paperclip"></i>
+        <span>Drop files or images here, &nbsp;<button type="button" class="bt-attach-browse" (click)="fileInput.click()">browse</button></span>
+        <span class="bt-attach-hint">or paste a screenshot with <kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd></span>
+      </div>
+      <div class="bt-attach-preview" *ngIf="formAttachments.length">
+        <div class="bt-attach-thumb" *ngFor="let att of formAttachments; let i = index">
+          <img *ngIf="att.type.startsWith('image/')" [src]="att.dataUrl" [alt]="att.name" />
+          <div *ngIf="!att.type.startsWith('image/')" class="bt-attach-file-icon">
+            <i class="fas fa-file-alt"></i>
+            <span>{{ att.name.split('.').pop() }}</span>
+          </div>
+          <div class="bt-attach-name">{{ att.name }}</div>
+          <button type="button" class="bt-attach-remove" (click)="removeFormAttachment(i)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
     </div>
     <div class="bt-field">

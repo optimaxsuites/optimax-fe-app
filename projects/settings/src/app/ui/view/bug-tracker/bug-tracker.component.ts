@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { forkJoin, switchMap } from 'rxjs';
@@ -50,6 +50,8 @@ interface Issue {
   workLog?: WorkLog[];
   shares?: Share[];
 }
+
+interface AttachmentItem { name: string; dataUrl: string; type: string; }
 
 interface ChannelItem { id: number; name: string; selected: boolean; }
 interface UserItem { id: number; userId?: number; fullname?: string; email?: string; selected: boolean; }
@@ -138,6 +140,11 @@ export class BugTrackerComponent implements OnInit {
 
   get selectedChannelCount(): number { return this.channels.filter(c => c.selected).length; }
   get selectedUserCount(): number { return this.dmUsers.filter(u => u.selected).length; }
+
+  // ── Attachments ─────────────────────────────────────────────────────────────
+  formAttachments: AttachmentItem[] = [];
+  dragOverForm = false;
+  private readonly ATTACH_DELIM = '\n\n__ATTACHMENTS__\n';
 
   // ── Link panel ─────────────────────────────────────────────────────────────
   showLinkPanel = false;
@@ -259,6 +266,8 @@ export class BugTrackerComponent implements OnInit {
   openForm(issue?: Issue): void {
     this.editingIssue = issue || null;
     this.form = issue ? { ...issue } : this.blankForm();
+    this.formAttachments = this.attachmentsFromDesc(issue?.description);
+    if (issue?.description) this.form.description = this.descriptionText(issue.description);
     this.tempFormLog = [];
     this.formLogNote = '';
     this.formLogEmail = '';
@@ -269,7 +278,9 @@ export class BugTrackerComponent implements OnInit {
     if (!this.form.title || !this.form.module || !this.form.priority) return;
     this.saving = true;
     const meId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0) || undefined;
-    const payload = { ...this.form, status: this.form.status || 'OPEN', reporterUserId: this.form.reporterUserId || meId };
+    const desc = (this.form.description || '') +
+      (this.formAttachments.length ? this.ATTACH_DELIM + JSON.stringify(this.formAttachments) : '');
+    const payload = { ...this.form, description: desc, status: this.form.status || 'OPEN', reporterUserId: this.form.reporterUserId || meId };
     const logsToPost = [...this.tempFormLog];
 
     const req = this.editingIssue?.id
@@ -288,6 +299,7 @@ export class BugTrackerComponent implements OnInit {
         this.applyFilters();
         this.showForm = false;
         this.saving = false;
+        this.formAttachments = [];
         this.toast('success', isNew ? 'Issue created — notifications sent' : 'Issue updated');
 
         if (isNew && saved.assigneeEmail) {
@@ -545,6 +557,71 @@ export class BugTrackerComponent implements OnInit {
         this.toast('success', this.selectedTaskId ? `Linked to Task #${this.selectedTaskId}` : 'Task link removed');
       },
       error: (err) => this.toast('error', err)
+    });
+  }
+
+  // ── Attachment handlers ──────────────────────────────────────────────────────
+
+  @HostListener('document:paste', ['$event'])
+  onDocumentPaste(e: ClipboardEvent): void {
+    if (!this.showForm) return;
+    const items = Array.from(e.clipboardData?.items || []);
+    const imageItems = items.filter(i => i.kind === 'file' && i.type.startsWith('image/'));
+    if (!imageItems.length) return;
+    imageItems.forEach(item => {
+      const file = item.getAsFile();
+      if (file) this.processFiles([file]);
+    });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files) this.processFiles(Array.from(input.files));
+    input.value = '';
+  }
+
+  onFormDragOver(e: DragEvent): void {
+    e.preventDefault();
+    this.dragOverForm = true;
+  }
+
+  onFormDragLeave(): void {
+    this.dragOverForm = false;
+  }
+
+  onFormDrop(e: DragEvent): void {
+    e.preventDefault();
+    this.dragOverForm = false;
+    if (e.dataTransfer?.files) this.processFiles(Array.from(e.dataTransfer.files));
+  }
+
+  removeFormAttachment(index: number): void {
+    this.formAttachments = this.formAttachments.filter((_, i) => i !== index);
+  }
+
+  descriptionText(desc?: string): string {
+    if (!desc) return '';
+    const i = desc.indexOf(this.ATTACH_DELIM);
+    return i > -1 ? desc.substring(0, i) : desc;
+  }
+
+  attachmentsFromDesc(desc?: string): AttachmentItem[] {
+    if (!desc) return [];
+    const i = desc.indexOf(this.ATTACH_DELIM);
+    if (i === -1) return [];
+    try { return JSON.parse(desc.substring(i + this.ATTACH_DELIM.length)); } catch { return []; }
+  }
+
+  private processFiles(files: File[]): void {
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        this.formAttachments = [
+          ...this.formAttachments,
+          { name: file.name || 'image.png', dataUrl: ev.target!.result as string, type: file.type },
+        ];
+      };
+      reader.readAsDataURL(file);
     });
   }
 
