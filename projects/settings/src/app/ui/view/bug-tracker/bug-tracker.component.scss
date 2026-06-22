@@ -789,3 +789,131 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+// ── Attachments ──────────────────────────────────────────────────────────────
+
+.bt-attach-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 20px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+
+  &.drag-over { border-color: #2e6276; background: #f0f9ff; }
+
+  i { font-size: 18px; color: #94a3b8; margin-bottom: 2px; }
+  span { font-size: 12px; color: #64748b; }
+}
+
+.bt-attach-browse {
+  background: none;
+  border: none;
+  color: #2e6276;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  &:hover { color: #245264; }
+}
+
+.bt-attach-hint {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+
+  kbd {
+    font-size: 10px;
+    background: #e2e8f0;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: monospace;
+    color: #374151;
+  }
+}
+
+.bt-attach-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.bt-attach-thumb {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 80px;
+
+  img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+
+  a img {
+    border: 2px solid transparent;
+    transition: border-color 0.12s;
+    &:hover { border-color: #2e6276; }
+  }
+}
+
+.bt-attach-file-icon {
+  width: 80px;
+  height: 60px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  i { font-size: 20px; color: #64748b; }
+  span { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+}
+
+.bt-attach-name {
+  font-size: 10px;
+  color: #64748b;
+  text-align: center;
+  word-break: break-all;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bt-attach-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  padding: 0;
+  &:hover { background: #dc2626; }
+}
+
+.bt-attach-detail { margin-bottom: 14px; }
