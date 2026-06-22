@@ -7,7 +7,7 @@ import {
   BuyerRfq, VendorQuoteResponse, IssuedLpo,
   IssuedLpoItem, ProcurementStats, CreateLpoForm,
 } from '../../domain/sourcing/sourcing.dto';
-import { TableColumn } from 'src/app/ui/shared-component/view/table/table.component';
+import { TableColumn } from '../../shared-component/view/table/table.component';
 
 type ActiveTable = 'rfqs' | 'lpos';
 
