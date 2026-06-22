@@ -1,14 +1,14 @@
-// ...existing code...
 import { Location } from '@angular/common';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { CooperativeLoanGroup, CooperativeMember } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { formatLoanPurposeDisplay } from '../../../service/loan/loan-display.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { MailNotificationService } from '../../../service/mailNotification.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 type QueueMessage = {
   severity: 'success' | 'error' | 'warn';
@@ -32,7 +32,11 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   batchSelectedLoanIds: Set<number> = new Set();
   batchViewIndex: number = 0;
   batchEmployeeDetailsMap: Map<number, any> = new Map();
+  private batchLoanNotesMap: Map<number, string> = new Map();
+  private batchLoanReferenceMap: Map<number, string> = new Map();
   isSendToAccountingModalVisible = false;
+  isLoanDetailsModalVisible = false;
+  submissionProgress = 0;
 
   // Helper to format membership ID as [group code letters]-[member id]-[membership id]
   public getFormattedMembershipId(loan: CooperativeLoan): string {
@@ -312,49 +316,61 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     return !!this.selectedLoan && this.selectedLoan.status === 'APPROVED' && !this.isSubmitting;
   }
 
-  selectLoan(loan: CooperativeLoan): void {
-  this.selectedLoanId = String(loan.id);
-  this.selectedDisbursementLoan = loan;
-  this.disbursementAmount = Number(loan.amount || 0);
-  this.paymentMethod = 'BANK_TRANSFER';
-  this.emailNotes = '';
-  
-  // Get the group - if groups aren't loaded yet, try to get it from the loan directly
-  let group = this.getGroupForLoan(loan);
-  
-  // If groups are still loading, we need to wait or get from cache
-  if (!group && this.groups.length === 0 && this.isGroupsLoading) {
-    // Groups are still loading, set a timeout to retry
-    setTimeout(() => {
-      const retryGroup = this.getGroupForLoan(loan);
-      if (retryGroup) {
-        this.populateGroupFields(retryGroup);
-      }
-    }, 500);
+  onCurrentLoanNoteChange(value: string): void {
+    this.emailNotes = value;
+    if (this.selectedDisbursementLoan) {
+      this.batchLoanNotesMap.set(this.selectedDisbursementLoan.id, value);
+    }
   }
-  
-  // Populate group fields if we have the group
-  if (group) {
-    this.populateGroupFields(group);
-  } else {
-    // Fallback: try to get group info from the loan object itself
-    this.accountingEmail = String(loan.accountingEmail || '').trim();
-    this.principalBankName = loan.principalBankName || '';
-    this.principalCollectionAccount = loan.principalCollectionAccount || '';
-    this.interestBankName = loan.interestBankName || '';
-    this.interestCollectionAccount = loan.interestCollectionAccount || '';
-    this.lateFeeBankName = loan.lateFeeBankName || '';
-    this.lateFeeCollectionAccount = loan.lateFeeCollectionAccount || '';
-    this.lateFeePercentage = loan.lateFeePercentage;
-    this.lateFeeGraceDays = loan.lateFeeGraceDays;
-    this.accountingWebhookUrl = loan.accountingWebhookUrl || '';
+
+  private getStoredLoanNote(loan: CooperativeLoan | null | undefined): string {
+    if (!loan) return '';
+    return this.batchLoanNotesMap.get(loan.id) || '';
   }
-  
-  this.disbursementInstructionReference = loan.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
-  this.disbursementInitiatedAt = loan.disbursementInitiatedAt || '';
-  this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
-  this.loadEmployeeDetails(loan);
-}
+
+  selectLoan(loan: CooperativeLoan, skipServerRefresh = false): void {
+    this.selectedLoanId = String(loan.id);
+    this.selectedDisbursementLoan = loan;
+    this.disbursementAmount = Number(loan.amount || 0);
+    this.paymentMethod = 'BANK_TRANSFER';
+    this.emailNotes = this.getStoredLoanNote(loan);
+    
+    // Get the group - if groups aren't loaded yet, try to get it from the loan directly
+    let group = this.getGroupForLoan(loan);
+    
+    // If groups are still loading, we need to wait or get from cache
+    if (!group && this.groups.length === 0 && this.isGroupsLoading) {
+      // Groups are still loading, set a timeout to retry
+      setTimeout(() => {
+        const retryGroup = this.getGroupForLoan(loan);
+        if (retryGroup) {
+          this.populateGroupFields(retryGroup);
+        }
+      }, 500);
+    }
+    
+    // Populate group fields if we have the group
+    if (group) {
+      this.populateGroupFields(group);
+    } else {
+      // Fallback: try to get group info from the loan object itself
+      this.accountingEmail = String(loan.accountingEmail || '').trim();
+      this.principalBankName = loan.principalBankName || '';
+      this.principalCollectionAccount = loan.principalCollectionAccount || '';
+      this.interestBankName = loan.interestBankName || '';
+      this.interestCollectionAccount = loan.interestCollectionAccount || '';
+      this.lateFeeBankName = loan.lateFeeBankName || '';
+      this.lateFeeCollectionAccount = loan.lateFeeCollectionAccount || '';
+      this.lateFeePercentage = loan.lateFeePercentage;
+      this.lateFeeGraceDays = loan.lateFeeGraceDays;
+      this.accountingWebhookUrl = loan.accountingWebhookUrl || '';
+    }
+    
+    this.disbursementInstructionReference = loan.disbursementInstructionLoanReference || this.generateDisbursementReference(loan);
+    this.disbursementInitiatedAt = loan.disbursementInitiatedAt || '';
+    this.disbursementInitiatedBy = this.getAuditUserLabel(loan.disbursementInitiatedBy);
+    this.loadEmployeeDetails(loan);
+  }
 
   toggleLoanSelection(loan: CooperativeLoan): void {
     if (this.selectedDisbursementLoan?.id === loan.id) {
@@ -362,6 +378,34 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
       return;
     }
     this.selectLoan(loan);
+  }
+
+  openLoanDetailsModal(loan: CooperativeLoan): void {
+    this.selectLoan(loan);
+    this.isLoanDetailsModalVisible = true;
+  }
+
+  openBatchLoanDetailsModal(): void {
+    const loans = this.batchSelectedLoans;
+    if (!loans.length) {
+      return;
+    }
+
+    this.batchViewIndex = 0;
+    const currentLoan = loans[0];
+    this.selectLoan(currentLoan);
+    this.isLoanDetailsModalVisible = true;
+  }
+
+  closeLoanDetailsModal(): void {
+    this.isLoanDetailsModalVisible = false;
+    setTimeout(() => {
+      if (!this.isSendToAccountingModalVisible) {
+        this.selectedDisbursementLoan = null;
+        this.selectedEmployeeDetails = null;
+        this.selectedLoanId = '';
+      }
+    }, 300);
   }
 
   private clearSelectedLoan(): void {
@@ -375,6 +419,7 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
     this.emailNotes = '';
     this.emailNotesError = false;
     this.isSendToAccountingModalVisible = false;
+    this.isLoanDetailsModalVisible = false;
   }
 
   loadEmployeeDetails(loan: CooperativeLoan): void {
@@ -396,15 +441,19 @@ export class CooperativeLoanDisbursementUiComponent implements OnInit {
   }
 
 sendToAccounting(): void {
-  const loan = this.selectedLoan;
-  const group = this.selectedGroup;
-  if (!loan || !group || !this.canSendToAccounting) {
+  if (!this.emailNotes?.trim() || this.isSubmitting) {
+    this.emailNotesError = !this.emailNotes?.trim();
     return;
   }
 
-  if (!this.emailNotes.trim()) {
-    this.emailNotesError = true;
-    this.showMessage('warn', 'Missing Notes', 'Additional notes are required before sending to accounting.');
+  if (this.isBatchMode) {
+    this.sendBatchToAccounting();
+    return;
+  }
+
+  const loan = this.selectedLoan;
+  const group = this.selectedGroup;
+  if (!loan || !group || !this.canSendToAccounting) {
     return;
   }
 
@@ -500,6 +549,7 @@ sendToAccounting(): void {
             next: (freshLoan: CooperativeLoan | undefined) => {
               this.isSubmitting = false;
               if (freshLoan) {
+                this.batchLoanNotesMap.delete(freshLoan.id);
                 this.upsertLoan(freshLoan);
                 this.selectLoan(freshLoan);
                 this.showMessage('success', 'Ready for Disbursement', `Loan ${freshLoan.loanCode || freshLoan.id} has been moved to READY_FOR_DISBURSEMENT.`);
@@ -661,9 +711,10 @@ sendToAccounting(): void {
     return String(value);
   }
 
-  private generateDisbursementReference(loan: CooperativeLoan): string {
+  private generateDisbursementReference(loan: CooperativeLoan, indexOffset = 0): string {
     const loanPrefix = String(loan.loanCode || loan.loanId || loan.id || 'COOP').replace(/[^A-Z0-9]/gi, '').slice(-6).toUpperCase();
-    return `COOP-DISB-${loanPrefix}-${Date.now().toString().slice(-6)}`;
+    const uniquePart = (Date.now() + indexOffset).toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `COOP-DISB-${loanPrefix}-${uniquePart}`;
   }
 
   private upsertLoan(updatedLoan: CooperativeLoan): void {
@@ -757,48 +808,264 @@ isBatchSelected(loan: CooperativeLoan): boolean {
   return this.batchSelectedLoanIds.has(loan.id);
 }
 
-toggleBatchSelect(loan: CooperativeLoan): void {
-  if (this.batchSelectedLoanIds.has(loan.id)) {
-    this.batchSelectedLoanIds.delete(loan.id);
-  } else {
-    this.batchSelectedLoanIds.add(loan.id);
-  }
-}
+  toggleBatchSelect(loan: CooperativeLoan): void {
+    if (this.batchSelectedLoanIds.has(loan.id)) {
+      this.batchSelectedLoanIds.delete(loan.id);
+      this.batchEmployeeDetailsMap.delete(loan.id);
+    } else {
+      this.batchSelectedLoanIds.add(loan.id);
+      if (!this.batchEmployeeDetailsMap.has(loan.id)) {
+        const member = this.getMemberForLoan(loan);
+        const employeeId = Number(member?.employeeId || 0);
+        if (employeeId) {
+          this.employeeService.getEmployeeById(employeeId).subscribe({
+            next: (emp) => this.batchEmployeeDetailsMap.set(loan.id, emp),
+            error: () => this.batchEmployeeDetailsMap.set(loan.id, null)
+          });
+        } else {
+          this.batchEmployeeDetailsMap.set(loan.id, null);
+        }
+      }
+    }
 
-selectAllApprovedLoans(): void {
-  this.getFilteredApprovedLoans().forEach(loan => {
-    this.batchSelectedLoanIds.add(loan.id);
-  });
-}
+    const newSize = this.batchSelectedLoanIds.size;
+    this.batchViewIndex = newSize > 0 ? Math.min(this.batchViewIndex, newSize - 1) : 0;
 
-clearBatchSelection(): void {
-  this.batchSelectedLoanIds.clear();
-  this.batchViewIndex = 0;
-}
+    if (newSize === 1) {
+      this.selectLoan(loan);
+    }
+  }
 
-navigateBatch(direction: 1 | -1): void {
-  const total = this.batchSelectedLoans.length;
-  if (total < 2) return;
-  this.batchViewIndex = (this.batchViewIndex + direction + total) % total;
-  const loan = this.batchSelectedLoans[this.batchViewIndex];
-  if (loan) {
-    this.selectLoan(loan);
+  selectAllApprovedLoans(): void {
+    this.getFilteredApprovedLoans().forEach(loan => {
+      if (!this.batchSelectedLoanIds.has(loan.id)) {
+        this.batchSelectedLoanIds.add(loan.id);
+        if (!this.batchEmployeeDetailsMap.has(loan.id)) {
+          const member = this.getMemberForLoan(loan);
+          const employeeId = Number(member?.employeeId || 0);
+          if (employeeId) {
+            this.employeeService.getEmployeeById(employeeId).subscribe({
+              next: (emp) => this.batchEmployeeDetailsMap.set(loan.id, emp),
+              error: () => this.batchEmployeeDetailsMap.set(loan.id, null)
+            });
+          } else {
+            this.batchEmployeeDetailsMap.set(loan.id, null);
+          }
+        }
+      }
+    });
   }
-}
 
-openSendToAccountingModal(): void {
-  if (this.isBatchMode) {
-    const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
-    if (!allApproved) return;
+  clearBatchSelection(): void {
+    this.batchSelectedLoanIds.clear();
+    this.batchEmployeeDetailsMap.clear();
+    this.batchViewIndex = 0;
   }
-  if (!this.selectedDisbursementLoan) return;
-  
-  if (!this.disbursementInstructionReference) {
-    this.disbursementInstructionReference = this.generateDisbursementReference(this.selectedDisbursementLoan);
+
+  navigateBatch(direction: 1 | -1): void {
+    const total = this.batchSelectedLoans.length;
+    if (total < 2) return;
+    this.batchViewIndex = (this.batchViewIndex + direction + total) % total;
+    const loan = this.batchSelectedLoans[this.batchViewIndex];
+    if (loan) {
+      this.selectLoan(loan);
+      this.selectedEmployeeDetails = this.batchEmployeeDetailsMap.get(loan.id) ?? null;
+      if (!this.selectedEmployeeDetails && !this.batchEmployeeDetailsMap.has(loan.id)) {
+        this.loadEmployeeDetails(loan);
+      }
+    }
   }
-  
-  this.emailNotesError = false;
-  this.isSendToAccountingModalVisible = true;
-}
+
+  openSendToAccountingModal(): void {
+    if (this.isBatchMode) {
+      const allApproved = this.batchSelectedLoans.every(l => l.status === 'APPROVED');
+      if (!allApproved) return;
+
+      this.batchViewIndex = Math.min(this.batchViewIndex, Math.max(0, this.batchSelectedLoans.length - 1));
+      const currentLoan = this.batchSelectedLoans[this.batchViewIndex];
+      if (currentLoan) {
+        this.selectLoan(currentLoan);
+      }
+
+      this.emailNotesError = false;
+      this.isSendToAccountingModalVisible = true;
+      this.submissionProgress = 0;
+      return;
+    }
+
+    if (!this.selectedDisbursementLoan || this.selectedDisbursementLoan.status !== 'APPROVED') {
+      return;
+    }
+
+    if (!this.disbursementInstructionReference) {
+      this.disbursementInstructionReference = this.generateDisbursementReference(this.selectedDisbursementLoan);
+    }
+
+    this.emailNotesError = false;
+    this.isSendToAccountingModalVisible = true;
+    this.submissionProgress = 0;
+  }
+
+  closeSendToAccountingModal(): void {
+    if (!this.isSubmitting) {
+      this.isSendToAccountingModalVisible = false;
+      this.emailNotesError = false;
+      this.submissionProgress = 0;
+    }
+  }
+
+  sendBatchToAccounting(): void {
+    const loans = this.batchSelectedLoans.filter(l => l.status === 'APPROVED');
+    if (!loans.length) return;
+
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const tenantId = 'optimax';
+    
+    const currentUser = sessionStorage.getItem('fullname') || 
+                        sessionStorage.getItem('username') || 
+                        localStorage.getItem('fullname') || 
+                        localStorage.getItem('username') || 
+                        'System';
+
+    const initiatedAt = new Date().toISOString();
+    const initiatedBy = currentUser;
+    this.emailNotesError = false;
+    this.isSubmitting = true;
+    this.submissionProgress = 10;
+
+    const loanRefs = loans.map((loan, idx) => ({
+      loan,
+      reference: this.generateDisbursementReference(loan, idx),
+      employeeDetails: this.batchEmployeeDetailsMap.get(loan.id) || null,
+      group: this.getGroupForLoan(loan)
+    }));
+
+    const headers = token ? new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-Tenant-ID': tenantId
+    }) : undefined;
+    const options = headers ? { headers } : undefined;
+
+    const apiBaseUrl = 'https://be.optimaxsuites.com';
+    const url = `${apiBaseUrl}/x/api/v2/accounting/events`;
+
+    this.submissionProgress = 35;
+
+    // Step 1: Concurrently post accounting events
+    const accountingRequests = loanRefs.map(({ loan, reference, employeeDetails, group }) => {
+      const approvedAmount = Number(loan.approvedAmount || loan.amount || 0);
+      const totalRepayable = group ? approvedAmount * (1 + (Number(group.interestRate || 0) / 100)) : approvedAmount;
+      const memberName = this.getMemberName(loan);
+      const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
+
+      const accountingPayload = {
+        id: 0,
+        sourceModule: 'HR',
+        eventType: 'LOAN_DISBURSEMENT',
+        amount: approvedAmount,
+        currency: 'NGN',
+        reference,
+        description: loanNote || `Loan disbursement for ${memberName}`,
+        transactionDate: initiatedAt,
+        metadata: {
+          loanId: loan.id,
+          loanCode: loan.loanCode || loan.loanId,
+          member: memberName,
+          memberId: loan.memberId || loan.cooperativeMemberId,
+          membershipId: loan.membershipId,
+          groupMembershipId: this.getFormattedMembershipId(loan),
+          groupName: group?.name || 'N/A',
+          groupCode: group?.code || 'N/A',
+          groupInterestRate: group?.interestRate || 0,
+          repaymentPeriod: loan.duration || loan.repaymentTime,
+          approvedAmount,
+          totalRepayable,
+          modeOfPayment: loan.modeOfPayment || 'MONTHLY',
+          paymentMethod: this.paymentMethod,
+          purpose: loan.purpose,
+          approvedDate: loan.approvedDate,
+          approvedBy: loan.approvedBy,
+          bankName: employeeDetails?.bankName || loan.memberBankName || 'N/A',
+          accountNumber: employeeDetails?.accountNumber || loan.memberAccountNumber || 'N/A',
+          accountName: memberName,
+          initiatedBy,
+          initiatedAt,
+          notes: loanNote
+        }
+      };
+
+      return this.http.post(url, accountingPayload, options);
+    });
+
+    forkJoin(accountingRequests).subscribe({
+      next: () => {
+        this.submissionProgress = 70;
+
+        // Step 2: Concurrently update loan statuses
+        const statusUpdates = loanRefs.map(({ loan, reference }) => {
+          const loanNote = this.getStoredLoanNote(loan) || this.emailNotes;
+          const group = this.getGroupForLoan(loan);
+          const accountingEmail = String(loan.accountingEmail || group?.accountingEmail || '').trim();
+          return this.cooperativeService.sendLoanToAccountingForDisbursement(loan.id, {
+            accountingEmail,
+            disbursementInstructionReference: reference,
+            disbursementReference: `PENDING-${reference}`,
+            paymentMethod: this.paymentMethod,
+            notes: loanNote
+          });
+        });
+
+        forkJoin(statusUpdates).subscribe({
+          next: (updatedLoans) => {
+            this.submissionProgress = 90;
+
+            // Step 3: Reload each updated loan
+            const reloadRequests = updatedLoans
+              .filter((l): l is CooperativeLoan => !!l)
+              .map(updated => this.cooperativeService.loadLoanById(updated.id));
+
+            forkJoin(reloadRequests).subscribe({
+              next: (freshLoans) => {
+                this.submissionProgress = 100;
+                this.isSubmitting = false;
+
+                freshLoans.forEach(freshLoan => {
+                  if (freshLoan) {
+                    this.batchLoanNotesMap.delete(freshLoan.id);
+                    this.upsertLoan(freshLoan);
+                  }
+                });
+
+                this.isSendToAccountingModalVisible = false;
+                this.isLoanDetailsModalVisible = false;
+                this.clearBatchSelection();
+                this.selectedDisbursementLoan = null;
+                this.selectedLoanId = '';
+                this.showMessage('success', 'Batch Sent', `${loans.length} disbursement request(s) sent to accounting successfully.`);
+              },
+              error: () => {
+                this.isSubmitting = false;
+                this.submissionProgress = 0;
+                this.showMessage('warn', 'Reload Failed', 'Batch updated, but some loan details could not be reloaded.');
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Error updating status for batch:', error);
+            this.isSubmitting = false;
+            this.submissionProgress = 0;
+            this.showMessage('error', 'Status Update Failed', 'Accounting events were posted, but some loan statuses could not be updated.');
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Batch send failed:', error);
+        this.isSubmitting = false;
+        this.submissionProgress = 0;
+        this.showMessage('error', 'Batch Post Failed', `Failed to send batch to accounting: ${error.message || 'Unknown error'}`);
+      }
+    });
+  }
 
 }
