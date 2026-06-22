@@ -58,6 +58,7 @@ export interface QuoteItem {
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'CONVERTED';
 
+
 export interface SalesOrder {
   id: string;
   orderNumber: string;
@@ -75,6 +76,7 @@ export interface SalesOrder {
   expectedDeliveryDate?: Date;
   actualDeliveryDate?: Date;
   notes?: string;
+  shippingAddress?: string;  
 }
 
 export interface SalesOrderItem {

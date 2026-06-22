@@ -263,9 +263,68 @@
 .status-inactive { background: #f3f4f6; color: #4b5563; }
 .status-blacklisted { background: #fee2e2; color: #991b1b; }
 
-// Actions Dropdown
-.actions {
-  text-align: right;
+// Actions Column & Buttons
+.actions-col {
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+
+  .action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      font-size: 0.8rem;
+    }
+
+    &.view-btn {
+      color: #2E6276;
+      background: rgba(46, 98, 118, 0.08);
+
+      &:hover {
+        background: rgba(46, 98, 118, 0.16);
+        transform: translateY(-2px);
+      }
+    }
+
+    &.edit-btn {
+      color: #2EB270;
+      background: rgba(46, 178, 112, 0.08);
+
+      &:hover {
+        background: rgba(46, 178, 112, 0.16);
+        transform: translateY(-2px);
+      }
+    }
+
+    &.cancel-btn {
+      color: #dc2626;
+      background: rgba(220, 38, 38, 0.08);
+
+      &:hover {
+        background: rgba(220, 38, 38, 0.16);
+        transform: translateY(-2px);
+      }
+    }
+
+    &.history-btn {
+      color: #6b8a97;
+      background: rgba(107, 114, 128, 0.08);
+
+      &:hover {
+        background: rgba(107, 114, 128, 0.16);
+        transform: translateY(-2px);
+      }
+    }
+  }
 }
 
 .action-dropdown {
@@ -280,9 +339,7 @@
   border-radius: 0.375rem;
   cursor: pointer;
   
-  svg { width: 1rem; height: 1rem; color: #94a3b8; }
-  
-  &:hover { background: #f1f5f9; svg { color: #475569; } }
+  &:hover { background: #f1f5f9; }
 }
 
 .dropdown-menu {
