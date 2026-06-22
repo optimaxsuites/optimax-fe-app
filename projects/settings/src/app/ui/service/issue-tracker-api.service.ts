@@ -112,17 +112,26 @@ export class IssueTrackerApiService {
   }
 
   postIssueCardMessage(channelId: number, senderUserId: number, issue: any) {
+    // Strip base64 attachments from description before sending — keep plain text only
+    const rawDesc: string = issue.description || '';
+    const attachDelim = '\n\n__ATTACHMENTS__\n';
+    const cleanDesc = rawDesc.includes(attachDelim)
+      ? rawDesc.substring(0, rawDesc.indexOf(attachDelim))
+      : rawDesc;
+
     const content = JSON.stringify({
       id: issue.id,
       title: issue.title,
       module: issue.module,
       priority: issue.priority,
       status: issue.status,
-      description: issue.description || '',
+      description: cleanDesc.substring(0, 500),
       reporterName: issue.reporterName || '',
     });
+    // Send as TEXT so the backend's messageType enum validation always passes.
+    // The message-feed component detects issue cards by JSON content shape.
     return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/message`,
-      { channelId, senderUserId, content, messageType: 'ISSUE_CARD' },
+      { channelId, senderUserId, content, messageType: 'TEXT' },
       { headers: this.authHeaders() }).pipe(catchError(this.err));
   }
 
@@ -134,23 +143,33 @@ export class IssueTrackerApiService {
   getOrCreateDmChannel(senderUserId: number, recipientUserId: number) {
     const uid1 = Math.min(senderUserId, recipientUserId);
     const uid2 = Math.max(senderUserId, recipientUserId);
-    return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
-      {
-        name: `dm-${uid1}-${uid2}`,
-        channelType: 'PRIVATE',
-        createdBy: senderUserId,
-        description: `DM between ${uid1} and ${uid2}`,
-      },
+    const dmName = `dm-${uid1}-${uid2}`;
+    // Search existing channels first — avoids 409 on duplicate channel name
+    return this.http.get<any[]>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
       { headers: this.authHeaders() },
     ).pipe(
-      switchMap(channel => {
-        const channelId = channel.id ?? channel.channelId;
-        return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel-member`,
-          { channelId, userId: recipientUserId, role: 'MEMBER' },
+      switchMap(channels => {
+        const existing = (channels || []).find((c: any) => c.name === dmName);
+        if (existing) return of(existing);
+        return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel`,
+          {
+            name: dmName,
+            channelType: 'PRIVATE',
+            createdBy: senderUserId,
+            description: `DM between ${uid1} and ${uid2}`,
+          },
           { headers: this.authHeaders() },
         ).pipe(
-          catchError(() => of(null)),
-          map(() => channel),
+          switchMap(channel => {
+            const channelId = channel.id ?? channel.channelId;
+            return this.http.post<any>(`${this.root()}/x/api/v2/ai/collab/chat/channel-member`,
+              { channelId, userId: recipientUserId, role: 'MEMBER' },
+              { headers: this.authHeaders() },
+            ).pipe(
+              catchError(() => of(null)),
+              map(() => channel),
+            );
+          }),
         );
       }),
       catchError(this.err),
