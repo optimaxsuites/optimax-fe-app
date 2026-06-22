@@ -120,10 +120,10 @@ const routes: Routes = [
   //   path: 'admin/sales/sales/invoices',
   //   component: InvoiceListComponent
   // },
-  {
-    path: 'admin/sales/sales/invoices/:uuid',
-    component: InvoiceListComponent
-  },
+  // {
+  //   path: 'admin/sales/sales/invoices/:uuid',
+  //   component: InvoiceListComponent
+  // },
   // {
   //   path: 'admin/sales/sales/invoices/new',
   //   component: InvoiceFormComponent
