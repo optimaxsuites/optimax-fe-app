@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import {
   HotelserviceService,
   Room,
@@ -39,6 +41,16 @@ export class RoomsListComponent implements OnInit, OnDestroy {
     div.textContent = text;
     return div.innerHTML;
   }
+
+  // Search
+  searchText = '';
+  searchSubject$ = new Subject<string>();
+
+  // Pagination
+  currentPage = 0;
+  pageSize = 12;
+  totalPages = 0;
+  paginatedRooms: Room[] = [];
 
   // Filters
   filterStatus: string = '';
@@ -91,7 +103,6 @@ export class RoomsListComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -107,15 +118,13 @@ export class RoomsListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.searchSubject$.next('');
     this.searchSubject$.complete();
   }
 
   private initializeSearch(): void {
     this.searchSubject$
-      .pipe(
-        debounceTime(300),
-        takeUntil(this.searchSubject$)
-      )
+      .pipe(debounceTime(300))
       .subscribe(() => {
         this.applyFilters();
       });
