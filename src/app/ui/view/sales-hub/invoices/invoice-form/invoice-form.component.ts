@@ -21,6 +21,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
   
+  isModal = false;
   invoiceForm: FormGroup;
   isSubmitting = false;
   isLoading = false;
@@ -89,18 +90,25 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    try {
-      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
-        this.dialogRef.nativeElement.showModal();
-      } else if (this.dialogRef?.nativeElement) {
+    if (this.isModal) {
+      try {
+        if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
+          this.dialogRef.nativeElement.showModal();
+        } else if (this.dialogRef?.nativeElement) {
+          this.dialogRef.nativeElement.setAttribute('open', '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      if (this.dialogRef?.nativeElement) {
         this.dialogRef.nativeElement.setAttribute('open', '');
       }
-    } catch (e) {
-      // ignore
     }
   }
 
   ngOnInit(): void {
+    this.isModal = this.saved.observed || this.cancelled.observed;
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
@@ -288,10 +296,26 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
       next: (response: any) => {
         this.customers = response.data;
+        const customerId = this.route.snapshot.queryParamMap.get('customerId');
+        if (customerId) {
+          this.invoiceForm.patchValue({ customerId: customerId });
+          const customer = this.customers.find(c => c.id === customerId);
+          if (customer) {
+            this.invoiceForm.patchValue({ customerName: customer.name });
+          }
+        }
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
+        const customerId = this.route.snapshot.queryParamMap.get('customerId');
+        if (customerId) {
+          this.invoiceForm.patchValue({ customerId: customerId });
+          const customer = this.customers.find(c => c.id === customerId);
+          if (customer) {
+            this.invoiceForm.patchValue({ customerName: customer.name });
+          }
+        }
       }
     });
   }
@@ -464,7 +488,12 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.saved.observed) {
           this.saved.emit();
         } else {
-          this.router.navigate(['/sales/invoices', response.id]);
+          const uuid = this.route.snapshot.paramMap.get('uuid');
+          if (uuid) {
+            this.router.navigate(['/admin/sales/invoices', response.id, uuid]);
+          } else {
+            this.router.navigate(['/admin/sales/invoices', response.id]);
+          }
         }
       },
       error: (error: any) => {
@@ -480,7 +509,12 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.cancelled.observed) {
       this.cancelled.emit();
     } else {
-      this.router.navigate(['/sales-hub']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
     }
   }
 

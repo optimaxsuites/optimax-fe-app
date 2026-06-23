@@ -151,7 +151,12 @@ export class QuoteDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      this.router.navigate(['/sales/quotes']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
     }
   }
 
@@ -159,7 +164,12 @@ export class QuoteDetailComponent implements OnInit {
     if (this.edit.observed) {
       this.edit.emit(this.quote!.id);
     } else {
-      this.router.navigate(['/sales/quotes', this.quote!.id, 'edit']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit']);
+      }
     }
   }
 }

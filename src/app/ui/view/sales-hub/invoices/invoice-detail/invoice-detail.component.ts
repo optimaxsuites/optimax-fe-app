@@ -113,7 +113,12 @@ export class InvoiceDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      this.router.navigate(['/sales/invoices']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
     }
   }
 
@@ -121,7 +126,12 @@ export class InvoiceDetailComponent implements OnInit {
     if (this.edit.observed) {
       this.edit.emit(this.invoice!.id);
     } else {
-      this.router.navigate(['/sales/invoices', this.invoice!.id, 'edit']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/invoices', this.invoice!.id, 'edit', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/invoices', this.invoice!.id, 'edit']);
+      }
     }
   }
 }
