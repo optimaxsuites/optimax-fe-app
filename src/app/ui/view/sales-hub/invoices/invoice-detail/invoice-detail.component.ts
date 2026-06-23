@@ -6,11 +6,12 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Invoice } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })

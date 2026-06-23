@@ -4,11 +4,12 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-quote-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
