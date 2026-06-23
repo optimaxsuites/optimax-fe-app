@@ -90,7 +90,7 @@ import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.compon
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
-import { ProductServiceCatalogComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog.component';
+import { ProductServiceCatalogListComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-list/product-service-catalog-list.component';
 import { DeliveryManagementComponent } from './ui/view/sales-hub/delivery-management/delivery-management.component';
 import { PaymentProcessingComponent } from './ui/view/sales-hub/payment-processing/payment-processing.component';
 import { SalesOrdersListComponent } from './ui/view/sales-hub/sales-order/sales-orders-list/sales-orders-list.component';
@@ -102,7 +102,6 @@ import { DocumentsComponent } from './ui/view/vendor-portal/documents/documents.
 import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
 import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/invoice-list.component';
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
-// CustomModalComponent is a standalone component; no AppModule import needed
 import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
@@ -125,7 +124,6 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     DeliveryManagementComponent,
     PaymentProcessingComponent,
     SalesHubComponent,
-    ProductServiceCatalogComponent,
     PerformanceComponent,
     DocumentsComponent,
     SourcingComponent,
@@ -207,6 +205,9 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     InvoiceDetailComponent,
     CustomerFormComponent,
     SalesOrdersListComponent,
+    ProductServiceCatalogListComponent,
+    ProductRequestDetailComponent,
+
 
   ],
   exports: [TableComponent],
