@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesOrder } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-sales-orders-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
   templateUrl: './sales-orders-detail.component.html',
   styleUrl: './sales-orders-detail.component.scss'
 })

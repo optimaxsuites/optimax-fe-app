@@ -3,12 +3,10 @@
     <!-- Header -->
     <div class="detail-header">
       <div class="header-left">
-        <button (click)="goBack()" class="back-link" style="background: none; border: none; cursor: pointer; padding: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem; display: inline-block; vertical-align: middle;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          Back to Quotes
-        </button>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+          <app-back-button (click)="goBack()"></app-back-button>
+          <span class="back-link" (click)="goBack()" style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Quotes</span>
+        </div>
         <div class="title-section">
           <h1 class="detail-title">Quote Details</h1>
           <div class="meta-info">
@@ -178,5 +176,8 @@
 
 <div *ngIf="!isLoading && !quote" class="error-state" style="text-align: center; padding: 4rem 2rem;">
   <p style="color: #64748b; font-size: 1.125rem; margin-bottom: 1.5rem;">Quote not found</p>
-  <button (click)="goBack()" class="btn-cancel" style="background: #2E6276; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Back to Quotes</button>
+  <div style="display: flex; justify-content: center; gap: 0.75rem; align-items: center; margin-top: 1.5rem;">
+    <app-back-button (click)="goBack()"></app-back-button>
+    <span class="back-link" (click)="goBack()" style="cursor: pointer; font-weight: 500;">Back to Quotes</span>
+  </div>
 </div>
