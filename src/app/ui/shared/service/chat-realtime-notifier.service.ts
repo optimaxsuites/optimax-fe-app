@@ -185,6 +185,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     this.refreshChannelsCooldownUntil = 0;
     this.refreshChannelsFailureCount = 0;
     const previousTargets = new Map(this.channelTargets);
+    const isFirstLoad = previousTargets.size === 0;
     const nextTargets = new Map<number, GlobalChatChannelTarget>();
     let unreadChannels = 0;
     let unreadDirectMessages = 0;
@@ -223,6 +224,23 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     });
     this.persistUnreadSnapshot(nextTargets);
     this.publishFallbackUnreadNotifications(previousTargets, nextTargets);
+
+    // On first load: if there are pending unreads, push a notification so the
+    // bell dropdown isn't empty while showing a badge count.
+    const totalUnread = unreadChannels + unreadDirectMessages;
+    if (isFirstLoad && totalUnread > 0) {
+      const routeUuid = this.resolveCollaborationRouteUuid();
+      this.ngZone.run(() => {
+        this.headerStateService.pushNotification({
+          title: 'Unread messages',
+          body: `You have ${totalUnread} unread message${totalUnread !== 1 ? 's' : ''} waiting.`,
+          category: 'chat',
+          route: `/admin/dashboard/communications/${routeUuid}`,
+          contextLabel: 'Channels & Direct messages',
+          workspaceMode: 'chat',
+        });
+      });
+    }
 
     this.channelSubs.forEach((sub, backendId) => {
       if (nextTargets.has(backendId)) {
@@ -846,8 +864,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     const senderUserId = Number(
       latestMessage?.senderUserId || incoming.senderUserId || 0,
     );
+    const rawContent = latestMessage?.content ?? incoming.content ?? '';
+    const humanContent = this.humanizeMessageContent(String(rawContent));
     const detail = this.notificationText(
-      latestMessage?.content ?? incoming.content,
+      humanContent,
       target.type === 'dm'
         ? 'New direct message'
         : `New message in ${target.label}`,
@@ -1005,6 +1025,17 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         .trim();
     }
     return trimmed;
+  }
+
+  private humanizeMessageContent(content: string): string {
+    if (!content || !content.startsWith('{')) return content;
+    try {
+      const p = JSON.parse(content);
+      if (typeof p?.title === 'string' && typeof p?.module === 'string') {
+        return `[Issue] ${p.title}${p.priority ? ' · ' + p.priority : ''}`;
+      }
+    } catch { /* not JSON */ }
+    return content;
   }
 
   private notificationText(value: unknown, fallback: string): string {

@@ -397,7 +397,7 @@ export class BugTrackerComponent implements OnInit {
       next: ({ channels, users }) => {
         this.channels = (channels || [])
           .filter((c: any) => c.status !== 'ARCHIVED' && c.channelType !== 'PRIVATE')
-          .map((c: any) => ({ id: c.id, name: c.name || c.channelCode || 'Channel', selected: false }))
+          .map((c: any) => ({ id: c.id ?? c.channelId ?? 0, name: c.name || c.channelCode || 'Channel', selected: false }))
           .sort((a: ChannelItem, b: ChannelItem) => a.name.localeCompare(b.name));
 
         this.dmUsers = (users || [])
@@ -457,7 +457,7 @@ export class BugTrackerComponent implements OnInit {
               this.api.postIssueCardMessage(c.id, senderUserId, issue))
           : selectedUsers.map(u =>
               this.api.getOrCreateDmChannel(senderUserId, u.userId!)
-                .pipe(switchMap(channel => this.api.postIssueCardMessage(channel.id, senderUserId, issue)))
+                .pipe(switchMap(channel => this.api.postIssueCardMessage(channel.id ?? channel.channelId, senderUserId, issue)))
             );
 
         forkJoin(msgCalls.length ? msgCalls : [this.api.getShares(id)]).subscribe({

@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Message } from '../communication.component';
 
@@ -55,7 +56,7 @@ export class MessageFeedComponent {
   documentViewerUrl: SafeResourceUrl = '';
   documentViewerType: 'pdf' | 'office' | 'file' = 'file';
 
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer, private router: Router) {}
   structuredViewerOpen = false;
   structuredViewerTitle = '';
   structuredViewerHtml = '';
@@ -453,7 +454,19 @@ export class MessageFeedComponent {
   }
 
   isIssueCard(msg: Message): boolean {
-    return msg.messageType === 'ISSUE_CARD';
+    if (msg.messageType === 'ISSUE_CARD') return true;
+    // Fallback: detect by content shape when messageType is absent or TEXT
+    if (msg.messageType && msg.messageType !== 'TEXT') return false;
+    try {
+      const p = JSON.parse(msg.content || '');
+      return (
+        typeof p?.id === 'number' &&
+        typeof p?.title === 'string' &&
+        typeof p?.module === 'string' &&
+        typeof p?.priority === 'string' &&
+        typeof p?.status === 'string'
+      );
+    } catch { return false; }
   }
 
   parseIssueCard(msg: Message): { id: number; title: string; module: string; priority: string; status: string; description: string; reporterName: string } | null {
@@ -479,6 +492,11 @@ export class MessageFeedComponent {
     if (s === 'BLOCKED') return 'issue-status-blocked';
     if (s === 'DONE') return 'issue-status-done';
     return 'issue-status-default';
+  }
+
+  navigateToIssue(issueId: number): void {
+    const uuid = crypto.randomUUID();
+    this.router.navigate(['/admin/settings/bug-tracker', uuid], { queryParams: { issue: issueId } });
   }
 
   isStructuredMessage(msg: Message): boolean {
