@@ -39,11 +39,11 @@ export class NavigationLinksService {
 
 
 		// commerce resources ==============================================================================================================
-		this.links["SHLink"] = "/admin/sales/sales-hub" + uuidV4();
+		this.links["SHLink"] = "/admin/sales/sales-hub/" + uuidV4();
 		// this.links["PMLink"] = "/admin/commerce/procurement-management/" + uuidV4();
-		this.links["PMLink"] = "/commerce/requests" + uuidV4();
+		this.links["PMLink"] = "/admin/sales/commerce/requests/home/" + uuidV4();
 		// this.links["VPLink"] = "/admin/commerce/vendor-portal/" + uuidV4();
-		this.links["VPLink"] = "vendor-portal" + uuidV4();
+		this.links["VPLink"] = "/admin/sales/vendor-portal/" + uuidV4();
 		// this.links["RALink"] = "/admin/sales/reports/" + uuidV4();
 		
 		//  resources ================================================================================================================
