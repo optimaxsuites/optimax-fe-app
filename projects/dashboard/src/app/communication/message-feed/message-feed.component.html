@@ -199,7 +199,7 @@
                 <div class="issue-card-meta">
                   <span class="issue-card-badge" [ngClass]="issueCardPriorityClass(issue.priority)">{{ issue.priority }}</span>
                   <span class="issue-card-badge" [ngClass]="issueCardStatusClass(issue.status)">{{ issue.status | titlecase }}</span>
-                  <span *ngIf="issue.reporterName" class="issue-card-reporter">by {{ issue.reporterName }}</span>
+                  <span *ngIf="issue.reporterName && issue.reporterName !== 'undefined'" class="issue-card-reporter">by {{ issue.reporterName }}</span>
                   <button class="issue-card-view-link"
                           (click)="navigateToIssue(issue.id); $event.stopPropagation()">
                     View Issue →
