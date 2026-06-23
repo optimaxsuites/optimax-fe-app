@@ -35,7 +35,7 @@ const routes: Routes = [
 
   // --- Sales Hub ---
   {
-    path: 'sales-hub',
+    path: 'admin/sales/sales-hub',
     component: SalesHubComponent
   },
   {

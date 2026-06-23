@@ -1,5 +1,3 @@
-// src/app/ui/view/sales-hub/quotations/quote-detail/quote-detail.component.ts
-
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';

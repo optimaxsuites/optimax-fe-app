@@ -398,7 +398,7 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.cancelled.observed) {
       this.cancelled.emit();
     } else {
-      this.router.navigate(['/sales-hub']);
+      this.router.navigate(['/admin/sales/sales-hub"']);
     }
   }
 
