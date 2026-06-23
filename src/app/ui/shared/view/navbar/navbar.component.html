@@ -1,20 +1,20 @@
-<!-- damilola worked on this: redesigned enterprise header with profile image, bell tray, and unread badges. -->
 <header class="app-header">
   <div class="app-header__left">
     <button type="button" class="menu-toggle" (click)="onToggleSidebar()">
-      <i class="pi pi-bars"></i> 
+      <i class="pi pi-bars"></i>
     </button>
-
     <div class="brand-block">
       <p class="brand-kicker">Enterprise workspace</p>
       <h1>OptimaX</h1>
     </div>
-  </div> 
+  </div>
+
   <div class="app-header__right">
     <div class="header-bell-wrap">
       <button
         type="button"
         class="header-icon"
+        [class.header-icon--active]="unreadBellCount > 0"
         (click)="openNotifications(); notificationsPanel.toggle($event)"
       >
         <i class="fas fa-bell"></i>
@@ -23,79 +23,87 @@
         </span>
       </button>
 
-      <p-overlayPanel #notificationsPanel styleClass="header-overlay-panel">
-        <div class="notification-panel">
-          <div class="notification-panel__header">
-            <div>
-              <p>Notifications</p>
-              <span>Messages, channels, routines, and module updates</span>
-            </div>
-            <div class="notification-panel__actions" *ngIf="notifications.length">
-              <button type="button" class="notification-header-action" *ngIf="unreadNotificationItems.length"
-                (click)="openUnreadNotificationsDialog(); notificationsPanel.hide()">
-                Unread
-              </button>
-              <button type="button" class="notification-header-action notification-header-action--danger"
-                (click)="clearAllNotifications(); notificationsPanel.hide()">
-                Clear all
-              </button>
-            </div>
-          </div>
+      <p-overlayPanel #notificationsPanel styleClass="notif-overlay">
+        <div class="np">
 
-          <div *ngIf="!notifications.length" class="notification-empty">
-            No notifications yet.
-          </div>
-
-          <button
-            type="button"
-            *ngFor="let item of latestNotifications"
-            class="notification-item"
-            [class.notification-item--unread]="!item.read"
-            (click)="openNotification(item); notificationsPanel.hide()"
-          >
-            <div class="notification-item__avatar">
-              <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
-              <span *ngIf="!item.avatarUrl">{{ (item.title || 'U').charAt(0) }}</span>
-            </div>
-            <div class="notification-item__body">
-              <div class="notification-item__meta">
-                <div class="notification-item__title">
-                  <span *ngIf="!item.read" class="notification-unread-dot"></span>
-                  <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
-                </div>
-                <span>{{ item.createdAt | date: 'shortTime' }}</span>
+          <!-- Header bar -->
+          <div class="np__bar">
+            <div class="np__bar-left">
+              <i class="fas fa-bell np__bar-icon"></i>
+              <div class="np__bar-text">
+                <span class="np__bar-title">Notifications</span>
+                <span class="np__bar-sub" *ngIf="notifications.length">
+                  {{ unreadNotificationItems.length ? unreadNotificationItems.length + ' unread' : 'All read' }}
+                </span>
               </div>
-              <p>{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
-              <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
             </div>
-          </button>
+            <div class="np__bar-actions" *ngIf="notifications.length">
+              <button type="button" class="np__act np__act--icon" title="View unread"
+                *ngIf="unreadNotificationItems.length"
+                (click)="openUnreadNotificationsDialog(); notificationsPanel.hide()">
+                <i class="pi pi-filter"></i>
+              </button>
+              <button type="button" class="np__act np__act--icon np__act--red" title="Clear all"
+                (click)="clearAllNotifications(); notificationsPanel.hide()">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
 
+          <!-- Empty -->
+          <div *ngIf="!notifications.length" class="np__empty">
+            <span class="np__empty-icon"><i class="fas fa-check-circle"></i></span>
+            <strong>All caught up!</strong>
+            <span>New messages will appear here.</span>
+          </div>
+
+          <!-- Items -->
+          <div class="np__list" *ngIf="notifications.length">
+            <button
+              type="button"
+              *ngFor="let item of latestNotifications"
+              class="np__item"
+              [class.np__item--unread]="!item.read"
+              (click)="openNotification(item); notificationsPanel.hide()"
+            >
+              <div class="np__avatar" [class.np__avatar--chat]="item.category === 'chat'" [class.np__avatar--feed]="item.category === 'feed'">
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+                <span *ngIf="!item.avatarUrl">{{ (item.title || 'N').charAt(0).toUpperCase() }}</span>
+              </div>
+              <div class="np__content">
+                <div class="np__top">
+                  <span class="np__name">{{ displayNotificationText(item.title, 'New update') }}</span>
+                  <span class="np__time">{{ item.createdAt | date: 'shortTime' }}</span>
+                </div>
+                <p class="np__msg">{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
+                <span class="np__tag" *ngIf="item.contextLabel">
+                  <i class="pi pi-hashtag"></i> {{ displayNotificationText(item.contextLabel, '') }}
+                </span>
+              </div>
+              <span *ngIf="!item.read" class="np__dot"></span>
+            </button>
+          </div>
+
+          <!-- Footer -->
           <button
             *ngIf="notifications.length > 5"
             type="button"
-            class="notification-view-all"
+            class="np__footer"
             (click)="viewAllNotifications(); notificationsPanel.hide()"
           >
-            View all updates
+            <span>View all notifications</span>
+            <i class="pi pi-angle-right"></i>
           </button>
+
         </div>
       </p-overlayPanel>
     </div>
 
-    <button
-      type="button"
-      class="profile-trigger"
-      (click)="profilePanel.toggle($event)"
-    >
+    <!-- Profile -->
+    <button type="button" class="profile-trigger" (click)="profilePanel.toggle($event)">
       <div class="profile-avatar">
-        <img
-          *ngIf="headerProfile.imageUrl; else initialsAvatar"
-          [src]="headerProfile.imageUrl"
-          [alt]="headerProfile.name"
-        />
-        <ng-template #initialsAvatar>
-          <span>{{ headerProfile.initials }}</span>
-        </ng-template>
+        <img *ngIf="headerProfile.imageUrl; else initialsAvatar" [src]="headerProfile.imageUrl" [alt]="headerProfile.name" />
+        <ng-template #initialsAvatar><span>{{ headerProfile.initials }}</span></ng-template>
       </div>
       <div class="profile-copy">
         <strong>{{ headerProfile.username || headerProfile.name }}</strong>
@@ -108,14 +116,8 @@
       <div class="profile-panel">
         <div class="profile-panel__identity">
           <div class="profile-avatar profile-avatar--large">
-            <img
-              *ngIf="headerProfile.imageUrl; else panelInitialsAvatar"
-              [src]="headerProfile.imageUrl"
-              [alt]="headerProfile.name"
-            />
-            <ng-template #panelInitialsAvatar>
-              <span>{{ headerProfile.initials }}</span>
-            </ng-template>
+            <img *ngIf="headerProfile.imageUrl; else panelInitialsAvatar" [src]="headerProfile.imageUrl" [alt]="headerProfile.name" />
+            <ng-template #panelInitialsAvatar><span>{{ headerProfile.initials }}</span></ng-template>
           </div>
           <div>
             <h3>{{ headerProfile.name }}</h3>
@@ -125,18 +127,17 @@
         </div>
         <p-divider></p-divider>
         <button type="button" class="panel-action" routerLink="/settings">
-          <i class="pi pi-cog"></i>
-          <span>Settings</span>
+          <i class="pi pi-cog"></i><span>Settings</span>
         </button>
         <button type="button" class="panel-action panel-action--danger" (click)="logout()">
-          <i class="pi pi-sign-out"></i>
-          <span>Sign out</span>
+          <i class="pi pi-sign-out"></i><span>Sign out</span>
         </button>
       </div>
     </p-overlayPanel>
   </div>
 </header>
 
+<!-- Unread dialog -->
 <p-dialog
   header="Unread Notifications"
   [(visible)]="showUnreadNotificationsDialog"
@@ -148,37 +149,38 @@
 >
   <div class="unread-dialog-shell">
     <div class="unread-dialog-actions" *ngIf="notifications.length">
-      <button type="button" class="notification-header-action notification-header-action--danger"
-        (click)="clearAllNotifications()">
-        Clear all
+      <button type="button" class="np__act np__act--text np__act--red" (click)="clearAllNotifications()">
+        <i class="pi pi-trash"></i> Clear all
       </button>
     </div>
 
-    <div *ngIf="!unreadNotificationItems.length" class="notification-empty">
-      No unread notifications.
+    <div *ngIf="!unreadNotificationItems.length" class="np__empty">
+      <span class="np__empty-icon"><i class="fas fa-check-circle"></i></span>
+      <strong>No unread notifications</strong>
+      <span>You've read everything.</span>
     </div>
 
     <button
       type="button"
       *ngFor="let item of unreadNotificationItems"
-      class="notification-item notification-item--unread notification-item--dialog"
+      class="np__item np__item--unread np__item--dialog"
       (click)="openNotification(item); closeUnreadNotificationsDialog()"
     >
-      <div class="notification-item__avatar">
+      <div class="np__avatar np__avatar--chat">
         <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
-        <span *ngIf="!item.avatarUrl">{{ (item.title || 'U').charAt(0) }}</span>
+        <span *ngIf="!item.avatarUrl">{{ (item.title || 'N').charAt(0).toUpperCase() }}</span>
       </div>
-      <div class="notification-item__body">
-        <div class="notification-item__meta">
-          <div class="notification-item__title">
-            <span class="notification-unread-dot"></span>
-            <strong>{{ displayNotificationText(item.title, 'New update') }}</strong>
-          </div>
-          <span>{{ item.createdAt | date: 'short' }}</span>
+      <div class="np__content">
+        <div class="np__top">
+          <span class="np__name">{{ displayNotificationText(item.title, 'New update') }}</span>
+          <span class="np__time">{{ item.createdAt | date: 'short' }}</span>
         </div>
-        <p>{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
-        <time *ngIf="item.contextLabel">{{ displayNotificationText(item.contextLabel, '') }}</time>
+        <p class="np__msg">{{ displayNotificationText(item.body, 'A new update is available.') }}</p>
+        <span class="np__tag" *ngIf="item.contextLabel">
+          <i class="pi pi-hashtag"></i> {{ displayNotificationText(item.contextLabel, '') }}
+        </span>
       </div>
-    </button>  
+      <span class="np__dot"></span>
+    </button>
   </div>
 </p-dialog>

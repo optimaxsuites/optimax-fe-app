@@ -126,7 +126,7 @@ export class IssueTrackerApiService {
       priority: issue.priority,
       status: issue.status,
       description: cleanDesc.substring(0, 500),
-      reporterName: issue.reporterName || '',
+      reporterName: (issue.reporterName && issue.reporterName !== 'undefined') ? issue.reporterName : '',
     });
     // Send as TEXT so the backend's messageType enum validation always passes.
     // The message-feed component detects issue cards by JSON content shape.

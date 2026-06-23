@@ -9082,7 +9082,15 @@ export class CommunicationComponent
     },
   ): Message {
     const replies = this.flattenThreadReplies(message);
-    const latestReply = replies[replies.length - 1];
+    // Find the reply with the highest sentAt timestamp (depth-first order is not
+    // guaranteed to be chronological when branches exist).
+    const latestReply = replies.length
+      ? replies.reduce((best, r) => {
+          const bt = parseServerDate(best.sentAtRaw)?.getTime() ?? 0;
+          const rt = parseServerDate(r.sentAtRaw)?.getTime() ?? 0;
+          return rt > bt ? r : best;
+        })
+      : null;
     const summary = replies
       .slice(0, 2)
       .map((reply) => `${reply.author}: ${reply.content}`)
