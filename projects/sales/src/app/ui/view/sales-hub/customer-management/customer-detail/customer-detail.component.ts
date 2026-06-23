@@ -7,11 +7,12 @@ import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, BackButtonComponent],
   templateUrl: './customer-detail.component.html',
   styleUrls: ['./customer-detail.component.scss']
 })
@@ -97,15 +98,24 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   editCustomer(): void {
-    this.router.navigate(['/sales/customers', this.customerId, 'edit']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/customers', this.customerId, 'edit', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/customers', this.customerId, 'edit']);
+    }
   }
 
   createQuote(): void {
-    this.router.navigate(['/sales/quotes/new'], { queryParams: { customerId: this.customerId } });
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
 
   createInvoice(): void {
-    this.router.navigate(['/sales/invoices/new'], { queryParams: { customerId: this.customerId } });
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
 
   deleteCustomer(): void {
@@ -115,15 +125,30 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   confirmDelete(): void {
     // Call service to delete customer
     alert(`Customer ${this.customer?.name} has been deleted`);
-    this.router.navigate(['/sales/customers']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
   }
 
   viewOrder(orderId: string): void {
-    this.router.navigate(['/sales/orders', orderId]);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/orders', orderId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/orders', orderId]);
+    }
   }
 
   goBack(): void {
-    this.router.navigate(['/sales/customers']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
   }
 
   getStatusBadgeClass(status: string): string {
@@ -210,6 +235,11 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   viewOrderHistory(): void {
-    this.router.navigate(['/sales/orders']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
   }
 }

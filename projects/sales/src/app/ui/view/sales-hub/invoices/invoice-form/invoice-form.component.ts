@@ -1,6 +1,6 @@
 // src/app/ui/view/sales-module/invoice-form/invoice-form.component.ts
 
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -15,12 +15,13 @@ import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '.
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
-export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
+export class InvoiceFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() fromQuoteId?: string;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
   
+
   invoiceForm: FormGroup;
   isSubmitting = false;
   isLoading = false;
@@ -59,7 +60,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // Make router available to template
   router: Router;
-  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
+
   
   private destroy$ = new Subject<void>();
 
@@ -88,19 +89,10 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  ngAfterViewInit(): void {
-    try {
-      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
-        this.dialogRef.nativeElement.showModal();
-      } else if (this.dialogRef?.nativeElement) {
-        this.dialogRef.nativeElement.setAttribute('open', '');
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
+
 
   ngOnInit(): void {
+
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
@@ -119,7 +111,7 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.closeDialog();
+
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -288,10 +280,26 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.salesService.getCustomers({ page: 0, size: 100 }).subscribe({
       next: (response: any) => {
         this.customers = response.data;
+        const customerId = this.route.snapshot.queryParamMap.get('customerId');
+        if (customerId) {
+          this.invoiceForm.patchValue({ customerId: customerId });
+          const customer = this.customers.find(c => c.id === customerId);
+          if (customer) {
+            this.invoiceForm.patchValue({ customerName: customer.name });
+          }
+        }
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
         this.setMockCustomers();
+        const customerId = this.route.snapshot.queryParamMap.get('customerId');
+        if (customerId) {
+          this.invoiceForm.patchValue({ customerId: customerId });
+          const customer = this.customers.find(c => c.id === customerId);
+          if (customer) {
+            this.invoiceForm.patchValue({ customerName: customer.name });
+          }
+        }
       }
     });
   }
@@ -460,11 +468,11 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response: Invoice) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
-        this.closeDialog();
-        if (this.saved.observed) {
-          this.saved.emit();
+        const uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid) {
+          this.router.navigate(['/admin/sales/invoices', response.id, uuid]);
         } else {
-          this.router.navigate(['/sales/invoices', response.id]);
+          this.router.navigate(['/admin/sales/invoices', response.id]);
         }
       },
       error: (error: any) => {
@@ -476,25 +484,11 @@ export class InvoiceFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancel(): void {
-    this.closeDialog();
-    if (this.cancelled.observed) {
-      this.cancelled.emit();
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
-    }
-  }
-
-  private closeDialog(): void {
-    try {
-      if (this.dialogRef?.nativeElement) {
-        if (typeof this.dialogRef.nativeElement.close === 'function') {
-          this.dialogRef.nativeElement.close();
-        } else {
-          this.dialogRef.nativeElement.removeAttribute('open');
-        }
-      }
-    } catch (e) {
-      // ignore
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

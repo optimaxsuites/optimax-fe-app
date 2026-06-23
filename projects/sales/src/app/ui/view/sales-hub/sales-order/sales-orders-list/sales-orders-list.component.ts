@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -106,7 +106,8 @@ export class SalesOrdersListComponent implements OnInit, OnDestroy {
 
   constructor(
     private salesService: SalesService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -280,8 +281,12 @@ export class SalesOrdersListComponent implements OnInit, OnDestroy {
   }
 
   openOrderDetail(orderId: string): void {
-    this.selectedOrderId = orderId;
-    this.showOrderDetail = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/orders', orderId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/orders', orderId]);
+    }
   }
 
   closeOrderDetail(): void {

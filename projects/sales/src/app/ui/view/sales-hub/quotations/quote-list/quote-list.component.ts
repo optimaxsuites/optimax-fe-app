@@ -2,7 +2,7 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -40,18 +40,30 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   selectedQuoteId?: string;
 
   openNewQuoteModal(): void {
-    this.selectedQuoteId = undefined;
-    this.showQuoteModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/quotes/new', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/quotes/new']);
+    }
   }
 
   openEditQuoteModal(quoteId: string): void {
-    this.selectedQuoteId = quoteId;
-    this.showQuoteModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/quotes', quoteId, 'edit', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/quotes', quoteId, 'edit']);
+    }
   }
 
   openQuoteDetail(quoteId: string): void {
-    this.selectedQuoteId = quoteId;
-    this.showQuoteDetail = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/quotes', quoteId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/quotes', quoteId]);
+    }
   }
 
   closeQuoteModal(): void {
@@ -72,8 +84,9 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   showInvoiceModal = false;
 
   openInvoiceModal(quoteId: string): void {
-    this.selectedQuoteId = quoteId;
-    this.showInvoiceModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
+    this.router.navigate(path, { queryParams: { quoteId: quoteId } });
   }
 
   closeInvoiceModal(): void {
@@ -125,7 +138,11 @@ export class QuoteListComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private salesService: SalesService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadQuotes();

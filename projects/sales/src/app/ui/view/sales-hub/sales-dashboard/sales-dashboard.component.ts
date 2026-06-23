@@ -1,5 +1,3 @@
-// src/app/ui/view/sales-hub/sales-dashboard/sales-dashboard.component.ts
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';

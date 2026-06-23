@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -13,10 +13,11 @@ import { Customer } from '../../../../domain/sales/sales.dto';
   templateUrl: './customer-form.component.html',
   styleUrls: ['./customer-form.component.scss']
 })
-export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
+export class CustomerFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
+ 
 
   customerForm: FormGroup;
   isSubmitting = false;
@@ -29,7 +30,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Make router available to template
   router: Router;
-  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
+
 
   private destroy$ = new Subject<void>();
 
@@ -51,19 +52,10 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  ngAfterViewInit(): void {
-    try {
-      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
-        this.dialogRef.nativeElement.showModal();
-      } else if (this.dialogRef?.nativeElement) {
-        this.dialogRef.nativeElement.setAttribute('open', '');
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
+
 
   ngOnInit(): void {
+
     this.customerId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.customerId;
 
@@ -73,7 +65,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.closeDialog();
+
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -140,11 +132,11 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response: Customer) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!');
-        this.closeDialog();
-        if (this.saved.observed) {
-          this.saved.emit();
+        const uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid) {
+          this.router.navigate(['/admin/sales/customers', response.id, uuid]);
         } else {
-          this.router.navigate(['/sales/customers', response.id]);
+          this.router.navigate(['/admin/sales/customers', response.id]);
         }
       },
       error: (error: any) => {
@@ -156,25 +148,11 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancel(): void {
-    this.closeDialog();
-    if (this.cancelled.observed) {
-      this.cancelled.emit();
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales/customers']);
-    }
-  }
-
-  private closeDialog(): void {
-    try {
-      if (this.dialogRef?.nativeElement) {
-        if (typeof this.dialogRef.nativeElement.close === 'function') {
-          this.dialogRef.nativeElement.close();
-        } else {
-          this.dialogRef.nativeElement.removeAttribute('open');
-        }
-      }
-    } catch (e) {
-      // ignore
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

@@ -1,6 +1,4 @@
-// src/app/ui/view/sales-module/quote-form/quote-form.component.ts
-
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
@@ -15,8 +13,7 @@ import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../do
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
-export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('dialog') dialogRef?: ElementRef<HTMLDialogElement>;
+export class QuoteFormComponent implements OnInit, OnDestroy {
   @Input() editId?: string;
   @Input() customerId?: string;
   @Output() saved = new EventEmitter<void>();
@@ -82,6 +79,10 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
     
+    if (!this.customerId) {
+      this.customerId = this.route.snapshot.queryParamMap.get('customerId') || '';
+    }
+    
     this.loadCustomers();
     this.loadProducts();
     this.setupFormListeners();
@@ -93,20 +94,7 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  ngAfterViewInit(): void {
-    try {
-      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
-        this.dialogRef.nativeElement.showModal();
-      } else if (this.dialogRef?.nativeElement) {
-        this.dialogRef.nativeElement.setAttribute('open', '');
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
   ngOnDestroy(): void {
-    this.closeDialog();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -378,11 +366,11 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response: Quote) => {
         this.isSubmitting = false;
         alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
-        this.closeDialog();
-        if (this.saved.observed) {
-          this.saved.emit();
+        const uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid) {
+          this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
         } else {
-          this.router.navigate(['/sales/quotes', response.id]);
+          this.router.navigate(['/admin/sales/quotes', response.id]);
         }
       },
       error: (error: any) => {
@@ -394,25 +382,11 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancel(): void {
-    this.closeDialog();
-    if (this.cancelled.observed) {
-      this.cancelled.emit();
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
-      this.router.navigate(['/sales-hub']);
-    }
-  }
-
-  private closeDialog(): void {
-    try {
-      if (this.dialogRef?.nativeElement) {
-        if (typeof this.dialogRef.nativeElement.close === 'function') {
-          this.dialogRef.nativeElement.close();
-        } else {
-          this.dialogRef.nativeElement.removeAttribute('open');
-        }
-      }
-    } catch (e) {
-      // ignore
+      this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
 

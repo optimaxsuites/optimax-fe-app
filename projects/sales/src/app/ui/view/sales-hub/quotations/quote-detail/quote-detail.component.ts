@@ -1,16 +1,15 @@
-// src/app/ui/view/sales-hub/quotations/quote-detail/quote-detail.component.ts
-
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Quote } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-quote-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
   templateUrl: './quote-detail.component.html',
   styleUrls: ['./quote-detail.component.scss']
 })
@@ -153,7 +152,12 @@ export class QuoteDetailComponent implements OnInit {
     if (this.closed.observed) {
       this.closed.emit();
     } else {
-      this.router.navigate(['/sales/quotes']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
     }
   }
 
@@ -161,7 +165,12 @@ export class QuoteDetailComponent implements OnInit {
     if (this.edit.observed) {
       this.edit.emit(this.quote!.id);
     } else {
-      this.router.navigate(['/sales/quotes', this.quote!.id, 'edit']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit']);
+      }
     }
   }
 }

@@ -1,16 +1,12 @@
-<!-- src/app/ui/view/sales-hub/sales-order/sales-orders-detail/sales-orders-detail.component.html -->
-
 <div class="quote-detail-container" *ngIf="!isLoading && order">
   <div class="detail-wrapper">
     <!-- Header -->
     <div class="detail-header">
       <div class="header-left">
-        <button (click)="onClose()" class="back-link" style="background: none; border: none; cursor: pointer; padding: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1rem; height: 1rem; display: inline-block; vertical-align: middle;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          Back to Orders
-        </button>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+          <app-back-button (click)="onClose()"></app-back-button>
+          <span class="back-link" (click)="onClose()" style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Orders</span>
+        </div>
         <div class="title-section">
           <h1 class="detail-title">Order Details</h1>
           <div class="meta-info">
@@ -180,5 +176,8 @@
 
 <div *ngIf="!isLoading && !order" class="error-state" style="text-align: center; padding: 4rem 2rem;">
   <p style="color: #64748b; font-size: 1.125rem; margin-bottom: 1.5rem;">Order not found</p>
-  <button (click)="onClose()" class="btn-cancel" style="background: #2E6276; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Back to Orders</button>
+  <div style="display: flex; justify-content: center; gap: 0.75rem; align-items: center; margin-top: 1.5rem;">
+    <app-back-button (click)="onClose()"></app-back-button>
+    <span class="back-link" (click)="onClose()" style="cursor: pointer; font-weight: 500;">Back to Orders</span>
+  </div>
 </div>

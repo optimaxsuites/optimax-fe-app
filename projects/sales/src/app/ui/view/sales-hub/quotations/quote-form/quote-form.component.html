@@ -1,35 +1,26 @@
-<!-- src/app/ui/view/sales-module/quote-form/quote-form.component.html -->
-
-<dialog #dialog class="custom-dialog">
-  <div class="quote-form-container">
-    <div class="form-wrapper">
-      
-      <!-- Header -->
-      <div class="form-header">
-        <div class="header-left">
-          <div class="header-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-          </div>
-          <div class="header-text">
-            <h1>{{ isEditMode ? 'Edit Quotation' : 'Create New Quotation' }}</h1>
-            <p>Create a professional quote for your customer</p>
-          </div>
+<div class="quote-form-container">
+  <div class="form-wrapper">
+    
+    <!-- Header -->
+    <div class="form-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
         </div>
-        <div class="header-right">
-          <button type="button" class="dialog-close-btn" aria-label="Close quotation" (click)="cancel()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-          <div class="quote-number" *ngIf="isEditMode">
-            <span>Quote #</span>
-            <strong>{{ quoteId }}</strong>
-          </div>
+        <div class="header-text">
+          <h1>{{ isEditMode ? 'Edit Quotation' : 'Create New Quotation' }}</h1>
+          <p>Create a professional quote for your customer</p>
         </div>
       </div>
+      <div class="header-right">
+        <div class="quote-number" *ngIf="isEditMode">
+          <span>Quote #</span>
+          <strong>{{ quoteId }}</strong>
+        </div>
+      </div>
+    </div>
 
       <!-- Loading State -->
       <div *ngIf="isLoading" class="loading-state">
@@ -404,9 +395,8 @@
           </div>
         </div>
       </form>
-    </div>
   </div>
-</dialog>
+</div>
 
 <!-- New Customer Modal -->
 <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="showNewCustomerModal = false">

@@ -1,28 +1,12 @@
 // src/app/ui/view/sales-module/quote-form/quote-form.component.scss
 
-/* ============ DIALOG ============ */
-.custom-dialog {
-  width: min(98vw, 1200px);
-  max-height: 92vh;
-  border: none;
-  border-radius: 1.5rem;
-  overflow: hidden;
-  background: transparent;
-  padding: 0;
-}
-
-.custom-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(6px);
-}
-
 /* ============ CONTAINER ============ */
 .quote-form-container {
   background: #f8fafc;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  max-height: 92vh;
+  min-height: 100vh;
 }
 
 .form-wrapper {
@@ -33,8 +17,6 @@
   border-radius: 1.25rem;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
   width: 100%;
-  max-height: calc(92vh - 2.5rem);
-  overflow-y: auto;
 }
 
 /* ============ HEADER ============ */

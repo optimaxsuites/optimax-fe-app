@@ -19,9 +19,12 @@ import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/
 import { InvoiceFormComponent } from './ui/view/sales-hub/invoices/invoice-form/invoice-form.component';
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.component';
+import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
+import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management/customer-detail/customer-detail.component';
+import { SalesOrdersDetailComponent } from './ui/view/sales-hub/sales-order/sales-orders-detail/sales-orders-detail.component';
 
 
-const routes: Routes = [
+export const routes: Routes = [
   // {
   //   path: "",
   //   redirectTo: 'commerce/requests',
@@ -29,7 +32,7 @@ const routes: Routes = [
   // },
   {
     path: '',
-    redirectTo: '/sales-hub',
+    redirectTo: '/admin/sales/sales-hub/:uuid',
     pathMatch: 'full'
   },
 
@@ -44,106 +47,92 @@ const routes: Routes = [
   },
 
   // --- Quotes ---
-  // {
-  //   path: 'sales/quotes',
-  //   component: QuoteListComponent
-  // },
-  // {
-  //   path: 'sales/quotes/new',
-  //   component: QuoteFormComponent
-  // },
-  // {
-  //   path: 'sales/quotes/:id',
-  //   component: QuoteDetailComponent
-  // },
-  // {
-  //   path: 'sales/quotes/:id/edit',
-  //   component: QuoteFormComponent
-  // },
-  // Admin routes
-  // {
-  //   path: 'admin/sales/sales/quotes',
-  //   component: QuoteListComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/:uuid',
-  //   component: QuoteListComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/new',
-  //   component: QuoteFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/new/:uuid',
-  //   component: QuoteFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/:id',
-  //   component: QuoteDetailComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/:id/:uuid',
-  //   component: QuoteDetailComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/:id/edit',
-  //   component: QuoteFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/quotes/:id/edit/:uuid',
-  //   component: QuoteFormComponent
-  // },
+  {
+    path: 'quotes/new',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'quotes/new/:uuid',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'quotes/:id/:uuid',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'quotes/:id/edit',
+    component: QuoteFormComponent
+  },
+  {
+    path: 'quotes/:id/edit/:uuid',
+    component: QuoteFormComponent
+  },
 
   // --- Invoices ---
-  // {
-  //   path: 'sales/invoices',
-  //   component: InvoiceListComponent
-  // },
-  // {
-  //   path: 'sales/invoices/new',
-  //   component: InvoiceFormComponent
-  // },
-  // {
-  //   path: 'sales/invoices/:id',
-  //   component: InvoiceDetailComponent
-  // },
-  // {
-  //   path: 'sales/invoices/:id/edit',
-  //   component: InvoiceFormComponent
-  // },
-  // Admin routes
-  // {
-  //   path: 'admin/sales/sales/invoices',
-  //   component: InvoiceListComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/:uuid',
-  //   component: InvoiceListComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/new',
-  //   component: InvoiceFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/new/:uuid',
-  //   component: InvoiceFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/:id',
-  //   component: InvoiceDetailComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/:id/:uuid',
-  //   component: InvoiceDetailComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/:id/edit',
-  //   component: InvoiceFormComponent
-  // },
-  // {
-  //   path: 'admin/sales/sales/invoices/:id/edit/:uuid',
-  //   component: InvoiceFormComponent
-  // },
+  {
+    path: 'invoices/new',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'invoices/new/:uuid',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'invoices/:id',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'invoices/:id/:uuid',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'invoices/:id/edit',
+    component: InvoiceFormComponent
+  },
+  {
+    path: 'invoices/:id/edit/:uuid',
+    component: InvoiceFormComponent
+  },
+
+  // --- Customers ---
+  {
+    path: 'customers/new',
+    component: CustomerFormComponent
+  },
+  {
+    path: 'customers/new/:uuid',
+    component: CustomerFormComponent
+  },
+  {
+    path: 'customers/:id',
+    component: CustomerDetailComponent
+  },
+  {
+    path: 'customers/:id/:uuid',
+    component: CustomerDetailComponent
+  },
+  {
+    path: 'customers/:id/edit',
+    component: CustomerFormComponent
+  },
+  {
+    path: 'customers/:id/edit/:uuid',
+    component: CustomerFormComponent
+  },
+
+  // --- Sales Orders ---
+  {
+    path: 'orders/:id',
+    component: SalesOrdersDetailComponent
+  },
+  {
+    path: 'orders/:id/:uuid',
+    component: SalesOrdersDetailComponent
+  },
 
   // --- Other routes ---
   {

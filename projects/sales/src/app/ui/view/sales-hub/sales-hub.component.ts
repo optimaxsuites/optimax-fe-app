@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { SalesDashboardComponent } from './sales-dashboard/sales-dashboard.component';
-import { ProductServiceCatalogComponent } from './product-service-catalog/product-service-catalog.component';
+import { ProductServiceCatalogListComponent } from './product-service-catalog/product-service-catalog-list/product-service-catalog-list.component';
 import { SalesOrdersListComponent } from './sales-order/sales-orders-list/sales-orders-list.component';
 import { PaymentProcessingComponent } from './payment-processing/payment-processing.component';
 import { CustomerListComponent } from './customer-management/customer-list/customer-list.component';
@@ -25,7 +25,7 @@ export class SalesHubComponent {
     },
     {
       name: 'Manage Catalog',
-      component: ProductServiceCatalogComponent,
+      component: ProductServiceCatalogListComponent,
       icon: 'fa-sharp fa-solid fa-layer-group',
     },
     {

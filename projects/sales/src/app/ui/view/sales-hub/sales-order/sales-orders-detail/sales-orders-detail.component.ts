@@ -1,23 +1,36 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesOrder } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-sales-orders-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackButtonComponent],
   templateUrl: './sales-orders-detail.component.html',
   styleUrl: './sales-orders-detail.component.scss'
 })
-export class SalesOrdersDetailComponent implements OnChanges {
+export class SalesOrdersDetailComponent implements OnChanges, OnInit {
   @Input() detailId?: string;
   @Output() closed = new EventEmitter<void>();
 
   order: SalesOrder | null = null;
   isLoading = false;
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private salesService: SalesService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    const id = this.detailId || this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadOrderDetail(id);
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['detailId'] && this.detailId) {
@@ -122,6 +135,15 @@ export class SalesOrdersDetailComponent implements OnChanges {
   }
 
   onClose(): void {
-    this.closed.emit();
+    if (this.closed.observed) {
+      this.closed.emit();
+    } else {
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
+    }
   }
 }
