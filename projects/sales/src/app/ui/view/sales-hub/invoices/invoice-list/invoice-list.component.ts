@@ -2,7 +2,7 @@
 
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -40,18 +40,30 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   selectedInvoiceId?: string;
 
   openNewInvoiceModal(): void {
-    this.selectedInvoiceId = undefined;
-    this.showInvoiceModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/invoices/new', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/invoices/new']);
+    }
   }
 
   openEditInvoiceModal(invoiceId: string): void {
-    this.selectedInvoiceId = invoiceId;
-    this.showInvoiceModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/invoices', invoiceId, 'edit', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/invoices', invoiceId, 'edit']);
+    }
   }
 
   openInvoiceDetail(invoiceId: string): void {
-    this.selectedInvoiceId = invoiceId;
-    this.showInvoiceDetail = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/invoices', invoiceId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/invoices', invoiceId]);
+    }
   }
 
   closeInvoiceModal(): void {
@@ -108,7 +120,11 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
   
   private destroy$ = new Subject<void>();
 
-  constructor(private salesService: SalesService) {}
+  constructor(
+    private salesService: SalesService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadInvoices();

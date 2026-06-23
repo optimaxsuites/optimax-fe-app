@@ -22,6 +22,7 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
   
+  isModal = false;
   quoteForm: FormGroup;
   isSubmitting = false;
   isLoading = false;
@@ -79,8 +80,13 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.isModal = this.saved.observed || this.cancelled.observed;
     this.quoteId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.quoteId;
+    
+    if (!this.customerId) {
+      this.customerId = this.route.snapshot.queryParamMap.get('customerId') || '';
+    }
     
     this.loadCustomers();
     this.loadProducts();
@@ -94,14 +100,20 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    try {
-      if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
-        this.dialogRef.nativeElement.showModal();
-      } else if (this.dialogRef?.nativeElement) {
+    if (this.isModal) {
+      try {
+        if (this.dialogRef?.nativeElement && typeof this.dialogRef.nativeElement.showModal === 'function') {
+          this.dialogRef.nativeElement.showModal();
+        } else if (this.dialogRef?.nativeElement) {
+          this.dialogRef.nativeElement.setAttribute('open', '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      if (this.dialogRef?.nativeElement) {
         this.dialogRef.nativeElement.setAttribute('open', '');
       }
-    } catch (e) {
-      // ignore
     }
   }
 
@@ -382,7 +394,12 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.saved.observed) {
           this.saved.emit();
         } else {
-          this.router.navigate(['/sales/quotes', response.id]);
+          const uuid = this.route.snapshot.paramMap.get('uuid');
+          if (uuid) {
+            this.router.navigate(['/admin/sales/quotes', response.id, uuid]);
+          } else {
+            this.router.navigate(['/admin/sales/quotes', response.id]);
+          }
         }
       },
       error: (error: any) => {
@@ -398,7 +415,12 @@ export class QuoteFormComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.cancelled.observed) {
       this.cancelled.emit();
     } else {
-      this.router.navigate(['/admin/sales/sales-hub"']);
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/sales-hub', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/sales-hub']);
+      }
     }
   }
 

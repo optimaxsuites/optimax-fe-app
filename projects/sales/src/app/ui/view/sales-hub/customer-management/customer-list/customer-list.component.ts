@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
 
@@ -42,8 +42,20 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   selectedCustomerDetail?: Customer;
 
   openCustomerModal(customer?: Customer): void {
-    this.selectedCustomerForEdit = customer;
-    this.showCustomerModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (customer) {
+      if (uuid) {
+        this.router.navigate(['/admin/sales/customers', customer.id, 'edit', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/customers', customer.id, 'edit']);
+      }
+    } else {
+      if (uuid) {
+        this.router.navigate(['/admin/sales/customers/new', uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/customers/new']);
+      }
+    }
   }
 
   closeCustomerModal(): void {
@@ -52,8 +64,12 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   openCustomerDetails(customer: Customer): void {
-    this.selectedCustomerDetail = customer;
-    this.showCustomerDetails = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/customers', customer.id, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/customers', customer.id]);
+    }
   }
 
   closeCustomerDetails(): void {
@@ -110,7 +126,8 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   constructor(
     private salesService: SalesService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -270,8 +287,9 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   // ✅ FIXED: Removed UUID and buildLink
   createQuote(customer: Customer): void {
-    this.selectedCustomerId = customer.id;
-    this.showQuoteModal = true;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    this.router.navigate(path, { queryParams: { customerId: customer.id } });
   }
 
   // Mock data for development

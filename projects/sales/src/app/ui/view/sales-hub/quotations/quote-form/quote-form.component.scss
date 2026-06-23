@@ -844,3 +844,33 @@
 .form-wrapper::-webkit-scrollbar-track { background: transparent; }
 .form-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 .form-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ============ ROUTED PAGE MODE ============ */
+.custom-dialog.is-routed {
+  position: relative !important;
+  inset: auto !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  display: block !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  
+  .quote-form-container {
+    max-height: none !important;
+    padding: 2rem 1rem !important;
+  }
+  
+  .form-wrapper {
+    max-height: none !important;
+    overflow-y: visible !important;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+  }
+  
+  .dialog-close-btn {
+    display: none !important;
+  }
+}
