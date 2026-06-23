@@ -35,15 +35,11 @@ const routes: Routes = [
 
   // --- Sales Hub ---
   {
-    path: 'sales-hub',
-    component: SalesHubComponent
-  },
-  {
     path: 'admin/sales/sales-hub',
     component: SalesHubComponent
   },
   {
-    path: 'admin/sales/sales-hub/:uuid',
+    path: 'sales-hub/:uuid',
     component: SalesHubComponent
   },
 
@@ -152,6 +148,10 @@ const routes: Routes = [
   // --- Other routes ---
   {
     path: 'commerce/requests',
+    component: RequestManagementComponent
+  },
+  {
+    path: 'commerce/requests/home/:uuid',
     component: RequestManagementComponent
   },
   {
