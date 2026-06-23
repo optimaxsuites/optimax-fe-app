@@ -129,8 +129,8 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     SourcingComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     SharedOverlayModule,

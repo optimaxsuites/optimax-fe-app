@@ -1,28 +1,12 @@
 // src/app/ui/view/sales-module/customer-form/customer-form.component.scss
 
-/* ============ DIALOG ============ */
-.custom-dialog {
-  width: min(98vw, 900px);
-  max-height: 92vh;
-  border: none;
-  border-radius: 1.5rem;
-  overflow: hidden;
-  background: transparent;
-  padding: 0;
-}
-
-.custom-dialog::backdrop {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(6px);
-}
-
 /* ============ CONTAINER ============ */
 .customer-form-container {
   background: #f8fafc;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  max-height: 92vh;
+  min-height: 100vh;
 }
 
 .form-wrapper {
@@ -33,8 +17,6 @@
   border-radius: 1.25rem;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
   width: 100%;
-  max-height: calc(92vh - 2.5rem);
-  overflow-y: auto;
 }
 
 /* ============ HEADER ============ */
@@ -76,30 +58,6 @@
   margin: 0;
   font-size: 0.8rem;
   color: #64748b;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.dialog-close-btn {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: #f1f5f9;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: #fee2e2;
-    svg { color: #dc2626; }
-  }
 }
 
 /* ============ LOADING ============ */
@@ -345,33 +303,3 @@ select.form-control {
 .form-wrapper::-webkit-scrollbar-track { background: transparent; }
 .form-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 .form-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* ============ ROUTED PAGE MODE ============ */
-.custom-dialog.is-routed {
-  position: relative !important;
-  inset: auto !important;
-  margin: 0 auto !important;
-  width: 100% !important;
-  max-width: 1200px !important;
-  max-height: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  display: block !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-  
-  .customer-form-container {
-    max-height: none !important;
-    padding: 2rem 1rem !important;
-  }
-  
-  .form-wrapper {
-    max-height: none !important;
-    overflow-y: visible !important;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
-  }
-  
-  .dialog-close-btn {
-    display: none !important;
-  }
-}
