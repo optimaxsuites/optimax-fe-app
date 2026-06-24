@@ -1,4 +1,3 @@
-// Modern Design System - Full Page Form (Matching Quote List)
 $primary-dark: #0f1a2e;
 $primary-mid: #1a2d4a;
 $primary-light: #2a4a6a;
@@ -25,7 +24,8 @@ $radius-xl: 24px;
 /* ============ CONTAINER - Full Page ============ */
 .quote-form-container {
   min-height: 100vh;
-  font-size: 1.1rem; /* Prevent squinting by slightly zooming layout */
+  font-size: 1.1rem;
+  /* Prevent squinting by slightly zooming layout */
   background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
   padding: 0;
   display: flex;
@@ -47,13 +47,15 @@ $radius-xl: 24px;
 .form-header {
   display: flex;
   justify-content: space-between;
-  align-items: center; /* Aligns vertically with back button */
-  
+  align-items: center;
+  /* Aligns vertically with back button */
+
   .header-back-title-group {
     display: flex;
     align-items: center;
     gap: 1.25rem;
   }
+
   padding: 1.25rem 2rem;
   margin-bottom: 1.25rem;
   background: white;
@@ -64,7 +66,7 @@ $radius-xl: 24px;
   gap: 1.5rem;
   position: relative;
   overflow: hidden;
-  
+
   // Subtle accent line at top
   &::before {
     content: '';
@@ -76,12 +78,12 @@ $radius-xl: 24px;
     background: linear-gradient(90deg, $primary-mid, $primary-light, $primary-mid);
     opacity: 0.6;
   }
-  
+
   .header-content {
     flex: 1;
     min-width: 240px;
   }
-  
+
   .header-badge {
     display: inline-flex;
     align-items: center;
@@ -95,12 +97,12 @@ $radius-xl: 24px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
-    
+
     i {
       font-size: 0.7rem;
     }
   }
-  
+
   .header-title {
     font-size: 1.6rem;
     font-weight: 700;
@@ -108,14 +110,14 @@ $radius-xl: 24px;
     margin: 0 0 0.25rem 0;
     letter-spacing: -0.02em;
   }
-  
+
   .header-subtitle {
     font-size: 0.85rem;
     color: $text-muted;
     margin: 0;
     font-weight: 400;
   }
-  
+
   .header-actions {
     display: flex;
     align-items: center;
@@ -123,7 +125,7 @@ $radius-xl: 24px;
     flex-wrap: wrap;
     padding-top: 0.25rem;
   }
-  
+
   .quote-number {
     display: flex;
     align-items: center;
@@ -132,7 +134,7 @@ $radius-xl: 24px;
     background: rgba(26, 45, 74, 0.04);
     border-radius: $radius-sm;
     border: 1px solid $border-light;
-    
+
     .quote-label {
       font-size: 0.65rem;
       color: $text-muted;
@@ -140,7 +142,7 @@ $radius-xl: 24px;
       letter-spacing: 0.05em;
       font-weight: 600;
     }
-    
+
     strong {
       font-size: 0.95rem;
       color: $primary-mid;
@@ -195,11 +197,11 @@ $radius-xl: 24px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
-  
+
   i {
     font-size: 0.85rem;
   }
-  
+
   &:hover {
     background: rgba(220, 38, 38, 0.04);
     border-color: #dc2626;
@@ -224,17 +226,17 @@ $radius-xl: 24px;
   box-shadow: 0 2px 8px rgba(26, 45, 74, 0.15);
   min-width: 100px;
   justify-content: center;
-  
+
   i {
     font-size: 0.85rem;
   }
-  
+
   &:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(26, 45, 74, 0.25);
     background: linear-gradient(145deg, $primary-light 0%, $primary-dark 100%);
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -259,7 +261,7 @@ $radius-xl: 24px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  
+
   .spinner-glow {
     width: 2.75rem;
     height: 2.75rem;
@@ -269,7 +271,7 @@ $radius-xl: 24px;
     animation: spin-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     box-shadow: 0 0 30px rgba(26, 45, 74, 0.1);
   }
-  
+
   p {
     margin-top: 1rem;
     color: $text-secondary;
@@ -279,9 +281,17 @@ $radius-xl: 24px;
 }
 
 @keyframes spin-glow {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(180deg) scale(1.05); }
-  100% { transform: rotate(360deg) scale(1); }
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.05);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 /* ============ FORM GRID ============ */
@@ -380,12 +390,12 @@ $radius-xl: 24px;
     flex: 1;
     display: flex;
     flex-direction: column;
-    
+
     .card-body {
       flex: 1;
       display: flex;
       flex-direction: column;
-      
+
       .items-table-wrapper {
         flex: 1;
       }
@@ -406,7 +416,7 @@ $radius-xl: 24px;
   overflow: hidden;
   transition: all 0.3s ease;
   border: 1px solid #cbd5e1;
-  
+
   &:hover {
     border-color: #94a3b8;
     box-shadow: 0 6px 16px rgba(15, 26, 46, 0.08);
@@ -430,7 +440,7 @@ $radius-xl: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   i {
     font-size: 0.95rem;
     color: $primary-mid;
@@ -462,7 +472,7 @@ $radius-xl: 24px;
   font-weight: 600;
   color: $text-secondary;
   margin-bottom: 0.5rem;
-  
+
   &.required::after {
     content: '*';
     color: #dc2626;
@@ -474,20 +484,27 @@ $radius-xl: 24px;
 .form-row {
   display: flex;
   gap: 1rem;
-  
+
   @media (max-width: 640px) {
     flex-direction: column;
     gap: 0.75rem;
   }
 }
 
-.flex-1 { flex: 1; }
-.flex-2 { flex: 2; }
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
 
 .form-group {
   margin-bottom: 1rem;
-  
-  &:last-child { margin-bottom: 0; }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .form-label {
@@ -496,7 +513,7 @@ $radius-xl: 24px;
   font-weight: 600;
   margin-bottom: 0.35rem;
   color: $text-secondary;
-  
+
   &.required::after {
     content: '*';
     color: #dc2626;
@@ -513,21 +530,21 @@ $radius-xl: 24px;
   transition: all 0.3s ease;
   background: white;
   color: $text-primary;
-  
+
   &:focus {
     outline: none;
     border-color: $primary-mid;
     box-shadow: 0 0 0 4px rgba(26, 45, 74, 0.08);
   }
-  
+
   &.is-invalid {
     border-color: #dc2626;
-    
+
     &:focus {
       box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
     }
   }
-  
+
   &[readonly] {
     background: #f8fafc;
     cursor: not-allowed;
@@ -543,7 +560,7 @@ $radius-xl: 24px;
   background: white;
   color: $text-primary;
   transition: all 0.3s ease;
-  
+
   &:focus {
     outline: none;
     border-color: $primary-mid;
@@ -564,7 +581,7 @@ $radius-xl: 24px;
   transition: all 0.3s ease;
   background: white;
   color: $text-primary;
-  
+
   &:focus {
     outline: none;
     border-color: $primary-mid;
@@ -606,13 +623,13 @@ $radius-xl: 24px;
 
 .billed-info {
   flex: 1;
-  
+
   strong {
     display: block;
     font-size: 0.95rem;
     color: $text-primary;
   }
-  
+
   span {
     font-size: 0.85rem;
     color: $text-muted;
@@ -632,11 +649,11 @@ $radius-xl: 24px;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
   transition: all 0.2s ease;
-  
+
   i {
     font-size: 0.7rem;
   }
-  
+
   &:hover {
     background: rgba(26, 45, 74, 0.08);
   }
@@ -662,11 +679,11 @@ $radius-xl: 24px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.25s ease;
-  
+
   i {
     font-size: 0.8rem;
   }
-  
+
   &:hover {
     background: $primary-light;
     transform: translateY(-1px);
@@ -687,16 +704,16 @@ $radius-xl: 24px;
   cursor: pointer;
   padding: 0.25rem 0;
   transition: all 0.2s ease;
-  
+
   i {
     font-size: 0.85rem;
     color: $primary-mid;
   }
-  
+
   &:hover {
     color: $primary-light;
     text-decoration: underline;
-    
+
     i {
       color: $primary-light;
     }
@@ -716,14 +733,15 @@ $radius-xl: 24px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
-  
-  th, td {
+
+  th,
+  td {
     padding: 0.4rem 0.5rem;
     text-align: left;
     vertical-align: middle;
     border-bottom: 1px solid $border-light;
   }
-  
+
   th {
     background: rgba(248, 250, 252, 0.8);
     font-weight: 700;
@@ -733,11 +751,11 @@ $radius-xl: 24px;
     font-size: 0.7rem;
     letter-spacing: 0.05em;
   }
-  
+
   .item-row:last-child td {
     border-bottom: none;
   }
-  
+
   .item-row:hover td {
     background: rgba(248, 250, 252, 0.5);
   }
@@ -748,7 +766,7 @@ $radius-xl: 24px;
   gap: 0.25rem;
   align-items: center;
   flex-wrap: wrap;
-  
+
   .form-control-sm {
     min-width: 100px;
   }
@@ -772,11 +790,11 @@ $radius-xl: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   i {
     font-size: 0.8rem;
   }
-  
+
   &:hover {
     background: rgba(26, 45, 74, 0.08);
     color: $primary-mid;
@@ -792,7 +810,7 @@ $radius-xl: 24px;
   font-size: 0.9rem;
 }
 
-.item-total { 
+.item-total {
   color: #2EB270;
   font-weight: 700;
 }
@@ -815,11 +833,11 @@ $radius-xl: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   i {
     font-size: 0.85rem;
   }
-  
+
   &:hover {
     background: rgba(220, 38, 38, 0.08);
     color: #dc2626;
@@ -846,11 +864,11 @@ $radius-xl: 24px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;
-  
+
   i {
     font-size: 0.8rem;
   }
-  
+
   &:hover {
     background: #47e797;
     transform: translateY(-1px);
@@ -861,7 +879,7 @@ $radius-xl: 24px;
 /* ============ SUMMARY ============ */
 .summary-card {
   background: rgba(248, 250, 252, 0.6);
-  
+
   .card-header {
     background: rgba(255, 255, 255, 0.4);
   }
@@ -871,7 +889,7 @@ $radius-xl: 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.25rem 1.5rem;
-  
+
   @media (max-width: 480px) {
     grid-template-columns: 1fr;
   }
@@ -884,11 +902,11 @@ $radius-xl: 24px;
   font-size: 0.9rem;
   color: $text-secondary;
   border-bottom: 1px solid $border-light;
-  
+
   &:last-child {
     border-bottom: none;
   }
-  
+
   &.total {
     font-weight: 700;
     font-size: 1.1rem;
@@ -902,8 +920,8 @@ $radius-xl: 24px;
 
 .summary-value {
   font-weight: 600;
-  
-  &.discount { 
+
+  &.discount {
     color: #dc2626;
   }
 }
@@ -955,7 +973,7 @@ $radius-xl: 24px;
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  
+
   i {
     font-size: 0.7rem;
   }
@@ -1049,6 +1067,7 @@ $radius-xl: 24px;
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1144,7 +1163,7 @@ $radius-xl: 24px;
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem 1.5rem;
   margin-top: 0.5rem;
-  
+
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
@@ -1159,7 +1178,7 @@ $radius-xl: 24px;
   font-size: 0.85rem;
   color: $text-primary;
   padding: 0.25rem 0;
-  
+
   input[type="checkbox"] {
     display: none;
   }
@@ -1174,7 +1193,7 @@ $radius-xl: 24px;
   flex-shrink: 0;
   transition: all 0.2s ease;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -1189,10 +1208,10 @@ $radius-xl: 24px;
   }
 }
 
-.checkbox-label input:checked + .checkbox-custom {
+.checkbox-label input:checked+.checkbox-custom {
   border-color: $primary-mid;
   background: rgba(26, 45, 74, 0.05);
-  
+
   &::after {
     transform: translate(-50%, -50%) scale(1);
   }
@@ -1219,8 +1238,13 @@ $radius-xl: 24px;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-container {
@@ -1232,16 +1256,19 @@ $radius-xl: 24px;
   overflow: hidden;
   box-shadow: $shadow-xl;
   animation: slideUp 0.3s ease;
-  
-  &.modal-lg { width: 640px; }
+
+  &.modal-lg {
+    width: 640px;
+  }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px) scale(0.95);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
@@ -1253,7 +1280,7 @@ $radius-xl: 24px;
   align-items: center;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid $border-light;
-  
+
   h3 {
     margin: 0;
     font-size: 1.1rem;
@@ -1262,7 +1289,7 @@ $radius-xl: 24px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    
+
     i {
       color: $primary-mid;
       font-size: 1rem;
@@ -1283,7 +1310,7 @@ $radius-xl: 24px;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(220, 38, 38, 0.08);
     color: #dc2626;
@@ -1299,7 +1326,7 @@ $radius-xl: 24px;
 .search-box {
   position: relative;
   margin-bottom: 1.25rem;
-  
+
   i {
     position: absolute;
     left: 0.9rem;
@@ -1308,7 +1335,7 @@ $radius-xl: 24px;
     color: $text-muted;
     font-size: 1rem;
   }
-  
+
   input {
     width: 100%;
     padding: 0.65rem 0.9rem 0.65rem 2.5rem;
@@ -1318,7 +1345,7 @@ $radius-xl: 24px;
     color: $text-primary;
     background: white;
     transition: all 0.3s ease;
-    
+
     &:focus {
       outline: none;
       border-color: $primary-mid;
@@ -1342,7 +1369,7 @@ $radius-xl: 24px;
   border-radius: $radius-sm;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     border-color: $primary-mid;
     background: rgba(26, 45, 74, 0.04);
@@ -1350,79 +1377,111 @@ $radius-xl: 24px;
   }
 }
 
-.product-name { 
-  font-weight: 600; 
+.product-name {
+  font-weight: 600;
   color: $text-primary;
   font-size: 0.9rem;
 }
-.product-sku { 
-  font-size: 0.8rem; 
-  color: $text-muted; 
+
+.product-sku {
+  font-size: 0.8rem;
+  color: $text-muted;
 }
-.product-price { 
-  font-weight: 700; 
+
+.product-price {
+  font-weight: 700;
   color: #2EB270;
   font-size: 0.9rem;
 }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
-  .form-wrapper { padding: 1rem; }
-  
+  .form-wrapper {
+    padding: 1rem;
+  }
+
   .form-header {
     padding: 1.25rem 1.5rem;
     flex-direction: column;
     align-items: stretch;
-    
+
     .header-actions {
       flex-direction: column;
       align-items: stretch;
-      
+
       .btn-cancel-header,
       .btn-save-header {
         justify-content: center;
       }
     }
   }
-  
+
   .header-title {
     font-size: 1.5rem;
   }
-  
-  .card-body { padding: 1rem; }
-  .form-grid { gap: 1rem; }
-  
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .form-grid {
+    gap: 1rem;
+  }
+
   .customer-select {
     flex-direction: column;
   }
-  
+
   .btn-add-customer {
     justify-content: center;
   }
-  
-  .checkbox-grid { grid-template-columns: 1fr; }
-  .summary-grid { grid-template-columns: 1fr; }
+
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
-  .form-wrapper { padding: 0.75rem; }
-  .form-header { padding: 1rem; }
-  
+  .form-wrapper {
+    padding: 0.75rem;
+  }
+
+  .form-header {
+    padding: 1rem;
+  }
+
   .data-table {
     font-size: 0.75rem;
-    
-    th, td {
+
+    th,
+    td {
       padding: 0.3rem 0.4rem;
     }
   }
-  
+
   .product-cell .form-control-sm {
     min-width: 70px;
   }
 }
 
 /* ============ SCROLLBAR ============ */
-.form-wrapper::-webkit-scrollbar { width: 6px; }
-.form-wrapper::-webkit-scrollbar-track { background: transparent; }
-.form-wrapper::-webkit-scrollbar-thumb { background: $border-color; border-radius: 999px; }
-.form-wrapper::-webkit-scrollbar-thumb:hover { background: $text-muted; }
+.form-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-wrapper::-webkit-scrollbar-thumb {
+  background: $border-color;
+  border-radius: 999px;
+}
+
+.form-wrapper::-webkit-scrollbar-thumb:hover {
+  background: $text-muted;
+}

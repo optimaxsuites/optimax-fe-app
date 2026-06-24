@@ -1,5 +1,3 @@
-// src/app/ui/view/sales-module/invoice-form/invoice-form.component.ts
-
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, AbstractControl } from '@angular/forms';
@@ -7,11 +5,12 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
@@ -20,7 +19,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   @Input() fromQuoteId?: string;
   @Output() saved = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
-  
+
 
   invoiceForm: FormGroup;
   isSubmitting = false;
@@ -31,37 +30,48 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   showTerms = false;
   showNotes = false;
   showAdvanced = false;
-  
+  showSignature = false;
+  showAttachments = false;
+  showAdditionalInfo = false;
+  showContactDetails = false;
+
+  // Additional Option data bindings
+  signatureText = '';
+  additionalInfoText = '';
+  contactPhone = '';
+  contactEmail = '';
+  attachmentFileName = '';
+
   // Data
   customers: Customer[] = [];
   products: Product[] = [];
   filteredProducts: Product[] = [];
-  
+
   // UI State
   showNewCustomerModal = false;
   showProductModal = false;
   searchProductTerm = '';
   currentItemIndex = 0;
-  
+
   // Currency
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
-  
+
   // Tax settings
   taxRate = 0;
   discountType: 'PERCENTAGE' | 'FIXED' = 'PERCENTAGE';
   discountValue = 0;
-  
+
   // Calculated totals - THESE ARE THE PROPERTIES
   subtotal: number = 0;
   totalTax: number = 0;      // ← THIS WAS MISSING
   taxAmount: number = 0;
   discountAmount: number = 0;
   grandTotal: number = 0;
-  
+
   // Make router available to template
   router: Router;
 
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -96,11 +106,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.invoiceId = this.editId || this.route.snapshot.paramMap.get('id') || '';
     this.quoteId = this.fromQuoteId || this.route.snapshot.queryParamMap.get('quoteId') || '';
     this.isEditMode = !!this.invoiceId;
-    
+
     this.loadCustomers();
     this.loadProducts();
     this.setupFormListeners();
-    
+
     if (this.isEditMode) {
       this.loadInvoice();
     } else if (this.quoteId) {
@@ -121,20 +131,20 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.invoiceForm.get('issueDate')?.valueChanges.subscribe(() => {
       this.updateDueDate();
     });
-    
+
     this.invoiceForm.get('paymentTerms')?.valueChanges.subscribe(() => {
       this.updateDueDate();
     });
-    
+
     // Calculate totals when items change
     this.invoiceForm.get('taxRate')?.valueChanges.subscribe(() => {
       this.calculateTotals();
     });
-    
+
     this.invoiceForm.get('discountValue')?.valueChanges.subscribe(() => {
       this.calculateTotals();
     });
-    
+
     this.invoiceForm.get('discountType')?.valueChanges.subscribe(() => {
       this.calculateTotals();
     });
@@ -143,7 +153,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   private updateDueDate(): void {
     const issueDate = this.invoiceForm.get('issueDate')?.value;
     const paymentTerms = this.invoiceForm.get('paymentTerms')?.value;
-    
+
     if (issueDate && paymentTerms) {
       const days = parseInt(paymentTerms.split(' ')[1]) || 30;
       const dueDate = new Date(issueDate);
@@ -168,9 +178,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       total: [{ value: 0, disabled: true }],
       taxAmount: [{ value: 0, disabled: true }]
     });
-    
+
     this.items.push(itemForm);
-    
+
     // Subscribe to changes for this item
     itemForm.get('quantity')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
     itemForm.get('unitPrice')?.valueChanges.subscribe(() => this.calculateItemTotal(itemForm));
@@ -186,10 +196,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const quantity = itemForm.get('quantity')?.value || 0;
     const unitPrice = itemForm.get('unitPrice')?.value || 0;
     const taxRate = itemForm.get('taxRate')?.value || 0;
-    
+
     const total = quantity * unitPrice;
     const taxAmount = total * (taxRate / 100);
-    
+
     itemForm.patchValue({ total: total, taxAmount: taxAmount }, { emitEvent: false });
     this.calculateTotals();
   }
@@ -198,31 +208,31 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   calculateTotals(): void {
     this.subtotal = 0;
     this.totalTax = 0;
-    
+
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i);
       const total = item.get('total')?.value || 0;
       const taxAmount = item.get('taxAmount')?.value || 0;
-      
+
       this.subtotal += total;
       this.totalTax += taxAmount;
     }
-    
+
     // Calculate discount
     const discountType = this.invoiceForm.get('discountType')?.value;
     const discountValue = this.invoiceForm.get('discountValue')?.value || 0;
-    
+
     if (discountType === 'PERCENTAGE') {
       this.discountAmount = this.subtotal * (discountValue / 100);
     } else {
       this.discountAmount = discountValue;
     }
-    
+
     // Calculate tax on after discount
     const taxRate = this.invoiceForm.get('taxRate')?.value || 0;
     const afterDiscount = this.subtotal - this.discountAmount;
     this.taxAmount = afterDiscount * (taxRate / 100);
-    
+
     this.grandTotal = afterDiscount + this.taxAmount;
   }
 
@@ -244,8 +254,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   filterProducts(): void {
     if (this.searchProductTerm) {
       const term = this.searchProductTerm.toLowerCase();
-      this.filteredProducts = this.products.filter(p => 
-        p.name.toLowerCase().includes(term) || 
+      this.filteredProducts = this.products.filter(p =>
+        p.name.toLowerCase().includes(term) ||
         p.sku.toLowerCase().includes(term)
       );
     } else {
@@ -358,7 +368,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       terms: quote.terms,
       paymentTerms: quote.terms || 'Net 30'
     });
-    
+
     // Add items from quote
     quote.items.forEach((item: any) => {
       this.addLineItem();
@@ -386,12 +396,12 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       notes: invoice.notes,
       paymentTerms: invoice.paymentTerms
     });
-    
+
     // Clear existing items
     while (this.items.length) {
       this.items.removeAt(0);
     }
-    
+
     // Add items from invoice
     invoice.items.forEach(item => {
       this.addLineItem();
@@ -409,6 +419,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  onFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.attachmentFileName = file.name;
+    }
+  }
+
   // Submit
   onSubmit(): void {
     if (this.invoiceForm.invalid) {
@@ -423,10 +440,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
 
     this.isSubmitting = true;
-    
+
     const formValue = this.invoiceForm.getRawValue();
     const items: InvoiceItem[] = [];
-    
+
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i).getRawValue();
       items.push({
@@ -438,7 +455,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         total: item.total
       });
     }
-    
+
     const invoiceData: Partial<Invoice> = {
       customerId: formValue.customerId,
       customerName: formValue.customerName,
@@ -456,14 +473,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       balanceDue: this.grandTotal,
       status: 'DRAFT' as InvoiceStatus
     };
-    
+
     let request;
     if (this.isEditMode) {
       request = this.salesService.updateInvoice(this.invoiceId, invoiceData);
     } else {
       request = this.salesService.createInvoice(invoiceData);
     }
-    
+
     request.subscribe({
       next: (response: Invoice) => {
         this.isSubmitting = false;
@@ -536,10 +553,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   getTotalInWords(amount: number): string {
     if (amount === 0) return 'Zero Naira Only';
-    
+
     const naira = Math.floor(amount);
     const kobo = Math.round((amount - naira) * 100);
-    
+
     let result = '';
     if (naira > 0) {
       result += this.numberToWords(naira) + ' Naira';
@@ -555,7 +572,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
       'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    
+
     if (num < 20) return ones[num];
     if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
     if (num < 1000) return ones[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' and ' + this.numberToWords(num % 100) : '');

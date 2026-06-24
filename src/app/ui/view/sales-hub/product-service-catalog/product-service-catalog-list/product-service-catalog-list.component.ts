@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -66,7 +66,8 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
 
   constructor(
     private salesService: SalesService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -206,12 +207,35 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     return 'In Stock';
   }
 
+  getStatusClass(status: string): string {
+    return status ? status.toLowerCase().replace(/_/g, '-') : '';
+  }
+
+  navigateToNewProduct(): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/products/new', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/products/new']);
+    }
+  }
+
   viewProduct(productId: string): void {
-    this.router.navigate(['/sales/products', productId]);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/products', productId, uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/products', productId]);
+    }
   }
 
   editProduct(productId: string): void {
-    this.router.navigate(['/sales/products', productId, 'edit']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/products', productId, 'edit', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/products', productId, 'edit']);
+    }
   }
 
   deleteProduct(product: Product): void {
