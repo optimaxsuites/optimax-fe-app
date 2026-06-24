@@ -219,6 +219,10 @@ export class SalesOrdersListComponent implements OnInit, OnDestroy {
     return classes[status] || 'status-pending';
   }
 
+  getStatusClass(status: OrderStatus): string {
+    return status.toLowerCase();
+  }
+
   getStatusLabel(status: OrderStatus): string {
     const labels: Record<OrderStatus, string> = {
       'PENDING': 'Pending',

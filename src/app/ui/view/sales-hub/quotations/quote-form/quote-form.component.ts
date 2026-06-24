@@ -5,11 +5,12 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-quote-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
@@ -40,6 +41,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   showTerms = false;
   showNotes = false;
   showAdvanced = false;
+  showSignature = false;
+  showAttachments = false;
+  showAdditionalInfo = false;
+  showContactDetails = false;
+
+  // Additional Option data bindings
+  signatureText = '';
+  additionalInfoText = '';
+  contactPhone = '';
+  contactEmail = '';
+  attachmentFileName = '';
   
   // Currency
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
@@ -304,6 +316,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       });
       this.calculateItemTotal(itemForm);
     });
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.attachmentFileName = file.name;
+    }
   }
 
   // Submit
