@@ -1609,19 +1609,23 @@ export class CommunicationComponent
   }
 
   shareFeedPost(post: CollabFeedPost, platform: 'facebook' | 'linkedin' | 'twitter' | 'instagram'): void {
-    const shareUrl = this.shareableFeedPostUrl(post);
-    const rawText = `${post.title || 'Enterprise update'} ${this.extractTextFromHtml(post.summary || post.body || '').slice(0, 120)}`.trim();
-    const shareText = encodeURIComponent(rawText);
+    const title = (post.title || 'Enterprise update').slice(0, 200);
+    const summary = this.extractTextFromHtml(post.summary || post.body || '').slice(0, 300).trim();
+    // Public OG share page on the backend — LinkedIn/Facebook crawl this URL for og:title, og:description, og:image
+    const sharePageUrl = `${this.collabService.apiBaseUrl}/share/post/${post.id}`;
+    const eu = encodeURIComponent;
     let targetUrl = '';
     if (platform === 'facebook') {
-      targetUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${shareText}`;
+      targetUrl = `https://www.facebook.com/sharer/sharer.php?u=${eu(sharePageUrl)}`;
     } else if (platform === 'linkedin') {
-      targetUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+      targetUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${eu(sharePageUrl)}`;
     } else if (platform === 'twitter') {
-      targetUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareText}`;
+      const tweet = `${title} — ${summary}`.slice(0, 240);
+      targetUrl = `https://twitter.com/intent/tweet?text=${eu(tweet)}&url=${eu(sharePageUrl)}`;
     } else {
+      // Instagram has no web share URL — copy text to clipboard
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(`${rawText}\n${shareUrl}`).catch(() => {});
+        navigator.clipboard.writeText(`${title}\n\n${summary}`).catch(() => {});
       }
       targetUrl = `https://www.instagram.com/`;
     }
@@ -2457,6 +2461,20 @@ export class CommunicationComponent
     this.viewedFeedPostIds.add(postId);
     this.persistViewedFeedPostIds();
     this.bumpFeedViewCount([postId]);
+    this.collabService.recordFeedPostView(postId).subscribe({
+      next: (updated) => {
+        if (updated?.viewCount != null) {
+          const vc = Number(updated.viewCount);
+          const patch = (p: CollabFeedPost) => Number(p.id) === postId ? { ...p, viewCount: vc } : p;
+          this.feedPosts = this.feedPosts.map(patch);
+          this.featuredFeedPosts = this.featuredFeedPosts.map(patch);
+          this.renderedRecentFeedPosts = this.renderedRecentFeedPosts.map(patch);
+          this.renderedFeaturedFeedPosts = this.renderedFeaturedFeedPosts.map(patch);
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {},
+    });
   }
 
   private bumpFeedViewCount(postIds: number[]): void {
