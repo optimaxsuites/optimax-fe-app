@@ -1186,6 +1186,13 @@ export class CollaborationService {
     );
   }
 
+  recordFeedPostView(id: number): Observable<CollabFeedPost> {
+    return this.http.get<CollabFeedPost>(
+      `${this.baseUrl}/x/api/v2/ai/collab/feed/post/${id}`,
+      { headers: this.headers },
+    );
+  }
+
   getFeedPosts(
     query = '',
     channelId?: number,

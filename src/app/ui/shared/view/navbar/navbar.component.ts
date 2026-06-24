@@ -109,10 +109,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   get unreadBellCount(): number {
-    return Math.max(
-      Number(this.unreadNotifications || 0),
-      Number(this.unreadMessages || 0),
-    );
+    return Number(this.unreadNotifications || 0);
   }
 
   viewAllNotifications(): void {
