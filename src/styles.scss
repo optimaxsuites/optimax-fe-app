@@ -370,3 +370,10 @@ body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
 // input[type="text"], textarea {
 //   text-transform: capitalize;
 // }
+
+// Notification overlay panel — remove default padding so the panel controls its own spacing
+.notif-overlay .p-overlaypanel-content {
+  padding: 0 !important;
+  border-radius: 0.9rem;
+  overflow: hidden;
+}

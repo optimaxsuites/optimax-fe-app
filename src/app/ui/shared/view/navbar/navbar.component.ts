@@ -71,11 +71,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   openNotifications(): void {
+    this.headerStateService.markAllNotificationsRead();
+    this.headerStateService.markAllMessagePreviewsRead();
+    this.headerStateService.updateUnreadCounts({ unreadChannels: 0, unreadDirectMessages: 0 });
   }
 
   clearAllNotifications(): void {
     this.headerStateService.clearAllNotifications();
     this.headerStateService.markAllMessagePreviewsRead();
+    this.headerStateService.updateUnreadCounts({ unreadChannels: 0, unreadDirectMessages: 0 });
     this.showUnreadNotificationsDialog = false;
   }
 

@@ -225,21 +225,34 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     this.persistUnreadSnapshot(nextTargets);
     this.publishFallbackUnreadNotifications(previousTargets, nextTargets);
 
-    // On first load: if there are pending unreads, push a notification so the
-    // bell dropdown isn't empty while showing a badge count.
-    const totalUnread = unreadChannels + unreadDirectMessages;
-    if (isFirstLoad && totalUnread > 0) {
+    // On first load: push real previews for each channel with unread messages
+    // so the bell dropdown shows actual content instead of a generic "waiting" message.
+    if (isFirstLoad) {
       const routeUuid = this.resolveCollaborationRouteUuid();
-      this.ngZone.run(() => {
-        this.headerStateService.pushNotification({
-          title: 'Unread messages',
-          body: `You have ${totalUnread} unread message${totalUnread !== 1 ? 's' : ''} waiting.`,
-          category: 'chat',
+      const unreadTargets = Array.from(nextTargets.values())
+        .filter(t => t.unreadCount > 0)
+        .slice(0, 5);
+      for (const target of unreadTargets) {
+        const notificationTarget = {
+          workspaceMode: 'chat' as const,
           route: `/admin/dashboard/communications/${routeUuid}`,
-          contextLabel: 'Channels & Direct messages',
-          workspaceMode: 'chat',
-        });
-      });
+          channelBackendId: target.type === 'channel' ? target.backendId : undefined,
+          dmUserId: target.type === 'dm' ? target.dmUserId : undefined,
+        };
+        this.loadVerifiedIncomingMessage(
+          target.backendId,
+          { senderName: '', content: '' },
+          0,
+          (latestMessage) =>
+            this.resolveIncomingDisplay(
+              target,
+              { senderName: '', content: '' },
+              latestMessage,
+              (resolved) =>
+                this.publishIncomingNotification(target, resolved, notificationTarget),
+            ),
+        );
+      }
     }
 
     this.channelSubs.forEach((sub, backendId) => {
@@ -555,11 +568,15 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (fromCurrent) {
       return fromCurrent;
     }
-    return (
+    const stored = (
       String(sessionStorage.getItem('uuid') || '').trim() ||
-      String(localStorage.getItem('uuid') || '').trim() ||
-      'uu'
+      String(localStorage.getItem('uuid') || '').trim()
     );
+    if (stored) return stored;
+    // Generate and cache a valid UUID so every bell click navigates to a real route
+    const fresh = crypto.randomUUID();
+    try { sessionStorage.setItem('uuid', fresh); } catch (_) {}
+    return fresh;
   }
 
   private extractRouteUuid(url: string): string {
