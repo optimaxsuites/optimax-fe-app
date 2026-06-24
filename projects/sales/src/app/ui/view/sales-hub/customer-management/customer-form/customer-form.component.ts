@@ -5,11 +5,12 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
+import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 
 @Component({
   selector: 'app-customer-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
   templateUrl: './customer-form.component.html',
   styleUrls: ['./customer-form.component.scss']
 })
@@ -27,6 +28,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
 
   // UI State
   showPasswordField = false;
+  customerStats?: Customer;
 
   // Make router available to template
   router: Router;
@@ -75,6 +77,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     this.salesService.getCustomerById(this.customerId).subscribe({
       next: (customer: Customer | null) => {
         if (customer) {
+          this.customerStats = customer;
           this.populateForm(customer);
         }
         this.isLoading = false;
@@ -154,6 +157,15 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     } else {
       this.router.navigate(['/admin/sales/sales-hub']);
     }
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+  }
+
+  formatDate(date?: Date | string): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   isFieldInvalid(fieldName: string): boolean {

@@ -107,7 +107,12 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   }
 
   editProduct(): void {
-    this.router.navigate(['/sales/products', this.productId, 'edit']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/products', this.productId, 'edit', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/products', this.productId, 'edit']);
+    }
   }
 
   deleteProduct(): void {
@@ -119,7 +124,12 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
       this.salesService.deleteProduct(this.product.id).subscribe({
         next: () => {
           alert(`Product ${this.product?.name} has been deleted`);
-          this.router.navigate(['/sales/products']);
+          const uuid = this.route.snapshot.paramMap.get('uuid');
+          if (uuid) {
+            this.router.navigate(['/admin/sales/sales-hub', uuid]);
+          } else {
+            this.router.navigate(['/admin/sales/sales-hub']);
+          }
         },
         error: (error: any) => {
           console.error('Error deleting product:', error);
@@ -130,7 +140,12 @@ export class ProductServiceCatalogDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/sales/products']);
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
   }
 
   getStatusBadgeClass(status: string): string {
