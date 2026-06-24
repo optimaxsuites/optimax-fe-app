@@ -17,9 +17,14 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
 
   protected readonly Math = Math;
   
+  viewMode: 'list' | 'icon' = 'icon';
   products: Product[] = [];
   isLoading = true;
   selectedProductIds: string[] = [];
+
+  setViewMode(mode: 'list' | 'icon'): void {
+    this.viewMode = mode;
+  }
   
   // Filters
   filters = {
