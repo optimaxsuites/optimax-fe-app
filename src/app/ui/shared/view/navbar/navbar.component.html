@@ -89,7 +89,7 @@
             *ngIf="notifications.length > 5"
             type="button"
             class="np__footer"
-            (click)="viewAllNotifications(); notificationsPanel.hide()"
+            (click)="openUnreadNotificationsDialog(); notificationsPanel.hide()"
           >
             <span>View all notifications</span>
             <i class="pi pi-angle-right"></i>
