@@ -32,7 +32,7 @@ export const routes: Routes = [
   // },
   {
     path: '',
-    redirectTo: '/admin/sales/sales-hub',
+    redirectTo: '/admin/sales/sales-hub/:uuid',
     pathMatch: 'full'
   },
 

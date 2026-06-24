@@ -24,12 +24,12 @@ export class SalesHubComponent {
       icon: 'fa-sharp fa-solid fa-chart-line',
     },
     {
-      name: 'Manage Catalog',
+      name: 'Catalog',
       component: ProductServiceCatalogListComponent,
       icon: 'fa-sharp fa-solid fa-layer-group',
     },
     {
-      name: 'See Quotes',
+      name: 'Quotes',
       component: QuoteListComponent,
       icon: 'fa-solid fa-file',
     },
@@ -39,12 +39,12 @@ export class SalesHubComponent {
       icon: 'fa-solid fa-file-invoice-dollar',
     },
     {
-      name: 'Order History',
+      name: 'Orders',
       component: SalesOrdersListComponent,
       icon: 'fa-solid fa-clock-rotate-left',
     },
     {
-      name: 'Manage Customers',
+      name: 'Customers',
       component: CustomerListComponent,
       icon: 'fa-solid fa-users',
       // icon: 'fa-solid fa-list',

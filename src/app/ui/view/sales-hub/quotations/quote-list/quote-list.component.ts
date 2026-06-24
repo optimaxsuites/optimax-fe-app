@@ -355,13 +355,13 @@ export class QuoteListComponent implements OnInit, OnDestroy {
         createdAt: new Date('2026-06-08'), expiresAt: new Date('2026-06-28'), notes: '', terms: ''
       },
       {
-        id: '4', quoteNumber: 'QT-004', customerId: 'CUST-004', customerName: 'Furniture Hub',
+        id: '4', quoteNumber: 'QT-004', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
         items: [], subtotal: 750000, taxAmount: 0, discountAmount: 0, totalAmount: 750000,
         currency: 'NGN', status: 'DECLINED', validUntil: new Date('2026-06-25'),
         createdAt: new Date('2026-06-07'), expiresAt: new Date('2026-06-25'), notes: '', terms: ''
       },
       {
-        id: '5', quoteNumber: 'QT-005', customerId: 'CUST-005', customerName: 'Office Supplies Ltd',
+        id: '5', quoteNumber: 'QT-005', customerId: 'CUST-005', customerName: 'Obinna Electronics',
         items: [], subtotal: 250000, taxAmount: 0, discountAmount: 0, totalAmount: 250000,
         currency: 'NGN', status: 'EXPIRED', validUntil: new Date('2026-06-01'),
         createdAt: new Date('2026-05-20'), expiresAt: new Date('2026-06-01'), notes: '', terms: ''
@@ -371,6 +371,30 @@ export class QuoteListComponent implements OnInit, OnDestroy {
         items: [], subtotal: 1800000, taxAmount: 0, discountAmount: 0, totalAmount: 1800000,
         currency: 'NGN', status: 'CONVERTED', validUntil: new Date('2026-06-20'),
         createdAt: new Date('2026-05-25'), expiresAt: new Date('2026-06-20'), notes: '', terms: ''
+      },
+      {
+        id: '7', quoteNumber: 'QT-007', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
+        items: [], subtotal: 950000, taxAmount: 0, discountAmount: 0, totalAmount: 950000,
+        currency: 'NGN', status: 'SENT', validUntil: new Date('2026-07-10'),
+        createdAt: new Date('2026-06-11'), expiresAt: new Date('2026-07-10'), notes: '', terms: ''
+      },
+      {
+        id: '8', quoteNumber: 'QT-008', customerId: 'CUST-003', customerName: 'Global Services NG',
+        items: [], subtotal: 430000, taxAmount: 0, discountAmount: 0, totalAmount: 430000,
+        currency: 'NGN', status: 'ACCEPTED', validUntil: new Date('2026-07-12'),
+        createdAt: new Date('2026-06-12'), expiresAt: new Date('2026-07-12'), notes: '', terms: ''
+      },
+      {
+        id: '9', quoteNumber: 'QT-009', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
+        items: [], subtotal: 620000, taxAmount: 0, discountAmount: 0, totalAmount: 620000,
+        currency: 'NGN', status: 'DRAFT', validUntil: new Date('2026-07-20'),
+        createdAt: new Date('2026-06-13'), expiresAt: new Date('2026-07-20'), notes: '', terms: ''
+      },
+      {
+        id: '10', quoteNumber: 'QT-010', customerId: 'CUST-005', customerName: 'Obinna Electronics',
+        items: [], subtotal: 1500000, taxAmount: 0, discountAmount: 0, totalAmount: 1500000,
+        currency: 'NGN', status: 'CONVERTED', validUntil: new Date('2026-06-30'),
+        createdAt: new Date('2026-06-05'), expiresAt: new Date('2026-06-30'), notes: '', terms: ''
       }
     ];
     this.totalElements = this.quotes.length;
