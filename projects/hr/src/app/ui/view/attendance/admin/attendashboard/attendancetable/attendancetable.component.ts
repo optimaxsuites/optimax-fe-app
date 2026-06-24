@@ -61,6 +61,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       this.attendancetableService.fetchAllRecords();
 
       this.attendancetableService.attendance$.subscribe(data => {
+      console.log('ATTENDANCE RECEIVED:', data);
       this.attendance = data;
 
       // Reapply filters instead of resetting table
@@ -77,6 +78,7 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
     } else {
       this.resetToToday();
     }
+    console.log('FILTERED TODAY:', this.filteredAttendance);
   });
   /*this.attendancetableService.attendance$.subscribe(data => {
     const today = new Date().toISOString().split('T')[0];

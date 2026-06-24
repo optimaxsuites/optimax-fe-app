@@ -152,6 +152,22 @@ private mapApiRecord(api: any): AttendanceTableRecord {
 
   const department = emp?.department?.name ?? '';
 
+  const attendanceDate = api.attendanceDate;
+
+  const isWeekend = (() => {
+
+    if (!Array.isArray(api.attendanceDate)) {
+      return false;
+    }
+
+    const [year, month, day] = api.attendanceDate;
+
+    const date = new Date(year, month - 1, day);
+
+    return date.getDay() === 0 || date.getDay() === 6;
+
+  })();
+
   // Extract HH:mm:ss time from ISO string for display
   const toTimeStr = (iso: string | null): string | null => iso;/*{
     if (!iso) return null;
@@ -210,7 +226,16 @@ fetchAllRecords(page: number = 1, size: number = 100): void {
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      console.log('RAW API RECORD:', res.content?.[0]);
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+        const day = date.getDay();
+        const isWeekend = day === 0 || day === 0;
+        return !(isWeekend && r.status ==='ABSENT');
+      });
+       console.log('MAPPED RECORD:', mapped[0]);
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch attendance records:', err)
@@ -224,7 +249,17 @@ fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100)
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+
+        const day = date.getDay();
+
+        const isWeekend = day === 0 || day === 6;
+
+        return !(isWeekend && r.status === 'ABSENT');
+      });
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch records by date range:', err)
@@ -238,7 +273,17 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+
+        const day = date.getDay();
+
+        const isWeekend = day === 0 || day === 6;
+
+        return !(isWeekend && r.status === 'ABSENT');
+      }) ;
 
        // TEMP: diagnostic log
       console.log('=== FETCH BY EMPLOYEE ===');
@@ -508,6 +553,14 @@ private scheduleAbsentCheck() {
 }
 
 async clockAction(employeeId: number, employeeName: string, department: string, action: 'IN' | 'OUT') {
+  const currentDate = new Date ();
+  const day = currentDate.getDay();
+
+  //Sunday = 0, Saturday = 6
+  if (day === 0 || day === 6) {
+    alert('Attendance is not available on weekends.');
+    return;
+  }
 
   if (this.hasCompletedToday(employeeId)) return;
 
