@@ -59,7 +59,16 @@ export class SalesService {
     }
 
     // Initialize Quotes
-    if (!localStorage.getItem(this.QUOTES_KEY)) {
+    const storedQuotes = localStorage.getItem(this.QUOTES_KEY);
+    let quotesCount = 0;
+    if (storedQuotes) {
+      try {
+        quotesCount = JSON.parse(storedQuotes).length;
+      } catch (e) {
+        quotesCount = 0;
+      }
+    }
+    if (!storedQuotes || quotesCount < 10) {
       const mockQuotes: Quote[] = [
         {
           id: '1', quoteNumber: 'QT-001', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
@@ -106,6 +115,51 @@ export class SalesService {
           subtotal: 150000, taxAmount: 0, discountAmount: 0, totalAmount: 150000,
           currency: 'NGN', status: 'EXPIRED' as QuoteStatus, validUntil: new Date('2026-06-01'),
           createdAt: new Date('2026-05-20'), expiresAt: new Date('2026-06-01'), notes: '', terms: ''
+        },
+        {
+          id: '6', quoteNumber: 'QT-006', customerId: 'CUST-001', customerName: 'Mama Nkechi Enterprises',
+          items: [
+            { id: 'item-7', productId: 'PROD-003', productName: 'Laptop - Dell XPS', description: 'Dell XPS 13 laptop', quantity: 2, unitPrice: 850000, discount: 5, total: 1615000 }
+          ], 
+          subtotal: 1615000, taxAmount: 0, discountAmount: 0, totalAmount: 1615000,
+          currency: 'NGN', status: 'CONVERTED' as QuoteStatus, validUntil: new Date('2026-06-20'),
+          createdAt: new Date('2026-05-25'), expiresAt: new Date('2026-06-20'), notes: '', terms: ''
+        },
+        {
+          id: '7', quoteNumber: 'QT-007', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
+          items: [
+            { id: 'item-8', productId: 'PROD-002', productName: 'Standing Desk', description: 'Adjustable standing desk', quantity: 7, unitPrice: 120000, discount: 0, total: 840000 }
+          ], 
+          subtotal: 840000, taxAmount: 0, discountAmount: 0, totalAmount: 840000,
+          currency: 'NGN', status: 'SENT' as QuoteStatus, validUntil: new Date('2026-07-10'),
+          createdAt: new Date('2026-06-11'), expiresAt: new Date('2026-07-10'), notes: '', terms: 'Net 30 days'
+        },
+        {
+          id: '8', quoteNumber: 'QT-008', customerId: 'CUST-003', customerName: 'Global Services NG',
+          items: [
+            { id: 'item-9', productId: 'PROD-001', productName: 'Executive Office Chair', description: 'Office chairs', quantity: 8, unitPrice: 50000, discount: 0, total: 400000 }
+          ], 
+          subtotal: 400000, taxAmount: 0, discountAmount: 0, totalAmount: 400000,
+          currency: 'NGN', status: 'ACCEPTED' as QuoteStatus, validUntil: new Date('2026-07-12'),
+          createdAt: new Date('2026-06-12'), expiresAt: new Date('2026-07-12'), notes: '', terms: ''
+        },
+        {
+          id: '9', quoteNumber: 'QT-009', customerId: 'CUST-004', customerName: 'Aliko Dangote Wholesale',
+          items: [
+            { id: 'item-10', productId: 'PROD-004', productName: 'Conference Table', description: 'Large conference table', quantity: 2, unitPrice: 250000, discount: 0, total: 500000 }
+          ], 
+          subtotal: 500000, taxAmount: 0, discountAmount: 0, totalAmount: 500000,
+          currency: 'NGN', status: 'DRAFT' as QuoteStatus, validUntil: new Date('2026-07-20'),
+          createdAt: new Date('2026-06-13'), expiresAt: new Date('2026-07-20'), notes: '', terms: ''
+        },
+        {
+          id: '10', quoteNumber: 'QT-010', customerId: 'CUST-005', customerName: 'Obinna Electronics',
+          items: [
+            { id: 'item-11', productId: 'PROD-003', productName: 'Laptop - Dell XPS', description: 'Laptop', quantity: 1, unitPrice: 850000, discount: 0, total: 850000 }
+          ], 
+          subtotal: 850000, taxAmount: 0, discountAmount: 0, totalAmount: 850000,
+          currency: 'NGN', status: 'CONVERTED' as QuoteStatus, validUntil: new Date('2026-06-30'),
+          createdAt: new Date('2026-06-05'), expiresAt: new Date('2026-06-30'), notes: '', terms: ''
         }
       ];
       localStorage.setItem(this.QUOTES_KEY, JSON.stringify(mockQuotes));
