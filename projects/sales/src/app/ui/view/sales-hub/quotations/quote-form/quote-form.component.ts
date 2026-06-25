@@ -6,11 +6,20 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
+import { lastValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-quote-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule, 
+    FormsModule, 
+    RouterModule, 
+    BackButtonComponent,
+    TemplateTypesComponent
+  ],
   templateUrl: './quote-form.component.html',
   styleUrls: ['./quote-form.component.scss']
 })
@@ -25,6 +34,10 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   isLoading = false;
   isEditMode = false;
   quoteId: string = '';
+  
+  // ============ WIZARD STATE ============
+  currentStep: 1 | 2 | 3 = 1;
+  totalSteps = 3;
   
   // Data
   customers: Customer[] = [];
@@ -53,6 +66,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   contactEmail = '';
   attachmentFileName = '';
   
+  // Shipping Details data bindings
+  showShippingDetails = false;
+  shippingAddress = '';
+  shippingMethod = '';
+  shippingDate = '';
+
+  // Discount & Additional charges
+  discountType: 'PERCENTAGE' | 'FIXED' = 'PERCENTAGE';
+  discountValue = 0;
+  additionalCharges = 0;
+  
   // Currency
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
   
@@ -61,6 +85,34 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   totalTax: number = 0;
   discountAmount: number = 0;
   grandTotal: number = 0;
+
+  // Template quotes
+  selectedTemplate: QuoteTemplate | null = null;
+
+  get quoteDataForTemplate(): any {
+    return {
+      customerId: this.quoteForm.get('customerId')?.value,
+      customerName: this.quoteForm.get('customerName')?.value,
+      customerEmail: this.customers.find(c => c.id === this.quoteForm.get('customerId')?.value)?.email,
+      currency: this.quoteForm.get('currency')?.value,
+      items: this.items.getRawValue().map((item: any) => ({
+        ...item,
+        total: item.total || 0,
+        taxAmount: item.taxAmount || 0
+      })),
+      subtotal: this.subtotal,
+      taxAmount: this.totalTax,
+      discountAmount: this.discountAmount,
+      totalAmount: this.grandTotal,
+      notes: this.quoteForm.get('notes')?.value,
+      terms: this.quoteForm.get('terms')?.value,
+      validUntil: this.quoteForm.get('validUntil')?.value,
+      quoteDate: this.quoteForm.get('quoteDate')?.value
+    };
+  }
+  
+  // Delivery action
+  selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
   
   // Make router available to template
   router: Router;
@@ -74,12 +126,17 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     router: Router
   ) {
     this.router = router;
+    
+    // Calculate default valid until date (30 days from now)
+    const defaultValidUntil = new Date();
+    defaultValidUntil.setDate(defaultValidUntil.getDate() + 30);
+    
     this.quoteForm = this.fb.group({
       customerId: ['', Validators.required],
       customerName: [''],
       quoteNumber: [{ value: 'Auto-generated', disabled: true }],
       quoteDate: [this.formatDateForInput(new Date()), Validators.required],
-      validUntil: ['', Validators.required],
+      validUntil: [this.formatDateForInput(defaultValidUntil), Validators.required],
       currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
@@ -116,6 +173,165 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     this.quoteForm.get('items')?.valueChanges.subscribe(() => {
       this.calculateTotals();
     });
+  }
+
+  // ============ WIZARD NAVIGATION ============
+  
+  goToStep(step: 1 | 2 | 3): void {
+    // Validate before going forward
+    if (step > this.currentStep) {
+      if (this.currentStep === 1 && !this.validateStep1()) {
+        return;
+      }
+      if (this.currentStep === 2 && !this.validateStep2()) {
+        return;
+      }
+    }
+    this.currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  nextStep(): void {
+    if (this.currentStep === 1) {
+      if (this.validateStep1()) {
+        this.currentStep = 2;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else if (this.currentStep === 2) {
+      if (this.validateStep2()) {
+        this.currentStep = 3;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }
+
+  prevStep(): void {
+    if (this.currentStep > 1) {
+      this.currentStep = (this.currentStep - 1) as 1 | 2;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  proceedToTemplateSelection(): void {
+    this.nextStep();
+  }
+
+  onHeaderActionClick(): void {
+    if (this.currentStep === 1) {
+      this.nextStep();
+    } else if (this.currentStep === 2) {
+      this.nextStep();
+    } else if (this.currentStep === 3) {
+      this.onSubmit();
+    }
+  }
+
+  // ============ STEP VALIDATION ============
+  
+  private validateStep1(): boolean {
+    console.log('Validating Step 1 (Quote Details & Line Items)...');
+    
+    // Debugger: print form status and invalid controls
+    if (this.quoteForm.invalid) {
+      console.warn('Form validation failed. Invalid form fields:');
+      Object.keys(this.quoteForm.controls).forEach(key => {
+        const control = this.quoteForm.get(key);
+        if (control?.invalid) {
+          console.warn(`- Control "${key}" is invalid. Value:`, control.value, 'Errors:', control.errors);
+        }
+      });
+    }
+
+    // Validate customer selection
+    if (!this.quoteForm.get('customerId')?.value) {
+      alert('Please select a customer');
+      return false;
+    }
+    
+    // Validate date fields
+    if (!this.quoteForm.get('quoteDate')?.value) {
+      alert('Please select a quote date');
+      return false;
+    }
+    
+    if (!this.quoteForm.get('validUntil')?.value) {
+      alert('Please select a valid until date');
+      return false;
+    }
+
+    // Validate at least one item
+    if (this.items.length === 0) {
+      alert('Please add at least one item to the quote');
+      return false;
+    }
+    
+    // Validate each item
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+      if (item.invalid) {
+        console.warn(`- Item ${i + 1} is invalid. Errors:`, item.errors);
+        Object.keys((item as FormGroup).controls).forEach(key => {
+          const ctrl = item.get(key);
+          if (ctrl?.invalid) {
+            console.warn(`  - Sub-control "${key}" is invalid. Value:`, ctrl.value, 'Errors:', ctrl.errors);
+          }
+        });
+      }
+      
+      if (!item.get('productId')?.value) {
+        alert(`Item ${i + 1}: Please select a product`);
+        return false;
+      }
+      
+      const qty = item.get('quantity')?.value;
+      if (qty === null || qty === undefined || qty < 1) {
+        alert(`Item ${i + 1}: Please enter a valid quantity (min 1)`);
+        return false;
+      }
+      
+      const price = item.get('unitPrice')?.value;
+      if (price === null || price === undefined || price < 0) {
+        alert(`Item ${i + 1}: Please enter a valid price (min 0)`);
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  private validateStep2(): boolean {
+    if (!this.selectedTemplate) {
+      // Default to Standard template if none selected explicitly
+      this.selectedTemplate = {
+        id: 'standard',
+        name: 'Standard Professional',
+        description: 'Clean, balanced layout with all essential business information',
+        sections: {
+          showCustomerDetails: true,
+          showCompanyLogo: true,
+          showTaxBreakdown: true,
+          showShippingDetails: true,
+          showPaymentTerms: true,
+          showNotes: true,
+          showTermsConditions: true,
+          showSignature: true,
+          showAttachments: false,
+          showItemImages: false,
+          showSKU: true,
+          showSerialNumbers: false,
+          showBatchDetails: false,
+          showSubtotalPerGroup: true,
+          showTotalInWords: true,
+          showCurrencySymbol: true,
+          showVendorInfo: true,
+          showCustomFields: false
+        },
+        layout: 'standard',
+        fontSize: 'medium',
+        colorTheme: 'professional'
+      };
+    }
+    return true;
   }
 
   // Form Arrays
@@ -173,14 +389,19 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       this.totalTax += taxAmount;
     }
     
-    // For now, discount is 0 - can be expanded later
-    this.discountAmount = 0;
-    this.grandTotal = this.subtotal + this.totalTax - this.discountAmount;
+    if (this.discountType === 'PERCENTAGE') {
+      this.discountAmount = this.subtotal * (this.discountValue / 100);
+    } else {
+      this.discountAmount = this.discountValue;
+    }
+    this.grandTotal = this.subtotal + this.totalTax - this.discountAmount + this.additionalCharges;
   }
 
   // Product selection
   onProductSelect(index: number, event: any): void {
-    const productId = event.target.value;
+    const productId = event?.target?.value || event?.value || '';
+    if (!productId) return;
+    
     const product = this.products.find(p => p.id === productId);
     if (product) {
       const itemForm = this.items.at(index);
@@ -222,7 +443,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   // Customer selection
   onCustomerSelect(event: any): void {
-    const customerId = event.target.value;
+    const customerId = event?.target?.value || event?.value || '';
+    if (!customerId) return;
+    
     const customer = this.customers.find(c => c.id === customerId);
     if (customer) {
       this.quoteForm.patchValue({ customerName: customer.name });
@@ -312,7 +535,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxRate: 0 // Default tax rate
+        taxRate: 0
       });
       this.calculateItemTotal(itemForm);
     });
@@ -329,6 +552,28 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   onSubmit(): void {
     if (this.quoteForm.invalid) {
       this.quoteForm.markAllAsTouched();
+      
+      console.warn('Form submission blocked. Invalid fields:');
+      Object.keys(this.quoteForm.controls).forEach(key => {
+        const control = this.quoteForm.get(key);
+        if (control?.invalid) {
+          console.warn(`- Control "${key}" is invalid. Value:`, control.value, 'Errors:', control.errors);
+        }
+      });
+      // Also log items FormArray invalid fields
+      for (let i = 0; i < this.items.length; i++) {
+        const item = this.items.at(i);
+        if (item.invalid) {
+          console.warn(`- Item ${i + 1} is invalid. Errors:`, item.errors);
+          Object.keys((item as FormGroup).controls).forEach(key => {
+            const ctrl = item.get(key);
+            if (ctrl?.invalid) {
+              console.warn(`  - Sub-control "${key}" is invalid. Value:`, ctrl.value, 'Errors:', ctrl.errors);
+            }
+          });
+        }
+      }
+
       alert('Please fill in all required fields');
       return;
     }
@@ -382,8 +627,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
     
     request.subscribe({
-      next: (response: Quote) => {
+      next: async (response: Quote) => {
         this.isSubmitting = false;
+        
+        // Handle delivery action
+        await this.handleDeliveryAction(response, this.selectedAction);
+        
         alert(this.isEditMode ? 'Quote updated successfully!' : 'Quote created successfully!');
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
@@ -398,6 +647,51 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         alert('Failed to save quote. Please try again.');
       }
     });
+  }
+
+  // Handle creation action from child
+  onCreateAction(event: { action: 'pdf' | 'email' | 'both' }): void {
+    this.selectedAction = event.action;
+    this.onSubmit();
+  }
+
+  // Handle delivery actions
+  private async handleDeliveryAction(quote: Quote, action: 'pdf' | 'email' | 'both'): Promise<void> {
+    try {
+      if (action === 'pdf' || action === 'both') {
+        const pdfBlob = await this.generateQuotePDF(quote);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(pdfBlob);
+        link.download = `Quote-${quote.quoteNumber}.pdf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+      
+      if (action === 'email' || action === 'both') {
+        await this.sendQuoteEmail(quote);
+        alert(`Quote ${quote.quoteNumber} sent to ${quote.customerName}`);
+      }
+    } catch (error) {
+      console.error('Error in delivery action:', error);
+      alert('There was an issue with the delivery. Please try again.');
+    }
+  }
+
+  // Generate PDF (placeholder)
+  private async generateQuotePDF(quote: Quote): Promise<Blob> {
+    const content = `
+      QUOTE: ${quote.quoteNumber}
+      Customer: ${quote.customerName}
+      Total: ${quote.totalAmount} ${quote.currency}
+      Template: ${this.selectedTemplate?.name || 'Standard'}
+    `;
+    return new Blob([content], { type: 'application/pdf' });
+  }
+
+  // Send email (placeholder)
+  private async sendQuoteEmail(quote: Quote): Promise<void> {
+    console.log(`Sending quote ${quote.quoteNumber} to ${quote.customerName}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   cancel(): void {
@@ -438,6 +732,12 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       'GBP': 'British Pound (GBP, £)'
     };
     return labels[code] || code;
+  }
+
+  getProductSku(productId: string): string {
+    if (!productId) return 'N/A';
+    const product = this.products.find(p => p.id === productId);
+    return product ? product.sku : 'N/A';
   }
 
   getTotalQuantity(): number {
@@ -497,5 +797,97 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
     ];
     this.filteredProducts = this.products;
+  }
+
+  // ============ UI Action Methods ============
+  
+  addCustomFields(): void {
+    alert('Custom Fields feature is under development.');
+  }
+
+  addNewGroup(): void {
+    alert('Add New Group feature is under development.');
+  }
+
+  addShippingDetails(): void {
+    this.showShippingDetails = !this.showShippingDetails;
+  }
+
+  addDiscounts(): void {
+    const value = prompt('Enter discount amount:');
+    if (value !== null) {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        const type = confirm('Click OK for Percentage, Cancel for Fixed Amount');
+        if (type) {
+          this.discountType = 'PERCENTAGE';
+          this.discountValue = Math.min(numValue, 100);
+        } else {
+          this.discountType = 'FIXED';
+          this.discountValue = numValue;
+        }
+        this.calculateTotals();
+      }
+    }
+  }
+
+  addAdditionalCharges(): void {
+    const value = prompt('Enter additional charges amount:');
+    if (value !== null) {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        this.additionalCharges = numValue;
+        this.calculateTotals();
+      }
+    }
+  }
+
+  editBilledBy(): void {
+    alert('Edit Billed By feature is under development.');
+  }
+
+  addDescription(index: number): void {
+    const itemForm = this.items.at(index);
+    const currentDesc = itemForm.get('description')?.value || '';
+    const newDesc = prompt('Enter item description:', currentDesc);
+    if (newDesc !== null) {
+      itemForm.patchValue({ description: newDesc });
+    }
+  }
+
+  addImage(index: number): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        alert(`Image "${file.name}" uploaded successfully for item.`);
+      }
+    };
+    fileInput.click();
+  }
+
+  addUnit(index: number): void {
+    const newUnit = prompt('Enter measurement unit (e.g. Kg, Box, Pack):', 'Each');
+    if (newUnit) {
+      alert(`Measurement unit set to: ${newUnit}`);
+    }
+  }
+
+  // Template selection handlers
+  onTemplateSelected(template: QuoteTemplate | undefined): void {
+    if (template) {
+      this.selectedTemplate = template;
+    }
+  }
+
+  getStepLabel(step: number): string {
+    const labels = {
+      1: 'Quote Details',
+      2: 'Line Items',
+      3: 'Template & Delivery'
+    };
+    return labels[step as keyof typeof labels] || '';
   }
 }

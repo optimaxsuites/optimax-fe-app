@@ -34,6 +34,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   taxOptions: string[] = ['VAT 7.5%', 'VAT 5%', 'No Tax', '0%'];
   discountOptions: string[] = ['No Discount', '5%', '10%', '15%', '20%', '25%', '50%'];
   measurementUnits: string[] = ['Each', 'Kg', 'g', 'L', 'mL', 'm', 'cm', 'Box', 'Pack', 'Carton'];
+  suppliers: string[] = ['Supplier A', 'Supplier B', 'Supplier C'];
   
   // Product variants
   variants: any[] = [];
@@ -297,6 +298,23 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         alert('Product information auto-filled from code!');
       }, 1000);
+    }
+  }
+
+  addSupplier(): void {
+    const newSupplier = prompt('Enter new supplier name:');
+    if (newSupplier && newSupplier.trim()) {
+      const trimmed = newSupplier.trim();
+      if (!this.suppliers.includes(trimmed)) {
+        this.suppliers.push(trimmed);
+        this.productForm.patchValue({
+          supplier: trimmed,
+          selectedSupplier: trimmed
+        });
+        alert(`Supplier "${trimmed}" added successfully.`);
+      } else {
+        alert(`Supplier "${trimmed}" already exists.`);
+      }
     }
   }
 }
