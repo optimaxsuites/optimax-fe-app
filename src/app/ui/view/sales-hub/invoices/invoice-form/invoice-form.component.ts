@@ -41,6 +41,16 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   contactPhone = '';
   contactEmail = '';
   attachmentFileName = '';
+  logoFileName = '';
+
+  // Shipping Details data bindings
+  showShippingDetails = false;
+  shippingAddress = '';
+  shippingMethod = '';
+  shippingDate = '';
+
+  // Discount & Additional charges
+  additionalCharges = 0;
 
   // Data
   customers: Customer[] = [];
@@ -233,7 +243,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const afterDiscount = this.subtotal - this.discountAmount;
     this.taxAmount = afterDiscount * (taxRate / 100);
 
-    this.grandTotal = afterDiscount + this.taxAmount;
+    const finalTax = this.totalTax || this.taxAmount;
+    this.grandTotal = afterDiscount + finalTax + this.additionalCharges;
   }
 
   // Product selection
@@ -430,7 +441,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   onSubmit(): void {
     if (this.invoiceForm.invalid) {
       this.invoiceForm.markAllAsTouched();
-      alert('Please fill in all required fields');
+      this.logInvalidControls(this.invoiceForm);
+      alert('Please fill in all required fields. Check console for details.');
       return;
     }
 
@@ -595,5 +607,118 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       { id: 'PROD-003', name: 'Laptop - Dell XPS', sku: 'LAP-001', description: 'Dell XPS 13 laptop', unitPrice: 850000, costPrice: 700000, currency: 'NGN', stockQuantity: 15, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
     ];
     this.filteredProducts = this.products;
+  }
+
+  onLogoSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.logoFileName = file.name;
+      alert(`Logo "${file.name}" uploaded successfully.`);
+    }
+  }
+
+  addCustomFields(): void {
+    alert('Custom Fields feature is under development.');
+  }
+
+  addNewGroup(): void {
+    alert('Add New Group feature is under development.');
+  }
+
+  addShippingDetails(): void {
+    this.showShippingDetails = !this.showShippingDetails;
+  }
+
+  addDiscounts(): void {
+    const discountType = this.invoiceForm.get('discountType')?.value || 'PERCENTAGE';
+    const discountValue = this.invoiceForm.get('discountValue')?.value || 0;
+    
+    const input = prompt(
+      'Enter discount amount (e.g. 10% or 5000):',
+      discountValue ? `${discountValue}${discountType === 'PERCENTAGE' ? '%' : ''}` : ''
+    );
+    if (input !== null) {
+      const valStr = input.trim();
+      if (valStr.endsWith('%')) {
+        const val = parseFloat(valStr.slice(0, -1));
+        if (!isNaN(val)) {
+          this.invoiceForm.patchValue({
+            discountType: 'PERCENTAGE',
+            discountValue: val
+          });
+          this.calculateTotals();
+        }
+      } else {
+        const val = parseFloat(valStr);
+        if (!isNaN(val)) {
+          this.invoiceForm.patchValue({
+            discountType: 'FIXED',
+            discountValue: val
+          });
+          this.calculateTotals();
+        }
+      }
+    }
+  }
+
+  addAdditionalCharges(): void {
+    const input = prompt(
+      'Enter additional charges (fixed amount):',
+      this.additionalCharges ? `${this.additionalCharges}` : ''
+    );
+    if (input !== null) {
+      const val = parseFloat(input.trim());
+      if (!isNaN(val)) {
+        this.additionalCharges = val;
+        this.calculateTotals();
+      }
+    }
+  }
+
+  editBilledBy(): void {
+    alert('Edit Billed By feature is under development.');
+  }
+
+  addDescription(index: number): void {
+    const itemForm = this.items.at(index);
+    const currentDesc = itemForm.get('description')?.value || '';
+    const newDesc = prompt('Enter item description:', currentDesc);
+    if (newDesc !== null) {
+      itemForm.patchValue({ description: newDesc });
+    }
+  }
+
+  addImage(index: number): void {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        alert(`Image "${file.name}" uploaded successfully for item.`);
+      }
+    };
+    fileInput.click();
+  }
+
+  addUnit(index: number): void {
+    const newUnit = prompt('Enter measurement unit (e.g. Kg, Box, Pack):', 'Each');
+    if (newUnit) {
+      alert(`Measurement unit set to: ${newUnit}`);
+    }
+  }
+
+  private logInvalidControls(formGroup: FormGroup | FormArray): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      if (control?.invalid) {
+        if (control instanceof FormGroup || control instanceof FormArray) {
+          console.warn(`Invalid Form group/array: ${key}`);
+          this.logInvalidControls(control);
+        } else {
+          console.warn(`Invalid Control: ${key}`, control.errors);
+        }
+      }
+    });
   }
 }

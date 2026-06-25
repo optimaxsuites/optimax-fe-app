@@ -19,11 +19,44 @@
           <span class="quote-label">Quote #</span>
           <strong>{{ quoteId }}</strong>
         </div>
-        <button type="submit" class="btn-save-header" [disabled]="isSubmitting" (click)="onSubmit()">
-          <i *ngIf="!isSubmitting" class="fas fa-check"></i>
+        <button type="button" class="btn-save-header" [disabled]="isSubmitting" (click)="onHeaderActionClick()">
+          <i *ngIf="!isSubmitting" class="fas" [class.fa-arrow-right]="currentStep < 3" [class.fa-check]="currentStep === 3"></i>
           <div *ngIf="isSubmitting" class="spinner-mini"></div>
-          {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+          <span>{{ isSubmitting ? 'Saving...' : (currentStep === 1 ? 'Continue to Template' : (currentStep === 2 ? 'Continue to Preview' : 'Create Quote')) }}</span>
         </button>
+      </div>
+    </div>
+
+    <!-- Wizard Steps Indicator -->
+    <div class="wizard-steps-indicator" *ngIf="!isLoading">
+      <div class="wizard-step" [class.active]="currentStep === 1" [class.completed]="currentStep > 1" (click)="goToStep(1)">
+        <div class="step-icon">
+          <i class="fas fa-edit"></i>
+        </div>
+        <div class="step-info">
+          <span class="step-num">Step 1</span>
+          <span class="step-name">Quote Details</span>
+        </div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 1"></div>
+      <div class="wizard-step" [class.active]="currentStep === 2" [class.completed]="currentStep > 2" (click)="goToStep(2)">
+        <div class="step-icon">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="step-info">
+          <span class="step-num">Step 2</span>
+          <span class="step-name">Template Design</span>
+        </div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 2"></div>
+      <div class="wizard-step" [class.active]="currentStep === 3" (click)="goToStep(3)">
+        <div class="step-icon">
+          <i class="fas fa-file-pdf"></i>
+        </div>
+        <div class="step-info">
+          <span class="step-num">Step 3</span>
+          <span class="step-name">Preview & Delivery</span>
+        </div>
       </div>
     </div>
 
@@ -36,442 +69,730 @@
     <!-- Form -->
     <form [formGroup]="quoteForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="quote-form">
       
-      <!-- Two-Column Form Layout -->
-      <div class="form-columns-wrapper">
-        
-        <!-- LEFT COLUMN: Quote Info & Line Items -->
-        <div class="form-column left-column">
+      <!-- STEP 1: Enter Quote Details -->
+      <div *ngIf="currentStep === 1">
+        <!-- Two-Column Form Layout -->
+        <div class="form-columns-wrapper">
           
-          <!-- Section 1: Quote Information -->
-          <div class="form-card glass">
-            <div class="card-header">
-              <div class="card-header-icon">
-                <i class="fas fa-info-circle"></i>
+          <!-- LEFT COLUMN: Quote Info & Line Items -->
+          <div class="form-column left-column">
+            
+            <!-- Section 1: Quote Information -->
+            <div class="form-card glass">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <i class="fas fa-info-circle"></i>
+                </div>
+                <h3>Quote Information</h3>
               </div>
-              <h3>Quote Information</h3>
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Quote No</label>
+                    <input type="text" formControlName="quoteNumber" class="form-control" readonly>
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Quote Date</label>
+                    <input type="date" formControlName="quoteDate" class="form-control">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Valid Till Date</label>
+                    <input type="date" formControlName="validUntil" class="form-control" [min]="minValidUntil">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label">Currency</label>
+                    <select formControlName="currency" class="form-control">
+                      <option *ngFor="let curr of currencies" [value]="curr">{{ getCurrencyLabel(curr) }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
+                    <button type="button" class="btn-link" (click)="addCustomFields()">
+                      <i class="fas fa-plus-circle"></i> Add Custom Fields
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label required">Quote No</label>
-                  <input type="text" formControlName="quoteNumber" class="form-control" readonly>
+
+            <!-- Section 4: Line Items -->
+            <div class="form-card glass">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <i class="fas fa-list"></i>
                 </div>
-                <div class="form-group flex-1">
-                  <label class="form-label required">Quote Date</label>
-                  <input type="date" formControlName="quoteDate" class="form-control">
-                </div>
-                <div class="form-group flex-1">
-                  <label class="form-label">Valid Till Date</label>
-                  <input type="date" formControlName="validUntil" class="form-control" [min]="minValidUntil">
-                </div>
+                <h3>Line Items</h3>
+                <button type="button" class="btn-add-item" (click)="addLineItem()">
+                  <i class="fas fa-plus"></i> Add Item
+                </button>
               </div>
-              <div class="form-row">
-                <div class="form-group flex-1">
-                  <label class="form-label">Currency</label>
-                  <select formControlName="currency" class="form-control">
-                    <option *ngFor="let curr of currencies" [value]="curr">{{ getCurrencyLabel(curr) }}</option>
-                  </select>
+              <div class="card-body">
+                
+                <!-- Subtitle -->
+                <div class="form-group">
+                  <input type="text" class="form-control" placeholder="Add subtitle to this section...">
                 </div>
-                <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
-                  <button type="button" class="btn-link">
-                    <i class="fas fa-plus-circle"></i> Add Custom Fields
+
+                <!-- Items Table -->
+                <div class="items-table-wrapper">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 22%;">Item</th>
+                        <th style="width: 10%;">TAX Rate</th>
+                        <th style="width: 8%;">Qty</th>
+                        <th style="width: 12%;">Rate</th>
+                        <th style="width: 12%;">Amount</th>
+                        <th style="width: 12%;">TAX</th>
+                        <th style="width: 12%;">Total</th>
+                        <th style="width: 4%;"></th>
+                      </tr>
+                    </thead>
+                    <tbody formArrayName="items">
+                      <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-row">
+                        <td>
+                          <div class="product-cell">
+                            <select formControlName="productId" class="form-control-sm" (change)="onProductSelect(i, $event)">
+                              <option value="">Select item...</option>
+                              <option *ngFor="let product of products" [value]="product.id">
+                                {{ product.name }}
+                              </option>
+                            </select>
+                            <div class="item-actions-cell">
+                              <button type="button" class="btn-icon-sm" title="Add Description" (click)="addDescription(i)">
+                                <i class="fas fa-edit"></i>
+                              </button>
+                              <button type="button" class="btn-icon-sm" title="Add Image" (click)="addImage(i)">
+                                <i class="fas fa-image"></i>
+                              </button>
+                              <button type="button" class="btn-icon-sm" title="Add Unit" (click)="addUnit(i)">
+                                <i class="fas fa-cube"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <input type="number" formControlName="taxRate" class="form-control-sm" placeholder="0">
+                        </td>
+                        <td>
+                          <input type="number" formControlName="quantity" class="form-control-sm" step="1" min="1" value="1">
+                        </td>
+                        <td>
+                          <input type="number" formControlName="unitPrice" class="form-control-sm" step="0.01" min="0" placeholder="0.00">
+                        </td>
+                        <td class="item-amount">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                        <td class="item-tax">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
+                        <td class="item-total">{{ formatCurrency((item.get('total')?.value || 0) + (item.get('taxAmount')?.value || 0)) }}</td>
+                        <td class="item-remove">
+                          <button type="button" class="btn-remove" (click)="removeLineItem(i)">
+                            <i class="fas fa-trash-alt"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Line Actions -->
+                <div class="line-actions">
+                  <button type="button" class="btn-link" (click)="addLineItem()">
+                    <i class="fas fa-plus-circle"></i> Add New Line
+                  </button>
+                  <button type="button" class="btn-link" (click)="addNewGroup()">
+                    <i class="fas fa-folder-plus"></i> Add New Group
                   </button>
                 </div>
               </div>
             </div>
+
           </div>
 
-          <!-- Section 4: Line Items -->
-          <div class="form-card glass">
-            <div class="card-header">
-              <div class="card-header-icon">
-                <i class="fas fa-list"></i>
+          <!-- RIGHT COLUMN: Parties, Summary, Additional Options -->
+          <div class="form-column right-column">
+            
+            <!-- Section 2: Parties -->
+            <div class="form-card glass">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <h3>Parties</h3>
               </div>
-              <h3>Line Items</h3>
-              <button type="button" class="btn-add-item" (click)="addLineItem()">
-                <i class="fas fa-plus"></i> Add Item
-              </button>
+              <div class="card-body">
+                <!-- Quotation From -->
+                <div class="subsection">
+                  <label class="subsection-label">Quotation From</label>
+                  <div class="billed-details">
+                    <div class="billed-avatar">EO</div>
+                    <div class="billed-info">
+                      <strong>Eseose Odion</strong>
+                      <span>Nigeria</span>
+                    </div>
+                    <button type="button" class="btn-edit" (click)="editBilledBy()">
+                      <i class="fas fa-pencil-alt"></i> Edit
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Quotation For -->
+                <div class="subsection" style="margin-top: 1rem;">
+                  <label class="subsection-label required">Quotation For</label>
+                  <div class="form-group">
+                    <div class="customer-select">
+                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($event)">
+                        <option value="">Select a client...</option>
+                        <option *ngFor="let customer of customers" [value]="customer.id">
+                          {{ customer.name }}
+                        </option>
+                      </select>
+                      <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">
+                        <i class="fas fa-user-plus"></i> New Client
+                      </button>
+                    </div>
+                    <div class="form-error" *ngIf="isFieldInvalid('customerId')">Please select a client</div>
+                  </div>
+                  <div class="form-group">
+                    <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
+                  </div>
+                </div>
+
+                <!-- Shipping -->
+                <div class="subsection" style="margin-top: 1rem;">
+                  <button type="button" class="btn-link" (click)="addShippingDetails()">
+                    <i class="fas fa-truck"></i> Add Shipping Details
+                  </button>
+                </div>
+                
+                <!-- Shipping Details Panel -->
+                <div class="shipping-details-panel" *ngIf="showShippingDetails" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                  <div class="form-group">
+                    <label class="form-label">Shipping Address</label>
+                    <input type="text" [(ngModel)]="shippingAddress" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Enter shipping address">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group flex-1">
+                      <label class="form-label">Method</label>
+                      <select [(ngModel)]="shippingMethod" [ngModelOptions]="{standalone: true}" class="form-control">
+                        <option value="">Select Method</option>
+                        <option value="Standard">Standard Courier</option>
+                        <option value="Express">Express Cargo</option>
+                        <option value="Pickup">Self Pickup</option>
+                      </select>
+                    </div>
+                    <div class="form-group flex-1">
+                      <label class="form-label">Est. Date</label>
+                      <input type="date" [(ngModel)]="shippingDate" [ngModelOptions]="{standalone: true}" class="form-control">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              
-              <!-- Subtitle -->
-              <div class="form-group">
-                <input type="text" class="form-control" placeholder="Add subtitle to this section...">
+
+            <!-- Section 5: Summary -->
+            <div class="form-card summary-card glass">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <i class="fas fa-calculator"></i>
+                </div>
+                <h3>Summary</h3>
+              </div>
+              <div class="card-body">
+                <!-- Totals -->
+                <div class="summary-grid">
+                  <div class="summary-item">
+                    <span class="summary-label">Subtotal</span>
+                    <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
+                  </div>
+                  <div class="summary-item" *ngIf="discountAmount > 0">
+                    <span class="summary-label">Discount <span *ngIf="discountValue > 0 && discountType === 'PERCENTAGE'">({{ discountValue }}%)</span></span>
+                    <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
+                  </div>
+                  <div class="summary-item" *ngIf="additionalCharges > 0">
+                    <span class="summary-label">Additional Charges</span>
+                    <span class="summary-value">+{{ formatCurrency(additionalCharges) }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tax</span>
+                    <span class="summary-value">{{ formatCurrency(totalTax) }}</span>
+                  </div>
+                  <div class="summary-item total">
+                    <span class="summary-label">Grand Total</span>
+                    <span class="summary-value grand-total">{{ formatCurrency(grandTotal) }}</span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="summary-actions">
+                  <button type="button" class="btn-link" (click)="addDiscounts()">
+                    <i class="fas fa-percent"></i> Add Discounts
+                  </button>
+                  <button type="button" class="btn-link" (click)="addAdditionalCharges()">
+                    <i class="fas fa-plus-circle"></i> Add Additional Charges
+                  </button>
+                </div>
+
+                <div class="summary-quantity">
+                  <span>Total Quantity</span>
+                  <span class="quantity-value">{{ getTotalQuantity() }}</span>
+                </div>
+
+                <!-- Total in Words -->
+                <div class="words-display">
+                  <span class="words-label">
+                    <i class="fas fa-font"></i> Total in words
+                  </span>
+                  <span>{{ getTotalInWords(grandTotal) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 6: Additional Options -->
+            <div class="form-card glass">
+              <div class="card-header">
+                <div class="card-header-icon">
+                  <i class="fas fa-cog"></i>
+                </div>
+                <h3>Additional Options</h3>
+              </div>
+              <div class="card-body">
+                <div class="options-grid">
+                  <button type="button" class="btn-option-link" [class.active]="showSignature" (click)="showSignature = !showSignature">
+                    <i class="fas fa-signature"></i> Add Signature
+                  </button>
+                  <button type="button" class="btn-option-link" [class.active]="showAttachments" (click)="showAttachments = !showAttachments">
+                    <i class="fas fa-paperclip"></i> Add Attachments
+                  </button>
+                  <button type="button" class="btn-option-link" [class.active]="showAdditionalInfo" (click)="showAdditionalInfo = !showAdditionalInfo">
+                    <i class="fas fa-info-circle"></i> Add Additional Info
+                  </button>
+                  <button type="button" class="btn-option-link" [class.active]="showContactDetails" (click)="showContactDetails = !showContactDetails">
+                    <i class="fas fa-address-card"></i> Add Contact Details
+                  </button>
+                  <button type="button" class="btn-option-link" [class.active]="showNotes" (click)="showNotes = !showNotes">
+                    <i class="fas fa-sticky-note"></i> Add Notes
+                  </button>
+                  <button type="button" class="btn-option-link" [class.active]="showTerms" (click)="showTerms = !showTerms">
+                    <i class="fas fa-gavel"></i> Add Terms
+                  </button>
+                </div>
+
+                <!-- Interactive Input Panels -->
+                <div class="options-panels-wrapper" *ngIf="showSignature || showAttachments || showAdditionalInfo || showContactDetails || showNotes || showTerms">
+                  
+                  <!-- Contact Details Panel -->
+                  <div class="option-panel-item" *ngIf="showContactDetails">
+                    <label class="form-label required">Contact Details</label>
+                    <div class="form-row">
+                      <div class="form-group flex-1">
+                        <input type="tel" [(ngModel)]="contactPhone" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Phone Number">
+                      </div>
+                      <div class="form-group flex-1">
+                        <input type="email" [(ngModel)]="contactEmail" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Email Address">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Signature Panel -->
+                  <div class="option-panel-item" *ngIf="showSignature">
+                    <label class="form-label">Authorized Signature</label>
+                    <div class="form-group">
+                      <input type="text" [(ngModel)]="signatureText" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Signee Name / Title">
+                      <div class="signature-draw-pad-placeholder">
+                        <i class="fas fa-pen-nib"></i> Signee signature placeholder (rendered on export)
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Attachments Panel -->
+                  <div class="option-panel-item" *ngIf="showAttachments">
+                    <label class="form-label">Attachments</label>
+                    <div class="file-upload-zone">
+                      <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                      <span class="upload-text" *ngIf="!attachmentFileName">Click to upload files or drop here</span>
+                      <span class="upload-text" *ngIf="attachmentFileName">Selected: <strong>{{ attachmentFileName }}</strong></span>
+                      <input type="file" (change)="onFileSelected($event)" class="file-input-overlay">
+                    </div>
+                  </div>
+
+                  <!-- Additional Info Panel -->
+                  <div class="option-panel-item" *ngIf="showAdditionalInfo">
+                    <label class="form-label">Additional Information</label>
+                    <div class="form-group">
+                      <textarea [(ngModel)]="additionalInfoText" [ngModelOptions]="{standalone: true}" class="form-textarea" placeholder="Add supplementary details..."></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Notes Panel -->
+                  <div class="option-panel-item" *ngIf="showNotes">
+                    <label class="form-label">Notes</label>
+                    <div class="form-group">
+                      <textarea formControlName="notes" class="form-textarea" placeholder="Enter notes for client..."></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Terms Panel -->
+                  <div class="option-panel-item" *ngIf="showTerms">
+                    <label class="form-label">Terms &amp; Conditions</label>
+                    <div class="form-group">
+                      <textarea formControlName="terms" class="form-textarea" placeholder="Enter terms and conditions..."></textarea>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Advanced -->
+                <div class="advanced-section">
+                  <button type="button" class="btn-link" (click)="showAdvanced = !showAdvanced">
+                    <i class="fas fa-chevron-down" [style.transform]="showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)'"></i>
+                    Advanced options
+                  </button>
+                  <div *ngIf="showAdvanced" class="advanced-panel">
+                    <div class="form-group">
+                      <label class="form-label">Display unit as</label>
+                      <select class="form-control">
+                        <option>Merge with quantity</option>
+                        <option>Show tax summary in invoice</option>
+                        <option>Do not show</option>
+                        <option>Hide place/country of supply</option>
+                      </select>
+                    </div>
+                    <div class="checkbox-grid">
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Add original images in line items</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show thumbnails in separate column</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show description in full width</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Hide subtotal for group items</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show SKU in Quotation</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Show Serial Numbers in Quotation</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Display Batch Details in columns</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1 Footer Actions -->
+        <div class="wizard-actions-footer">
+          <button type="button" class="btn-cancel" (click)="cancel()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button type="button" class="btn-continue" (click)="nextStep()">
+            Continue to Template Selection <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Select Template Design -->
+      <div *ngIf="currentStep === 2" class="wizard-step-content select-template-container">
+        <div class="step-card-desc glass">
+          <div class="desc-icon-bg">
+            <i class="fas fa-magic"></i>
+          </div>
+          <div class="desc-text">
+            <h3>Select Quote Template Layout</h3>
+            <p>Select an elegant template style for your quotation document. All pricing, line items, and terms will adapt beautifully to your choice.</p>
+          </div>
+        </div>
+
+        <div class="wizard-template-selector">
+          <app-template-types
+            [quoteData]="quoteDataForTemplate"
+            [selectedTemplateId]="selectedTemplate?.id || 'standard'"
+            (templateSelected)="onTemplateSelected($event)"
+            (back)="prevStep()"
+          ></app-template-types>
+        </div>
+
+        <!-- Step 2 Footer Actions -->
+        <div class="wizard-actions-footer">
+          <button type="button" class="btn-cancel" (click)="prevStep()">
+            <i class="fas fa-arrow-left"></i> Back to Details
+          </button>
+          <button type="button" class="btn-continue" (click)="nextStep()">
+            Continue to Preview & Options <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Preview & Delivery Options -->
+      <div *ngIf="currentStep === 3" class="wizard-step-content preview-delivery-container">
+        <div class="preview-delivery-grid">
+          <!-- Left Column: Live Document Preview -->
+          <div class="preview-document-column">
+            <div class="preview-header-bar">
+              <span class="preview-badge"><i class="fas fa-eye"></i> Live Document Preview</span>
+              <span class="template-name-badge">
+                Selected Style: <strong>{{ selectedTemplate?.name || 'Standard Professional' }}</strong>
+              </span>
+            </div>
+
+            <!-- Paper Mockup Document -->
+            <div class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
+              <div class="doc-header">
+                <div class="doc-company-info">
+                  <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
+                    <i class="fas fa-building"></i>
+                  </div>
+                  <div>
+                    <h2 class="company-name">ERP Sales Hub</h2>
+                    <p class="company-address">Lagos, Nigeria</p>
+                    <p class="company-email">sales&#64;erpsales.ng</p>
+                  </div>
+                </div>
+                <div class="doc-meta-info">
+                  <h1 class="doc-title">QUOTATION</h1>
+                  <p><strong>Quote #:</strong> {{ isEditMode ? quoteId : 'DRAFT' }}</p>
+                  <p><strong>Date:</strong> {{ quoteForm.get('quoteDate')?.value || today }}</p>
+                  <p><strong>Valid Till:</strong> {{ quoteForm.get('validUntil')?.value }}</p>
+                </div>
+              </div>
+
+              <!-- Parties Details -->
+              <div class="doc-parties">
+                <div class="parties-col" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
+                  <span class="parties-label">Quotation From:</span>
+                  <strong>Eseose Odion</strong>
+                  <p>Nigeria</p>
+                </div>
+                <div class="parties-col">
+                  <span class="parties-label">Quotation For:</span>
+                  <strong>{{ quoteForm.get('customerName')?.value || 'Client Name' }}</strong>
+                  <p *ngIf="quoteForm.get('customerId')?.value">ID: {{ quoteForm.get('customerId')?.value }}</p>
+                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && quoteDataForTemplate?.customerEmail">
+                    Email: {{ quoteDataForTemplate?.customerEmail }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Shipping Details (if added & enabled) -->
+              <div class="doc-shipping" *ngIf="showShippingDetails && selectedTemplate?.sections?.showShippingDetails !== false">
+                <h4 class="doc-section-title"><i class="fas fa-truck"></i> Shipping Information</h4>
+                <div class="shipping-grid">
+                  <div><strong>Address:</strong> {{ shippingAddress || 'N/A' }}</div>
+                  <div><strong>Method:</strong> {{ shippingMethod || 'N/A' }}</div>
+                  <div><strong>Est. Date:</strong> {{ shippingDate || 'N/A' }}</div>
+                </div>
               </div>
 
               <!-- Items Table -->
-              <div class="items-table-wrapper">
-                <table class="data-table">
+              <div class="doc-items-table-wrapper">
+                <table class="doc-table">
                   <thead>
                     <tr>
-                      <th style="width: 22%;">Item</th>
-                      <th style="width: 10%;">TAX Rate</th>
-                      <th style="width: 8%;">Qty</th>
-                      <th style="width: 12%;">Rate</th>
-                      <th style="width: 12%;">Amount</th>
-                      <th style="width: 12%;">TAX</th>
-                      <th style="width: 12%;">Total</th>
-                      <th style="width: 4%;"></th>
+                      <th style="text-align: left;">Item</th>
+                      <th style="text-align: left;" *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                      <th style="text-align: right; width: 10%;">Qty</th>
+                      <th style="text-align: right; width: 15%;">Rate</th>
+                      <th style="text-align: right; width: 15%;">Total</th>
                     </tr>
                   </thead>
-                  <tbody formArrayName="items">
-                    <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="item-row">
+                  <tbody>
+                    <tr *ngFor="let item of items.controls" class="doc-item-row">
                       <td>
-                        <div class="product-cell">
-                          <select formControlName="productId" class="form-control-sm" (change)="onProductSelect(i, $any($event.target).value)">
-                            <option value="">Select item...</option>
-                            <option *ngFor="let product of products" [value]="product.id">
-                              {{ product.name }}
-                            </option>
-                          </select>
-                          <div class="item-actions-cell">
-                            <button type="button" class="btn-icon-sm" title="Add Description">
-                              <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn-icon-sm" title="Add Image">
-                              <i class="fas fa-image"></i>
-                            </button>
-                            <button type="button" class="btn-icon-sm" title="Add Unit">
-                              <i class="fas fa-cube"></i>
-                            </button>
-                          </div>
-                        </div>
+                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                        <p class="doc-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
                       </td>
-                      <td>
-                        <input type="number" formControlName="taxRate" class="form-control-sm" placeholder="0">
+                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">
+                        {{ getProductSku(item.get('productId')?.value) }}
                       </td>
-                      <td>
-                        <input type="number" formControlName="quantity" class="form-control-sm" step="1" min="1" value="1">
+                      <td style="text-align: right;">{{ item.get('quantity')?.value }}</td>
+                      <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                      <td style="text-align: right;" class="doc-item-total">
+                        {{ formatCurrency(item.get('total')?.value || 0) }}
                       </td>
-                      <td>
-                        <input type="number" formControlName="unitPrice" class="form-control-sm" step="0.01" min="0" placeholder="0.00">
-                      </td>
-                      <td class="item-amount">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
-                      <td class="item-tax">{{ formatCurrency(item.get('taxAmount')?.value || 0) }}</td>
-                      <td class="item-total">{{ formatCurrency((item.get('total')?.value || 0) + (item.get('taxAmount')?.value || 0)) }}</td>
-                      <td class="item-remove">
-                        <button type="button" class="btn-remove" (click)="removeLineItem(i)">
-                          <i class="fas fa-trash-alt"></i>
-                        </button>
-                      </td>
+                    </tr>
+                    <tr *ngIf="items.length === 0">
+                      <td colspan="5" class="doc-empty-table">No line items added.</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              <!-- Line Actions -->
-              <div class="line-actions">
-                <button type="button" class="btn-link" (click)="addLineItem()">
-                  <i class="fas fa-plus-circle"></i> Add New Line
-                </button>
-                <button type="button" class="btn-link">
-                  <i class="fas fa-folder-plus"></i> Add New Group
-                </button>
+              <!-- Summary, Notes, Signature -->
+              <div class="doc-summary-notes-grid">
+                <!-- Notes and Terms -->
+                <div class="doc-notes-col">
+                  <div class="doc-notes-item" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
+                    <span class="doc-sub-label">Notes:</span>
+                    <p>{{ quoteForm.get('notes')?.value }}</p>
+                  </div>
+                  <div class="doc-notes-item" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
+                    <span class="doc-sub-label">Terms &amp; Conditions:</span>
+                    <p>{{ quoteForm.get('terms')?.value }}</p>
+                  </div>
+                  <div class="doc-notes-item" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
+                    <span class="doc-sub-label">Total in Words:</span>
+                    <p class="doc-words">{{ getTotalInWords(grandTotal) }}</p>
+                  </div>
+                </div>
+
+                <!-- Calculations -->
+                <div class="doc-totals-col">
+                  <div class="doc-total-row">
+                    <span>Subtotal</span>
+                    <span>{{ formatCurrency(subtotal) }}</span>
+                  </div>
+                  <div class="doc-total-row" *ngIf="discountAmount > 0">
+                    <span>Discount</span>
+                    <span class="doc-discount">-{{ formatCurrency(discountAmount) }}</span>
+                  </div>
+                  <div class="doc-total-row" *ngIf="additionalCharges > 0">
+                    <span>Additional Charges</span>
+                    <span>+{{ formatCurrency(additionalCharges) }}</span>
+                  </div>
+                  <div class="doc-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false">
+                    <span>Tax (7.5%)</span>
+                    <span>{{ formatCurrency(totalTax) }}</span>
+                  </div>
+                  <div class="doc-total-row grand-total">
+                    <span>Grand Total</span>
+                    <span>{{ formatCurrency(grandTotal) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Signature Area -->
+              <div class="doc-signature-block" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
+                <div class="signature-line"></div>
+                <p class="signature-title">Authorized Signature</p>
+                <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
               </div>
             </div>
           </div>
 
+          <!-- Right Column: Delivery Choices -->
+          <div class="delivery-options-column">
+            <div class="delivery-card glass">
+              <div class="delivery-card-header">
+                <div class="delivery-icon-bg">
+                  <i class="fas fa-paper-plane"></i>
+                </div>
+                <h3>Delivery Options</h3>
+              </div>
+              
+              <p class="delivery-card-desc">Choose how you want to receive and share this quotation with your client.</p>
+
+              <div class="delivery-choices-list">
+                <div class="delivery-choice-item" [class.active]="selectedAction === 'pdf'" (click)="selectedAction = 'pdf'">
+                  <div class="choice-icon"><i class="fas fa-file-pdf"></i></div>
+                  <div class="choice-details">
+                    <h4>Download PDF</h4>
+                    <p>Save quote document as a PDF to your device</p>
+                  </div>
+                  <div class="choice-check">
+                    <i class="fas" [class.fa-check-circle]="selectedAction === 'pdf'" [class.fa-circle]="selectedAction !== 'pdf'"></i>
+                  </div>
+                </div>
+
+                <div class="delivery-choice-item" [class.active]="selectedAction === 'email'" (click)="selectedAction = 'email'">
+                  <div class="choice-icon"><i class="fas fa-envelope"></i></div>
+                  <div class="choice-details">
+                    <h4>Send via Email</h4>
+                    <p>Send an email directly to the client with the quote</p>
+                  </div>
+                  <div class="choice-check">
+                    <i class="fas" [class.fa-check-circle]="selectedAction === 'email'" [class.fa-circle]="selectedAction !== 'email'"></i>
+                  </div>
+                </div>
+
+                <div class="delivery-choice-item" [class.active]="selectedAction === 'both'" (click)="selectedAction = 'both'">
+                  <div class="choice-icon"><i class="fas fa-share-alt"></i></div>
+                  <div class="choice-details">
+                    <h4>Both (PDF + Email)</h4>
+                    <p>Download the PDF copy and send the email</p>
+                  </div>
+                  <div class="choice-check">
+                    <i class="fas" [class.fa-check-circle]="selectedAction === 'both'" [class.fa-circle]="selectedAction !== 'both'"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Submission Buttons -->
+              <div class="delivery-submit-actions">
+                <button type="button" class="btn-delivery-submit" [disabled]="isSubmitting" (click)="onSubmit()">
+                  <i *ngIf="!isSubmitting" class="fas fa-paper-plane"></i>
+                  <div *ngIf="isSubmitting" class="spinner-mini"></div>
+                  <span>{{ isSubmitting ? 'Processing...' : 'Generate & Deliver Quote' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- RIGHT COLUMN: Parties, Summary, Additional Options -->
-        <div class="form-column right-column">
-          
-          <!-- Section 2: Parties -->
-          <div class="form-card glass">
-            <div class="card-header">
-              <div class="card-header-icon">
-                <i class="fas fa-users"></i>
-              </div>
-              <h3>Parties</h3>
-            </div>
-            <div class="card-body">
-              <!-- Quotation From -->
-              <div class="subsection">
-                <label class="subsection-label">Quotation From</label>
-                <div class="billed-details">
-                  <div class="billed-avatar">EO</div>
-                  <div class="billed-info">
-                    <strong>Eseose Odion</strong>
-                    <span>Nigeria</span>
-                  </div>
-                  <button type="button" class="btn-edit">
-                    <i class="fas fa-pencil-alt"></i> Edit
-                  </button>
-                </div>
-              </div>
-
-              <!-- Quotation For -->
-              <div class="subsection" style="margin-top: 1rem;">
-                <label class="subsection-label required">Quotation For</label>
-                <div class="form-group">
-                  <div class="customer-select">
-                    <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($any($event.target).value)">
-                      <option value="">Select a client...</option>
-                      <option *ngFor="let customer of customers" [value]="customer.id">
-                        {{ customer.name }}
-                      </option>
-                    </select>
-                    <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">
-                      <i class="fas fa-user-plus"></i> New Client
-                    </button>
-                  </div>
-                  <div class="form-error" *ngIf="isFieldInvalid('customerId')">Please select a client</div>
-                </div>
-                <div class="form-group">
-                  <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
-                </div>
-              </div>
-
-              <!-- Shipping -->
-              <div class="subsection" style="margin-top: 1rem;">
-                <button type="button" class="btn-link">
-                  <i class="fas fa-truck"></i> Add Shipping Details
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 5: Summary -->
-          <div class="form-card summary-card glass">
-            <div class="card-header">
-              <div class="card-header-icon">
-                <i class="fas fa-calculator"></i>
-              </div>
-              <h3>Summary</h3>
-            </div>
-            <div class="card-body">
-              <!-- Totals -->
-              <div class="summary-grid">
-                <div class="summary-item">
-                  <span class="summary-label">Subtotal</span>
-                  <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
-                </div>
-                <div class="summary-item" *ngIf="discountAmount > 0">
-                  <span class="summary-label">Discount</span>
-                  <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
-                </div>
-                <div class="summary-item">
-                  <span class="summary-label">Tax</span>
-                  <span class="summary-value">{{ formatCurrency(totalTax) }}</span>
-                </div>
-                <div class="summary-item total">
-                  <span class="summary-label">Grand Total</span>
-                  <span class="summary-value grand-total">{{ formatCurrency(grandTotal) }}</span>
-                </div>
-              </div>
-
-              <!-- Actions -->
-              <div class="summary-actions">
-                <button type="button" class="btn-link">
-                  <i class="fas fa-percent"></i> Add Discounts
-                </button>
-                <button type="button" class="btn-link">
-                  <i class="fas fa-plus-circle"></i> Add Additional Charges
-                </button>
-              </div>
-
-              <div class="summary-quantity">
-                <span>Total Quantity</span>
-                <span class="quantity-value">{{ getTotalQuantity() }}</span>
-              </div>
-
-              <!-- Total in Words -->
-              <div class="words-display">
-                <span class="words-label">
-                  <i class="fas fa-font"></i> Total in words
-                </span>
-                <span>{{ getTotalInWords(grandTotal) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 6: Additional Options -->
-          <div class="form-card glass">
-            <div class="card-header">
-              <div class="card-header-icon">
-                <i class="fas fa-cog"></i>
-              </div>
-              <h3>Additional Options</h3>
-            </div>
-            <div class="card-body">
-              <div class="options-grid">
-                <button type="button" class="btn-option-link" [class.active]="showSignature" (click)="showSignature = !showSignature">
-                  <i class="fas fa-signature"></i> Add Signature
-                </button>
-                <button type="button" class="btn-option-link" [class.active]="showAttachments" (click)="showAttachments = !showAttachments">
-                  <i class="fas fa-paperclip"></i> Add Attachments
-                </button>
-                <button type="button" class="btn-option-link" [class.active]="showAdditionalInfo" (click)="showAdditionalInfo = !showAdditionalInfo">
-                  <i class="fas fa-info-circle"></i> Add Additional Info
-                </button>
-                <button type="button" class="btn-option-link" [class.active]="showContactDetails" (click)="showContactDetails = !showContactDetails">
-                  <i class="fas fa-address-card"></i> Add Contact Details
-                </button>
-                <button type="button" class="btn-option-link" [class.active]="showNotes" (click)="showNotes = !showNotes">
-                  <i class="fas fa-sticky-note"></i> Add Notes
-                </button>
-                <button type="button" class="btn-option-link" [class.active]="showTerms" (click)="showTerms = !showTerms">
-                  <i class="fas fa-gavel"></i> Add Terms
-                </button>
-              </div>
-
-              <!-- Interactive Input Panels -->
-              <div class="options-panels-wrapper" *ngIf="showSignature || showAttachments || showAdditionalInfo || showContactDetails || showNotes || showTerms">
-                
-                <!-- Contact Details Panel -->
-                <div class="option-panel-item" *ngIf="showContactDetails">
-                  <label class="form-label required">Contact Details</label>
-                  <div class="form-row">
-                    <div class="form-group flex-1">
-                      <input type="tel" [(ngModel)]="contactPhone" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Phone Number">
-                    </div>
-                    <div class="form-group flex-1">
-                      <input type="email" [(ngModel)]="contactEmail" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Email Address">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Signature Panel -->
-                <div class="option-panel-item" *ngIf="showSignature">
-                  <label class="form-label">Authorized Signature</label>
-                  <div class="form-group">
-                    <input type="text" [(ngModel)]="signatureText" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Signee Name / Title">
-                    <div class="signature-draw-pad-placeholder">
-                      <i class="fas fa-pen-nib"></i> Signee signature placeholder (rendered on export)
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Attachments Panel -->
-                <div class="option-panel-item" *ngIf="showAttachments">
-                  <label class="form-label">Attachments</label>
-                  <div class="file-upload-zone">
-                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                    <span class="upload-text" *ngIf="!attachmentFileName">Click to upload files or drop here</span>
-                    <span class="upload-text" *ngIf="attachmentFileName">Selected: <strong>{{ attachmentFileName }}</strong></span>
-                    <input type="file" (change)="onFileSelected($event)" class="file-input-overlay">
-                  </div>
-                </div>
-
-                <!-- Additional Info Panel -->
-                <div class="option-panel-item" *ngIf="showAdditionalInfo">
-                  <label class="form-label">Additional Information</label>
-                  <div class="form-group">
-                    <textarea [(ngModel)]="additionalInfoText" [ngModelOptions]="{standalone: true}" class="form-textarea" placeholder="Add supplementary details..."></textarea>
-                  </div>
-                </div>
-
-                <!-- Notes Panel -->
-                <div class="option-panel-item" *ngIf="showNotes">
-                  <label class="form-label">Notes</label>
-                  <div class="form-group">
-                    <textarea formControlName="notes" class="form-textarea" placeholder="Enter notes for client..."></textarea>
-                  </div>
-                </div>
-
-                <!-- Terms Panel -->
-                <div class="option-panel-item" *ngIf="showTerms">
-                  <label class="form-label">Terms &amp; Conditions</label>
-                  <div class="form-group">
-                    <textarea formControlName="terms" class="form-textarea" placeholder="Enter terms and conditions..."></textarea>
-                  </div>
-                </div>
-
-              </div>
-
-              <!-- Advanced -->
-              <div class="advanced-section">
-                <button type="button" class="btn-link" (click)="showAdvanced = !showAdvanced">
-                  <i class="fas fa-chevron-down" [style.transform]="showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)'"></i>
-                  Advanced options
-                </button>
-                <div *ngIf="showAdvanced" class="advanced-panel">
-                  <div class="form-group">
-                    <label class="form-label">Display unit as</label>
-                    <select class="form-control">
-                      <option>Merge with quantity</option>
-                      <option>Show tax summary in invoice</option>
-                      <option>Do not show</option>
-                      <option>Hide place/country of supply</option>
-                    </select>
-                  </div>
-                  <div class="checkbox-grid">
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Add original images in line items</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show thumbnails in separate column</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show description in full width</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Hide subtotal for group items</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show SKU in Quotation</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Show Serial Numbers in Quotation</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox">
-                      <span class="checkbox-custom"></span>
-                      <span class="checkbox-text">Display Batch Details in columns</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- Step 3 Footer Actions -->
+        <div class="wizard-actions-footer">
+          <button type="button" class="btn-cancel" (click)="prevStep()">
+            <i class="fas fa-arrow-left"></i> Back to Templates
+          </button>
+          <button type="button" class="btn-continue" (click)="onSubmit()" [disabled]="isSubmitting">
+            <i class="fas fa-check"></i> Save & Deliver Quote
+          </button>
         </div>
       </div>
     </form>
   </div>
-</div>
 
-<!-- New Customer Modal -->
-<div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="showNewCustomerModal = false">
-  <div class="modal-container" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3><i class="fas fa-user-plus"></i> Add New Client</h3>
-      <button class="modal-close" (click)="showNewCustomerModal = false">×</button>
-    </div>
-    <div class="modal-body">
-      <p>Quick add customer form would go here</p>
+  <!-- New Customer Modal -->
+  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="showNewCustomerModal = false">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-plus"></i> Add New Client</h3>
+        <button class="modal-close" (click)="showNewCustomerModal = false">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Quick add customer form would go here</p>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Product Search Modal -->
-<div class="modal-overlay" *ngIf="showProductModal" (click)="showProductModal = false">
-  <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3><i class="fas fa-search"></i> Select Product</h3>
-      <button class="modal-close" (click)="showProductModal = false">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" [(ngModel)]="searchProductTerm" (input)="filterProducts()" placeholder="Search products...">
+  <!-- Product Search Modal -->
+  <div class="modal-overlay" *ngIf="showProductModal" (click)="showProductModal = false">
+    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-search"></i> Select Product</h3>
+        <button class="modal-close" (click)="showProductModal = false">×</button>
       </div>
-      <div class="product-list">
-        <div *ngFor="let product of filteredProducts" class="product-item" (click)="selectProductFromModal(product, currentItemIndex)">
-          <div class="product-name">{{ product.name }}</div>
-          <div class="product-sku">{{ product.sku }}</div>
-          <div class="product-price">{{ formatCurrency(product.unitPrice) }}</div>
+      <div class="modal-body">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" [(ngModel)]="searchProductTerm" (input)="filterProducts()" placeholder="Search products...">
+        </div>
+        <div class="product-list">
+          <div *ngFor="let product of filteredProducts" class="product-item" (click)="selectProductFromModal(product, currentItemIndex)">
+            <div class="product-name">{{ product.name }}</div>
+            <div class="product-sku">{{ product.sku }}</div>
+            <div class="product-price">{{ formatCurrency(product.unitPrice) }}</div>
+          </div>
         </div>
       </div>
     </div>

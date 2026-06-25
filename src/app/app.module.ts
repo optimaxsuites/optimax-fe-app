@@ -105,6 +105,8 @@ import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-det
 import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
+import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
+
 
 @NgModule({
   declarations: [
@@ -207,6 +209,7 @@ import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
     SalesOrdersListComponent,
     ProductServiceCatalogListComponent,
     ProductRequestDetailComponent,
+    TemplateTypesComponent,
 
 
   ],

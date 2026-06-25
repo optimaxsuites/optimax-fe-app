@@ -194,11 +194,9 @@
                   <div class="supplier-select-wrapper">
                     <select formControlName="supplier" class="form-control">
                       <option value="">Select supplier</option>
-                      <option value="Supplier A">Supplier A</option>
-                      <option value="Supplier B">Supplier B</option>
-                      <option value="Supplier C">Supplier C</option>
+                      <option *ngFor="let sup of suppliers" [value]="sup">{{ sup }}</option>
                     </select>
-                    <button type="button" class="btn-add-supplier">+</button>
+                    <button type="button" class="btn-add-supplier" (click)="addSupplier()">+</button>
                   </div>
                 </div>
               </div>
@@ -344,9 +342,7 @@
                 <label class="form-label">Select supplier</label>
                 <select formControlName="selectedSupplier" class="form-control">
                   <option value="">Select supplier</option>
-                  <option value="Supplier A">Supplier A</option>
-                  <option value="Supplier B">Supplier B</option>
-                  <option value="Supplier C">Supplier C</option>
+                  <option *ngFor="let sup of suppliers" [value]="sup">{{ sup }}</option>
                 </select>
               </div>
             </div>

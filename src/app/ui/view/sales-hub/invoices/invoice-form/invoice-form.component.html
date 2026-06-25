@@ -82,7 +82,7 @@
                   </select>
                 </div>
                 <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
-                  <button type="button" class="btn-link">
+                  <button type="button" class="btn-link" (click)="addCustomFields()">
                     <i class="fas fa-plus-circle"></i> Add Custom Fields
                   </button>
                 </div>
@@ -101,9 +101,10 @@
             <div class="card-body">
               <div class="logo-drop-zone">
                 <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                <span>Drop your logo here or click to browse</span>
-                <small>PNG or JPEG, up to 1080×1080px</small>
-                <input type="file" accept="image/*" class="file-input-overlay">
+                <span *ngIf="!logoFileName">Drop your logo here or click to browse</span>
+                <span *ngIf="logoFileName">Selected: <strong>{{ logoFileName }}</strong></span>
+                <small *ngIf="!logoFileName">PNG or JPEG, up to 1080×1080px</small>
+                <input type="file" accept="image/*" (change)="onLogoSelected($event)" class="file-input-overlay">
               </div>
             </div>
           </div>
@@ -153,13 +154,13 @@
                             </option>
                           </select>
                           <div class="item-actions-cell">
-                            <button type="button" class="btn-icon-sm" title="Add Description">
+                            <button type="button" class="btn-icon-sm" title="Add Description" (click)="addDescription(i)">
                               <i class="fas fa-edit"></i>
                             </button>
-                            <button type="button" class="btn-icon-sm" title="Add Image">
+                            <button type="button" class="btn-icon-sm" title="Add Image" (click)="addImage(i)">
                               <i class="fas fa-image"></i>
                             </button>
-                            <button type="button" class="btn-icon-sm" title="Add Unit">
+                            <button type="button" class="btn-icon-sm" title="Add Unit" (click)="addUnit(i)">
                               <i class="fas fa-cube"></i>
                             </button>
                           </div>
@@ -192,7 +193,7 @@
                 <button type="button" class="btn-link" (click)="addLineItem()">
                   <i class="fas fa-plus-circle"></i> Add New Line
                 </button>
-                <button type="button" class="btn-link">
+                <button type="button" class="btn-link" (click)="addNewGroup()">
                   <i class="fas fa-folder-plus"></i> Add New Group
                 </button>
               </div>
@@ -222,7 +223,7 @@
                     <strong>Eseose Odion</strong>
                     <span>Nigeria</span>
                   </div>
-                  <button type="button" class="btn-edit">
+                  <button type="button" class="btn-edit" (click)="editBilledBy()">
                     <i class="fas fa-pencil-alt"></i> Edit
                   </button>
                 </div>
@@ -252,9 +253,32 @@
 
               <!-- Shipping -->
               <div class="subsection" style="margin-top: 1rem;">
-                <button type="button" class="btn-link">
+                <button type="button" class="btn-link" (click)="addShippingDetails()">
                   <i class="fas fa-truck"></i> Add Shipping Details
                 </button>
+              </div>
+              
+              <!-- Shipping Details Panel -->
+              <div class="shipping-details-panel" *ngIf="showShippingDetails" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Shipping Address</label>
+                  <input type="text" [(ngModel)]="shippingAddress" [ngModelOptions]="{standalone: true}" class="form-control" placeholder="Enter shipping address">
+                </div>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label">Method</label>
+                    <select [(ngModel)]="shippingMethod" [ngModelOptions]="{standalone: true}" class="form-control">
+                      <option value="">Select Method</option>
+                      <option value="Standard">Standard Courier</option>
+                      <option value="Express">Express Cargo</option>
+                      <option value="Pickup">Self Pickup</option>
+                    </select>
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Est. Date</label>
+                    <input type="date" [(ngModel)]="shippingDate" [ngModelOptions]="{standalone: true}" class="form-control">
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -275,8 +299,12 @@
                   <span class="summary-value">{{ formatCurrency(subtotal) }}</span>
                 </div>
                 <div class="summary-item" *ngIf="discountAmount > 0">
-                  <span class="summary-label">Discount</span>
+                  <span class="summary-label">Discount <span *ngIf="invoiceForm.get('discountValue')?.value > 0 && invoiceForm.get('discountType')?.value === 'PERCENTAGE'">({{ invoiceForm.get('discountValue')?.value }}%)</span></span>
                   <span class="summary-value discount">-{{ formatCurrency(discountAmount) }}</span>
+                </div>
+                <div class="summary-item" *ngIf="additionalCharges > 0">
+                  <span class="summary-label">Additional Charges</span>
+                  <span class="summary-value">+{{ formatCurrency(additionalCharges) }}</span>
                 </div>
                 <div class="summary-item">
                   <span class="summary-label">Tax</span>
@@ -290,10 +318,10 @@
 
               <!-- Actions -->
               <div class="summary-actions">
-                <button type="button" class="btn-link">
+                <button type="button" class="btn-link" (click)="addDiscounts()">
                   <i class="fas fa-percent"></i> Add Discounts
                 </button>
-                <button type="button" class="btn-link">
+                <button type="button" class="btn-link" (click)="addAdditionalCharges()">
                   <i class="fas fa-plus-circle"></i> Add Additional Charges
                 </button>
               </div>
