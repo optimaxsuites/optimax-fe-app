@@ -58,7 +58,7 @@ export class CheckinCheckoutComponent implements OnInit {
 
     if (currentUser?.userId) {
 
-      console.log('SESSION USER:', currentUser);
+    console.log('SESSION USER:', currentUser);
     console.log('SESSION USER ID:', currentUser.userId);
 
       this.attendancetableService
@@ -75,6 +75,10 @@ export class CheckinCheckoutComponent implements OnInit {
           this.hrEmployeeId = result.id;
           this.hrDepartment = result.department;
           this.hrEmployeeName = result.fullName;
+
+          this.attendancetableService.fetchByEmployee(
+            Number(this.hrEmployeeId)
+          );
 
           console.log('HR employee ID resolved:', this.hrEmployeeId);
         });
@@ -97,8 +101,11 @@ export class CheckinCheckoutComponent implements OnInit {
   setInterval(() => { this.currentTime = new Date(); }, 1000);
 
   // React to attendance changes
-  this.attendancetableService.attendance$.subscribe(() => {
+  this.attendancetableService.attendance$.subscribe(data => {
     //const userId = this.currentUser?.id!;
+
+    console.log('ATTENDANCE UPDATE');
+    console.log(data);
 
     if (!this.hrEmployeeId) return;
     const employeeId = Number(this.hrEmployeeId);
@@ -109,6 +116,24 @@ export class CheckinCheckoutComponent implements OnInit {
     // Restore clock status from today's record after refresh
     this.restoreClockStatus();
   });
+
+  /*this.attendancetableService
+  .fetchByEmployee(Number(this.hrEmployeeId))
+  .subscribe(() => {
+
+    this.restoreClockStatus();
+
+    this.hasCompletedToday =
+      this.attendancetableService.hasCompletedToday(
+        Number(this.hrEmployeeId)
+      );
+
+    this.isAbsentToday =
+      this.attendancetableService.isEmployeeBlockedToday(
+        Number(this.hrEmployeeId)
+      );
+  });*/
+  
 
   this.checkOfficeHours();
   this.officeHoursService.officeHours$.subscribe(() => this.checkOfficeHours());
@@ -129,12 +154,14 @@ const employeeId = Number(this.hrEmployeeId);
 const restored =
 this.attendancetableService.getTodayStatusForEmployee(employeeId);
 
+console.log('RESTORE STATUS');
+console.log('Employee ID:', employeeId);
+console.log('Restored:', restored);
+
 if (restored === 'CLOCKED_IN') {
 this.status = 'CLOCKED_IN';
 this.attendancetableService.setClockStatus('CLOCKED_IN');
-
 } else if (restored === 'CLOCKED_OUT') {
-
 this.status = 'CLOCKED_OUT';
 this.attendancetableService.setClockStatus('CLOCKED_OUT');
 }
@@ -201,9 +228,6 @@ this.attendancetableService.setClockStatus('CLOCKED_OUT');
           department: this.hrDepartment,
           action: 'IN'
         });
-    
-        this.status = 'CLOCKED_IN';
-        this.attendancetableService.setClockStatus('CLOCKED_IN');
 
         await this.attendancetableService.clockAction(
           //this.currentUser!.id,
@@ -215,6 +239,9 @@ this.attendancetableService.setClockStatus('CLOCKED_OUT');
           'IN'
         );
 
+        this.status = 'CLOCKED_IN';
+        this.attendancetableService.setClockStatus('CLOCKED_IN');
+
   } else {
 
       console.log('CLOCK PAYLOAD:', {
@@ -223,9 +250,6 @@ this.attendancetableService.setClockStatus('CLOCKED_OUT');
         department: this.hrDepartment,
         action: 'OUT'
       });
-
-    this.status = 'CLOCKED_OUT';
-    this.attendancetableService.setClockStatus('CLOCKED_OUT');
 
     await this.attendancetableService.clockAction(
       //this.currentUser!.id,
@@ -236,6 +260,11 @@ this.attendancetableService.setClockStatus('CLOCKED_OUT');
       this.hrDepartment, //for department
       'OUT'
     );
+
+    this.status = 'CLOCKED_OUT';
+    this.attendancetableService.setClockStatus('CLOCKED_OUT');
+
+    
   }
 } finally {
     this.isGettingLocation  = false;
