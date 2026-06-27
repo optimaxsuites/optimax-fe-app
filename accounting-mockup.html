@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OptimaX ERP — Accounting (Merged Mockup)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css">
+<script>
+tailwind.config = {
+  theme: { extend: { colors: { customBlue: '#112a46', customBlueHover: '#0d1f33' } } }
+}
+</script>
+<style>
+body { font-family: system-ui,-apple-system,sans-serif; }
+.tab-btn { display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;transition:all .15s;cursor:pointer;border:none;background:none; }
+.tab-btn.active { background:#112a46;color:#fff; }
+.tab-btn:not(.active) { color:#6b7280; }
+.tab-btn:not(.active):hover { background:#f3f4f6;color:#111827; }
+.inner-tab { padding:10px 16px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s; }
+.inner-tab.active { border-bottom-color:#112a46;color:#112a46; }
+.inner-tab:not(.active) { color:#9ca3af; }
+.inner-tab:not(.active):hover { color:#374151; }
+.badge-new { background:#f59e0b;color:#fff;font-size:9px;padding:1px 6px;border-radius:999px;font-weight:900;vertical-align:middle; }
+.stat-card { position:relative;overflow:hidden;border-radius:12px;padding:24px;min-height:110px;display:flex;flex-direction:column;justify-content:space-between;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:all .3s; }
+.stat-card:hover { transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.stat-ghost { position:absolute;right:-16px;bottom:-16px;font-size:5rem;opacity:.07; }
+.view { display:none; }
+.view.active { display:block; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- NAV TAB BAR — mirrors app-nav-tab -->
+<div class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40 px-4 md:px-8">
+  <div class="flex items-center gap-1 overflow-x-auto py-2">
+    <button class="tab-btn active" onclick="showTab('events')" id="btn-events"><i class="pi pi-inbox"></i> Accounting Events</button>
+    <button class="tab-btn" onclick="showTab('coa')" id="btn-coa"><i class="pi pi-sitemap"></i> Chart of Accounts</button>
+    <button class="tab-btn" onclick="showTab('journals')" id="btn-journals"><i class="pi pi-book"></i> Journal Entries</button>
+    <button class="tab-btn" onclick="showTab('ledger')" id="btn-ledger"><i class="pi pi-list"></i> General Ledger</button>
+    <button class="tab-btn" onclick="showTab('bank')" id="btn-bank"><i class="pi pi-building"></i> Bank &amp; Reconciliation</button>
+    <button class="tab-btn" onclick="showTab('payments')" id="btn-payments"><i class="pi pi-send"></i> Payment Runs</button>
+    <button class="tab-btn" onclick="showTab('reports')" id="btn-reports"><i class="pi pi-chart-bar"></i> Reports <span class="badge-new">IN NAV</span></button>
+    <button class="tab-btn" onclick="showTab('settings')" id="btn-settings"><i class="pi pi-cog"></i> Settings</button>
+  </div>
+</div>
+
+<!-- ═══ TAB 1: ACCOUNTING EVENTS ═══
+  FIXES: renamed from "Accounting Transactions"; new lifecycle
+  INITIATED→PENDING→APPROVED→COMPLETED; direction + currency + counterparty
+  columns added; separate Approve/Edit/Reject buttons; modal renamed
+-->
+<div id="view-events" class="view active min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm">
+      <i class="pi pi-info-circle text-blue-500 mt-0.5 shrink-0"></i>
+      <div><span class="font-black text-blue-900">Renamed from "Accounting Transactions"</span><span class="text-blue-700"> — Events are instances of Event Definitions. Status lifecycle: INITIATED → PENDING → APPROVED → COMPLETED. Direction, Currency, and Counterparty columns added per the new model.</span></div>
+    </div>
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center"><i class="pi pi-inbox text-amber-600 text-xl"></i></div>
+          <h1 class="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight">Accounting Events</h1>
+        </div>
+        <p class="text-gray-500 font-semibold text-sm sm:text-lg">Review, approve and post financial events from all business modules.</p>
+      </div>
+      <div class="relative z-10 flex gap-3">
+        <button class="flex items-center gap-2 bg-white text-gray-700 px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 border border-gray-200 shadow-sm active:scale-95"><i class="pi pi-download"></i> Export</button>
+        <button class="flex items-center gap-2 bg-white text-gray-700 px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 border border-gray-200 shadow-sm active:scale-95"><i class="pi pi-refresh"></i> Refresh</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="stat-card border-l-[5px] border-l-[#dc2626]"><i class="pi pi-bolt stat-ghost text-red-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Initiated</span><p class="text-[2rem] font-extrabold text-red-600">12</p></div>
+      <div class="stat-card border-l-[5px] border-l-[#d97706]"><i class="pi pi-clock stat-ghost text-amber-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Pending</span><p class="text-[2rem] font-extrabold text-amber-600">8</p></div>
+      <div class="stat-card border-l-[5px] border-l-[#16a34a]"><i class="pi pi-check-circle stat-ghost text-green-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Approved</span><p class="text-[2rem] font-extrabold text-green-700">47</p></div>
+      <div class="stat-card border-l-[5px] border-l-[#7c3aed]"><i class="pi pi-verified stat-ghost text-purple-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Completed</span><p class="text-[2rem] font-extrabold text-purple-700">234</p></div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+      <div class="relative flex-1 min-w-[220px] border border-gray-200 rounded-xl">
+        <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" placeholder="Search reference, counterparty, description..." class="w-full pl-11 pr-4 py-3 bg-transparent text-sm font-medium text-gray-700 outline-none">
+      </div>
+      <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none cursor-pointer bg-white"><option>ALL DIRECTION</option><option>INFLOW</option><option>OUTFLOW</option></select>
+      <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none cursor-pointer bg-white"><option>ALL MODULES</option><option>PAYROLL</option><option>POS</option><option>LOANS</option><option>EXPENSE</option><option>BANK</option></select>
+      <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none cursor-pointer bg-white"><option>ALL STATUS</option><option>INITIATED</option><option>PENDING</option><option>APPROVED</option><option>COMPLETED</option><option>REJECTED</option><option>CANCELLED</option></select>
+      <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none cursor-pointer bg-white"><option>ALL CURRENCIES</option><option>NGN</option><option>USD</option><option>GBP</option><option>EUR</option><option>AED</option></select>
+      <button class="px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-black text-sm uppercase flex items-center gap-1.5 hover:bg-gray-50"><i class="pi pi-times text-xs"></i> Clear</button>
+    </div>
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr class="bg-[#112a46] text-white text-left">
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Date</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Reference</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Event Definition</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Counterparty</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Module</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Direction</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Amount</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Status</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right whitespace-nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="bg-white hover:bg-gray-50 transition-colors">
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-700 font-medium">14 Jun 2026</td>
+              <td class="px-5 py-3.5 whitespace-nowrap font-mono text-customBlue font-bold">TXN-2026-041</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Staff Salary Payment</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Olawale Adeyemi</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase">PAYROLL</span></td>
+              <td class="px-5 py-3.5"><span class="flex items-center gap-1 text-red-600 font-bold text-xs whitespace-nowrap"><i class="pi pi-arrow-up-right"></i> OUTFLOW</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦150,000 <span class="text-xs text-gray-400 font-normal">NGN</span></td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold uppercase">PENDING</span></td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center justify-end gap-3 text-lg">
+                  <button title="View Details" class="text-gray-400 hover:text-gray-700"><i class="pi pi-eye"></i></button>
+                  <button title="Approve" onclick="document.getElementById('modal-approve').classList.remove('hidden')" class="text-green-600 hover:text-green-800"><i class="pi pi-check"></i></button>
+                  <button title="Edit Mapping" class="text-customBlue hover:opacity-70"><i class="pi pi-pencil"></i></button>
+                  <button title="Reject" class="text-red-500 hover:text-red-700"><i class="pi pi-times-circle"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="bg-[#f8f9fa] hover:bg-gray-100 transition-colors">
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-700 font-medium">13 Jun 2026</td>
+              <td class="px-5 py-3.5 whitespace-nowrap font-mono text-customBlue font-bold">TXN-2026-040</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Client Invoice Settlement</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Dangote Group</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase">SALES</span></td>
+              <td class="px-5 py-3.5"><span class="flex items-center gap-1 text-green-600 font-bold text-xs whitespace-nowrap"><i class="pi pi-arrow-down-left"></i> INFLOW</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">$5,200 <span class="text-xs text-gray-400 font-normal">USD ≈ ₦8.2M</span></td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">COMPLETED</span></td>
+              <td class="px-5 py-3.5"><div class="flex items-center justify-end gap-3"><button class="text-gray-400 hover:text-gray-700 text-lg"><i class="pi pi-eye"></i></button><span class="text-gray-300 text-base"><i class="pi pi-lock"></i></span></div></td>
+            </tr>
+            <tr class="bg-white hover:bg-gray-50 opacity-70 transition-colors">
+              <td class="px-5 py-3.5 whitespace-nowrap text-gray-700 font-medium">12 Jun 2026</td>
+              <td class="px-5 py-3.5 whitespace-nowrap font-mono text-customBlue font-bold">TXN-2026-039</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Expense Reimbursement</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Amaka Okonkwo</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold uppercase">EXPENSE</span></td>
+              <td class="px-5 py-3.5"><span class="flex items-center gap-1 text-red-600 font-bold text-xs whitespace-nowrap"><i class="pi pi-arrow-up-right"></i> OUTFLOW</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦45,000 <span class="text-xs text-gray-400 font-normal">NGN</span></td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase">REJECTED</span></td>
+              <td class="px-5 py-3.5"><div class="flex items-center justify-end gap-3"><button class="text-gray-400 hover:text-gray-700 text-lg"><i class="pi pi-eye"></i></button><span class="text-gray-300 text-base"><i class="pi pi-lock"></i></span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-6 border-t border-gray-50 flex items-center justify-between">
+        <p class="text-gray-400 font-bold text-sm">Showing 3 of 301 events</p>
+        <div class="flex items-center gap-2">
+          <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-black text-gray-500">← Prev</button>
+          <button class="px-4 py-2 bg-customBlue text-white rounded-lg text-sm font-black">1</button>
+          <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-black text-gray-500">2</button>
+          <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-black text-gray-500">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APPROVE MODAL: FIXED — no "Fiduciary Control", "Cancel" not "Discard", "Post to Ledger" not "Accept & Post" -->
+<div id="modal-approve" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="document.getElementById('modal-approve').classList.add('hidden')"></div>
+  <div class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
+    <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-customBlue to-[#2e6276]"></div>
+    <button onclick="document.getElementById('modal-approve').classList.add('hidden')" class="absolute top-5 right-5 p-2 hover:bg-gray-100 rounded-full"><i class="pi pi-times text-gray-400"></i></button>
+    <div class="px-10 pt-12 pb-10 flex flex-col items-center text-center">
+      <div class="w-20 h-20 bg-customBlue/10 rounded-full flex items-center justify-center mb-6"><i class="pi pi-check-circle text-4xl text-customBlue"></i></div>
+      <h2 class="text-3xl font-black text-gray-900 mb-2">Approve &amp; Post to Ledger</h2>
+      <p class="text-gray-500 font-medium mb-6 max-w-xs">Creates an immutable journal entry and updates the General Ledger.</p>
+      <div class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-6 text-left">
+        <div class="flex justify-between items-start mb-4">
+          <div><p class="text-xs font-black uppercase tracking-widest text-gray-400">Event Definition</p><p class="text-lg font-black text-customBlue mt-1">Staff Salary Payment</p><p class="text-xs font-mono text-gray-400 mt-0.5">TXN-2026-041</p></div>
+          <div class="text-right"><p class="text-xs font-black uppercase tracking-widest text-gray-400">Amount</p><p class="text-2xl font-black text-gray-900 mt-1">₦150,000</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div><p class="text-xs font-black uppercase text-gray-400 mb-1">Debit Account</p><p class="font-bold text-red-600 text-sm">5001 — Salaries Expense</p></div>
+          <div><p class="text-xs font-black uppercase text-gray-400 mb-1">Credit Account</p><p class="font-bold text-green-600 text-sm">2001 — Payroll Payable</p></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 w-full">
+        <button onclick="document.getElementById('modal-approve').classList.add('hidden')" class="flex-1 px-6 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 active:scale-95">Cancel</button>
+        <button class="flex-[2] px-6 py-4 bg-customBlue text-white rounded-2xl font-black uppercase tracking-widest hover:opacity-90 shadow-lg active:scale-95">Post to Ledger</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 2: CHART OF ACCOUNTS ═══
+  FIXES: COST_OF_SALES type; "Archived Accounts" (was "Deleted Logs");
+  "Run Trial Balance" (was dead "Run Report"); "Opening Balance" (was "Opening Register Balance")
+-->
+<div id="view-coa" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm">
+      <i class="pi pi-check-circle text-green-500 mt-0.5 shrink-0"></i>
+      <div><span class="font-black text-green-900">COST_OF_SALES account type added</span><span class="text-green-700"> — Required by IFRS for Gross Profit. "Deleted Logs" → "Archived Accounts". Dead "Run Report" → "Run Trial Balance" (now navigates to General Ledger → Trial Balance tab). "Opening Register Balance" → "Opening Balance".</span></div>
+    </div>
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-customBlue/10 flex items-center justify-center text-customBlue"><i class="pi pi-sitemap text-xl"></i></div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Chart of Accounts</h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Hierarchical account structure · IFRS-compliant types</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 active:scale-95"><i class="pi pi-folder-open"></i> Archived Accounts</button>
+        <button onclick="showTab('ledger');setTimeout(()=>showInnerTab('ledger','trial'),80)" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 active:scale-95"><i class="pi pi-table"></i> Run Trial Balance</button>
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 shadow-md active:scale-95"><i class="pi pi-plus"></i> New Account</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Assets</p><p class="text-2xl font-black text-customBlue">24</p><p class="text-xs text-gray-400 mt-1">Normal: Dr</p></div>
+      <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Liabilities</p><p class="text-2xl font-black text-red-600">18</p><p class="text-xs text-gray-400 mt-1">Normal: Cr</p></div>
+      <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Equity</p><p class="text-2xl font-black text-purple-600">8</p><p class="text-xs text-gray-400 mt-1">Normal: Cr</p></div>
+      <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Income</p><p class="text-2xl font-black text-green-600">12</p><p class="text-xs text-gray-400 mt-1">Normal: Cr</p></div>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-amber-600 mb-2">Cost of Sales <span class="badge-new">NEW</span></p><p class="text-2xl font-black text-amber-600">6</p><p class="text-xs text-amber-500 mt-1">Normal: Dr</p></div>
+      <div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm text-center hover:shadow-md transition-all cursor-pointer"><p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Expenses</p><p class="text-2xl font-black text-orange-600">31</p><p class="text-xs text-gray-400 mt-1">Normal: Dr</p></div>
+    </div>
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div class="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-[200px] border border-gray-200 rounded-xl">
+          <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          <input type="text" placeholder="Search accounts..." class="w-full pl-11 pr-4 py-3 bg-transparent text-sm outline-none">
+        </div>
+        <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none bg-white"><option>ALL TYPES</option><option>ASSET</option><option>LIABILITY</option><option>EQUITY</option><option>INCOME</option><option>COST_OF_SALES</option><option>EXPENSE</option></select>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead><tr class="bg-[#112a46] text-white text-left">
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Account Name</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Code</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Type</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Normal Balance</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Opening Balance</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right">Actions</th>
+          </tr></thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="bg-white hover:bg-gray-50 cursor-pointer" onclick="toggleCoa(this,'1000')">
+              <td class="px-5 py-3.5 font-black text-customBlue"><span id="ico-1000" class="mr-2 text-gray-400 text-xs">▶</span>1000 — Current Assets</td>
+              <td class="px-5 py-3.5 font-mono text-gray-500">1000</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">ASSET</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-700">Debit</td>
+              <td class="px-5 py-3.5 text-gray-400">—</td>
+              <td class="px-5 py-3.5 text-right"><button class="text-gray-400 hover:text-gray-600 mr-3"><i class="pi pi-plus"></i></button><button class="text-customBlue hover:opacity-70"><i class="pi pi-pencil"></i></button></td>
+            </tr>
+            <tr class="bg-[#f8f9fa] hover:bg-gray-100 coa-1000" style="display:none"><td class="px-5 py-3.5 pl-12 text-gray-700 font-medium">1001 — Cash &amp; Bank</td><td class="px-5 py-3.5 font-mono text-gray-400">1001</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">ASSET</span></td><td class="px-5 py-3.5 font-bold text-gray-700">Debit</td><td class="px-5 py-3.5 text-gray-700 font-medium">₦4,250,000</td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-2"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+            <tr class="bg-[#f8f9fa] hover:bg-gray-100 coa-1000" style="display:none"><td class="px-5 py-3.5 pl-12 text-gray-700 font-medium">1002 — Accounts Receivable</td><td class="px-5 py-3.5 font-mono text-gray-400">1002</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">ASSET</span></td><td class="px-5 py-3.5 font-bold text-gray-700">Debit</td><td class="px-5 py-3.5 text-gray-700 font-medium">₦12,800,000</td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-2"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+            <tr class="bg-amber-50/60 hover:bg-amber-50 cursor-pointer border-l-4 border-l-amber-300" onclick="toggleCoa(this,'4000')">
+              <td class="px-5 py-3.5 font-black text-amber-700"><span id="ico-4000" class="mr-2 text-amber-400 text-xs">▶</span>4000 — Cost of Sales <span class="badge-new ml-1">NEW TYPE</span></td>
+              <td class="px-5 py-3.5 font-mono text-amber-600">4000</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">COST_OF_SALES</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-700">Debit</td>
+              <td class="px-5 py-3.5 text-gray-400">—</td>
+              <td class="px-5 py-3.5 text-right"><button class="text-gray-400 hover:text-gray-600 mr-3"><i class="pi pi-plus"></i></button><button class="text-customBlue hover:opacity-70"><i class="pi pi-pencil"></i></button></td>
+            </tr>
+            <tr class="bg-amber-50/30 hover:bg-amber-50 coa-4000" style="display:none"><td class="px-5 py-3.5 pl-12 text-gray-700 font-medium">4001 — Direct Labour Cost</td><td class="px-5 py-3.5 font-mono text-gray-400">4001</td><td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">COST_OF_SALES</span></td><td class="px-5 py-3.5 font-bold text-gray-700">Debit</td><td class="px-5 py-3.5 text-gray-400">—</td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-2"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+            <tr class="bg-white hover:bg-gray-50 cursor-pointer" onclick="toggleCoa(this,'5000')">
+              <td class="px-5 py-3.5 font-black text-customBlue"><span id="ico-5000" class="mr-2 text-gray-400 text-xs">▶</span>5000 — Operating Expenses</td>
+              <td class="px-5 py-3.5 font-mono text-gray-500">5000</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">EXPENSE</span></td>
+              <td class="px-5 py-3.5 font-bold text-gray-700">Debit</td>
+              <td class="px-5 py-3.5 text-gray-400">—</td>
+              <td class="px-5 py-3.5 text-right"><button class="text-gray-400 hover:text-gray-600 mr-3"><i class="pi pi-plus"></i></button><button class="text-customBlue hover:opacity-70"><i class="pi pi-pencil"></i></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 3: JOURNAL ENTRIES ═══
+  FIXES: h1 = "Journal Entries" (was "Financial Journals" while tab said "Journal Entries"
+  and component was named "BookKeepingComponent" — 3 different names for one screen).
+  Reverse action added. Recurring Templates button added.
+-->
+<div id="view-journals" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-customBlue/10 flex items-center justify-center rounded-2xl text-customBlue"><i class="pi pi-book text-xl"></i></div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Journal Entries</h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Audit-ready double-entry bookkeeping records</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 active:scale-95"><i class="pi pi-download"></i> Export CSV</button>
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 active:scale-95"><i class="pi pi-replay"></i> Recurring</button>
+        <button class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 shadow-md active:scale-95"><i class="pi pi-plus"></i> Manual Journal</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="stat-card border-l-[5px] border-l-customBlue"><i class="pi pi-book stat-ghost text-customBlue"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Total Journals</span><p class="text-[2rem] font-extrabold text-customBlue">842</p></div>
+      <div class="stat-card border-l-[5px] border-l-[#16a34a]"><i class="pi pi-check-circle stat-ghost text-green-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Posted</span><p class="text-[2rem] font-extrabold text-green-700">798</p></div>
+      <div class="stat-card border-l-[5px] border-l-[#d97706]"><i class="pi pi-file-edit stat-ghost text-amber-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Draft</span><p class="text-[2rem] font-extrabold text-amber-600">44</p></div>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+      <div class="relative flex-1 min-w-[200px] border border-gray-200 rounded-xl">
+        <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" placeholder="Search entry #, reference, description..." class="w-full pl-11 pr-4 py-3 bg-transparent text-sm outline-none">
+      </div>
+      <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black uppercase text-customBlue outline-none bg-white"><option>All Statuses</option><option>POSTED</option><option>DRAFT</option><option>REVERSED</option></select>
+      <input type="date" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-white">
+      <input type="date" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-white">
+      <button class="px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-black text-sm uppercase flex items-center gap-1.5 hover:bg-gray-50"><i class="pi pi-times text-xs"></i> Clear</button>
+    </div>
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead><tr class="bg-[#112a46] text-white text-left">
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Entry #</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Date</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Description</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Debit (Dr)</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Credit (Cr)</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Status</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Source</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right">Actions</th>
+          </tr></thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-customBlue font-bold whitespace-nowrap">JE-2026-0842</td><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">14 Jun 2026</td><td class="px-5 py-3.5 text-gray-700 max-w-[220px] truncate">June Payroll — Salaries Payable</td><td class="px-5 py-3.5 font-bold text-red-600">₦4,500,000</td><td class="px-5 py-3.5 font-bold text-green-600">₦4,500,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">POSTED</span></td><td class="px-5 py-3.5"><span class="inline-flex bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">AUTO</span></td><td class="px-5 py-3.5"><div class="flex items-center justify-end gap-3 text-lg"><button class="text-gray-400 hover:text-gray-700"><i class="pi pi-eye"></i></button><button title="Reverse Entry" class="text-amber-500 hover:text-amber-700"><i class="pi pi-undo"></i></button></div></td></tr>
+            <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono text-customBlue font-bold whitespace-nowrap">JE-2026-0841</td><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">13 Jun 2026</td><td class="px-5 py-3.5 text-gray-700 max-w-[220px] truncate">Client Invoice — Dangote Group</td><td class="px-5 py-3.5 font-bold text-red-600">₦8,216,000</td><td class="px-5 py-3.5 font-bold text-green-600">₦8,216,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">POSTED</span></td><td class="px-5 py-3.5"><span class="inline-flex bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">AUTO</span></td><td class="px-5 py-3.5"><div class="flex items-center justify-end gap-3 text-lg"><button class="text-gray-400 hover:text-gray-700"><i class="pi pi-eye"></i></button><button class="text-amber-500 hover:text-amber-700"><i class="pi pi-undo"></i></button></div></td></tr>
+            <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-customBlue font-bold whitespace-nowrap">JE-2026-0840</td><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">12 Jun 2026</td><td class="px-5 py-3.5 text-gray-700 max-w-[220px] truncate">Manual — Prepaid Insurance adj.</td><td class="px-5 py-3.5 font-bold text-red-600">₦120,000</td><td class="px-5 py-3.5 font-bold text-green-600">₦120,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold uppercase">DRAFT</span></td><td class="px-5 py-3.5"><span class="inline-flex bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">MANUAL</span></td><td class="px-5 py-3.5"><div class="flex items-center justify-end gap-3 text-lg"><button class="text-gray-400 hover:text-gray-700"><i class="pi pi-eye"></i></button><button class="text-customBlue hover:opacity-70"><i class="pi pi-pencil"></i></button><button class="text-green-600 hover:text-green-800"><i class="pi pi-check"></i></button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 4: GENERAL LEDGER ═══
+  FIXES: Trial Balance subtab added (was missing entirely);
+  "All Primary Accounts" filter label → "All Accounts" (sub-accounts are included too)
+-->
+<div id="view-ledger" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-customBlue/10 flex items-center justify-center rounded-2xl text-customBlue"><i class="pi pi-list text-xl"></i></div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">General Ledger</h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Complete double-entry transaction history per account</p>
+        </div>
+      </div>
+      <button class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 active:scale-95"><i class="pi pi-download"></i> Export</button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="flex border-b border-gray-100 px-6 gap-1">
+        <button class="inner-tab active" id="inner-ledger-ledger" onclick="showInnerTab('ledger','ledger')">Ledger View</button>
+        <button class="inner-tab" id="inner-ledger-trial" onclick="showInnerTab('ledger','trial')">Trial Balance <span class="badge-new">NEW</span></button>
+      </div>
+      <div id="inner-ledger-view-ledger" class="p-4">
+        <div class="flex flex-wrap gap-3 mb-4">
+          <select class="appearance-none border border-gray-200 rounded-xl px-4 py-3 text-sm font-black text-customBlue outline-none bg-white"><option>All Accounts</option><option>1001 — Cash &amp; Bank</option><option>1002 — Accounts Receivable</option><option>5001 — Salaries Expense</option></select>
+          <input type="date" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-white">
+          <input type="date" class="border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-white">
+          <button class="px-4 py-3 bg-customBlue text-white rounded-xl text-sm font-black uppercase tracking-widest hover:opacity-90 active:scale-95">Apply</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left">
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Date</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Journal Ref</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Description</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Account</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Debit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Credit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs whitespace-nowrap">Running Balance</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">14 Jun 2026</td><td class="px-5 py-3.5 font-mono text-customBlue">JE-2026-0842</td><td class="px-5 py-3.5 text-gray-700">June Payroll</td><td class="px-5 py-3.5 text-gray-600 font-medium">5001 — Salaries Expense</td><td class="px-5 py-3.5 text-red-600 font-bold">₦4,500,000</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦18,200,000 Dr</td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">14 Jun 2026</td><td class="px-5 py-3.5 font-mono text-customBlue">JE-2026-0842</td><td class="px-5 py-3.5 text-gray-700">June Payroll</td><td class="px-5 py-3.5 text-gray-600 font-medium">2001 — Payroll Payable</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 text-green-600 font-bold">₦4,500,000</td><td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦4,500,000 Cr</td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">13 Jun 2026</td><td class="px-5 py-3.5 font-mono text-customBlue">JE-2026-0841</td><td class="px-5 py-3.5 text-gray-700">Dangote Invoice</td><td class="px-5 py-3.5 text-gray-600 font-medium">1002 — Accounts Receivable</td><td class="px-5 py-3.5 text-red-600 font-bold">₦8,216,000</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦21,016,000 Dr</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="inner-ledger-view-trial" class="p-4" style="display:none">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <p class="text-sm text-gray-500 font-medium">As at <span class="font-black text-gray-800">30 Jun 2026</span></p>
+          <button class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-gray-50"><i class="pi pi-download"></i> Export PDF</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left">
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Code</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Account Name</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Type</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right">Debit (Dr)</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right">Credit (Cr)</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">1001</td><td class="px-5 py-3.5 text-gray-700 font-medium">Cash &amp; Bank</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">ASSET</span></td><td class="px-5 py-3.5 text-right font-bold text-gray-900">₦4,250,000</td><td class="px-5 py-3.5 text-right text-gray-300">—</td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono text-gray-500">1002</td><td class="px-5 py-3.5 text-gray-700 font-medium">Accounts Receivable</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">ASSET</span></td><td class="px-5 py-3.5 text-right font-bold text-gray-900">₦21,016,000</td><td class="px-5 py-3.5 text-right text-gray-300">—</td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">2001</td><td class="px-5 py-3.5 text-gray-700 font-medium">Payroll Payable</td><td class="px-5 py-3.5"><span class="inline-flex bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">LIABILITY</span></td><td class="px-5 py-3.5 text-right text-gray-300">—</td><td class="px-5 py-3.5 text-right font-bold text-gray-900">₦4,500,000</td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono text-gray-500">3001</td><td class="px-5 py-3.5 text-gray-700 font-medium">Revenue — Services</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">INCOME</span></td><td class="px-5 py-3.5 text-right text-gray-300">—</td><td class="px-5 py-3.5 text-right font-bold text-gray-900">₦38,516,000</td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">5001</td><td class="px-5 py-3.5 text-gray-700 font-medium">Salaries Expense</td><td class="px-5 py-3.5"><span class="inline-flex bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">EXPENSE</span></td><td class="px-5 py-3.5 text-right font-bold text-gray-900">₦18,200,000</td><td class="px-5 py-3.5 text-right text-gray-300">—</td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">5002</td><td class="px-5 py-3.5 text-gray-700 font-medium">Other Expenses</td><td class="px-5 py-3.5"><span class="inline-flex bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">EXPENSE</span></td><td class="px-5 py-3.5 text-right font-bold text-gray-900">ↄ550,000</td><td class="px-5 py-3.5 text-right text-gray-300">—</td></tr>
+            </tbody>
+            <tfoot><tr class="bg-green-50 border-t-2 border-green-300">
+              <td colspan="3" class="px-5 py-4 font-black text-green-800 uppercase tracking-widest text-sm">TOTALS — <span class="text-green-600">BALANCED ✓</span></td>
+              <td class="px-5 py-4 text-right font-black text-green-800">₦44,016,000</td>
+              <td class="px-5 py-4 text-right font-black text-green-800">₦44,016,000</td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 5: BANK & RECONCILIATION ═══
+  FIXES: Bank settings moved out of standalone "Settings" tab into subtab here.
+  Reconciliation added (docx section 8 — prerequisite: Journal Engine + GL).
+  Bank Account / Transactions / Reconciliation / Connect subtabs.
+-->
+<div id="view-bank" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-customBlue/10 flex items-center justify-center text-customBlue"><i class="pi pi-building text-xl"></i></div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Bank &amp; Reconciliation</h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Connected bank accounts, statements, and GL reconciliation</p>
+        </div>
+      </div>
+      <button class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 shadow-md active:scale-95"><i class="pi pi-plus"></i> Connect Bank</button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div class="flex border-b border-gray-100 px-6 gap-1 overflow-x-auto">
+        <button class="inner-tab active" id="inner-bank-accounts" onclick="showInnerTab('bank','accounts')">Accounts</button>
+        <button class="inner-tab" id="inner-bank-transactions" onclick="showInnerTab('bank','transactions')">Bank Transactions</button>
+        <button class="inner-tab" id="inner-bank-reconcile" onclick="showInnerTab('bank','reconcile')">Reconciliation <span class="badge-new">DOCX §8</span></button>
+        <button class="inner-tab" id="inner-bank-connect" onclick="showInnerTab('bank','connect')">Connect / Mono</button>
+      </div>
+      <!-- Accounts -->
+      <div id="inner-bank-view-accounts" class="p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
+                <span class="text-lg font-black text-green-700">GT</span>
+              </div>
+              <span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">ACTIVE</span>
+            </div>
+            <p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">GTBank</p>
+            <p class="text-lg font-black text-gray-900">0123456789</p>
+            <p class="text-2xl font-extrabold text-customBlue mt-2">₦4,250,000</p>
+            <p class="text-xs text-gray-400 mt-1">Last sync: 14 Jun 2026, 09:41</p>
+            <div class="flex gap-2 mt-4">
+              <button class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black uppercase hover:bg-gray-100">Transactions</button>
+              <button class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black uppercase hover:bg-gray-100">Reconcile</button>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
+                <span class="text-lg font-black text-orange-600">AC</span>
+              </div>
+              <span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">ACTIVE</span>
+            </div>
+            <p class="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Access Bank</p>
+            <p class="text-lg font-black text-gray-900">0987654321</p>
+            <p class="text-2xl font-extrabold text-customBlue mt-2">₦1,820,000</p>
+            <p class="text-xs text-gray-400 mt-1">Last sync: 14 Jun 2026, 08:15</p>
+            <div class="flex gap-2 mt-4">
+              <button class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black uppercase hover:bg-gray-100">Transactions</button>
+              <button class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black uppercase hover:bg-gray-100">Reconcile</button>
+            </div>
+          </div>
+          <div class="border-2 border-dashed border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center text-gray-400 hover:border-customBlue hover:text-customBlue transition-all cursor-pointer">
+            <i class="pi pi-plus text-3xl mb-3"></i>
+            <p class="font-black text-sm uppercase tracking-widest">Add Bank Account</p>
+            <p class="text-xs mt-1">via Mono Open Banking</p>
+          </div>
+        </div>
+        <!-- Paystack Wallet toggle (existing feature preserved) -->
+        <div class="bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-[#00C3F7]/10 flex items-center justify-center"><i class="pi pi-wallet text-[#00C3F7]"></i></div>
+            <div><p class="font-black text-sm text-gray-800">Paystack Wallet</p><p class="text-xs text-gray-400">₦320,000 available</p></div>
+          </div>
+          <button class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-black uppercase hover:bg-gray-50">View Wallet</button>
+        </div>
+      </div>
+      <!-- Bank Transactions -->
+      <div id="inner-bank-view-transactions" class="p-4" style="display:none">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left">
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Date</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Description</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Debit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Credit</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Balance</th>
+              <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">GL Status</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">14 Jun 2026</td><td class="px-5 py-3.5 text-gray-700">SALARY BULK TRANSFER</td><td class="px-5 py-3.5 text-red-600 font-bold">₦4,500,000</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 font-bold text-gray-900">₦4,250,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">MATCHED</span></td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">13 Jun 2026</td><td class="px-5 py-3.5 text-gray-700">TRANSFER FROM DANGOTE</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 text-green-600 font-bold">₦8,216,000</td><td class="px-5 py-3.5 font-bold text-gray-900">₦8,750,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">MATCHED</span></td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 text-gray-700 whitespace-nowrap">11 Jun 2026</td><td class="px-5 py-3.5 text-gray-700">BANK CHARGES - JUNE</td><td class="px-5 py-3.5 text-red-600 font-bold">₦12,500</td><td class="px-5 py-3.5 text-gray-300">—</td><td class="px-5 py-3.5 font-bold text-gray-900">₦534,000</td><td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">UNMATCHED</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Reconciliation (NEW from docx section 8) -->
+      <div id="inner-bank-view-reconcile" class="p-4" style="display:none">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm mb-4">
+          <i class="pi pi-info-circle text-blue-500 mt-0.5 shrink-0"></i>
+          <div><span class="font-black text-blue-900">From docx Build Order §8</span><span class="text-blue-700"> — Reconciliation requires Journal Engine (§9) and General Ledger (§10) to be built first. Matches bank statement lines to GL entries; unmatched items post adjustments.</span></div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="stat-card border-l-[5px] border-l-green-500"><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Matched</span><p class="text-[2rem] font-extrabold text-green-700">142</p></div>
+          <div class="stat-card border-l-[5px] border-l-amber-500"><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Unmatched</span><p class="text-[2rem] font-extrabold text-amber-600">8</p></div>
+          <div class="stat-card border-l-[5px] border-l-customBlue"><span class="text-sm font-bold uppercase tracking-widest text-gray-500">GL Balance</span><p class="text-[1.5rem] font-extrabold text-customBlue">₦4,250,000</p></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-200"><p class="font-black text-sm uppercase tracking-widest text-gray-700">Bank Statement</p></div>
+            <div class="divide-y divide-gray-100">
+              <div class="px-5 py-3 flex justify-between items-center bg-green-50"><span class="text-sm text-gray-700">SALARY BULK TRANSFER</span><span class="font-bold text-red-600">-₦4,500,000</span></div>
+              <div class="px-5 py-3 flex justify-between items-center bg-green-50"><span class="text-sm text-gray-700">TRANSFER FROM DANGOTE</span><span class="font-bold text-green-600">+₦8,216,000</span></div>
+              <div class="px-5 py-3 flex justify-between items-center bg-amber-50 border-l-4 border-l-amber-400"><span class="text-sm text-gray-700">BANK CHARGES - JUNE</span><span class="font-bold text-red-600">-₦12,500</span></div>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-200"><p class="font-black text-sm uppercase tracking-widest text-gray-700">General Ledger (1001)</p></div>
+            <div class="divide-y divide-gray-100">
+              <div class="px-5 py-3 flex justify-between items-center bg-green-50"><span class="text-sm font-mono text-customBlue">JE-0842</span><span class="font-bold text-red-600">-₦4,500,000</span></div>
+              <div class="px-5 py-3 flex justify-between items-center bg-green-50"><span class="text-sm font-mono text-customBlue">JE-0841</span><span class="font-bold text-green-600">+₦8,216,000</span></div>
+              <div class="px-5 py-3 flex justify-between items-center text-gray-300"><span class="text-sm italic">No match found</span><span class="text-xs">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end mt-4 gap-3">
+          <button class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-50">Create Adjustment Entry</button>
+          <button class="px-5 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90">Post Reconciliation</button>
+        </div>
+      </div>
+      <!-- Connect / Mono -->
+      <div id="inner-bank-view-connect" class="p-6" style="display:none">
+        <div class="max-w-md mx-auto text-center py-8">
+          <div class="w-16 h-16 bg-customBlue/10 rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="pi pi-link text-2xl text-customBlue"></i></div>
+          <h3 class="text-xl font-black text-gray-900 mb-2">Connect via Mono Open Banking</h3>
+          <p class="text-gray-500 text-sm mb-6">Securely link your Nigerian bank accounts for real-time statement sync. Supported: GTBank, Access, Wema, Zenith, UBA, First Bank.</p>
+          <button class="w-full px-6 py-4 bg-customBlue text-white rounded-2xl font-black uppercase tracking-widest hover:opacity-90 shadow-lg">Launch Mono Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 6: PAYMENT RUNS ═══
+  FIXES: Renamed from "Disbursement Tray" / "Disburse".
+  Maker/Checker columns added for CBN dual-authorisation compliance.
+-->
+<div id="view-payments" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-orange-50 border border-orange-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm">
+      <i class="pi pi-info-circle text-orange-500 mt-0.5 shrink-0"></i>
+      <div><span class="font-black text-orange-900">Renamed from "Disbursement Tray" / "Disburse"</span><span class="text-orange-700"> — "Payment Runs" is the global standard term. Maker/Checker (Created By + Approved By) columns added for CBN dual-authorisation compliance.</span></div>
+    </div>
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-customBlue/10 flex items-center justify-center text-customBlue"><i class="pi pi-send text-xl"></i></div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Payment Runs</h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Initiate, review, authorise and disburse payment batches</p>
+        </div>
+      </div>
+      <button class="flex items-center gap-2 px-5 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 shadow-md active:scale-95"><i class="pi pi-plus"></i> New Payment Run</button>
+    </div>
+    <!-- CBN Compliance Notice -->
+    <div class="bg-red-50 border border-red-200 rounded-xl px-5 py-4 flex items-start gap-3">
+      <i class="pi pi-shield text-red-600 text-xl mt-0.5 shrink-0"></i>
+      <div>
+        <p class="font-black text-red-900 text-sm uppercase tracking-widest mb-1">CBN Dual-Authorisation Required</p>
+        <p class="text-red-700 text-sm">All payment runs above ₦500,000 require a second authoriser before funds are released. Payments initiated by a maker cannot be approved by the same user.</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="stat-card border-l-[5px] border-l-amber-500"><i class="pi pi-clock stat-ghost text-amber-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Pending</span><p class="text-[2rem] font-extrabold text-amber-600">5</p></div>
+      <div class="stat-card border-l-[5px] border-l-blue-500"><i class="pi pi-shield stat-ghost text-blue-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Awaiting Auth</span><p class="text-[2rem] font-extrabold text-blue-600">3</p></div>
+      <div class="stat-card border-l-[5px] border-l-green-500"><i class="pi pi-check-circle stat-ghost text-green-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Completed</span><p class="text-[2rem] font-extrabold text-green-700">89</p></div>
+      <div class="stat-card border-l-[5px] border-l-red-500"><i class="pi pi-times stat-ghost text-red-400"></i><span class="text-sm font-bold uppercase tracking-widest text-gray-500">Failed</span><p class="text-[2rem] font-extrabold text-red-600">2</p></div>
+    </div>
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead><tr class="bg-[#112a46] text-white text-left">
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Run ID</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Description</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Recipients</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Total Amount</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Maker (Created By)</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Checker (Approved By)</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs">Status</th>
+            <th class="px-5 py-4 font-bold uppercase tracking-wider text-xs text-right">Actions</th>
+          </tr></thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="bg-white hover:bg-gray-50">
+              <td class="px-5 py-3.5 font-mono text-customBlue font-bold whitespace-nowrap">PR-2026-014</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">June Payroll Run</td>
+              <td class="px-5 py-3.5 text-gray-700">47 staff</td>
+              <td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦18,450,000</td>
+              <td class="px-5 py-3.5 text-gray-700">Chioma Eze</td>
+              <td class="px-5 py-3.5"><span class="text-amber-600 font-bold text-sm">Awaiting...</span></td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold uppercase">PENDING AUTH</span></td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center justify-end gap-3 text-lg">
+                  <button class="text-gray-400 hover:text-gray-700"><i class="pi pi-eye"></i></button>
+                  <button title="Authorise (2nd approver)" class="text-green-600 hover:text-green-800 font-black text-sm"><i class="pi pi-shield"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="bg-[#f8f9fa] hover:bg-gray-100">
+              <td class="px-5 py-3.5 font-mono text-customBlue font-bold whitespace-nowrap">PR-2026-013</td>
+              <td class="px-5 py-3.5 text-gray-700 font-medium">Vendor Payments — Jun</td>
+              <td class="px-5 py-3.5 text-gray-700">12 vendors</td>
+              <td class="px-5 py-3.5 font-bold text-gray-900 whitespace-nowrap">₦6,200,000</td>
+              <td class="px-5 py-3.5 text-gray-700">Tunde Balogun</td>
+              <td class="px-5 py-3.5 text-gray-700">Adaeze Nwosu</td>
+              <td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">COMPLETED</span></td>
+              <td class="px-5 py-3.5"><div class="flex items-center justify-end"><button class="text-gray-400 hover:text-gray-700 text-lg"><i class="pi pi-eye"></i></button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 7: REPORTS ═══
+  FIX: Reports existed at /reports route but had NO tab in the main navigation.
+  Added to nav. Income Statement shows GROSS PROFIT line (enabled by COST_OF_SALES type).
+-->
+<div id="view-reports" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto">
+    <div class="bg-orange-50 border border-orange-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm mb-6">
+      <i class="pi pi-info-circle text-orange-500 mt-0.5 shrink-0"></i>
+      <div><span class="font-black text-orange-900">Reports tab was missing from navigation</span><span class="text-orange-700"> — The Reports module existed at /reports route but was not linked from any tab. Now surfaced in main nav. Income Statement now shows a Gross Profit line, enabled by the new COST_OF_SALES account type.</span></div>
+    </div>
+    <div class="flex gap-6">
+      <!-- Left Nav -->
+      <div class="w-52 shrink-0">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-100"><p class="text-xs font-black uppercase tracking-widest text-gray-500">Financial Reports</p></div>
+          <div class="divide-y divide-gray-100">
+            <button onclick="showReport('income')" id="rpt-income" class="w-full px-4 py-3 text-left text-sm font-bold text-customBlue bg-customBlue/5 flex items-center gap-3"><i class="pi pi-chart-line text-customBlue"></i> Income Statement</button>
+            <button onclick="showReport('balance')" id="rpt-balance" class="w-full px-4 py-3 text-left text-sm font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-3"><i class="pi pi-table text-gray-400"></i> Balance Sheet</button>
+            <button onclick="showReport('cashflow')" id="rpt-cashflow" class="w-full px-4 py-3 text-left text-sm font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-3"><i class="pi pi-arrows-h text-gray-400"></i> Cash Flow</button>
+            <button onclick="showReport('tax')" id="rpt-tax" class="w-full px-4 py-3 text-left text-sm font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-3"><i class="pi pi-percentage text-gray-400"></i> Tax Summary</button>
+            <button onclick="showReport('trial')" id="rpt-trial" class="w-full px-4 py-3 text-left text-sm font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-3"><i class="pi pi-list text-gray-400"></i> Trial Balance</button>
+          </div>
+        </div>
+      </div>
+      <!-- Report Content -->
+      <div class="flex-1">
+        <!-- Income Statement -->
+        <div id="rpt-view-income" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center">
+            <div><h2 class="text-xl font-black text-gray-900">Income Statement</h2><p class="text-sm text-gray-400 mt-1">For the period ending 30 June 2026</p></div>
+            <div class="flex gap-2"><button class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-black uppercase hover:bg-gray-50"><i class="pi pi-download mr-1"></i> PDF</button><button class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-black uppercase hover:bg-gray-50"><i class="pi pi-file-excel mr-1"></i> Excel</button></div>
+          </div>
+          <div class="px-8 py-6">
+            <table class="w-full text-sm">
+              <tbody>
+                <tr class="border-b-2 border-gray-200"><td colspan="2" class="py-2 font-black text-customBlue uppercase tracking-widest text-xs">Revenue</td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Revenue — Services</td><td class="py-2 text-right font-bold text-gray-900">₦38,516,000</td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Revenue — Products</td><td class="py-2 text-right font-bold text-gray-900">₦12,400,000</td></tr>
+                <tr class="border-t border-gray-200 bg-gray-50"><td class="py-2 pl-4 font-black text-gray-900">Total Revenue</td><td class="py-2 text-right font-black text-gray-900">₦50,916,000</td></tr>
+                <tr class="border-b-2 border-gray-200 mt-4"><td colspan="2" class="py-3 font-black text-amber-700 uppercase tracking-widest text-xs">Cost of Sales <span class="badge-new">NEW — enabled by COST_OF_SALES type</span></td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Direct Labour Cost</td><td class="py-2 text-right font-bold text-gray-900">(₦8,200,000)</td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Cost of Materials</td><td class="py-2 text-right font-bold text-gray-900">(₦4,100,000)</td></tr>
+                <tr class="border-t border-gray-200 bg-gray-50"><td class="py-2 pl-4 font-black text-gray-900">Total Cost of Sales</td><td class="py-2 text-right font-black text-gray-900">(₦12,300,000)</td></tr>
+                <!-- GROSS PROFIT — only possible with COST_OF_SALES type -->
+                <tr class="bg-green-50 border-y-2 border-green-300"><td class="py-3 pl-4 font-black text-green-900 text-base">GROSS PROFIT</td><td class="py-3 text-right font-black text-green-900 text-base">₦38,616,000</td></tr>
+                <tr class="border-b-2 border-gray-200 mt-2"><td colspan="2" class="py-3 font-black text-customBlue uppercase tracking-widest text-xs">Operating Expenses</td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Salaries Expense</td><td class="py-2 text-right font-bold text-gray-900">(₦18,200,000)</td></tr>
+                <tr><td class="py-2 pl-4 text-gray-700">Other Expenses</td><td class="py-2 text-right font-bold text-gray-900">(₦550,000)</td></tr>
+                <tr class="border-t border-gray-200 bg-gray-50"><td class="py-2 pl-4 font-black text-gray-900">Total Operating Expenses</td><td class="py-2 text-right font-black text-gray-900">(₦18,750,000)</td></tr>
+                <tr class="bg-customBlue/5 border-y-2 border-customBlue"><td class="py-3 pl-4 font-black text-customBlue text-base">NET PROFIT</td><td class="py-3 text-right font-black text-customBlue text-base">₦19,866,000</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Balance Sheet (hidden) -->
+        <div id="rpt-view-balance" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
+          <div class="px-8 py-6 border-b border-gray-100"><h2 class="text-xl font-black text-gray-900">Balance Sheet</h2><p class="text-sm text-gray-400 mt-1">As at 30 June 2026</p></div>
+          <div class="px-8 py-6 grid grid-cols-2 gap-8">
+            <div>
+              <p class="font-black text-customBlue uppercase tracking-widest text-xs mb-3">Assets</p>
+              <div class="space-y-2 text-sm"><div class="flex justify-between"><span class="text-gray-700">Cash &amp; Bank</span><span class="font-bold">₦4,250,000</span></div><div class="flex justify-between"><span class="text-gray-700">Accounts Receivable</span><span class="font-bold">₦21,016,000</span></div><div class="flex justify-between border-t border-gray-200 pt-2 font-black text-gray-900"><span>Total Assets</span><span>₦25,266,000</span></div></div>
+            </div>
+            <div>
+              <p class="font-black text-customBlue uppercase tracking-widest text-xs mb-3">Liabilities &amp; Equity</p>
+              <div class="space-y-2 text-sm"><div class="flex justify-between"><span class="text-gray-700">Payroll Payable</span><span class="font-bold">₦4,500,000</span></div><div class="flex justify-between"><span class="text-gray-700">Retained Earnings</span><span class="font-bold">₦20,766,000</span></div><div class="flex justify-between border-t border-gray-200 pt-2 font-black text-gray-900"><span>Total L + E</span><span>₦25,266,000</span></div></div>
+            </div>
+          </div>
+          <div class="mx-8 mb-6 bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-sm font-black text-green-800 text-center">✓ Balance Sheet is BALANCED — Total Assets = Total Liabilities + Equity</div>
+        </div>
+        <!-- Cash Flow (hidden) -->
+        <div id="rpt-view-cashflow" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
+          <div class="px-8 py-6 border-b border-gray-100"><h2 class="text-xl font-black text-gray-900">Cash Flow Statement (Indirect Method)</h2><p class="text-sm text-gray-400 mt-1">For the period ending 30 June 2026</p></div>
+          <div class="px-8 py-6 text-sm">
+            <p class="font-black text-customBlue uppercase tracking-widest text-xs mb-3">Operating Activities</p>
+            <div class="space-y-2 mb-4"><div class="flex justify-between pl-4"><span class="text-gray-700">Net Profit</span><span class="font-bold">₦19,866,000</span></div><div class="flex justify-between pl-4"><span class="text-gray-700">Add: Depreciation</span><span class="font-bold">₦320,000</span></div><div class="flex justify-between pl-4"><span class="text-gray-700">Less: Increase in Receivables</span><span class="font-bold text-red-600">(₦8,216,000)</span></div><div class="flex justify-between border-t border-gray-200 pt-2 font-black"><span>Net Cash from Operations</span><span class="text-green-700">₦11,970,000</span></div></div>
+            <p class="font-black text-customBlue uppercase tracking-widest text-xs mb-3">Financing Activities</p>
+            <div class="flex justify-between pl-4 mb-4"><span class="text-gray-700">Payroll disbursed</span><span class="font-bold text-red-600">(₦18,450,000)</span></div>
+            <div class="flex justify-between border-t-2 border-gray-200 pt-3 font-black text-base"><span>Net Change in Cash</span><span class="text-customBlue">(₦6,480,000)</span></div>
+          </div>
+        </div>
+        <!-- Tax Summary (hidden) -->
+        <div id="rpt-view-tax" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
+          <div class="px-8 py-6 border-b border-gray-100"><h2 class="text-xl font-black text-gray-900">Tax Summary</h2><p class="text-sm text-gray-400 mt-1">June 2026 — FIRS Compliance</p></div>
+          <div class="overflow-x-auto px-4 pb-4">
+            <table class="w-full text-sm mt-2">
+              <thead><tr class="bg-[#112a46] text-white"><th class="px-5 py-3 text-xs font-bold uppercase tracking-wider">Code</th><th class="px-5 py-3 text-xs font-bold uppercase tracking-wider">Tax Type</th><th class="px-5 py-3 text-xs font-bold uppercase tracking-wider text-right">Rate</th><th class="px-5 py-3 text-xs font-bold uppercase tracking-wider text-right">Taxable Amount</th><th class="px-5 py-3 text-xs font-bold uppercase tracking-wider text-right">Tax Due</th></tr></thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3 font-mono text-gray-500">VAT-OUT</td><td class="px-5 py-3 text-gray-700">Output VAT (7.5%)</td><td class="px-5 py-3 text-right font-bold">7.5%</td><td class="px-5 py-3 text-right text-gray-700">₦50,916,000</td><td class="px-5 py-3 text-right font-bold text-gray-900">₦3,818,700</td></tr>
+                <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3 font-mono text-gray-500">VAT-IN</td><td class="px-5 py-3 text-gray-700">Input VAT (7.5%)</td><td class="px-5 py-3 text-right font-bold">7.5%</td><td class="px-5 py-3 text-right text-gray-700">₦12,300,000</td><td class="px-5 py-3 text-right font-bold text-green-600">(₦922,500)</td></tr>
+                <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3 font-mono text-gray-500">WHT-SVC</td><td class="px-5 py-3 text-gray-700">WHT — Services (5%)</td><td class="px-5 py-3 text-right font-bold">5%</td><td class="px-5 py-3 text-right text-gray-700">₦550,000</td><td class="px-5 py-3 text-right font-bold text-gray-900">₦27,500</td></tr>
+                <tr class="bg-amber-50 border-t-2 border-amber-200"><td colspan="4" class="px-5 py-3 font-black text-amber-900">Net VAT Payable (Output - Input)</td><td class="px-5 py-3 text-right font-black text-amber-900">₦2,896,200</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Trial Balance (hidden) -->
+        <div id="rpt-view-trial" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hidden">
+          <div class="px-8 py-6 border-b border-gray-100"><h2 class="text-xl font-black text-gray-900">Trial Balance</h2><p class="text-sm text-gray-400 mt-1">As at 30 June 2026</p></div>
+          <div class="p-4"><p class="text-sm text-gray-500 px-4">Same as General Ledger → Trial Balance subtab. <button onclick="showTab('ledger');setTimeout(()=>showInnerTab('ledger','trial'),80)" class="text-customBlue font-black underline">Go there →</button></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB 8: SETTINGS ═══
+  NEW: Categories, Modules, and Event Definitions sub-tabs added from docx model.
+  Exchange Rates added (docx §6 — multi-currency, rate locked at event creation).
+  Existing: System settings (bank connections, GL defaults, approval thresholds).
+-->
+<div id="view-settings" class="view min-h-screen bg-gray-50 p-6 md:p-10">
+  <div class="max-w-[1600px] mx-auto space-y-6">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-start gap-3 text-sm">
+      <i class="pi pi-info-circle text-blue-500 mt-0.5 shrink-0"></i>
+      <div><span class="font-black text-blue-900">New from docx model:</span><span class="text-blue-700"> Categories (§1), Modules (§2), and Event Definitions (§3) are the admin-managed config that drives the Events queue. Exchange Rates (§6) support multi-currency with rate locking at event creation.</span></div>
+    </div>
+    <div class="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-gray-100">
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-12 h-12 bg-customBlue/10 flex items-center justify-center rounded-2xl text-customBlue"><i class="pi pi-cog text-xl"></i></div>
+        <div><h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Accounting Settings</h1><p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">System configuration, transaction rules, and module setup</p></div>
+      </div>
+      <div class="flex border-b border-gray-100 gap-1 overflow-x-auto mb-6">
+        <button class="inner-tab active" id="inner-settings-categories" onclick="showInnerTab('settings','categories')">Categories <span class="badge-new">§1</span></button>
+        <button class="inner-tab" id="inner-settings-modules" onclick="showInnerTab('settings','modules')">Modules <span class="badge-new">§2</span></button>
+        <button class="inner-tab" id="inner-settings-eventdefs" onclick="showInnerTab('settings','eventdefs')">Event Definitions <span class="badge-new">§3</span></button>
+        <button class="inner-tab" id="inner-settings-rates" onclick="showInnerTab('settings','rates')">Exchange Rates <span class="badge-new">§6</span></button>
+        <button class="inner-tab" id="inner-settings-system" onclick="showInnerTab('settings','system')">System</button>
+      </div>
+
+      <!-- Categories -->
+      <div id="inner-settings-view-categories">
+        <div class="flex justify-between items-center mb-4"><p class="text-sm text-gray-500">Top-level groupings for transactions — e.g. Salaries, Loans, Procurement. Used for filtering and reporting.</p><button class="flex items-center gap-2 px-4 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90"><i class="pi pi-plus"></i> New Category</button></div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left"><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">ID</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Name</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Description</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Event Defs</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs text-right">Actions</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">1</td><td class="px-5 py-3.5 font-bold text-gray-900">Salaries</td><td class="px-5 py-3.5 text-gray-500">All staff payroll payments</td><td class="px-5 py-3.5"><span class="inline-flex bg-customBlue/10 text-customBlue px-2 py-0.5 rounded text-xs font-bold">3 defs</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono text-gray-500">2</td><td class="px-5 py-3.5 font-bold text-gray-900">Procurement</td><td class="px-5 py-3.5 text-gray-500">Vendor purchases and supply payments</td><td class="px-5 py-3.5"><span class="inline-flex bg-customBlue/10 text-customBlue px-2 py-0.5 rounded text-xs font-bold">5 defs</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">3</td><td class="px-5 py-3.5 font-bold text-gray-900">Loans</td><td class="px-5 py-3.5 text-gray-500">Staff and commercial loan disbursements</td><td class="px-5 py-3.5"><span class="inline-flex bg-customBlue/10 text-customBlue px-2 py-0.5 rounded text-xs font-bold">2 defs</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button><button class="text-red-400 hover:text-red-600"><i class="pi pi-trash"></i></button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modules -->
+      <div id="inner-settings-view-modules" style="display:none">
+        <div class="flex justify-between items-center mb-4"><p class="text-sm text-gray-500">Business areas that trigger accounting events (e.g. Payroll, POS, HR). Every Event Definition must belong to a module.</p><button class="flex items-center gap-2 px-4 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90"><i class="pi pi-plus"></i> New Module</button></div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left"><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">ID</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Name</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Description</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Active Defs</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs text-right">Actions</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">1</td><td class="px-5 py-3.5 font-bold text-gray-900">HR &amp; Payroll</td><td class="px-5 py-3.5 text-gray-500">Salary, allowances, deductions</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">4 active</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button></td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono text-gray-500">2</td><td class="px-5 py-3.5 font-bold text-gray-900">POS / Sales</td><td class="px-5 py-3.5 text-gray-500">Point-of-sale and invoice events</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">3 active</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button></td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono text-gray-500">3</td><td class="px-5 py-3.5 font-bold text-gray-900">Expense Management</td><td class="px-5 py-3.5 text-gray-500">Staff reimbursements and petty cash</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">2 active</span></td><td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-3"><i class="pi pi-pencil"></i></button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Event Definitions -->
+      <div id="inner-settings-view-eventdefs" style="display:none">
+        <div class="flex justify-between items-center mb-4"><p class="text-sm text-gray-500">Templates that define accounting rules for each transaction type. STATIC mappings use a fixed CoA account; DYNAMIC mappings resolve the account at runtime using a resolver key.</p><button class="flex items-center gap-2 px-4 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90"><i class="pi pi-plus"></i> New Definition</button></div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left"><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Code</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Name</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Module</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Direction</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Debit Mapping</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Credit Mapping</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Currencies</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Approval</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs text-right">Actions</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50">
+                <td class="px-5 py-3.5 font-mono text-customBlue font-bold">SAL-001</td>
+                <td class="px-5 py-3.5 font-bold text-gray-900">Staff Salary Payment</td>
+                <td class="px-5 py-3.5"><span class="inline-flex bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">PAYROLL</span></td>
+                <td class="px-5 py-3.5"><span class="text-red-600 font-bold text-xs">↑ OUTFLOW</span></td>
+                <td class="px-5 py-3.5 text-gray-600 text-xs"><span class="inline-flex bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold mr-1">STATIC</span>5001 — Salaries Expense</td>
+                <td class="px-5 py-3.5 text-gray-600 text-xs"><span class="inline-flex bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded font-bold mr-1">DYNAMIC</span>counterparty.defaultAccount</td>
+                <td class="px-5 py-3.5 text-gray-500 text-xs">NGN, USD</td>
+                <td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">YES</span></td>
+                <td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-2"><i class="pi pi-pencil"></i></button><button class="text-amber-500 hover:text-amber-700 text-xs font-black">DISABLE</button></td>
+              </tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100">
+                <td class="px-5 py-3.5 font-mono text-customBlue font-bold">INV-001</td>
+                <td class="px-5 py-3.5 font-bold text-gray-900">Client Invoice Settlement</td>
+                <td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">SALES</span></td>
+                <td class="px-5 py-3.5"><span class="text-green-600 font-bold text-xs">↓ INFLOW</span></td>
+                <td class="px-5 py-3.5 text-gray-600 text-xs"><span class="inline-flex bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold mr-1">STATIC</span>1002 — Accounts Receivable</td>
+                <td class="px-5 py-3.5 text-gray-600 text-xs"><span class="inline-flex bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold mr-1">STATIC</span>3001 — Revenue — Services</td>
+                <td class="px-5 py-3.5 text-gray-500 text-xs">NGN, USD, GBP, EUR</td>
+                <td class="px-5 py-3.5"><span class="inline-flex bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs font-bold">NO</span></td>
+                <td class="px-5 py-3.5 text-right"><button class="text-customBlue hover:opacity-70 mr-2"><i class="pi pi-pencil"></i></button><button class="text-amber-500 hover:text-amber-700 text-xs font-black">DISABLE</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Exchange Rates -->
+      <div id="inner-settings-view-rates" style="display:none">
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-sm text-gray-500">Rates are locked at event creation — historical records never recalculate. Source: FIXER API, CBN official, or Manual override.</p>
+          <div class="flex gap-2">
+            <button class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl font-black text-sm uppercase hover:bg-gray-50"><i class="pi pi-refresh"></i> Fetch CBN Rates</button>
+            <button class="flex items-center gap-2 px-4 py-2.5 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90"><i class="pi pi-plus"></i> Manual Rate</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <thead><tr class="bg-[#112a46] text-white text-left"><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Currency Pair</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Rate (to NGN)</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Source</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Rate Date</th><th class="px-5 py-3 font-bold uppercase tracking-wider text-xs">Status</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono font-bold text-gray-900">USD/NGN</td><td class="px-5 py-3.5 font-bold text-customBlue text-lg">1,580.00</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">CBN</span></td><td class="px-5 py-3.5 text-gray-600">14 Jun 2026</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">ACTIVE</span></td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono font-bold text-gray-900">GBP/NGN</td><td class="px-5 py-3.5 font-bold text-customBlue text-lg">2,010.50</td><td class="px-5 py-3.5"><span class="inline-flex bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">FIXER</span></td><td class="px-5 py-3.5 text-gray-600">14 Jun 2026</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">ACTIVE</span></td></tr>
+              <tr class="bg-white hover:bg-gray-50"><td class="px-5 py-3.5 font-mono font-bold text-gray-900">EUR/NGN</td><td class="px-5 py-3.5 font-bold text-customBlue text-lg">1,720.00</td><td class="px-5 py-3.5"><span class="inline-flex bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">MANUAL</span></td><td class="px-5 py-3.5 text-gray-600">13 Jun 2026</td><td class="px-5 py-3.5"><span class="inline-flex bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">STALE</span></td></tr>
+              <tr class="bg-[#f8f9fa] hover:bg-gray-100"><td class="px-5 py-3.5 font-mono font-bold text-gray-900">AED/NGN</td><td class="px-5 py-3.5 font-bold text-customBlue text-lg">430.25</td><td class="px-5 py-3.5"><span class="inline-flex bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">CBN</span></td><td class="px-5 py-3.5 text-gray-600">14 Jun 2026</td><td class="px-5 py-3.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">ACTIVE</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- System Settings -->
+      <div id="inner-settings-view-system" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <p class="font-black text-customBlue uppercase tracking-widest text-xs">Company &amp; Fiscal Year</p>
+            <div class="space-y-3">
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Company Name</label><input type="text" value="OptimaX Suites Ltd" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"></div>
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Tax Identification Number (TIN)</label><input type="text" value="12345678-0001" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"></div>
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">VAT Registration No.</label><input type="text" value="VAT-0987654" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"></div>
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Base Currency</label><select class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"><option>NGN — Nigerian Naira</option><option>USD — US Dollar</option></select></div>
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Fiscal Year Start</label><select class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"><option>January (Calendar Year)</option><option>April</option><option>July</option></select></div>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <p class="font-black text-customBlue uppercase tracking-widest text-xs">Approval Thresholds (CBN)</p>
+            <div class="space-y-3">
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Single Authoriser Limit</label><input type="text" value="₦499,999" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"></div>
+              <div><label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-1">Dual Authorisation Required Above</label><input type="text" value="₦500,000" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 outline-none bg-gray-50"></div>
+            </div>
+            <p class="font-black text-customBlue uppercase tracking-widest text-xs mt-4">Period Management</p>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-sm">
+                <thead><tr class="bg-gray-50 border-b border-gray-200"><th class="px-4 py-2 text-left text-xs font-bold uppercase text-gray-500">Period</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-gray-500">Status</th><th class="px-4 py-2 text-right text-xs font-bold uppercase text-gray-500">Action</th></tr></thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr><td class="px-4 py-2.5 text-gray-700 font-medium">June 2026</td><td class="px-4 py-2.5"><span class="inline-flex bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">OPEN</span></td><td class="px-4 py-2.5 text-right"><button class="text-amber-600 font-black text-xs uppercase hover:opacity-70">Lock Period</button></td></tr>
+                  <tr><td class="px-4 py-2.5 text-gray-700 font-medium">May 2026</td><td class="px-4 py-2.5"><span class="inline-flex bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">LOCKED</span></td><td class="px-4 py-2.5 text-right"><button class="text-customBlue font-black text-xs uppercase hover:opacity-70">Unlock</button></td></tr>
+                  <tr><td class="px-4 py-2.5 text-gray-700 font-medium">April 2026</td><td class="px-4 py-2.5"><span class="inline-flex bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">LOCKED</span></td><td class="px-4 py-2.5 text-right"><button class="text-customBlue font-black text-xs uppercase hover:opacity-70">Unlock</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end mt-6">
+          <button class="px-6 py-3 bg-customBlue text-white rounded-xl font-black text-sm uppercase tracking-widest hover:opacity-90 shadow-md active:scale-95">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  var v = document.getElementById('view-' + name);
+  var b = document.getElementById('btn-' + name);
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+}
+function showInnerTab(group, tab) {
+  document.querySelectorAll('[id^="inner-' + group + '-view-"]').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('[id^="inner-' + group + '-"]').forEach(el => {
+    if (!el.id.includes('-view-')) el.classList.remove('active');
+  });
+  var tv = document.getElementById('inner-' + group + '-view-' + tab);
+  var tb = document.getElementById('inner-' + group + '-' + tab);
+  if (tv) tv.style.display = 'block';
+  if (tb) tb.classList.add('active');
+}
+function showReport(name) {
+  document.querySelectorAll('[id^="rpt-view-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('[id^="rpt-"]').forEach(el => {
+    if (!el.id.includes('-view-')) { el.style.fontWeight=''; el.style.background=''; el.classList.remove('bg-customBlue/5','text-customBlue','font-bold'); el.classList.add('text-gray-600'); }
+  });
+  var v = document.getElementById('rpt-view-' + name);
+  var b = document.getElementById('rpt-' + name);
+  if (v) v.classList.remove('hidden');
+  if (b) { b.classList.add('text-customBlue'); b.classList.remove('text-gray-600'); b.style.background='rgba(17,42,70,0.05)'; }
+}
+function toggleCoa(row, code) {
+  var children = document.querySelectorAll('.coa-' + code);
+  var ico = document.getElementById('ico-' + code);
+  var hidden = children.length > 0 && children[0].style.display === 'none';
+  children.forEach(c => c.style.display = hidden ? '' : 'none');
+  if (ico) ico.textContent = hidden ? '▼ ' : '▶ ';
+}
+</script>
+</body>
+</html>
