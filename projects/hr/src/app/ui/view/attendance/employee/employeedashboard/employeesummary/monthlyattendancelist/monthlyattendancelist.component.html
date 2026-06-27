@@ -8,6 +8,14 @@
     </div>
   </div>
 
+  <div *ngIf="isLoading" class="loader-wrapper">
+    <div class="loader"></div>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <!-- existing attendance list -->
+  </div>
+
   <div class="table">
 
     <div class="table-header">

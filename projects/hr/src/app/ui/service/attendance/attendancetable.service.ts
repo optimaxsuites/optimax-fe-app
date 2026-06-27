@@ -94,20 +94,6 @@ resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number;
   ).pipe(
     map(res => {
       const employees = res.content ?? res;
-      //to log employees returned from api
-      /*console.log('Employees API response:', employees);
-      //const match = employees.find((e: any) => e.user?.username === username);
-      
-      employees.forEach((e: any) => {
-        console.log( 'EMPLOYEE:',
-          e.id,
-          'LINKED USER:',
-          e.user
-        );
-      }); */
-
-      //
-
       console.log('==============================');
       console.log('SESSION USER ID:', sessionUserId);
       console.log('EMPLOYEES:', employees);
@@ -152,8 +138,26 @@ private mapApiRecord(api: any): AttendanceTableRecord {
 
   const department = emp?.department?.name ?? '';
 
+  const attendanceDate = api.attendanceDate;
+
+  const isWeekend = (() => {
+
+    if (!Array.isArray(api.attendanceDate)) {
+      return false;
+    }
+
+    const [year, month, day] = api.attendanceDate;
+
+    const date = new Date(year, month - 1, day);
+
+    return date.getDay() === 0 || date.getDay() === 6;
+
+  })();
+
   // Extract HH:mm:ss time from ISO string for display
-  const toTimeStr = (iso: string | null): string | null => iso;/*{
+
+  //const toTimeStr = (iso: string | null): string | null => iso;
+  /*{
     if (!iso) return null;
     try {
       return new Date(iso).toLocaleTimeString();
@@ -162,26 +166,69 @@ private mapApiRecord(api: any): AttendanceTableRecord {
     }
   };*/
 
+  const toDateTime = (value: any): string | null => {
+
+  if (!value) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+
+    const [
+      year,
+      month,
+      day,
+      hour = 0,
+      minute = 0,
+      second = 0,
+      nano = 0
+    ] = value;
+
+    return new Date(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second,
+      Math.floor(nano/1000000)
+    ).toISOString();
+  }
+
+  return value;
+}
+
   // API stores location as plain string — wrap it for our DTO
   const toLocation = (locStr: string | null) => {
     if (!locStr) return null;
     return { address: locStr, lat: 0, lng: 0 };
   };
 
+  const toDateOnly = (value: any): string | null => {
+
+  if (!value) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+
+    const [year, month, day] = value;
+
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  return value;
+};
+
   return {
-    //id: emp?.id?.toString() ?? api.id?.toString() ?? '',
-    //attendanceRecordId: api.id?.toString(),
-    //employeeId: emp?.id?.toString(),
-    //id: emp?.id?.toString() ?? '',
-    //apiRecordId: api.id,
     id: Number(api.id), //attendancerecordid
     apiRecordId: Number(api.id),
     employeeId: Number(emp?.id), //employeeid
     employee: fullName,
     department,
-    date: api.attendanceDate ?? null,
-    checkIn: toTimeStr(api.checkIn),
-    checkOut: toTimeStr(api.checkOut),
+    date: toDateOnly(api.attendanceDate),
+    checkIn: toDateTime(api.checkIn),
+    checkOut: toDateTime(api.checkOut),
     checkInLocation: toLocation(api.checkInLocation),
     checkOutLocation: toLocation(api.checkOutLocation),
     status: api.status ?? 'ABSENT',
@@ -210,7 +257,16 @@ fetchAllRecords(page: number = 1, size: number = 100): void {
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      console.log('RAW API RECORD:', res.content?.[0]);
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+        const day = date.getDay();
+        const isWeekend = day === 0 || day === 0;
+        return !(isWeekend && r.status ==='ABSENT');
+      });
+       console.log('MAPPED RECORD:', mapped[0]);
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch attendance records:', err)
@@ -224,7 +280,17 @@ fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100)
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+
+        const day = date.getDay();
+
+        const isWeekend = day === 0 || day === 6;
+
+        return !(isWeekend && r.status === 'ABSENT');
+      });
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
     error: (err) => console.error('Failed to fetch records by date range:', err)
@@ -238,7 +304,17 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
     { headers: this.getAuthHeaders() }
   ).subscribe({
     next: (res) => {
-      const mapped = (res.content ?? []).map((r: any) => this.mapApiRecord(r));
+      const mapped = (res.content ?? [])
+      .map((r: any) => this.mapApiRecord(r))
+      .filter((r: AttendanceTableRecord) => {
+        const date = new Date(r.date!);
+
+        const day = date.getDay();
+
+        const isWeekend = day === 0 || day === 6;
+
+        return !(isWeekend && r.status === 'ABSENT');
+      }) ;
 
        // TEMP: diagnostic log
       console.log('=== FETCH BY EMPLOYEE ===');
@@ -250,6 +326,12 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
 
       console.log('RAW API RESPONSE:', res.content);
       console.log('MAPPED RECORDS:', mapped);
+      console.log(mapped.map((r: AttendanceTableRecord) => ({
+        date: r.date,
+        checkIn: r.checkIn,
+        checkOut: r.checkOut
+      }))
+);
       
       this.mergeAndPublish(mapped); // ← was attendanceSubject.next(mapped)
     },
@@ -266,86 +348,6 @@ fetchRecordById(id: number): Observable<AttendanceTableRecord> {
     map((res: any) => this.mapApiRecord(res))
   );
 }
-//POST
-/*postAttendanceRecord(payload: {
-  employeeId: number;
-  attendanceDate: string;
-  checkIn: string | null;
-  checkOut: string | null;
-  checkInLocation: string;
-  checkOutLocation: string;
-  checkInDistance: number;
-  checkOutDistance: number;
-  status: string;
-  hours: number;
-}): Observable<any> {
-  const body = {
-    id: 0,
-    employeeId: payload.employeeId,
-    attendanceDate: payload.attendanceDate,
-    checkIn: payload.checkIn,
-    checkOut: payload.checkOut,
-    checkInLocation: payload.checkInLocation,
-    checkOutLocation: payload.checkOutLocation,
-    checkInDistance: payload.checkInDistance,
-    checkOutDistance: payload.checkOutDistance,
-    status: payload.status,
-    hours: payload.hours,
-    overrideOpen: false,
-    overrideBy: 0,
-    overrideReason: '',
-    statusBeforeOverride: payload.status,
-    appliedScheduleType: 'OFFICE_HOURS',
-    appliedScheduleId: 0,
-    appliedExpectedStart: payload.checkIn,
-    appliedExpectedEnd: payload.checkOut,
-    appliedShiftName: ''
-  };
-
-  return this.http.post<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords`,
-    body,
-    { headers: this.getAuthHeaders() }
-  );
-} */
-
-/*private putAttendanceRecord(id: number, payload: any): Observable<any> {
-  return this.http.put<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
-    payload,
-    { headers: this.getAuthHeaders() }
-  );
-}*/
-
-/*private clockInApi(
-  employeeId: number,
-  checkIn: string,
-  checkInLocation: string,
-  checkInDistance: number
-): void {
-  const body = {
-    employeeId,
-    checkIn,
-    checkInLocation,
-    checkInDistance
-  };
-
-  this.http.post<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
-    body,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
-    next: (res) => {
-      if (res?.id) {
-        this.apiRecordId = res.id;
-        console.log('Clock-in successful, record ID:', this.apiRecordId);
-      } else {
-        console.warn('Clock-in succeeded but no ID returned');
-      }
-    },
-    error: (err) => console.error('Clock-in failed:', err)
-  });
-}*/
 
 private clockInApi(
   employeeId: number,
@@ -453,23 +455,6 @@ overrideOpenApi(
   });
 }
 
-/*overrideOpenApi(
-  recordId: number,
-  actorUserId: number,
-  reason: string
-): void {
-  const body = { actorUserId, reason };
-
-  this.http.post<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${recordId}/override/open`,
-    body,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
-    next: (res) => console.log('Override open successful:', res),
-    error: (err) => console.error('Override open failed:', err)
-  });
-}*/
-
 private getTodayRecord(employeeId: number): AttendanceTableRecord | undefined {
   const today = new Date().toISOString().split('T')[0];
   return this.attendanceSubject.value.find(
@@ -508,6 +493,14 @@ private scheduleAbsentCheck() {
 }
 
 async clockAction(employeeId: number, employeeName: string, department: string, action: 'IN' | 'OUT') {
+  const currentDate = new Date ();
+  const day = currentDate.getDay();
+
+  //Sunday = 0, Saturday = 6
+  if (day === 0 || day === 6) {
+    alert('Attendance is not available on weekends.');
+    return;
+  }
 
   if (this.hasCompletedToday(employeeId)) return;
 
@@ -626,120 +619,6 @@ if (action === 'IN') {
 
 }
 
-/*async clockAction(employeeid: string, employeeName: string, department: string, action: 'IN' | 'OUT') {
-  const now = new Date();
-  const isoNow = now.toISOString();
-  const dateStr = now.toISOString().split('T')[0];
-
-  //call the API
-  const existingRecord = this.getTodayRecord(employeeid); // use your existing helper
-
-  const payload = {
-    employeeId: parseInt(employeeid),       // API expects a number
-    attendanceDate: dateStr,
-    checkIn:  action === 'IN'  ? isoNow : (existingRecord?.checkIn ?? isoNow),
-    checkOut: action === 'OUT' ? isoNow : null,
-    checkInLocation:  existingRecord?.checkInLocation?.address  ?? '',
-    checkOutLocation: existingRecord?.checkOutLocation?.address ?? '',
-    checkInDistance:  existingRecord?.checkInLocation  ? this.getDistance(existingRecord.checkInLocation)  : 0,
-    checkOutDistance: existingRecord?.checkOutLocation ? this.getDistance(existingRecord.checkOutLocation) : 0,
-    status: existingRecord?.status ?? 'PRESENT',
-    hours:  existingRecord?.hours  ? parseFloat(existingRecord.hours) : 0
-  };
-
-  this.postAttendanceRecord(payload).subscribe({
-    next: (res) => console.log('Attendance posted to API:', res),
-    error: (err) => console.error('Failed to post attendance:', err)
-  });
-
-if (this.hasCompletedToday(employeeid)) {
-  return; // Block further clocking
-}
-
-  const data = [...this.attendanceSubject.value];
-  const today = new Date().toISOString().split('T')[0];
-
-  let record = data.find(r => r.employee === employeeName && r.date === today);
-
-  // if no record exists for today, create one
-  if (!record) {
-    record = {
-      id: employeeid,
-      employee: employeeName,
-      department: department,
-      date: today,
-      checkIn: null,
-      checkOut: null,
-      checkInLocation: null,
-      checkOutLocation: null,
-      status: 'ABSENT',
-      hours: 0
-    };
-    data.unshift(record);
-  }
-
-   // Capture location
-  const location = await this.getCurrentLocation();
-
-
-  const officeHours = this.officeHoursService.getOfficeHours();
-
-  const opening = this.convertToDateTime(officeHours.openingTime);
-  const closing = this.convertToDateTime(officeHours.closingTime);
-  const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod)
-
-  // Calculate distance if company location is set and we got coords
-  let distance: number | null = null;
-  if (location && officeHours.companyLatitude && officeHours.companyLongitude) {
-    distance = this.calculateDistance(
-      location.lat,
-      location.lng,
-      officeHours.companyLatitude,
-      officeHours.companyLongitude
-    );
-  }
-
-  if (action === 'IN') {
-
-  record.checkIn = now.toLocaleTimeString();
-  record.checkInLocation = location
-  ? {
-      address: location.address,
-      lat: location.lat,
-      lng: location.lng
-    }
-  : null;  // to store location
-
-  // If admin opened attendance, never mark late
-  if (record.overrideOpen) {
-    record.status = 'PRESENT';
-    // Optional cleanup: remove override after successful clock-in
-    record.overrideOpen = false;
-  } else {
-    const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
-     record.status = now <= graceTime ? 'PRESENT' : 'LATE';
-  }
-}
-
-  if (action === 'OUT') {
-    record.checkOut = now.toLocaleTimeString();
-    record.checkOutLocation = location
-    ? {
-      address: location.address,
-      lat: location.lat,
-      lng: location.lng
-    }
-  : null;
-
-    record.hours = this.calculateHours(record.checkIn!, record.checkOut);
-    // OVERTIME logic (but do not remove LATE)
-    if (now > closing) {
-      record.status = 'OVERTIME';
-    }
-  }
-
-  this.attendanceSubject.next(data);
-}*/
 
 // helper method
 private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -887,20 +766,6 @@ private autoMarkAbsentIfNeeded() {
       this.localRecords.set(key, absentRecord);
       changed = true;
     }
-      /*data.unshift({
-        id: emp.id,
-        employee: emp.name,
-        department: emp.department,
-        date: today,
-        checkIn: null,
-        checkOut: null,
-        checkInLocation: null,
-        checkOutLocation: null,
-        status: 'ABSENT',
-        hours: 0
-      });
-
-      changed = true;*/
     }
   });
 
@@ -971,24 +836,6 @@ openAttendanceForToday(employeeId: number, actorUserId: number, reason: string) 
     );
   }
 }
-
-/*openAttendanceForToday(employeeId: string) {
-
-  const today = new Date().toISOString().split('T')[0];
-
-  const records = [...this.attendanceSubject.value];
-
-  const record = records.find(
-    r => r.employeeId === employeeId && r.date === today
-  );
-
-  if (!record) return;
-
-  record.overrideOpen = true; //allow record override
-  //record.status = 'PRESENT'; // immediately mark PRESENT
-
-  this.attendanceSubject.next(records);
-}*/
 
 hasCompletedToday(employeeId: number): boolean {
   const today = new Date().toDateString();

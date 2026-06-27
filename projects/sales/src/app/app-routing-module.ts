@@ -22,6 +22,9 @@ import { VendorPortalComponent } from './ui/view/vendor-portal/vendor-portal.com
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
 import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management/customer-detail/customer-detail.component';
 import { SalesOrdersDetailComponent } from './ui/view/sales-hub/sales-order/sales-orders-detail/sales-orders-detail.component';
+import { ProductServiceCatalogFormComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-form/product-service-catalog-form.component';
+import { ProductServiceCatalogDetailComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-detail/product-service-catalog-detail.component';
+
 
 
 export const routes: Routes = [
@@ -32,7 +35,7 @@ export const routes: Routes = [
   // },
   {
     path: '',
-    redirectTo: '/admin/sales/sales-hub/:uuid',
+    redirectTo: 'sales-hub',
     pathMatch: 'full'
   },
 
@@ -122,6 +125,37 @@ export const routes: Routes = [
   {
     path: 'customers/:id/edit/:uuid',
     component: CustomerFormComponent
+  },
+
+  // --- Products/Services Catalog ---
+  {
+    path: 'products',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
+  {
+    path: 'products/new',
+    component: ProductServiceCatalogFormComponent
+  },
+  {
+    path: 'products/new/:uuid',
+    component: ProductServiceCatalogFormComponent
+  },
+  {
+    path: 'products/:id',
+    component: ProductServiceCatalogDetailComponent
+  },
+  {
+    path: 'products/:id/:uuid',
+    component: ProductServiceCatalogDetailComponent
+  },
+  {
+    path: 'products/:id/edit',
+    component: ProductServiceCatalogFormComponent
+  },
+  {
+    path: 'products/:id/edit/:uuid',
+    component: ProductServiceCatalogFormComponent
   },
 
   // --- Sales Orders ---

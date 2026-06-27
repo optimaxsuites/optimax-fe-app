@@ -30,6 +30,8 @@ import { InvoiceDetailComponent } from '../invoices/invoice-detail/invoice-detai
   styleUrls: ['./sales-dashboard.component.scss']
 })
 export class SalesDashboardComponent implements OnInit, OnDestroy {
+  Math = Math;
+  customerAvatars: string[] = ['AO', 'FA', 'WL', 'KP'];
   
   // Dashboard Stats
   stats = {
@@ -62,6 +64,16 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   showQuoteDetail = false;
   showInvoiceDetail = false;
   selectedItemId?: string;
+  
+  // Customization
+  showCustomizationModal = false;
+  customization = {
+    showRevenueChart: true,
+    showTopProducts: true,
+    showRecentQuotes: true,
+    showRecentInvoices: true,
+    chartType: 'bar' // 'bar' | 'line' | 'pie' | 'doughnut'
+  };
 
   // Simple Product Form Data
   productForm = {
@@ -85,6 +97,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadCustomization();
     this.loadDashboardData();
   }
 
@@ -192,6 +205,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/sales/products']);
   }
 
+  navigateToCustomerList(): void {
+    this.router.navigate(['/sales/customers']);
+  }
+
   navigateToQuoteDetail(quoteId: string): void {
     this.selectedItemId = quoteId;
     this.showQuoteDetail = true;
@@ -293,6 +310,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  getStatusClass(status: string): string {
+    return status ? status.toLowerCase() : 'draft';
+  }
+
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
       'DRAFT': 'status-draft',
@@ -381,5 +402,86 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
       { month: 'May', amount: 580000 },
       { month: 'Jun', amount: 2845000 }
     ];
+  }
+
+  // ============================================
+  // CUSTOMIZATION & DYNAMIC CHART HELPERS
+  // ============================================
+
+  openCustomizationModal(): void {
+    this.showCustomizationModal = true;
+  }
+
+  closeCustomizationModal(): void {
+    this.showCustomizationModal = false;
+  }
+
+  saveCustomization(): void {
+    localStorage.setItem('sales_dashboard_customization', JSON.stringify(this.customization));
+  }
+
+  loadCustomization(): void {
+    const saved = localStorage.getItem('sales_dashboard_customization');
+    if (saved) {
+      try {
+        this.customization = JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing customization', e);
+      }
+    }
+  }
+
+  getPointX(idx: number): number {
+    const width = 440; // 480 - 40
+    const count = this.revenueData.length || 1;
+    const step = count > 1 ? width / (count - 1) : width;
+    return 40 + idx * step;
+  }
+
+  getPointY(amount: number): number {
+    const height = 140; // 160 - 20
+    const max = this.getMaxRevenue() || 1;
+    return 160 - (amount / max) * height;
+  }
+
+  getLineChartPath(): string {
+    if (!this.revenueData || this.revenueData.length === 0) return '';
+    return this.revenueData.map((d, i) => {
+      const x = this.getPointX(i);
+      const y = this.getPointY(d.amount);
+      return `${i === 0 ? 'M' : 'L'}${x} ${y}`;
+    }).join(' ');
+  }
+
+  getLineChartAreaPath(): string {
+    const path = this.getLineChartPath();
+    if (!path) return '';
+    const firstX = this.getPointX(0);
+    const lastX = this.getPointX(this.revenueData.length - 1);
+    return `${path} L${lastX} 160 L${firstX} 160 Z`;
+  }
+
+  getConicGradient(): string {
+    if (!this.revenueData || this.revenueData.length === 0) return 'conic-gradient(#2EB270 0% 100%)';
+    const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
+    let accumulatedPercent = 0;
+    const colors = ['#2EB270', '#2E6276', '#fbbf24', '#8b5cf6', '#ef4444', '#3b82f6'];
+    const parts = this.revenueData.map((d, i) => {
+      const percent = (d.amount / total) * 100;
+      const start = accumulatedPercent;
+      accumulatedPercent += percent;
+      return `${colors[i % colors.length]} ${start.toFixed(1)}% ${accumulatedPercent.toFixed(1)}%`;
+    });
+    return `conic-gradient(${parts.join(', ')})`;
+  }
+
+  getConicLegendColor(idx: number): string {
+    const colors = ['#2EB270', '#2E6276', '#fbbf24', '#8b5cf6', '#ef4444', '#3b82f6'];
+    return colors[idx % colors.length];
+  }
+
+  getConicPercent(amount: number): string {
+    const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
+    return ((amount / total) * 100).toFixed(1) + '%';
   }
 }

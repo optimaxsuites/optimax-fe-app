@@ -13,6 +13,7 @@ export class MonthlyattendancelistComponent implements OnInit {
   filteredData: AttendanceTableRecord[] = [];
 
   selectedMonth!: string; // format: YYYY-MM
+  isLoading = false;
 
   @Output() filteredDataChange = new EventEmitter<AttendanceTableRecord[]>();
 
@@ -31,6 +32,7 @@ export class MonthlyattendancelistComponent implements OnInit {
   }
 
   loadAttendance() {
+    this.isLoading = true;
 
     const currentUser = this.userSession.getCurrentUser();
 
@@ -38,6 +40,7 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     if (!currentUser?.userId) {
       console.error('No logged in user');
+      this.isLoading = false;
       return;
     }
 
@@ -50,10 +53,12 @@ export class MonthlyattendancelistComponent implements OnInit {
 
     this.attendanceService
       .resolveHrEmployeeId(username)*/
-      .subscribe(result => {
+      .subscribe({
+        next: (result) => {
 
         if (!result) {
           console.error('HR employee not found');
+          this.isLoading = false;
           return;
         }
 
@@ -71,7 +76,13 @@ export class MonthlyattendancelistComponent implements OnInit {
             );
 
             this.applyMonthFilter();
+            this.isLoading = false;
           });
+        },
+        error: (err) => {
+          console.error('Failed to resolve employee', err);
+          this.isLoading = false;
+        }
       });
   }
   /*loadAttendance() {
