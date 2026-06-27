@@ -1,0 +1,139 @@
+      <div class="panel-header">
+        <div><h1 class="panel-title">CRM Settings &amp; Configuration</h1><p class="panel-subtitle">Pipeline stages · custom fields · permissions · integrations · SLA policies · API</p></div>
+        <div class="panel-actions"><button class="btn-primary">💾 Save Changes</button></div>
+      </div>
+      <div class="settings-layout">
+        <div class="settings-nav">
+          <div class="settings-nav-item active">Pipeline Config</div>
+          <div class="settings-nav-item">Custom Fields</div>
+          <div class="settings-nav-item">Roles &amp; Permissions</div>
+          <div class="settings-nav-item">Integrations</div>
+          <div class="settings-nav-item">SLA Policies</div>
+          <div class="settings-nav-item">User Management</div>
+          <div class="settings-nav-item">Audit Log</div>
+          <div class="settings-nav-item">API &amp; Webhooks</div>
+          <div class="settings-nav-item">NDPA Compliance</div>
+        </div>
+        <div>
+          <div id="s-pipeline" class="settings-panel active">
+            <div class="settings-section">
+              <div class="settings-section-title">Pipeline Stages — B2B Enterprise</div>
+              <div style="display:flex;flex-direction:column;gap:.5rem;">
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;background:#f8fafc;"><span style="color:#94a3b8;cursor:grab;">⠿</span><input type="text" value="Prospecting" class="form-input" style="max-width:200px;"><input type="number" value="72" class="form-input" style="max-width:80px;" placeholder="Win %"><input type="color" value="#25925B" style="width:36px;height:36px;border:1px solid #e8edf2;border-radius:.375rem;cursor:pointer;"><button class="btn-xs" style="margin-left:auto;color:#dc2626;">Remove</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;background:#f8fafc;"><span style="color:#94a3b8;cursor:grab;">⠿</span><input type="text" value="Qualified" class="form-input" style="max-width:200px;"><input type="number" value="69" class="form-input" style="max-width:80px;"><input type="color" value="#2E6276" style="width:36px;height:36px;border:1px solid #e8edf2;border-radius:.375rem;cursor:pointer;"><button class="btn-xs" style="margin-left:auto;color:#dc2626;">Remove</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;background:#f8fafc;"><span style="color:#94a3b8;cursor:grab;">⠿</span><input type="text" value="Proposal Sent" class="form-input" style="max-width:200px;"><input type="number" value="71" class="form-input" style="max-width:80px;"><input type="color" value="#2EB270" style="width:36px;height:36px;border:1px solid #e8edf2;border-radius:.375rem;cursor:pointer;"><button class="btn-xs" style="margin-left:auto;color:#dc2626;">Remove</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;background:#f8fafc;"><span style="color:#94a3b8;cursor:grab;">⠿</span><input type="text" value="Negotiation" class="form-input" style="max-width:200px;"><input type="number" value="55" class="form-input" style="max-width:80px;"><input type="color" value="#f59e0b" style="width:36px;height:36px;border:1px solid #e8edf2;border-radius:.375rem;cursor:pointer;"><button class="btn-xs" style="margin-left:auto;color:#dc2626;">Remove</button></div>
+                <button class="btn-xs green" style="align-self:flex-start;">+ Add Stage</button>
+              </div>
+            </div>
+          </div>
+          <div id="s-permissions" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">Role-Based Access Control</div>
+              <table class="permissions-table" style="width:100%;border-collapse:collapse;">
+                <thead><tr><th>Feature</th><th>Admin</th><th>Sales Manager</th><th>Sales Rep</th><th>Support</th><th>Gov Officer</th><th>Read Only</th></tr></thead>
+                <tbody>
+                  <tr><td class="perm-role">View Contacts</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td></tr>
+                  <tr><td class="perm-role">Edit Contacts</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                  <tr><td class="perm-role">Delete Contacts</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                  <tr><td class="perm-role">View All Deals</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox" checked></td></tr>
+                  <tr><td class="perm-role">Approve Quotes</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                  <tr><td class="perm-role">Gov Module Access</td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td></tr>
+                  <tr><td class="perm-role">Export Data</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                  <tr><td class="perm-role">Audit Log Access</td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div id="s-integrations" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">Connected Integrations</div>
+              <div class="integration-card"><div class="int-logo">📧</div><div class="int-info"><div class="int-name">Gmail / Google Workspace</div><div class="int-desc">2-way email sync · open tracking · calendar sync</div></div><div class="int-status connected">✓ Connected</div><button class="btn-xs">Configure</button></div>
+              <div class="integration-card"><div class="int-logo">💬</div><div class="int-info"><div class="int-name">WhatsApp Business API</div><div class="int-desc">Bulk messaging · template messages · reply tracking</div></div><div class="int-status connected">✓ Connected</div><button class="btn-xs">Configure</button></div>
+              <div class="integration-card"><div class="int-logo">📞</div><div class="int-info"><div class="int-name">Twilio VoIP / Call Recording</div><div class="int-desc">Auto-log calls · recordings · transcription</div></div><div class="int-status connected">✓ Connected</div><button class="btn-xs">Configure</button></div>
+              <div class="integration-card"><div class="int-logo">📅</div><div class="int-info"><div class="int-name">Calendly — Meeting Scheduler</div><div class="int-desc">Booking links · auto-create activities when meetings booked</div></div><div class="int-status connected">✓ Connected</div><button class="btn-xs">Configure</button></div>
+              <div class="integration-card"><div class="int-logo">📄</div><div class="int-info"><div class="int-name">DocuSign — E-Signature</div><div class="int-desc">Contract signing · quote acceptance · status sync</div></div><div class="int-status disconnected">⊘ Not Connected</div><button class="btn-xs green">Connect</button></div>
+              <div class="integration-card"><div class="int-logo">🔗</div><div class="int-info"><div class="int-name">LinkedIn Sales Navigator</div><div class="int-desc">Contact enrichment · company data · InMail logging</div></div><div class="int-status disconnected">⊘ Not Connected</div><button class="btn-xs green">Connect</button></div>
+              <div class="integration-card"><div class="int-logo">💰</div><div class="int-info"><div class="int-name">OptimaX Accounting (Internal)</div><div class="int-desc">Auto-create invoice from accepted quote · revenue sync</div></div><div class="int-status connected">✓ Connected (Native)</div><button class="btn-xs">View</button></div>
+            </div>
+          </div>
+          <div id="s-audit" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">Immutable Audit Log — Last 20 Events</div>
+              <div style="font-size:.75rem;color:#94a3b8;margin-bottom:.875rem;">All changes are cryptographically hashed and cannot be modified or deleted. NDPA 2023 and ISO 27001 compliant.</div>
+              <table class="data-table" style="font-size:.75rem;">
+                <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Record</th><th>IP Address</th><th>Hash</th></tr></thead>
+                <tbody>
+                  <tr><td style="font-family:monospace;color:#94a3b8;">2026-06-23 14:22:41</td><td>sarah.adeyemi</td><td><span class="badge badge-info" style="font-size:.65rem;">UPDATE</span></td><td>Deal #38 — stage changed to Negotiation</td><td>105.112.44.21</td><td style="font-family:monospace;font-size:.68rem;color:#94a3b8;">a3f8c2d…</td></tr>
+                  <tr><td style="font-family:monospace;color:#94a3b8;">2026-06-23 13:58:12</td><td>james.adebisi</td><td><span class="badge badge-success" style="font-size:.65rem;">CREATE</span></td><td>Contact: Musa Umar (UBA Group)</td><td>197.210.88.5</td><td style="font-family:monospace;font-size:.68rem;color:#94a3b8;">b7e1f44…</td></tr>
+                  <tr><td style="font-family:monospace;color:#94a3b8;">2026-06-23 11:30:05</td><td>sarah.adeyemi</td><td><span class="badge badge-warning" style="font-size:.65rem;">EXPORT</span></td><td>Contacts export — 247 records (CSV)</td><td>105.112.44.21</td><td style="font-family:monospace;font-size:.68rem;color:#94a3b8;">c2a9e77…</td></tr>
+                  <tr><td style="font-family:monospace;color:#94a3b8;">2026-06-23 09:14:33</td><td>admin</td><td><span class="badge badge-purple" style="font-size:.65rem;">CONFIG</span></td><td>SLA policy updated — Platinum: 1hr response</td><td>41.206.22.8</td><td style="font-family:monospace;font-size:.68rem;color:#94a3b8;">d5b3c18…</td></tr>
+                  <tr><td style="font-family:monospace;color:#94a3b8;">2026-06-22 17:45:00</td><td>yemi.kasali</td><td><span class="badge badge-danger" style="font-size:.65rem;">DELETE</span></td><td>Lead: test&#64;example.com (duplicate)</td><td>197.210.77.3</td><td style="font-family:monospace;font-size:.68rem;color:#94a3b8;">e9d4a02…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div id="s-fields" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">Custom Fields — Contacts</div>
+              <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;">
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.8rem;font-weight:600;flex:1;">NIN (National ID Number)</span><span class="badge badge-neutral">Text</span><span class="badge badge-info">Gov Module</span><button class="btn-xs">Edit</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.8rem;font-weight:600;flex:1;">BVN (Bank Verification Number)</span><span class="badge badge-neutral">Text</span><span class="badge badge-danger">Sensitive — masked</span><button class="btn-xs">Edit</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.8rem;font-weight:600;flex:1;">Company Tier (SME/Enterprise/Enterprise+)</span><span class="badge badge-neutral">Dropdown</span><span class="badge badge-success">CRM</span><button class="btn-xs">Edit</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.8rem;font-weight:600;flex:1;">WhatsApp Consent (NDPA)</span><span class="badge badge-neutral">Boolean</span><span class="badge badge-purple">Required</span><button class="btn-xs">Edit</button></div>
+              </div>
+              <button class="btn-xs green">+ Add Custom Field</button>
+            </div>
+          </div>
+          <div id="s-sla" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">SLA Policy Configuration</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem;">
+                <div style="border:1.5px solid #bbf7d0;border-radius:.75rem;padding:.875rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:800;color:#166534;margin-bottom:.5rem;">🏆 Platinum</div><div class="form-group"><label class="form-label">First Response</label><select class="form-input"><option>1 hour</option></select></div><div class="form-group"><label class="form-label">Resolution</label><select class="form-input"><option>4 hours</option></select></div><div class="form-group"><label class="form-label">Accounts</label><input type="text" class="form-input" value="Zenith Insurance, GTBank"></div></div>
+                <div style="border:1.5px solid #fef3c7;border-radius:.75rem;padding:.875rem;background:#fffbeb;"><div style="font-size:.78rem;font-weight:800;color:#92400e;margin-bottom:.5rem;">🥈 Gold</div><div class="form-group"><label class="form-label">First Response</label><select class="form-input"><option>4 hours</option></select></div><div class="form-group"><label class="form-label">Resolution</label><select class="form-input"><option>24 hours</option></select></div><div class="form-group"><label class="form-label">Accounts</label><input type="text" class="form-input" value="MTN, Access Bank, Dangote"></div></div>
+                <div style="border:1.5px solid #e2e8f0;border-radius:.75rem;padding:.875rem;background:#f8fafc;"><div style="font-size:.78rem;font-weight:800;color:#475569;margin-bottom:.5rem;">🥉 Standard</div><div class="form-group"><label class="form-label">First Response</label><select class="form-input"><option>8 hours</option></select></div><div class="form-group"><label class="form-label">Resolution</label><select class="form-input"><option>48 hours</option></select></div><div class="form-group"><label class="form-label">Accounts</label><input type="text" class="form-input" value="All other accounts"></div></div>
+              </div>
+            </div>
+          </div>
+          <div id="s-api" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">API Keys &amp; Webhooks</div>
+              <div style="margin-bottom:1rem;"><label class="form-label">Production API Key</label><div style="display:flex;gap:.5rem;"><input type="password" class="form-input" value="sk-opt-live-a3f8c2d9e1b447f2a0c8d3e7f1b2c4d9" readonly><button class="btn-xs">Show</button><button class="btn-xs green">Regenerate</button></div></div>
+              <div class="settings-section-title" style="margin-top:1rem;">Webhooks</div>
+              <div style="display:flex;flex-direction:column;gap:.5rem;">
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.78rem;font-weight:600;flex:1;">https://erp.company.ng/hooks/crm-deal-won</span><span class="badge badge-success">Active</span><button class="btn-xs">Test</button><button class="btn-xs">Edit</button></div>
+                <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid #e8edf2;border-radius:.5rem;"><span style="font-size:.78rem;font-weight:600;flex:1;">https://erp.company.ng/hooks/crm-lead-created</span><span class="badge badge-success">Active</span><button class="btn-xs">Test</button><button class="btn-xs">Edit</button></div>
+                <button class="btn-xs green" style="align-self:flex-start;">+ Add Webhook</button>
+              </div>
+            </div>
+          </div>
+          <div id="s-compliance" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">NDPA 2023 Compliance — Nigeria Data Protection Act</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+                <div style="padding:.75rem;border:1px solid #bbf7d0;border-radius:.5rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:700;color:#166534;margin-bottom:.25rem;">✓ Data Residency</div><div style="font-size:.73rem;color:#166634;">All data stored in Nigeria (Lagos Tier-3 DC + Abuja DR)</div></div>
+                <div style="padding:.75rem;border:1px solid #bbf7d0;border-radius:.5rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:700;color:#166534;margin-bottom:.25rem;">✓ Consent Management</div><div style="font-size:.73rem;color:#166634;">WhatsApp/email consent captured per contact with timestamp</div></div>
+                <div style="padding:.75rem;border:1px solid #bbf7d0;border-radius:.5rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:700;color:#166534;margin-bottom:.25rem;">✓ Right to Erasure</div><div style="font-size:.73rem;color:#166634;">Citizen deletion requests processed within 72 hours</div></div>
+                <div style="padding:.75rem;border:1px solid #bbf7d0;border-radius:.5rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:700;color:#166534;margin-bottom:.25rem;">✓ Data Breach Protocol</div><div style="font-size:.73rem;color:#166634;">Automated NITDA notification within 72 hours of breach detection</div></div>
+                <div style="padding:.75rem;border:1px solid #bbf7d0;border-radius:.5rem;background:#f0fdf4;"><div style="font-size:.78rem;font-weight:700;color:#166534;margin-bottom:.25rem;">✓ Encryption</div><div style="font-size:.73rem;color:#166634;">AES-256 at rest · TLS 1.3 in transit · BVN fields double-encrypted</div></div>
+                <div style="padding:.75rem;border:1px solid #fef3c7;border-radius:.5rem;background:#fffbeb;"><div style="font-size:.78rem;font-weight:700;color:#92400e;margin-bottom:.25rem;">⚠ DPO Registration</div><div style="font-size:.73rem;color:#92400e;">Due: NITDA DPO filing deadline Aug 31, 2026 — action required</div></div>
+              </div>
+            </div>
+          </div>
+          <div id="s-users" class="settings-panel">
+            <div class="settings-section">
+              <div class="settings-section-title">User Management</div>
+              <div class="filter-bar" style="margin-bottom:.75rem;"><div class="search-box"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search users…"></div><button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ Invite User</button></div>
+              <table class="data-table">
+                <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Last Login</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><div class="contact-cell"><div class="c-avatar" style="background:#25925B;">SA</div>Sarah Adeyemi</div></td><td>sarah.a&#64;company.ng</td><td><span class="badge badge-purple">Sales Manager</span></td><td>Today 9:14 AM</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn-xs">Edit</button></td></tr>
+                  <tr><td><div class="contact-cell"><div class="c-avatar" style="background:#2E6276;">JA</div>James Adebisi</div></td><td>james.a&#64;company.ng</td><td><span class="badge badge-info">Sales Rep</span></td><td>Today 8:52 AM</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn-xs">Edit</button></td></tr>
+                  <tr><td><div class="contact-cell"><div class="c-avatar" style="background:#a78bfa;">YK</div>Yemi Kasali</div></td><td>yemi.k&#64;company.ng</td><td><span class="badge badge-info">Sales Rep</span></td><td>Today 8:30 AM</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn-xs">Edit</button></td></tr>
+                  <tr><td><div class="contact-cell"><div class="c-avatar" style="background:#ef4444;">AD</div>Admin User</div></td><td>admin&#64;company.ng</td><td><span class="badge badge-danger">Admin</span></td><td>Yesterday 5:45 PM</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn-xs">Edit</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>

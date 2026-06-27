@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OptimaX ERP — Accounting (Enterprise Sidebar Mockup)</title>
+<style>
+:root {
+  --sidebar-bg:#0d1f33;--sidebar-hover:#1a3350;--sidebar-active:#112a46;
+  --primary:#112a46;--primary-hover:#0d1f33;--accent:#f59e0b;--accent-light:#fef3c7;
+  --green:#16a34a;--red:#dc2626;--purple:#7c3aed;--blue:#2563eb;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-400:#9ca3af;--gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
+  --radius-xl:1rem;--radius-2xl:1.5rem;--radius-3xl:2rem;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 12px rgba(0,0,0,.1);--shadow-lg:0 8px 24px rgba(0,0,0,.14);
+  --font:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--gray-50);display:flex;min-height:100vh;overflow-x:hidden;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:240px;min-height:100vh;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;overflow-y:auto;}
+.sb-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-brand-name{color:#fff;font-size:15px;font-weight:900;letter-spacing:.02em;}
+.sb-brand-sub{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px;text-transform:uppercase;letter-spacing:.1em;}
+.sb-section{padding:16px 12px 4px;color:rgba(255,255,255,.28);font-size:9.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.6);font-size:13px;font-weight:700;cursor:pointer;border-radius:8px;margin:2px 8px;transition:all .15s;border:none;background:none;width:calc(100% - 16px);text-align:left;}
+.sb-item:hover{background:var(--sidebar-hover);color:#fff;}
+.sb-item.active{background:var(--accent);color:#fff;font-weight:900;}
+.sb-item i{width:18px;text-align:center;font-size:14px;}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:999px;}
+.sb-item.active .sb-badge{background:rgba(0,0,0,.25);}
+.sb-new{margin-left:auto;background:var(--accent);color:var(--primary);font-size:9px;font-weight:900;padding:2px 6px;border-radius:999px;}
+.sb-item.active .sb-new{background:rgba(0,0,0,.2);color:#fff;}
+.sb-footer{margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-user{display:flex;align-items:center;gap:10px;}
+.sb-avatar{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
+.sb-user-name{color:#fff;font-weight:800;font-size:13px;}
+.sb-user-role{color:rgba(255,255,255,.4);font-size:11px;}
+
+/* ── MAIN ── */
+#main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── TOP BAR ── */
+#topbar{background:#fff;border-bottom:1px solid var(--gray-200);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.tb-breadcrumb{display:flex;align-items:center;gap:8px;color:var(--gray-500);font-size:12px;font-weight:700;}
+.tb-breadcrumb .current{color:var(--primary);font-weight:900;}
+.tb-search{position:relative;flex:1;max-width:320px;margin:0 24px;}
+.tb-search input{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--gray-200);border-radius:10px;font-size:13px;outline:none;background:var(--gray-50);color:var(--gray-700);}
+.tb-search input:focus{border-color:var(--primary);background:#fff;}
+.tb-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);}
+.tb-period{background:var(--primary);color:#fff;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:900;letter-spacing:.05em;}
+.tb-notif{position:relative;width:36px;height:36px;background:var(--gray-100);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
+.tb-notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #fff;}
+.tb-avatar{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:var(--primary);cursor:pointer;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+
+/* ── CONTENT AREA ── */
+#content{flex:1;padding:28px;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ── CARDS & COMPONENTS ── */
+.page-header{background:#fff;border-radius:var(--radius-3xl);padding:28px 32px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;}
+.page-header-left{display:flex;align-items:center;gap:16px;}
+.page-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.page-title{font-size:22px;font-weight:900;color:var(--gray-900);letter-spacing:-.02em;}
+.page-sub{font-size:13px;color:var(--gray-400);font-weight:500;margin-top:3px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;border:none;cursor:pointer;transition:all .15s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--primary);color:#fff;}
+.btn-primary:hover{background:var(--primary-hover);}
+.btn-outline{background:#fff;color:var(--gray-700);border:1px solid var(--gray-200);}
+.btn-outline:hover{background:var(--gray-50);}
+.btn-accent{background:var(--accent);color:var(--primary);}
+.btn-sm{padding:7px 12px;font-size:12px;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:var(--radius-xl);padding:20px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);position:relative;overflow:hidden;transition:all .3s;}
+.stat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:5px 0 0 5px;}
+.stat-blue::before{background:var(--primary);}
+.stat-green::before{background:var(--green);}
+.stat-red::before{background:var(--red);}
+.stat-amber::before{background:var(--accent);}
+.stat-purple::before{background:var(--purple);}
+.stat-label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);margin-bottom:8px;}
+.stat-value{font-size:30px;font-weight:900;line-height:1;letter-spacing:-.03em;}
+.stat-ghost{position:absolute;right:-10px;bottom:-10px;font-size:64px;opacity:.06;}
+.card{background:#fff;border-radius:var(--radius-2xl);padding:24px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);margin-bottom:20px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.card-title{font-size:15px;font-weight:900;color:var(--gray-900);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--primary);color:#fff;}
+th{padding:12px 16px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;text-align:left;white-space:nowrap;}
+td{padding:12px 16px;border-bottom:1px solid var(--gray-100);color:var(--gray-700);vertical-align:middle;}
+tr:nth-child(even) td{background:#fafafa;}
+tr:hover td{background:var(--gray-50);}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;}
+.badge-green{background:#dcfce7;color:var(--green);}
+.badge-red{background:#fee2e2;color:var(--red);}
+.badge-amber{background:#fef3c7;color:#92400e;}
+.badge-blue{background:#dbeafe;color:var(--blue);}
+.badge-purple{background:#ede9fe;color:var(--purple);}
+.badge-gray{background:var(--gray-100);color:var(--gray-500);}
+.badge-new{background:var(--accent);color:var(--primary);font-size:9px;padding:2px 6px;margin-left:4px;}
+.improve-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px;margin-bottom:20px;}
+.improve-banner i{color:#3b82f6;margin-top:1px;flex-shrink:0;}
+.improve-banner strong{color:#1e3a8a;}
+.improve-banner span{color:#1d4ed8;}
+.tag-dir-in{color:var(--green);font-size:11px;font-weight:900;display:flex;align-items:center;gap:3px;}
+.tag-dir-out{color:var(--red);font-size:11px;font-weight:900;display:flex;align-items:center;gap:3px;}
+.act-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:3px 5px;border-radius:6px;transition:all .15s;}
+.act-btn:hover{background:var(--gray-100);}
+.filter-bar{background:#fff;border-radius:var(--radius-xl);padding:14px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center;}
+.filter-input{flex:1;min-width:200px;border:1px solid var(--gray-200);border-radius:10px;padding:9px 12px;font-size:13px;outline:none;background:var(--gray-50);}
+.filter-select{border:1px solid var(--gray-200);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:900;text-transform:uppercase;color:var(--primary);outline:none;background:#fff;cursor:pointer;}
+.inner-tabs{display:flex;border-bottom:2px solid var(--gray-100);gap:4px;margin-bottom:20px;}
+.inner-tab{padding:9px 16px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;color:var(--gray-400);}
+.inner-tab.active{border-bottom-color:var(--primary);color:var(--primary);}
+.inner-tab:not(.active):hover{color:var(--gray-700);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:var(--radius-3xl);width:100%;max-width:520px;overflow:hidden;position:relative;}
+.modal-top-bar{height:6px;background:linear-gradient(90deg,var(--primary),#2e6276);}
+.modal-body{padding:36px 40px;}
+.modal-icon{width:72px;height:72px;border-radius:50%;background:rgba(17,42,70,.08);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;color:var(--primary);}
+.modal-title{font-size:26px;font-weight:900;color:var(--gray-900);text-align:center;margin-bottom:8px;}
+.modal-sub{font-size:14px;color:var(--gray-500);text-align:center;margin-bottom:24px;}
+.preview-box{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:16px;padding:20px;margin-bottom:20px;}
+.preview-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100);}
+.preview-row:last-child{border:none;}
+.preview-label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);}
+.preview-val{font-weight:900;color:var(--gray-900);}
+.modal-actions{display:flex;gap:12px;}
+.btn-cancel{flex:1;padding:14px;background:var(--gray-100);color:var(--gray-600);border-radius:14px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;border:none;cursor:pointer;}
+.btn-confirm{flex:2;padding:14px;background:var(--primary);color:#fff;border-radius:14px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;border:none;cursor:pointer;}
+.btn-confirm:hover{background:var(--primary-hover);}
+
+/* ── DISBURSEMENT WIZARD ── */
+.disb-steps{display:flex;align-items:center;gap:0;background:#fff;border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);margin-bottom:20px;}
+.disb-step{display:flex;align-items:center;gap:8px;flex:1;}
+.disb-step:not(:last-child)::after{content:'';flex:1;height:2px;background:var(--gray-200);margin:0 8px;}
+.disb-step.done:not(:last-child)::after{background:var(--green);}
+.disb-bubble{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;background:var(--gray-200);color:var(--gray-500);}
+.disb-step.active .disb-bubble{background:var(--accent);color:var(--primary);}
+.disb-step.done .disb-bubble{background:var(--green);color:#fff;}
+.disb-step-label{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);}
+.disb-step.active .disb-step-label{color:var(--primary);}
+.disb-step.done .disb-step-label{color:var(--green);}
+.disb-two-col{display:grid;grid-template-columns:1fr 340px;gap:20px;}
+.disb-card{background:#fff;border-radius:var(--radius-xl);padding:20px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);}
+.disb-card-header{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--primary);margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--gray-100);}
+.disb-field{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--gray-100);font-size:13px;}
+.disb-field:last-child{border:none;}
+.disb-field label{color:var(--gray-400);font-weight:700;}
+.disb-field span{font-weight:800;color:var(--gray-900);}
+.disb-request-cards{display:flex;flex-direction:column;gap:10px;}
+.disb-req-card{background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.disb-req-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);}
+.disb-req-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);}
+.disb-req-card.selected{border-color:var(--primary);background:rgba(17,42,70,.03);}
+.disb-req-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.disb-req-avatar{width:34px;height:34px;border-radius:9px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;}
+.disb-req-amount{font-size:18px;font-weight:900;color:var(--primary);}
+.disb-req-name{font-size:13px;font-weight:900;color:var(--gray-900);}
+.disb-req-meta{font-size:11px;color:var(--gray-400);}
+.disb-req-ref{font-size:11px;font-weight:900;font-family:monospace;color:var(--blue);}
+.disb-sidebar-stat{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px;margin-bottom:12px;}
+.disb-sidebar-stat-label{font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px;}
+.disb-sidebar-stat-value{font-size:22px;font-weight:900;color:var(--primary);}
+.disb-method-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;}
+.disb-method-btn{border:2px solid var(--gray-200);border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:#fff;transition:all .15s;}
+.disb-method-btn:hover,.disb-method-btn.selected{border-color:var(--primary);background:rgba(17,42,70,.03);}
+.disb-method-btn i{font-size:22px;color:var(--primary);}
+.disb-method-btn span{font-size:12px;font-weight:900;text-transform:uppercase;color:var(--gray-700);}
+.disb-ledger-entry{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:16px;}
+.disb-screen{display:none;}
+.disb-screen.active{display:block;}
+
+/* ── DASHBOARD CHARTS ── */
+.chart-bar-track{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 4px;}
+.chart-bar-group{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:3px;flex:1;width:100%;}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;transition:all .3s;}
+.chart-bar-label{font-size:10px;color:var(--gray-400);font-weight:700;text-align:center;}
+.aging-bar{height:10px;border-radius:5px;margin-bottom:6px;}
+
+/* ── REPORTS ── */
+.report-layout{display:grid;grid-template-columns:200px 1fr;gap:20px;}
+.report-nav{background:#fff;border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);height:fit-content;}
+.report-nav-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:1px solid var(--gray-100);color:var(--gray-600);transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+.report-nav-item:hover{background:var(--gray-50);color:var(--primary);}
+.report-nav-item.active{background:rgba(17,42,70,.06);color:var(--primary);font-weight:900;}
+.report-content{background:#fff;border-radius:var(--radius-xl);padding:28px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);}
+.report-view{display:none;}
+.report-view.active{display:block;}
+.fs-section-head{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--primary);margin:16px 0 8px;border-bottom:2px solid var(--primary);padding-bottom:4px;}
+.fs-row{display:flex;justify-content:space-between;padding:6px 0 6px 16px;font-size:14px;border-bottom:1px solid var(--gray-100);}
+.fs-total{display:flex;justify-content:space-between;padding:9px 0;font-size:15px;font-weight:900;color:var(--gray-900);border-top:2px solid var(--gray-700);margin-top:4px;}
+.fs-gp{display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:900;background:#f0fdf4;border-radius:8px;padding:10px 14px;color:#166534;margin:8px 0;}
+.fs-np{display:flex;justify-content:space-between;padding:12px 14px;font-size:16px;font-weight:900;background:rgba(17,42,70,.06);border-radius:8px;color:var(--primary);}
+
+.coa-child{display:none;}
+.inner-view{display:none;}
+.inner-view.active{display:block;}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-brand-name">OptimaX ERP</div>
+    <div class="sb-brand-sub">Accounting Module</div>
+  </div>
+
+  <div class="sb-section">Overview</div>
+  <button class="sb-item active" onclick="nav('dashboard')" id="nav-dashboard">
+    <i>⬛</i> Dashboard
+  </button>
+
+  <div class="sb-section">Core Accounting</div>
+  <button class="sb-item" onclick="nav('events')" id="nav-events">
+    <i>📥</i> Accounting Events <span class="sb-badge">8</span>
+  </button>
+  <button class="sb-item" onclick="nav('journals')" id="nav-journals">
+    <i>📖</i> Journal Entries
+  </button>
+  <button class="sb-item" onclick="nav('ledger')" id="nav-ledger">
+    <i>📋</i> General Ledger
+  </button>
+  <button class="sb-item" onclick="nav('coa')" id="nav-coa">
+    <i>🏗</i> Chart of Accounts
+  </button>
+
+  <div class="sb-section">Receivables &amp; Payables</div>
+  <button class="sb-item" onclick="nav('ar')" id="nav-ar">
+    <i>💰</i> Accounts Receivable
+  </button>
+  <button class="sb-item" onclick="nav('ap')" id="nav-ap">
+    <i>🧾</i> Accounts Payable
+  </button>
+  <button class="sb-item" onclick="nav('banking')" id="nav-banking">
+    <i>🏦</i> Bank &amp; Reconciliation
+  </button>
+  <button class="sb-item" onclick="nav('payments')" id="nav-payments">
+    <i>💸</i> Payment Runs
+  </button>
+
+  <div class="sb-section">Reporting</div>
+  <button class="sb-item" onclick="nav('reports')" id="nav-reports">
+    <i>📊</i> Reports <span class="sb-new">NEW IN NAV</span>
+  </button>
+  <button class="sb-item" onclick="nav('tax')" id="nav-tax">
+    <i>🧮</i> Tax
+  </button>
+  <button class="sb-item" onclick="nav('budgets')" id="nav-budgets">
+    <i>🎯</i> Budgets
+  </button>
+
+  <div class="sb-section">Configuration</div>
+  <button class="sb-item" onclick="nav('settings')" id="nav-settings">
+    <i>⚙️</i> Settings
+  </button>
+
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">DA</div>
+      <div>
+        <div class="sb-user-name">Damilola Awe</div>
+        <div class="sb-user-role">Finance Admin</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="tb-breadcrumb">
+      <span>Accounting</span>
+      <span style="color:#d1d5db">›</span>
+      <span class="current" id="tb-current">Dashboard</span>
+    </div>
+    <div class="tb-search">
+      <span class="tb-search-icon">🔍</span>
+      <input type="text" placeholder="Search transactions, accounts...">
+    </div>
+    <div class="tb-right">
+      <span class="tb-period">FY 2026 · Q2 · Jun 2026</span>
+      <button class="tb-notif"><span style="font-size:16px">🔔</span><div class="tb-notif-dot"></div></button>
+      <div class="tb-avatar">DA</div>
+    </div>
+  </div>
+
+  <!-- ═══ CONTENT ═══ -->
+  <div id="content">
+
+    <!-- ─── DASHBOARD ─── -->
+    <div class="view active" id="view-dashboard">
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card stat-blue">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" style="color:var(--primary)">₦50.9M</div>
+          <div style="font-size:11px;color:var(--green);margin-top:6px;font-weight:700;">▲ 18% vs May</div>
+          <div class="stat-ghost">📈</div>
+        </div>
+        <div class="stat-card stat-red">
+          <div class="stat-label">Total Expenses</div>
+          <div class="stat-value" style="color:var(--red)">₦18.8M</div>
+          <div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:700;">▲ 5% vs May</div>
+          <div class="stat-ghost">📉</div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-label">Net Profit</div>
+          <div class="stat-value" style="color:var(--green)">₦19.9M</div>
+          <div style="font-size:11px;color:var(--green);margin-top:6px;font-weight:700;">▲ 22% vs May</div>
+          <div class="stat-ghost">💹</div>
+        </div>
+        <div class="stat-card stat-amber">
+          <div class="stat-label">Pending Events</div>
+          <div class="stat-value" style="color:#92400e">8</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:6px;font-weight:700;">Require approval</div>
+          <div class="stat-ghost">⏳</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <!-- Revenue vs Expenses Bar Chart -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Revenue vs Expenses — Jun 2026</span>
+          </div>
+          <div class="chart-bar-track">
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:85%;background:var(--primary);opacity:.8;"></div><div class="chart-bar" style="height:32%;background:var(--accent);"></div></div><div class="chart-bar-label">Jan</div></div>
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:72%;background:var(--primary);opacity:.8;"></div><div class="chart-bar" style="height:28%;background:var(--accent);"></div></div><div class="chart-bar-label">Feb</div></div>
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:78%;background:var(--primary);opacity:.8;"></div><div class="chart-bar" style="height:35%;background:var(--accent);"></div></div><div class="chart-bar-label">Mar</div></div>
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:88%;background:var(--primary);opacity:.8;"></div><div class="chart-bar" style="height:40%;background:var(--accent);"></div></div><div class="chart-bar-label">Apr</div></div>
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:80%;background:var(--primary);opacity:.8;"></div><div class="chart-bar" style="height:33%;background:var(--accent);"></div></div><div class="chart-bar-label">May</div></div>
+            <div class="chart-bar-group"><div class="chart-bar-wrap"><div class="chart-bar" style="height:100%;background:var(--primary);"></div><div class="chart-bar" style="height:37%;background:var(--accent);"></div></div><div class="chart-bar-label">Jun</div></div>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--gray-500);"><div style="width:12px;height:12px;border-radius:3px;background:var(--primary)"></div> Revenue</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--gray-500);"><div style="width:12px;height:12px;border-radius:3px;background:var(--accent)"></div> Expenses</div>
+          </div>
+        </div>
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Quick Actions</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn btn-primary" style="justify-content:center;" onclick="nav('events')">📥 Review Events</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="nav('journals')">✏️ Manual Journal</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="nav('payments')">💸 New Payment Run</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="nav('reports')">📊 View Reports</button>
+            <button class="btn btn-outline" style="justify-content:center;" onclick="nav('banking')">🏦 Reconcile Bank</button>
+            <button class="btn btn-accent" style="justify-content:center;" onclick="nav('coa')">🏗 Chart of Accounts</button>
+          </div>
+          <!-- AR/AP Aging -->
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100);">
+            <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);margin-bottom:10px;">AR/AP Aging Summary</div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:4px;">Receivables (₦32.8M)</div>
+            <div style="display:flex;border-radius:6px;overflow:hidden;height:10px;margin-bottom:12px;">
+              <div style="background:var(--green);width:55%;" title="Current"></div>
+              <div style="background:var(--accent);width:25%;" title="30 days"></div>
+              <div style="background:#f97316;width:12%;" title="60 days"></div>
+              <div style="background:var(--red);width:8%;" title="90+ days"></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin-bottom:4px;">Payables (₦9.2M)</div>
+            <div style="display:flex;border-radius:6px;overflow:hidden;height:10px;">
+              <div style="background:var(--green);width:70%;"></div>
+              <div style="background:var(--accent);width:20%;"></div>
+              <div style="background:var(--red);width:10%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Events Table -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Accounting Events</span>
+          <button class="btn btn-outline btn-sm" onclick="nav('events')">View All →</button>
+        </div>
+        <table>
+          <thead><tr><th>Date</th><th>Reference</th><th>Event Definition</th><th>Counterparty</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>14 Jun 2026</td><td style="font-family:monospace;font-weight:900;color:var(--primary)">TXN-2026-041</td><td>Staff Salary Payment</td><td>Olawale Adeyemi</td><td style="font-weight:900">₦150,000</td><td><span class="badge badge-amber">PENDING</span></td></tr>
+            <tr><td>13 Jun 2026</td><td style="font-family:monospace;font-weight:900;color:var(--primary)">TXN-2026-040</td><td>Client Invoice Settlement</td><td>Dangote Group</td><td style="font-weight:900">$5,200 USD</td><td><span class="badge badge-green">COMPLETED</span></td></tr>
+            <tr><td>12 Jun 2026</td><td style="font-family:monospace;font-weight:900;color:var(--primary)">TXN-2026-039</td><td>Expense Reimbursement</td><td>Amaka Okonkwo</td><td style="font-weight:900">₦45,000</td><td><span class="badge badge-red">REJECTED</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── ACCOUNTING EVENTS ─── -->
+    <div class="view" id="view-events">
+      <div class="improve-banner"><i>ℹ</i><div><strong>Renamed from "Accounting Transactions"</strong> <span>— Events are instances of Event Definitions. Status lifecycle: INITIATED → PENDING → APPROVED → COMPLETED. Direction, Currency, Counterparty columns added. Separate Approve/Edit/Reject buttons (no combined trash icon). Modal renamed: "Approve &amp; Post to Ledger" not "Fiduciary Control".</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#fef3c7;color:#d97706;">📥</div>
+          <div><div class="page-title">Accounting Events</div><div class="page-sub">Review, approve and post financial events from all modules</div></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline">⬇ Export</button>
+          <button class="btn btn-outline">↺ Refresh</button>
+        </div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card stat-red"><div class="stat-label">Initiated</div><div class="stat-value" style="color:var(--red)">12</div><div class="stat-ghost">⚡</div></div>
+        <div class="stat-card stat-amber"><div class="stat-label">Pending</div><div class="stat-value" style="color:#92400e">8</div><div class="stat-ghost">⏳</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">Approved</div><div class="stat-value" style="color:var(--green)">47</div><div class="stat-ghost">✔</div></div>
+        <div class="stat-card stat-purple"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--purple)">234</div><div class="stat-ghost">✅</div></div>
+      </div>
+      <div class="filter-bar">
+        <input class="filter-input" placeholder="Search reference, counterparty, description...">
+        <select class="filter-select"><option>ALL DIRECTION</option><option>INFLOW</option><option>OUTFLOW</option></select>
+        <select class="filter-select"><option>ALL MODULES</option><option>PAYROLL</option><option>POS</option><option>LOANS</option><option>EXPENSE</option></select>
+        <select class="filter-select"><option>ALL STATUS</option><option>INITIATED</option><option>PENDING</option><option>APPROVED</option><option>COMPLETED</option><option>REJECTED</option></select>
+        <select class="filter-select"><option>ALL CURRENCIES</option><option>NGN</option><option>USD</option><option>GBP</option></select>
+        <button class="btn btn-outline btn-sm">✕ Clear</button>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Date</th><th>Reference</th><th>Event Definition</th><th>Counterparty</th><th>Module</th><th>Direction</th><th>Amount</th><th>Currency</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>14 Jun 2026</td><td style="font-family:monospace;color:var(--primary);font-weight:900">TXN-2026-041</td><td>Staff Salary Payment</td><td>Olawale Adeyemi</td>
+              <td><span class="badge badge-purple">PAYROLL</span></td>
+              <td><span class="tag-dir-out">↑ OUTFLOW</span></td>
+              <td style="font-weight:900">₦150,000</td><td style="font-weight:700;color:var(--gray-400)">NGN</td>
+              <td><span class="badge badge-amber">PENDING</span></td>
+              <td style="text-align:right">
+                <button class="act-btn" title="View" style="color:var(--gray-400)">👁</button>
+                <button class="act-btn" title="Approve" onclick="document.getElementById('modal-approve').classList.add('open')" style="color:var(--green)">✔</button>
+                <button class="act-btn" title="Edit Mapping" style="color:var(--primary)">✏</button>
+                <button class="act-btn" title="Reject" style="color:var(--red)">✕</button>
+              </td>
+            </tr>
+            <tr>
+              <td>13 Jun 2026</td><td style="font-family:monospace;color:var(--primary);font-weight:900">TXN-2026-040</td><td>Client Invoice Settlement</td><td>Dangote Group</td>
+              <td><span class="badge badge-blue">SALES</span></td>
+              <td><span class="tag-dir-in">↓ INFLOW</span></td>
+              <td style="font-weight:900">$5,200 <span style="font-size:11px;color:var(--gray-400)">≈ ₦8.2M</span></td><td style="font-weight:700;color:var(--blue)">USD</td>
+              <td><span class="badge badge-green">COMPLETED</span></td>
+              <td style="text-align:right"><button class="act-btn" style="color:var(--gray-400)">👁</button> <span style="color:var(--gray-200);font-size:14px">🔒</span></td>
+            </tr>
+            <tr>
+              <td>12 Jun 2026</td><td style="font-family:monospace;color:var(--primary);font-weight:900">TXN-2026-039</td><td>Expense Reimbursement</td><td>Amaka Okonkwo</td>
+              <td><span class="badge" style="background:#fed7aa;color:#c2410c">EXPENSE</span></td>
+              <td><span class="tag-dir-out">↑ OUTFLOW</span></td>
+              <td style="font-weight:900">₦45,000</td><td style="font-weight:700;color:var(--gray-400)">NGN</td>
+              <td><span class="badge badge-red">REJECTED</span></td>
+              <td style="text-align:right"><button class="act-btn" style="color:var(--gray-400)">👁</button> <span style="color:var(--gray-200);font-size:14px">🔒</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:16px 20px;border-top:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:13px;color:var(--gray-400);font-weight:700">Showing 3 of 301 events</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm">← Prev</button>
+            <button class="btn btn-primary btn-sm">1</button>
+            <button class="btn btn-outline btn-sm">2</button>
+            <button class="btn btn-outline btn-sm">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CHART OF ACCOUNTS ─── -->
+    <div class="view" id="view-coa">
+      <div class="improve-banner"><i>ℹ</i><div><strong>COST_OF_SALES account type added (IFRS)</strong> <span>— "Deleted Logs" → "Archived Accounts". Dead "Run Report" → "Run Trial Balance". "Opening Register Balance" → "Opening Balance". Normal Balance column added.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#ede9fe;color:#7c3aed;">🏗</div>
+          <div><div class="page-title">Chart of Accounts</div><div class="page-sub">Hierarchical account structure · IFRS-compliant types</div></div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline">📂 Archived Accounts</button>
+          <button class="btn btn-outline" onclick="nav('ledger');setTimeout(()=>showInner('ledger','trial'),80)">📊 Run Trial Balance</button>
+          <button class="btn btn-primary">＋ New Account</button>
+        </div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="stat-card stat-blue" style="padding:16px;"><div class="stat-label" style="font-size:10px">Assets</div><div style="font-size:24px;font-weight:900;color:var(--primary)">24</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px">Normal: Dr</div></div>
+        <div class="stat-card stat-red" style="padding:16px;"><div class="stat-label" style="font-size:10px">Liabilities</div><div style="font-size:24px;font-weight:900;color:var(--red)">18</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px">Normal: Cr</div></div>
+        <div class="stat-card stat-purple" style="padding:16px;"><div class="stat-label" style="font-size:10px">Equity</div><div style="font-size:24px;font-weight:900;color:var(--purple)">8</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px">Normal: Cr</div></div>
+        <div class="stat-card stat-green" style="padding:16px;"><div class="stat-label" style="font-size:10px">Income</div><div style="font-size:24px;font-weight:900;color:var(--green)">12</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px">Normal: Cr</div></div>
+        <div class="stat-card" style="padding:16px;border-left:5px solid var(--accent);background:#fffbeb;"><div class="stat-label" style="font-size:10px;color:#92400e">Cost of Sales <span class="badge-new">NEW</span></div><div style="font-size:24px;font-weight:900;color:#92400e">6</div><div style="font-size:10px;color:#b45309;margin-top:4px">Normal: Dr</div></div>
+        <div class="stat-card" style="padding:16px;border-left:5px solid #f97316;"><div class="stat-label" style="font-size:10px">Expenses</div><div style="font-size:24px;font-weight:900;color:#c2410c">31</div><div style="font-size:10px;color:var(--gray-400);margin-top:4px">Normal: Dr</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <div style="padding:14px;border-bottom:1px solid var(--gray-100);display:flex;gap:10px;flex-wrap:wrap;">
+          <input class="filter-input" placeholder="Search accounts..." style="flex:1;min-width:180px;">
+          <select class="filter-select"><option>ALL TYPES</option><option>ASSET</option><option>LIABILITY</option><option>EQUITY</option><option>INCOME</option><option>COST_OF_SALES</option><option>EXPENSE</option></select>
+        </div>
+        <table>
+          <thead><tr><th>Account Name</th><th>Code</th><th>Type</th><th>Normal Balance</th><th>Opening Balance</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr style="cursor:pointer;background:#f8fafc" onclick="toggleCoaSb('1000',this)">
+              <td style="font-weight:900;color:var(--primary)"><span id="ico-sb-1000">▶ </span>1000 — Current Assets</td>
+              <td style="font-family:monospace;color:var(--gray-400)">1000</td>
+              <td><span class="badge badge-blue">ASSET</span></td><td style="font-weight:700">Debit</td><td style="color:var(--gray-400)">—</td>
+              <td style="text-align:right"><button class="act-btn">＋</button><button class="act-btn" style="color:var(--primary)">✏</button></td>
+            </tr>
+            <tr class="coa-child-sb-1000" style="display:none;background:#fafeff">
+              <td style="padding-left:36px;color:var(--gray-700);font-weight:600">1001 — Cash &amp; Bank</td>
+              <td style="font-family:monospace;color:var(--gray-400)">1001</td><td><span class="badge badge-blue">ASSET</span></td><td style="font-weight:700">Debit</td><td style="font-weight:700">₦4,250,000</td>
+              <td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td>
+            </tr>
+            <tr class="coa-child-sb-1000" style="display:none;background:#fafeff">
+              <td style="padding-left:36px;color:var(--gray-700);font-weight:600">1002 — Accounts Receivable</td>
+              <td style="font-family:monospace;color:var(--gray-400)">1002</td><td><span class="badge badge-blue">ASSET</span></td><td style="font-weight:700">Debit</td><td style="font-weight:700">₦12,800,000</td>
+              <td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td>
+            </tr>
+            <tr style="cursor:pointer;background:#fffbeb;border-left:4px solid var(--accent)" onclick="toggleCoaSb('4000',this)">
+              <td style="font-weight:900;color:#92400e"><span id="ico-sb-4000">▶ </span>4000 — Cost of Sales <span class="badge-new">NEW TYPE</span></td>
+              <td style="font-family:monospace;color:#b45309">4000</td>
+              <td><span class="badge" style="background:#fef3c7;color:#92400e">COST_OF_SALES</span></td><td style="font-weight:700">Debit</td><td style="color:var(--gray-400)">—</td>
+              <td style="text-align:right"><button class="act-btn">＋</button><button class="act-btn" style="color:var(--primary)">✏</button></td>
+            </tr>
+            <tr class="coa-child-sb-4000" style="display:none;background:#fffde7">
+              <td style="padding-left:36px;color:var(--gray-700);font-weight:600">4001 — Direct Labour Cost</td>
+              <td style="font-family:monospace;color:var(--gray-400)">4001</td><td><span class="badge" style="background:#fef3c7;color:#92400e">COST_OF_SALES</span></td><td style="font-weight:700">Debit</td><td style="color:var(--gray-400)">—</td>
+              <td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td>
+            </tr>
+            <tr style="cursor:pointer;background:#f8fafc" onclick="toggleCoaSb('5000',this)">
+              <td style="font-weight:900;color:var(--primary)"><span id="ico-sb-5000">▶ </span>5000 — Operating Expenses</td>
+              <td style="font-family:monospace;color:var(--gray-400)">5000</td>
+              <td><span class="badge" style="background:#ffedd5;color:#c2410c">EXPENSE</span></td><td style="font-weight:700">Debit</td><td style="color:var(--gray-400)">—</td>
+              <td style="text-align:right"><button class="act-btn">＋</button><button class="act-btn" style="color:var(--primary)">✏</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── JOURNAL ENTRIES ─── -->
+    <div class="view" id="view-journals">
+      <div class="improve-banner"><i>ℹ</i><div><strong>Unified naming — h1 now "Journal Entries"</strong> <span>Previously h1 said "Financial Journals" while the tab said "Journal Entries" and the component was named "BookKeepingComponent" — 3 different names for one screen. Reverse action and Recurring Templates added.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#dbeafe;color:#2563eb;">📖</div>
+          <div><div class="page-title">Journal Entries</div><div class="page-sub">Audit-ready double-entry bookkeeping records</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline">⬇ Export CSV</button><button class="btn btn-outline">↺ Recurring</button><button class="btn btn-primary">＋ Manual Journal</button></div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card stat-blue"><div class="stat-label">Total Journals</div><div class="stat-value" style="color:var(--primary)">842</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">Posted</div><div class="stat-value" style="color:var(--green)">798</div></div>
+        <div class="stat-card stat-amber"><div class="stat-label">Draft</div><div class="stat-value" style="color:#92400e">44</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Entry #</th><th>Date</th><th>Description</th><th>Debit (Dr)</th><th>Credit (Cr)</th><th>Status</th><th>Source</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">JE-2026-0842</td><td>14 Jun 2026</td><td>June Payroll — Salaries Payable</td><td style="color:var(--red);font-weight:700">₦4,500,000</td><td style="color:var(--green);font-weight:700">₦4,500,000</td><td><span class="badge badge-green">POSTED</span></td><td><span class="badge badge-purple">AUTO</span></td><td style="text-align:right"><button class="act-btn" title="View">👁</button> <button class="act-btn" title="Reverse Entry" style="color:var(--accent)">↺</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">JE-2026-0841</td><td>13 Jun 2026</td><td>Client Invoice — Dangote Group</td><td style="color:var(--red);font-weight:700">₦8,216,000</td><td style="color:var(--green);font-weight:700">₦8,216,000</td><td><span class="badge badge-green">POSTED</span></td><td><span class="badge badge-purple">AUTO</span></td><td style="text-align:right"><button class="act-btn">👁</button> <button class="act-btn" style="color:var(--accent)">↺</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">JE-2026-0840</td><td>12 Jun 2026</td><td>Manual — Prepaid Insurance adj.</td><td style="color:var(--red);font-weight:700">₦120,000</td><td style="color:var(--green);font-weight:700">₦120,000</td><td><span class="badge badge-amber">DRAFT</span></td><td><span class="badge badge-gray">MANUAL</span></td><td style="text-align:right"><button class="act-btn">👁</button><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--green)">✔</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── GENERAL LEDGER ─── -->
+    <div class="view" id="view-ledger">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#f0fdf4;color:var(--green);">📋</div>
+          <div><div class="page-title">General Ledger</div><div class="page-sub">Complete double-entry transaction history · Trial Balance included</div></div>
+        </div>
+        <button class="btn btn-outline">⬇ Export</button>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active" id="itab-ledger-main" onclick="showInner('ledger','main')">Ledger View</button>
+        <button class="inner-tab" id="itab-ledger-trial" onclick="showInner('ledger','trial')">Trial Balance <span class="badge-new">NEW</span></button>
+      </div>
+      <div class="inner-view active" id="iview-ledger-main">
+        <div class="filter-bar">
+          <select class="filter-select"><option>All Accounts</option><option>1001 — Cash &amp; Bank</option><option>1002 — Accounts Receivable</option><option>5001 — Salaries Expense</option></select>
+          <input type="date" class="filter-input" style="flex:0 0 auto;width:160px">
+          <input type="date" class="filter-input" style="flex:0 0 auto;width:160px">
+          <button class="btn btn-primary btn-sm">Apply</button>
+        </div>
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>Date</th><th>Journal Ref</th><th>Description</th><th>Account</th><th>Debit</th><th>Credit</th><th>Running Balance</th></tr></thead>
+            <tbody>
+              <tr><td>14 Jun</td><td style="font-family:monospace;color:var(--primary)">JE-0842</td><td>June Payroll</td><td>5001 — Salaries Expense</td><td style="color:var(--red);font-weight:700">₦4,500,000</td><td style="color:var(--gray-200)">—</td><td style="font-weight:900">₦18.2M Dr</td></tr>
+              <tr><td>14 Jun</td><td style="font-family:monospace;color:var(--primary)">JE-0842</td><td>June Payroll</td><td>2001 — Payroll Payable</td><td style="color:var(--gray-200)">—</td><td style="color:var(--green);font-weight:700">₦4,500,000</td><td style="font-weight:900">₦4.5M Cr</td></tr>
+              <tr><td>13 Jun</td><td style="font-family:monospace;color:var(--primary)">JE-0841</td><td>Dangote Invoice</td><td>1002 — Accounts Receivable</td><td style="color:var(--red);font-weight:700">₦8,216,000</td><td style="color:var(--gray-200)">—</td><td style="font-weight:900">₦21.0M Dr</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="inner-view" id="iview-ledger-trial">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <p style="font-size:14px;color:var(--gray-500)">As at <strong>30 June 2026</strong></p>
+          <button class="btn btn-outline btn-sm">⬇ Export PDF</button>
+        </div>
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>Code</th><th>Account Name</th><th>Type</th><th style="text-align:right">Debit (Dr)</th><th style="text-align:right">Credit (Cr)</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">1001</td><td>Cash &amp; Bank</td><td><span class="badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">₦4,250,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">1002</td><td>Accounts Receivable</td><td><span class="badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">₦21,016,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">2001</td><td>Payroll Payable</td><td><span class="badge badge-red">LIABILITY</span></td><td style="text-align:right;color:var(--gray-200)">—</td><td style="text-align:right;font-weight:700">₦4,500,000</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">3001</td><td>Revenue — Services</td><td><span class="badge badge-green">INCOME</span></td><td style="text-align:right;color:var(--gray-200)">—</td><td style="text-align:right;font-weight:700">₦38,516,000</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">5001</td><td>Salaries Expense</td><td><span class="badge" style="background:#ffedd5;color:#c2410c">EXPENSE</span></td><td style="text-align:right;font-weight:700">₦18,200,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+            </tbody>
+            <tfoot><tr style="background:#f0fdf4"><td colspan="3" style="font-weight:900;color:var(--green);padding:12px 16px;font-size:13px">TOTALS — BALANCED ✓</td><td style="text-align:right;font-weight:900;color:var(--green);padding:12px 16px">₦43,466,000</td><td style="text-align:right;font-weight:900;color:var(--green);padding:12px 16px">₦43,466,000</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ACCOUNTS RECEIVABLE ─── -->
+    <div class="view" id="view-ar">
+      <div class="improve-banner"><i>ℹ</i><div><strong>AR module added</strong> <span>— Currently missing from OptimaX Accounting. Standard in all global ERP systems (SAP, QuickBooks, Xero, Sage). Tracks unpaid customer invoices by aging bucket.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#dcfce7;color:var(--green);">💰</div>
+          <div><div class="page-title">Accounts Receivable</div><div class="page-sub">Outstanding customer invoices and aging analysis</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline">⬇ Export</button><button class="btn btn-primary">＋ New Invoice</button></div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">
+        <div class="stat-card stat-blue"><div class="stat-label">Total AR</div><div class="stat-value" style="color:var(--primary);font-size:22px">₦32.8M</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">Current (&lt;30d)</div><div class="stat-value" style="color:var(--green);font-size:22px">₦18.0M</div></div>
+        <div class="stat-card stat-amber"><div class="stat-label">30–60 Days</div><div class="stat-value" style="color:#92400e;font-size:22px">₦8.2M</div></div>
+        <div class="stat-card" style="border-left:5px solid #f97316"><div class="stat-label">60–90 Days</div><div class="stat-value" style="color:#c2410c;font-size:22px">₦4.0M</div></div>
+        <div class="stat-card stat-red"><div class="stat-label">90+ Days</div><div class="stat-value" style="color:var(--red);font-size:22px">₦2.6M</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Invoice #</th><th>Customer</th><th>Issue Date</th><th>Due Date</th><th>Amount</th><th>Outstanding</th><th>Age</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">INV-2026-089</td><td>Dangote Group</td><td>01 Jun 2026</td><td>30 Jun 2026</td><td style="font-weight:700">₦8,216,000</td><td style="color:var(--green);font-weight:700">₦0</td><td><span class="badge badge-green">CURRENT</span></td><td><span class="badge badge-green">PAID</span></td><td style="text-align:right"><button class="act-btn">👁</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">INV-2026-088</td><td>MTN Nigeria</td><td>15 May 2026</td><td>14 Jun 2026</td><td style="font-weight:700">₦12,400,000</td><td style="color:var(--red);font-weight:700">₦12,400,000</td><td><span class="badge" style="background:#ffedd5;color:#c2410c">60+ DAYS</span></td><td><span class="badge badge-red">OVERDUE</span></td><td style="text-align:right"><button class="act-btn">👁</button><button class="act-btn btn-sm" style="color:var(--primary);font-size:12px">📧 Chase</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">INV-2026-087</td><td>Zenith Bank Plc</td><td>01 Jun 2026</td><td>15 Jul 2026</td><td style="font-weight:700">₦5,500,000</td><td style="color:var(--amber);font-weight:700">₦5,500,000</td><td><span class="badge badge-green">CURRENT</span></td><td><span class="badge badge-amber">PENDING</span></td><td style="text-align:right"><button class="act-btn">👁</button><button class="act-btn" style="color:var(--green)">💳 Record Payment</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── ACCOUNTS PAYABLE ─── -->
+    <div class="view" id="view-ap">
+      <div class="improve-banner"><i>ℹ</i><div><strong>AP module added</strong> <span>— Currently missing from OptimaX Accounting. Tracks outstanding vendor bills and payment scheduling.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#fee2e2;color:var(--red);">🧾</div>
+          <div><div class="page-title">Accounts Payable</div><div class="page-sub">Vendor bills and payment scheduling</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline">⬇ Export</button><button class="btn btn-primary">＋ New Bill</button></div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card stat-blue"><div class="stat-label">Total AP</div><div class="stat-value" style="color:var(--primary);font-size:22px">₦9.2M</div></div>
+        <div class="stat-card stat-red"><div class="stat-label">Due Today</div><div class="stat-value" style="color:var(--red);font-size:22px">₦1.8M</div></div>
+        <div class="stat-card stat-amber"><div class="stat-label">Due This Week</div><div class="stat-value" style="color:#92400e;font-size:22px">₦4.5M</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">Paid This Month</div><div class="stat-value" style="color:var(--green);font-size:22px">₦6.2M</div></div>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Bill #</th><th>Vendor</th><th>Bill Date</th><th>Due Date</th><th>Amount</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">BILL-2026-041</td><td>Julius Berger Nigeria</td><td>01 Jun 2026</td><td>14 Jun 2026 <span class="badge badge-red" style="font-size:9px;margin-left:4px">DUE TODAY</span></td><td style="font-weight:700">₦1,800,000</td><td><span class="badge badge-red">OVERDUE</span></td><td style="text-align:right"><button class="act-btn">👁</button><button class="btn btn-primary btn-sm" onclick="nav('payments')">Pay Now</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">BILL-2026-040</td><td>EKEDC (Electricity)</td><td>05 Jun 2026</td><td>20 Jun 2026</td><td style="font-weight:700">₦420,000</td><td><span class="badge badge-amber">PENDING</span></td><td style="text-align:right"><button class="act-btn">👁</button><button class="btn btn-outline btn-sm">Schedule</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">BILL-2026-039</td><td>Aluko &amp; Oyebode LP</td><td>10 Jun 2026</td><td>10 Jul 2026</td><td style="font-weight:700">₦3,200,000</td><td><span class="badge badge-green">SCHEDULED</span></td><td style="text-align:right"><button class="act-btn">👁</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── BANK & RECONCILIATION ─── -->
+    <div class="view" id="view-banking">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#dbeafe;color:var(--blue);">🏦</div>
+          <div><div class="page-title">Bank &amp; Reconciliation</div><div class="page-sub">Connected accounts, statements, and GL reconciliation</div></div>
+        </div>
+        <button class="btn btn-primary">＋ Connect Bank</button>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active" id="itab-banking-accounts" onclick="showInner('banking','accounts')">Accounts</button>
+        <button class="inner-tab" id="itab-banking-txns" onclick="showInner('banking','txns')">Transactions</button>
+        <button class="inner-tab" id="itab-banking-reconcile" onclick="showInner('banking','reconcile')">Reconciliation</button>
+        <button class="inner-tab" id="itab-banking-mono" onclick="showInner('banking','mono')">Connect / Mono</button>
+      </div>
+      <div class="inner-view active" id="iview-banking-accounts">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+          <div class="card" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <div style="width:44px;height:44px;background:#f0fdf4;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--green);font-size:16px">GT</div>
+              <span class="badge badge-green">ACTIVE</span>
+            </div>
+            <div style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">GTBank</div>
+            <div style="font-family:monospace;font-weight:900;color:var(--primary);margin-bottom:8px">0123456789</div>
+            <div style="font-size:24px;font-weight:900;color:var(--primary)">₦4,250,000</div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-bottom:16px">Last sync: 14 Jun 2026, 09:41</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-outline btn-sm" style="justify-content:center">Transactions</button><button class="btn btn-outline btn-sm" style="justify-content:center">Reconcile</button></div>
+          </div>
+          <div class="card" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <div style="width:44px;height:44px;background:#fff7ed;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#c2410c;font-size:16px">AC</div>
+              <span class="badge badge-green">ACTIVE</span>
+            </div>
+            <div style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">Access Bank</div>
+            <div style="font-family:monospace;font-weight:900;color:var(--primary);margin-bottom:8px">0987654321</div>
+            <div style="font-size:24px;font-weight:900;color:var(--primary)">₦1,820,000</div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;margin-bottom:16px">Last sync: 14 Jun 2026, 08:15</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn btn-outline btn-sm" style="justify-content:center">Transactions</button><button class="btn btn-outline btn-sm" style="justify-content:center">Reconcile</button></div>
+          </div>
+          <div style="border:2px dashed var(--gray-200);border-radius:var(--radius-xl);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;cursor:pointer;transition:all .15s;color:var(--gray-400)" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--gray-200)';this.style.color='var(--gray-400)'">
+            <div style="font-size:28px;margin-bottom:8px">＋</div>
+            <div style="font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.06em">Add Bank Account</div>
+            <div style="font-size:12px;margin-top:4px">via Mono Open Banking</div>
+          </div>
+        </div>
+      </div>
+      <div class="inner-view" id="iview-banking-txns">
+        <div class="card" style="padding:0">
+          <table>
+            <thead><tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th><th>GL Status</th></tr></thead>
+            <tbody>
+              <tr><td>14 Jun 2026</td><td>SALARY BULK TRANSFER</td><td style="color:var(--red);font-weight:700">₦4,500,000</td><td style="color:var(--gray-200)">—</td><td style="font-weight:700">₦4,250,000</td><td><span class="badge badge-green">MATCHED</span></td></tr>
+              <tr><td>13 Jun 2026</td><td>TRANSFER FROM DANGOTE</td><td style="color:var(--gray-200)">—</td><td style="color:var(--green);font-weight:700">₦8,216,000</td><td style="font-weight:700">₦8,750,000</td><td><span class="badge badge-green">MATCHED</span></td></tr>
+              <tr><td>11 Jun 2026</td><td>BANK CHARGES - JUNE</td><td style="color:var(--red);font-weight:700">₦12,500</td><td style="color:var(--gray-200)">—</td><td style="font-weight:700">₦534,000</td><td><span class="badge badge-amber">UNMATCHED</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="inner-view" id="iview-banking-reconcile">
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card stat-green"><div class="stat-label">Matched</div><div class="stat-value" style="color:var(--green)">142</div></div>
+          <div class="stat-card stat-amber"><div class="stat-label">Unmatched</div><div class="stat-value" style="color:#92400e">8</div></div>
+          <div class="stat-card stat-blue"><div class="stat-label">GL Balance</div><div class="stat-value" style="color:var(--primary);font-size:22px">₦4,250,000</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="card" style="padding:0"><div style="padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-100);font-weight:900;font-size:12px;text-transform:uppercase;color:var(--primary)">Bank Statement</div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;background:#f0fdf4;border-bottom:1px solid var(--gray-100)"><span style="font-size:13px">SALARY BULK TRANSFER</span><span style="font-weight:700;color:var(--red)">-₦4,500,000</span></div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;background:#f0fdf4;border-bottom:1px solid var(--gray-100)"><span style="font-size:13px">TRANSFER FROM DANGOTE</span><span style="font-weight:700;color:var(--green)">+₦8,216,000</span></div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;background:#fffbeb;border-left:3px solid var(--accent)"><span style="font-size:13px">BANK CHARGES - JUNE</span><span style="font-weight:700;color:var(--red)">-₦12,500</span></div>
+          </div>
+          <div class="card" style="padding:0"><div style="padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-100);font-weight:900;font-size:12px;text-transform:uppercase;color:var(--primary)">General Ledger (1001)</div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;background:#f0fdf4;border-bottom:1px solid var(--gray-100)"><span style="font-family:monospace;font-size:13px;color:var(--primary)">JE-0842</span><span style="font-weight:700;color:var(--red)">-₦4,500,000</span></div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;background:#f0fdf4;border-bottom:1px solid var(--gray-100)"><span style="font-family:monospace;font-size:13px;color:var(--primary)">JE-0841</span><span style="font-weight:700;color:var(--green)">+₦8,216,000</span></div>
+            <div style="padding:12px 16px;display:flex;justify-content:space-between;color:var(--gray-300)"><span style="font-size:13px;font-style:italic">No match found</span><span>—</span></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px"><button class="btn btn-outline">Create Adjustment Entry</button><button class="btn btn-primary">Post Reconciliation</button></div>
+      </div>
+      <div class="inner-view" id="iview-banking-mono">
+        <div style="max-width:400px;margin:40px auto;text-align:center">
+          <div class="page-icon" style="background:rgba(17,42,70,.08);color:var(--primary);width:64px;height:64px;border-radius:18px;margin:0 auto 16px;font-size:26px">🔗</div>
+          <div style="font-size:20px;font-weight:900;margin-bottom:8px">Connect via Mono Open Banking</div>
+          <div style="font-size:13px;color:var(--gray-500);margin-bottom:24px">Securely link Nigerian bank accounts for real-time statement sync. Supported: GTBank, Access, Wema, Zenith, UBA, First Bank.</div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px">Launch Mono Connect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAYMENT RUNS / DISBURSEMENT (Full Wizard) ─── -->
+    <div class="view" id="view-payments">
+      <div class="improve-banner"><i>ℹ</i><div><strong>Renamed from "Disbursement Tray" / "Disburse"</strong> <span>— "Payment Runs" is the global ERP standard term. Full 5-step wizard preserved: Tray → Review → Pay → Confirm → Ledger. Maker/Checker columns for CBN dual-authorisation compliance.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#ede9fe;color:var(--purple);">💸</div>
+          <div><div class="page-title">Payment Runs</div><div class="page-sub">Initiate, review, authorise and disburse payments</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline" onclick="disbNav('tray')">← Back to Tray</button></div>
+      </div>
+      <!-- CBN Notice -->
+      <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:20px">
+        <span style="font-size:20px">🛡</span>
+        <div><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--red);margin-bottom:4px">CBN Dual-Authorisation Required</div><div style="font-size:13px;color:#9f1239">All payment runs above ₦500,000 require a second authoriser. A maker cannot also be the checker.</div></div>
+      </div>
+      <!-- Wizard Progress -->
+      <div class="disb-steps">
+        <div class="disb-step active" id="ds-tray"><div class="disb-bubble">1</div><div class="disb-step-label">Tray</div></div>
+        <div class="disb-step" id="ds-detail"><div class="disb-bubble">2</div><div class="disb-step-label">Review</div></div>
+        <div class="disb-step" id="ds-pay"><div class="disb-bubble">3</div><div class="disb-step-label">Pay</div></div>
+        <div class="disb-step" id="ds-confirm"><div class="disb-bubble">4</div><div class="disb-step-label">Confirm</div></div>
+        <div class="disb-step" id="ds-ledger"><div class="disb-bubble">5</div><div class="disb-step-label">Ledger</div></div>
+      </div>
+
+      <!-- SCREEN: TRAY -->
+      <div class="disb-screen active" id="disb-tray">
+        <div class="disb-two-col">
+          <div>
+            <div class="disb-card-header" style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-100);margin-bottom:12px">
+              <span style="font-size:13px;font-weight:900;text-transform:uppercase;color:var(--primary)">Incoming Requests</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--gray-400)">3 total</span>
+            </div>
+            <div class="disb-request-cards">
+              <div class="disb-req-card" onclick="selectRequest('Olawale Adeyemi',150000,'Engineering','GTBank','PR-2026-014')">
+                <div class="disb-req-top"><div style="display:flex;align-items:center;gap:10px"><div class="disb-req-avatar">OA</div><div><div class="disb-req-name">Olawale Adeyemi</div><div class="disb-req-meta">Engineering · Staff Loan</div></div></div><span class="badge badge-amber">Pending</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><div class="disb-req-amount">₦150,000</div><div style="display:flex;flex-direction:column;align-items:flex-end"><span class="disb-req-ref">PR-2026-014</span><span style="font-size:11px;color:var(--primary);font-weight:700;margin-top:2px">Review →</span></div></div>
+              </div>
+              <div class="disb-req-card" onclick="selectRequest('Chioma Eze',320000,'HR','Access Bank','PR-2026-015')">
+                <div class="disb-req-top"><div style="display:flex;align-items:center;gap:10px"><div class="disb-req-avatar" style="background:var(--purple)">CE</div><div><div class="disb-req-name">Chioma Eze</div><div class="disb-req-meta">HR · Emergency Loan</div></div></div><span class="badge badge-amber">Pending</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><div class="disb-req-amount">₦320,000</div><div style="display:flex;flex-direction:column;align-items:flex-end"><span class="disb-req-ref">PR-2026-015</span><span style="font-size:11px;color:var(--primary);font-weight:700;margin-top:2px">Review →</span></div></div>
+              </div>
+              <div class="disb-req-card" style="opacity:.6">
+                <div class="disb-req-top"><div style="display:flex;align-items:center;gap:10px"><div class="disb-req-avatar" style="background:var(--green)">TB</div><div><div class="disb-req-name">Tunde Balogun</div><div class="disb-req-meta">Finance · Transport Allow.</div></div></div><span class="badge badge-blue">Processing</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px"><div class="disb-req-amount">₦45,000</div><span class="badge badge-blue">In Progress</span></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="disb-sidebar-stat"><div class="disb-sidebar-stat-label">Total Pending</div><div class="disb-sidebar-stat-value">3</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">Awaiting review</div></div>
+            <div class="disb-sidebar-stat" style="background:#f0fdf4;border-color:#bbf7d0"><div class="disb-sidebar-stat-label">Total Value</div><div class="disb-sidebar-stat-value" style="color:var(--green)">₦515,000</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">All pending requests</div></div>
+            <div class="disb-sidebar-stat" style="background:#fffbeb;border-color:#fde68a"><div class="disb-sidebar-stat-label">Processing</div><div class="disb-sidebar-stat-value" style="color:#92400e">1</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">In progress now</div></div>
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px;font-size:13px;color:var(--gray-500)"><strong style="color:var(--primary)">Lifecycle Flow</strong><br>Select a pending request to begin: Review → Approve → Pay → Confirm → Post to Ledger</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: DETAIL/REVIEW -->
+      <div class="disb-screen" id="disb-detail">
+        <div class="disb-two-col">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="disb-card">
+              <div class="disb-card-header">📄 Request Details</div>
+              <div class="disb-field"><label>Employee</label><span id="det-name">—</span></div>
+              <div class="disb-field"><label>Department</label><span id="det-dept">—</span></div>
+              <div class="disb-field"><label>Amount</label><span id="det-amount" style="font-size:20px;color:var(--primary);font-weight:900">—</span></div>
+              <div class="disb-field"><label>Reference</label><span id="det-ref" style="font-family:monospace;color:var(--blue)">—</span></div>
+            </div>
+            <div class="disb-card">
+              <div class="disb-card-header">🏦 Recipient Bank Details</div>
+              <div class="disb-field"><label>Bank</label><span id="det-bank">—</span></div>
+              <div class="disb-field"><label>Account No.</label><span style="font-family:monospace;font-weight:900;color:var(--primary)">0123456789</span></div>
+              <div class="disb-field"><label>Account Name</label><span id="det-name2">—</span></div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="disbNav('pay')">✔ Approve &amp; Proceed to Payment</button>
+              <button class="btn btn-outline" style="flex:1;justify-content:center;color:var(--red)">✕ Reject</button>
+            </div>
+          </div>
+          <div>
+            <div class="disb-card">
+              <div style="background:linear-gradient(135deg,var(--primary),#2e6276);border-radius:12px;padding:20px;color:#fff;margin-bottom:16px;text-align:center">
+                <div style="font-size:11px;font-weight:900;text-transform:uppercase;opacity:.7;margin-bottom:8px">Disbursement Amount</div>
+                <div style="font-size:32px;font-weight:900" id="det-amount2">₦150,000</div>
+                <span class="badge badge-amber" style="margin-top:8px;display:inline-flex">Pending Review</span>
+              </div>
+              <div style="font-size:12px;color:var(--gray-400);background:var(--gray-50);border-radius:10px;padding:12px;display:flex;align-items:center;gap:8px"><span style="color:var(--green)">🛡</span> All approvals are audit-logged and timestamped.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: PAY -->
+      <div class="disb-screen" id="disb-pay">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <span style="color:var(--green);font-size:20px">✔</span>
+          <div><strong style="color:#166534">Request Approved</strong><br><span style="font-size:13px;color:#16a34a">Disburse <strong id="pay-amount">₦150,000</strong> to <strong id="pay-name">—</strong></span></div>
+        </div>
+        <div class="disb-two-col">
+          <div class="disb-card">
+            <div class="disb-card-header">💳 Select Payment Method</div>
+            <div class="disb-method-grid">
+              <button class="disb-method-btn" id="method-paystack" onclick="selectDisbMethod('paystack','Paystack')"><i class="pi pi-credit-card" style="font-size:24px;color:var(--primary)">💳</i><span>Paystack</span></button>
+              <button class="disb-method-btn" id="method-bank" onclick="selectDisbMethod('bank','Bank Transfer')"><i style="font-size:24px">🏦</i><span>Bank Transfer</span></button>
+              <button class="disb-method-btn" id="method-wallet" onclick="selectDisbMethod('wallet','Wallet')"><i style="font-size:24px">👛</i><span>Wallet</span></button>
+              <button class="disb-method-btn" id="method-cash" onclick="selectDisbMethod('cash','Cash')"><i style="font-size:24px">💵</i><span>Cash</span></button>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="disbNav('confirm')">Send Payment →</button>
+              <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="disbNav('tray')">Cancel</button>
+            </div>
+          </div>
+          <div class="disb-card">
+            <div style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Payment Summary</div>
+            <div class="disb-field"><label>Recipient</label><span id="pay-name2">—</span></div>
+            <div class="disb-field"><label>Amount</label><span style="color:var(--primary);font-weight:900">₦150,000</span></div>
+            <div class="disb-field"><label>Fee</label><span style="color:var(--green);font-weight:700">₦0.00</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:16px;font-weight:900;border-top:2px solid var(--gray-100);margin-top:8px"><span>Total</span><span style="color:var(--primary)">₦150,000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: CONFIRM -->
+      <div class="disb-screen" id="disb-confirm">
+        <div style="max-width:500px;margin:0 auto;text-align:center;padding:40px 0">
+          <div style="width:72px;height:72px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px">✔</div>
+          <div style="font-size:22px;font-weight:900;margin-bottom:8px">Confirm Disbursement</div>
+          <div style="font-size:14px;color:var(--gray-500);margin-bottom:24px">Review and confirm this payment before it is sent. This action cannot be undone.</div>
+          <div class="preview-box" style="text-align:left">
+            <div class="preview-row"><span class="preview-label">Recipient</span><span class="preview-val">Olawale Adeyemi</span></div>
+            <div class="preview-row"><span class="preview-label">Amount</span><span class="preview-val">₦150,000</span></div>
+            <div class="preview-row"><span class="preview-label">Method</span><span class="preview-val">Bank Transfer</span></div>
+            <div class="preview-row"><span class="preview-label">GL Debit</span><span class="preview-val" style="color:var(--red)">2001 — Payroll Payable</span></div>
+            <div class="preview-row"><span class="preview-label">GL Credit</span><span class="preview-val" style="color:var(--green)">1001 — Cash &amp; Bank</span></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:20px">
+            <button class="btn-cancel" onclick="disbNav('pay')">← Back</button>
+            <button class="btn-confirm" onclick="disbNav('ledger')">Confirm &amp; Disburse</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: LEDGER ENTRY -->
+      <div class="disb-screen" id="disb-ledger">
+        <div style="max-width:560px;margin:0 auto;padding:32px 0">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="width:72px;height:72px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:32px">🎉</div>
+            <div style="font-size:20px;font-weight:900;color:var(--green)">Payment Disbursed!</div>
+            <div style="font-size:13px;color:var(--gray-500);margin-top:4px">₦150,000 sent to Olawale Adeyemi via Bank Transfer</div>
+          </div>
+          <div class="disb-ledger-entry">
+            <div style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:12px;letter-spacing:.1em">Journal Entry Created — JE-2026-0843</div>
+            <div class="disb-field"><label>Date</label><span>14 Jun 2026, 11:42</span></div>
+            <div class="disb-field"><label>Debit</label><span style="color:var(--red)">2001 — Payroll Payable: ₦150,000</span></div>
+            <div class="disb-field"><label>Credit</label><span style="color:var(--green)">1001 — Cash &amp; Bank: ₦150,000</span></div>
+            <div class="disb-field"><label>Maker</label><span>Chioma Eze</span></div>
+            <div class="disb-field"><label>Checker</label><span style="color:var(--primary);font-weight:900">Adaeze Nwosu</span></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="nav('ledger')">View in Ledger</button>
+            <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="disbNav('tray')">← Back to Tray</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── REPORTS ─── -->
+    <div class="view" id="view-reports">
+      <div class="improve-banner"><i>ℹ</i><div><strong>Reports tab was missing from navigation</strong> <span>— Now surfaced. Income Statement shows Gross Profit line (enabled by COST_OF_SALES type). Balance Sheet, Cash Flow, Tax Summary, Trial Balance all accessible.</span></div></div>
+      <div class="page-header" style="margin-bottom:24px">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#f0fdf4;color:var(--green);">📊</div>
+          <div><div class="page-title">Financial Reports</div><div class="page-sub">IFRS-compliant financial statements · FY 2026</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline">⬇ PDF</button><button class="btn btn-outline">📊 Excel</button></div>
+      </div>
+      <div class="report-layout">
+        <nav class="report-nav">
+          <button class="report-nav-item active" id="rnav-income" onclick="showReport('income')">📈 Income Statement</button>
+          <button class="report-nav-item" id="rnav-balance" onclick="showReport('balance')">📋 Balance Sheet</button>
+          <button class="report-nav-item" id="rnav-cashflow" onclick="showReport('cashflow')">💧 Cash Flow</button>
+          <button class="report-nav-item" id="rnav-tax" onclick="showReport('tax')">🧮 Tax Summary</button>
+          <button class="report-nav-item" id="rnav-trial" onclick="showReport('trial')">🔢 Trial Balance</button>
+        </nav>
+        <div>
+          <!-- Income Statement -->
+          <div class="report-content report-view active" id="rview-income">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+              <div><div style="font-size:18px;font-weight:900">Income Statement</div><div style="font-size:13px;color:var(--gray-400)">For the period ending 30 June 2026</div></div>
+            </div>
+            <div class="fs-section-head">Revenue</div>
+            <div class="fs-row"><span>Revenue — Services</span><span style="font-weight:700">₦38,516,000</span></div>
+            <div class="fs-row"><span>Revenue — Products</span><span style="font-weight:700">₦12,400,000</span></div>
+            <div class="fs-total"><span>Total Revenue</span><span>₦50,916,000</span></div>
+            <div class="fs-section-head" style="color:#92400e;border-color:#d97706">Cost of Sales <span class="badge-new">ENABLED BY COST_OF_SALES TYPE</span></div>
+            <div class="fs-row"><span>Direct Labour Cost</span><span style="font-weight:700">(₦8,200,000)</span></div>
+            <div class="fs-row"><span>Cost of Materials</span><span style="font-weight:700">(₦4,100,000)</span></div>
+            <div class="fs-total"><span>Total Cost of Sales</span><span>(₦12,300,000)</span></div>
+            <div class="fs-gp"><span>GROSS PROFIT</span><span>₦38,616,000</span></div>
+            <div class="fs-section-head">Operating Expenses</div>
+            <div class="fs-row"><span>Salaries Expense</span><span style="font-weight:700">(₦18,200,000)</span></div>
+            <div class="fs-row"><span>Other Expenses</span><span style="font-weight:700">(₦550,000)</span></div>
+            <div class="fs-total"><span>Total Expenses</span><span>(₦18,750,000)</span></div>
+            <div class="fs-np"><span>NET PROFIT</span><span>₦19,866,000</span></div>
+          </div>
+          <!-- Balance Sheet -->
+          <div class="report-content report-view" id="rview-balance" style="display:none">
+            <div style="font-size:18px;font-weight:900;margin-bottom:4px">Balance Sheet</div>
+            <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px">As at 30 June 2026</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+              <div><div class="fs-section-head">Assets</div><div class="fs-row"><span>Cash &amp; Bank</span><span>₦4,250,000</span></div><div class="fs-row"><span>Accounts Receivable</span><span>₦21,016,000</span></div><div class="fs-total"><span>Total Assets</span><span>₦25,266,000</span></div></div>
+              <div><div class="fs-section-head">Liabilities &amp; Equity</div><div class="fs-row"><span>Payroll Payable</span><span>₦4,500,000</span></div><div class="fs-row"><span>Retained Earnings</span><span>₦20,766,000</span></div><div class="fs-total"><span>Total L + E</span><span>₦25,266,000</span></div></div>
+            </div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-top:20px;font-weight:900;color:var(--green);text-align:center;font-size:13px">✓ BALANCED — Total Assets = Total Liabilities + Equity</div>
+          </div>
+          <!-- Cash Flow -->
+          <div class="report-content report-view" id="rview-cashflow" style="display:none">
+            <div style="font-size:18px;font-weight:900;margin-bottom:4px">Cash Flow Statement (Indirect Method)</div>
+            <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px">For the period ending 30 June 2026</div>
+            <div class="fs-section-head">Operating Activities</div>
+            <div class="fs-row"><span>Net Profit</span><span>₦19,866,000</span></div>
+            <div class="fs-row"><span>Add: Depreciation</span><span>₦320,000</span></div>
+            <div class="fs-row"><span>Less: Increase in Receivables</span><span style="color:var(--red)">(₦8,216,000)</span></div>
+            <div class="fs-total"><span>Net Cash from Operations</span><span style="color:var(--green)">₦11,970,000</span></div>
+            <div class="fs-section-head">Financing Activities</div>
+            <div class="fs-row"><span>Payroll disbursed</span><span style="color:var(--red)">(₦18,450,000)</span></div>
+            <div class="fs-total" style="font-size:16px;margin-top:12px"><span>Net Change in Cash</span><span style="color:var(--primary)">(₦6,480,000)</span></div>
+          </div>
+          <!-- Tax Summary -->
+          <div class="report-content report-view" id="rview-tax" style="display:none">
+            <div style="font-size:18px;font-weight:900;margin-bottom:4px">Tax Summary</div>
+            <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px">June 2026 — FIRS Compliance</div>
+            <table><thead><tr><th>Code</th><th>Tax Type</th><th style="text-align:right">Rate</th><th style="text-align:right">Taxable</th><th style="text-align:right">Tax Due</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:monospace">VAT-OUT</td><td>Output VAT</td><td style="text-align:right;font-weight:700">7.5%</td><td style="text-align:right">₦50,916,000</td><td style="text-align:right;font-weight:900">₦3,818,700</td></tr>
+              <tr><td style="font-family:monospace">VAT-IN</td><td>Input VAT</td><td style="text-align:right;font-weight:700">7.5%</td><td style="text-align:right">₦12,300,000</td><td style="text-align:right;font-weight:700;color:var(--green)">(₦922,500)</td></tr>
+              <tr><td style="font-family:monospace">WHT-SVC</td><td>WHT — Services</td><td style="text-align:right;font-weight:700">5%</td><td style="text-align:right">₦550,000</td><td style="text-align:right;font-weight:900">₦27,500</td></tr>
+              <tr style="background:#fffbeb"><td colspan="4" style="font-weight:900;color:#92400e">Net VAT Payable (Output − Input)</td><td style="text-align:right;font-weight:900;color:#92400e">₦2,896,200</td></tr>
+            </tbody></table>
+          </div>
+          <!-- Trial Balance -->
+          <div class="report-content report-view" id="rview-trial" style="display:none">
+            <div style="font-size:18px;font-weight:900;margin-bottom:4px">Trial Balance</div>
+            <div style="font-size:13px;color:var(--gray-400);margin-bottom:20px">As at 30 June 2026</div>
+            <table><thead><tr><th>Code</th><th>Account Name</th><th>Type</th><th style="text-align:right">Debit (Dr)</th><th style="text-align:right">Credit (Cr)</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">1001</td><td>Cash &amp; Bank</td><td><span class="badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">₦4,250,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">1002</td><td>Accounts Receivable</td><td><span class="badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">₦21,016,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">2001</td><td>Payroll Payable</td><td><span class="badge badge-red">LIABILITY</span></td><td style="text-align:right;color:var(--gray-200)">—</td><td style="text-align:right;font-weight:700">₦4,500,000</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">3001</td><td>Revenue — Services</td><td><span class="badge badge-green">INCOME</span></td><td style="text-align:right;color:var(--gray-200)">—</td><td style="text-align:right;font-weight:700">₦38,516,000</td></tr>
+              <tr><td style="font-family:monospace;color:var(--gray-400)">5001</td><td>Salaries Expense</td><td><span class="badge" style="background:#ffedd5;color:#c2410c">EXPENSE</span></td><td style="text-align:right;font-weight:700">₦18,200,000</td><td style="text-align:right;color:var(--gray-200)">—</td></tr>
+            </tbody>
+            <tfoot><tr style="background:#f0fdf4"><td colspan="3" style="font-weight:900;color:var(--green);padding:12px 16px">TOTALS — BALANCED ✓</td><td style="text-align:right;font-weight:900;color:var(--green);padding:12px 16px">₦43,466,000</td><td style="text-align:right;font-weight:900;color:var(--green);padding:12px 16px">₦43,466,000</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TAX ─── -->
+    <div class="view" id="view-tax">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#fef3c7;color:#92400e;">🧮</div>
+          <div><div class="page-title">Tax</div><div class="page-sub">VAT, WHT, CIT — FIRS compliance</div></div>
+        </div>
+        <button class="btn btn-primary">＋ New Tax Code</button>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Rate</th><th>GL Account</th><th>FIRS Code</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">VAT-OUT</td><td>Output VAT</td><td><span class="badge badge-blue">VAT</span></td><td style="font-weight:900">7.5%</td><td>2100 — VAT Payable</td><td style="font-family:monospace">FIRS-VAT-01</td><td><span class="badge badge-green">ACTIVE</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">VAT-IN</td><td>Input VAT</td><td><span class="badge badge-blue">VAT</span></td><td style="font-weight:900">7.5%</td><td>1200 — VAT Receivable</td><td style="font-family:monospace">FIRS-VAT-02</td><td><span class="badge badge-green">ACTIVE</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">WHT-SVC</td><td>WHT — Services</td><td><span class="badge badge-purple">WHT</span></td><td style="font-weight:900">5%</td><td>2101 — WHT Payable</td><td style="font-family:monospace">FIRS-WHT-01</td><td><span class="badge badge-green">ACTIVE</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">WHT-RENT</td><td>WHT — Rent</td><td><span class="badge badge-purple">WHT</span></td><td style="font-weight:900">10%</td><td>2101 — WHT Payable</td><td style="font-family:monospace">FIRS-WHT-02</td><td><span class="badge badge-green">ACTIVE</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+            <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">CIT</td><td>Company Income Tax</td><td><span class="badge badge-amber">CIT</span></td><td style="font-weight:900">30%</td><td>2102 — CIT Payable</td><td style="font-family:monospace">FIRS-CIT-01</td><td><span class="badge badge-green">ACTIVE</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── BUDGETS ─── -->
+    <div class="view" id="view-budgets">
+      <div class="improve-banner"><i>ℹ</i><div><strong>Budgets module connected</strong> <span>— BudgetingForecastingComponent existed but was disconnected from the navigation (wired to a wrong tab). Now properly surfaced with budget vs actual tracking.</span></div></div>
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:#ede9fe;color:var(--purple);">🎯</div>
+          <div><div class="page-title">Budgets &amp; Forecasting</div><div class="page-sub">FY 2026 budget tracking vs actuals</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-outline">⬇ Export</button><button class="btn btn-primary">＋ New Budget</button></div>
+      </div>
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card stat-blue"><div class="stat-label">Total Budget</div><div class="stat-value" style="color:var(--primary);font-size:22px">₦240M</div><div style="font-size:11px;color:var(--gray-400);margin-top:6px">FY 2026</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">Spent YTD</div><div class="stat-value" style="color:var(--green);font-size:22px">₦112M</div><div style="font-size:11px;color:var(--green);margin-top:6px">46.7% of budget</div></div>
+        <div class="stat-card stat-amber"><div class="stat-label">Remaining</div><div class="stat-value" style="color:#92400e;font-size:22px">₦128M</div><div style="font-size:11px;color:var(--gray-400);margin-top:6px">6 months remaining</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Budget vs Actual by Department</span></div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700;color:var(--gray-700)">HR &amp; Payroll</span><span style="font-size:12px;color:var(--gray-400)">₦85.2M / ₦120M <strong style="color:var(--green)">71%</strong></span></div>
+            <div style="height:10px;background:var(--gray-100);border-radius:5px;overflow:hidden"><div style="height:100%;width:71%;background:var(--green);border-radius:5px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700;color:var(--gray-700)">Operations</span><span style="font-size:12px;color:var(--gray-400)">₦22.0M / ₦30M <strong style="color:var(--accent)">73%</strong></span></div>
+            <div style="height:10px;background:var(--gray-100);border-radius:5px;overflow:hidden"><div style="height:100%;width:73%;background:var(--accent);border-radius:5px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700;color:var(--gray-700)">IT &amp; Technology</span><span style="font-size:12px;color:var(--gray-400)">₦4.8M / ₦20M <strong style="color:var(--blue)">24%</strong></span></div>
+            <div style="height:10px;background:var(--gray-100);border-radius:5px;overflow:hidden"><div style="height:100%;width:24%;background:var(--blue);border-radius:5px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700;color:var(--gray-700)">Marketing</span><span style="font-size:12px;color:var(--gray-400)">₦9.5M / ₦8M <strong style="color:var(--red)">119% ⚠</strong></span></div>
+            <div style="height:10px;background:var(--gray-100);border-radius:5px;overflow:hidden"><div style="height:100%;width:100%;background:var(--red);border-radius:5px"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS ─── -->
+    <div class="view" id="view-settings">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-icon" style="background:var(--gray-100);color:var(--gray-700);">⚙️</div>
+          <div><div class="page-title">Accounting Settings</div><div class="page-sub">Categories · Modules · Event Definitions · Exchange Rates · System</div></div>
+        </div>
+        <button class="btn btn-primary">💾 Save Settings</button>
+      </div>
+      <div class="inner-tabs">
+        <button class="inner-tab active" id="itab-settings-cats" onclick="showInner('settings','cats')">Categories §1</button>
+        <button class="inner-tab" id="itab-settings-mods" onclick="showInner('settings','mods')">Modules §2</button>
+        <button class="inner-tab" id="itab-settings-evdefs" onclick="showInner('settings','evdefs')">Event Definitions §3</button>
+        <button class="inner-tab" id="itab-settings-rates" onclick="showInner('settings','rates')">Exchange Rates §6</button>
+        <button class="inner-tab" id="itab-settings-sys" onclick="showInner('settings','sys')">System</button>
+      </div>
+      <div class="inner-view active" id="iview-settings-cats">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><p style="font-size:13px;color:var(--gray-500)">Top-level transaction groupings. Used for filtering and reporting.</p><button class="btn btn-primary btn-sm">＋ New Category</button></div>
+        <div class="card" style="padding:0"><table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Defs</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody><tr><td style="font-family:monospace">1</td><td style="font-weight:900">Salaries</td><td>All staff payroll payments</td><td><span class="badge badge-blue">3</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td></tr>
+        <tr><td style="font-family:monospace">2</td><td style="font-weight:900">Procurement</td><td>Vendor purchases and supplies</td><td><span class="badge badge-blue">5</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td></tr>
+        <tr><td style="font-family:monospace">3</td><td style="font-weight:900">Loans</td><td>Staff and commercial loans</td><td><span class="badge badge-blue">2</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--red)">🗑</button></td></tr></tbody></table></div>
+      </div>
+      <div class="inner-view" id="iview-settings-mods">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><p style="font-size:13px;color:var(--gray-500)">Business areas that trigger accounting events. Every Event Definition must belong to a module.</p><button class="btn btn-primary btn-sm">＋ New Module</button></div>
+        <div class="card" style="padding:0"><table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Active Defs</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody><tr><td style="font-family:monospace">1</td><td style="font-weight:900">HR &amp; Payroll</td><td>Salary, allowances, deductions</td><td><span class="badge badge-green">4 active</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+        <tr><td style="font-family:monospace">2</td><td style="font-weight:900">POS / Sales</td><td>Point-of-sale and invoice events</td><td><span class="badge badge-green">3 active</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr>
+        <tr><td style="font-family:monospace">3</td><td style="font-weight:900">Expense Management</td><td>Staff reimbursements and petty cash</td><td><span class="badge badge-green">2 active</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button></td></tr></tbody></table></div>
+      </div>
+      <div class="inner-view" id="iview-settings-evdefs">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><p style="font-size:13px;color:var(--gray-500)">Templates with accounting rules. STATIC = fixed CoA account. DYNAMIC = resolver key resolved at runtime.</p><button class="btn btn-primary btn-sm">＋ New Definition</button></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table><thead><tr><th>Code</th><th>Name</th><th>Module</th><th>Dir</th><th>Debit Mapping</th><th>Credit Mapping</th><th>Currencies</th><th>Approval</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">SAL-001</td><td style="font-weight:900">Staff Salary Payment</td><td><span class="badge badge-purple">PAYROLL</span></td><td><span style="color:var(--red);font-weight:900;font-size:11px">↑ OUT</span></td><td style="font-size:12px"><span class="badge badge-blue" style="margin-right:4px">STATIC</span>5001 — Salaries Exp.</td><td style="font-size:12px"><span class="badge badge-amber" style="margin-right:4px">DYNAMIC</span>counterparty.defaultAcc</td><td style="font-size:12px">NGN, USD</td><td><span class="badge badge-green">YES</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--accent);font-size:11px;font-weight:900">DISABLE</button></td></tr>
+          <tr><td style="font-family:monospace;color:var(--primary);font-weight:900">INV-001</td><td style="font-weight:900">Client Invoice Settlement</td><td><span class="badge badge-blue">SALES</span></td><td><span style="color:var(--green);font-weight:900;font-size:11px">↓ IN</span></td><td style="font-size:12px"><span class="badge badge-blue" style="margin-right:4px">STATIC</span>1002 — AR</td><td style="font-size:12px"><span class="badge badge-blue" style="margin-right:4px">STATIC</span>3001 — Revenue</td><td style="font-size:12px">NGN, USD, GBP, EUR</td><td><span class="badge badge-gray">NO</span></td><td style="text-align:right"><button class="act-btn" style="color:var(--primary)">✏</button><button class="act-btn" style="color:var(--accent);font-size:11px;font-weight:900">DISABLE</button></td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="inner-view" id="iview-settings-rates">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><p style="font-size:13px;color:var(--gray-500)">Rates locked at event creation. Sources: FIXER API, CBN official, or Manual override.</p><div class="btn-group"><button class="btn btn-outline btn-sm">↺ Fetch CBN Rates</button><button class="btn btn-primary btn-sm">＋ Manual Rate</button></div></div>
+        <div class="card" style="padding:0"><table><thead><tr><th>Pair</th><th>Rate (to NGN)</th><th>Source</th><th>Rate Date</th><th>Status</th></tr></thead>
+        <tbody><tr><td style="font-family:monospace;font-weight:900">USD/NGN</td><td style="font-size:20px;font-weight:900;color:var(--primary)">1,580.00</td><td><span class="badge badge-blue">CBN</span></td><td>14 Jun 2026</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+        <tr><td style="font-family:monospace;font-weight:900">GBP/NGN</td><td style="font-size:20px;font-weight:900;color:var(--primary)">2,010.50</td><td><span class="badge badge-purple">FIXER</span></td><td>14 Jun 2026</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+        <tr><td style="font-family:monospace;font-weight:900">EUR/NGN</td><td style="font-size:20px;font-weight:900;color:var(--primary)">1,720.00</td><td><span class="badge badge-gray">MANUAL</span></td><td>13 Jun 2026</td><td><span class="badge badge-amber">STALE</span></td></tr>
+        <tr><td style="font-family:monospace;font-weight:900">AED/NGN</td><td style="font-size:20px;font-weight:900;color:var(--primary)">430.25</td><td><span class="badge badge-blue">CBN</span></td><td>14 Jun 2026</td><td><span class="badge badge-green">ACTIVE</span></td></tr></tbody></table></div>
+      </div>
+      <div class="inner-view" id="iview-settings-sys">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div class="card"><div class="card-header"><span class="card-title">Company &amp; Fiscal Year</span></div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);display:block;margin-bottom:4px">Company Name</label><input type="text" value="OptimaX Suites Ltd" style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;background:var(--gray-50)"></div>
+              <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);display:block;margin-bottom:4px">Tax Identification Number (TIN)</label><input type="text" value="12345678-0001" style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;background:var(--gray-50)"></div>
+              <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);display:block;margin-bottom:4px">Base Currency</label><select style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;background:var(--gray-50)"><option>NGN — Nigerian Naira</option><option>USD</option></select></div>
+              <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);display:block;margin-bottom:4px">Fiscal Year Start</label><select style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none;background:var(--gray-50)"><option>January (Calendar Year)</option><option>April</option></select></div>
+            </div>
+          </div>
+          <div>
+            <div class="card"><div class="card-header"><span class="card-title">CBN Approval Thresholds</span></div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);display:block;margin-bottom:4px">Single Authoriser Limit</label><input type="text" value="₦499,999" style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none"></div>
+                <div><label style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--gray-400);display:block;margin-bottom:4px">Dual Authorisation Above</label><input type="text" value="₦500,000" style="width:100%;border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;font-size:13px;outline:none"></div>
+              </div>
+            </div>
+            <div class="card" style="margin-top:0"><div class="card-header"><span class="card-title">Period Management</span></div>
+              <table><thead><tr><th>Period</th><th>Status</th><th style="text-align:right">Action</th></tr></thead>
+              <tbody><tr><td style="font-weight:700">June 2026</td><td><span class="badge badge-green">OPEN</span></td><td style="text-align:right"><button class="btn btn-outline btn-sm" style="color:var(--accent)">Lock Period</button></td></tr>
+              <tr><td style="font-weight:700">May 2026</td><td><span class="badge badge-gray">LOCKED</span></td><td style="text-align:right"><button class="btn btn-outline btn-sm">Unlock</button></td></tr>
+              <tr><td style="font-weight:700">April 2026</td><td><span class="badge badge-gray">LOCKED</span></td><td style="text-align:right"><button class="btn btn-outline btn-sm">Unlock</button></td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- APPROVE MODAL -->
+<div class="modal-overlay" id="modal-approve">
+  <div class="modal">
+    <div class="modal-top-bar"></div>
+    <div class="modal-body">
+      <div class="modal-icon">✔</div>
+      <div class="modal-title">Approve &amp; Post to Ledger</div>
+      <div class="modal-sub">Creates an immutable journal entry and updates the General Ledger.</div>
+      <div class="preview-box">
+        <div class="preview-row"><span class="preview-label">Event Definition</span><span class="preview-val" style="color:var(--primary)">Staff Salary Payment</span></div>
+        <div class="preview-row"><span class="preview-label">Reference</span><span class="preview-val" style="font-family:monospace">TXN-2026-041</span></div>
+        <div class="preview-row"><span class="preview-label">Amount</span><span class="preview-val">₦150,000</span></div>
+        <div class="preview-row"><span class="preview-label">Debit</span><span class="preview-val" style="color:var(--red)">5001 — Salaries Expense</span></div>
+        <div class="preview-row"><span class="preview-label">Credit</span><span class="preview-val" style="color:var(--green)">2001 — Payroll Payable</span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="document.getElementById('modal-approve').classList.remove('open')">Cancel</button>
+        <button class="btn-confirm">Post to Ledger</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const titles = {dashboard:'Dashboard',events:'Accounting Events',journals:'Journal Entries',ledger:'General Ledger',coa:'Chart of Accounts',ar:'Accounts Receivable',ap:'Accounts Payable',banking:'Bank & Reconciliation',payments:'Payment Runs',reports:'Reports',tax:'Tax',budgets:'Budgets',settings:'Settings'};
+function nav(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+  var v = document.getElementById('view-' + name);
+  var b = document.getElementById('nav-' + name);
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+  document.getElementById('tb-current').textContent = titles[name] || name;
+}
+function showInner(group, tab) {
+  document.querySelectorAll('[id^="iview-' + group + '-"]').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('[id^="itab-' + group + '-"]').forEach(el => el.classList.remove('active'));
+  var v = document.getElementById('iview-' + group + '-' + tab);
+  var b = document.getElementById('itab-' + group + '-' + tab);
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+}
+function toggleCoaSb(code, row) {
+  var children = document.querySelectorAll('.coa-child-sb-' + code);
+  var ico = document.getElementById('ico-sb-' + code);
+  var hidden = children.length > 0 && children[0].style.display === 'none';
+  children.forEach(c => c.style.display = hidden ? '' : 'none');
+  if (ico) ico.textContent = hidden ? '▼ ' : '▶ ';
+}
+// Disbursement wizard state
+var disbScreen = 'tray';
+var disbSelected = null;
+var disbMethod = null;
+function disbNav(screen) {
+  disbScreen = screen;
+  document.querySelectorAll('.disb-screen').forEach(s => s.classList.remove('active'));
+  var s = document.getElementById('disb-' + screen);
+  if (s) s.classList.add('active');
+  updateDisbSteps();
+}
+function updateDisbSteps() {
+  var order = ['tray','detail','pay','confirm','ledger'];
+  var idx = order.indexOf(disbScreen);
+  order.forEach((step, i) => {
+    var el = document.getElementById('ds-' + step);
+    if (!el) return;
+    el.classList.remove('active','done');
+    if (i < idx) el.classList.add('done');
+    else if (i === idx) el.classList.add('active');
+  });
+}
+function selectRequest(name, amount, dept, bank, ref) {
+  disbSelected = {name, amount, dept, bank, ref};
+  document.getElementById('det-name').textContent = name;
+  document.getElementById('det-dept').textContent = dept;
+  document.getElementById('det-amount').textContent = '₦' + amount.toLocaleString();
+  document.getElementById('det-bank').textContent = bank;
+  document.getElementById('det-ref').textContent = ref;
+  document.getElementById('pay-name').textContent = name;
+  document.getElementById('pay-amount').textContent = '₦' + amount.toLocaleString();
+  disbNav('detail');
+}
+function selectDisbMethod(method, label) {
+  disbMethod = method;
+  document.querySelectorAll('.disb-method-btn').forEach(b => b.classList.remove('selected'));
+  var btn = document.getElementById('method-' + method);
+  if (btn) btn.classList.add('selected');
+}
+function showReport(name) {
+  document.querySelectorAll('.report-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.report-nav-item').forEach(b => b.classList.remove('active'));
+  var v = document.getElementById('rview-' + name);
+  var b = document.getElementById('rnav-' + name);
+  if (v) v.classList.add('active');
+  if (b) b.classList.add('active');
+}
+</script>
+</body>
+</html>

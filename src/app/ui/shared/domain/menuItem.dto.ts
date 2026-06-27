@@ -5,10 +5,12 @@ export interface MenuItem {
     icon?: string;
     roles: string[];
     submenu?: MenuItem[];
-    open?: boolean; 
+    open?: boolean;
     locked?: boolean;
     active?: boolean;
     code?: string;
-    isNotSidebarItem? : boolean;
+    description?: string;
+    shortDescription?: string;
+    isNotSidebarItem?: boolean;
   }
   

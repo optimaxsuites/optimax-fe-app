@@ -95,7 +95,20 @@ export class NavigationLinksService {
 
 //  resources ================================================================================================================
     this.links['posLink'] = '/admin/pos/' +uuidV4();
-    this.links['crmLink'] = '/admin/crm/' +uuidV4();
+    this.links['crmLink']           = '/admin/crm/dashboard/'  + uuidV4();
+    this.links['crmContactsLink']   = '/admin/crm/contacts/'   + uuidV4();
+    this.links['crmAccountsLink']   = '/admin/crm/accounts/'   + uuidV4();
+    this.links['crmPipelineLink']   = '/admin/crm/pipeline/'   + uuidV4();
+    this.links['crmLeadsLink']      = '/admin/crm/leads/'      + uuidV4();
+    this.links['crmCampaignsLink']  = '/admin/crm/campaigns/'  + uuidV4();
+    this.links['crmActivitiesLink'] = '/admin/crm/activities/' + uuidV4();
+    this.links['crmQuotesLink']     = '/admin/crm/quotes/'     + uuidV4();
+    this.links['crmContractsLink']  = '/admin/crm/contracts/'  + uuidV4();
+    this.links['crmTicketsLink']    = '/admin/crm/tickets/'    + uuidV4();
+    this.links['crmSettingsLink']   = '/admin/crm/settings/'   + uuidV4();
+    this.links['crmReportsLink']    = '/admin/crm/reports/'    + uuidV4();
+    this.links['crmAutomationLink'] = '/admin/crm/automation/' + uuidV4();
+    this.links['crmGovernmentLink'] = '/admin/crm/government/' + uuidV4();
     this.links['expensesLink'] = '/admin/expenses/expense/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
     this.links['productivityLink'] = '/admin/hr/productivity/' +uuidV4();
