@@ -23,6 +23,8 @@ $r:       8px;
   padding: 1.25rem;
   background: $bg;
   color: #334155;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
 
   // Mockup CSS custom properties (used by var(--ox-*) in HTML/inline styles)
   --ox-primary: #25925B;
@@ -78,16 +80,16 @@ $r:       8px;
 }
 
 .page-title {
-  font-size: 16px;
+  font-size: 1.4rem;
   font-weight: 800;
-  color: $teal;
+  color: var(--ox-heading);
   margin: 0 0 2px;
   line-height: 1.2;
 }
 
 .page-subtitle {
-  font-size: 11px;
-  color: $muted;
+  font-size: .8rem;
+  color: var(--ox-muted);
   margin: 0;
 }
 
@@ -101,8 +103,8 @@ $r:       8px;
   flex-wrap: wrap;
 
   h2 {
-    font-size: 16px;
-    color: $teal;
+    font-size: 1.4rem;
+    color: var(--ox-heading);
     margin-right: auto;
     margin-bottom: 0;
   }
@@ -115,7 +117,7 @@ $r:       8px;
   padding: 7px 10px;
   color: #475467;
   font: inherit;
-  font-size: 12px;
+  font-size: .82rem;
 
   &:focus {
     outline: 2px solid $green;
@@ -137,13 +139,13 @@ select.filter {
 // ── Buttons ───────────────────────────────────────────────────────────────────
 .btn {
   border: 0;
-  border-radius: 7px;
-  padding: 8px 12px;
-  font-weight: 800;
+  border-radius: var(--radius-sm);
+  padding: .5rem 1rem;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: .82rem;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -196,8 +198,8 @@ select.filter {
   align-items: center;
   border-radius: 999px;
   padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: .7rem;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -224,8 +226,8 @@ select.filter {
   align-items: center;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: .7rem;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -234,8 +236,8 @@ select.filter {
   align-items: center;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: .7rem;
+  font-weight: 700;
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
@@ -257,8 +259,8 @@ select.filter {
   padding: 0 12px;
 
   h3 {
-    font-size: 14px;
-    color: $teal;
+    font-size: .9rem;
+    color: var(--ox-heading);
     margin: 0;
   }
 }
@@ -287,16 +289,16 @@ select.filter {
 
   label {
     display: block;
-    color: #98a2b3;
+    color: var(--ox-muted);
     text-transform: uppercase;
     letter-spacing: .06em;
-    font-size: 10px;
+    font-size: .72rem;
     margin-bottom: 4px;
   }
 
   strong {
-    font-size: 22px;
-    color: $teal;
+    font-size: 1.5rem;
+    color: var(--ox-heading);
   }
 
   p {
@@ -320,21 +322,18 @@ select.filter {
 
 .stat-card,
 .kpi-card {
-  background: #fff;
-  border: 1px solid $line;
-  border-radius: $r;
-  padding: 12px;
-  box-shadow: $shadow;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  background: var(--ox-card);
+  border: 1px solid var(--ox-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.125rem;
+  box-shadow: var(--ox-shadow);
   cursor: pointer;
-  transition: box-shadow .15s, transform .15s;
+  transition: all .2s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,.1);
-    border-color: $green;
+    box-shadow: var(--ox-shadow-md);
+    border-color: var(--ox-primary);
   }
 }
 
@@ -342,11 +341,11 @@ select.filter {
 .kpi-icon {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: .625rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  margin-bottom: .625rem;
 
   mat-icon, .mat-icon {
     font-size: 18px;
@@ -365,31 +364,33 @@ select.filter {
 
 .stat-value,
 .kpi-value {
-  font-size: 22px;
+  font-size: 1.5rem;
   font-weight: 800;
-  color: $teal;
+  color: var(--ox-heading);
   line-height: 1;
 }
 
 .stat-label,
 .kpi-label {
-  font-size: 10px;
-  color: #98a2b3;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  margin-top: 2px;
-  font-weight: 700;
+  font-size: .73rem;
+  color: var(--ox-muted);
+  margin-top: .25rem;
+  font-weight: 500;
 }
 
 .stat-delta,
 .kpi-sub {
-  font-size: 10px;
-  margin-top: 3px;
+  font-size: .7rem;
+  font-weight: 600;
+  margin-top: .35rem;
   color: $muted;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
 
-  &.up   { color: #16a34a; }
-  &.down { color: $red; }
-  &.warn { color: $amber; }
+  &.up   { color: var(--ox-success); }
+  &.down { color: var(--ox-danger); }
+  &.warn { color: var(--ox-warning); }
 }
 
 // ── Table wrap ────────────────────────────────────────────────────────────────
@@ -426,7 +427,7 @@ select.filter {
   .mat-mdc-header-cell {
     background: $soft !important;
     color: #98a2b3 !important;
-    font-size: 10px !important;
+    font-size: .72rem !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: .05em !important;
@@ -436,7 +437,7 @@ select.filter {
   }
 
   .mat-mdc-cell {
-    font-size: 12px !important;
+    font-size: .82rem !important;
     color: $ink !important;
     padding: 9px 10px !important;
     border-bottom: 1px solid #eef2f7 !important;
