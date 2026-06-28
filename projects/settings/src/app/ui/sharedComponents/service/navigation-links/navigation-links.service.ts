@@ -148,6 +148,7 @@ this.links['HOSSettings'] = 'Hospitality-settings/' +uuidV4();
 this.links['userRoles'] = 'user-roles/' +uuidV4();
 this.links['moduleRegistry'] = 'module-registry/' +uuidV4();
 this.links['bugTracker'] = 'bug-tracker/' +uuidV4();
+this.links['CRMSettings'] = 'crm-settings/' +uuidV4();
 
 // POS ================================================================================================================
 this.links['productLink'] = '/admin/pos/product/' +uuidV4();

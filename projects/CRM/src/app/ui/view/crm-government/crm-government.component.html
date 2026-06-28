@@ -9,25 +9,25 @@
 
       <!-- Compliance Banner -->
       <div style="background:linear-gradient(135deg,#1a2e38,#224957);border-radius:.75rem;padding:1rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1.25rem;">
-        <div style="font-size:1.8rem;">🏛</div>
-        <div style="flex:1;"><div style="font-size:.88rem;font-weight:800;color:#fff;margin-bottom:.2rem;">Government Module — Enterprise Compliance Active</div><div style="font-size:.75rem;color:#94a3b8;line-height:1.5;">NDPA 2023 compliant · Data residency: Nigeria · Role-based access · Immutable audit trail (every record change logged with timestamp + IP) · ISO 27001 aligned · Ministry hierarchy enforced</div></div>
+        <div style="font-size:25px;">🏛</div>
+        <div style="flex:1;"><div style="font-size:12px;font-weight:800;color:#fff;margin-bottom:.2rem;">Government Module — Enterprise Compliance Active</div><div style="font-size:10px;color:#94a3b8;line-height:1.5;">NDPA 2023 compliant · Data residency: Nigeria · Role-based access · Immutable audit trail (every record change logged with timestamp + IP) · ISO 27001 aligned · Ministry hierarchy enforced</div></div>
         <div style="display:flex;gap:.625rem;"><span class="badge" style="background:rgba(37,146,91,.2);color:#2EB270;border:1px solid rgba(46,178,112,.3);">✓ NDPA</span><span class="badge" style="background:rgba(37,146,91,.2);color:#2EB270;border:1px solid rgba(46,178,112,.3);">✓ ISO 27001</span><span class="badge" style="background:rgba(37,146,91,.2);color:#2EB270;border:1px solid rgba(46,178,112,.3);">✓ In-Country Data</span></div>
       </div>
 
       <!-- Gov Sub-tabs -->
       <div class="gov-nav">
-        <button class="gov-tab active">👥 Citizens / Constituents</button>
-        <button class="gov-tab">📁 Case Management</button>
-        <button class="gov-tab">💰 Grant Management</button>
-        <button class="gov-tab">📜 Permits &amp; Licenses</button>
-        <button class="gov-tab">🏗 Tender / Procurement</button>
+        <button class="gov-tab" [class.active]="activeTab === 'citizens'" (click)="setTab('citizens')">👥 Citizens / Constituents</button>
+        <button class="gov-tab" [class.active]="activeTab === 'cases'" (click)="setTab('cases')">📁 Case Management</button>
+        <button class="gov-tab" [class.active]="activeTab === 'grants'" (click)="setTab('grants')">💰 Grant Management</button>
+        <button class="gov-tab" [class.active]="activeTab === 'permits'" (click)="setTab('permits')">📜 Permits &amp; Licenses</button>
+        <button class="gov-tab" [class.active]="activeTab === 'tenders'" (click)="setTab('tenders')">🏗 Tender / Procurement</button>
       </div>
 
       <!-- CITIZENS SUB-PANEL -->
-      <div id="gov-citizens" class="gov-panel active">
+      <div *ngIf="activeTab === 'citizens'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:.85rem;font-weight:700;color:#2E6276;">Registered Citizens &amp; Organisations — 4,281 records</div>
-          <div style="display:flex;gap:.5rem;"><button class="btn-xs">⬆ Bulk Import</button><button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ Register Citizen</button></div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Registered Citizens &amp; Organisations — 4,281 records</div>
+          <div style="display:flex;gap:.5rem;"><button class="btn-xs">⬆ Bulk Import</button><button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ Register Citizen</button></div>
         </div>
         <div class="filter-bar" style="margin-bottom:.875rem;">
           <div class="search-box" style="max-width:280px;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search NIN, name, ward, LGA…"></div>
@@ -39,10 +39,10 @@
           <table class="data-table">
             <thead><tr><th style="width:36px;"><input type="checkbox"></th><th>Citizen / Entity</th><th>Type</th><th>NIN / Reg No.</th><th>LGA / Ward</th><th>State</th><th>Cases</th><th>Last Interaction</th><th>Officer</th><th></th></tr></thead>
             <tbody>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#25925B;">AK</div><div><div class="contact-name">Adewale Kolawole</div><div class="contact-email">adewale.k&#64;gmail.com · +234 803 112 3344</div></div></div></td><td><span class="citizen-type-tag individual">Individual</span></td><td style="font-family:monospace;font-size:.78rem;">NIN: 7823 4512 9001</td><td>Surulere, Ward 4</td><td>Lagos</td><td><span class="badge badge-info">2 active</span></td><td style="color:#94a3b8;">Today</td><td><div class="owner-cell"><div class="o-avatar">MO</div>M. Okafor</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Case</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#7c3aed;font-size:.65rem;">NGO</div><div><div class="contact-name">Arise Africa Foundation</div><div class="contact-email">info&#64;ariseafrica.org</div></div></div></td><td><span class="citizen-type-tag ngo">NGO</span></td><td style="font-family:monospace;font-size:.78rem;">CAC: RC-1184527</td><td>Central Area</td><td>FCT Abuja</td><td><span class="badge badge-warning">1 grant</span></td><td style="color:#94a3b8;">Yesterday</td><td><div class="owner-cell"><div class="o-avatar" style="background:#2E6276;">AJ</div>A. Johnson</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Grant</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#f59e0b;font-size:.65rem;">BIZ</div><div><div class="contact-name">Kano Textile Ltd.</div><div class="contact-email">info&#64;kanotextile.com.ng</div></div></div></td><td><span class="citizen-type-tag business">Business</span></td><td style="font-family:monospace;font-size:.78rem;">TIN: 0012345678</td><td>Nassarawa LGA</td><td>Kano</td><td><span class="badge badge-info">1 permit</span></td><td style="color:#94a3b8;">Jun 20</td><td><div class="owner-cell"><div class="o-avatar" style="background:#f59e0b;">HU</div>H. Usman</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Permit</button></td></tr>
-              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#10b981;font-size:.65rem;">GOV</div><div><div class="contact-name">NDDC Regional Office</div><div class="contact-email">nddc-rivers&#64;gov.ng</div></div></div></td><td><span class="citizen-type-tag govt">Govt Agency</span></td><td style="font-family:monospace;font-size:.78rem;">MDА: NDDC-PH-01</td><td>Port Harcourt</td><td>Rivers</td><td><span class="badge badge-purple">2 tenders</span></td><td style="color:#94a3b8;">Jun 18</td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">EO</div>E. Obi</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Tender</button></td></tr>
+              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#25925B;">AK</div><div><div class="contact-name">Adewale Kolawole</div><div class="contact-email">adewale.k&#64;gmail.com · +234 803 112 3344</div></div></div></td><td><span class="citizen-type-tag individual">Individual</span></td><td style="font-family:monospace;font-size:11px;">NIN: 7823 4512 9001</td><td>Surulere, Ward 4</td><td>Lagos</td><td><span class="badge badge-info">2 active</span></td><td style="color:#94a3b8;">Today</td><td><div class="owner-cell"><div class="o-avatar">MO</div>M. Okafor</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Case</button></td></tr>
+              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#7c3aed;font-size:9px;">NGO</div><div><div class="contact-name">Arise Africa Foundation</div><div class="contact-email">info&#64;ariseafrica.org</div></div></div></td><td><span class="citizen-type-tag ngo">NGO</span></td><td style="font-family:monospace;font-size:11px;">CAC: RC-1184527</td><td>Central Area</td><td>FCT Abuja</td><td><span class="badge badge-warning">1 grant</span></td><td style="color:#94a3b8;">Yesterday</td><td><div class="owner-cell"><div class="o-avatar" style="background:#2E6276;">AJ</div>A. Johnson</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Grant</button></td></tr>
+              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#f59e0b;font-size:9px;">BIZ</div><div><div class="contact-name">Kano Textile Ltd.</div><div class="contact-email">info&#64;kanotextile.com.ng</div></div></div></td><td><span class="citizen-type-tag business">Business</span></td><td style="font-family:monospace;font-size:11px;">TIN: 0012345678</td><td>Nassarawa LGA</td><td>Kano</td><td><span class="badge badge-info">1 permit</span></td><td style="color:#94a3b8;">Jun 20</td><td><div class="owner-cell"><div class="o-avatar" style="background:#f59e0b;">HU</div>H. Usman</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Permit</button></td></tr>
+              <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#10b981;font-size:9px;">GOV</div><div><div class="contact-name">NDDC Regional Office</div><div class="contact-email">nddc-rivers&#64;gov.ng</div></div></div></td><td><span class="citizen-type-tag govt">Govt Agency</span></td><td style="font-family:monospace;font-size:11px;">MDА: NDDC-PH-01</td><td>Port Harcourt</td><td>Rivers</td><td><span class="badge badge-purple">2 tenders</span></td><td style="color:#94a3b8;">Jun 18</td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">EO</div>E. Obi</div></td><td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">New Tender</button></td></tr>
             </tbody>
           </table>
           <div class="pagination-row"><span class="pag-info">Showing 1–4 of 4,281 records</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><span>…</span><button class="page-btn">714</button><button class="page-btn">›</button></div></div>
@@ -50,16 +50,16 @@
       </div>
 
       <!-- CASES SUB-PANEL -->
-      <div id="gov-cases" class="gov-panel">
+      <div *ngIf="activeTab === 'cases'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:.85rem;font-weight:700;color:#2E6276;">Citizen Cases &amp; Service Requests — 342 open</div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Citizen Cases &amp; Service Requests — 342 open</div>
           <div style="display:flex;gap:.5rem;">
             <button class="btn-xs">⚙ Escalation Matrix</button>
-            <button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ New Case</button>
+            <button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ New Case</button>
           </div>
         </div>
         <!-- Ministry Hierarchy Notice -->
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.625rem;padding:.75rem 1rem;margin-bottom:.875rem;font-size:.78rem;color:#166534;">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.625rem;padding:.75rem 1rem;margin-bottom:.875rem;font-size:11px;color:#166534;">
           <strong>Approval Hierarchy Active:</strong> Officer → Director → Permanent Secretary → Minister &nbsp;|&nbsp; Cases escalated automatically at each SLA threshold
         </div>
         <div class="filter-bar" style="margin-bottom:.75rem;">
@@ -72,10 +72,10 @@
           <table class="data-table">
             <thead><tr><th>Case ID</th><th>Citizen / Entity</th><th>Category</th><th>Description</th><th>Priority</th><th>Status</th><th>SLA</th><th>Officer</th><th>Opened</th><th></th></tr></thead>
             <tbody>
-              <tr style="background:#fff5f5;"><td style="font-weight:700;color:#dc2626;">CAS-0428</td><td>Adewale Kolawole</td><td><span class="badge badge-info" style="font-size:.68rem;">Infrastructure</span></td><td style="font-size:.78rem;max-width:200px;">Road damage — Surulere Apapa Rd pothole causing accidents</td><td><span class="case-priority critical">Critical</span></td><td><span class="case-status escalated">Escalated</span></td><td><div style="font-size:.72rem;font-weight:700;color:#dc2626;">1h 20m left</div><div class="sla-bar"><div class="sla-fill breach" style="width:80%;"></div></div></td><td>Dir. Okonkwo</td><td style="color:#94a3b8;">Today</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0427</td><td>Arise Africa Foundation</td><td><span class="badge badge-purple" style="font-size:.68rem;">Social Services</span></td><td style="font-size:.78rem;max-width:200px;">Grant disbursement delay — 3 months outstanding</td><td><span class="case-priority high">High</span></td><td><span class="case-status in-progress">In Progress</span></td><td><div style="font-size:.72rem;font-weight:700;color:#d97706;">4h left</div><div class="sla-bar"><div class="sla-fill warn" style="width:55%;"></div></div></td><td>A. Johnson</td><td style="color:#94a3b8;">Yesterday</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0426</td><td>Fatima Bello</td><td><span class="badge badge-warning" style="font-size:.68rem;">Tax &amp; Revenue</span></td><td style="font-size:.78rem;max-width:200px;">FOIA Request — copies of 2024 constituency project budget</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status open">Open</span></td><td><div style="font-size:.72rem;font-weight:700;color:#25925B;">2d left</div><div class="sla-bar"><div class="sla-fill ok" style="width:20%;"></div></div></td><td>M. Okafor</td><td style="color:#94a3b8;">Jun 20</td><td><button class="btn-xs">View</button></td></tr>
-              <tr><td style="font-weight:700;color:#2E6276;">CAS-0425</td><td>Kano Textile Ltd.</td><td><span class="badge badge-teal" style="font-size:.68rem;">Business Reg.</span></td><td style="font-size:.78rem;max-width:200px;">Operating permit renewal — factory expansion approval</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status resolved">Resolved</span></td><td><div style="font-size:.72rem;font-weight:700;color:#25925B;">Resolved in 18h</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td>H. Usman</td><td style="color:#94a3b8;">Jun 18</td><td><button class="btn-xs">View</button></td></tr>
+              <tr style="background:#fff5f5;"><td style="font-weight:700;color:#dc2626;">CAS-0428</td><td>Adewale Kolawole</td><td><span class="badge badge-info" style="font-size:10px;">Infrastructure</span></td><td style="font-size:11px;max-width:200px;">Road damage — Surulere Apapa Rd pothole causing accidents</td><td><span class="case-priority critical">Critical</span></td><td><span class="case-status escalated">Escalated</span></td><td><div style="font-size:10px;font-weight:700;color:#dc2626;">1h 20m left</div><div class="sla-bar"><div class="sla-fill breach" style="width:80%;"></div></div></td><td>Dir. Okonkwo</td><td style="color:#94a3b8;">Today</td><td><button class="btn-xs">View</button></td></tr>
+              <tr><td style="font-weight:700;color:#2E6276;">CAS-0427</td><td>Arise Africa Foundation</td><td><span class="badge badge-purple" style="font-size:10px;">Social Services</span></td><td style="font-size:11px;max-width:200px;">Grant disbursement delay — 3 months outstanding</td><td><span class="case-priority high">High</span></td><td><span class="case-status in-progress">In Progress</span></td><td><div style="font-size:10px;font-weight:700;color:#d97706;">4h left</div><div class="sla-bar"><div class="sla-fill warn" style="width:55%;"></div></div></td><td>A. Johnson</td><td style="color:#94a3b8;">Yesterday</td><td><button class="btn-xs">View</button></td></tr>
+              <tr><td style="font-weight:700;color:#2E6276;">CAS-0426</td><td>Fatima Bello</td><td><span class="badge badge-warning" style="font-size:10px;">Tax &amp; Revenue</span></td><td style="font-size:11px;max-width:200px;">FOIA Request — copies of 2024 constituency project budget</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status open">Open</span></td><td><div style="font-size:10px;font-weight:700;color:#25925B;">2d left</div><div class="sla-bar"><div class="sla-fill ok" style="width:20%;"></div></div></td><td>M. Okafor</td><td style="color:#94a3b8;">Jun 20</td><td><button class="btn-xs">View</button></td></tr>
+              <tr><td style="font-weight:700;color:#2E6276;">CAS-0425</td><td>Kano Textile Ltd.</td><td><span class="badge badge-teal" style="font-size:10px;">Business Reg.</span></td><td style="font-size:11px;max-width:200px;">Operating permit renewal — factory expansion approval</td><td><span class="case-priority normal">Normal</span></td><td><span class="case-status resolved">Resolved</span></td><td><div style="font-size:10px;font-weight:700;color:#25925B;">Resolved in 18h</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td>H. Usman</td><td style="color:#94a3b8;">Jun 18</td><td><button class="btn-xs">View</button></td></tr>
             </tbody>
           </table>
           <div class="pagination-row"><span class="pag-info">Showing 1–4 of 342 open cases</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">›</button></div></div>
@@ -83,10 +83,10 @@
       </div>
 
       <!-- GRANTS SUB-PANEL -->
-      <div id="gov-grants" class="gov-panel">
+      <div *ngIf="activeTab === 'grants'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:.85rem;font-weight:700;color:#2E6276;">Grant Management — 28 active grant programmes</div>
-          <div style="display:flex;gap:.5rem;"><button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ New Grant Programme</button></div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Grant Management — 28 active grant programmes</div>
+          <div style="display:flex;gap:.5rem;"><button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ New Grant Programme</button></div>
         </div>
         <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:.875rem;">
           <div class="stat-card"><div class="stat-value">28</div><div class="stat-label">Grant Programmes</div></div>
@@ -99,20 +99,20 @@
           <table class="data-table">
             <thead><tr><th>Grant ID</th><th>Programme</th><th>Recipient</th><th>Amount</th><th>Stage</th><th>Disbursed</th><th>Audit Due</th><th>Officer</th><th></th></tr></thead>
             <tbody>
-              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0089</td><td>SME Empowerment Fund 2026</td><td>Arise Africa Foundation</td><td style="font-weight:700;color:#25925B;">₦12.5M</td><td><span class="grant-stage awarded">Awarded</span></td><td><div style="font-size:.75rem;color:#25925B;">₦0 / ₦12.5M</div><div class="sla-bar"><div class="sla-fill ok" style="width:0%;"></div></div></td><td style="color:#94a3b8;">Dec 2026</td><td>A. Johnson</td><td><button class="btn-xs">Disburse</button></td></tr>
-              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0076</td><td>Agricultural Revitalisation Grant</td><td>Kano Farmers Co-op</td><td style="font-weight:700;color:#25925B;">₦8.2M</td><td><span class="grant-stage disbursed">Disbursed</span></td><td><div style="font-size:.75rem;color:#25925B;">₦8.2M / ₦8.2M</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td style="color:#d97706;font-weight:700;">Sep 2026 ⚠</td><td>H. Usman</td><td><button class="btn-xs">Audit</button></td></tr>
-              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0068</td><td>Women Entrepreneurship Fund</td><td>Mama Ngozi Cooperative</td><td style="font-weight:700;color:#25925B;">₦3.5M</td><td><span class="grant-stage review">Under Review</span></td><td><div style="font-size:.75rem;color:#94a3b8;">Pending award</div></td><td style="color:#94a3b8;">Mar 2027</td><td>M. Okafor</td><td><button class="btn-xs">Review</button></td></tr>
-              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0055</td><td>Digital Skills Youth Programme</td><td>Lagos Tech Hub</td><td style="font-weight:700;color:#25925B;">₦6.0M</td><td><span class="grant-stage audit">Audit</span></td><td><div style="font-size:.75rem;color:#25925B;">₦6.0M / ₦6.0M</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td style="color:#dc2626;font-weight:700;">Jul 2026 !</td><td>E. Obi</td><td><button class="btn-xs">Audit Report</button></td></tr>
+              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0089</td><td>SME Empowerment Fund 2026</td><td>Arise Africa Foundation</td><td style="font-weight:700;color:#25925B;">₦12.5M</td><td><span class="grant-stage awarded">Awarded</span></td><td><div style="font-size:10px;color:#25925B;">₦0 / ₦12.5M</div><div class="sla-bar"><div class="sla-fill ok" style="width:0%;"></div></div></td><td style="color:#94a3b8;">Dec 2026</td><td>A. Johnson</td><td><button class="btn-xs">Disburse</button></td></tr>
+              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0076</td><td>Agricultural Revitalisation Grant</td><td>Kano Farmers Co-op</td><td style="font-weight:700;color:#25925B;">₦8.2M</td><td><span class="grant-stage disbursed">Disbursed</span></td><td><div style="font-size:10px;color:#25925B;">₦8.2M / ₦8.2M</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td style="color:#d97706;font-weight:700;">Sep 2026 ⚠</td><td>H. Usman</td><td><button class="btn-xs">Audit</button></td></tr>
+              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0068</td><td>Women Entrepreneurship Fund</td><td>Mama Ngozi Cooperative</td><td style="font-weight:700;color:#25925B;">₦3.5M</td><td><span class="grant-stage review">Under Review</span></td><td><div style="font-size:10px;color:#94a3b8;">Pending award</div></td><td style="color:#94a3b8;">Mar 2027</td><td>M. Okafor</td><td><button class="btn-xs">Review</button></td></tr>
+              <tr><td style="font-weight:700;color:#7c3aed;">GRT-0055</td><td>Digital Skills Youth Programme</td><td>Lagos Tech Hub</td><td style="font-weight:700;color:#25925B;">₦6.0M</td><td><span class="grant-stage audit">Audit</span></td><td><div style="font-size:10px;color:#25925B;">₦6.0M / ₦6.0M</div><div class="sla-bar"><div class="sla-fill ok" style="width:100%;"></div></div></td><td style="color:#dc2626;font-weight:700;">Jul 2026 !</td><td>E. Obi</td><td><button class="btn-xs">Audit Report</button></td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
       <!-- PERMITS SUB-PANEL -->
-      <div id="gov-permits" class="gov-panel">
+      <div *ngIf="activeTab === 'permits'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:.85rem;font-weight:700;color:#2E6276;">Permits &amp; Licenses — 1,284 active</div>
-          <button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ New Application</button>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Permits &amp; Licenses — 1,284 active</div>
+          <button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ New Application</button>
         </div>
         <div class="table-container">
           <table class="data-table">
@@ -128,10 +128,10 @@
       </div>
 
       <!-- TENDERS SUB-PANEL -->
-      <div id="gov-tenders" class="gov-panel">
+      <div *ngIf="activeTab === 'tenders'" class="gov-panel active">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.875rem;">
-          <div style="font-size:.85rem;font-weight:700;color:#2E6276;">Public Tenders &amp; Procurement — 14 active</div>
-          <div style="display:flex;gap:.5rem;"><button class="btn-xs">📢 Publish Tender</button><button class="btn-primary" style="font-size:.75rem;padding:.35rem .75rem;">+ New Tender</button></div>
+          <div style="font-size:12px;font-weight:700;color:#2E6276;">Public Tenders &amp; Procurement — 14 active</div>
+          <div style="display:flex;gap:.5rem;"><button class="btn-xs">📢 Publish Tender</button><button class="btn-primary" style="font-size:10px;padding:.35rem .75rem;">+ New Tender</button></div>
         </div>
         <div class="table-container">
           <table class="data-table">
