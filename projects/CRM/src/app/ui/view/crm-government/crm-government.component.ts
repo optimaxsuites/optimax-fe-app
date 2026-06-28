@@ -5,4 +5,10 @@ import { Component } from '@angular/core';
   templateUrl: './crm-government.component.html',
   styleUrls: ['./crm-government.component.scss'],
 })
-export class CrmGovernmentComponent {}
+export class CrmGovernmentComponent {
+  activeTab = 'citizens';
+
+  setTab(tab: string): void {
+    this.activeTab = tab;
+  }
+}

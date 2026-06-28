@@ -249,7 +249,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
               { senderName: '', content: '' },
               latestMessage,
               (resolved) =>
-                this.publishIncomingNotification(target, resolved, notificationTarget),
+                this.publishIncomingNotification(target, resolved, notificationTarget, true),
             ),
         );
       }
@@ -645,6 +645,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       messageBackendId?: number;
       threadRootMessageBackendId?: number;
     },
+    silent = false,
   ): void {
     this.ngZone.run(() => {
       this.headerStateService.pushMessagePreview({
@@ -673,26 +674,28 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         messageBackendId: notificationTarget.messageBackendId,
         threadRootMessageBackendId: notificationTarget.threadRootMessageBackendId,
       });
-      this.playNotificationCue();
-      if (
-        typeof document !== 'undefined' &&
-        document.visibilityState === 'visible' &&
-        !this.router.url.includes('/admin/dashboard/communications/')
-      ) {
-        this.messageService.add({
-          key: 'tf',
-          severity: 'info',
-          summary: resolved.title,
-          detail: resolved.detail,
-          life: 4000,
-        });
+      if (!silent) {
+        this.playNotificationCue();
+        if (
+          typeof document !== 'undefined' &&
+          document.visibilityState === 'visible' &&
+          !this.router.url.includes('/admin/dashboard/communications/')
+        ) {
+          this.messageService.add({
+            key: 'tf',
+            severity: 'info',
+            summary: resolved.title,
+            detail: resolved.detail,
+            life: 4000,
+          });
+        }
+        this.showBrowserNotification(
+          resolved.title,
+          resolved.detail,
+          resolved.avatarUrl,
+          notificationTarget,
+        );
       }
-      this.showBrowserNotification(
-        resolved.title,
-        resolved.detail,
-        resolved.avatarUrl,
-        notificationTarget,
-      );
     });
   }
 

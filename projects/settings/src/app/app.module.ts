@@ -105,6 +105,7 @@ import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-impor
 import { ProbationSettingsComponent } from './ui/view/hr/probation/probation-settings.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
+import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -156,6 +157,7 @@ import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component
     ProbationSettingsComponent,
     ModuleRegistryComponent,
     BugTrackerComponent,
+    CrmSettingsComponent,
   ],
   imports: [
     // BrowserModule,
