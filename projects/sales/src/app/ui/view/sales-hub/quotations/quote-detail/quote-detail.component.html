@@ -1,80 +1,97 @@
 <div class="quote-detail-container" *ngIf="!isLoading && quote">
   <div class="detail-wrapper">
-    <!-- Header -->
+
+    <!-- Clean Header - Matching Form Style -->
     <div class="detail-header">
-      <div class="header-left">
-        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-          <app-back-button (click)="goBack()"></app-back-button>
-          <span class="back-link" (click)="goBack()" style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Quotes</span>
-        </div>
-        <div class="title-section">
-          <h1 class="detail-title">Quote Details</h1>
-          <div class="meta-info">
-            <span>Quote #{{ quote.quoteNumber }}</span>
-            <div class="meta-divider"></div>
-            <span>Created: {{ formatDate(quote.createdAt) }}</span>
+      <div class="header-back-title-group">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-content">
+          <div class="header-badge">
+            <i class="fas fa-file-invoice"></i>
+            <span>Quote Details</span>
           </div>
+          <h1 class="header-title">Quote #{{ quote.quoteNumber }}</h1>
+          <p class="header-subtitle">Review and manage quotation details</p>
         </div>
       </div>
-      <div class="header-right">
-        <span class="status-badge-large" [class]="getStatusBadgeClass(quote.status)">
-          {{ getStatusLabel(quote.status) }}
-        </span>
-        <div class="action-buttons">
-          <button *ngIf="quote.status === 'DRAFT'" (click)="sendQuote()" class="action-btn send">
-            Send Quote
-          </button>
-          <button *ngIf="quote.status === 'SENT'" (click)="acceptQuote()" class="action-btn send">
-            Accept
-          </button>
-          <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="action-btn edit">
-            Decline
-          </button>
-          <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="action-btn edit" style="cursor: pointer;">
-            Edit
-          </button>
-          <button (click)="deleteQuote()" class="action-btn more delete">
-            Delete
-          </button>
+      <div class="header-actions">
+        <div class="quote-status">
+          <span class="status-badge-large" [class]="'status-' + getStatusClass(quote.status)">
+            <span class="status-dot"></span>
+            {{ getStatusLabel(quote.status) | titlecase }}
+          </span>
         </div>
+        <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="btn-save-header">
+          <i class="fas fa-pencil-alt"></i> Edit
+        </button>
       </div>
     </div>
 
+    <!-- Action Bar -->
+    <div class="action-bar glass">
+      <div class="action-bar-left">
+        <div class="meta-info">
+          <span><i class="fas fa-calendar-alt"></i> Created: {{ formatDate(quote.createdAt) }}</span>
+          <span class="meta-divider"></span>
+          <span><i class="fas fa-clock"></i> Valid Until: {{ formatDate(quote.validUntil) }}</span>
+        </div>
+      </div>
+      <div class="action-bar-right">
+        <button *ngIf="quote.status === 'DRAFT'" (click)="sendQuote()" class="btn-action send">
+          <i class="fas fa-paper-plane"></i> Send Quote
+        </button>
+        <button *ngIf="quote.status === 'SENT'" (click)="acceptQuote()" class="btn-action accept">
+          <i class="fas fa-check-circle"></i> Customer Accepted
+        </button>
+        <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="btn-action decline">
+          <i class="fas fa-times-circle"></i> Customer Declined
+        </button>
+        <button (click)="deleteQuote()" class="btn-action delete">
+          <i class="fas fa-trash-alt"></i> Delete
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="detail-grid">
-      <!-- Left side: Invoice layout -->
-      <div>
-        <div class="info-card">
+      
+      <!-- Left Column: Quote Content -->
+      <div class="detail-main">
+        
+        <!-- Company & Billing Info -->
+        <div class="info-card glass">
           <div class="card-body">
-            <div class="company-details" style="margin-bottom: 2rem; display: flex; justify-content: space-between;">
+            <div class="company-details">
               <div>
-                <h2 style="color: #2E6276; margin: 0 0 0.5rem 0;">ERP Sales Hub</h2>
-                <p style="margin: 0; color: #64748b; font-size: 0.875rem;">Lagos, Nigeria</p>
-                <p style="margin: 0; color: #64748b; font-size: 0.875rem;">sales&#64;erpsales.ng</p>
+                <h2>ERP Sales Hub</h2>
+                <p>Lagos, Nigeria</p>
+                <p>sales&#64;erpsales.ng</p>
               </div>
-              <div style="text-align: right;">
-                <h3 style="color: #64748b; margin: 0 0 0.5rem 0; font-size: 1.5rem; letter-spacing: 0.05em;">QUOTE</h3>
-                <p style="margin: 0; font-size: 0.875rem;"><strong>Quote #:</strong> {{ quote.quoteNumber }}</p>
-                <p style="margin: 0; font-size: 0.875rem;"><strong>Date:</strong> {{ formatDate(quote.createdAt) }}</p>
-                <p style="margin: 0; font-size: 0.875rem;"><strong>Valid Until:</strong> {{ formatDate(quote.validUntil) }}</p>
+              <div class="quote-meta">
+                <h3>QUOTE</h3>
+                <p><strong>Quote #:</strong> {{ quote.quoteNumber }}</p>
+                <p><strong>Date:</strong> {{ formatDate(quote.createdAt) }}</p>
+                <p><strong>Valid Until:</strong> {{ formatDate(quote.validUntil) }}</p>
+                <p><strong>Currency:</strong> {{ quote.currency }}</p>
               </div>
             </div>
 
-            <div class="billing-details" style="margin-bottom: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
-              <h4 style="color: #475569; margin: 0 0 0.5rem 0; font-size: 0.875rem; text-transform: uppercase;">Bill To</h4>
-              <strong style="font-size: 1.125rem; color: #1e293b;">{{ quote.customerName }}</strong>
-              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.875rem;" *ngIf="quote.customerId">Customer ID: {{ quote.customerId }}</p>
+            <div class="billing-details">
+              <h4>Bill To</h4>
+              <strong>{{ quote.customerName }}</strong>
+              <p *ngIf="quote.customerId">Customer ID: {{ quote.customerId }}</p>
             </div>
 
             <!-- Items Table -->
-            <div class="items-table">
+            <div class="items-table-wrapper">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="text-align: left;">Product</th>
-                    <th style="text-align: left;">Description</th>
-                    <th class="text-right" style="width: 10%">Qty</th>
-                    <th class="text-right" style="width: 15%">Price</th>
-                    <th class="text-right" style="width: 15%">Total</th>
+                    <th>Product</th>
+                    <th>Description</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -86,40 +103,44 @@
                     <td class="text-right total">{{ formatCurrency(item.total) }}</td>
                   </tr>
                   <tr *ngIf="quote.items.length === 0">
-                    <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">No items added to this quote.</td>
+                    <td colspan="5" class="empty-items">No items added to this quote.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <!-- Notes & Totals -->
-            <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
-              <div>
-                <div *ngIf="quote.notes" style="margin-bottom: 1rem;">
-                  <h5 style="color: #475569; margin: 0 0 0.25rem 0; font-size: 0.875rem;">Notes</h5>
-                  <p class="notes-text">{{ quote.notes }}</p>
+            <div class="footer-section">
+              <div class="notes-section">
+                <div *ngIf="quote.notes" class="note-block">
+                  <h5><i class="fas fa-sticky-note"></i> Notes</h5>
+                  <p>{{ quote.notes }}</p>
                 </div>
-                <div *ngIf="quote.terms">
-                  <h5 style="color: #475569; margin: 0 0 0.25rem 0; font-size: 0.875rem;">Terms & Conditions</h5>
-                  <p class="terms-text">{{ quote.terms }}</p>
+                <div *ngIf="quote.terms" class="note-block">
+                  <h5><i class="fas fa-gavel"></i> Terms & Conditions</h5>
+                  <p>{{ quote.terms }}</p>
                 </div>
               </div>
-              <div>
+              <div class="totals-section">
                 <div class="summary-row">
-                  <span>Subtotal:</span>
+                  <span>Subtotal</span>
                   <span>{{ formatCurrency(quote.subtotal) }}</span>
                 </div>
                 <div class="summary-row" *ngIf="quote.discountAmount > 0">
-                  <span>Discount:</span>
-                  <span>-{{ formatCurrency(quote.discountAmount) }}</span>
+                  <span>Discount</span>
+                  <span class="discount">-{{ formatCurrency(quote.discountAmount) }}</span>
                 </div>
                 <div class="summary-row" *ngIf="quote.taxAmount > 0">
-                  <span>Tax (7.5%):</span>
+                  <span>Tax (7.5%)</span>
                   <span>{{ formatCurrency(quote.taxAmount) }}</span>
                 </div>
                 <div class="summary-row total">
-                  <span>Total:</span>
-                  <span class="total-amount">{{ formatCurrency(quote.totalAmount) }}</span>
+                  <span>Grand Total</span>
+                  <span class="grand-total">{{ formatCurrency(quote.totalAmount) }}</span>
+                </div>
+                <div class="total-words">
+                  <span class="words-label"><i class="fas fa-font"></i> Total in words</span>
+                  <span>{{ getTotalInWords(quote.totalAmount) }}</span>
                 </div>
               </div>
             </div>
@@ -127,15 +148,14 @@
         </div>
       </div>
 
-      <!-- Right side: Sidebar details -->
-      <div>
-        <!-- Summary Card -->
-        <div class="info-card">
+      <!-- Right Column: Sidebar -->
+      <div class="detail-sidebar">
+        
+        <!-- Quote Information -->
+        <div class="info-card glass">
           <div class="card-header">
-            <div class="card-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+            <div class="card-header-icon">
+              <i class="fas fa-info-circle"></i>
             </div>
             <h3>Quote Information</h3>
           </div>
@@ -144,23 +164,110 @@
               <div class="detail-row">
                 <span class="detail-label">Status</span>
                 <span class="detail-value">
-                  <span class="status-badge" [class]="getStatusBadgeClass(quote.status)">
-                    {{ getStatusLabel(quote.status) }}
+                  <span class="status-badge" [class]="'status-' + getStatusClass(quote.status)">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(quote.status) | titlecase }}
                   </span>
                 </span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Created At</span>
+                <span class="detail-label">Quote #</span>
+                <span class="detail-value">{{ quote.quoteNumber }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Created</span>
                 <span class="detail-value">{{ formatDate(quote.createdAt) }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Valid Until</span>
-                <span class="detail-value">{{ formatDate(quote.validUntil) }}</span>
+                <span class="detail-value" [class.expiring]="isExpiringSoon(quote.validUntil)">{{ formatDate(quote.validUntil) }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Currency</span>
                 <span class="detail-value">{{ quote.currency }}</span>
               </div>
+              <div class="detail-row" *ngIf="quote.customerId">
+                <span class="detail-label">Customer ID</span>
+                <span class="detail-value">{{ quote.customerId }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-user"></i>
+            </div>
+            <h3>Customer</h3>
+          </div>
+          <div class="card-body">
+            <div class="customer-info">
+              <div class="customer-avatar">
+                <span>{{ quote.customerName.charAt(0).toUpperCase() || '?' }}</span>
+              </div>
+              <div class="customer-details">
+                <strong>{{ quote.customerName }}</strong>
+              </div>
+            </div>
+            <button class="btn-view-customer" (click)="viewCustomer()">
+              <i class="fas fa-external-link-alt"></i> View Customer
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="info-card summary-card glass">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <h3>Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="summary-mini">
+              <div class="summary-mini-row">
+                <span>Items</span>
+                <span>{{ quote.items.length || 0 }}</span>
+              </div>
+              <div class="summary-mini-row">
+                <span>Total Quantity</span>
+                <span>{{ getTotalQuantity() }}</span>
+              </div>
+              <div class="summary-mini-row total">
+                <span>Total Amount</span>
+                <span>{{ formatCurrency(quote.totalAmount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Card (Mobile) -->
+        <div class="info-card glass mobile-actions">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-cog"></i>
+            </div>
+            <h3>Actions</h3>
+          </div>
+          <div class="card-body">
+            <div class="mobile-action-buttons">
+              <button *ngIf="quote.status === 'DRAFT'" (click)="sendQuote()" class="btn-action-mobile send">
+                <i class="fas fa-paper-plane"></i> Send Quote
+              </button>
+              <button *ngIf="quote.status === 'SENT'" (click)="acceptQuote()" class="btn-action-mobile accept">
+                <i class="fas fa-check-circle"></i> Customer Accepted
+              </button>
+              <button *ngIf="quote.status === 'SENT'" (click)="declineQuote()" class="btn-action-mobile decline">
+                <i class="fas fa-times-circle"></i> Customer Declined
+              </button>
+              <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="btn-action-mobile edit">
+                <i class="fas fa-pencil-alt"></i> Edit
+              </button>
+              <button (click)="deleteQuote()" class="btn-action-mobile delete">
+                <i class="fas fa-trash-alt"></i> Delete
+              </button>
             </div>
           </div>
         </div>
@@ -169,15 +276,20 @@
   </div>
 </div>
 
+<!-- Loading State -->
 <div *ngIf="isLoading" class="loading-state">
-  <div class="spinner"></div>
-  <p style="margin-top: 1rem; color: #475569;">Loading quote details...</p>
+  <div class="spinner-glow"></div>
+  <p>Loading quote details...</p>
 </div>
 
-<div *ngIf="!isLoading && !quote" class="error-state" style="text-align: center; padding: 4rem 2rem;">
-  <p style="color: #64748b; font-size: 1.125rem; margin-bottom: 1.5rem;">Quote not found</p>
-  <div style="display: flex; justify-content: center; gap: 0.75rem; align-items: center; margin-top: 1.5rem;">
-    <app-back-button (click)="goBack()"></app-back-button>
-    <span class="back-link" (click)="goBack()" style="cursor: pointer; font-weight: 500;">Back to Quotes</span>
+<!-- Error State -->
+<div *ngIf="!isLoading && !quote" class="error-state">
+  <div class="error-content">
+    <i class="fas fa-file-invoice fa-4x"></i>
+    <h2>Quote Not Found</h2>
+    <p>The quote you're looking for doesn't exist or has been removed.</p>
+    <button class="btn-primary" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back to Quotes
+    </button>
   </div>
 </div>

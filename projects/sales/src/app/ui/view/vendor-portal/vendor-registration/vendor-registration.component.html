@@ -1,0 +1,1323 @@
+<!-- ══════════════════════════════════════════════════════════════════════════
+     VENDOR REGISTRATION  |  Optimax ERP  –  Commerce Module
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="vr-page">
+
+  <!-- ── Top Bar ─────────────────────────────────────────────────────────── -->
+  <header class="vr-topbar">
+    <div class="vr-topbar__inner">
+      <div class="vr-topbar__brand">
+        <div class="vr-topbar__logo">OP</div>
+        <span class="vr-topbar__name">Optimax ERP</span>
+        <span class="vr-topbar__sep">/</span>
+        <span class="vr-topbar__crumb">Vendor Registration</span>
+      </div>
+      <div class="vr-topbar__meta">
+        <span>Already registered?</span>
+        <a routerLink="/vendor/login">Sign In to Vendor Portal</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Success State ────────────────────────────────────────────────────── -->
+  <div *ngIf="submitSuccess" class="vr-content">
+    <div class="success-wrap">
+      <div class="success-card">
+        <div class="success-card__icon">
+          <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h2 class="success-card__title">Registration Submitted</h2>
+        <p class="success-card__sub">Your vendor application has been received and is under review.</p>
+        <p class="success-card__ref">Reference ID: <span>{{ registeredVendorId }}</span></p>
+        <p class="success-card__note">
+          Our team will review your application within <strong>3–5 business days</strong>.
+          You will receive an email notification once your account is approved.
+        </p>
+        <button (click)="navigateToLogin()" class="btn btn-primary">
+          Go to Vendor Portal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main Registration Layout ─────────────────────────────────────────── -->
+  <div *ngIf="!submitSuccess" class="vr-content">
+
+    <!-- Page Heading -->
+    <div class="vr-heading">
+      <h1 class="vr-heading__title">Vendor Registration</h1>
+      <p class="vr-heading__sub">Complete all six sections to register as a verified vendor on the Optimax marketplace.</p>
+    </div>
+
+    <div class="vr-layout">
+
+      <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+      <aside class="vr-sidebar">
+        <div class="vr-sidebar__card">
+
+          <!-- Header -->
+          <div class="vr-sidebar__header">
+            <span class="vr-sidebar__header-label">Progress</span>
+            <span class="vr-sidebar__header-step">Step {{ currentStep }} of {{ steps.length }}</span>
+          </div>
+          <div class="vr-sidebar__progress">
+            <div class="vr-sidebar__progress-fill" [style.width.%]="progressPercent"></div>
+          </div>
+
+          <!-- Step Nav -->
+          <nav class="vr-sidebar__nav">
+            <button
+              *ngFor="let step of steps"
+              (click)="goToStep(step.id)"
+              [disabled]="step.id > currentStep && !isStepCompleted(step.id - 1)"
+              class="step-item"
+              [class.is-active]="step.id === currentStep"
+              [class.is-done]="isStepCompleted(step.id) && step.id !== currentStep">
+
+              <div class="step-item__num">
+                <ng-container *ngIf="isStepCompleted(step.id) && step.id !== currentStep; else numTpl">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </ng-container>
+                <ng-template #numTpl>{{ step.id }}</ng-template>
+              </div>
+
+              <div class="step-item__labels">
+                <span class="step-item__name">{{ step.title }}</span>
+                <span class="step-item__sub">{{ step.subtitle }}</span>
+              </div>
+            </button>
+          </nav>
+
+          <!-- Footer note -->
+          <div class="vr-sidebar__footer">
+            <p>Fields marked <strong style="color:#ef4444">*</strong> are required. All information must be accurate before submission.</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Form Panel ─────────────────────────────────────────────────── -->
+      <div class="vr-panel">
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 1 – BUSINESS INFORMATION
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 1" [formGroup]="step1Form" novalidate class="step-fade">
+
+          <!-- Company Identity -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Company Identity</h2>
+            </div>
+            <div class="form-section__body--grid2">
+
+              <!-- Legal Business Name -->
+              <div class="field field--full">
+                <label class="field-label">Legal Business Name <span class="req">*</span></label>
+                <input formControlName="businessName" type="text"
+                       class="field-input" [class.is-invalid]="isInvalid(step1Form,'businessName')"
+                       placeholder="Exactly as registered with CAC / Company Registry">
+                <span *ngIf="isInvalid(step1Form,'businessName')" class="field-error">{{ getError(step1Form,'businessName') }}</span>
+              </div>
+
+              <!-- Trading Name -->
+              <div class="field">
+                <label class="field-label">Trading / DBA Name <span class="opt">(if different)</span></label>
+                <input formControlName="tradingName" type="text"
+                       class="field-input" placeholder="Name used in day-to-day business">
+              </div>
+
+              <!-- Business Structure -->
+              <div class="field">
+                <label class="field-label">Business Structure <span class="req">*</span></label>
+                <select formControlName="vendorType" class="field-select"
+                        [class.is-invalid]="isInvalid(step1Form,'vendorType')">
+                  <option value="" disabled>Select business structure</option>
+                  <option *ngFor="let v of vendorTypes" [value]="v.value">{{ v.label }}</option>
+                </select>
+                <span *ngIf="isInvalid(step1Form,'vendorType')" class="field-error">{{ getError(step1Form,'vendorType') }}</span>
+              </div>
+
+              <!-- Ownership Type -->
+              <div class="field">
+                <label class="field-label">Ownership Type <span class="req">*</span></label>
+                <select formControlName="ownershipType" class="field-select"
+                        [class.is-invalid]="isInvalid(step1Form,'ownershipType')">
+                  <option value="" disabled>Select ownership type</option>
+                  <option *ngFor="let o of ownershipTypes" [value]="o.value">{{ o.label }}</option>
+                </select>
+                <span *ngIf="isInvalid(step1Form,'ownershipType')" class="field-error">{{ getError(step1Form,'ownershipType') }}</span>
+              </div>
+
+              <!-- Years in Operation -->
+              <div class="field">
+                <label class="field-label">Years in Operation <span class="req">*</span></label>
+                <select formControlName="yearsInOperation" class="field-select"
+                        [class.is-invalid]="isInvalid(step1Form,'yearsInOperation')">
+                  <option value="" disabled>Select range</option>
+                  <option *ngFor="let y of yearsOptions" [value]="y.value">{{ y.label }}</option>
+                </select>
+                <span *ngIf="isInvalid(step1Form,'yearsInOperation')" class="field-error">{{ getError(step1Form,'yearsInOperation') }}</span>
+              </div>
+
+              <!-- Number of Employees -->
+              <div class="field">
+                <label class="field-label">Number of Employees <span class="req">*</span></label>
+                <input formControlName="numberOfEmployees" type="number" min="1"
+                       class="field-input" [class.is-invalid]="isInvalid(step1Form,'numberOfEmployees')"
+                       placeholder="e.g. 25">
+                <span *ngIf="isInvalid(step1Form,'numberOfEmployees')" class="field-error">{{ getError(step1Form,'numberOfEmployees') }}</span>
+              </div>
+
+              <!-- Annual Turnover -->
+              <div class="field">
+                <label class="field-label">Annual Turnover <span class="req">*</span></label>
+                <select formControlName="annualTurnover" class="field-select"
+                        [class.is-invalid]="isInvalid(step1Form,'annualTurnover')">
+                  <option value="" disabled>Select range</option>
+                  <option *ngFor="let t of annualTurnovers" [value]="t.value">{{ t.label }}</option>
+                </select>
+                <span *ngIf="isInvalid(step1Form,'annualTurnover')" class="field-error">{{ getError(step1Form,'annualTurnover') }}</span>
+              </div>
+
+              <!-- Date of Incorporation -->
+              <div class="field">
+                <label class="field-label">Date of Incorporation <span class="req">*</span></label>
+                <input formControlName="dateOfIncorporation" type="date"
+                       class="field-input" [class.is-invalid]="isInvalid(step1Form,'dateOfIncorporation')">
+                <span *ngIf="isInvalid(step1Form,'dateOfIncorporation')" class="field-error">{{ getError(step1Form,'dateOfIncorporation') }}</span>
+              </div>
+
+              <!-- Business Size -->
+              <div class="field field--full">
+                <label class="field-label">Business Size <span class="req">*</span></label>
+                <div class="size-tiles">
+                  <label *ngFor="let s of businessSizes" class="size-tile"
+                         [class.is-selected]="step1Form.get('businessSize')?.value === s.value">
+                    <input type="radio" formControlName="businessSize" [value]="s.value">
+                    <span class="size-tile__label">{{ s.label }}</span>
+                    <span class="size-tile__desc">{{ s.description }}</span>
+                  </label>
+                </div>
+                <span *ngIf="isInvalid(step1Form,'businessSize')" class="field-error">{{ getError(step1Form,'businessSize') }}</span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Registration & Tax Numbers -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Registration &amp; Tax Numbers</h2>
+            </div>
+            <div class="form-section__body--grid2">
+
+              <div class="field">
+                <label class="field-label">CAC Registration Number <span class="req">*</span></label>
+                <input formControlName="cacNumber" type="text"
+                       class="field-input" placeholder="e.g. RC 123456">
+                <span class="field-hint">Corporate Affairs Commission registration number</span>
+              </div>
+
+              <div class="field">
+                <label class="field-label">Company Registration Number <span class="req">*</span></label>
+                <input formControlName="registrationNumber" type="text"
+                       class="field-input" [class.is-invalid]="isInvalid(step1Form,'registrationNumber')"
+                       placeholder="Official registration number">
+                <span *ngIf="isInvalid(step1Form,'registrationNumber')" class="field-error">{{ getError(step1Form,'registrationNumber') }}</span>
+              </div>
+
+              <div class="field">
+                <label class="field-label">Tax Identification Number (TIN) <span class="req">*</span></label>
+                <input formControlName="taxIdentificationNumber" type="text"
+                       class="field-input" [class.is-invalid]="isInvalid(step1Form,'taxIdentificationNumber')"
+                       placeholder="e.g. 1234567-0001">
+                <span *ngIf="isInvalid(step1Form,'taxIdentificationNumber')" class="field-error">{{ getError(step1Form,'taxIdentificationNumber') }}</span>
+              </div>
+
+              <div class="field">
+                <label class="field-label">VAT Registration Number <span class="opt">(if applicable)</span></label>
+                <input formControlName="vatRegistrationNumber" type="text"
+                       class="field-input" placeholder="VAT number">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Industry & Supply Categories -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Industry &amp; Supply Categories</h2>
+            </div>
+            <div class="form-section__body">
+
+              <!-- Primary Industry -->
+              <div class="field" style="margin-bottom:1.25rem">
+                <label class="field-label">Primary Industry <span class="req">*</span></label>
+                <select formControlName="primaryIndustry" class="field-select"
+                        [class.is-invalid]="isInvalid(step1Form,'primaryIndustry')">
+                  <option value="" disabled>Select your primary industry</option>
+                  <option *ngFor="let ind of industryOptions" [value]="ind">{{ ind }}</option>
+                </select>
+                <span *ngIf="isInvalid(step1Form,'primaryIndustry')" class="field-error">{{ getError(step1Form,'primaryIndustry') }}</span>
+              </div>
+
+              <!-- Secondary Industries -->
+              <div class="field" style="margin-bottom:1.25rem">
+                <label class="field-label">Secondary Industries <span class="opt">(up to 3)</span></label>
+                <div class="chip-wrap">
+                  <button *ngFor="let ind of industryOptions" type="button"
+                          (click)="toggleIndustry(ind)"
+                          [disabled]="!isIndustrySelected(ind) && selectedIndustries.length >= 3"
+                          class="chip" [class.is-selected]="isIndustrySelected(ind)">
+                    {{ ind }}
+                  </button>
+                </div>
+                <span class="chip-meta">{{ selectedIndustries.length }} / 3 selected</span>
+              </div>
+
+              <!-- Supply Categories -->
+              <div class="field" style="margin-bottom:1.25rem">
+                <label class="field-label">Supply Categories <span class="req">*</span> <span class="opt">(select all that apply)</span></label>
+                <div class="chip-wrap">
+                  <button *ngFor="let cat of supplierCategories" type="button"
+                          (click)="toggleCategory(cat)"
+                          class="chip" [class.is-selected]="isCategorySelected(cat)">
+                    {{ cat }}
+                  </button>
+                </div>
+                <span *ngIf="isInvalid(step1Form,'supplierCategories') && selectedCategories.length === 0" class="field-error">Please select at least one supply category.</span>
+                <span class="chip-meta">{{ selectedCategories.length }} selected</span>
+              </div>
+
+              <!-- Description -->
+              <div class="field" style="margin-bottom:1.25rem">
+                <label class="field-label">Products / Services Description <span class="req">*</span></label>
+                <textarea formControlName="productServiceDescription" rows="4"
+                          class="field-textarea" [class.is-invalid]="isInvalid(step1Form,'productServiceDescription')"
+                          placeholder="Describe in detail the products and/or services your business provides. Include specific items, brands, or specialisations where relevant. (Minimum 50 characters)"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span *ngIf="isInvalid(step1Form,'productServiceDescription')" class="field-error">{{ getError(step1Form,'productServiceDescription') }}</span>
+                  <span class="field-counter">{{ step1Form.get('productServiceDescription')?.value?.length || 0 }} / 1000</span>
+                </div>
+              </div>
+
+              <!-- Web Presence -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+                <div class="field">
+                  <label class="field-label">Company Website <span class="opt">(optional)</span></label>
+                  <input formControlName="companyWebsite" type="url"
+                         class="field-input" [class.is-invalid]="isInvalid(step1Form,'companyWebsite')"
+                         placeholder="https://www.yourcompany.com">
+                  <span *ngIf="isInvalid(step1Form,'companyWebsite')" class="field-error">{{ getError(step1Form,'companyWebsite') }}</span>
+                </div>
+                <div class="field">
+                  <label class="field-label">LinkedIn Company Page <span class="opt">(optional)</span></label>
+                  <input formControlName="linkedinProfile" type="url"
+                         class="field-input" [class.is-invalid]="isInvalid(step1Form,'linkedinProfile')"
+                         placeholder="https://linkedin.com/company/...">
+                  <span *ngIf="isInvalid(step1Form,'linkedinProfile')" class="field-error">{{ getError(step1Form,'linkedinProfile') }}</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 2 – CONTACT & LOCATION
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 2" [formGroup]="step2Form" novalidate class="step-fade">
+
+          <!-- Business Communication -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Business Communication</h2>
+            </div>
+            <div class="form-section__body--grid2">
+              <div class="field">
+                <label class="field-label">Business Email <span class="req">*</span></label>
+                <input formControlName="businessEmail" type="email" class="field-input" [class.is-invalid]="isInvalid(step2Form,'businessEmail')" placeholder="info@yourcompany.com">
+                <span *ngIf="isInvalid(step2Form,'businessEmail')" class="field-error">{{ getError(step2Form,'businessEmail') }}</span>
+              </div>
+              <div class="field">
+                <label class="field-label">Business Phone <span class="req">*</span></label>
+                <input formControlName="businessPhone" type="tel" class="field-input" [class.is-invalid]="isInvalid(step2Form,'businessPhone')" placeholder="+234 800 000 0000">
+                <span *ngIf="isInvalid(step2Form,'businessPhone')" class="field-error">{{ getError(step2Form,'businessPhone') }}</span>
+              </div>
+              <div class="field">
+                <label class="field-label">Alternate Phone <span class="opt">(optional)</span></label>
+                <input formControlName="businessPhoneAlt" type="tel" class="field-input" placeholder="+234 800 000 0001">
+              </div>
+              <div class="field">
+                <label class="field-label">Fax Number <span class="opt">(optional)</span></label>
+                <input formControlName="faxNumber" type="tel" class="field-input" placeholder="+234 1 000 0000">
+              </div>
+              <div class="field">
+                <label class="field-label">Twitter / X Handle <span class="opt">(optional)</span></label>
+                <input formControlName="twitterHandle" type="text" class="field-input" placeholder="@yourcompany">
+              </div>
+              <div class="field">
+                <label class="field-label">Facebook Page URL <span class="opt">(optional)</span></label>
+                <input formControlName="facebookPage" type="url" class="field-input" placeholder="https://facebook.com/yourcompany">
+              </div>
+            </div>
+          </div>
+
+          <!-- Registered Address -->
+          <div class="form-section" formGroupName="registeredAddress">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Registered Address</h2>
+              <span class="form-section__badge form-section__badge--info">Official</span>
+            </div>
+            <div class="form-section__body--grid2">
+              <div class="field field--full">
+                <label class="field-label">Street Address Line 1 <span class="req">*</span></label>
+                <input formControlName="streetLine1" type="text" class="field-input" placeholder="Building number, street name">
+              </div>
+              <div class="field field--full">
+                <label class="field-label">Street Address Line 2 <span class="opt">(optional)</span></label>
+                <input formControlName="streetLine2" type="text" class="field-input" placeholder="Suite, floor, additional detail">
+              </div>
+              <div class="field">
+                <label class="field-label">City / Town <span class="req">*</span></label>
+                <input formControlName="city" type="text" class="field-input" placeholder="City">
+              </div>
+              <div class="field">
+                <label class="field-label">State / Province <span class="req">*</span></label>
+                <select formControlName="state" class="field-select">
+                  <option value="" disabled>Select state</option>
+                  <option *ngFor="let s of nigerianStates" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Local Government Area (LGA)</label>
+                <input formControlName="lga" type="text" class="field-input" placeholder="LGA">
+              </div>
+              <div class="field">
+                <label class="field-label">Country <span class="req">*</span></label>
+                <select formControlName="country" class="field-select">
+                  <option *ngFor="let c of allCountries" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Postal Code</label>
+                <input formControlName="postalCode" type="text" class="field-input" placeholder="e.g. 100001">
+              </div>
+              <div class="field">
+                <label class="field-label">Nearest Landmark <span class="opt">(optional)</span></label>
+                <input formControlName="landmark" type="text" class="field-input" placeholder="e.g. Near Central Bank">
+              </div>
+            </div>
+          </div>
+
+          <!-- Operating Address -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title">Operating Address</h2>
+              <div style="margin-left:auto">
+                <label class="toggle-header__label">
+                  <input type="checkbox" formControlName="operatingAddressSameAsRegistered">
+                  Same as registered address
+                </label>
+              </div>
+            </div>
+            <div *ngIf="!step2Form.get('operatingAddressSameAsRegistered')?.value"
+                 class="form-section__body--grid2" formGroupName="operatingAddress">
+              <div class="field field--full">
+                <label class="field-label">Street Address Line 1 <span class="req">*</span></label>
+                <input formControlName="streetLine1" type="text" class="field-input" placeholder="Building number, street name">
+              </div>
+              <div class="field field--full">
+                <label class="field-label">Street Address Line 2 <span class="opt">(optional)</span></label>
+                <input formControlName="streetLine2" type="text" class="field-input" placeholder="Suite, floor">
+              </div>
+              <div class="field">
+                <label class="field-label">City / Town <span class="req">*</span></label>
+                <input formControlName="city" type="text" class="field-input" placeholder="City">
+              </div>
+              <div class="field">
+                <label class="field-label">State <span class="req">*</span></label>
+                <select formControlName="state" class="field-select">
+                  <option value="" disabled>Select state</option>
+                  <option *ngFor="let s of nigerianStates" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Country <span class="req">*</span></label>
+                <select formControlName="country" class="field-select">
+                  <option *ngFor="let c of allCountries" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Postal Code</label>
+                <input formControlName="postalCode" type="text" class="field-input" placeholder="Postal code">
+              </div>
+            </div>
+            <div *ngIf="step2Form.get('operatingAddressSameAsRegistered')?.value"
+                 class="form-section__body" style="color:#9ca3af;font-size:0.8125rem;font-style:italic">
+              Operating address mirrors the registered address above.
+            </div>
+          </div>
+
+          <!-- Primary Contact -->
+          <div class="form-section" formGroupName="primaryContact">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Primary Contact Person</h2>
+              <span class="form-section__badge form-section__badge--info">Main POC</span>
+            </div>
+            <div class="form-section__body--grid2">
+              <div class="field">
+                <label class="field-label">First Name <span class="req">*</span></label>
+                <input formControlName="firstName" type="text" class="field-input" placeholder="First name">
+              </div>
+              <div class="field">
+                <label class="field-label">Last Name <span class="req">*</span></label>
+                <input formControlName="lastName" type="text" class="field-input" placeholder="Last name">
+              </div>
+              <div class="field">
+                <label class="field-label">Job Title <span class="req">*</span></label>
+                <input formControlName="jobTitle" type="text" class="field-input" placeholder="e.g. Managing Director, Procurement Manager">
+              </div>
+              <div class="field">
+                <label class="field-label">Department <span class="opt">(optional)</span></label>
+                <input formControlName="department" type="text" class="field-input" placeholder="e.g. Sales, Finance">
+              </div>
+              <div class="field">
+                <label class="field-label">Email Address <span class="req">*</span></label>
+                <input formControlName="email" type="email" class="field-input" placeholder="contact@yourcompany.com">
+              </div>
+              <div class="field">
+                <label class="field-label">Phone Number <span class="req">*</span></label>
+                <input formControlName="phoneNumber" type="tel" class="field-input" placeholder="+234 800 000 0000">
+              </div>
+              <div class="field">
+                <label class="field-label">Alternate Phone <span class="opt">(optional)</span></label>
+                <input formControlName="phoneNumberAlt" type="tel" class="field-input" placeholder="+234 800 000 0001">
+              </div>
+              <div class="field" style="display:flex;align-items:center;gap:0.625rem;padding-top:1.5rem">
+                <input type="checkbox" formControlName="isAuthorizedSignatory" id="priAuthSig" style="accent-color:#193042;width:16px;height:16px;cursor:pointer">
+                <label for="priAuthSig" style="font-size:0.875rem;color:#374151;cursor:pointer">This person is an authorized signatory</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Contact (optional) -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title" style="color:#4b5563">Secondary Contact Person</h2>
+              <span class="form-section__badge form-section__badge--muted" style="margin-right:0.5rem">Optional</span>
+              <label class="toggle-header__label" style="margin-left:auto">
+                <input type="checkbox" formControlName="hasSecondaryContact">
+                Add secondary contact
+              </label>
+            </div>
+            <div *ngIf="step2Form.get('hasSecondaryContact')?.value"
+                 class="form-section__body--grid2" formGroupName="secondaryContact">
+              <div class="field">
+                <label class="field-label">First Name</label>
+                <input formControlName="firstName" type="text" class="field-input" placeholder="First name">
+              </div>
+              <div class="field">
+                <label class="field-label">Last Name</label>
+                <input formControlName="lastName" type="text" class="field-input" placeholder="Last name">
+              </div>
+              <div class="field">
+                <label class="field-label">Job Title</label>
+                <input formControlName="jobTitle" type="text" class="field-input" placeholder="Job title">
+              </div>
+              <div class="field">
+                <label class="field-label">Email Address</label>
+                <input formControlName="email" type="email" class="field-input" placeholder="email@yourcompany.com">
+              </div>
+              <div class="field">
+                <label class="field-label">Phone Number</label>
+                <input formControlName="phoneNumber" type="tel" class="field-input" placeholder="+234 800 000 0000">
+              </div>
+              <div class="field" style="display:flex;align-items:center;gap:0.625rem;padding-top:1.5rem">
+                <input type="checkbox" formControlName="isAuthorizedSignatory" id="secAuthSig" style="accent-color:#193042;width:16px;height:16px;cursor:pointer">
+                <label for="secAuthSig" style="font-size:0.875rem;color:#374151;cursor:pointer">This person is an authorized signatory</label>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 3 – FINANCIAL & BANKING
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 3" [formGroup]="step3Form" novalidate class="step-fade">
+
+          <!-- Primary Bank Account -->
+          <div class="form-section" formGroupName="primaryBankAccount">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Primary Bank Account</h2>
+              <span class="form-section__badge form-section__badge--info">Main</span>
+            </div>
+            <div class="form-section__body--grid2">
+              <div class="field">
+                <label class="field-label">Bank Name <span class="req">*</span></label>
+                <select formControlName="bankName" class="field-select">
+                  <option value="" disabled>Select bank</option>
+                  <option *ngFor="let b of banksNigeria" [value]="b">{{ b }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Bank Branch <span class="opt">(optional)</span></label>
+                <input formControlName="bankBranch" type="text" class="field-input" placeholder="e.g. Victoria Island, Lagos">
+              </div>
+              <div class="field">
+                <label class="field-label">Account Name <span class="req">*</span></label>
+                <input formControlName="accountName" type="text" class="field-input" placeholder="As it appears on the account">
+              </div>
+              <div class="field">
+                <label class="field-label">Account Number (NUBAN) <span class="req">*</span></label>
+                <input formControlName="accountNumber" type="text" maxlength="10" class="field-input" placeholder="10-digit NUBAN number">
+              </div>
+              <div class="field">
+                <label class="field-label">Account Type <span class="req">*</span></label>
+                <select formControlName="accountType" class="field-select">
+                  <option value="CURRENT">Current Account</option>
+                  <option value="SAVINGS">Savings Account</option>
+                  <option value="DOMICILIARY">Domiciliary Account</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Account Currency <span class="req">*</span></label>
+                <select formControlName="currency" class="field-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Sort Code <span class="opt">(optional)</span></label>
+                <input formControlName="sortCode" type="text" class="field-input" placeholder="e.g. 011">
+              </div>
+              <div class="field">
+                <label class="field-label">SWIFT / BIC Code <span class="opt">(international)</span></label>
+                <input formControlName="swiftCode" type="text" class="field-input" placeholder="e.g. GTBINGLA">
+              </div>
+              <div class="field field--full">
+                <label class="field-label">IBAN <span class="opt">(for international transfers)</span></label>
+                <input formControlName="iban" type="text" class="field-input" placeholder="International Bank Account Number">
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Bank Account -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title" style="color:#4b5563">Secondary Bank Account</h2>
+              <span class="form-section__badge form-section__badge--muted" style="margin-right:0.5rem">Optional</span>
+              <label class="toggle-header__label" style="margin-left:auto">
+                <input type="checkbox" formControlName="hasSecondaryBankAccount">
+                Add secondary account
+              </label>
+            </div>
+            <div *ngIf="step3Form.get('hasSecondaryBankAccount')?.value"
+                 class="form-section__body--grid2" formGroupName="secondaryBankAccount">
+              <div class="field">
+                <label class="field-label">Bank Name</label>
+                <select formControlName="bankName" class="field-select">
+                  <option value="" disabled>Select bank</option>
+                  <option *ngFor="let b of banksNigeria" [value]="b">{{ b }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Account Name</label>
+                <input formControlName="accountName" type="text" class="field-input" placeholder="Account name">
+              </div>
+              <div class="field">
+                <label class="field-label">Account Number</label>
+                <input formControlName="accountNumber" type="text" maxlength="10" class="field-input" placeholder="10-digit NUBAN">
+              </div>
+              <div class="field">
+                <label class="field-label">Account Type</label>
+                <select formControlName="accountType" class="field-select">
+                  <option value="CURRENT">Current</option>
+                  <option value="SAVINGS">Savings</option>
+                  <option value="DOMICILIARY">Domiciliary</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Currency</label>
+                <select formControlName="currency" class="field-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Preferences -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Payment Preferences</h2>
+            </div>
+            <div class="form-section__body--grid3">
+              <div class="field">
+                <label class="field-label">Preferred Payment Method <span class="req">*</span></label>
+                <select formControlName="preferredPaymentMethod" class="field-select">
+                  <option *ngFor="let p of paymentMethods" [value]="p.value">{{ p.label }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Payment Terms Preference <span class="req">*</span></label>
+                <select formControlName="paymentTermsPreference" class="field-select">
+                  <option *ngFor="let t of paymentTerms" [value]="t">{{ t }}</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Preferred Invoice Currency <span class="req">*</span></label>
+                <select formControlName="currencyPreference" class="field-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bank Reference & Insurance -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Bank Reference &amp; Liability Insurance</h2>
+            </div>
+            <div class="form-section__body">
+              <div class="check-item" style="margin-bottom:0">
+                <input type="checkbox" formControlName="hasBankReference" id="bankRef" style="accent-color:#193042;width:16px;height:16px">
+                <label for="bankRef" class="check-item__label">We have a bank reference available</label>
+              </div>
+              <div *ngIf="step3Form.get('hasBankReference')?.value" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1rem">
+                <div class="field">
+                  <label class="field-label">Bank Reference Name</label>
+                  <input formControlName="bankReferenceName" type="text" class="field-input" placeholder="Name of bank official / reference">
+                </div>
+                <div class="field">
+                  <label class="field-label">Bank Reference Contact</label>
+                  <input formControlName="bankReferenceContact" type="text" class="field-input" placeholder="Email or phone">
+                </div>
+              </div>
+
+              <hr class="section-divider">
+
+              <div class="check-item" style="margin-bottom:0">
+                <input type="checkbox" formControlName="hasLiabilityInsurance" id="liabIns" style="accent-color:#193042;width:16px;height:16px">
+                <label for="liabIns" class="check-item__label">We have Public / Professional Liability Insurance</label>
+              </div>
+              <div *ngIf="step3Form.get('hasLiabilityInsurance')?.value" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1rem">
+                <div class="field">
+                  <label class="field-label">Insurance Provider</label>
+                  <input formControlName="liabilityInsuranceProvider" type="text" class="field-input" placeholder="Insurance company name">
+                </div>
+                <div class="field">
+                  <label class="field-label">Policy Number</label>
+                  <input formControlName="liabilityInsurancePolicyNumber" type="text" class="field-input" placeholder="Policy reference number">
+                </div>
+                <div class="field">
+                  <label class="field-label">Policy Expiry Date</label>
+                  <input formControlName="liabilityInsuranceExpiryDate" type="date" class="field-input">
+                </div>
+                <div class="field">
+                  <label class="field-label">Coverage Amount (₦)</label>
+                  <input formControlName="liabilityInsuranceCoverageAmount" type="number" class="field-input" placeholder="e.g. 5000000">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 4 – COMPLIANCE & CERTIFICATIONS
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 4" [formGroup]="step4Form" novalidate class="step-fade">
+
+          <!-- Certifications -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Certifications &amp; Accreditations</h2>
+              <button type="button" (click)="addCertification()" class="btn-add" style="margin-left:auto">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Add Certification
+              </button>
+            </div>
+            <div class="form-section__body">
+              <div *ngIf="certifications.length === 0" class="empty-state">
+                No certifications added. Click "Add Certification" to add ISO, NAFDAC, SON or other accreditations.
+              </div>
+              <div *ngFor="let cert of certifications.controls; let i = index; trackBy: trackByIndex"
+                   [formArrayName]="'certifications'" class="array-block">
+                <div [formGroupName]="i">
+                  <div class="array-block__header">
+                    <span class="array-block__label">Certification #{{ i + 1 }}</span>
+                    <button type="button" (click)="removeCertification(i)" class="array-block__remove">
+                      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      Remove
+                    </button>
+                  </div>
+                  <div class="grid3">
+                    <div class="field">
+                      <label class="field-label">Certification Type <span class="req">*</span></label>
+                      <select formControlName="certificationType" class="field-select">
+                        <option value="" disabled>Select type</option>
+                        <option *ngFor="let ct of certificationTypes" [value]="ct.value">{{ ct.label }}</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field-label">Certificate Name <span class="req">*</span></label>
+                      <input formControlName="certificationName" type="text" class="field-input" placeholder="Full certificate name">
+                    </div>
+                    <div class="field">
+                      <label class="field-label">Issuing Body <span class="req">*</span></label>
+                      <input formControlName="issuingBody" type="text" class="field-input" placeholder="e.g. ISO, NAFDAC">
+                    </div>
+                    <div class="field">
+                      <label class="field-label">Certificate Number</label>
+                      <input formControlName="certificateNumber" type="text" class="field-input" placeholder="Reference number">
+                    </div>
+                    <div class="field">
+                      <label class="field-label">Issue Date <span class="req">*</span></label>
+                      <input formControlName="issueDate" type="date" class="field-input">
+                    </div>
+                    <div class="field">
+                      <label class="field-label">Expiry Date</label>
+                      <div style="display:flex;align-items:center;gap:0.75rem">
+                        <input formControlName="expiryDate" type="date" class="field-input" [disabled]="cert.get('isNeverExpiring')?.value">
+                        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.775rem;color:#6b7280;white-space:nowrap;cursor:pointer">
+                          <input type="checkbox" formControlName="isNeverExpiring" style="accent-color:#193042"> No expiry
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legal Declarations -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--danger"></div>
+              <h2 class="form-section__title">Legal Declarations</h2>
+              <span class="form-section__badge form-section__badge--danger">Required</span>
+            </div>
+            <div class="form-section__body">
+              <div class="info-banner info-banner--warning" style="margin-bottom:1.25rem">
+                <svg class="info-banner__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <div>
+                  <p class="info-banner__title">Important Declaration</p>
+                  <p class="info-banner__body">Please answer the following questions accurately. Providing false information may result in permanent disqualification from the Optimax vendor marketplace.</p>
+                </div>
+              </div>
+
+              <div class="decl-row">
+                <p class="decl-row__q">Has your company ever been debarred or blacklisted by any government, organisation, or procurement body?</p>
+                <div class="decl-row__radios">
+                  <label><input type="radio" formControlName="hasBeenDebarred" [value]="true"> Yes</label>
+                  <label><input type="radio" formControlName="hasBeenDebarred" [value]="false"> No</label>
+                </div>
+              </div>
+              <div *ngIf="step4Form.get('hasBeenDebarred')?.value" class="decl-detail">
+                <label class="field-label">Please provide full details</label>
+                <textarea formControlName="debarmentDetails" rows="3" class="field-textarea" placeholder="Provide full details of the debarment..."></textarea>
+              </div>
+
+              <div class="decl-row">
+                <p class="decl-row__q">Does your company have any pending litigation or legal disputes that may affect your ability to perform contracts?</p>
+                <div class="decl-row__radios">
+                  <label><input type="radio" formControlName="hasPendingLitigation" [value]="true"> Yes</label>
+                  <label><input type="radio" formControlName="hasPendingLitigation" [value]="false"> No</label>
+                </div>
+              </div>
+              <div *ngIf="step4Form.get('hasPendingLitigation')?.value" class="decl-detail">
+                <label class="field-label">Please provide full details</label>
+                <textarea formControlName="litigationDetails" rows="3" class="field-textarea" placeholder="Describe the nature and current status of the litigation..."></textarea>
+              </div>
+
+              <div class="decl-row">
+                <p class="decl-row__q">Has your company ever filed for bankruptcy, insolvency, or been placed under receivership or administration?</p>
+                <div class="decl-row__radios">
+                  <label><input type="radio" formControlName="hasBeenBankrupt" [value]="true"> Yes</label>
+                  <label><input type="radio" formControlName="hasBeenBankrupt" [value]="false"> No</label>
+                </div>
+              </div>
+              <div *ngIf="step4Form.get('hasBeenBankrupt')?.value" class="decl-detail">
+                <label class="field-label">Please provide full details</label>
+                <textarea formControlName="bankruptcyDetails" rows="3" class="field-textarea" placeholder="Provide full details..."></textarea>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- HSE & Quality -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Health, Safety, Environment &amp; Quality</h2>
+            </div>
+            <div class="form-section__body">
+              <label class="check-item">
+                <input type="checkbox" formControlName="hasHsePolicy" style="accent-color:#193042;width:16px;height:16px">
+                <span class="check-item__label">We have a documented Health, Safety &amp; Environment (HSE) policy</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" formControlName="hasEnvironmentalPolicy" style="accent-color:#193042;width:16px;height:16px">
+                <span class="check-item__label">We have a formal Environmental Management policy</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" formControlName="hasQualityManagementSystem" style="accent-color:#193042;width:16px;height:16px">
+                <span class="check-item__label">We operate a Quality Management System (QMS)</span>
+              </label>
+              <div *ngIf="step4Form.get('hasQualityManagementSystem')?.value" style="margin-top:0.875rem;padding-left:1.75rem">
+                <label class="field-label">QMS Details</label>
+                <input formControlName="qualityManagementSystemDetails" type="text" class="field-input" placeholder="e.g. ISO 9001:2015 certified since 2020">
+              </div>
+            </div>
+          </div>
+
+          <!-- Policy Acknowledgements -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Policy Acknowledgements</h2>
+            </div>
+            <div class="form-section__body" style="display:flex;flex-direction:column;gap:0.75rem">
+              <label class="policy-card" [class.is-checked]="step4Form.get('acceptsDataProtectionPolicy')?.value">
+                <input type="checkbox" formControlName="acceptsDataProtectionPolicy">
+                <div>
+                  <p class="policy-card__title">Data Protection &amp; Privacy Policy <span class="req">*</span></p>
+                  <p class="policy-card__desc">I confirm that our company will comply with all applicable data protection laws and Optimax's privacy policy in handling personal and business data.</p>
+                </div>
+              </label>
+              <label class="policy-card" [class.is-checked]="step4Form.get('acceptsAntiCorruptionPolicy')?.value">
+                <input type="checkbox" formControlName="acceptsAntiCorruptionPolicy">
+                <div>
+                  <p class="policy-card__title">Anti-Bribery &amp; Anti-Corruption Policy <span class="req">*</span></p>
+                  <p class="policy-card__desc">I confirm that our company prohibits bribery, corruption, and improper payments in any form, and will comply with all applicable anti-corruption laws.</p>
+                </div>
+              </label>
+              <label class="policy-card" [class.is-checked]="step4Form.get('acceptsCodeOfConduct')?.value">
+                <input type="checkbox" formControlName="acceptsCodeOfConduct">
+                <div>
+                  <p class="policy-card__title">Vendor Code of Conduct <span class="req">*</span></p>
+                  <p class="policy-card__desc">I confirm that our company has read, understood, and agrees to abide by the Optimax Vendor Code of Conduct, including ethical business practices, fair labour standards, and environmental responsibility.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 5 – REFERENCES & EXPERIENCE
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 5" [formGroup]="step5Form" novalidate class="step-fade">
+
+          <!-- Client References -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Client References</h2>
+              <span style="font-size:0.775rem;color:#9ca3af;margin-left:0.25rem">(minimum 1)</span>
+              <button type="button" (click)="addClientReference()" [disabled]="clientReferences.length >= 5" class="btn-add" style="margin-left:auto">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Add Reference
+              </button>
+            </div>
+            <div class="form-section__body" formArrayName="clientReferences">
+              <div *ngFor="let ref of clientReferences.controls; let i = index; trackBy: trackByIndex"
+                   [formGroupName]="i" class="array-block">
+                <div class="array-block__header">
+                  <span class="array-block__label">Reference #{{ i + 1 }}</span>
+                  <button *ngIf="clientReferences.length > 1" type="button" (click)="removeClientReference(i)" class="array-block__remove">Remove</button>
+                </div>
+                <div class="grid2">
+                  <div class="field">
+                    <label class="field-label">Company / Organisation Name <span class="req">*</span></label>
+                    <input formControlName="companyName" type="text" class="field-input" placeholder="Client company name">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Contact Person Name <span class="req">*</span></label>
+                    <input formControlName="contactPersonName" type="text" class="field-input" placeholder="Full name">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Contact Email <span class="req">*</span></label>
+                    <input formControlName="contactEmail" type="email" class="field-input" placeholder="contact@client.com">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Contact Phone <span class="req">*</span></label>
+                    <input formControlName="contactPhone" type="tel" class="field-input" placeholder="+234 800 000 0000">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Relationship Description <span class="req">*</span></label>
+                    <input formControlName="relationshipDescription" type="text" class="field-input" placeholder="e.g. Supplied IT equipment for 3 years">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Years of Relationship <span class="req">*</span></label>
+                    <input formControlName="yearsOfRelationship" type="number" min="0" class="field-input" placeholder="e.g. 3">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Projects -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Key Projects &amp; Experience</h2>
+              <span style="font-size:0.775rem;color:#9ca3af;margin-left:0.25rem">(minimum 1)</span>
+              <button type="button" (click)="addKeyProject()" [disabled]="keyProjects.length >= 10" class="btn-add" style="margin-left:auto">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Add Project
+              </button>
+            </div>
+            <div class="form-section__body" formArrayName="keyProjects">
+              <div *ngFor="let proj of keyProjects.controls; let i = index; trackBy: trackByIndex"
+                   [formGroupName]="i" class="array-block">
+                <div class="array-block__header">
+                  <span class="array-block__label">Project #{{ i + 1 }}</span>
+                  <button *ngIf="keyProjects.length > 1" type="button" (click)="removeKeyProject(i)" class="array-block__remove">Remove</button>
+                </div>
+                <div class="grid2">
+                  <div class="field">
+                    <label class="field-label">Project Title <span class="req">*</span></label>
+                    <input formControlName="projectTitle" type="text" class="field-input" placeholder="Brief project name">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Client Name <span class="req">*</span></label>
+                    <input formControlName="clientName" type="text" class="field-input" placeholder="Client or end-user">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Project Value <span class="opt">(optional)</span></label>
+                    <input formControlName="projectValue" type="number" class="field-input" placeholder="e.g. 5000000">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Currency</label>
+                    <select formControlName="projectCurrency" class="field-select">
+                      <option value="NGN">NGN (₦)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="EUR">EUR (€)</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Start Date <span class="req">*</span></label>
+                    <input formControlName="startDate" type="date" class="field-input">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">End Date</label>
+                    <div style="display:flex;align-items:center;gap:0.75rem">
+                      <input formControlName="endDate" type="date" class="field-input" [disabled]="proj.get('isOngoing')?.value">
+                      <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.775rem;color:#6b7280;white-space:nowrap;cursor:pointer">
+                        <input type="checkbox" formControlName="isOngoing" style="accent-color:#193042"> Ongoing
+                      </label>
+                    </div>
+                  </div>
+                  <div class="field full">
+                    <label class="field-label">Project Description <span class="req">*</span></label>
+                    <textarea formControlName="description" rows="3" class="field-textarea" placeholder="Describe the scope of work, deliverables, and your company's specific role... (Minimum 30 characters)"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trade Associations -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title" style="color:#4b5563">Trade &amp; Professional Associations</h2>
+              <span class="form-section__badge form-section__badge--muted" style="margin-right:0.5rem">Optional</span>
+              <button type="button" (click)="addTradeAssociation()" class="btn-add" style="margin-left:auto">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Add Association
+              </button>
+            </div>
+            <div class="form-section__body" formArrayName="tradeAssociations">
+              <div *ngIf="tradeAssociations.length === 0" class="empty-state">No trade associations added. This section is optional.</div>
+              <div *ngFor="let assoc of tradeAssociations.controls; let i = index; trackBy: trackByIndex"
+                   [formGroupName]="i" class="array-block">
+                <div class="array-block__header">
+                  <span class="array-block__label">Association #{{ i + 1 }}</span>
+                  <button type="button" (click)="removeTradeAssociation(i)" class="array-block__remove">Remove</button>
+                </div>
+                <div class="grid3">
+                  <div class="field" style="grid-column:span 2">
+                    <label class="field-label">Association Name <span class="req">*</span></label>
+                    <input formControlName="associationName" type="text" class="field-input" placeholder="e.g. NACCIMA, MANCIN">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Membership Number</label>
+                    <input formControlName="membershipNumber" type="text" class="field-input" placeholder="Optional">
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Member Since</label>
+                    <input formControlName="memberSince" type="date" class="field-input">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Awards & Additional Info -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title" style="color:#4b5563">Awards &amp; Additional Information</h2>
+              <span class="form-section__badge form-section__badge--muted">Optional</span>
+            </div>
+            <div class="form-section__body" style="display:flex;flex-direction:column;gap:1.25rem">
+              <div class="field">
+                <label class="field-label">Awards &amp; Recognition</label>
+                <textarea formControlName="awards" rows="3" class="field-textarea" placeholder="List any industry awards, recognitions, or accolades your company has received..."></textarea>
+              </div>
+              <div class="field">
+                <label class="field-label">Additional Information</label>
+                <textarea formControlName="additionalInformation" rows="3" class="field-textarea" placeholder="Any other relevant information about your company's capabilities, USPs, or context..."></textarea>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             STEP 6 – DOCUMENTS & SUBMISSION
+             ════════════════════════════════════════════════════════════════ -->
+        <form *ngIf="currentStep === 6" [formGroup]="step6Form" novalidate class="step-fade">
+
+          <div class="info-banner info-banner--info">
+            <svg class="info-banner__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="info-banner__title">Document Requirements</p>
+              <p class="info-banner__body">Upload clear, legible copies. Accepted: PDF, JPG, PNG, DOC, DOCX. Maximum 5MB per file. Required documents must be uploaded before submission.</p>
+            </div>
+          </div>
+
+          <!-- Required Documents -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--danger"></div>
+              <h2 class="form-section__title">Required Documents</h2>
+              <span class="form-section__badge form-section__badge--danger">Mandatory</span>
+            </div>
+            <div class="form-section__body">
+              <div class="doc-grid">
+                <ng-container *ngFor="let doc of [
+                  { key: 'cacCertificate',           label: 'CAC Certificate of Incorporation' },
+                  { key: 'tinCertificate',           label: 'Tax Identification Number (TIN) Certificate' },
+                  { key: 'incorporationCertificate', label: 'Certificate of Incorporation / Registration' },
+                  { key: 'taxClearanceCertificate',  label: 'Tax Clearance Certificate' },
+                  { key: 'directorId',               label: 'Director / Principal Officer ID' },
+                  { key: 'authorizedSignatoryId',    label: 'Authorized Signatory ID' }
+                ]">
+                  <div class="doc-card">
+                    <p class="doc-card__label">{{ doc.label }} <span class="req">*</span></p>
+                    <div *ngIf="!uploadedFiles[doc.key]">
+                      <label [for]="'file_' + doc.key" class="upload-zone">
+                        <svg class="upload-zone__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="upload-zone__text">Click to upload file</span>
+                      </label>
+                      <input [id]="'file_' + doc.key" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                             (change)="onFileSelect($event, doc.key)" style="display:none">
+                      <p *ngIf="uploadErrors[doc.key]" class="field-error">{{ uploadErrors[doc.key] }}</p>
+                    </div>
+                    <div *ngIf="uploadedFiles[doc.key]" class="upload-done">
+                      <svg class="upload-done__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <div class="upload-done__info">
+                        <span class="upload-done__name">{{ uploadedFiles[doc.key]?.name }}</span>
+                        <span class="upload-done__size">{{ uploadedFiles[doc.key]?.size }}</span>
+                      </div>
+                      <button type="button" (click)="removeFile(doc.key)" class="upload-done__remove">
+                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial & Statutory Documents -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--warning"></div>
+              <h2 class="form-section__title">Financial &amp; Statutory Documents</h2>
+              <span class="form-section__badge form-section__badge--warning">Recommended</span>
+            </div>
+            <div class="form-section__body">
+              <div class="doc-grid">
+                <ng-container *ngFor="let doc of [
+                  { key: 'auditedFinancialStatements', label: 'Audited Financial Statements (last 2 years)' },
+                  { key: 'bankStatement',              label: 'Bank Statement (last 6 months)' },
+                  { key: 'vatCertificate',             label: 'VAT Certificate (if registered)' },
+                  { key: 'pencomClearance',            label: 'PenCom Clearance Certificate' },
+                  { key: 'itfClearance',               label: 'ITF Clearance Certificate' },
+                  { key: 'nsitfClearance',             label: 'NSITF Compliance Certificate' }
+                ]">
+                  <div class="doc-card">
+                    <p class="doc-card__label">{{ doc.label }}</p>
+                    <div *ngIf="!uploadedFiles[doc.key]">
+                      <label [for]="'file_' + doc.key" class="upload-zone">
+                        <svg class="upload-zone__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="upload-zone__text">Click to upload file</span>
+                      </label>
+                      <input [id]="'file_' + doc.key" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                             (change)="onFileSelect($event, doc.key)" style="display:none">
+                    </div>
+                    <div *ngIf="uploadedFiles[doc.key]" class="upload-done">
+                      <svg class="upload-done__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <div class="upload-done__info">
+                        <span class="upload-done__name">{{ uploadedFiles[doc.key]?.name }}</span>
+                        <span class="upload-done__size">{{ uploadedFiles[doc.key]?.size }}</span>
+                      </div>
+                      <button type="button" (click)="removeFile(doc.key)" class="upload-done__remove">
+                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <!-- Optional Documents -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent form-section__accent--muted"></div>
+              <h2 class="form-section__title" style="color:#4b5563">Optional Supporting Documents</h2>
+              <span class="form-section__badge form-section__badge--muted">Optional</span>
+            </div>
+            <div class="form-section__body">
+              <div class="doc-grid">
+                <ng-container *ngFor="let doc of [
+                  { key: 'companyProfile',  label: 'Company Profile / Brochure' },
+                  { key: 'isoCertificate', label: 'ISO or Other Quality Certificates' }
+                ]">
+                  <div class="doc-card">
+                    <p class="doc-card__label">{{ doc.label }}</p>
+                    <div *ngIf="!uploadedFiles[doc.key]">
+                      <label [for]="'file_' + doc.key" class="upload-zone">
+                        <svg class="upload-zone__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="upload-zone__text">Upload (optional)</span>
+                      </label>
+                      <input [id]="'file_' + doc.key" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                             (change)="onFileSelect($event, doc.key)" style="display:none">
+                    </div>
+                    <div *ngIf="uploadedFiles[doc.key]" class="upload-done">
+                      <svg class="upload-done__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <div class="upload-done__info">
+                        <span class="upload-done__name">{{ uploadedFiles[doc.key]?.name }}</span>
+                        <span class="upload-done__size">{{ uploadedFiles[doc.key]?.size }}</span>
+                      </div>
+                      <button type="button" (click)="removeFile(doc.key)" class="upload-done__remove">
+                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms & Submission -->
+          <div class="form-section">
+            <div class="form-section__header">
+              <div class="form-section__accent"></div>
+              <h2 class="form-section__title">Terms, Conditions &amp; Final Submission</h2>
+            </div>
+            <div class="form-section__body" style="display:flex;flex-direction:column;gap:0.875rem">
+
+              <label class="policy-card" [class.is-checked]="step6Form.get('termsAndConditionsAccepted')?.value">
+                <input type="checkbox" formControlName="termsAndConditionsAccepted">
+                <div>
+                  <p class="policy-card__title">Terms &amp; Conditions <span class="req">*</span></p>
+                  <p class="policy-card__desc">I have read and agree to the Optimax <a href="#">Vendor Terms &amp; Conditions</a>, including the vendor agreement, contractual obligations, and dispute resolution process.</p>
+                </div>
+              </label>
+              <span *ngIf="step6Form.get('termsAndConditionsAccepted')?.invalid && step6Form.get('termsAndConditionsAccepted')?.touched" class="field-error">You must accept the Terms &amp; Conditions to submit.</span>
+
+              <label class="policy-card" [class.is-checked]="step6Form.get('privacyPolicyAccepted')?.value">
+                <input type="checkbox" formControlName="privacyPolicyAccepted">
+                <div>
+                  <p class="policy-card__title">Privacy Policy <span class="req">*</span></p>
+                  <p class="policy-card__desc">I consent to Optimax collecting, storing, and processing the information provided in this registration form in accordance with the <a href="#">Privacy Policy</a>.</p>
+                </div>
+              </label>
+              <span *ngIf="step6Form.get('privacyPolicyAccepted')?.invalid && step6Form.get('privacyPolicyAccepted')?.touched" class="field-error">You must accept the Privacy Policy to submit.</span>
+
+              <div class="decl-box">
+                <p class="decl-box__heading">Statutory Declaration</p>
+                <p class="decl-box__text">I, the undersigned, hereby declare that all information provided in this vendor registration is true, accurate, and complete to the best of my knowledge and belief. I understand that any misrepresentation or omission of facts may result in the rejection of this application, termination of any existing vendor relationship, and/or legal action.</p>
+              </div>
+
+              <div *ngIf="submitError" class="info-banner info-banner--error" style="margin:0">
+                <svg class="info-banner__icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="info-banner__body">{{ submitError }}</p>
+              </div>
+
+            </div>
+          </div>
+
+        </form>
+
+        <!-- ── Navigation Footer ──────────────────────────────────────────── -->
+        <div class="vr-footer">
+
+          <button type="button" (click)="prevStep()" [disabled]="currentStep === 1"
+                  class="btn btn-ghost">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Previous
+          </button>
+
+          <div class="vr-footer__dots">
+            <span *ngFor="let s of steps" class="vr-footer__dot"
+                  [class.is-active]="s.id === currentStep"
+                  [class.is-complete]="isStepCompleted(s.id) && s.id !== currentStep">
+            </span>
+          </div>
+
+          <div class="vr-footer__right">
+            <button *ngIf="currentStep < steps.length" type="button" class="btn btn-ghost btn-sm">
+              Save Draft
+            </button>
+
+            <button *ngIf="currentStep < steps.length" type="button" (click)="nextStep()" class="btn btn-primary">
+              Next Step
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <button *ngIf="currentStep === steps.length" type="button" (click)="onSubmit()"
+                    [disabled]="isSubmitting" class="btn btn-primary">
+              <span *ngIf="isSubmitting" class="spinner"></span>
+              <svg *ngIf="!isSubmitting" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              {{ isSubmitting ? 'Submitting…' : 'Submit Registration' }}
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+      <!-- end vr-panel -->
+    </div>
+    <!-- end vr-layout -->
+  </div>
+  <!-- end vr-content -->
+
+</div>
+<!-- end vr-page -->

@@ -5,6 +5,7 @@ import { LpoComponent } from './lpo/lpo.component';
 import { PerformanceComponent } from './performance/performance.component';
 import { DocumentsComponent } from './documents/documents.component';
 import { TabConfig } from '../../shared-component/service/interface/data';
+import {VendorRegistrationComponent} from './vendor-registration/vendor-registration.component';
 
 @Component({
   selector: 'app-vendor-portal',
@@ -13,6 +14,12 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 })
 export class VendorPortalComponent {
   tabsConfig: TabConfig[] = [
+
+  {
+    name: 'Register',
+    component: VendorRegistrationComponent,
+    icon: 'fa-solid fa-table-columns',
+  },
   {
     name: 'Dashboard',
     component: DashboardComponent,

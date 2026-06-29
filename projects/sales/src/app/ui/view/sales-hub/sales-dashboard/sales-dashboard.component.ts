@@ -462,10 +462,10 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getConicGradient(): string {
-    if (!this.revenueData || this.revenueData.length === 0) return 'conic-gradient(#2EB270 0% 100%)';
+    if (!this.revenueData || this.revenueData.length === 0) return 'conic-gradient(#8b5cf6 0% 100%)';
     const total = this.revenueData.reduce((sum, d) => sum + d.amount, 0) || 1;
     let accumulatedPercent = 0;
-    const colors = ['#2EB270', '#2E6276', '#fbbf24', '#8b5cf6', '#ef4444', '#3b82f6'];
+    const colors = ['#8b5cf6', '#2E6276', '#fbbf24', '#2EB270', '#ef4444', '#3b82f6'];
     const parts = this.revenueData.map((d, i) => {
       const percent = (d.amount / total) * 100;
       const start = accumulatedPercent;
@@ -476,7 +476,7 @@ export class SalesDashboardComponent implements OnInit, OnDestroy {
   }
 
   getConicLegendColor(idx: number): string {
-    const colors = ['#2EB270', '#2E6276', '#fbbf24', '#8b5cf6', '#ef4444', '#3b82f6'];
+    const colors = ['#8b5cf6', '#2E6276', '#fbbf24', '#2EB270', '#ef4444', '#3b82f6'];
     return colors[idx % colors.length];
   }
 

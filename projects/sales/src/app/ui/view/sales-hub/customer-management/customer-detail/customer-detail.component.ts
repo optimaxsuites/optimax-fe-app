@@ -1,5 +1,3 @@
-// src/app/ui/view/sales-module/customer-detail/customer-detail.component.ts
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -242,4 +240,25 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
       this.router.navigate(['/admin/sales/sales-hub']);
     }
   }
+
+  getStatusClass(status: string): string {
+  const classes: Record<string, string> = {
+    'ACTIVE': 'active',
+    'INACTIVE': 'inactive',
+    'BLACKLISTED': 'blacklisted'
+  };
+  return classes[status] || 'active';
+}
+
+getOrderStatusClass(status: string): string {
+  const classes: Record<string, string> = {
+    'PENDING': 'pending',
+    'PROCESSING': 'processing',
+    'SHIPPED': 'shipped',
+    'DELIVERED': 'delivered',
+    'COMPLETED': 'completed',
+    'CANCELLED': 'cancelled'
+  };
+  return classes[status] || 'pending';
+}
 }
