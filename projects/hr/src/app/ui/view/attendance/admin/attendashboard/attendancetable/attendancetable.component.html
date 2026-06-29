@@ -3,11 +3,7 @@
     <div class="attendance-card">
       <!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->
       <app-attendancefilter (filtersChange)="onFiltersChange($event)"></app-attendancefilter>
-      <div class="loader-wrapper" *ngIf="isLoading">
-        <div class="loader"></div>
-        <p>Loading attendance records...</p>
-      </div>
-        <table class="attendance-table" *ngIf="!isLoading">
+        <table class="attendance-table">
   <thead> 
     
     <tr>
@@ -32,9 +28,9 @@
     <td>{{ record.employee }}</td>
     <td>{{ record.department }}</td>
     <td>{{ record.date || '-'}}</td>
-    <td>{{ record.checkIn ? (record.checkIn | date:'HH:mm:ss') : '-' }}</td>
+    <td>{{ record.checkIn || '-' }}</td>
     <!--<td>{{ record.checkIn || '-' }}</td>-->
-    <td>{{ record.checkOut ? (record.checkOut | date: 'HH:mm:ss') : '-' }}</td>
+    <td>{{ record.checkOut || '-' }}</td>
     <!--<td>{{ record.checkOut || '-' }}</td>-->
 
     <td>
@@ -103,7 +99,7 @@
     </td>
   </tr>
 
-  <tr *ngIf="!isLoading && filteredAttendance.length === 0">
+  <tr *ngIf="filteredAttendance.length === 0">
     <td colspan="12" class="empty-state">
       <div class="empty-content">
         <p class="empty-title">
