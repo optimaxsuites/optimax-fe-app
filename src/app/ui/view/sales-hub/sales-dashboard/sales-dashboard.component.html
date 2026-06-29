@@ -70,7 +70,7 @@
                 <div class="stat-chart-mini">
                   <svg viewBox="0 0 100 30">
                     <polyline points="0,25 10,20 20,28 30,15 40,22 50,10 60,18 70,5 80,12 90,8 100,2" fill="none"
-                      stroke="#8b5cf6" stroke-width="2" />
+                      stroke="#f97316" stroke-width="2" />
                     <polygon points="0,25 10,20 20,28 30,15 40,22 50,10 60,18 70,5 80,12 90,8 100,2 100,30 0,30"
                       fill="url(#revenueGrad)" opacity="0.15" />
                   </svg>
@@ -192,7 +192,7 @@
                   <!-- Area under the line -->
                   <path [attr.d]="getLineChartAreaPath()" fill="url(#lineChartAreaGrad)" />
                   <!-- Line path -->
-                  <path [attr.d]="getLineChartPath()" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                  <path [attr.d]="getLineChartPath()" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                   <!-- Dots for each point -->
                   <circle *ngFor="let d of revenueData; let idx = index"
                           [attr.cx]="getPointX(idx)"
@@ -423,12 +423,12 @@
       <svg style="position: absolute; width: 0; height: 0;">
         <defs>
           <linearGradient id="revenueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0" />
+            <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f97316;stop-opacity:0" />
           </linearGradient>
           <linearGradient id="lineChartAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.35" />
-            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.0" />
+            <stop offset="0%" style="stop-color:#f97316;stop-opacity:0.35" />
+            <stop offset="100%" style="stop-color:#f97316;stop-opacity:0.0" />
           </linearGradient>
         </defs>
       </svg>
@@ -513,7 +513,8 @@
 </app-side-modal>
 
 <app-side-modal *ngIf="showInvoiceDetail" (close)="closeInvoiceDetail()">
-  <app-invoice-detail [detailId]="selectedItemId" (closed)="closeInvoiceDetail()"></app-invoice-detail>
+  <app-invoice-detail [detailId]="selectedItemId" (closed)="closeInvoiceDetail()"
+    (edit)="closeInvoiceDetail(); openEditInvoiceModal($event)"></app-invoice-detail>
 </app-side-modal>
 
 <app-side-modal *ngIf="showCustomizationModal" (close)="closeCustomizationModal()">
