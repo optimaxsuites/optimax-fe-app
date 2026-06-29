@@ -425,18 +425,18 @@ $radius-xl: 24px;
 
 .stat-card {
   background: white;
-  border-radius: 8px;
-  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  padding: 20px;
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: $shadow-sm;
-  border: 1px solid $border-light;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+  border: 1px solid #e3eef0;
 
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: $shadow-xl;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
 
     .stat-card-glow {
       opacity: 0.15;
@@ -463,8 +463,8 @@ $radius-xl: 24px;
     position: relative;
     z-index: 1;
     display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    gap: 16px;
+    align-items: center;
   }
 
   .stat-icon-wrapper {
@@ -888,7 +888,7 @@ $radius-xl: 24px;
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: linear-gradient(180deg, #8b5cf6, #a78bfa);
+      background: linear-gradient(180deg, #f97316, #fb923c);
     }
 
     .legend-label {
@@ -980,7 +980,7 @@ $radius-xl: 24px;
 
 .bar {
   width: 100%;
-  background: linear-gradient(180deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(180deg, #f97316, #fb923c);
   border-radius: $radius-sm;
   transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;

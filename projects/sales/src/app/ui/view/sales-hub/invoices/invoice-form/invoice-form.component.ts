@@ -209,7 +209,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   addLineItem(): void {
     const itemForm = this.fb.group({
-      productId: ['', Validators.required],
+      productId: [''],
       productName: ['', Validators.required],
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
@@ -449,8 +449,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.addLineItem();
       const index = this.items.length - 1;
       const itemForm = this.items.at(index);
+      
+      const matchingProduct = this.products.find(
+        p => p.name.toLowerCase() === item.productName.toLowerCase()
+      );
+      const pId = matchingProduct ? matchingProduct.id : '';
+
       itemForm.patchValue({
-        productId: '',
+        productId: pId,
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
@@ -824,10 +830,6 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items.at(i);
-      if (!item.get('productId')?.value) {
-        alert(`Item ${i + 1}: Please select a product`);
-        return false;
-      }
 
       const qty = item.get('quantity')?.value;
       if (qty === null || qty === undefined || qty < 1) {
