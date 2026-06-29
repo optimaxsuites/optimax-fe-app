@@ -1,0 +1,12 @@
+<div class="search-container">
+  <input
+    type="text"
+    class="search-input"
+    placeholder="Search..."
+    (input)="searchgroups(search.value)"
+    #search
+    aria-label="Search groups"
+  />
+  <i class="fa-solid fa-search" (click)="searchgroups(search.value)"></i>
+  <i class="fa-solid fa-x" (click)="clearSearchText(search)"></i>
+</div>

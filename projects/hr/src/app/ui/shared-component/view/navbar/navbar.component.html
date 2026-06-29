@@ -1,0 +1,80 @@
+<div class='header'>
+
+    <!-- <div class="header-center">      
+      <div class="searchbar-container">
+        <app-searchbar></app-searchbar>
+      </div>
+    </div> -->
+
+    <div class="items hamburger" >
+      <button class="hamburger-icon" (click)="onToggleSidebar()">
+        <i *ngIf="sidebarHidden" class="pi pi-bars"></i>
+        <i *ngIf="!sidebarHidden" class="pi pi-bars"></i> 
+        <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
+      </button>
+    </div>
+
+    <div class="header-end">
+        <!-- <div class="items"><p>Contacts</p></div> -->
+        <div class="items bell-wrap" (click)="toggleNotifPanel()" style="position:relative">
+          <i class="fas fa-bell"></i>
+          <span class="bell-badge" *ngIf="notifCount > 0">{{ notifCount > 99 ? '99+' : notifCount }}</span>
+        </div>
+
+        <!-- Notification dropdown -->
+        <div class="notif-panel" *ngIf="showNotifPanel" (click)="$event.stopPropagation()">
+          <div class="notif-panel-head">
+            <span class="notif-panel-title">Notifications</span>
+            <button class="notif-mark-read" (click)="markAllRead()">Mark all read</button>
+          </div>
+          <div class="notif-list" *ngIf="notifications.length; else noNotifs">
+            <div class="notif-item" *ngFor="let n of notifications" [class.unread]="!n.read">
+              <div class="notif-dot" *ngIf="!n.read"></div>
+              <div class="notif-content">
+                <div class="notif-title">{{ n.title }}</div>
+                <div class="notif-body">{{ n.body }}</div>
+                <div class="notif-meta">{{ notifTime(n.createdAt) }} &middot; {{ n.recipient }}</div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noNotifs>
+            <div class="notif-empty">No notifications yet</div>
+          </ng-template>
+        </div>
+        <div class="items"><i class="fas fa-message"></i></div>
+        <div (click)="op.toggle($event)" class="items profile-item">
+            <div class="profile-img-container">
+                <img src='assets/profile.jpg' alt=""  class='profile-img' />
+            </div>
+            <div class="profile-name">
+                <p class="name">{{
+                  userRegData.username
+              }}</p>
+                <!-- <p class="status">{{userRegData.roles}}</p> -->
+            </div>
+        </div>
+        <p-overlayPanel #op>
+          <div class="panel-container">
+            <div class="profile-name">
+              <h3 class="name-2">{{
+                userRegData.username
+            }}</h3>
+              <!-- <h4 class="status-2">{{userRegData.roles}}</h4> -->
+              <h5 class="my-2"><strong>ID: </strong>{{userRegData.accountId}}</h5>
+            </div>
+              <p-divider></p-divider>
+              <div>
+                <a [routerLink]="hrSettingsRoute" class="settings"><i class="pi pi-cog"></i>Settings</a>
+                <h4 (click)="logout()" class="logout"><i class="pi pi-sign-out"></i> Sign Out</h4>
+              </div>
+            </div>
+        </p-overlayPanel>
+    </div>
+
+<!-- 
+    <div class="items hamburger" >
+      <button class="hamburger-icon" (click)="onToggleSidebar()">
+      &#9776;
+      </button>
+    </div> -->
+</div>

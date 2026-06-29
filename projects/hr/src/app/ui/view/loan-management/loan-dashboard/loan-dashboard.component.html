@@ -1,0 +1,562 @@
+<div class="loan-dashboard-container">
+  <!-- Modal Overlay - Redesigned Advanced Loan Modal -->
+  <div class="modal-overlay" *ngIf="showLoanDetailsModal" (click)="closeLoanDetailsModal()">
+    <div class="loan-details-modal advanced-loan-modal" (click)="$event.stopPropagation()" *ngIf="selectedLoan">
+      <!-- Hero Header with Gradient Background -->
+      <div class="modal-hero">
+        <div class="hero-left">
+          <span class="hero-badge">ADVANCE LOAN PREVIEW</span>
+          <h2>{{ selectedLoan.fullName }}</h2>
+          <p class="hero-meta">{{ formatAdvanceLoanDisplayId(selectedLoan) }} • {{ formatDepartmentDisplay(selectedLoan.department) }}</p>
+        </div>
+        <div class="hero-right">
+          <div class="hero-stat">
+            <span>Status</span>
+            <strong class="status-badge" [ngClass]="getStatusClass(selectedLoan.status)">{{ getStatusDisplay(selectedLoan.status) }}</strong>
+          </div>
+          <div class="hero-stat">
+            <span>Amount</span>
+            <strong>{{ formatCurrency(selectedLoan.amount) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="modal-body-grid">
+        
+        <!-- LEFT COLUMN -->
+        <div class="modal-left-column">
+          
+          <!-- Applicant Section -->
+          <div class="info-card">
+            <div class="card-header-icon">
+              <i class="fas fa-user"></i>
+              <div>
+                <span class="card-eyebrow">Applicant</span>
+                <h4>Identity & Role</h4>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="row-label">Loan ID</span>
+                <span class="row-value mono">{{ formatAdvanceLoanDisplayId(selectedLoan) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Employee</span>
+                <span class="row-value">{{ selectedLoan.fullName }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Employee ID</span>
+                <span class="row-value mono">{{ selectedLoan.employeeId }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Department</span>
+                <span class="row-value">{{ formatDepartmentDisplay(selectedLoan.department) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financials Section -->
+          <div class="info-card">
+            <div class="card-header-icon finance-icon">
+              <i class="fas fa-wallet"></i>
+              <div>
+                <span class="card-eyebrow">Financials</span>
+                <h4>Loan Breakdown</h4>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="row-label">Loan Amount</span>
+                <span class="row-value money">{{ formatCurrency(selectedLoan.amount) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Monthly Repayment</span>
+                <span class="row-value money">{{ formatCurrency(selectedLoan.repaymentAmount) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Interest Rate</span>
+                <span class="row-value strong">{{ getPreviewInterestRate(selectedLoan) }}%</span>
+              </div>
+              <div class="info-row" *ngIf="hasPreviewBeenDisbursed(selectedLoan)">
+                <span class="row-label">Amount Paid</span>
+                <span class="row-value money">{{ formatCurrency(getPreviewResolvedAmountPaid(selectedLoan)) }}</span>
+              </div>
+              <div class="info-row" *ngIf="hasPreviewBeenDisbursed(selectedLoan)">
+                <span class="row-label">Outstanding</span>
+                <span class="row-value money warning">{{ formatCurrency(getPreviewResolvedOutstandingBalance(selectedLoan)) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purpose Section -->
+          <div class="info-card purpose-card">
+            <div class="card-header-icon">
+              <i class="fas fa-bullseye"></i>
+              <div>
+                <span class="card-eyebrow">Purpose</span>
+                <h4>Loan Intent</h4>
+              </div>
+            </div>
+            <p class="purpose-text">{{ formatPurposeDisplay(selectedLoan.purpose) }}</p>
+          </div>
+
+          <!-- Admin Note Section -->
+          <div class="info-card admin-note-card" *ngIf="getPreviewAdminFeedback(selectedLoan)?.notes">
+            <div class="card-header-icon comment-icon">
+              <i class="fas fa-comment"></i>
+              <div>
+                <span class="card-eyebrow">Admin Note</span>
+                <h4>Latest Review Comment</h4>
+              </div>
+            </div>
+            <p class="note-text">{{ getPreviewAdminFeedback(selectedLoan)?.notes }}</p>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="modal-right-column">
+          
+          <!-- Timeline Section -->
+          <div class="info-card">
+            <div class="card-header-icon">
+              <i class="fas fa-clock"></i>
+              <div>
+                <span class="card-eyebrow">Workflow</span>
+                <h4>Loan Timeline</h4>
+              </div>
+            </div>
+            <div class="timeline-list">
+              <div class="timeline-item" *ngFor="let field of getPreviewLifecycleStageFields(selectedLoan)">
+                <span class="timeline-label">{{ field.label }}</span>
+                <span class="timeline-value">{{ field.value }}</span>
+              </div>
+              <div class="timeline-item current-status-item">
+                <span class="timeline-label">Current Status</span>
+                <span class="status-badge" [ngClass]="getStatusClass(getPreviewDisplayedStatus(selectedLoan))">{{ getStatusDisplay(getPreviewDisplayedStatus(selectedLoan)) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Risk Signals Section -->
+          <div class="info-card">
+            <div class="card-header-icon risk-icon">
+              <i class="fas fa-shield-alt"></i>
+              <div>
+                <span class="card-eyebrow">Monitoring</span>
+                <h4>Risk Signals</h4>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="row-label">Overdue Installments</span>
+                <span class="row-value strong">{{ getOverdueInstallmentsCount(selectedLoan) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Credit Flags</span>
+                <span class="row-value strong">{{ getCreditReportedCount(selectedLoan) }}</span>
+              </div>
+              <div class="info-row">
+                <span class="row-label">Late Fees Accrued</span>
+                <span class="row-value money warning">{{ formatCurrency(getLateFeesTotal(selectedLoan)) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Repayment Progress Section (only if disbursed) -->
+          <div class="info-card repayment-progress-card" *ngIf="hasPreviewBeenDisbursed(selectedLoan)">
+            <div class="card-header-icon finance-icon">
+              <i class="fas fa-chart-line"></i>
+              <div>
+                <span class="card-eyebrow">Repayment</span>
+                <h4>Progress Snapshot</h4>
+              </div>
+            </div>
+            
+            <div class="repayment-stats-grid">
+              <div class="repayment-stat">
+                <span>State</span>
+                <strong>{{ getPreviewRepaymentStatusTitle(selectedLoan) }}</strong>
+              </div>
+              <div class="repayment-stat">
+                <span>Installments</span>
+                <strong>{{ getPreviewPaidInstallmentsCount(selectedLoan) }}/{{ getPreviewTotalInstallmentsCount(selectedLoan) || 0 }}</strong>
+              </div>
+              <div class="repayment-stat">
+                <span>Total Repayable</span>
+                <strong>{{ formatCurrency(getPreviewTotalRepayableAmount(selectedLoan)) }}</strong>
+              </div>
+            </div>
+            
+            <div class="repayment-progress-block">
+              <div class="progress-header">
+                <span>Repayment completion</span>
+                <strong>{{ getPreviewProgressPercentage(selectedLoan).toFixed(1) }}%</strong>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" [style.width.%]="getPreviewProgressPercentage(selectedLoan)">
+                  <span class="progress-label" *ngIf="getPreviewProgressPercentage(selectedLoan) > 18">
+                    {{ getPreviewPaidInstallmentsCount(selectedLoan) }}/{{ getPreviewTotalInstallmentsCount(selectedLoan) || 0 }} cleared
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Installments Table (Full Width) -->
+      <div class="installments-section" *ngIf="getLifecycleInstallmentsPreview(selectedLoan).length">
+        <div class="section-header-icon">
+          <i class="fas fa-calendar-alt"></i>
+          <div>
+            <span class="card-eyebrow">Repayment Schedule</span>
+            <h4>First 6 Installments</h4>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="installments-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Due Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of getLifecycleInstallmentsPreview(selectedLoan)">
+                <td class="installment-no">{{ item.installmentNo }}</td>
+                <td>{{ item.dueDate | date:'mediumDate' }}</td>
+                <td class="amount-cell">{{ formatCurrency(item.totalAmount) }}</td>
+                <td>
+                  <span class="installment-status" [ngClass]="item.status.toLowerCase()">
+                    {{ item.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Payments Section (if any) -->
+      <div class="payments-section" *ngIf="getPreviewRecentPayments(selectedLoan).length">
+        <div class="section-header-icon">
+          <i class="fas fa-receipt"></i>
+          <div>
+            <span class="card-eyebrow">Payment History</span>
+            <h4>Recent Transactions</h4>
+          </div>
+        </div>
+        <div class="payments-list">
+          <div class="payment-item" *ngFor="let payment of getPreviewRecentPayments(selectedLoan)">
+            <div class="payment-date">
+              <i class="fas fa-credit-card"></i>
+              <span>{{ payment.paidAt | date:'mediumDate' }}</span>
+            </div>
+            <div class="payment-details">
+              <span class="payment-amount">{{ formatCurrency(payment.totalAmount || 0) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="modal-actions" *ngIf="selectedLoan.status === 'PENDING'">
+        <button class="btn-cancel" (click)="closeLoanDetailsModal()">Cancel</button>
+        <button class="btn-primary" (click)="openApprovalForm(selectedLoan)">
+          <i class="fas fa-clipboard-check"></i> Review Application
+        </button>
+      </div>
+      <div class="modal-actions" *ngIf="selectedLoan.status !== 'PENDING'">
+        <button class="btn-secondary" (click)="closeLoanDetailsModal()">Close</button>
+        <button class="btn-secondary" (click)="seeLoanHistory(selectedLoan.employeeId)">
+          <i class="fas fa-history"></i> Loan History
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <!-- Hero Section - Dark design matching Employee Dashboard -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Welcome back, <span class="admin-name">{{ adminDisplayName }}</span>!</h1>
+          <p class="hero-subtitle">Manage advance loans, track disbursements, and monitor loan performance from a single command center.</p>
+          <div class="dashboard-badge">
+            <i class="fas fa-chart-line"></i>
+            <span>Advanced Loans Dashboard</span>
+          </div>
+        </div>
+        <div class="hero-avatar">
+          {{ getInitials(adminDisplayName) }}
+        </div>
+      </div>
+      
+      <!-- Dashboard Switcher integrated into hero -->
+      <div class="dashboard-switcher-wrapper">
+        <div class="dashboard-switcher">
+          <button 
+            type="button" 
+            class="switcher-btn" 
+            [class.active]="selectedDashboard === 'advance'"
+            (click)="switchDashboard('advance')">
+            <i class="fas fa-hand-holding-dollar"></i>
+            Advanced Loans
+          </button>
+          <button 
+            type="button" 
+            class="switcher-btn" 
+            [class.active]="selectedDashboard === 'cooperative'"
+            (click)="switchDashboard('cooperative')">
+            <i class="fas fa-users"></i>
+            Cooperative Loans
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards - 4 cards -->
+    <div class="stats-grid">
+      <div class="stat-card pending">
+        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboardStats.pendingApplications }}</span>
+          <span class="stat-label">Pending Review</span>
+          <span class="stat-note">Awaiting approval</span>
+        </div>
+      </div>
+
+      <div class="stat-card ready">
+        <div class="stat-icon"><i class="fas fa-hand-holding-dollar"></i></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboardStats.readyForDisbursement }}</span>
+          <span class="stat-label">Ready to Disburse</span>
+          <span class="stat-note">Approved & queued</span>
+        </div>
+      </div>
+
+      <div class="stat-card active">
+        <div class="stat-icon"><i class="fas fa-exchange-alt"></i></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ dashboardStats.activeLoans }}</span>
+          <span class="stat-label">Active Loans</span>
+          <span class="stat-note">In repayment</span>
+        </div>
+      </div>
+
+      <div class="stat-card balance">
+        <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ formatCurrency(dashboardStats.totalBalance) }}</span>
+          <span class="stat-label">Outstanding Balance</span>
+          <span class="stat-note">Total exposure</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <div class="alerts-section" *ngIf="alerts.length > 0">
+      <div class="alert-item" *ngFor="let alert of alerts" [ngClass]="alert.level">
+        <i class="fas" [ngClass]="alert.level === 'danger' ? 'fa-exclamation-triangle' : 'fa-bell'"></i>
+        <span>{{ alert.message }}</span>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="dashboard-two-column">
+      
+      <!-- LEFT COLUMN: Recent Loans Table -->
+      <div class="left-column">
+        <div class="recent-loans-section">
+          <div class="section-header">
+            <div class="header-left">
+              <i class="fas fa-file-invoice"></i>
+              <h2>Recent Loan Applications</h2>
+            </div>
+            <div class="filter-tabs">
+              <button 
+                class="filter-tab" 
+                [class.active]="activeFilter === 'ALL'"
+                (click)="setStatusFilter('ALL')">
+                All
+              </button>
+              <button 
+                class="filter-tab" 
+                [class.active]="activeFilter === 'PENDING'"
+                (click)="setStatusFilter('PENDING')">
+                Pending
+              </button>
+              <button 
+                class="filter-tab" 
+                [class.active]="activeFilter === 'ACTIVE'"
+                (click)="setStatusFilter('ACTIVE')">
+                Active
+              </button>
+            </div>
+          </div>
+
+          <div class="loading-state" *ngIf="isLoading && !isDataLoaded">
+            <div class="spinner"></div>
+            <p>Loading loan applications...</p>
+          </div>
+
+          <div class="table-wrapper" *ngIf="!isLoading && dashboardLoanRows.length > 0">
+            <table class="loans-table">
+              <thead>
+                <tr>
+                  <th>S/N</th>
+                  <th class="sortable" (click)="setSort('loanId')">
+                    Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('employeeId')">
+                    Employee ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('employeeName')">
+                    Employee Name <i class="fas" [ngClass]="getSortIcon('employeeName')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('department')">
+                    Department <i class="fas" [ngClass]="getSortIcon('department')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('amount')">
+                    Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('status')">
+                    Status <i class="fas" [ngClass]="getSortIcon('status')"></i>
+                  </th>
+                  <th class="sortable" (click)="setSort('requestDate')">
+                    Date <i class="fas" [ngClass]="getSortIcon('requestDate')"></i>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of dashboardLoanRows; let i = index">
+                  <td class="sn">{{ i + 1 }}</td>
+                  <td class="loan-id">{{ row.displayId }}</td>
+                  <td class="employee-id">{{ row.employeeId }}</td>
+                  <td class="employee-name">{{ row.fullName }}</td>
+                  <td class="department">{{ row.departmentDisplay }}</td>
+                  <td class="amount">{{ formatCurrency(row.loan.amount) }}</td>
+                  <td class="status-cell">
+                    <span class="status-badge" [ngClass]="row.statusClass">
+                      {{ row.statusLabel }}
+                    </span>
+                  </td>
+                  <td class="date">{{ row.loan.requestDate | date:'mediumDate' }}</td>
+                  <td class="actions">
+                    <button class="action-btn view" (click)="viewLoanDetails(row.loan.id)" title="View Details">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn history" (click)="seeLoanHistory(row.loan.employeeId)" title="View History">
+                      <i class="fas fa-history"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" *ngIf="!isLoading && dashboardLoanRows.length === 0 && isDataLoaded">
+            <i class="fas fa-inbox"></i>
+            <p>No loan applications found</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Command Center + Repayment Updates -->
+      <div class="right-column">
+        
+        <!-- Command Center -->
+        <div class="command-center">
+          <div class="command-header">
+            <i class="fas fa-terminal"></i>
+            <h2>Admin Tools</h2>
+          </div>
+
+          <button class="command-btn" (click)="manageEmployeeAdvanceLoans()">
+            <i class="fas fa-clipboard-list"></i>
+            <div class="btn-text">
+              <strong>Manage Loans</strong>
+              <span>Review and approve applications</span>
+            </div>
+            <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="dashboardStats.pendingApplications > 0">{{ dashboardStats.pendingApplications }}</span>
+          </button>
+
+          <button class="command-btn" (click)="openPurposeManagement()">
+            <i class="fas fa-tags"></i>
+            <div class="btn-text">
+              <strong>Manage Loan Purposes</strong>
+              <span>Create or edit loan purposes</span>
+            </div>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+
+          <button class="command-btn" (click)="openGracePeriodRequests()">
+            <i class="fas fa-hourglass-half"></i>
+            <div class="btn-text">
+              <strong>Manage Extension Requests</strong>
+              <span>Review extension requests</span>
+            </div>
+            <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="pendingExtensionRequestsCount > 0">{{ pendingExtensionRequestsCount }}</span>
+          </button>
+
+          <button class="command-btn" (click)="openDisbursementCenter()">
+            <i class="fas fa-wallet"></i>
+            <div class="btn-text">
+              <strong>Disburse Loans</strong>
+              <span>Release approved funds</span>
+            </div>
+            <i class="fas fa-chevron-right"></i>
+            <span class="rounded-badge" *ngIf="approvedLoansCount > 0">{{ approvedLoansCount }}</span>
+          </button>
+
+          <button class="command-btn" (click)="generateReports()">
+            <i class="fas fa-chart-area"></i>
+            <div class="btn-text">
+              <strong>Generate Reports</strong>
+              <span>Export loan data</span>
+            </div>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+
+        <!-- Repayment Updates -->
+        <div class="recent-activity">
+          <div class="activity-header">
+            <i class="fas fa-credit-card"></i>
+            <h3>Repayment Updates</h3>
+            <span class="badge">{{ recentActivities.length }}</span>
+          </div>
+
+          <div class="activity-list" *ngIf="recentActivities.length > 0; else noActivity">
+            <div class="activity-item" *ngFor="let activity of recentActivities" [ngClass]="getActivityLevelClass(activity.level)">
+              <div class="activity-icon">
+                <i class="fas" [ngClass]="getActivityIcon(activity.type)"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-message">{{ activity.message }}</p>
+                <div class="activity-meta">
+                  <span>{{ getActivityRelativeTime(activity.occurredAt) }}</span>
+                  <span class="dot">•</span>
+                  <span>{{ activity.loanId }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noActivity>
+            <div class="empty-activity">
+              <i class="fas fa-check-circle"></i>
+              <p>No recent repayment updates</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

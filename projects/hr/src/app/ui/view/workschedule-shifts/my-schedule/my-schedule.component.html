@@ -1,0 +1,213 @@
+<div class="calendar-container">
+
+  <!-- TOGGLE -->
+  <div class="view-toggle">
+    <button [class.active]="viewMode === 'calendar'" (click)="setView('calendar')">
+      <i class="fa-solid fa-calendar"></i> Calendar
+    </button>
+
+    <button [class.active]="viewMode === 'table'" (click)="setView('table')">
+      <i class="fa-solid fa-table"></i> Table
+    </button>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div *ngIf="viewMode === 'calendar'" class="calendar-card">
+
+    <!-- HEADER -->
+    <div class="calendar-header">
+      <button class="nav-btn" (click)="prevMonth()">‹</button>
+      <span class="month-label">{{ monthLabel }}</span>
+      <button class="nav-btn" (click)="nextMonth()">›</button>
+    </div>
+
+    <!-- WEEKDAYS -->
+    <div class="weekday-row">
+      <div class="weekday-cell" *ngFor="let d of ['Sun','Mon','Tues','Wed','Thur','Fri','Sat']">
+        {{ d }}
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="calendar-grid">
+      <div
+        class="calendar-cell"
+        *ngFor="let day of calendarDays"
+        [class.other-month]="!day.inMonth"
+        [class.selected]="formatDateLocal(day.date) === selectedDate"
+        [class.has-schedule]="hasSchedule(day.date)"
+        (click)="selectDate(day)"
+      >
+        <span class="date-number">
+          {{ day.date.getDate() }}
+        </span>
+
+      <div
+        class="calendar-dots"
+        *ngIf="getDayShiftColors(day.date).length > 0"
+      >
+        <span
+          *ngFor="let color of getDayShiftColors(day.date)"
+          class="calendar-dot"
+          [style.background]="color"
+        ></span>
+      </div>
+      </div>
+    </div>
+
+        <!-- DAY DETAILS -->
+    <div class="day-detail">
+
+      <div class="day-detail-header">
+        <span class="day-label">{{ selectedDateLabel }}</span>
+      </div>
+
+      <!--<div *ngIf="hasConflict(selectedDate)" class="conflict-warning">
+        ⚠ You have overlapping shifts!
+      </div>-->
+
+      <div class="my-conflict-card" [class.has-conflict]="hasConflict(selectedDate)">
+        <div class="my-card-header">
+          <i class="fa-solid"
+            [class.fa-triangle-exclamation]="hasConflict(selectedDate)"
+            [class.fa-calendar-check]="!hasConflict(selectedDate)"> 
+            >
+          </i>
+          <span>{{ hasConflict(selectedDate) ? 'You have overlapping shifts' : 'Shift conflicts' }}</span>
+        </div>
+
+        <!-- All clear -->
+        <div *ngIf="!hasConflict(selectedDate)" class="clear-body">
+          <div class="check-ring">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <span>No overlapping shifts on this day.</span>
+        </div>
+
+        <!-- Conflict pairs -->
+        <div *ngIf="hasConflict(selectedDate)" class="conflict-body">
+          <div *ngFor="let pair of conflictingShiftPairs" class="conflict-pair">
+            <span class="pair-label">Overlap detected</span>
+            <div class="shift-pill-row">
+              <span class="shift-pill">
+                <i class="fa-regular fa-clock"></i>
+                {{ pair.a.name }} · {{ pair.a.startTime }} – {{ pair.a.endTime }}
+              </span>
+              <span class="vs-dot">vs</span>
+              <span class="shift-pill">
+                <i class="fa-regular fa-clock"></i>
+                {{ pair.b.name }} · {{ pair.b.startTime }} – {{ pair.b.endTime }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <div *ngIf="hasConflict(selectedDate)" class="conflict-footer">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Contact your manager to resolve this conflict</span>
+        </div>
+      </div>
+
+      <div *ngIf="shiftsForSelectedDate.length === 0" class="empty-card">
+        No shifts scheduled for this day...
+      </div>
+
+      <div *ngFor="let item of shiftsForSelectedDate" class="shift-card">
+        <strong>{{ item.shift?.name }}</strong>
+        <div>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</div>
+        <div>{{ item.project }}</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  </div>
+
+  <!-- TABLE VIEW -->
+   <div *ngIf="viewMode === 'table'" class="table-view">
+
+  <!-- DATE SELECT -->
+  <div class="top-bar">
+    <div>
+      <label>Select Date:</label>
+      <input
+        type="date"
+        [value]="selectedDate"
+        (change)="onDateChange($event)"
+      />
+    </div>
+  </div>
+
+  <!-- CARD -->
+  <div class="schedule-card">
+
+    <h3 class="title">
+      My Shifts for {{ selectedDateLabel }}
+    </h3>
+
+    <table class="schedule-table" *ngIf="shiftsForSelectedDate.length > 0">
+      <thead>
+        <tr>
+          <th>Shift</th>
+          <th>Project</th>
+          <th>Time</th>
+          <th>Actual In/Out</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let item of shiftsForSelectedDate">
+          <td>{{ item.shift?.name }}</td>
+          <td>{{ item.project }}</td>
+          <td>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</td>
+          <td>–</td>
+          <td>
+            <span class="status scheduled">Scheduled</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="shiftsForSelectedDate.length === 0" class="empty">
+      No shifts scheduled.
+    </div>
+
+  </div>
+
+</div>
+  <!--<div *ngIf="viewMode === 'table'">
+
+    <h4>{{ selectedDateLabel }}</h4>
+
+    <table *ngIf="shiftsForSelectedDate.length > 0">
+      <thead>
+        <tr>
+          <th>Shift</th>
+          <th>Time</th>
+          <th>Project</th>
+          <th>Conflict</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let item of shiftsForSelectedDate">
+          <td>{{ item.shift?.name }}</td>
+          <td>{{ item.shift?.startTime }} – {{ item.shift?.endTime }}</td>
+          <td>{{ item.project }}</td>
+          <td>
+            <span *ngIf="hasConflict(selectedDate)">⚠</span>
+            <span *ngIf="!hasConflict(selectedDate)">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="shiftsForSelectedDate.length === 0">
+      No shifts
+    </div>
+
+  </div>-->
+

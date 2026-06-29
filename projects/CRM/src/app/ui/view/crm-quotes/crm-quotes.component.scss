@@ -1,0 +1,146 @@
+@import '../_crm-shared';
+
+.quote-number {
+  font-family: monospace;
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.amount-cell {
+  font-weight: 600;
+  color: #2E6276;
+}
+
+// Full-page form layout
+.quote-form-page {
+  padding: 24px;
+  max-width: 1100px;
+}
+
+.quote-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.quote-form-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.quote-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.quote-section-card {
+  border-radius: 12px !important;
+  border: 1px solid #e8edf2 !important;
+  box-shadow: none !important;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    padding-bottom: 12px;
+  }
+
+  mat-card-title {
+    margin: 0 !important;
+    font-size: 11.5px !important;
+  }
+}
+
+// Line items table
+.line-items-table-wrap {
+  overflow-x: auto;
+}
+
+.line-items-table {
+  width: 100%;
+
+  th.mat-header-cell {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  td.mat-cell {
+    padding: 6px 8px;
+    vertical-align: middle;
+  }
+}
+
+.inline-field {
+  width: 200px;
+
+  .mat-form-field-wrapper {
+    padding-bottom: 0;
+  }
+}
+
+.inline-field-sm {
+  width: 100px;
+
+  .mat-form-field-wrapper {
+    padding-bottom: 0;
+  }
+}
+
+.line-total {
+  font-weight: 600;
+  color: #2E6276;
+  font-size: 13px;
+}
+
+.no-items-msg {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+// Totals display
+.totals-display {
+  max-width: 360px;
+  margin-left: auto;
+  border-top: 1px solid #e8edf2;
+  padding-top: 16px;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+
+  &.total-final {
+    border-top: 2px solid #2E6276;
+    margin-top: 8px;
+    padding-top: 8px;
+
+    .totals-label,
+    .totals-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2E6276;
+    }
+  }
+}
+
+.totals-label {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.totals-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2E6276;
+}

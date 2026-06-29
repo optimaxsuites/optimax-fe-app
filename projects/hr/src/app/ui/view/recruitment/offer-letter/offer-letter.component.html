@@ -1,0 +1,73 @@
+
+<div class="card table-item">
+    <div class="move-back">
+        <app-back-button (click)="goBack()"></app-back-button>
+    </div>
+
+    <div class="invite-main">
+        <div class="invite-header">
+            <div class="d-flex gap-4 my-2">
+                <div class="input-container-50">
+                    <label for="name"><strong>Name:</strong> </label>
+                    <span>  {{candidate.candidateName}}</span>
+                    <!-- <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" disabled> -->
+                </div>
+                <div class="input-container-50">
+                    <label for="phone-number"><strong>Phone Number:</strong> </label>
+                    <span>  {{candidate.contactNo}}</span>
+
+                    <!-- <input type="text" id="phone-number" name="phone-number" [(ngModel)]="candidate.contactNo" class="editInput" disabled appNumberOnly> -->
+                </div>
+            </div>
+            <div class="d-flex gap-4 my-2">
+                <div class="input-container-50">
+                    <label for="email"><strong>Email:</strong></label>
+                    <span>  {{candidate.email}}</span>
+
+                    <!-- <input type="text" id="email" name="email" [(ngModel)]="candidate.email" class="editInput" disabled> -->
+                </div>
+                <div class="input-container-50">
+                    <label for="position"><strong>Position:</strong></label>
+                    <span>  {{candidate.position}}</span>
+
+                    <!-- <input type="" id="position" name="position" [(ngModel)]="candidate.position" class="editInput" disabled appNumberOnly> -->
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <div class="invite-template-wrapper">
+                    <label><strong>Template</strong></label>
+                    <div class="invite-template">
+                        <div class="template-card" *ngFor="let template of templates; let i = index" (click)="setTemplate(i)" [ngClass]="{'active': activeTemplateIndex === i}" >{{ getTemplateName(i) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-container-50">
+                <label for="interviewSubject"><strong>Offer Letter Subject</strong></label>
+                <input type="" id="interviewSubject" name="interviewSubject" [(ngModel)]="offerSubject" class="editInput" >
+
+                <div class="add-attachment mt-4">
+                    <!-- File upload input -->
+                    <input type="file" class="editInput" (change)="onFileSelected($event)" />
+
+                    <!-- Display attachments -->
+                    <div *ngIf="attachments?.length">
+                        <h4><strong>Attachement(s)</strong></h4>
+                            <span *ngFor="let attachment of attachments">
+                                <a [href]="attachment.url" target="_blank">{{ attachment.name }}</a><br>
+                            </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="invite-template-wrapper">
+            <label><strong>Offer Letter</strong></label>
+            <!-- <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)"></textarea> -->
+            <p-editor [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)" [style]="{ height: '400px' }" />
+        </div>
+        <div class="btn-wrapper">
+            <app-button text="Send Offer" class="btn-save" (click)="handleSendOffer()" ></app-button>
+        </div>
+    </div>
+</div>

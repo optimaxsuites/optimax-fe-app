@@ -1,0 +1,16 @@
+.ai-output-panel {
+  border-color: rgba(46, 98, 118, 0.2);
+  background: var(--color-background-primary);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover:not(.expanded) {
+    border-color: rgba(46, 98, 118, 0.35);
+  }
+
+  &.expanded {
+    cursor: default;
+    border-color: rgba(46, 98, 118, 0.3);
+    box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.06);
+  }
+}

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "erp-sales": {
+    "ERP-FE": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -22,9 +22,14 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/erp-sales",
+            "allowedCommonJsDependencies": [
+              "apexcharts",
+              "@canvasjs/angular-charts",
+              "@canvasjs/charts"
+            ],
+            "outputPath": "dist/erp-fe",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -33,30 +38,45 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
+              "src/favicon.ico",
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
+              "node_modules/ngx-toastr/toastr.css",
+              "node_modules/primeng/resources/themes/saga-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeicons/primeicons.css"
+            ],
+            "scripts": [
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+              "node_modules/apexcharts/dist/apexcharts.min.js"
             ]
           },
           "configurations": {
             "production": {
+              "optimization": {
+                "fonts": {
+                  "inline": false
+                }
+              },
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "5000kB",
-                  "maximumError": "10MB"
+                  "maximumWarning": "15mb",
+                  "maximumError": "20mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "40kB",
-                  "maximumError": "80kB"
+                  "maximumWarning": "5mb",
+                  "maximumError": "10mb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -67,22 +87,25 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "erp-sales:build:production"
+              "buildTarget": "ERP-FE:build:production"
             },
             "development": {
-              "buildTarget": "erp-sales:build:development"
+              "buildTarget": "ERP-FE:build:development"
             }
           },
           "defaultConfiguration": "development"
         },
         "extract-i18n": {
-          "builder": "@angular/build:extract-i18n"
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "buildTarget": "ERP-FE:build"
+          }
         },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "polyfills": [
               "zone.js",
@@ -91,17 +114,26 @@
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
+              "src/favicon.ico",
+              "src/assets",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest",
+              "src/manifest.webmanifest"
             ],
             "styles": [
-              "src/styles.scss"
-            ]
+              "@angular/material/prebuilt-themes/purple-green.css",
+              "src/styles.scss",
+              "node_modules/@fullcalendar/core/main.css",
+              "node_modules/@fullcalendar/daygrid/main.css"
+            ],
+            "scripts": []
           }
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

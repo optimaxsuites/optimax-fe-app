@@ -1,0 +1,520 @@
+<!-- 
+<p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast></p-toast>
+
+<div *ngIf="showCandidate">
+  <div class="card">
+    <br>
+    <div class="flex w-full justify-between ps-3 table-item">
+      <div class="w-1/1">
+        <ng-select 
+          [items]="positions || []"
+          class="input-container-100"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedPositions"
+          (ngModelChange)="filterCandidatesByPosition()">
+        </ng-select>
+      </div>
+
+      <div class="search-bar w-[90%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          class="editInput h-[36px]"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+        />
+      </div>
+    </div>
+
+    <app-table 
+      [columns]="candidateColumns" 
+      [rows]="filteredCandidates" 
+      [actions]="candidateActions"
+      [paginator]="true" 
+      [rowsPerPage]="15"
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [emptyMessage]="'No candidate(s) application yet.'"
+      (actionClick)="handleCandidateAction($event)"
+      >
+    </app-table>
+  </div>
+</div>
+
+
+<div *ngIf="showInterviewInvite">
+  <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
+</div>
+
+
+
+<app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.candidateName + ' Information'"
+  [title]="'Close'"
+  (close)="closeViewModal()">
+  
+  <div class="view-wrapper p-4">
+    // Section for Predefined Fields
+    <div class="predefined-section">
+      <h3 class="section-title">Basic Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label><strong>Name:</strong></label>
+          <span> {{ activeItem.candidateName || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label><strong>Email:</strong></label>
+          <span> {{ activeItem.email || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label><strong>Position:</strong></label>
+          <span> {{ activeItem.position || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label><strong>Date Applied:</strong></label>
+          <span> {{ activeItem.dateApplied || 'N/A' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    // Section for Dynamic Fields
+    <div class="dynamic-section">
+      <h3 class="section-title">Additional Information</h3>
+      <div *ngFor="let key of getDynamicKeys()" class="info-item mb-4">
+        <label><strong>{{ key | splitAndTitleCase }}:</strong></label>
+
+        // Check if value is a document
+        <span *ngIf="isDocument(activeItem[key]); else textValue">
+          <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
+          <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}" class="file-link ms-2">Download</a>
+        </span>
+        
+       // Non-file Values
+        <ng-template #textValue>
+          <span> {{ activeItem[key] }}</span>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</app-modal> -->
+
+
+<div class="p-6 bg-gray-50 rounded-lg min-h-[80vh]">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-700">
+      <span (click)="viewState = 'job-grid'; selectedJob = null; selectedCandidate = null" class="cursor-pointer hover:text-customBlue">Recruitment</span>
+      <span (click)="viewState = 'applicant-list'; selectedCandidate = null; refreshFilteredApplicants()" *ngIf="selectedJob" class="cursor-pointer hover:text-customBlue"> / {{ selectedJob?.title }}</span>
+      <span *ngIf="selectedCandidate" class="cursor-pointer hover:text-customBlue"> / {{ selectedCandidate?.firstname }} {{ selectedCandidate?.lastname }}</span>
+
+    </h2>
+  </div>
+
+  <div *ngIf="viewState === 'job-grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let job of groupedJobs" 
+         (click)="selectJob(job)"
+         class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all cursor-pointer group">
+      
+      <div class="flex justify-between items-start mb-4">
+        <div class="p-3 bg-blue-50 rounded-lg text-customBlue group-hover:bg-customBlue group-hover:text-white transition-colors">
+          <i class="pi pi-briefcase text-xl"></i>
+        </div>
+        <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">Active</span>
+      </div>
+
+      <h3 class="text-lg font-bold text-gray-800 mb-1">{{ job.title }}</h3>
+      <p class="text-gray-500 text-sm mb-4">{{ job.category }} • {{ job.location }}</p>
+
+      <div class="flex items-center justify-between border-t pt-4">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-gray-700">{{ job.applicants.length }}</p>
+          <p class="text-sm text-gray-400 uppercase">Total</p>
+        </div>
+        <!-- <div class="text-center border-x px-6">
+          <p class="text-2xl font-bold text-customBlue">3</p> <p class="text-xs text-gray-400 uppercase">New</p>
+        </div> -->
+        <button class="text-customBlue hover:underline text-sm font-semibold">View All</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="viewState === 'applicant-list'" class="animate-fade-in">
+    <app-table 
+      [columns]="applicantColumns" 
+      [rows]="filteredApplicants" 
+      [actions]="applicantActions"
+      (actionClick)="handleCandidateAction($event)">
+    </app-table>
+  </div>
+
+    <div *ngIf="viewState === 'applicant-view'" class="animate-fade-in">
+
+
+  <!-- Right: Candidate Detail -->
+  <div class="candidate-detail" *ngIf="selectedCandidate; else noSelection">
+
+    <!-- Detail Header -->
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div class="detail-avatar">{{ getInitials(selectedCandidate) }}</div>
+        <div>
+          <h2 class="detail-name">{{ selectedCandidate.fullName }}</h2>
+          <p class="detail-meta">
+            <span>{{ selectedCandidate.email }}</span>
+            <span class="meta-dot">·</span>
+            <span>{{ selectedCandidate.phone }}</span>
+            <span class="meta-dot">·</span>
+            <span>Applied {{ selectedCandidate.appliedDate }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--invite" 
+          [disabled]="isInterviewInviteSent(selectedCandidate)" 
+          (click)="onActionSelected('Interview Invite')">
+          <i class="fas fa-calendar-check"></i> Interview Invite
+        </button>
+
+        <button class="action-btn action-btn--reject" 
+          (click)="onActionSelected('Rejection')">
+          <i class="fas fa-xmark"></i> Reject
+        </button>
+
+        <p-button 
+          icon="pi pi-ellipsis-v" 
+          [text]="true" 
+          [rounded]="true" 
+           class="btn-navigate"
+          severity="secondary"
+          (click)="menu.toggle($event)"
+          pTooltip="More Actions"
+          tooltipPosition="bottom">
+        </p-button>
+
+        <p-menu 
+          #menu 
+          [model]="getFilteredActionItems()" 
+          [popup]="true" 
+          styleClass="payroll-menu"
+          appendTo="body">
+        </p-menu>
+      </div>
+    </div>
+
+    <!-- Detail Body Tabs -->
+    <div class="detail-tabs">
+      <button
+        *ngFor="let tab of tabs"
+        class="tab-btn"
+        [class.tab-btn--active]="activeTab === tab.key"
+        (click)="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="detail-body">
+
+      <!-- Tab: Form Response -->
+      <div *ngIf="activeTab === 'form'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Application Responses</div>
+          <div class="response-grid">
+            <div class="response-item" *ngFor="let field of selectedCandidate.formResponses">
+              <span class="response-label">{{ field.label }}</span>
+              <span class="response-value">{{ field.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Documents -->
+      <div *ngIf="activeTab === 'documents'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Submitted Documents</div>
+          <div class="document-list">
+            <div class="document-row" *ngFor="let doc of selectedCandidate.documents">
+              <div class="document-row__icon">
+                <i class="fas fa-file-pdf" *ngIf="doc.type === 'pdf'"></i>
+                <i class="fas fa-file-word" *ngIf="doc.type === 'docx'"></i>
+                <i class="fas fa-file" *ngIf="doc.type !== 'pdf' && doc.type !== 'docx'"></i>
+              </div>
+              <div class="document-row__info">
+                <span class="document-name">{{ doc.name }}</span>
+                <span class="document-meta">{{ doc.size }} · Uploaded {{ doc.uploadedDate }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button class="doc-download-btn" (click)="openDocumentPreview(doc)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="doc-download-btn" (click)="downloadDocument(doc)">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="!selectedCandidate.documents || selectedCandidate.documents.length === 0" class="list-empty">
+              No documents submitted
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activeTab === 'scoresheets'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__title">Interview Score Sheets</div>
+          <div *ngIf="getSubmittedScoreSheets(selectedCandidate?.id).length; else noScoreSheets" class="document-list">
+            <div class="document-row" *ngFor="let scoreSheet of getSubmittedScoreSheets(selectedCandidate?.id)">
+              <div class="document-row__icon">
+                <i class="fas fa-clipboard-check"></i>
+              </div>
+              <div class="document-row__info">
+                <span class="document-name">{{ scoreSheet.criteria?.title || 'Score Sheet' }}</span>
+                <span class="document-meta">
+                  Interview {{ scoreSheet.interviewStage || 1 }} · {{ scoreSheet.interviewerName || scoreSheet.interviewerEmail || 'Interviewer' }} · {{ scoreSheet.requestDate | date:'medium' }}
+                </span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="assignment-row__status assignment-row__status--submitted">{{ scoreSheet.totalScore || 0 | number:'1.1-1' }}</span>
+                <button class="doc-download-btn" (click)="openScoreSheetPreview(scoreSheet)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <ng-template #noScoreSheets>
+            <div class="list-empty">No interview score sheets submitted yet.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Tab: AI Vetting -->
+      <div *ngIf="activeTab === 'ai'" class="tab-panel">
+        <div class="section-block">
+          <div class="section-block__header">
+            <span class="section-block__title">AI Vetting Analysis</span>
+            <button class="rerun-btn" (click)="runAiVetting(selectedCandidate)">
+              <i class="fas fa-rotate-right"></i> Re-run Analysis
+            </button>
+          </div>
+
+          <div *ngIf="selectedCandidate.aiVetting as ai">
+
+            <!-- Score Bar -->
+            <div class="ai-score-row">
+              <div class="ai-score-card">
+                <span class="ai-score-label">Overall Score</span>
+                <span class="ai-score-value" [ngClass]="getScoreClass(ai.overallScore)">
+                  {{ ai.overallScore }}<span class="ai-score-max">/100</span>
+                </span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Skills Match</span>
+                <span class="ai-score-value">{{ ai.skillsMatch }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Experience Fit</span>
+                <span class="ai-score-value">{{ ai.experienceFit }}%</span>
+              </div>
+              <div class="ai-score-card">
+                <span class="ai-score-label">Recommendation</span>
+                <span class="ai-recommendation ai-recommendation--{{ ai.recommendation | lowercase }}">
+                  {{ ai.recommendation }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Strengths -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-circle-check"></i> Strengths
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let s of ai.strengths">{{ s }}</li>
+              </ul>
+            </div>
+
+            <!-- Concerns -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title ai-subsection__title--warn">
+                <i class="fas fa-triangle-exclamation"></i> Concerns
+              </div>
+              <ul class="ai-list">
+                <li *ngFor="let c of ai.concerns">{{ c }}</li>
+              </ul>
+            </div>
+
+            <!-- Summary -->
+            <div class="ai-subsection">
+              <div class="ai-subsection__title">
+                <i class="fas fa-robot"></i> AI Summary
+              </div>
+              <p class="ai-summary">{{ ai.summary }}</p>
+            </div>
+
+          </div>
+
+          <div *ngIf="!selectedCandidate.aiVetting" class="ai-empty">
+            <i class="fas fa-robot ai-empty__icon"></i>
+            <span>No AI analysis yet.</span>
+            <button class="rerun-btn" (click)="runAiVetting(selectedCandidate)">
+              Run Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Decision History -->
+      <div *ngIf="activeTab === 'decisionHistory'" class="tab-panel">
+        <!-- <div class="section-block">
+          <div class="section-block__title">Decision History</div> -->
+          <div class="timeline" *ngIf="selectedCandidate.decisionHistory && selectedCandidate.decisionHistory.length > 0">
+            <div class="timeline-item" *ngFor="let item of selectedCandidate.decisionHistory; let i = index">
+              <div class="timeline-marker">
+                <i class="fas" [ngClass]="getTimelineIcon(item.action)"></i>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-action">{{ item.action }}</span>
+                  <span class="timeline-date">{{ item.date | date:'medium' }}</span>
+                </div>
+                <div class="timeline-details" *ngIf="item.details">{{ item.details }}</div>
+                <div class="timeline-email" *ngIf="item.emailCopy">
+                  <button class="email-toggle-btn" (click)="toggleEmailView(i)">
+                    <i class="fas" [ngClass]="expandedEmails[i] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    View Email Copy
+                  </button>
+                  <div class="email-content" *ngIf="expandedEmails[i]" [innerHTML]="item.emailCopy"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!selectedCandidate.decisionHistory || selectedCandidate.decisionHistory.length === 0" class="list-empty">
+            No decision history available
+          </div>
+        <!-- </div>
+      </div> -->
+</div>
+    </div>
+  </div>
+
+  <!-- No selection state -->
+  <ng-template #noSelection>
+    <div class="no-selection">
+      <i class="fas fa-user-group no-selection__icon"></i>
+      <span>Select a candidate to view details</span>
+    </div>
+  </ng-template>
+
+  </div>
+</div>
+
+<app-invite-modal
+  *ngIf="showInviteModal"
+  [visible]="showInviteModal"
+  [header]="'Interview Invitation for ' + selectedCandidate?.fullName"
+  [candidate]="selectedCandidate"
+  [currentAction]="currentAction"
+  (close)="showInviteModal = false"
+  (inviteSent)="refreshCandidateData()">
+</app-invite-modal>
+
+<app-large-side-modal
+  *ngIf="showDocumentPreview"
+  [title]="'Close'"
+  (close)="closeDocumentPreview()">
+  <div class="candidate-detail" *ngIf="selectedDocument as doc">
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div>
+          <h2 class="detail-name">{{ doc.name }}</h2>
+          <p class="detail-meta">
+            <span>{{ doc.size }}</span>
+            <span class="meta-dot">·</span>
+            <span>Uploaded {{ doc.uploadedDate }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="detail-header__actions">
+        <button class="action-btn action-btn--shortlisted" (click)="downloadDocument(doc)">
+          <i class="fas fa-arrow-down"></i> Download
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="section-block" *ngIf="!documentPreviewUnsupported && documentPreviewUrl; else unsupportedDocumentPreview">
+        <iframe
+          [src]="documentPreviewUrl"
+          title="Document Preview"
+          style="width: 100%; min-height: 70vh; border: 0; border-radius: 12px;">
+        </iframe>
+      </div>
+      <ng-template #unsupportedDocumentPreview>
+        <div class="section-block">
+          <div class="section-block__title">Preview Unavailable</div>
+          <div class="list-empty">This file type cannot be previewed in-app yet. Download it to view the contents.</div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</app-large-side-modal>
+
+<app-large-side-modal
+  *ngIf="showScoreSheetPreview"
+  [title]="'Close'"
+  (close)="closeScoreSheetPreview()">
+  <div class="candidate-detail" *ngIf="selectedScoreSheet as scoreSheet">
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div>
+          <h2 class="detail-name">{{ scoreSheet.criteria?.title || 'Score Sheet' }}</h2>
+          <p class="detail-meta">
+            <span>Interview {{ scoreSheet.interviewStage || 1 }}</span>
+            <span class="meta-dot">·</span>
+            <span>{{ scoreSheet.requestDate | date:'medium' }}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <div class="section-block">
+        <div class="section-block__title">Submission Summary</div>
+        <div class="response-grid">
+          <div class="response-item">
+            <span class="response-label">Interviewer</span>
+            <span class="response-value">{{ scoreSheet.interviewerName || scoreSheet.interviewerEmail || 'Interviewer' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Role</span>
+            <span class="response-value">{{ scoreSheet.interviewerRole || 'Interviewer' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Total Score</span>
+            <span class="response-value">{{ scoreSheet.totalScore || 0 | number:'1.1-1' }}</span>
+          </div>
+          <div class="response-item">
+            <span class="response-label">Submitted</span>
+            <span class="response-value">{{ scoreSheet.requestDate | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block mt-4">
+        <div class="section-block__title">Question Breakdown</div>
+        <div class="response-grid">
+          <div class="response-item" *ngFor="let question of scoreSheet.criteria?.questions || []">
+            <span class="response-label">{{ question.text }}</span>
+            <span class="response-value">{{ question.score || 0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-large-side-modal>
+

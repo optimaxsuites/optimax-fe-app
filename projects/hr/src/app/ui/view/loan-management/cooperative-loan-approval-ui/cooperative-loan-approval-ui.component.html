@@ -1,0 +1,298 @@
+<div class="coop-approval-container" data-component="coop-approval">
+  <div class="inline-messages" *ngIf="messages.length > 0">
+    <div class="inline-message" *ngFor="let message of messages" [class.error]="message.severity === 'error'" [class.success]="message.severity === 'success'">
+      <strong>{{ message.summary }}</strong>
+      <span>{{ message.detail }}</span>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Loading cooperative loan applications…</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <header class="page-header">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-title">
+          <h1><i class="fas fa-clipboard-list"></i> Cooperative Loan Applications</h1>
+          <p>Review and manage cooperative loan applications</p>
+        </div>
+      </div>
+      <button class="refresh-btn" type="button" (click)="loadData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+          <div class="stat-icon pending-icon"><i class="fas fa-hourglass-half"></i></div>
+          <div class="stat-content">
+            <div class="stat-value">{{ pendingCount }}</div>
+            <div class="stat-label">Pending</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon approved-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-content">
+            <div class="stat-value">{{ approvedCount }}</div>
+            <div class="stat-label">Approved</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon active-icon"><i class="fas fa-exchange-alt"></i></div>
+          <div class="stat-content">
+            <div class="stat-value">{{ activeCount }}</div>
+            <div class="stat-label">Active</div>
+          </div>
+        </div>
+
+        <div class="stat-card total-balance-card">
+          <div class="stat-icon balance-icon"><i class="fas fa-scale-balanced"></i></div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(totalActiveLoanBalance) }}</div>
+            <div class="stat-label">Total Balance of Active Loans</div>
+          </div>
+        </div>
+    </div>
+
+    <div class="filters-wrapper">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchTermChange($event)"
+            placeholder="Search by member, group, or loan ID...">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="groupFilter">Group</label>
+        <select id="groupFilter" [(ngModel)]="filters.groupId" (ngModelChange)="applyFilters()">
+          <option value="">All Groups</option>
+          <option *ngFor="let g of groups" [value]="g.id">{{ g.name }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="statusFilter">Status</label>
+        <select id="statusFilter" [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="READY_FOR_DISBURSEMENT">Ready for Disbursement</option>
+          <option value="ACTIVE">Active</option>
+          <option value="OVERDUE">Overdue</option>
+          <option value="PAUSED">Paused</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="DEFAULTED">Defaulted</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="stageFilter">Approval Stage</label>
+        <select id="stageFilter" [(ngModel)]="filters.stage" (ngModelChange)="applyFilters()">
+          <option value="">All Stages</option>
+          <option value="PENDING_GUARANTOR_APPROVAL">Awaiting Guarantors</option>
+          <option value="READY_FOR_ADMIN_REVIEW">Ready for Review</option>
+        </select>
+      </div>
+
+      <div class="filter-group date-group">
+        <label for="dateFromFilter">Date From</label>
+        <input type="date" id="dateFromFilter" [(ngModel)]="filters.dateFrom" (ngModelChange)="applyFilters()">
+      </div>
+
+      <div class="filter-group date-group">
+        <label for="dateToFilter">Date To</label>
+        <input type="date" id="dateToFilter" [(ngModel)]="filters.dateTo" (ngModelChange)="applyFilters()">
+      </div>
+
+      <button class="reset-btn" type="button" (click)="resetFilters()">
+        <i class="fas fa-undo-alt"></i> Reset
+      </button>
+    </div>
+
+    <div class="results-info">
+      <span>Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredLoans.length }} applications</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="advance-loans-table" *ngIf="paginatedLoans.length > 0">
+        <thead>
+          <tr>
+            <th class="sortable" (click)="setSort('sn')">S/N <i class="fas" [ngClass]="getSortIcon('sn')"></i></th>
+            <th class="sortable" (click)="setSort('loanCode')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanCode')"></i></th>
+            <th class="sortable" (click)="setSort('memberName')">Member <i class="fas" [ngClass]="getSortIcon('memberName')"></i></th>
+            <th>Member ID</th>
+            <th>Membership ID</th>
+            <th class="sortable" (click)="setSort('groupName')">Group <i class="fas" [ngClass]="getSortIcon('groupName')"></i></th>
+            <th class="sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
+            <th>Duration</th>
+            <th>Purpose</th>
+            <th>Interest</th>
+            <th>Total Repayable</th>
+            <th class="sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+            <th class="sortable" (click)="setSort('applicationDate')">Date Submitted <i class="fas" [ngClass]="getSortIcon('applicationDate')"></i></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of paginatedLoans; let i = index">
+            <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+            <td class="loan-id-cell">{{ row.loanCode }}</td>
+            <td class="employee-name-cell">{{ row.memberName }}</td>
+            <td>{{ getMemberIdentifier(row.loan) }}</td>
+            <td>{{ getMembershipId(row.loan) }}</td>
+            <td>{{ row.groupName }}</td>
+            <td>{{ formatCurrency(row.amount) }}</td>
+            <td>{{ row.loan.repaymentTime || row.loan.duration || '—' }} mo.</td>
+            <td class="purpose-cell">{{ row.purposeDisplay }}</td>
+            <td>{{ row.groupInterestRate }}</td>
+            <td>{{ formatCurrency(row.totalRepayable) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="row.statusClass">
+                {{ row.statusLabel }}
+              </span>
+            </td>
+            <td>{{ row.appliedOn | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button class="action-btn view-btn" type="button" (click)="viewLoanDetail(row.loan)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="action-btn history-btn" type="button" (click)="openCooperativeLoanHistory(row.loan)" title="View Member Loan History">
+                <i class="fas fa-history"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="paginatedLoans.length === 0">
+        <i class="fas fa-inbox"></i>
+        <p>No cooperative loan applications found matching your filters.</p>
+      </div>
+
+      <div class="pagination-bar">
+        <button class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Approval Modal -->
+<div class="modal-overlay" *ngIf="showApprovalModal" (click)="closeApprovalModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-check-circle"></i> Approve Cooperative Loan</h2>
+      <button class="close-btn" type="button" (click)="closeApprovalModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLoanForApproval as loan">
+      <div class="loan-summary">
+        <div class="summary-row"><span>Member:</span><strong>{{ getMemberName(loan) }}</strong></div>
+        <div class="summary-row"><span>Group:</span><strong>{{ getGroupName(loan) }}</strong></div>
+        <div class="summary-row"><span>Group Code:</span><strong>{{ getGroupCode(loan) }}</strong></div>
+        <div class="summary-row"><span>Group ID:</span><strong>{{ getGroupId(loan) }}</strong></div>
+        <div class="summary-row"><span>Member ID:</span><strong>{{ getMemberIdentifier(loan) }}</strong></div>
+        <div class="summary-row"><span>Membership ID:</span><strong>{{ getMembershipId(loan) }}</strong></div>
+        <div class="summary-row"><span>Loan Code:</span><strong>{{ loan.loanCode || loan.id }}</strong></div>
+        <div class="summary-row"><span>Amount Requested:</span><strong class="amount">{{ formatCurrency(loan.amount) }}</strong></div>
+        <div class="summary-row"><span>Duration:</span><strong>{{ loan.repaymentTime || loan.duration || '—' }} months</strong></div>
+        <div class="summary-row"><span>Purpose:</span><strong>{{ formatPurposeDisplay(loan.purpose) }}</strong></div>
+        <div class="summary-row"><span>Applied On:</span><strong>{{ (loan.applicationDate || loan.requestDate) | date:'mediumDate' }}</strong></div>
+      </div>
+
+      <div class="group-terms-block">
+        <h3 class="block-title"><i class="fas fa-layer-group"></i> Group Terms (read-only)</h3>
+        <p class="block-hint">These rates are set on the group. To change them, update the group's configuration.</p>
+        <div class="terms-grid">
+          <div class="term-item"><span class="term-label">Interest Rate</span><span class="term-value">{{ getGroupInterestRate(loan) }}</span></div>
+          <div class="term-item"><span class="term-label">Late Fee %</span><span class="term-value">{{ getGroupForLoan(loan)?.lateFeePercentage ?? 0 }}%</span></div>
+          <div class="term-item"><span class="term-label">Late Fee Grace</span><span class="term-value">{{ getGroupForLoan(loan)?.lateFeeGraceDays ?? 0 }} days</span></div>
+          <div class="term-item"><span class="term-label">Total Repayable</span><span class="term-value amount">{{ formatCurrency(getTotalRepayable(loan)) }}</span></div>
+        </div>
+      </div>
+
+      <div class="approval-form">
+        <h3 class="block-title"><i class="fas fa-sliders-h"></i> Approval Terms</h3>
+        <div class="form-group">
+          <label>Repayment Start Date <span class="required">*</span></label>
+          <input type="date" [(ngModel)]="approvalRepaymentStartDate" (ngModelChange)="onRepaymentStartDateChange($event)" [min]="getMinRepaymentDate()" class="form-input">
+          <div class="field-hint">Date the first repayment installment is due</div>
+        </div>
+        <div class="form-group">
+          <label>Repayment Day of Month <span class="required">*</span></label>
+          <select [(ngModel)]="approvalRepaymentDay" class="form-select">
+            <option *ngFor="let d of availableRepaymentDays" [value]="d">{{ d }}</option>
+          </select>
+          <div class="field-hint">Day of each month when payment is due for the selected start month</div>
+          <div class="field-hint" *ngIf="!repaymentDayWarning && approvalRepaymentStartDate">{{ getRepaymentDaySuggestion() }}</div>
+          <div class="field-hint error-text" *ngIf="repaymentDayWarning">{{ repaymentDayWarning }}</div>
+        </div>
+        <div class="form-group">
+          <label>Admin Notes (Optional)</label>
+          <textarea [(ngModel)]="approvalAdminComment" rows="3" placeholder="Add any comments or approval notes…" class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" type="button" (click)="closeApprovalModal()" [disabled]="isSubmitting">Cancel</button>
+      <button class="approve-btn" type="button" (click)="submitApproval()" [disabled]="isSubmitting">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+        <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Approving…' : 'Approve Loan' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-ban"></i> Reject Loan Application</h2>
+      <button class="close-btn" type="button" (click)="closeRejectModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLoanForRejection as loan">
+      <div class="loan-summary">
+        <div class="summary-row"><span>Member:</span><strong>{{ getMemberName(loan) }}</strong></div>
+        <div class="summary-row"><span>Group:</span><strong>{{ getGroupName(loan) }}</strong></div>
+        <div class="summary-row"><span>Group Code:</span><strong>{{ getGroupCode(loan) }}</strong></div>
+        <div class="summary-row"><span>Member ID:</span><strong>{{ getMemberIdentifier(loan) }}</strong></div>
+        <div class="summary-row"><span>Membership ID:</span><strong>{{ getMembershipId(loan) }}</strong></div>
+        <div class="summary-row"><span>Amount:</span><strong class="amount">{{ formatCurrency(loan.amount) }}</strong></div>
+        <div class="summary-row"><span>Purpose:</span><strong>{{ formatPurposeDisplay(loan.purpose) }}</strong></div>
+      </div>
+
+      <div class="form-group rejection-reason-group">
+        <label>Reason for Rejection <span class="required">*</span></label>
+        <textarea [(ngModel)]="rejectionReason" rows="4" placeholder="Please provide a detailed reason. This will be visible to the member." class="form-textarea"></textarea>
+        <div class="field-hint">This reason is stored on the loan record and shown to the member.</div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" type="button" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
+      <button class="reject-btn" type="button" (click)="confirmRejection()" [disabled]="isSubmitting">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSubmitting"></i>
+        <i class="fas fa-ban" *ngIf="!isSubmitting"></i>
+        {{ isSubmitting ? 'Rejecting…' : 'Reject Application' }}
+      </button>
+    </div>
+  </div>
+</div>

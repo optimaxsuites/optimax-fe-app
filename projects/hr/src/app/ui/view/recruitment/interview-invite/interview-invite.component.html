@@ -1,0 +1,97 @@
+<!-- <p-dialog  [header]="'Send ' + currentAction + ' Notification Mail'" [modal]="true" [style]="{width: 'auto', height: 'auto', 'max-width': '90vw','min-width': '50vw', 'max-height': '90vh', 'min-height': '35vh', overflow: 'auto'}" >
+  
+  <div class="flex flex-col justify-between" *ngIf="!isStepTwo">
+    <div>
+   <label class="block mb-2 font-semibold">Select a Template</label>
+    <p-dropdown [options]="templates" [(ngModel)]="selectedInviteTemplate" 
+                optionLabel="name" placeholder="Choose a template..."
+                styleClass="w-full mb-4">
+    </p-dropdown>
+    </div>
+ 
+    
+    <div class="flex justify-end items-end gap-2">
+      <button class="btn-secondary" (click)="close()">Cancel</button>
+      <button class="btn-primary" [disabled]="!selectedInviteTemplate" (click)="goToPreview()">Next</button>
+    </div>
+  </div>
+
+  <div *ngIf="isStepTwo">
+   
+
+    <div *ngIf="currentAction === 'Interview Invite'" class="mb-4 rounded border border-slate-200 p-4">
+     <div class="mb-4">
+  <h3 class="font-semibold mb-2">Required Information</h3>
+
+  <div class="grid grid-cols-2 gap-2 w-full">
+    <div *ngFor="let field of selectedInviteTemplate?.customPlaceholders">
+      <label class="block text-sm text-gray-600">
+        {{ field.label }}
+      </label>
+
+      <input
+        type="text"
+        [(ngModel)]="manualPlaceholderValues[field.key]"
+        (ngModelChange)="updateInterviewSetupFromPlaceholders()"
+        class="w-full p-2 border rounded"
+      />
+    </div>
+  </div>
+</div>
+
+      <h3 class="font-semibold mb-3">Interview Setup</h3>
+
+      <div class="mb-3">
+        <label class="block text-sm text-gray-600">Interview Notes</label>
+        <textarea [(ngModel)]="interviewInviteSetup.notes" rows="3" class="w-full p-2 border rounded" placeholder="Agenda, prep instructions, or panel notes"></textarea>
+      </div>
+
+      <div class="mb-2 flex items-center justify-between">
+        <h4 class="font-semibold">Interview Panel</h4>
+        <button type="button" class="btn-secondary" (click)="addPanelMember()" [disabled]="panelUsersLoading || !availablePanelUsers.length">Add Panel Member</button>
+      </div>
+      <p *ngIf="panelUsersLoading" class="text-sm text-slate-500 mb-2">Loading users for interview panel...</p>
+      <p *ngIf="!panelUsersLoading && !availablePanelUsers.length" class="text-sm text-red-500 mb-2">No users available for panel assignment yet.</p>
+      <div *ngFor="let member of interviewInviteSetup.panelMembers; let i = index" class="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.2fr_auto] gap-2 mb-2 items-end">
+        <div>
+          <label class="block text-sm text-gray-600">User</label>
+
+
+
+          <select
+            [(ngModel)]="member.id"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onPanelUserSelected(i, $event)"
+          >
+            <option value="">Select interviewer</option>
+            <option
+              *ngFor="let user of getPanelUserOptions(member.id)"
+              [value]="user.id"
+            >
+              {{ user.label }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Role</label>
+          <input type="text" [(ngModel)]="member.role" class="w-full p-2 border rounded" placeholder="Hiring Manager">
+        </div>
+
+        <button type="button" class="btn-secondary" (click)="removePanelMember(i)" [disabled]="interviewInviteSetup.panelMembers.length === 1">Remove</button>
+      </div>
+    </div>
+
+    <div class="preview-box p-4 bg-gray-50 rounded border">
+      <h4 class="font-bold border-b pb-1 mb-2">{{resolveFinalContent(selectedInviteTemplate?.subject || '')}}</h4>
+      <div class="text-wrap" [innerHTML]="resolveFinalContent(selectedInviteTemplate?.body || '')"></div>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <button class="btn-secondary" (click)="isStepTwo = false">Back</button>
+      <button class="btn-primary disabled:cursor-not-allowed disabled:bg-customBlueHover" (click)="sendFinalMail()" [disabled]="sendLoading">
+        <span *ngIf="!sendLoading">Send</span>
+        <span *ngIf="sendLoading">Sending...</span>
+      </button>
+    </div>
+  </div>
+</p-dialog> -->

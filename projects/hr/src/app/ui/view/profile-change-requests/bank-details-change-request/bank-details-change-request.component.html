@@ -1,0 +1,200 @@
+<div class="bank-details-change-container">
+  <form [formGroup]="bankDetailsForm" (ngSubmit)="submitRequest()" class="change-request-form">
+    <!-- Current Bank Details Section -->
+    <div class="form-section">
+      <h4 class="section-title">Current Bank Details</h4>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="currentBankName">Current Bank Name</label>
+          <input
+            type="text"
+            id="currentBankName"
+            formControlName="currentBankName"
+            class="form-control"
+            readonly
+            placeholder="Your current bank"
+          />
+          <small class="form-text" *ngIf="currentBankDetails?.bankName">
+            Currently registered: <strong>{{ currentBankDetails.bankName }}</strong>
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="currentAccountNumber">Current Account Number</label>
+          <input
+            type="text"
+            id="currentAccountNumber"
+            formControlName="currentAccountNumber"
+            class="form-control"
+            readonly
+            placeholder="Your current account number"
+          />
+          <small class="form-text" *ngIf="currentBankDetails?.accountNumber">
+            Currently registered: <strong>****{{ currentBankDetails.accountNumber?.slice(-4) }}</strong>
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Bank Details Section -->
+    <div class="form-section">
+      <h4 class="section-title">New Bank Details</h4>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newBankName">
+            <span class="required">*</span>
+            New Bank Name
+          </label>
+          <p-autoComplete
+            #autoComplete
+            formControlName="newBankName"
+            [suggestions]="filteredBanks"
+            field="name"
+            [dropdown]="true"
+            [forceSelection]="false"
+            placeholder="Select or search for a bank"
+            (completeMethod)="onBankSearch($event)"
+            class="w-100"
+            [styleClass]="'form-control p-input'"
+          >
+            <ng-template let-bank pTemplate="item">
+              <div class="bank-option">
+                <strong>{{ bank.name }}</strong>
+                <span class="bank-abbr">{{ bank.abbreviation }}</span>
+              </div>
+            </ng-template>
+          </p-autoComplete>
+          <small class="form-error" *ngIf="hasError('newBankName', 'required')">
+            Bank name is required
+          </small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newAccountNumber">
+            <span class="required">*</span>
+            New Account Number
+          </label>
+          <input
+            type="text"
+            id="newAccountNumber"
+            formControlName="newAccountNumber"
+            class="form-control"
+            placeholder="Enter your new 10-digit account number"
+            maxlength="10"
+            (blur)="validateAccountNumber('newAccountNumber')"
+            inputmode="numeric"
+          />
+          <small class="form-error" *ngIf="hasError('newAccountNumber', 'required')">
+            Account number is required
+          </small>
+          <small class="form-error" *ngIf="hasError('newAccountNumber', 'pattern')">
+            Account number must be 10 digits
+          </small>
+          <small class="form-hint">
+            <i class="fa-solid fa-info-circle"></i>
+            Nigerian bank account numbers are 10 digits
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmAccountNumber">
+            <span class="required">*</span>
+            Confirm Account Number
+          </label>
+          <input
+            type="text"
+            id="confirmAccountNumber"
+            formControlName="confirmAccountNumber"
+            class="form-control"
+            placeholder="Re-enter your new account number"
+            maxlength="10"
+            (blur)="validateAccountNumber('confirmAccountNumber')"
+            inputmode="numeric"
+          />
+          <small class="form-error" *ngIf="hasError('confirmAccountNumber', 'required')">
+            Please confirm the account number
+          </small>
+          <small class="form-error" *ngIf="hasError('confirmAccountNumber', 'pattern')">
+            Account number must be 10 digits
+          </small>
+          <small
+            class="form-error"
+            *ngIf="bankDetailsForm.hasError('accountMismatch') && bankDetailsForm.get('confirmAccountNumber')?.touched"
+          >
+            Account numbers do not match
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reason Section -->
+    <div class="form-section">
+      <h4 class="section-title">Reason for Change</h4>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="reason">
+            <span class="required">*</span>
+            Please provide a reason for this change
+          </label>
+          <textarea
+            id="reason"
+            formControlName="reason"
+            class="form-control"
+            placeholder="E.g., Account closure, switching to better bank rates, etc."
+            rows="4"
+            maxlength="500"
+          ></textarea>
+          <small class="form-hint">
+            Minimum 10 characters, Maximum 500 characters
+            ({{ bankDetailsForm.get('reason')?.value?.length || 0 }}/500)
+          </small>
+          <small class="form-error" *ngIf="hasError('reason', 'required')">
+            Reason is required
+          </small>
+          <small class="form-error" *ngIf="hasError('reason', 'minlength')">
+            Reason must be at least 10 characters long
+          </small>
+          <small class="form-error" *ngIf="hasError('reason', 'maxlength')">
+            Reason cannot exceed 500 characters
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+      <i class="fa-solid fa-lightbulb"></i>
+      <div>
+        <strong>Processing Information</strong>
+        <p>
+          Your bank details change request will be reviewed by HR. Ensure all details are correct before submitting.
+          Once approved, the changes will be effective for your next salary disbursement.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cancelRequest()"
+        [disabled]="isSubmitting"
+      >
+        <i class="fa-solid fa-times"></i>
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!bankDetailsForm.valid || isSubmitting"
+      >
+        <i class="fa-solid fa-paper-plane"></i>
+        {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,99 @@
+<div class="payment-reminder-container">
+  <div class="up-to-date-notice" *ngIf="upToDateNotification">
+    <div class="notice-copy">
+      <strong>No pending payments. All your payments are up to date!</strong>
+      <span>
+        Your next payment for {{ upToDateNotification.loan.loanCode || upToDateNotification.loan.id }} is due
+        {{ getDaysText(upToDateNotification.daysUntilDue).toLowerCase() }}.
+      </span>
+    </div>
+    <button class="dismiss-btn" type="button" (click)="dismissUpToDateNotification()" aria-label="Dismiss payment notice">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div class="lock-reminder-section" *ngIf="lockedLoans.length > 0">
+    <div class="section-header warning-lock">
+      <i class="fas fa-lock"></i>
+      <h4>Locked Repayment Actions</h4>
+      <span class="count">{{ lockedLoans.length }}</span>
+    </div>
+
+    <div class="lock-list">
+      <div class="lock-item" *ngFor="let item of lockedLoans" [ngClass]="getLockClass(item.loan.status)">
+        <div class="lock-copy">
+          <strong>{{ item.title }}</strong>
+          <span>{{ item.loan.loanCode || item.loan.id }}</span>
+          <p>{{ item.message }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Payments Section -->
+  <div class="reminder-section" *ngIf="overduePayments.length > 0">
+    <div class="section-header danger">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h4>Overdue Payments</h4>
+      <span class="count">{{ overduePayments.length }}</span>
+    </div>
+    
+    <div class="reminder-list">
+      <div class="reminder-item" *ngFor="let payment of overduePayments" [class]="getOverdueUrgencyClass(payment.daysOverdue)">
+        <div class="reminder-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="reminder-content">
+          <div class="reminder-title">
+            <strong>{{ payment.loan.loanCode || payment.loan.id }}</strong>
+            <span class="badge overdue">Overdue</span>
+          </div>
+          <div class="reminder-details">
+            <span>Installment {{ payment.installment.installmentNo }}</span>
+            <span class="amount">{{ formatCurrency(payment.installment.totalAmount) }}</span>
+          </div>
+          <div class="reminder-due">
+            <i class="fas fa-calendar"></i>
+            <span class="overdue-text">{{ getOverdueText(payment.daysOverdue) }}</span>
+          </div>
+        </div>
+        <button class="action-btn" (click)="makePayment(payment.loan, payment.installment)">
+          Pay Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming Payments Section -->
+  <div class="reminder-section" *ngIf="upcomingPayments.length > 0">
+    <div class="section-header">
+      <i class="fas fa-bell"></i>
+      <h4>Upcoming Payments</h4>
+      <span class="count">{{ upcomingPayments.length }}</span>
+    </div>
+    
+    <div class="reminder-list">
+      <div class="reminder-item" *ngFor="let payment of upcomingPayments" [class]="getUrgencyClass(payment.daysUntilDue)">
+        <div class="reminder-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="reminder-content">
+          <div class="reminder-title">
+            <strong>{{ payment.loan.loanCode || payment.loan.id }}</strong>
+          </div>
+          <div class="reminder-details">
+            <span>Installment {{ payment.installment.installmentNo }}</span>
+            <span class="amount">{{ formatCurrency(payment.installment.totalAmount) }}</span>
+          </div>
+          <div class="reminder-due">
+            <i class="fas fa-hourglass-half"></i>
+            <span>{{ getDaysText(payment.daysUntilDue) }}</span>
+          </div>
+        </div>
+        <button class="action-btn" (click)="makePayment(payment.loan, payment.installment)">
+          Pay Now
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,200 @@
+<div class="reports-shell loan-management-surface">
+  <div class="reports-header lm-header-card">
+    <div class="header-left">
+      <app-back-button (click)="goBack()"></app-back-button>
+      <div class="header-title">
+        <h1><i class="fas fa-chart-area"></i>Cooperative Loan Reports</h1>
+        <p>View and export cooperative loan portfolio reports</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="export-btn excel" (click)="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Excel
+      </button>
+      <button class="export-btn csv" (click)="exportToCSV()">
+        <i class="fas fa-file-csv"></i> CSV
+      </button>
+      <button class="export-btn print" (click)="printReport()">
+        <i class="fas fa-print"></i> Print
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading cooperative loan reports...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon total-icon">
+          <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ summary.totalLoans }}</div>
+          <div class="stat-label">Total Loans</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon amount-icon">
+          <i class="fas fa-naira-sign"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(summary.totalAmount) }}</div>
+          <div class="stat-label">Total Amount</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon paid-icon">
+          <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(summary.totalPaid) }}</div>
+          <div class="stat-label">Total Paid</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon balance-icon">
+          <i class="fas fa-scale-balanced"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(summary.totalBalance) }}</div>
+          <div class="stat-label">Total Balance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Panel -->
+    <div class="alerts-panel" *ngIf="alerts.length > 0">
+      <div class="alert-item" *ngFor="let alert of alerts">
+        <i class="fas fa-info-circle"></i>
+        <span>{{ alert }}</span>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-wrapper">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" [(ngModel)]="filters.search" (ngModelChange)="onSearchChange($event)" placeholder="Loan code, member, group">
+        </div>
+        <div class="filter-group">
+          <label>Group</label>
+          <select [(ngModel)]="filters.groupId" (ngModelChange)="applyFilters()">
+            <option value="">All Groups</option>
+            <option *ngFor="let group of groups" [value]="group.id">{{ group.name }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
+            <option value="">All Statuses</option>
+            <option *ngFor="let status of statuses" [value]="status">{{ formatStatusDisplay(status) }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Date From</label>
+          <input type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="applyFilters()">
+        </div>
+        <div class="filter-group">
+          <label>Date To</label>
+          <input type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="applyFilters()">
+        </div>
+        <div class="filter-actions">
+          <button class="reset-btn" (click)="resetFilters()">
+            <i class="fas fa-undo-alt"></i> Reset Filters
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="results-info">
+      <span>Showing {{ paginationStart }}-{{ paginationEnd }} of {{ filteredLoanRows.length }} filtered loans</span>
+      <span class="total-amount">Total: {{ formatCurrency(filteredTotalAmount) }}</span>
+    </div>
+
+    <!-- Reports Table - Native table, not app-table -->
+    <div class="table-wrapper">
+      <table class="reports-table" *ngIf="paginatedLoanRows.length > 0">
+        <thead>
+          <tr>
+            <th class="sn-col">S/N</th>
+            <th class="loan-id-col sortable" (click)="setSort('loanId')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i></th>
+            <th class="member-name-col sortable" (click)="setSort('member')">Member <i class="fas" [ngClass]="getSortIcon('member')"></i></th>
+            <th class="member-id-col">Member ID</th>
+            <th class="membership-id-col">Membership ID</th>
+            <th class="group-name-col sortable" (click)="setSort('group')">Group Name <i class="fas" [ngClass]="getSortIcon('group')"></i></th>
+            <th class="purpose-code-col">Purpose Code</th>
+            <th class="purpose-col">Purpose</th>
+            <th class="late-policy-col">Late Fee/Grace Days</th>
+            <th class="amount-col sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
+            <th class="interest-col">Group Interest</th>
+            <th class="interest-amount-col">Interest Amount</th>
+            <th class="repayable-col">Repayable Amount</th>
+            <th class="late-fee-col">Late Fee Amount</th>
+            <th class="paid-col">Paid</th>
+            <th class="balance-col">Balance</th>
+            <th class="status-col sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+            <th class="date-col sortable" (click)="setSort('date')">Date <i class="fas" [ngClass]="getSortIcon('date')"></i></th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of paginatedLoanRows; let i = index">
+            <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+            <td class="loan-id-cell">{{ row.loanId }}</td>
+            <td class="member-name-cell">{{ row.memberName }}</td>
+            <td class="member-id-cell">{{ row.memberId }}</td>
+            <td class="membership-id-cell">{{ row.membershipId || 'N/A' }}</td>
+            <td class="group-name-cell">{{ row.groupName }}</td>
+            <td class="purpose-code-cell">{{ row.purposeCode }}</td>
+            <td class="purpose-cell" [title]="row.purpose">{{ row.purpose.length > 30 ? (row.purpose | slice:0:30) + '...' : row.purpose }}</td>
+            <td class="late-policy-cell">{{ row.lateFeePolicy }}</td>
+            <td class="amount-cell">{{ formatCurrency(row.amount) }}</td>
+            <td class="interest-cell">{{ row.groupInterest }}%</td>
+            <td class="amount-cell">{{ formatCurrency(row.interestAmount) }}</td>
+            <td class="amount-cell">{{ formatCurrency(row.repayableAmount) }}</td>
+            <td class="late-fee-cell">{{ formatCurrency(row.lateFeeAmount) }}</td>
+            <td class="paid-cell">{{ formatCurrency(row.paid) }}</td>
+            <td class="balance-cell">{{ formatCurrency(row.balance) }}</td>
+            <td class="status-cell">
+              <span class="status-badge" [ngClass]="row.statusClass">
+                {{ row.status }}
+              </span>
+            </td>
+            <td class="date-cell">{{ row.date | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button class="action-btn view-btn" (click)="openLoanDetails(row.loan.id)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="filteredLoanRows.length === 0 && !isLoading">
+        <i class="fas fa-inbox"></i>
+        <p>No cooperative loans found matching your filters.</p>
+        <button class="reset-btn-small" (click)="resetFilters()">Clear Filters</button>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar" *ngIf="totalPages > 1">
+        <button class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+</div>

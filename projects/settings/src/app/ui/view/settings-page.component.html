@@ -1,0 +1,131 @@
+<div class="settings-shell">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════════════════ -->
+  <aside class="settings-sidebar">
+
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <i class="fas fa-cog"></i>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">Settings</span>
+        <span class="brand-sub">System Configuration</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li *ngFor="let item of menuItems" class="nav-entry">
+
+          <!-- Every item navigates via the inner <a> (mirrors old behaviour exactly).
+               The wrapping div handles the submenu toggle on click. -->
+          <div (click)="toggleSubMenu(item)"
+               class="nav-item-wrap"
+               [class.nav-active]="isRouteActive(item.route)">
+            <a class="nav-link"
+               [routerLink]="item.route"
+               routerLinkActive="nav-link-active"
+               [routerLinkActiveOptions]="{ exact: false }"
+               (click)="$event.stopPropagation()">
+              <span class="nav-icon-wrap">
+                <i [class]="item.icon || 'fas fa-sliders-h'"></i>
+              </span>
+              <span class="nav-label">{{ item.label }}</span>
+              <i *ngIf="item.submenu?.length"
+                 class="fas fa-chevron-right nav-chevron"
+                 [class.rotated]="item.open"></i>
+            </a>
+          </div>
+
+          <!-- Submenu -->
+          <ul *ngIf="item.submenu?.length" class="nav-sub" [class.open]="item.open">
+            <li *ngFor="let sub of item.submenu">
+              <a [routerLink]="sub.route"
+                 [queryParams]="sub.queryParams || {}"
+                 routerLinkActive="sub-active"
+                 [routerLinkActiveOptions]="{ exact: false }"
+                 class="sub-link">
+                <span class="sub-dot"></span>
+                {{ sub.label }}
+              </a>
+            </li>
+          </ul>
+
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="footer-avatar">
+        <i class="fas fa-user-shield"></i>
+      </div>
+      <div class="footer-info">
+        <span class="footer-role">{{ role | slice:1:-1 }}</span>
+        <span class="footer-hint">Active session</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════════ -->
+  <main class="settings-main">
+
+    <!-- Home card grid — only when no child route is active -->
+    <div class="settings-home" *ngIf="!isAnyChildActive">
+
+      <div class="home-header">
+        <div>
+          <h1 class="home-title">System Settings</h1>
+          <p class="home-sub">Manage configuration, users, roles and business preferences</p>
+        </div>
+        <div class="home-badge">
+          <i class="fas fa-shield-alt"></i>
+          <span>Admin Panel</span>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="setting-card"
+             *ngFor="let item of menuItems; let i = index"
+             [routerLink]="item.route || null"
+             [class.card-no-route]="!item.route"
+             [attr.data-color-index]="i % 8">
+
+          <div class="card-icon-wrap">
+            <i [class]="item.icon || 'fas fa-sliders-h'"></i>
+          </div>
+
+          <div class="card-body">
+            <h3 class="card-title">{{ item.label }}</h3>
+            <p class="card-desc">
+              {{ item.description || item.shortDescription || ('Configure ' + item.label + ' settings') }}
+            </p>
+            <div class="card-sub-count" *ngIf="item.submenu?.length">
+              <i class="fas fa-layer-group"></i>
+              {{ item.submenu!.length }} section{{ item.submenu!.length !== 1 ? 's' : '' }}
+            </div>
+          </div>
+
+          <div class="card-footer-row">
+            <span class="card-cta">{{ item.route ? 'Configure' : 'Coming soon' }}</span>
+            <div class="card-arrow-btn">
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Routed child content -->
+    <div class="router-wrap">
+      <router-outlet></router-outlet>
+    </div>
+
+  </main>
+
+</div>
+
+<p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast position="top-right" key="tl" />

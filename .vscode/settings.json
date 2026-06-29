@@ -1,4 +1,5 @@
 {
-  "git.path": "/usr/bin/git",
-  "git.enabled": true
+    "cSpell.words": [
+        "Shortlets"
+    ]
 }

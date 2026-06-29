@@ -1,0 +1,11 @@
+<p-multiSelect
+  [options]="categories"
+  optionLabel="name"
+  optionValue="id"
+  [ngModel]="selectedIds"
+  (ngModelChange)="onChange($event)"
+  display="chip"
+  [filter]="true"
+  placeholder="Select categories"
+  class="w-full">
+</p-multiSelect>

@@ -1,0 +1,447 @@
+/*.assignment-container {
+  padding: 20px;
+  background: #eef2f3;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 25px;
+  width: 300px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}*/
+// ── Modal Shell ──────────────────────────────────────────────────────────────
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.modal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  width: min(620px, 96vw);
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #1a2e2b;
+  }
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #999;
+  line-height: 1;
+  padding: 4px;
+
+  &:hover { color: #333; }
+}
+
+.modal-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;   // scrolls the form, NOT the selector panels
+  flex: 1;
+}
+
+h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+// ── Form Elements ────────────────────────────────────────────────────────────
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+
+  label {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #444;
+  }
+
+  select,
+  input[type="date"],
+  input[type="text"],
+  input[type="number"],
+  input[type="time"] {
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    font-size: 13px;
+    color: #333;
+    background: #fff;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: #2a7a74;
+    }
+
+    &:disabled {
+      background: #f5f5f5;
+      color: #999;
+    }
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.required { color: #e74c3c; }
+
+.end-date-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    font-size: 13px;
+    color: #333;
+    background: #fff;
+    transition: border-color 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: #2a7a74;
+    }
+  }
+}
+
+.clear-end-date {
+  align-self: flex-start;
+  padding: 7px 12px;
+  border: 1px solid #e74c3c;
+  background: transparent;
+  color: #e74c3c;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #fdecea;
+  }
+}
+
+.optional-hint {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+// ── Selection Mode Toggle ───────────────────
+
+.selection-mode-toggle {
+  display: flex;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+
+  button {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: #f9f9f9;
+    font-size: 13px;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    &:first-child { border-right: 1px solid #dcdcdc; }
+
+    &.active {
+      background: #2a7a74;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    &:not(.active):hover { background: #f0f0f0; }
+  }
+}
+
+// ── Shared Selector List ─────────────────────────────────────────────────────
+
+.search-input {
+  margin-bottom: 8px;
+}
+
+.selector-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.selector-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid #f2f2f2;
+
+  &:last-child { border-bottom: none; }
+
+  &:hover { background: #f7faf9; }
+
+  &.selected { background: #edf7f5; }
+
+  input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #2a7a74;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+}
+
+.option-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c3e50;
+  flex: 1;
+}
+
+.option-dept {
+  font-size: 11px;
+  color: #999;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+// Department option overrides
+.dept-option {
+  align-items: flex-start;
+  padding: 10px 12px;
+
+  .dept-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .option-name { font-size: 13px; }
+    .option-dept { background: transparent; padding: 0; font-size: 11px; }
+  }
+}
+
+// ── Selected Summary ──────────────────────────────────────────────────────────
+
+.selected-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #2a7a74;
+
+  i { font-size: 13px; }
+
+  span { flex: 1; }
+}
+
+.clear-btn {
+  border: none;
+  background: transparent;
+  color: #e74c3c;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+
+  &:hover { color: #c0392b; }
+}
+
+.field-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #aaa;
+}
+
+.empty-list {
+  padding: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+}
+
+// ── Recurrence ────────────────────────────────────────────────────────────────
+
+.recurrence-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.recurrence-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+
+  input[type="radio"] { display: none; }
+
+  &.active {
+    background: #2a7a74;
+    color: #fff;
+    border-color: #2a7a74;
+  }
+}
+
+.custom-recurrence {
+  margin-top: 12px;
+  padding: 14px;
+  background: #f7f9fa;
+  border-radius: 8px;
+
+  .day-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    input:checked + span {
+      background: #3da86a;
+      color: #fff;
+    }
+  }
+}
+
+// ── Conflict & Actions ────────────────────────────────────────────────────────
+
+.conflict {
+  background: #fdecea;
+  color: #c0392b;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cancel-btn {
+  padding: 9px 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #555;
+
+  &:hover { background: #f5f5f5; }
+}
+
+.assign-btn {
+  padding: 9px 20px;
+  background: #2a7a74;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover { background: #256d67; }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+  }
+}
+
+.edit-series-toggle {
+  margin: 16px 24px 0;
+  padding: 12px;
+  border: 1px solid #d7ebe8;
+  background: #f6fbfa;
+  border-radius: 8px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #2a7a74;
+  }
+
+  small {
+    display: block;
+    margin-top: 6px;
+    color: #666;
+    font-size: 12px;
+  }
+
+  input[type='checkbox'] {
+    accent-color: #2a7a74;
+  }
+}

@@ -1,0 +1,275 @@
+@import '../_crm-shared';
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+// Compliance Banner
+.compliance-banner {
+  background: linear-gradient(135deg, #1a2e38, #224957);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.compliance-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.compliance-text {
+  flex: 1;
+}
+
+.compliance-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.compliance-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.compliance-badges {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.compliance-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(37, 146, 91, 0.2);
+  color: #2EB270;
+  border: 1px solid rgba(46, 178, 112, 0.3);
+}
+
+// Gov panel fade-in (tab switching handled by _crm-shared pill style)
+.gov-panel {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-row-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2E6276;
+}
+
+.panel-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+// Hierarchy notice
+.hierarchy-notice {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: #166534;
+}
+
+// Citizen type badges
+.citizen-type-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.individual { background: #dbeafe; color: #1d4ed8; }
+  &.ngo        { background: #ede9fe; color: #7c3aed; }
+  &.business   { background: #fef3c7; color: #d97706; }
+  &.govt       { background: #dcfce7; color: #166534; }
+}
+
+// Badge variants
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.badge-info    { background: #dbeafe; color: #1d4ed8; }
+  &.badge-warning { background: #fef3c7; color: #d97706; }
+  &.badge-success { background: #dcfce7; color: #166534; }
+  &.badge-purple  { background: #ede9fe; color: #7c3aed; }
+  &.badge-teal    { background: #ccfbf1; color: #0d9488; }
+  &.badge-orange  { background: #ffedd5; color: #c2410c; }
+  &.badge-neutral { background: #f1f5f9; color: #94a3b8; }
+}
+
+// Case priority / status
+.case-priority {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.critical { background: #fee2e2; color: #dc2626; }
+  &.high     { background: #ffedd5; color: #ea580c; }
+  &.normal   { background: #f1f5f9; color: #475569; }
+  &.low      { background: #f0fdf4; color: #166534; }
+}
+
+.case-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.escalated   { background: #fee2e2; color: #dc2626; }
+  &.in-progress { background: #fef3c7; color: #d97706; }
+  &.open        { background: #dbeafe; color: #1d4ed8; }
+  &.resolved    { background: #dcfce7; color: #166534; }
+  &.closed      { background: #f1f5f9; color: #94a3b8; }
+}
+
+// SLA bar
+.sla-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #25925B;
+  margin-bottom: 3px;
+
+  &.breach { color: #dc2626; }
+}
+
+.sla-bar {
+  height: 5px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+  width: 80px;
+}
+
+.sla-fill {
+  height: 100%;
+  background: #25925B;
+  border-radius: 3px;
+
+  &.breach { background: #dc2626; }
+}
+
+// Grant stages
+.grant-stage {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.awarded   { background: #dcfce7; color: #166534; }
+  &.disbursed { background: #dbeafe; color: #1d4ed8; }
+  &.review    { background: #fef3c7; color: #d97706; }
+  &.audit     { background: #ede9fe; color: #7c3aed; }
+}
+
+.disb-text {
+  font-size: 11.5px;
+  color: #25925B;
+  margin-bottom: 3px;
+}
+
+// Permit statuses
+.permit-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.approved   { background: #dcfce7; color: #166534; }
+  &.inspecting { background: #fef3c7; color: #d97706; }
+  &.renewal    { background: #fee2e2; color: #dc2626; }
+  &.pending    { background: #f1f5f9; color: #94a3b8; }
+}
+
+// Tender statuses
+.tender-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.tender-open   { background: #dcfce7; color: #166534; }
+  &.tender-eval   { background: #fef3c7; color: #d97706; }
+  &.tender-closed { background: #f1f5f9; color: #94a3b8; }
+  &.tender-awarded{ background: #dbeafe; color: #1d4ed8; }
+}
+
+// Stats grid (grants)
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2E6276;
+}
+
+.stat-label {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+// Table helpers
+.mono     { font-family: monospace; font-size: 12px; }
+.muted    { color: #94a3b8; font-size: 12.5px; }
+.case-id  { font-weight: 700; color: #2E6276; }
+.grant-id { font-weight: 700; color: #7c3aed; }
+.permit-id{ font-weight: 700; color: #2E6276; }
+.tender-id{ font-weight: 700; color: #2E6276; font-size: 12px; }
+.amount-cell { font-weight: 700; color: #25925B; }
+.desc-cell   { font-size: 12.5px; max-width: 220px; }
+
+.action-btn {
+  font-size: 11.5px;
+  padding: 2px 10px;
+  line-height: 24px;
+  min-height: 24px;
+  margin-right: 4px;
+}

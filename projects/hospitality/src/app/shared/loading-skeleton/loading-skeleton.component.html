@@ -1,0 +1,47 @@
+<ng-container [ngSwitch]="type">
+  <!-- Card Skeleton (for room cards) -->
+  <ng-container *ngSwitchCase="'card'">
+    <div *ngFor="let item of skeletons" class="skeleton-card">
+      <div class="skeleton-image"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-text skeleton-title"></div>
+        <div class="skeleton-text skeleton-subtitle"></div>
+        <div class="skeleton-text skeleton-line"></div>
+        <div class="skeleton-button"></div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Room Grid Skeleton (for room details grid) -->
+  <ng-container *ngSwitchCase="'room-grid'">
+    <div *ngFor="let item of skeletons" class="skeleton-room-grid">
+      <div class="skeleton-room-item">
+        <div class="skeleton-image-large"></div>
+        <div class="skeleton-info">
+          <div class="skeleton-text skeleton-title"></div>
+          <div class="skeleton-text skeleton-subtitle"></div>
+          <div class="skeleton-text skeleton-line"></div>
+          <div class="skeleton-badge"></div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Text Skeleton -->
+  <ng-container *ngSwitchCase="'text'">
+    <div *ngFor="let item of skeletons" class="skeleton-text-block">
+      <div class="skeleton-text skeleton-line"></div>
+      <div class="skeleton-text skeleton-line short"></div>
+    </div>
+  </ng-container>
+
+  <!-- Circle Skeleton -->
+  <ng-container *ngSwitchCase="'circle'">
+    <div *ngFor="let item of skeletons" class="skeleton-circle"></div>
+  </ng-container>
+
+  <!-- Line Skeleton -->
+  <ng-container *ngSwitchCase="'line'">
+    <div *ngFor="let item of skeletons" class="skeleton-text skeleton-line"></div>
+  </ng-container>
+</ng-container>

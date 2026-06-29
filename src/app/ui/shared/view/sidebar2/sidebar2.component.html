@@ -1,0 +1,117 @@
+<nav class="sb" [ngClass]="sidebarClass">
+
+  <!-- ── Brand ──────────────────────────────────────────────────────────────── -->
+  <div class="sb-brand">
+    <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
+    <img *ngIf="sidebarHidden"  src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
+  </div>
+
+  <!-- ── Toggle ─────────────────────────────────────────────────────────────── -->
+  <div class="sb-toggle-wrap" [ngClass]="{
+    'sb-toggle-wrap--collapsed': sidebarHidden,
+    'sb-toggle-wrap--expanded': !sidebarHidden
+  }">
+    <button class="sb-toggle-btn" (click)="onToggleSidebar()">
+      <i *ngIf="sidebarHidden"  class="pi pi-angle-right"></i>
+      <i *ngIf="!sidebarHidden" class="pi pi-angle-left"></i>
+    </button>
+  </div>
+
+  <!-- ── Search ─────────────────────────────────────────────────────────────── -->
+  <div class="sb-search-wrap" *ngIf="!sidebarHidden">
+    <i class="pi pi-search sb-search-icon"></i>
+    <input type="text" class="sb-search" placeholder="Search menu…"
+           (input)="onSearch($any($event.target).value)" />
+  </div>
+
+  <!-- ── Nav list ───────────────────────────────────────────────────────────── -->
+  <ul class="sb-list">
+    <li *ngFor="let item of filteredMenuItems$ | async as menuItems" class="sb-entry">
+
+      <!-- Item without submenu -->
+      <a *ngIf="!item.submenu"
+         [routerLink]="item.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="item.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="item.icon" [class]="item.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ item.label }}</span>
+      </a>
+
+      <!-- Item with submenu -->
+      <div *ngIf="item.submenu"
+           class="sb-link sb-link--parent"
+           [class.sb-link--open]="item.open"
+           (click)="toggleSubMenu(item, menuItems)"
+           [pTooltip]="item.label" tooltipPosition="right"
+           [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="item.icon" [class]="item.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ item.label }}</span>
+        <i *ngIf="!sidebarHidden"
+           class="fas fa-chevron-right sb-chevron"
+           [class.sb-chevron--open]="item.open"></i>
+      </div>
+
+      <!-- Submenu -->
+      <ul *ngIf="item.submenu" class="sb-sub" [class.sb-sub--open]="item.open">
+        <ng-container *ngFor="let sub of item.submenu">
+          <li *ngIf="!sub.isNotSidebarItem">
+            <a [routerLink]="sub.route"
+               (click)="onNavigate()"
+               routerLinkActive="sb-sub-link--active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               class="sb-sub-link"
+               [pTooltip]="sub.label" tooltipPosition="right"
+               [tooltipDisabled]="!sidebarHidden">
+              <i *ngIf="sub.icon" [class]="sub.icon + ' sb-sub-icon'"></i>
+              <span *ngIf="!sub.icon" class="sb-sub-dot"></span>
+              <span *ngIf="!sidebarHidden" class="sb-sub-label">{{ sub.label }}</span>
+            </a>
+          </li>
+        </ng-container>
+      </ul>
+
+    </li>
+
+    <!-- Marketplace -->
+    <li *ngIf="isSuperUser()" class="sb-entry">
+      <a [routerLink]="marketplace.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="marketplace.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="marketplace.icon" [class]="marketplace.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ marketplace.label }}</span>
+      </a>
+    </li>
+
+    <!-- Tenants -->
+    <li *ngIf="showAdminUI" class="sb-entry">
+      <a [routerLink]="tenant.route"
+         (click)="onNavigate()"
+         routerLinkActive="sb-link--active"
+         [routerLinkActiveOptions]="{ exact: true }"
+         class="sb-link"
+         [pTooltip]="tenant.label" tooltipPosition="right"
+         [tooltipDisabled]="!sidebarHidden">
+        <span class="sb-icon-wrap">
+          <i *ngIf="tenant.icon" [class]="tenant.icon"></i>
+        </span>
+        <span *ngIf="!sidebarHidden" class="sb-label">{{ tenant.label }}</span>
+      </a>
+    </li>
+
+  </ul>
+
+</nav>
