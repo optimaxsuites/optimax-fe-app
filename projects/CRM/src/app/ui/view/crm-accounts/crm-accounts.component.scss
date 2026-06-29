@@ -1,0 +1,21 @@
+@import '../_crm-shared';
+
+:host {
+  display: block;
+  padding: 1.25rem;
+}
+
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 800;
+
+  &.high { background: #dcfce7; color: #166534; }
+  &.med  { background: #fef3c7; color: #92400e; }
+  &.low  { background: #f1f5f9; color: #64748b; }
+}

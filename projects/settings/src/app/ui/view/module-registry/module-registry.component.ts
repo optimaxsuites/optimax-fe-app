@@ -84,6 +84,22 @@ const TS_MODULE_CODES: { code: string; label: string; submenus: { code: string; 
     code: 'optimaXPOS', label: 'POS',
     submenus: []
   },
+  {
+    code: 'CRM', label: 'CRM',
+    submenus: [
+      { code: 'CRM_CONTACTS',   label: 'Contacts' },
+      { code: 'CRM_ACCOUNTS',   label: 'Accounts' },
+      { code: 'CRM_PIPELINE',   label: 'Pipeline' },
+      { code: 'CRM_DEALS',      label: 'Deals' },
+      { code: 'CRM_LEADS',      label: 'Leads' },
+      { code: 'CRM_ACTIVITIES', label: 'Activities' },
+      { code: 'CRM_CAMPAIGNS',  label: 'Campaigns' },
+      { code: 'CRM_QUOTES',     label: 'Quotes' },
+      { code: 'CRM_CONTRACTS',  label: 'Contracts' },
+      { code: 'CRM_TICKETS',    label: 'Tickets' },
+      { code: 'CRM_SETTINGS',   label: 'CRM Settings' },
+    ]
+  },
 ];
 
 @Component({

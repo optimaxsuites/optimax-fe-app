@@ -7,12 +7,11 @@
       ⚠️ You are offline. Some features may not be available.
     </div>
 
-    <div *ngIf="syncInProgress" class="bg-blue-100 text-gray-600 font-bold text-center py-3">
-      {{ syncMessage }}
-    </div>
-
-    <div *ngIf="!syncInProgress && syncMessage" class="text-center py-3 font-semibold">
-      {{ syncMessage }}
+    <div *ngIf="syncMessage" class="flex items-center justify-center gap-3 py-3 font-semibold"
+         [class.bg-blue-100]="syncInProgress" [class.bg-green-50]="!syncInProgress">
+      <span class="text-gray-600">{{ syncMessage }}</span>
+      <button *ngIf="!syncInProgress" (click)="syncMessage = ''"
+              class="text-gray-400 hover:text-gray-600 leading-none">&times;</button>
     </div>
 
 <router-outlet></router-outlet>

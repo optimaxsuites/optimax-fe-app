@@ -64,6 +64,7 @@ export class HeaderStateService {
   private readonly state$ = new BehaviorSubject<HeaderState>(
     this.readStoredState(),
   );
+  private suppressPushUntil = 0;
 
   readonly view$ = this.state$.asObservable();
 
@@ -107,10 +108,11 @@ export class HeaderStateService {
   pushNotification(
     item: Omit<HeaderNotificationItem, 'id' | 'createdAt' | 'read'>,
   ): void {
+    const isSuppressed = Date.now() < this.suppressPushUntil;
     const nextItem: HeaderNotificationItem = {
       id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       createdAt: Date.now(),
-      read: false,
+      read: isSuppressed,
       ...item,
       title: this.stringifyNotificationField(item.title, 'New update'),
       body: this.stringifyNotificationField(
@@ -193,6 +195,7 @@ export class HeaderStateService {
   }
 
   markAllNotificationsRead(): void {
+    this.suppressPushUntil = Date.now() + 6000;
     this.commit({
       ...this.state$.value,
       unreadNotifications: 0,

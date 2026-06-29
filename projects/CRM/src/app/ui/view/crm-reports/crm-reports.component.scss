@@ -1,0 +1,245 @@
+@import '../_crm-shared';
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  margin: 24px 0 12px;
+}
+
+// Report cards grid
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.report-card {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  padding: 18px;
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+}
+
+.rc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.rc-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #2E6276;
+  margin-bottom: 4px;
+}
+
+.rc-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.rc-actions {
+  display: flex;
+  gap: 8px;
+
+  .btn-run {
+    background: #25925B;
+    color: #fff;
+    font-size: 12px;
+    padding: 0 12px;
+    line-height: 28px;
+    min-width: 0;
+  }
+
+  button {
+    font-size: 12px;
+    line-height: 28px;
+    min-height: 28px;
+    min-width: 0;
+  }
+}
+
+// Charts row
+.charts-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chart-card {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  padding: 18px;
+  flex: 1;
+  min-width: 220px;
+
+  &.flex-1-2 {
+    flex: 1.2;
+  }
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2E6276;
+  margin-bottom: 14px;
+}
+
+// Perf rows
+.perf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.o-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.perf-info {
+  flex: 1;
+}
+
+.perf-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 3px;
+}
+
+.perf-bar-wrap {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.perf-bar {
+  height: 100%;
+  background: #25925B;
+  border-radius: 4px;
+  transition: width 0.4s;
+}
+
+.perf-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2E6276;
+  white-space: nowrap;
+}
+
+// Source / win-loss rows
+.source-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.source-label {
+  width: 72px;
+  font-size: 12px;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.source-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.source-bar {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.source-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  width: 52px;
+  text-align: right;
+}
+
+// Scheduled list
+.sched-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sched-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.sched-label {
+  color: #374151;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &.badge-success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.badge-neutral {
+    background: #f1f5f9;
+    color: #94a3b8;
+  }
+}
+
+.add-sched-btn {
+  font-size: 12px;
+  margin-top: 4px;
+}

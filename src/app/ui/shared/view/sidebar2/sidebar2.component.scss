@@ -290,8 +290,8 @@ ul, .sb-list {
 .sb-sub-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px 6px 38px;
+  gap: 8px;
+  padding: 6px 10px 6px 16px;
   border-radius: 8px;
   border-left: 2px solid transparent;
   text-decoration: none !important;
@@ -304,6 +304,7 @@ ul, .sb-list {
     background: $hover-bg;
     color: #ffffff !important;
     .sb-sub-dot   { background: rgba(255, 255, 255, 0.7); }
+    .sb-sub-icon  { opacity: 1; }
     .sb-sub-label { color: #ffffff !important; }
   }
 
@@ -314,6 +315,7 @@ ul, .sb-list {
     border-left-color: $active-border;
 
     .sb-sub-dot   { background: $active-border; }
+    .sb-sub-icon  { opacity: 1; }
     .sb-sub-label { color: #ffffff !important; }
   }
 }
@@ -325,6 +327,15 @@ ul, .sb-list {
   background: rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
   transition: background 0.14s;
+}
+
+.sb-sub-icon {
+  font-size: 11px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.13s;
 }
 
 .sb-sub-label {

@@ -70,7 +70,8 @@
                class="sb-sub-link"
                [pTooltip]="sub.label" tooltipPosition="right"
                [tooltipDisabled]="!sidebarHidden">
-              <span class="sb-sub-dot"></span>
+              <i *ngIf="sub.icon" [class]="sub.icon + ' sb-sub-icon'"></i>
+              <span *ngIf="!sub.icon" class="sb-sub-dot"></span>
               <span *ngIf="!sidebarHidden" class="sb-sub-label">{{ sub.label }}</span>
             </a>
           </li>

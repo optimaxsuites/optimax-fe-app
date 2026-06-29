@@ -7,6 +7,7 @@ import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.compo
 import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
+import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 
 const routes: Routes = [
   {
@@ -37,7 +38,11 @@ const routes: Routes = [
       {
         path: 'bug-tracker/:uuid',
         component: BugTrackerComponent,
-      }
+      },
+      {
+        path: 'crm-settings/:uuid',
+        component: CrmSettingsComponent,
+      },
     ],
   },
 ];
