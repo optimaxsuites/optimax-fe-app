@@ -534,9 +534,16 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
   // Capture location first
   const location = await this.getCurrentLocation();
 
+  if (!location) {
+    alert(
+      'Unale to determine yourlocation. Pleaseensure your Location Services are enable and try again.'
+    );
+    return;
+  }
+
   // Calculate distance from office
   let distanceFromOffice = 0;
-  if (location && officeHours.companyLatitude && officeHours.companyLongitude) {
+  if (/*location &&*/ officeHours.companyLatitude && officeHours.companyLongitude) {
     distanceFromOffice = this.calculateDistance(
       location.lat, location.lng,
       officeHours.companyLatitude, officeHours.companyLongitude
@@ -943,7 +950,9 @@ private getCurrentLocation(): Promise<{ address: string; lat: number; lng: numbe
         }
       },
       () => resolve(null),
-      { timeout: 8000, maximumAge: 0 }
+      { enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0 }
     );
   });
 }

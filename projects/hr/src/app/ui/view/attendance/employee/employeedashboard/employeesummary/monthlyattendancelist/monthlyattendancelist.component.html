@@ -10,13 +10,12 @@
 
   <div *ngIf="isLoading" class="loader-wrapper">
     <div class="loader"></div>
+    <p>Loading attendance records...</p>
   </div>
 
   <div *ngIf="!isLoading">
     <!-- existing attendance list -->
-  </div>
-
-  <div class="table">
+     <div class="table">
 
     <div class="table-header">
       <span>Date</span>
@@ -33,9 +32,9 @@
     >
       <span>{{ record.date | date:'MMM d, yyyy' }}</span>
       <span class="status">{{ record.status }}</span>
-      <span>{{ record.checkIn | date:'HH:mm:ss' }}</span>
+      <span>{{ record.checkIn ? (record.checkIn | date:'HH:mm:ss') : '-' }}</span>
       <!--<span>{{ record.checkIn || '--' }}</span>-->
-      <span>{{ record.checkOut | date:'HH:mm:ss' }}</span>
+      <span>{{ record.checkOut ? (record.checkOut | date:'HH:mm:ss') : '-' }}</span>
       <!--<span>{{ record.checkOut || '--' }}</span>-->
       <span>{{ record.hours || 0 }}h</span>
     </div>
@@ -56,4 +55,7 @@
     </div>
 
   </div>
+  </div>
+
+  
 </div>
