@@ -40,6 +40,8 @@ export interface RequestItem {
   serviceStartDate?: Date;
   serviceEndDate?: Date;
   requiredQualifications?: string[];
+  serviceCategory?: string;
+  experienceLevel?: string;
 }
 
 export interface ProcurementRequest {
@@ -76,6 +78,9 @@ export interface ProcurementRequest {
   approvalComments?: string;
   // Vendor Selection
   selectedVendors?: string[];
+  deliveryMode?: string;
+  specialInstructions?: string;
+  serviceCategory?: string;
 }
 
 export interface RequestFilters {

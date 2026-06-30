@@ -1,15 +1,17 @@
+// request-for-quotation-service-form.component.ts
 
-import { Component, EventEmitter, Output, Input, OnChanges } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { v4 as uuidV4 } from 'uuid';
 
 @Component({
   selector: 'app-request-for-quotation-service-form',
   templateUrl: './request-for-quotation-service-form.component.html',
   styleUrl: './request-for-quotation-service-form.component.scss'
 })
-export class RequestForQuotationServiceFormComponent  implements OnChanges {
+export class RequestForQuotationServiceFormComponent implements OnChanges, OnInit {
   @Input() initialData: any = {};
   @Output() formData = new EventEmitter<any>();
   @Output() back = new EventEmitter<void>();
@@ -31,10 +33,15 @@ export class RequestForQuotationServiceFormComponent  implements OnChanges {
     'Other'
   ];
   experienceLevels = ['Entry', 'Intermediate', 'Expert', 'Senior'];
+  isEditMode = false;
+  requestId: string | null = null;
+  isLoading = false;
+  isNewRequest = true;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
     private procurementRequestService: ProcurementRequestService
   ) {
     this.serviceForm = this.fb.group({
@@ -51,10 +58,121 @@ export class RequestForQuotationServiceFormComponent  implements OnChanges {
     this.addItem();
   }
 
-  ngOnChanges(): void {
-    if (this.initialData) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialData'] && this.initialData) {
       this.serviceForm.patchValue(this.initialData);
     }
+  } // <-- THIS BRACE WAS MISSING
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      const uuid = params.get('uuid');
+      if (uuid) {
+        this.requestId = uuid;
+        this.loadRequest(uuid);
+      }
+    });
+  }
+
+  loadRequest(uuid: string): void {
+    this.isLoading = true;
+    this.procurementRequestService.getRequest(uuid).subscribe({
+      next: (req) => {
+        if (req && req.id) {
+          this.isNewRequest = false;
+          this.isEditMode = true;
+          this.populateForm(req);
+        } else {
+          this.isNewRequest = true;
+          this.isEditMode = false;
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.warn('Request not found, treating as new request.', err);
+        this.isNewRequest = true;
+        this.isEditMode = false;
+        this.isLoading = false;
+        
+        if (this.requestId && !this.isEditMode) {
+          // We're creating a new request with this UUID
+        }
+      }
+    });
+  }
+
+  populateForm(req: any): void {
+    // Clear any initial item pushed in constructor
+    while (this.items.length) {
+      this.items.removeAt(0);
+    }
+
+    // Populate items array
+    if (req.items && req.items.length > 0) {
+      req.items.forEach((item: any) => {
+        const itemGroup = this.createItemForm();
+        
+        // Clear requiredQualifications array
+        const qualifications = itemGroup.get('requiredQualifications') as FormArray;
+        while (qualifications.length) {
+          qualifications.removeAt(0);
+        }
+        if (item.requiredQualifications) {
+          item.requiredQualifications.forEach((qual: any) => {
+            qualifications.push(this.fb.control(qual, Validators.required));
+          });
+        }
+
+        // Clear attachments array
+        const attachments = itemGroup.get('attachments') as FormArray;
+        while (attachments.length) {
+          attachments.removeAt(0);
+        }
+        if (item.attachments) {
+          item.attachments.forEach((att: any) => {
+            attachments.push(this.fb.group({
+              id: [att.id || this.generateId()],
+              fileName: [att.fileName, Validators.required],
+              fileUrl: [att.fileUrl],
+              size: [att.size],
+              type: [att.type],
+              uploadedAt: [att.uploadedAt || new Date()],
+              file: [att.file]
+            }));
+          });
+        }
+
+        // Patch remaining item values
+        itemGroup.patchValue({
+          id: item.id || this.generateId(),
+          name: item.name || '',
+          description: item.description || '',
+          serviceCategory: item.serviceCategory || '',
+          quantity: item.quantity || 1,
+          estimatedBudget: item.estimatedBudget || 0,
+          experienceLevel: item.experienceLevel || '',
+          serviceDuration: item.serviceDuration || '',
+          serviceStartDate: item.serviceStartDate ? new Date(item.serviceStartDate).toISOString().substring(0, 10) : '',
+          serviceEndDate: item.serviceEndDate ? new Date(item.serviceEndDate).toISOString().substring(0, 10) : ''
+        });
+
+        this.items.push(itemGroup);
+      });
+    } else {
+      // If no items, add a default one
+      this.addItem();
+    }
+
+    // Patch general form values
+    this.serviceForm.patchValue({
+      title: req.title || '',
+      description: req.description || '',
+      serviceCategory: req.serviceCategory || '',
+      deliveryLocation: req.deliveryLocation || '',
+      deliveryDeadline: req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : '',
+      currency: req.currency || 'NGN',
+      specialInstructions: req.specialInstructions || ''
+    });
   }
 
   get items(): FormArray {
@@ -140,14 +258,32 @@ export class RequestForQuotationServiceFormComponent  implements OnChanges {
       formValue.totalBudget = this.getTotalBudget();
       formValue.procurementType = 'SERVICE';
       
-      this.procurementRequestService.createRequest(formValue).subscribe({
-        next: (req) => {
-          this.router.navigate(['/commerce/requests/new/service', req.id, 'template']);
-        },
-        error: (err) => {
-          console.error('Failed to create request', err);
-        }
-      });
+      const requestId = this.requestId || uuidV4();
+      
+      if (this.isEditMode && this.requestId) {
+        this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+          next: (req) => {
+            this.router.navigate(['/commerce/requests/new/service', req.id, 'template']);
+          },
+          error: (err) => {
+            console.error('Failed to update request', err);
+            this.router.navigate(['/commerce/requests/new/service', requestId, 'template']);
+          }
+        });
+      } else {
+        this.procurementRequestService.createRequest({
+          ...formValue,
+          id: requestId
+        }).subscribe({
+          next: (req) => {
+            this.router.navigate(['/commerce/requests/new/service', req.id, 'template']);
+          },
+          error: (err) => {
+            console.error('Failed to create request', err);
+            this.router.navigate(['/commerce/requests/new/service', requestId, 'template']);
+          }
+        });
+      }
     } else {
       this.markFormGroupTouched(this.serviceForm);
       console.warn('Form validation failed. Errors:', this.getFormValidationErrors());
@@ -181,7 +317,7 @@ export class RequestForQuotationServiceFormComponent  implements OnChanges {
   }
 
   onBack(): void {
-    this.back.emit();
+    this.router.navigate(['/commerce/requests/new']);
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
