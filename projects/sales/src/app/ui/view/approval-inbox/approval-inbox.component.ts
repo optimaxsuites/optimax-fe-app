@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ApprovalService } from '../../service/approval-inbox/approval.service';
 import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats } from '../../domain/approval-inbox/approval-request.dto';
-import { ProcurementRequestService } from '../../service/procurement-request-management/product-request-management/procurement-request.service';
+import { ProcurementRequestService } from '../../service/procurement/procurement.service';
 
 @Component({
   selector: 'app-approval-inbox',

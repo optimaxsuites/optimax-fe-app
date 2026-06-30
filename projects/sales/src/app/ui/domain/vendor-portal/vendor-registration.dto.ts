@@ -1,332 +1,443 @@
-// ─── Vendor Registration DTOs ────────────────────────────────────────────────
+// ─── Enums & Union Types ──────────────────────────────────────────────────────
+export type RegistrationStatus =
+  | 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'suspended';
 
-export type VendorType = 'SOLE_PROPRIETOR' | 'PARTNERSHIP' | 'LLC' | 'PLC' | 'NGO' | 'COOPERATIVE' | 'OTHER';
-export type BusinessSize = 'MICRO' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'ENTERPRISE';
-export type OwnershipType = 'PRIVATE' | 'PUBLIC' | 'GOVERNMENT' | 'MIXED' | 'FOREIGN';
-export type YearsInOperation = 'LESS_THAN_1' | '1_TO_3' | '3_TO_5' | '5_TO_10' | '10_TO_20' | 'MORE_THAN_20';
-export type AnnualTurnover = 'BELOW_1M' | '1M_TO_10M' | '10M_TO_50M' | '50M_TO_100M' | 'ABOVE_100M';
-export type DocumentStatus = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'PENDING';
-export type PaymentMethod = 'BANK_TRANSFER' | 'CHEQUE' | 'MOBILE_MONEY' | 'ONLINE_PAYMENT';
-export type VendorCertificationType =
-  | 'ISO_9001'
-  | 'ISO_14001'
-  | 'ISO_45001'
-  | 'NAFDAC'
-  | 'SON'
-  | 'COREN'
-  | 'NIA'
-  | 'NBA'
-  | 'ICAN'
-  | 'OTHER';
+export type BusinessType =
+  | 'sole_proprietorship' | 'partnership' | 'limited_liability'
+  | 'public_limited' | 'cooperative' | 'ngo' | 'government_entity' | 'other';
 
-// ─── Step 1: Business Information ─────────────────────────────────────────────
-export interface BusinessInformationDto {
-  // Core Identity
-  businessName: string;
-  tradingName?: string;
-  vendorType: VendorType;
-  businessSize: BusinessSize;
-  ownershipType: OwnershipType;
-  yearsInOperation: YearsInOperation;
-  annualTurnover: AnnualTurnover;
-  numberOfEmployees: number;
+export type BusinessSize = 'micro' | 'small' | 'medium' | 'large' | 'enterprise';
 
-  // Registration Details
-  registrationNumber: string;
-  taxIdentificationNumber: string;
-  vatRegistrationNumber?: string;
-  cacNumber?: string; // Corporate Affairs Commission (Nigeria)
-  dateOfIncorporation: string; // ISO date string
+export type OwnershipType =
+  | 'indigenous' | 'foreign' | 'joint_venture' | 'government' | 'mixed';
 
-  // Industry & Categories
-  primaryIndustry: string;
-  secondaryIndustries: string[];
-  supplierCategories: string[];
-  productServiceDescription: string;
+export type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR' | 'GHS' | 'KES' | 'ZAR';
 
-  // Web Presence
-  companyWebsite?: string;
-  linkedinProfile?: string;
+export type AccountType = 'current' | 'savings' | 'domiciliary';
+
+export type DocumentStatus = 'pending' | 'verified' | 'expired' | 'rejected';
+
+export type SupplyCategory =
+  | 'technology_it' | 'construction_civil' | 'healthcare_medical'
+  | 'office_supplies' | 'industrial_equipment' | 'food_beverage'
+  | 'logistics_transport' | 'furniture_fixtures' | 'safety_ppe'
+  | 'cleaning_facilities' | 'marketing_print' | 'engineering_mechanical'
+  | 'electrical_electronics' | 'oil_gas' | 'agriculture_farming'
+  | 'financial_services' | 'consulting_professional' | 'catering_hospitality'
+  | 'security_services' | 'real_estate' | 'telecoms' | 'pharmaceuticals'
+  | 'automotive' | 'textiles_apparel' | 'other';
+
+export type DeliveryRegion =
+  | 'lagos' | 'abuja' | 'rivers' | 'kano' | 'oyo' | 'delta'
+  | 'anambra' | 'edo' | 'enugu' | 'kwara' | 'ogun' | 'ondo'
+  | 'osun' | 'ekiti' | 'cross_river' | 'akwa_ibom' | 'bayelsa'
+  | 'imo' | 'abia' | 'ebonyi' | 'benue' | 'kogi' | 'nasarawa'
+  | 'plateau' | 'kaduna' | 'sokoto' | 'kebbi' | 'zamfara' | 'katsina'
+  | 'jigawa' | 'yobe' | 'borno' | 'adamawa' | 'taraba' | 'gombe'
+  | 'bauchi' | 'niger' | 'nationwide' | 'international';
+
+// ─── Step 1: Business Identity ────────────────────────────────────────────────
+export interface BusinessIdentity {
+  // Core
+  businessName:         string;
+  tradingName?:         string;
+  businessType:         BusinessType;
+  businessSize:         BusinessSize;
+  ownershipType:        OwnershipType;
+  yearEstablished:      number;
+  numberOfEmployees:    string;  // range e.g. "1-10"
+  annualTurnoverRange:  string;  // e.g. "₦50M - ₦200M"
+  currency:             Currency;
+
+  // Description
+  businessDescription:  string;
+  missionStatement?:    string;
+  websiteUrl?:          string;
+  linkedinUrl?:         string;
+
+  // Branding
+  logoFileUrl?:         string;
+  logoFile?:            File;
 }
 
-// ─── Step 2: Contact & Location ────────────────────────────────────────────────
-export interface ContactLocationDto {
-  // Registered Address
-  registeredAddress: AddressDto;
+// ─── Step 2: Legal & Compliance ───────────────────────────────────────────────
+export interface LegalCompliance {
+  // CAC / Registration
+  cacRegistrationNumber:   string;
+  cacRegistrationDate:     string;
+  cacCertificateFileUrl?:  string;
+  cacCertificateFile?:     File;
 
-  // Operating Address (if different)
-  operatingAddressSameAsRegistered: boolean;
-  operatingAddress?: AddressDto;
+  // Tax
+  tinNumber:               string;
+  vatRegistered:           boolean;
+  vatNumber?:              string;
+  taxClearanceCertFileUrl?: string;
+  taxClearanceCertFile?:   File;
+  taxClearanceExpiryDate?: string;
 
-  // Primary Contact
-  primaryContact: ContactPersonDto;
-
-  // Secondary Contact
-  hasSecondaryContact: boolean;
-  secondaryContact?: ContactPersonDto;
-
-  // Business Communication
-  businessEmail: string;
-  businessPhone: string;
-  businessPhoneAlt?: string;
-  faxNumber?: string;
-
-  // Social Media (optional)
-  twitterHandle?: string;
-  facebookPage?: string;
-}
-
-export interface AddressDto {
-  streetLine1: string;
-  streetLine2?: string;
-  city: string;
-  state: string;
-  lga?: string; // Local Government Area
-  country: string;
-  postalCode?: string;
-  landmark?: string;
-}
-
-export interface ContactPersonDto {
-  firstName: string;
-  lastName: string;
-  jobTitle: string;
-  department?: string;
-  email: string;
-  phoneNumber: string;
-  phoneNumberAlt?: string;
-  isAuthorizedSignatory: boolean;
-}
-
-// ─── Step 3: Financial & Banking ──────────────────────────────────────────────
-export interface FinancialBankingDto {
-  // Primary Bank Account
-  primaryBankAccount: BankAccountDto;
-
-  // Secondary Bank Account (optional)
-  hasSecondaryBankAccount: boolean;
-  secondaryBankAccount?: BankAccountDto;
-
-  // Financial Details
-  preferredPaymentMethod: PaymentMethod;
-  paymentTermsPreference: string; // e.g. "Net 30", "Net 60"
-  currencyPreference: string; // e.g. "NGN", "USD"
-
-  // Credit & Financial Standing
-  hasBankReference: boolean;
-  bankReferenceName?: string;
-  bankReferenceContact?: string;
+  // Regulatory
+  nafdacNumber?:           string;
+  dprLicenceNumber?:       string;
+  sonCertificationNumber?: string;
+  pencomNumber?:           string;
+  nscNumber?:              string;
+  otherLicences?:          string;
 
   // Insurance
-  hasLiabilityInsurance: boolean;
-  liabilityInsuranceProvider?: string;
-  liabilityInsurancePolicyNumber?: string;
-  liabilityInsuranceExpiryDate?: string;
-  liabilityInsuranceCoverageAmount?: number;
-}
+  hasPublicLiabilityInsurance: boolean;
+  publicLiabilityInsurer?:     string;
+  publicLiabilityPolicyNo?:    string;
+  publicLiabilityExpiryDate?:  string;
+  publicLiabilityFileUrl?:     string;
+  publicLiabilityFile?:        File;
 
-export interface BankAccountDto {
-  bankName: string;
-  bankBranch?: string;
-  accountName: string;
-  accountNumber: string;
-  accountType: 'SAVINGS' | 'CURRENT' | 'DOMICILIARY';
-  sortCode?: string;
-  swiftCode?: string;
-  iban?: string;
-  currency: string;
-}
+  hasProfessionalIndemnity: boolean;
+  professionalIndemnityInsurer?:   string;
+  professionalIndemnityPolicyNo?:  string;
+  professionalIndemnityExpiry?:    string;
 
-// ─── Step 4: Compliance & Certifications ──────────────────────────────────────
-export interface ComplianceDto {
   // Certifications
-  certifications: CertificationDto[];
+  isoStandards:            string[];   // e.g. ["ISO 9001:2015", "ISO 14001"]
+  otherCertifications?:    string;
 
-  // Legal & Compliance
-  hasBeenDebarred: boolean;
-  debarmentDetails?: string;
-  hasPendingLitigation: boolean;
-  litigationDetails?: string;
-  hasBeenBankrupt: boolean;
-  bankruptcyDetails?: string;
+  // Legal declarations
+  hasBeenBlacklisted:      boolean;
+  blacklistedDetails?:     string;
+  hasLitigationPending:    boolean;
+  litigationDetails?:      string;
+  hasCriminalConviction:   boolean;
+  criminalDetails?:        string;
+}
 
-  // Health, Safety & Environment
-  hasHsePolicy: boolean;
-  hsePolicyDocumentRef?: string;
-  hasEnvironmentalPolicy: boolean;
+// ─── Step 3: Contact & Location ───────────────────────────────────────────────
+export interface ContactLocation {
+  // Primary contact
+  primaryContactName:    string;
+  primaryContactTitle:   string;
+  primaryContactEmail:   string;
+  primaryContactPhone:   string;
+  primaryContactPhone2?: string;
 
-  // Quality Management
+  // Secondary contact
+  hasSecondaryContact:   boolean;
+  secondaryContactName?: string;
+  secondaryContactTitle?: string;
+  secondaryContactEmail?: string;
+  secondaryContactPhone?: string;
+
+  // Registered address
+  registeredAddressLine1:  string;
+  registeredAddressLine2?: string;
+  registeredCity:          string;
+  registeredState:         string;
+  registeredPostalCode?:   string;
+  registeredCountry:       string;
+
+  // Operating / correspondence address
+  operatingAddressSameAsRegistered: boolean;
+  operatingAddressLine1?:  string;
+  operatingAddressLine2?:  string;
+  operatingCity?:          string;
+  operatingState?:         string;
+  operatingPostalCode?:    string;
+  operatingCountry?:       string;
+
+  // Warehouse / storage
+  hasWarehouse:            boolean;
+  warehouseAddressLine1?:  string;
+  warehouseCity?:          string;
+  warehouseState?:         string;
+  warehouseCapacity?:      string;
+
+  // Delivery
+  deliveryRegions:         DeliveryRegion[];
+  hasOwnDeliveryFleet:     boolean;
+  fleetSize?:              number;
+  deliveryLeadTimeDays:    number;
+  canDeliverNationwide:    boolean;
+  canDeliverInternationally: boolean;
+}
+
+// ─── Step 4: Banking & Finance ────────────────────────────────────────────────
+export interface BankingFinance {
+  // Primary bank account
+  primaryBankName:         string;
+  primaryBankBranch?:      string;
+  primaryAccountName:      string;
+  primaryAccountNumber:    string;
+  primaryAccountType:      AccountType;
+  primaryCurrency:         Currency;
+  primarySortCode?:        string;
+  primaryIban?:            string;
+  primarySwiftCode?:       string;
+
+  // Secondary bank (optional)
+  hasSecondaryBankAccount: boolean;
+  secondaryBankName?:      string;
+  secondaryAccountName?:   string;
+  secondaryAccountNumber?: string;
+  secondaryAccountType?:   AccountType;
+  secondaryCurrency?:      Currency;
+
+  // Payment preferences
+  preferredPaymentTerms:   string;   // e.g. "Net 30"
+  acceptsAdvancePayment:   boolean;
+  advancePaymentPercentage?: number;
+  acceptsLetterOfCredit:   boolean;
+  acceptsMobileMoney:      boolean;
+  mobileMoneyCurrency?:    string;
+  mobileMoneyNumber?:      string;
+
+  // Financial standing
+  creditRating?:           string;
+  annualAuditedAccounts:   boolean;
+  auditFirmName?:          string;
+  lastAuditYear?:          number;
+
+  // References
+  bankReference1Name?:     string;
+  bankReference1Contact?:  string;
+  tradeReference1Company?: string;
+  tradeReference1Contact?: string;
+  tradeReference1Email?:   string;
+  tradeReference2Company?: string;
+  tradeReference2Contact?: string;
+  tradeReference2Email?:   string;
+}
+
+// ─── Step 5: Capabilities & Experience ───────────────────────────────────────
+export interface CapabilitiesExperience {
+  // Supply categories
+  supplyCategories:         SupplyCategory[];
+  primaryCategory:          SupplyCategory;
+  categoryDescription:      string;
+
+  // Capacity
+  canHandleEmergencyOrders: boolean;
+  emergencyLeadTimeHours?:  number;
+  minimumOrderValue?:       number;
+  maximumOrderValue?:       number;
+  bulkDiscountAvailable:    boolean;
+  bulkDiscountDetails?:     string;
+
+  // Quality
   hasQualityManagementSystem: boolean;
-  qualityManagementSystemDetails?: string;
+  qmsStandard?:             string;
+  hasInspectionFacility:    boolean;
+  testingEquipmentList?:    string;
 
-  // Data Protection
-  acceptsDataProtectionPolicy: boolean;
-  acceptsAntiCorruptionPolicy: boolean;
-  acceptsCodeOfConduct: boolean;
+  // Production / supply
+  isManufacturer:           boolean;
+  isDistributor:            boolean;
+  isServiceProvider:        boolean;
+  isImporter:               boolean;
+  primarySuppliersCountries?: string;
+
+  // Past performance
+  majorClients:             MajorClient[];
+  completedProjectsCount:   number;
+  averageProjectValue?:     number;
+  largestProjectValue?:     number;
+  largestProjectDescription?: string;
+
+  // Staff & expertise
+  technicalStaffCount?:     number;
+  keyPersonnelList:         KeyPersonnel[];
+
+  // Memberships
+  industryAssociations?:    string;
+  professionalMemberships?: string;
+  awardsRecognitions?:      string;
 }
 
-export interface CertificationDto {
-  certificationType: VendorCertificationType;
-  certificationName: string;
-  issuingBody: string;
-  certificateNumber?: string;
-  issueDate: string;
-  expiryDate?: string;
-  isNeverExpiring: boolean;
+export interface MajorClient {
+  id:           string;
+  companyName:  string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contractValue?: number;
+  contractYear?:  number;
+  description?:   string;
 }
 
-// ─── Step 5: References & Experience ──────────────────────────────────────────
-export interface ReferencesExperienceDto {
-  // Client References
-  clientReferences: ClientReferenceDto[];
-
-  // Key Projects / Experience
-  keyProjects: KeyProjectDto[];
-
-  // Trade Associations
-  tradeAssociations: TradeAssociationDto[];
-
-  // Awards & Recognition
-  awards?: string;
-
-  // Additional Information
-  additionalInformation?: string;
+export interface KeyPersonnel {
+  id:           string;
+  name:         string;
+  title:        string;
+  qualification?: string;
+  yearsExperience?: number;
 }
 
-export interface ClientReferenceDto {
-  companyName: string;
-  contactPersonName: string;
-  contactEmail: string;
-  contactPhone: string;
-  relationshipDescription: string;
-  yearsOfRelationship: number;
+// ─── Step 6: Documents & Declaration ─────────────────────────────────────────
+export interface DocumentsDeclaration {
+  // Uploaded documents
+  uploadedDocuments:     UploadedDocument[];
+
+  // Declaration
+  declarantName:         string;
+  declarantTitle:        string;
+  declarantEmail:        string;
+  declarantPhone:        string;
+  declarationDate:       string;
+
+  // Agreements
+  agreedToTerms:         boolean;
+  agreedToPrivacyPolicy: boolean;
+  agreedToCodeOfConduct: boolean;
+  agreedToAntiCorruption: boolean;
+  confirmedAccuracy:     boolean;
+
+  // Signature
+  signatureFileUrl?:     string;
+  signatureFile?:        File;
 }
 
-export interface KeyProjectDto {
-  projectTitle: string;
-  clientName: string;
-  projectValue?: number;
-  projectCurrency?: string;
-  startDate: string;
-  endDate?: string;
-  isOngoing: boolean;
-  description: string;
+export interface UploadedDocument {
+  id:            string;
+  type:          DocumentUploadType;
+  label:         string;
+  fileName:      string;
+  fileSize:      string;
+  fileUrl:       string;
+  uploadedDate:  Date;
+  expiryDate?:   Date;
+  isRequired:    boolean;
+  status:        DocumentStatus;
+  file?:         File;
 }
 
-export interface TradeAssociationDto {
-  associationName: string;
-  membershipNumber?: string;
-  memberSince?: string;
+export type DocumentUploadType =
+  | 'cac_certificate' | 'tax_clearance' | 'vat_certificate'
+  | 'nafdac_cert' | 'son_cert' | 'public_liability_insurance'
+  | 'professional_indemnity' | 'iso_certificate' | 'annual_accounts'
+  | 'company_profile' | 'bank_reference_letter' | 'other';
+
+// ─── Full Registration DTO ────────────────────────────────────────────────────
+export interface VendorRegistration {
+  id?:              string;
+  applicationNumber?: string;
+  status:           RegistrationStatus;
+  submittedDate?:   Date;
+  lastModified?:    Date;
+  reviewedBy?:      string;
+  rejectionReason?: string;
+
+  step1: BusinessIdentity;
+  step2: LegalCompliance;
+  step3: ContactLocation;
+  step4: BankingFinance;
+  step5: CapabilitiesExperience;
+  step6: DocumentsDeclaration;
 }
 
-// ─── Step 6: Documents Upload ─────────────────────────────────────────────────
-export interface DocumentsUploadDto {
-  // Required Documents
-  cacCertificate?: FileUploadDto;
-  tinCertificate?: FileUploadDto;
-  vatCertificate?: FileUploadDto;
-  incorporationCertificate?: FileUploadDto;
+// ─── Constants ────────────────────────────────────────────────────────────────
+export const BUSINESS_TYPE_LABELS: Record<BusinessType, string> = {
+  sole_proprietorship: 'Sole Proprietorship',
+  partnership:         'Partnership',
+  limited_liability:   'Limited Liability Company (LLC)',
+  public_limited:      'Public Limited Company (PLC)',
+  cooperative:         'Cooperative Society',
+  ngo:                 'Non-Governmental Organisation (NGO)',
+  government_entity:   'Government Entity / Parastatal',
+  other:               'Other',
+};
 
-  // Financial Documents
-  auditedFinancialStatements?: FileUploadDto;
-  bankStatement?: FileUploadDto; // Last 6 months
+export const BUSINESS_SIZE_LABELS: Record<BusinessSize, string> = {
+  micro:      'Micro (1–9 employees)',
+  small:      'Small (10–49 employees)',
+  medium:     'Medium (50–249 employees)',
+  large:      'Large (250–999 employees)',
+  enterprise: 'Enterprise (1,000+ employees)',
+};
 
-  // Compliance Documents
-  taxClearanceCertificate?: FileUploadDto;
-  pencomClearance?: FileUploadDto; // Pension clearance (Nigeria)
-  itfClearance?: FileUploadDto;    // ITF clearance (Nigeria)
-  nsitfClearance?: FileUploadDto;  // NSITF clearance (Nigeria)
+export const OWNERSHIP_TYPE_LABELS: Record<OwnershipType, string> = {
+  indigenous:    'Fully Indigenous / Nigerian-owned',
+  foreign:       'Fully Foreign-owned',
+  joint_venture: 'Joint Venture (Indigenous + Foreign)',
+  government:    'Government-owned',
+  mixed:         'Mixed Ownership',
+};
 
-  // Identity Documents
-  directorId?: FileUploadDto;
-  authorizedSignatoryId?: FileUploadDto;
+export const SUPPLY_CATEGORY_LABELS: Record<SupplyCategory, string> = {
+  technology_it:           'Technology & IT',
+  construction_civil:      'Construction & Civil Works',
+  healthcare_medical:      'Healthcare & Medical Supplies',
+  office_supplies:         'Office Supplies & Stationery',
+  industrial_equipment:    'Industrial Equipment & Parts',
+  food_beverage:           'Food & Beverage',
+  logistics_transport:     'Logistics & Transportation',
+  furniture_fixtures:      'Furniture & Fixtures',
+  safety_ppe:              'Safety Equipment & PPE',
+  cleaning_facilities:     'Cleaning & Facilities Management',
+  marketing_print:         'Marketing, Print & Branded Items',
+  engineering_mechanical:  'Engineering & Mechanical Works',
+  electrical_electronics:  'Electrical & Electronics',
+  oil_gas:                 'Oil & Gas Services',
+  agriculture_farming:     'Agriculture & Farming',
+  financial_services:      'Financial & Insurance Services',
+  consulting_professional: 'Consulting & Professional Services',
+  catering_hospitality:    'Catering & Hospitality',
+  security_services:       'Security Services',
+  real_estate:             'Real Estate & Property',
+  telecoms:                'Telecommunications',
+  pharmaceuticals:         'Pharmaceuticals & Healthcare Products',
+  automotive:              'Automotive & Vehicle Services',
+  textiles_apparel:        'Textiles & Apparel',
+  other:                   'Other',
+};
 
-  // Optional Documents
-  companyProfile?: FileUploadDto;
-  isoCertificate?: FileUploadDto;
-  otherDocuments?: FileUploadDto[];
-}
-
-export interface FileUploadDto {
-  file?: File;
-  fileName: string;
-  fileSize: number;
-  fileType: string;
-  uploadedAt?: string;
-  documentStatus?: DocumentStatus;
-  expiryDate?: string;
-}
-
-// ─── Master Registration DTO ──────────────────────────────────────────────────
-export interface VendorRegistrationDto {
-  businessInformation: BusinessInformationDto;
-  contactLocation: ContactLocationDto;
-  financialBanking: FinancialBankingDto;
-  compliance: ComplianceDto;
-  referencesExperience: ReferencesExperienceDto;
-  documents: DocumentsUploadDto;
-  termsAndConditionsAccepted: boolean;
-  privacyPolicyAccepted: boolean;
-  registrationDate?: string;
-}
-
-// ─── API Response ─────────────────────────────────────────────────────────────
-export interface VendorRegistrationResponse {
-  success: boolean;
-  vendorId?: string;
-  registrationNumber?: string;
-  message: string;
-  errors?: Record<string, string[]>;
-}
-
-// ─── Lookup Data ──────────────────────────────────────────────────────────────
 export const NIGERIAN_STATES = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-  'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
-  'FCT (Abuja)', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
-  'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo',
-  'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa',
+  'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo',
+  'Ekiti', 'Enugu', 'FCT (Abuja)', 'Gombe', 'Imo', 'Jigawa',
+  'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun',
+  'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
 ];
 
-export const AFRICAN_COUNTRIES = [
-  'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'Egypt', 'Ethiopia',
-  'Tanzania', 'Uganda', 'Rwanda', 'Senegal', 'Côte d\'Ivoire', 'Cameroon',
-  'Mozambique', 'Zambia', 'Zimbabwe', 'Other'
-];
-
-export const ALL_COUNTRIES = [
-  ...AFRICAN_COUNTRIES,
-  'United Kingdom', 'United States', 'France', 'Germany', 'China',
-  'India', 'United Arab Emirates', 'Canada', 'Australia', 'Other'
-];
-
-export const SUPPLIER_CATEGORIES = [
-  'IT Equipment & Software', 'Office Supplies & Stationery', 'Furniture & Fixtures',
-  'Construction & Civil Works', 'Electrical & Electronics', 'Mechanical & Engineering',
-  'Medical Supplies & Equipment', 'Pharmaceuticals', 'Food & Beverages',
-  'Uniforms & Protective Gear', 'Vehicles & Transportation', 'Fuel & Lubricants',
-  'Cleaning & Janitorial Services', 'Security Services', 'Catering Services',
-  'Consulting & Professional Services', 'Legal Services', 'Financial Services',
-  'Training & Capacity Development', 'Marketing & Advertising', 'Printing & Publishing',
-  'Agriculture & Farm Produce', 'Logistics & Warehousing', 'Telecommunications',
-  'Renewable Energy', 'Oil & Gas', 'Mining & Minerals', 'Textile & Garments', 'Other'
-];
-
-export const INDUSTRY_OPTIONS = [
-  'Agriculture', 'Automotive', 'Banking & Finance', 'Construction',
-  'Education', 'Energy & Utilities', 'Entertainment & Media', 'Food & Beverage',
-  'Government & Public Sector', 'Healthcare', 'Hospitality & Tourism',
-  'Information Technology', 'Insurance', 'Legal', 'Logistics & Supply Chain',
-  'Manufacturing', 'Mining & Resources', 'Oil & Gas', 'Pharmaceutical',
-  'Real Estate', 'Retail & Distribution', 'Telecommunications', 'Other'
-];
-
-export const BANKS_NIGERIA = [
+export const NIGERIAN_BANKS = [
   'Access Bank', 'Citibank Nigeria', 'Ecobank Nigeria', 'Fidelity Bank',
   'First Bank of Nigeria', 'First City Monument Bank (FCMB)', 'Globus Bank',
-  'Guaranty Trust Bank (GTBank)', 'Heritage Bank', 'Jaiz Bank',
-  'Keystone Bank', 'Polaris Bank', 'Providus Bank', 'Stanbic IBTC Bank',
-  'Standard Chartered Bank', 'Sterling Bank', 'SunTrust Bank', 'Titan Trust Bank',
-  'Union Bank', 'United Bank for Africa (UBA)', 'Unity Bank', 'Wema Bank',
-  'Zenith Bank', 'Other'
+  'Guaranty Trust Bank (GTBank)', 'Heritage Bank', 'Keystone Bank',
+  'Lotus Bank', 'Optimus Bank', 'Parallex Bank', 'Polaris Bank',
+  'Premium Trust Bank', 'Providus Bank', 'Stanbic IBTC Bank',
+  'Standard Chartered Bank', 'Sterling Bank', 'Suntrust Bank',
+  'Titan Trust Bank', 'Union Bank', 'United Bank for Africa (UBA)',
+  'Unity Bank', 'Wema Bank', 'Zenith Bank', 'Other',
+];
+
+export const PAYMENT_TERMS_OPTIONS = [
+  'Advance Payment (100%)', '50% Advance / 50% on Delivery',
+  '30% Advance / 70% on Delivery', 'Net 7', 'Net 14', 'Net 15',
+  'Net 30', 'Net 45', 'Net 60', 'Net 90', 'Letter of Credit',
+  'On Delivery', 'Milestone-based',
+];
+
+export const ISO_STANDARDS_OPTIONS = [
+  'ISO 9001:2015 (Quality Management)',
+  'ISO 14001:2015 (Environmental Management)',
+  'ISO 45001:2018 (Occupational Health & Safety)',
+  'ISO 27001:2022 (Information Security)',
+  'ISO 22000:2018 (Food Safety Management)',
+  'ISO 13485:2016 (Medical Devices)',
+  'ISO 50001:2018 (Energy Management)',
+  'ISO 31000:2018 (Risk Management)',
+];
+
+export const EMPLOYEE_RANGES = [
+  '1–5', '6–10', '11–25', '26–50', '51–100',
+  '101–250', '251–500', '501–1,000', '1,001–5,000', '5,000+',
+];
+
+export const TURNOVER_RANGES = [
+  'Under ₦10 million',
+  '₦10M – ₦50M',
+  '₦50M – ₦200M',
+  '₦200M – ₦500M',
+  '₦500M – ₦1 billion',
+  '₦1B – ₦5B',
+  '₦5B – ₦20B',
+  'Above ₦20 billion',
 ];
