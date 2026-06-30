@@ -227,7 +227,7 @@ export class VendorSelectionComponent implements OnInit {
           selectedVendors: Array.from(this.selectedVendors)
         }).subscribe(() => {
           const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-          this.router.navigate(['admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
+          this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
         });
       }
     }
@@ -237,9 +237,9 @@ export class VendorSelectionComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
     if (uuid) {
       const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-      this.router.navigate(['admin/sales/commerce/requests/new', typePath, uuid, 'template']);
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'template']);
     } else {
-      this.router.navigate(['admin/sales/commerce/requests/new']);
+      this.router.navigate(['/admin/sales/commerce/requests/new']);
     }
   }
 

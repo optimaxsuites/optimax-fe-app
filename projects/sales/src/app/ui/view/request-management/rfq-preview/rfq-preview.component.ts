@@ -153,9 +153,9 @@ export class RfqPreviewComponent implements OnInit {
     if (this.requestId) {
       // Determine which type path to use based on the request
       const typePath = this.request?.procurementType === 'SERVICE' ? 'service' : 'product';
-      this.router.navigate(['admin/sales/commerce/requests/new', typePath, this.requestId, 'vendors']);
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, this.requestId, 'vendors']);
     } else {
-      this.router.navigate(['admin/sales/commerce/requests/new']);
+      this.router.navigate(['/admin/sales/commerce/requests/new']);
     }
   }
 

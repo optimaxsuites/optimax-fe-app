@@ -285,7 +285,7 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
-  // ✅ FIXED: Removed UUID and buildLink
+  // Removed UUID and buildLink
   createQuote(customer: Customer): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
