@@ -1,17 +1,18 @@
 // procurement-product-form/procurement-product-form.component.ts
 
-import { Component, EventEmitter, Output, Input, OnChanges } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnChanges, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { RequestItem, Attachment } from '../../../domain/procurement-request/procurement.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { v4 as uuidV4 } from 'uuid';
 
 @Component({
   selector: 'app-request-for-quotation-form',
   templateUrl: './request-for-quotation-form.component.html',
   styleUrl: './request-for-quotation-form.component.scss'
 })
-export class RequestForQuotationFormComponent  implements OnChanges {
+export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   @Input() initialData: any = {};
   @Output() formData = new EventEmitter<any>();
   @Output() back = new EventEmitter<void>();
@@ -19,10 +20,13 @@ export class RequestForQuotationFormComponent  implements OnChanges {
   productForm: FormGroup;
   currencies = ['NGN', 'USD', 'EUR', 'GBP'];
   units = ['Pieces', 'Boxes', 'Kg', 'Liters', 'Meters', 'Sets', 'Packages', 'Units'];
+  isEditMode = false;
+  requestId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
     private procurementRequestService: ProcurementRequestService
   ) {
     this.productForm = this.fb.group({
@@ -38,6 +42,110 @@ export class RequestForQuotationFormComponent  implements OnChanges {
 
     // Add initial item
     this.addItem();
+  }
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      const uuid = params.get('uuid');
+      if (uuid) {
+        this.isEditMode = true;
+        this.requestId = uuid;
+        this.loadRequest(uuid);
+      }
+    });
+  }
+
+  loadRequest(uuid: string): void {
+    this.procurementRequestService.getRequest(uuid).subscribe({
+      next: (req) => {
+        if (req) {
+          // Clear any initial item pushed in constructor
+          while (this.items.length) {
+            this.items.removeAt(0);
+          }
+
+          // Populate items array
+          if (req.items && req.items.length > 0) {
+            req.items.forEach(item => {
+              const itemGroup = this.createItemForm();
+              
+              // Clear custom fields array in specifications
+              const specsGroup = itemGroup.get('specifications') as FormGroup;
+              const customFields = specsGroup.get('customFields') as FormArray;
+              while (customFields.length) {
+                customFields.removeAt(0);
+              }
+              const specs = item.specifications as any;
+              if (specs?.customFields) {
+                specs.customFields.forEach((field: any) => {
+                  customFields.push(this.fb.group({
+                    label: [field.label, Validators.required],
+                    value: [field.value, Validators.required]
+                  }));
+                });
+              }
+
+              // Clear attachments array
+              const attachments = itemGroup.get('attachments') as FormArray;
+              while (attachments.length) {
+                attachments.removeAt(0);
+              }
+              if (item.attachments) {
+                item.attachments.forEach((att: any) => {
+                  attachments.push(this.fb.group({
+                    id: [att.id],
+                    fileName: [att.fileName, Validators.required],
+                    fileUrl: [att.fileUrl],
+                    size: [att.size],
+                    type: [att.type],
+                    uploadedAt: [att.uploadedAt],
+                    file: [att.file]
+                  }));
+                });
+              }
+
+              // Patch remaining item values
+              itemGroup.patchValue({
+                id: item.id,
+                name: item.name,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit,
+                estimatedBudget: item.estimatedBudget,
+                unitPrice: item.unitPrice,
+                specifications: {
+                  brand: specs?.brand || '',
+                  model: specs?.model || '',
+                  color: specs?.color || '',
+                  size: specs?.size || '',
+                  material: specs?.material || '',
+                  warranty: specs?.warranty || ''
+                }
+              });
+
+              this.items.push(itemGroup);
+            });
+          }
+
+          // Patch general form values
+          this.productForm.patchValue({
+            title: req.title,
+            description: req.description,
+            deliveryLocation: req.deliveryLocation,
+            deliveryDeadline: req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : '',
+            currency: req.currency || 'NGN',
+            deliveryMode: req.deliveryMode || 'STANDARD',
+            specialInstructions: req.specialInstructions || ''
+          });
+        } else {
+          this.isEditMode = false;
+        }
+      },
+      error: (err) => {
+        console.warn('Request not found in database, treating as new request draft.', err);
+        this.isEditMode = false;
+      }
+    });
   }
 
   ngOnChanges(): void {
@@ -132,32 +240,41 @@ export class RequestForQuotationFormComponent  implements OnChanges {
   }
 
   onNext(): void {
-    if (this.productForm.valid) {
-      const formValue = this.productForm.value;
-      formValue.totalBudget = this.getTotalBudget();
-      formValue.procurementType = 'PRODUCT';
-      // Convert file URLs to actual files for submission
-      formValue.items = formValue.items.map((item: any) => ({
-        ...item,
-        attachments: item.attachments.map((att: any) => ({
-          ...att,
-          file: att.file || null,
-          fileUrl: att.fileUrl || null
-        }))
-      }));
-      
-      this.procurementRequestService.createRequest(formValue).subscribe({
+  if (this.productForm.valid) {
+    const formValue = this.productForm.value;
+    formValue.totalBudget = this.getTotalBudget();
+    formValue.procurementType = 'PRODUCT';
+    
+    const requestId = this.requestId || uuidV4();
+    
+    if (this.isEditMode && this.requestId) {
+      this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+        next: (req) => {
+          this.router.navigate(['/commerce/requests/new/product', req.id, 'template']);
+        },
+        error: (err) => {
+          console.error('Failed to update request', err);
+          this.router.navigate(['/commerce/requests/new/product', requestId, 'template']);
+        }
+      });
+    } else {
+      this.procurementRequestService.createRequest({
+        ...formValue,
+        id: requestId
+      }).subscribe({
         next: (req) => {
           this.router.navigate(['/commerce/requests/new/product', req.id, 'template']);
         },
         error: (err) => {
           console.error('Failed to create request', err);
+          this.router.navigate(['/commerce/requests/new/product', requestId, 'template']);
         }
       });
-    } else {
-      this.markFormGroupTouched(this.productForm);
     }
+  } else {
+    this.markFormGroupTouched(this.productForm);
   }
+}
 
   onBack(): void {
     this.back.emit();

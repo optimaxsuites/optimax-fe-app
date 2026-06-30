@@ -1,3 +1,5 @@
+<!-- rfq-preview.component.html -->
+
 <div class="rfq-preview-container" *ngIf="!isLoading && request">
   <div class="preview-header">
     <div class="header-content">
@@ -27,13 +29,13 @@
             </div>
             <div class="doc-title-group">
               <h1 class="doc-main-title">REQUEST FOR QUOTATION</h1>
-              <p class="doc-id">Reference: #{{ request?.id }}</p>
+              <p class="doc-id">Reference: #{{ request.id }}</p>
             </div>
           </div>
           <div class="doc-meta">
-            <div class="meta-row"><strong>Date:</strong> <span>{{ formatDate(request?.createdAt) }}</span></div>
-            <div class="meta-row"><strong>Deadline:</strong> <span>{{ formatDate(request?.deliveryDeadline) }}</span></div>
-            <div class="meta-row"><strong>Currency:</strong> <span>{{ request?.currency }}</span></div>
+            <div class="meta-row"><strong>Date:</strong> <span>{{ formatDate(request.createdAt) }}</span></div>
+            <div class="meta-row"><strong>Deadline:</strong> <span>{{ formatDate(request.deliveryDeadline) }}</span></div>
+            <div class="meta-row"><strong>Currency:</strong> <span>{{ request.currency }}</span></div>
           </div>
         </div>
 
@@ -44,25 +46,25 @@
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Title</span>
-              <span class="info-value">{{ request?.title }}</span>
+              <span class="info-value">{{ request.title }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Procurement Type</span>
-              <span class="info-value type-badge">{{ request?.procurementType?.toLowerCase() }}</span>
+              <span class="info-value type-badge">{{ request.procurementType?.toLowerCase() || 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Delivery Location</span>
-              <span class="info-value">{{ request?.deliveryLocation }}</span>
+              <span class="info-value">{{ request.deliveryLocation }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Total Estimated Budget</span>
-              <span class="info-value font-semibold">{{ formatBudget(request?.totalBudget || 0) }}</span>
+              <span class="info-value font-semibold">{{ formatBudget(request.totalBudget || 0) }}</span>
             </div>
           </div>
           
           <div class="info-description">
             <span class="info-label">Scope Description</span>
-            <p class="description-text">{{ request?.description }}</p>
+            <p class="description-text">{{ request.description }}</p>
           </div>
         </div>
 
@@ -75,27 +77,41 @@
                 <th>Description</th>
                 <th class="text-right">Qty</th>
                 <th class="text-right">Unit</th>
-                <th class="text-right" *ngIf="request?.procurementType === 'PRODUCT'">Est. Budget</th>
-                <th class="text-right" *ngIf="request?.procurementType === 'SERVICE'">Duration</th>
+                <th class="text-right" *ngIf="request.procurementType === 'PRODUCT'">Est. Budget</th>
+                <th class="text-right" *ngIf="request.procurementType === 'SERVICE'">Duration</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of request?.items">
-                <td class="font-semibold">{{ item.name }}</td>
+              <tr *ngFor="let item of request.items">
+                <td class="font-semibold">
+                  <div>{{ item.name }}</div>
+                  <div class="item-attachments-preview" *ngIf="item.attachments && item.attachments.length > 0">
+                    <div class="item-attachment-thumb" *ngFor="let att of item.attachments">
+                      <img 
+                        *ngIf="att.type?.includes('image') && att.fileUrl" 
+                        [src]="att.fileUrl" 
+                        class="item-img-preview" 
+                        alt="attachment">
+                      <span *ngIf="!att.type?.includes('image')" class="item-doc-link">
+                        <i class="fas fa-file-alt"></i> {{ att.fileName }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
                 <td>{{ item.description }}</td>
                 <td class="text-right">{{ item.quantity }}</td>
                 <td class="text-right">{{ item.unit || 'Units' }}</td>
-                <td class="text-right" *ngIf="request?.procurementType === 'PRODUCT'">{{ formatBudget(item.estimatedBudget) }}</td>
-                <td class="text-right" *ngIf="request?.procurementType === 'SERVICE'">{{ item.serviceDuration || 'N/A' }}</td>
+                <td class="text-right" *ngIf="request.procurementType === 'PRODUCT'">{{ formatBudget(item.estimatedBudget) }}</td>
+                <td class="text-right" *ngIf="request.procurementType === 'SERVICE'">{{ item.serviceDuration || 'N/A' }}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="doc-section-block" *ngIf="request?.attachments?.length">
+        <div class="doc-section-block" *ngIf="request.attachments?.length">
           <h3>3. Attachments</h3>
           <ul class="doc-attachments-list">
-            <li *ngFor="let att of request?.attachments">
+            <li *ngFor="let att of request.attachments">
               <i class="fas fa-paperclip"></i> {{ att.fileName }}
             </li>
           </ul>

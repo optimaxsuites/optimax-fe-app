@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-request-for-quotation-detail',
@@ -11,6 +13,7 @@ import { ProcurementRequestService } from '../../../service/procurement/procurem
 export class RequestForQuotationDetailComponent implements OnInit {
   request: ProcurementRequest | null = null;
   isLoading = false;
+  isDownloading = false;
   showCancelDialog = false;
   cancellationReason = '';
   template: RFQTemplate | null = null;
@@ -133,5 +136,41 @@ export class RequestForQuotationDetailComponent implements OnInit {
     if (fileType.includes('excel') || fileType.includes('spreadsheet') || fileType.includes('csv')) return 'fa-file-excel';
     if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
     return 'fa-file';
+  }
+
+  downloadPDF(): void {
+    const element = document.getElementById('rfq-detail-sheet');
+    if (element) {
+      this.isDownloading = true;
+      html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: true,
+        ignoreElements: (el) => el.classList.contains('action-bar') || el.tagName.toLowerCase() === 'app-back-button'
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 size width
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`RFQ-Detail-${this.request?.id || 'Request'}.pdf`);
+        this.isDownloading = false;
+      }).catch(err => {
+        console.error('Error generating PDF:', err);
+        this.isDownloading = false;
+      });
+    }
+  }
+
+  canEdit(request: ProcurementRequest): boolean {
+    const nonEditableStatuses = ['DELIVERED', 'CANCELLED'];
+    return !nonEditableStatuses.includes(request.status);
+  }
+
+  goEdit(): void {
+    if (this.request) {
+      const typePath = this.request.procurementType?.toLowerCase() === 'service' ? 'service' : 'product';
+      this.router.navigate(['/commerce/requests/new', typePath, this.request.id]);
+    }
   }
 }

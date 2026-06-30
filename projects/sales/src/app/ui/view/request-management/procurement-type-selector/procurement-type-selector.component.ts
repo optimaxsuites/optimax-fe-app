@@ -1,4 +1,4 @@
-// procurement-type-selector/procurement-type-selector.component.ts
+// procurement-type-selector.component.ts
 
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -32,10 +32,11 @@ export class ProcurementTypeSelectorComponent {
   proceed(): void {
     if (this.typeForm.valid) {
       const type = this.typeForm.get('procurementType')?.value;
+      const uuid = uuidV4();
       if (type === 'PRODUCT') {
-        this.router.navigate(['/commerce/requests/new/product', uuidV4()]);
+        this.router.navigate(['/commerce/requests/new/product', uuid]);
       } else if (type === 'SERVICE') {
-        this.router.navigate(['/commerce/requests/new/service', uuidV4()]);
+        this.router.navigate(['/commerce/requests/new/service', uuid]);
       }
     }
   }

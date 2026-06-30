@@ -541,7 +541,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     }
     if (event.row._rowType === 'ORDER') return;
     if (event.actionId === 'edit') {
-      this.router.navigate(['/commerce/requests', event.row.id, 'edit']);
+      const typePath = event.row.procurementType?.toLowerCase() === 'service' ? 'service' : 'product';
+      this.router.navigate(['/commerce/requests/new', typePath, event.row.id]);
       return;
     }
     if (event.actionId === 'cancel') {
@@ -639,8 +640,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   openNewRequest(): void {
-    this.router.navigate([this.newRequestLink]);
-  }
+  this.router.navigate(['/commerce/requests/new']);
+}
 
   viewAllRequests(): void {
     this.router.navigate(['/admin/sales/commerce/requests']);
