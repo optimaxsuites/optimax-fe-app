@@ -284,7 +284,35 @@ ul, .sb-list {
   overflow: hidden;
   transition: max-height 0.24s ease;
 
-  &.sb-sub--open { max-height: 400px; }
+  &.sb-sub--open { max-height: 800px; }
+}
+
+// ─── Sub-menu section header ──────────────────────────────────────────────────
+
+.sb-sub-section-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 10px 4px 16px;
+  margin-top: 4px;
+
+  span {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-left: 8px;
+  }
 }
 
 .sb-sub-link {
