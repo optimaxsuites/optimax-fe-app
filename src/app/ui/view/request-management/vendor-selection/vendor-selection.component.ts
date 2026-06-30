@@ -207,10 +207,10 @@ export class VendorSelectionComponent implements OnInit {
       const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
       if (uuid) {
         this.procurementService.updateRequest(uuid, {
-          selectedVendors: Array.from(this.selectedVendors),
-          status: 'VENDORS_QUOTING'
+          selectedVendors: Array.from(this.selectedVendors)
         }).subscribe(() => {
-          this.router.navigate(['/commerce/requests']);
+          const typePath = this.router.url.includes('/service') ? 'service' : 'product';
+          this.router.navigate(['/commerce/requests/new', typePath, uuid, 'preview']);
         });
       }
     }

@@ -78,6 +78,7 @@ import { ProcurementTypeSelectorComponent } from './ui/view/request-management/p
 import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
 import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
+import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
 
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
@@ -117,6 +118,7 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     RfqTemplateSelectorComponent,
     VendorSelectionComponent,
     RequestForQuotationDetailComponent,
+    RfqPreviewComponent,
     DashboardComponent,
     FinanceComponent,
     LpoComponent,

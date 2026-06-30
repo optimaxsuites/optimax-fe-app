@@ -13,7 +13,7 @@ export class RequestManagementComponent {
     {
       name: 'Request for Quotations',
       component: RequestForQuotationListComponent,
-      icon: 'fa-solid fa-bell-ring',
+      icon: 'fa-solid fa-bell',
       // icon: 'fa-solid fa-bell', 
     },
     // {

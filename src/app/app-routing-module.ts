@@ -6,6 +6,7 @@ import { ProcurementTypeSelectorComponent } from './ui/view/request-management/p
 import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
 import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
+import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
 import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
@@ -198,6 +199,10 @@ export const routes: Routes = [
     component: VendorSelectionComponent
   },
   {
+    path: 'commerce/requests/new/product/:uuid/preview',
+    component: RfqPreviewComponent
+  },
+  {
     path: 'commerce/requests/new/service',
     component: RequestForQuotationServiceFormComponent
   },
@@ -212,6 +217,10 @@ export const routes: Routes = [
   {
     path: 'commerce/requests/new/service/:uuid/vendors',
     component: VendorSelectionComponent
+  },
+  {
+    path: 'commerce/requests/new/service/:uuid/preview',
+    component: RfqPreviewComponent
   },
   {
     path: 'commerce/service-requests',
