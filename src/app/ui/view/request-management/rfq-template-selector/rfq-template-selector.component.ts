@@ -155,7 +155,7 @@ export class RfqTemplateSelectorComponent implements OnInit {
           rfqTitle: this.templateForm.get('customMessage')?.value
         }).subscribe(() => {
           const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-          this.router.navigate(['admin/sales/commerce/requests/new', typePath, uuid, 'vendors']);
+          this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'vendors']);
         });
       }
     }
@@ -165,9 +165,9 @@ export class RfqTemplateSelectorComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const typePath = this.router.url.includes('/service') ? 'service' : 'product';
     if (uuid) {
-      this.router.navigate(['admin/sales/commerce/requests/new', typePath, uuid]);
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid]);
     } else {
-      this.router.navigate(['admin/sales/commerce/requests/new']);
+      this.router.navigate(['/admin/sales/commerce/requests/new']);
     }
   }
 }

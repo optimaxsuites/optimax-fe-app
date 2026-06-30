@@ -250,11 +250,11 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     if (this.isEditMode && this.requestId) {
       this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
         next: (req) => {
-          this.router.navigate(['admin/sales/commerce/requests/new/product', req.id, 'template']);
+          this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
         },
         error: (err) => {
           console.error('Failed to update request', err);
-          this.router.navigate(['admin/sales/commerce/requests/new/product', requestId, 'template']);
+          this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
         }
       });
     } else {
@@ -263,11 +263,11 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
         id: requestId
       }).subscribe({
         next: (req) => {
-          this.router.navigate(['admin/sales/commerce/requests/new/product', req.id, 'template']);
+          this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
         },
         error: (err) => {
           console.error('Failed to create request', err);
-          this.router.navigate(['admin/sales/commerce/requests/new/product', requestId, 'template']);
+          this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
         }
       });
     }

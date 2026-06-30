@@ -34,9 +34,9 @@ export class ProcurementTypeSelectorComponent {
       const type = this.typeForm.get('procurementType')?.value;
       const uuid = uuidV4();
       if (type === 'PRODUCT') {
-        this.router.navigate(['admin/sales/commerce/requests/new/product', uuid]);
+        this.router.navigate(['/admin/sales/commerce/requests/new/product', uuid]);
       } else if (type === 'SERVICE') {
-        this.router.navigate(['admin/sales/commerce/requests/new/service', uuid]);
+        this.router.navigate(['/admin/sales/commerce/requests/new/service', uuid]);
       }
     }
   }
