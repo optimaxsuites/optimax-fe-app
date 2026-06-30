@@ -1,15 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { ProductRequestDetailComponent } from './ui/view/request-management/product-request-management/product-request-detail/product-request-detail.component';
-import { ProductRequestFormComponent } from './ui/view/request-management/product-request-management/product-request-form/product-request-form.component';
-import { ProductRequestListComponent } from './ui/view/request-management/product-request-management/product-request-list/product-request-list.component';
+import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
+import { RequestForQuotationServiceFormComponent } from './ui/view/request-management/request-for-quotation-service-form/request-for-quotation-service-form.component';
+import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
+import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
+import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
+import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
 import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
-import { RequestEditFormComponent } from './ui/view/request-management/product-request-management/request-edit-form/request-edit-form.component';
-import { DeliveryTrackingMapComponent } from './ui/view/request-management/product-request-management/delivery-tracking-map/delivery-tracking-map.component';
-import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
-import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';
-import { ServiceRequestDetailComponent } from './ui/view/request-management/service-request-management/service-request-detail/service-request-detail.component';
-import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
 import { SalesDashboardComponent } from './ui/view/sales-hub/sales-dashboard/sales-dashboard.component';
 import { SalesHubComponent } from './ui/view/sales-hub/sales-hub.component';
 import { QuoteListComponent } from './ui/view/sales-hub/quotations/quote-list/quote-list.component';
@@ -26,18 +23,17 @@ import { ProductServiceCatalogFormComponent } from './ui/view/sales-hub/product-
 import { ProductServiceCatalogDetailComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-detail/product-service-catalog-detail.component';
 
 
-
 export const routes: Routes = [
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/requests',
-  //   pathMatch: 'full'
-  // },
   {
-    path: '',
-    redirectTo: 'sales-hub',
+    path: "",
+    redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
+  // {
+  //   path: '',
+  //   redirectTo: 'sales-hub',
+  //   pathMatch: 'full'
+  // },
 
   // --- Sales Hub ---
   {
@@ -179,43 +175,47 @@ export const routes: Routes = [
   },
   {
     path: 'commerce/requests/new',
-    component: ProductRequestFormComponent
-  },
-  {
-    path: 'commerce/requests/drafts',
-    component: RequestDraftsComponent
+    component: ProcurementTypeSelectorComponent
   },
   {
     path: 'commerce/requests/:id',
-    component: ProductRequestDetailComponent
+    component: RequestForQuotationDetailComponent
   },
   {
-    path: 'commerce/requests/:id/edit',
-    component: RequestEditFormComponent
+    path: 'commerce/requests/new/product',
+    component: RequestForQuotationFormComponent
   },
   {
-    path: 'commerce/requests/:id/tracking',
-    component: DeliveryTrackingMapComponent
+    path: 'commerce/requests/new/product/:uuid',
+    component: RequestForQuotationFormComponent
+  },
+  {
+    path: 'commerce/requests/new/product/:uuid/template',
+    component: RfqTemplateSelectorComponent
+  },
+  {
+    path: 'commerce/requests/new/product/:uuid/vendors',
+    component: VendorSelectionComponent
+  },
+  {
+    path: 'commerce/requests/new/service',
+    component: RequestForQuotationServiceFormComponent
+  },
+  {
+    path: 'commerce/requests/new/service/:uuid',
+    component: RequestForQuotationServiceFormComponent
+  },
+  {
+    path: 'commerce/requests/new/service/:uuid/template',
+    component: RfqTemplateSelectorComponent
+  },
+  {
+    path: 'commerce/requests/new/service/:uuid/vendors',
+    component: VendorSelectionComponent
   },
   {
     path: 'commerce/service-requests',
     component: RequestManagementComponent
-  },
-  {
-    path: 'commerce/service-requests/new',
-    component: ServiceRequestFormComponent
-  },
-  {
-    path: 'commerce/service-requests/:id/edit',
-    component: ServiceRequestFormComponent
-  },
-  {
-    path: 'commerce/service-requests/:id',
-    component: ServiceRequestDetailComponent
-  },
-  {
-    path: 'commerce/orders/:id',
-    component: OrderDetailComponent
   },
   {
     path: 'vendor-portal/:uuid',

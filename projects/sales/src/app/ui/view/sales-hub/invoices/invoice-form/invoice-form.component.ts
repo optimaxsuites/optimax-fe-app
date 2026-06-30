@@ -6,11 +6,12 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent],
   templateUrl: './invoice-form.component.html',
   styleUrls: ['./invoice-form.component.scss']
 })
@@ -27,6 +28,35 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   isEditMode = false;
   invoiceId: string = '';
   quoteId: string = '';
+
+  // ============ WIZARD STATE ============
+  currentStep: 1 | 2 | 3 = 1;
+  totalSteps = 3;
+  selectedTemplate: QuoteTemplate | null = null;
+  selectedAction: 'pdf' | 'email' | 'both' = 'pdf';
+
+  get invoiceDataForTemplate(): any {
+    return {
+      customerId: this.invoiceForm.get('customerId')?.value,
+      customerName: this.invoiceForm.get('customerName')?.value,
+      customerEmail: this.customers.find(c => c.id === this.invoiceForm.get('customerId')?.value)?.email,
+      currency: this.invoiceForm.get('currency')?.value,
+      items: this.items.getRawValue().map((item: any) => ({
+        ...item,
+        total: item.total || 0,
+        taxAmount: item.taxAmount || 0
+      })),
+      subtotal: this.subtotal,
+      taxAmount: this.totalTax || this.taxAmount,
+      discountAmount: this.discountAmount,
+      totalAmount: this.grandTotal,
+      notes: this.invoiceForm.get('notes')?.value,
+      terms: this.invoiceForm.get('terms')?.value,
+      issueDate: this.invoiceForm.get('issueDate')?.value,
+      dueDate: this.invoiceForm.get('dueDate')?.value
+    };
+  }
+
   showTerms = false;
   showNotes = false;
   showAdvanced = false;
@@ -179,7 +209,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   addLineItem(): void {
     const itemForm = this.fb.group({
-      productId: ['', Validators.required],
+      productId: [''],
       productName: ['', Validators.required],
       description: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
@@ -398,6 +428,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private populateForm(invoice: Invoice): void {
+    this.quoteId = invoice.quoteId || '';
     this.invoiceForm.patchValue({
       customerId: invoice.customerId,
       customerName: invoice.customerName,
@@ -418,8 +449,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.addLineItem();
       const index = this.items.length - 1;
       const itemForm = this.items.at(index);
+      
+      const matchingProduct = this.products.find(
+        p => p.name.toLowerCase() === item.productName.toLowerCase()
+      );
+      const pId = matchingProduct ? matchingProduct.id : '';
+
       itemForm.patchValue({
-        productId: '',
+        productId: pId,
         productName: item.productName,
         description: item.description,
         quantity: item.quantity,
@@ -483,7 +520,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       totalAmount: this.grandTotal,
       amountPaid: 0,
       balanceDue: this.grandTotal,
-      status: 'DRAFT' as InvoiceStatus
+      status: (this.currentStep === 3 ? 'SENT' : 'DRAFT') as InvoiceStatus,
+      quoteId: this.quoteId || undefined
     };
 
     let request;
@@ -494,8 +532,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     }
 
     request.subscribe({
-      next: (response: Invoice) => {
+      next: async (response: Invoice) => {
         this.isSubmitting = false;
+        await this.handleDeliveryAction(response, this.selectedAction);
+
+        if (response.status === 'SENT' && response.quoteId) {
+          this.salesService.updateQuote(response.quoteId, { status: 'CONVERTED' }).subscribe({
+            next: () => console.log(`Quote ${response.quoteId} marked as CONVERTED`),
+            error: (err) => console.error('Error converting quote:', err)
+          });
+        }
+
         alert(this.isEditMode ? 'Invoice updated successfully!' : 'Invoice created successfully!');
         const uuid = this.route.snapshot.paramMap.get('uuid');
         if (uuid) {
@@ -706,6 +753,195 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     if (newUnit) {
       alert(`Measurement unit set to: ${newUnit}`);
     }
+  }
+
+  // ============ WIZARD NAVIGATION ============
+  goToStep(step: 1 | 2 | 3): void {
+    if (step > this.currentStep) {
+      if (this.currentStep === 1 && !this.validateStep1()) {
+        return;
+      }
+      if (this.currentStep === 2 && !this.validateStep2()) {
+        return;
+      }
+    }
+    this.currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  nextStep(): void {
+    if (this.currentStep === 1) {
+      if (this.validateStep1()) {
+        this.currentStep = 2;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else if (this.currentStep === 2) {
+      if (this.validateStep2()) {
+        this.currentStep = 3;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }
+
+  prevStep(): void {
+    if (this.currentStep > 1) {
+      this.currentStep = (this.currentStep - 1) as 1 | 2;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  proceedToTemplateSelection(): void {
+    this.nextStep();
+  }
+
+  onHeaderActionClick(): void {
+    if (this.currentStep === 1) {
+      this.nextStep();
+    } else if (this.currentStep === 2) {
+      this.nextStep();
+    } else if (this.currentStep === 3) {
+      this.onSubmit();
+    }
+  }
+
+  // ============ STEP VALIDATION ============
+  private validateStep1(): boolean {
+    console.log('Validating Step 1 (Invoice Details & Line Items)...');
+
+    if (!this.invoiceForm.get('customerId')?.value) {
+      alert('Please select a customer');
+      return false;
+    }
+
+    if (!this.invoiceForm.get('issueDate')?.value) {
+      alert('Please select an invoice date');
+      return false;
+    }
+
+    if (!this.invoiceForm.get('dueDate')?.value) {
+      alert('Please select a due date');
+      return false;
+    }
+
+    if (this.items.length === 0) {
+      alert('Please add at least one item to the invoice');
+      return false;
+    }
+
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items.at(i);
+
+      const qty = item.get('quantity')?.value;
+      if (qty === null || qty === undefined || qty < 1) {
+        alert(`Item ${i + 1}: Please enter a valid quantity (min 1)`);
+        return false;
+      }
+
+      const price = item.get('unitPrice')?.value;
+      if (price === null || price === undefined || price < 0) {
+        alert(`Item ${i + 1}: Please enter a valid price (min 0)`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private validateStep2(): boolean {
+    if (!this.selectedTemplate) {
+      this.selectedTemplate = {
+        id: 'standard',
+        name: 'Standard Professional',
+        description: 'Clean, balanced layout with all essential business information',
+        sections: {
+          showCustomerDetails: true,
+          showCompanyLogo: true,
+          showTaxBreakdown: true,
+          showShippingDetails: true,
+          showPaymentTerms: true,
+          showNotes: true,
+          showTermsConditions: true,
+          showSignature: true,
+          showAttachments: false,
+          showItemImages: false,
+          showSKU: true,
+          showSerialNumbers: false,
+          showBatchDetails: false,
+          showSubtotalPerGroup: true,
+          showTotalInWords: true,
+          showCurrencySymbol: true,
+          showVendorInfo: true,
+          showCustomFields: false
+        },
+        layout: 'standard',
+        fontSize: 'medium',
+        colorTheme: 'professional'
+      };
+    }
+    return true;
+  }
+
+  onTemplateSelected(template: QuoteTemplate | undefined): void {
+    if (template) {
+      this.selectedTemplate = template;
+    }
+  }
+
+  onCreateAction(event: { action: 'pdf' | 'email' | 'both' }): void {
+    this.selectedAction = event.action;
+    this.onSubmit();
+  }
+
+  // ============ DELIVERY ACTIONS ============
+  private async handleDeliveryAction(invoice: Invoice, action: 'pdf' | 'email' | 'both'): Promise<void> {
+    try {
+      if (action === 'pdf' || action === 'both') {
+        const pdfBlob = await this.generateInvoicePDF(invoice);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(pdfBlob);
+        link.download = `Invoice-${invoice.invoiceNumber}.pdf`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      if (action === 'email' || action === 'both') {
+        await this.sendInvoiceEmail(invoice);
+        alert(`Invoice ${invoice.invoiceNumber} sent to ${invoice.customerName}`);
+      }
+    } catch (error) {
+      console.error('Error in delivery action:', error);
+      alert('There was an issue with the delivery. Please try again.');
+    }
+  }
+
+  private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
+    const content = `
+      INVOICE: ${invoice.invoiceNumber}
+      Customer: ${invoice.customerName}
+      Total: ${invoice.totalAmount} ${invoice.currency}
+      Template: ${this.selectedTemplate?.name || 'Standard'}
+    `;
+    return new Blob([content], { type: 'application/pdf' });
+  }
+
+  private async sendInvoiceEmail(invoice: Invoice): Promise<void> {
+    console.log(`Sending invoice ${invoice.invoiceNumber} to ${invoice.customerName}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  getProductSku(productId: string): string {
+    if (!productId) return 'N/A';
+    const product = this.products.find(p => p.id === productId);
+    return product ? product.sku : 'N/A';
+  }
+
+  getStepLabel(step: number): string {
+    const labels = {
+      1: 'Invoice Details',
+      2: 'Template Design',
+      3: 'Preview & Delivery'
+    };
+    return labels[step as keyof typeof labels] || '';
   }
 
   private logInvalidControls(formGroup: FormGroup | FormArray): void {

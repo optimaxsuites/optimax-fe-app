@@ -97,6 +97,7 @@ export interface Invoice {
   id: string;
   invoiceNumber: string;
   orderId: string;
+  quoteId?: string;
   customerId: string;
   customerName: string;
   items: InvoiceItem[];

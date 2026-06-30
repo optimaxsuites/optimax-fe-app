@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote } from '../../../../domain/sales/sales.dto';
+import { Quote, Invoice } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
@@ -76,6 +76,18 @@ export class QuoteDetailComponent implements OnInit {
     return classes[status] || 'status-draft';
   }
 
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      'DRAFT': 'draft',
+      'SENT': 'sent',
+      'ACCEPTED': 'accepted',
+      'DECLINED': 'declined',
+      'EXPIRED': 'expired',
+      'CONVERTED': 'converted'
+    };
+    return classes[status] || 'draft';
+  }
+
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       'DRAFT': 'Draft',
@@ -88,12 +100,87 @@ export class QuoteDetailComponent implements OnInit {
     return labels[status] || status;
   }
 
+  isExpiringSoon(validUntil: Date | string): boolean {
+    if (!validUntil) return false;
+    const validDate = new Date(validUntil);
+    const today = new Date();
+    const diffTime = validDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3 && diffDays >= 0;
+  }
+
+  getTotalQuantity(): number {
+    if (!this.quote || !this.quote.items) return 0;
+    return this.quote.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  }
+
+  getTotalInWords(amount: number): string {
+    // Simple number to words conversion - you can expand this
+    const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if (amount === 0) return 'Zero';
+    
+    const currency = this.quote?.currency || 'NGN';
+    const currencySymbol = currency === 'NGN' ? 'Naira' : currency;
+    
+    const naira = Math.floor(amount);
+    const kobo = Math.round((amount - naira) * 100);
+    
+    if (naira === 0) return `${kobo} Kobo`;
+    
+    let words = this.numberToWords(naira) + ' ' + currencySymbol;
+    if (kobo > 0) {
+      words += ` and ${this.numberToWords(kobo)} Kobo`;
+    }
+    return words;
+  }
+
+  private numberToWords(num: number): string {
+    if (num === 0) return 'Zero';
+    
+    const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const thousands = ['', 'Thousand', 'Million', 'Billion'];
+    
+    if (num < 10) return units[num];
+    if (num < 20) return teens[num - 10];
+    if (num < 100) {
+      const t = Math.floor(num / 10);
+      const u = num % 10;
+      return tens[t] + (u > 0 ? ' ' + units[u] : '');
+    }
+    if (num < 1000) {
+      const h = Math.floor(num / 100);
+      const r = num % 100;
+      return units[h] + ' Hundred' + (r > 0 ? ' and ' + this.numberToWords(r) : '');
+    }
+    
+    let result = '';
+    let remaining = num;
+    let group = 0;
+    
+    while (remaining > 0) {
+      const chunk = remaining % 1000;
+      if (chunk > 0) {
+        const chunkWords = this.numberToWords(chunk);
+        result = chunkWords + (thousands[group] ? ' ' + thousands[group] : '') + (result ? ' ' + result : '');
+      }
+      remaining = Math.floor(remaining / 1000);
+      group++;
+    }
+    
+    return result;
+  }
+
   sendQuote(): void {
     if (this.quote && confirm(`Send quote ${this.quote.quoteNumber} to ${this.quote.customerName}?`)) {
       this.salesService.updateQuote(this.quote.id, { status: 'SENT' }).subscribe({
         next: (updated: Quote) => {
           this.quote = updated;
-          alert(`Quote ${this.quote.quoteNumber} has been sent to ${this.quote.customerName}`);
+          alert(`Quote ${this.quote!.quoteNumber} has been sent to ${this.quote!.customerName}`);
         },
         error: (err: any) => {
           console.error('Error sending quote:', err);
@@ -108,7 +195,48 @@ export class QuoteDetailComponent implements OnInit {
       this.salesService.updateQuote(this.quote.id, { status: 'ACCEPTED' }).subscribe({
         next: (updated: Quote) => {
           this.quote = updated;
-          alert(`Quote ${this.quote.quoteNumber} has been accepted`);
+          
+          const invoiceData: Partial<Invoice> = {
+            quoteId: updated.id,
+            customerId: updated.customerId,
+            customerName: updated.customerName,
+            items: updated.items.map(item => ({
+              id: Math.random().toString(36).substr(2, 9),
+              productName: item.productName,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.total
+            })),
+            subtotal: updated.subtotal,
+            taxAmount: updated.taxAmount,
+            discountAmount: updated.discountAmount,
+            totalAmount: updated.totalAmount,
+            amountPaid: 0,
+            balanceDue: updated.totalAmount,
+            currency: updated.currency,
+            status: 'DRAFT',
+            notes: updated.notes,
+            paymentTerms: updated.terms || 'Net 30',
+            issueDate: new Date(),
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Default 30 days due
+          };
+
+          this.salesService.createInvoice(invoiceData).subscribe({
+            next: (createdInvoice: Invoice) => {
+              alert(`Quote ${updated.quoteNumber} accepted. Draft Invoice ${createdInvoice.invoiceNumber} has been created.`);
+              const uuid = this.route.snapshot.paramMap.get('uuid');
+              if (uuid) {
+                this.router.navigate(['/admin/sales/invoices', createdInvoice.id, uuid]);
+              } else {
+                this.router.navigate(['/admin/sales/invoices', createdInvoice.id]);
+              }
+            },
+            error: (invoiceErr: any) => {
+              console.error('Error creating invoice from quote:', invoiceErr);
+              alert('Quote was accepted, but failed to create draft invoice.');
+            }
+          });
         },
         error: (err: any) => {
           console.error('Error accepting quote:', err);
@@ -123,7 +251,7 @@ export class QuoteDetailComponent implements OnInit {
       this.salesService.updateQuote(this.quote.id, { status: 'DECLINED' }).subscribe({
         next: (updated: Quote) => {
           this.quote = updated;
-          alert(`Quote ${this.quote.quoteNumber} has been marked as declined`);
+          alert(`Quote ${this.quote!.quoteNumber} has been marked as declined`);
         },
         error: (err: any) => {
           console.error('Error declining quote:', err);
@@ -170,6 +298,17 @@ export class QuoteDetailComponent implements OnInit {
         this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit', uuid]);
       } else {
         this.router.navigate(['/admin/sales/quotes', this.quote!.id, 'edit']);
+      }
+    }
+  }
+
+  viewCustomer(): void {
+    if (this.quote && this.quote.customerId) {
+      const uuid = this.route.snapshot.paramMap.get('uuid');
+      if (uuid) {
+        this.router.navigate(['/admin/sales/customers', this.quote.customerId, uuid]);
+      } else {
+        this.router.navigate(['/admin/sales/customers', this.quote.customerId]);
       }
     }
   }
