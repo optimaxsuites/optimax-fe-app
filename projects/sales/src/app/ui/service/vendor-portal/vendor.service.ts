@@ -5,7 +5,7 @@ import {
   Rfq, Quotation, QuotationItem, Lpo,
   Invoice, Payment, VendorDocument,
   VendorStats, LpoStats, FinanceStats, DocumentStats, PerformanceStats,
-  ItemAvailability, MonthlyMetric, ClientPerformance,
+  ItemAvailability, MonthlyMetric, ClientPerformance,VendorProfile, DocumentTemplate, TemplateDocType, 
 } from '../../domain/vendor-portal/vendor.dto';
 
 @Injectable({ providedIn: 'root' })
@@ -22,6 +22,11 @@ export class VendorService {
   readonly lpos$       = this.lpos$$.asObservable();
   readonly invoices$   = this.invoices$$.asObservable();
   readonly documents$  = this.documents$$.asObservable();
+  private profile$$  = new BehaviorSubject<VendorProfile>(this.seedProfile());
+private templates$$ = new BehaviorSubject<DocumentTemplate[]>(this.seedTemplates());
+
+readonly profile$   = this.profile$$.asObservable();
+readonly templates$ = this.templates$$.asObservable();
 
   // ── RFQ ──────────────────────────────────────────────────────────────────────
   getRfqs(): Observable<Rfq[]> {
@@ -141,6 +146,58 @@ export class VendorService {
 
   deleteDocument(id: string): void {
     this.documents$$.next(this.documents$$.getValue().filter(d => d.id !== id));
+  }
+   // ── Vendor Profile ─────────────────────────────────────────────────────────────
+  getProfile(): Observable<VendorProfile> {
+    return this.profile$;
+  }
+ 
+  // Profile is view-only for now per product decision — update method is stubbed
+  // for when editing is enabled. Left here so the component has a real call site
+  // to wire up rather than inventing one later.
+  updateProfile(patch: Partial<VendorProfile>): void {
+    this.profile$$.next({ ...this.profile$$.getValue(), ...patch });
+  }
+ 
+  // ── Document Templates (branding) ────────────────────────────────────────────
+  getTemplates(docType?: TemplateDocType): Observable<DocumentTemplate[]> {
+    return this.templates$.pipe(
+      map(list => docType ? list.filter(t => t.docType === docType) : list)
+    );
+  }
+ 
+  getActiveTemplate(docType: TemplateDocType): Observable<DocumentTemplate | undefined> {
+    return this.templates$.pipe(
+      map(list => list.find(t => t.docType === docType && t.isActive))
+    );
+  }
+ 
+  saveTemplate(template: Omit<DocumentTemplate, 'id' | 'updatedDate'>, id?: string): DocumentTemplate {
+    const list = this.templates$$.getValue();
+    const now  = new Date();
+ 
+    if (id) {
+      const updated = list.map(t => t.id === id ? { ...t, ...template, updatedDate: now } : t);
+      this.templates$$.next(updated);
+      return updated.find(t => t.id === id)!;
+    }
+ 
+    const newTemplate: DocumentTemplate = {
+      ...template, id: `tmpl-${Date.now()}`, updatedDate: now,
+    };
+    this.templates$$.next([...list, newTemplate]);
+    return newTemplate;
+  }
+ 
+  setActiveTemplate(id: string, docType: TemplateDocType): void {
+    const list = this.templates$$.getValue().map(t =>
+      t.docType === docType ? { ...t, isActive: t.id === id } : t
+    );
+    this.templates$$.next(list);
+  }
+ 
+  deleteTemplate(id: string): void {
+    this.templates$$.next(this.templates$$.getValue().filter(t => t.id !== id));
   }
 
   // ── Performance ───────────────────────────────────────────────────────────────
@@ -293,6 +350,63 @@ export class VendorService {
       { id: 'doc-005', name: 'NAFDAC Registration', category: 'licence', fileUrl: '#', fileName: 'NAFDAC_Reg_2026.pdf', fileSize: '1.8 MB', fileType: 'pdf', uploadedDate: new Date('2026-03-10'), expiryDate: future, status: 'active', isRequired: false },
       { id: 'doc-006', name: 'ISO 9001:2015 Certificate', category: 'certification', fileUrl: '#', fileName: 'ISO_9001_Certificate.pdf', fileSize: '1.5 MB', fileType: 'pdf', uploadedDate: new Date('2025-11-01'), expiryDate: new Date('2027-11-01'), status: 'active', isRequired: false, notes: 'Quality management system certification' },
       { id: 'doc-007', name: 'Company Profile', category: 'other', fileUrl: '#', fileName: 'TechSupply_Company_Profile.pdf', fileSize: '5.6 MB', fileType: 'pdf', uploadedDate: new Date('2026-04-12'), status: 'pending_review', isRequired: false },
+    ];
+  }
+   private seedProfile(): VendorProfile {
+    return {
+      id:                   'vendor-001',
+      companyName:          'Apex Industrial Supplies Ltd',
+      tradingName:          'Apex Supplies',
+      rcNumber:             'RC 1834562',
+      taxId:                'TIN 01928374-0001',
+      category:             'Industrial Equipment',
+      additionalCategories: ['Office Furniture', 'Safety Equipment'],
+      email:                'procurement@apexsupplies.ng',
+      phone:                '+234 803 123 4567',
+      alternatePhone:       '+234 1 280 5566',
+      website:              'www.apexsupplies.ng',
+      address:              '14 Adeola Odeku Street, Victoria Island',
+      city:                 'Lagos',
+      state:                'Lagos State',
+      country:              'Nigeria',
+      contactPersonName:    'Ngozi Eze',
+      contactPersonRole:    'Procurement Manager',
+      bankDetails: {
+        bankName:      'Zenith Bank Plc',
+        accountName:   'Apex Industrial Supplies Ltd',
+        accountNumber: '1012345678',
+        sortCode:      '057150013',
+      },
+      logoUrl:             undefined,
+      verificationStatus: 'verified',
+      memberSince:         new Date('2023-02-14'),
+    };
+  }
+ 
+  private seedTemplates(): DocumentTemplate[] {
+    return [
+      {
+        id:              'tmpl-inv-default',
+        name:            'Default',
+        docType:         'invoice',
+        isActive:        true,
+        accentColor:     '#224957',
+        footerText:      'Thank you for your business. Payment due within terms stated above.',
+        showBankDetails: true,
+        notesDefault:    'All amounts in NGN unless otherwise stated.',
+        updatedDate:     new Date('2026-04-01'),
+      },
+      {
+        id:              'tmpl-quo-default',
+        name:            'Default',
+        docType:         'quotation',
+        isActive:        true,
+        accentColor:     '#224957',
+        footerText:      'This quotation is valid for 14 days from the date of issue.',
+        showBankDetails: false,
+        notesDefault:    'Prices are subject to change without prior notice.',
+        updatedDate:     new Date('2026-04-01'),
+      },
     ];
   }
 }

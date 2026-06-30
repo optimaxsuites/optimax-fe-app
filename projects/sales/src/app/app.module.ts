@@ -102,6 +102,8 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
 
 import { VendorRegistrationComponent } from './ui/view/vendor-portal/vendor-registration/vendor-registration.component';
 import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
+import {VendorDashboardComponent} from './ui/view/vendor-portal/vendor-dashboard/vendor-dashboard.component';
+import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/vendor-profile.component';
 
 
 @NgModule({
@@ -131,6 +133,8 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     DocumentsComponent,
 
     VendorRegistrationComponent,
+    VendorDashboardComponent,
+    VendorProfileComponent,
   ],
   imports: [
     // BrowserModule,
