@@ -150,7 +150,34 @@ export class RequestForQuotationServiceFormComponent  implements OnChanges {
       });
     } else {
       this.markFormGroupTouched(this.serviceForm);
+      console.warn('Form validation failed. Errors:', this.getFormValidationErrors());
     }
+  }
+
+  getFormValidationErrors(): any {
+    const errors: any = {};
+    Object.keys(this.serviceForm.controls).forEach(key => {
+      const control = this.serviceForm.get(key);
+      if (control?.invalid) {
+        if (control instanceof FormArray) {
+          errors[key] = control.controls.map((c, idx) => {
+            const itemErrors: any = {};
+            if (c instanceof FormGroup) {
+              Object.keys(c.controls).forEach(itemKey => {
+                const itemControl = c.get(itemKey);
+                if (itemControl?.invalid) {
+                  itemErrors[itemKey] = itemControl.errors;
+                }
+              });
+            }
+            return itemErrors;
+          });
+        } else {
+          errors[key] = control.errors;
+        }
+      }
+    });
+    return errors;
   }
 
   onBack(): void {
