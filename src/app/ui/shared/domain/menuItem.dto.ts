@@ -12,5 +12,7 @@ export interface MenuItem {
     description?: string;
     shortDescription?: string;
     isNotSidebarItem?: boolean;
+    isSectionHeader?: boolean;
+    doNotRegisterAsPermission?: boolean;
   }
   
