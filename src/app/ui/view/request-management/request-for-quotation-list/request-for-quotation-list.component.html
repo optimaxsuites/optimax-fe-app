@@ -168,6 +168,7 @@
               </th>
               <th class="sn-header text-center" style="width: 4rem;">S/N</th>
               <th class="sortable" (click)="setSort('id')">Request ID <i class="fas" [ngClass]="getSortIcon('id')"></i></th>
+              <th class="sortable" (click)="setSort('procurementType')">Type <i class="fas" [ngClass]="getSortIcon('procurementType')"></i></th>
               <th class="sortable" (click)="setSort('title')">Product / Order Name <i class="fas" [ngClass]="getSortIcon('title')"></i></th>
               <th class="sortable text-right" (click)="setSort('quantity')">Qty <i class="fas" [ngClass]="getSortIcon('quantity')"></i></th>
               <th class="sortable text-right" (click)="setSort('totalBudget')">Budget <i class="fas" [ngClass]="getSortIcon('totalBudget')"></i></th>
@@ -186,6 +187,11 @@
               </td>
               <td class="sn-cell text-center">{{ currentPage * pageSize + i + 1 }}</td>
               <td class="loan-id-cell clickable" (click)="onActionClick({ actionId: 'view', row: row })" style="cursor: pointer; color: #38bdf8; font-weight: 600;">{{ row.id }}</td>
+              <td>
+                <span class="type-badge" [ngClass]="row.procurementType ? row.procurementType.toLowerCase() : 'order'">
+                  {{ row.procurementType ? (row.procurementType | titlecase) : 'Order' }}
+                </span>
+              </td>
               <td class="employee-name-cell clickable" (click)="onActionClick({ actionId: 'view', row: row })" [title]="row.title" style="cursor: pointer;">{{ truncate(row.title, 30) }}</td>
               <td class="text-right font-semibold">{{ getRowQuantity(row) }}</td>
               <td class="text-right font-semibold text-teal-600">{{ formatBudget(row) }}</td>
