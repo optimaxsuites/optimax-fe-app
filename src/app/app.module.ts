@@ -70,21 +70,15 @@ import { ErrorToastInterceptor } from './ui/shared-component/service/error-messa
 
 import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.component';
 
-import { ProductRequestListComponent } from './ui/view/request-management/product-request-management/product-request-list/product-request-list.component';
 import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
-import { ProductRequestFormComponent } from './ui/view/request-management/product-request-management/product-request-form/product-request-form.component';
-import { ProductRequestDetailComponent } from './ui/view/request-management/product-request-management/product-request-detail/product-request-detail.component';
-import { RequestEditFormComponent } from './ui/view/request-management/product-request-management/request-edit-form/request-edit-form.component';
-import { DeliveryTrackingMapComponent } from './ui/view/request-management/product-request-management/delivery-tracking-map/delivery-tracking-map.component';
-import { VendorRatingComponent } from './ui/view/request-management/product-request-management/vendor-rating/vendor-rating.component';
-import { RequestDraftsComponent } from './ui/view/request-management/product-request-management/request-drafts/request-drafts.component';
-import { RequestReorderComponent } from './ui/view/request-management/product-request-management/request-reorder/request-reorder.component';
-import { NotificationCenterComponent } from './ui/view/request-management/product-request-management/notification-center/notification-center.component';
-import { ExportDropdownComponent } from './ui/view/request-management/product-request-management/export-dropdown/export-dropdown.component';
-import { ServiceRequestListComponent } from './ui/view/request-management/service-request-management/service-request-list/service-request-list.component';
-import { ServiceRequestFormComponent } from './ui/view/request-management/service-request-management/service-request-form/service-request-form.component';  
-import { OrderDetailComponent } from './ui/view/request-management/product-request-management/order-detail/order-detail.component';
-import { ApprovalInboxComponent } from './ui/view/approval-inbox/approval-inbox.component';
+import { RequestForQuotationListComponent } from './ui/view/request-management/request-for-quotation-list/request-for-quotation-list.component';
+import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
+import { RequestForQuotationServiceFormComponent } from './ui/view/request-management/request-for-quotation-service-form/request-for-quotation-service-form.component';
+import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
+import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
+import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
+import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
+
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
@@ -104,7 +98,7 @@ import { InvoiceListComponent } from './ui/view/sales-hub/invoices/invoice-list/
 import { InvoiceDetailComponent } from './ui/view/sales-hub/invoices/invoice-detail/invoice-detail.component';
 import { CustomerListComponent } from './ui/view/sales-hub/customer-management/customer-list/customer-list.component';
 import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/customer-form/customer-form.component';
-import {SourcingComponent} from './ui/view/sourcing/sourcing.component';
+
 import { VendorRegistrationComponent } from './ui/view/vendor-portal/vendor-registration/vendor-registration.component';
 import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
 
@@ -115,10 +109,14 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     TableComponent,
     SidebarComponent,
     NavTabComponent,
-    ProductRequestListComponent,
-    ServiceRequestListComponent,
     RequestManagementComponent,
-    NotificationCenterComponent,
+    RequestForQuotationListComponent,
+    RequestForQuotationFormComponent,
+    RequestForQuotationServiceFormComponent,
+    ProcurementTypeSelectorComponent,
+    RfqTemplateSelectorComponent,
+    VendorSelectionComponent,
+    RequestForQuotationDetailComponent,
     DashboardComponent,
     FinanceComponent,
     LpoComponent,
@@ -129,7 +127,7 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     SalesHubComponent,
     PerformanceComponent,
     DocumentsComponent,
-    SourcingComponent,
+
     VendorRegistrationComponent,
   ],
   imports: [
@@ -174,7 +172,7 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    ApprovalInboxComponent,
+
     MatIconModule,
     MatTabsModule,
     MatDatepickerModule,
@@ -191,16 +189,7 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     ProfileInfoComponent,
     UserInterfaceComponent,
     BackButtonComponent,
-    ProductRequestFormComponent,
-    ProductRequestDetailComponent,
-    RequestEditFormComponent,
-    DeliveryTrackingMapComponent,
-    VendorRatingComponent,
-    RequestDraftsComponent,
-    RequestReorderComponent,
-    ExportDropdownComponent,
-    ServiceRequestFormComponent,
-    OrderDetailComponent,
+
     QuoteFormComponent,
     InvoiceListComponent,
     InvoiceFormComponent,
@@ -210,7 +199,6 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     CustomerFormComponent,
     SalesOrdersListComponent,
     ProductServiceCatalogListComponent,
-    ProductRequestDetailComponent,
     TemplateTypesComponent,
 
 

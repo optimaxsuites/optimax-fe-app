@@ -1,648 +1,576 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-} from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  FormArray,
-  Validators,
-  AbstractControl,
-  ValidatorFn,
-} from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, take } from 'rxjs/operators';
 
 import { VendorRegistrationService } from '../../../service/vendor-portal/vendor-registration.service';
 import {
-  NIGERIAN_STATES,
-  ALL_COUNTRIES,
-  SUPPLIER_CATEGORIES,
-  INDUSTRY_OPTIONS,
-  BANKS_NIGERIA,
-  VendorType,
-  BusinessSize,
+  BusinessType, BusinessSize, OwnershipType, SupplyCategory,
+  DeliveryRegion, AccountType, Currency, DocumentUploadType,
+  UploadedDocument, MajorClient, KeyPersonnel,
+  BUSINESS_TYPE_LABELS, BUSINESS_SIZE_LABELS, OWNERSHIP_TYPE_LABELS,
+  SUPPLY_CATEGORY_LABELS, NIGERIAN_STATES, NIGERIAN_BANKS,
+  PAYMENT_TERMS_OPTIONS, ISO_STANDARDS_OPTIONS,
+  EMPLOYEE_RANGES, TURNOVER_RANGES,
 } from '../../../domain/vendor-portal/vendor-registration.dto';
-
-export interface RegistrationStep {
-  id: number;
-  title: string;
-  subtitle: string;
-  icon: string;
-}
 
 @Component({
   selector: 'app-vendor-registration',
   templateUrl: './vendor-registration.component.html',
-   styleUrl: './vendor-registration.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  styleUrls: ['./vendor-registration.component.scss'],
 })
 export class VendorRegistrationComponent implements OnInit, OnDestroy {
+
   private destroy$ = new Subject<void>();
 
-  // ─── Step Config ──────────────────────────────────────────────────────────
-  readonly steps: RegistrationStep[] = [
-    { id: 1, title: 'Business Information',   subtitle: 'Company profile & registration',  icon: 'building' },
-    { id: 2, title: 'Contact & Location',     subtitle: 'Addresses & key contacts',        icon: 'map-pin' },
-    { id: 3, title: 'Financial & Banking',    subtitle: 'Bank details & payment info',     icon: 'credit-card' },
-    { id: 4, title: 'Compliance & Certs',     subtitle: 'Legal standing & certifications', icon: 'shield-check' },
-    { id: 5, title: 'References & Projects',  subtitle: 'Track record & experience',       icon: 'briefcase' },
-    { id: 6, title: 'Documents',              subtitle: 'Upload required files',           icon: 'file-text' },
+  // ── Steps ─────────────────────────────────────────────────────────────────
+  currentStep   = 1;
+  totalSteps    = 6;
+  isSubmitting  = false;
+  isSubmitted   = false;
+  applicationNumber = '';
+  autoSaveTimer: any;
+
+  readonly steps = [
+    { n: 1, label: 'Business Identity',   icon: '🏢' },
+    { n: 2, label: 'Legal & Compliance',  icon: '⚖️' },
+    { n: 3, label: 'Contact & Location',  icon: '📍' },
+    { n: 4, label: 'Banking & Finance',   icon: '🏦' },
+    { n: 5, label: 'Capabilities',        icon: '⚙️' },
+    { n: 6, label: 'Documents & Sign-off',icon: '📄' },
   ];
 
-  currentStep = 1;
-  isSubmitting = false;
-  submitSuccess = false;
-  submitError = '';
-  registeredVendorId = '';
+  // ── Forms ─────────────────────────────────────────────────────────────────
+  form1!: FormGroup;
+  form2!: FormGroup;
+  form3!: FormGroup;
+  form4!: FormGroup;
+  form5!: FormGroup;
+  form6!: FormGroup;
 
-  // ─── Lookup Data ──────────────────────────────────────────────────────────
-  readonly nigerianStates = NIGERIAN_STATES;
-  readonly allCountries = ALL_COUNTRIES;
-  readonly supplierCategories = SUPPLIER_CATEGORIES;
-  readonly industryOptions = INDUSTRY_OPTIONS;
-  readonly banksNigeria = BANKS_NIGERIA;
+  // ── Constants exposed to template ─────────────────────────────────────────
+  readonly BUSINESS_TYPE_LABELS    = BUSINESS_TYPE_LABELS;
+  readonly BUSINESS_SIZE_LABELS    = BUSINESS_SIZE_LABELS;
+  readonly OWNERSHIP_TYPE_LABELS   = OWNERSHIP_TYPE_LABELS;
+  readonly SUPPLY_CATEGORY_LABELS  = SUPPLY_CATEGORY_LABELS;
+  readonly NIGERIAN_STATES         = NIGERIAN_STATES;
+  readonly NIGERIAN_BANKS          = NIGERIAN_BANKS;
+  readonly PAYMENT_TERMS_OPTIONS   = PAYMENT_TERMS_OPTIONS;
+  readonly ISO_STANDARDS_OPTIONS   = ISO_STANDARDS_OPTIONS;
+  readonly EMPLOYEE_RANGES         = EMPLOYEE_RANGES;
+  readonly TURNOVER_RANGES         = TURNOVER_RANGES;
 
-  readonly vendorTypes: { value: VendorType; label: string }[] = [
-    { value: 'SOLE_PROPRIETOR', label: 'Sole Proprietorship' },
-    { value: 'PARTNERSHIP',     label: 'Partnership' },
-    { value: 'LLC',             label: 'Limited Liability Company (LLC)' },
-    { value: 'PLC',             label: 'Public Limited Company (PLC)' },
-    { value: 'NGO',             label: 'Non-Governmental Organisation (NGO)' },
-    { value: 'COOPERATIVE',     label: 'Cooperative Society' },
-    { value: 'OTHER',           label: 'Other' },
+  readonly businessTypes    = Object.keys(BUSINESS_TYPE_LABELS)    as BusinessType[];
+  readonly businessSizes    = Object.keys(BUSINESS_SIZE_LABELS)    as BusinessSize[];
+  readonly ownershipTypes   = Object.keys(OWNERSHIP_TYPE_LABELS)   as OwnershipType[];
+  readonly supplyCategories = Object.keys(SUPPLY_CATEGORY_LABELS)  as SupplyCategory[];
+
+  readonly currencies: Currency[]    = ['NGN', 'USD', 'GBP', 'EUR', 'GHS', 'KES', 'ZAR'];
+  readonly accountTypes: AccountType[] = ['current', 'savings', 'domiciliary'];
+  readonly currentYear = new Date().getFullYear();
+
+  readonly deliveryRegionOptions: { value: DeliveryRegion; label: string }[] = [
+    { value: 'lagos',       label: 'Lagos' },
+    { value: 'abuja',       label: 'Abuja (FCT)' },
+    { value: 'rivers',      label: 'Rivers' },
+    { value: 'kano',        label: 'Kano' },
+    { value: 'oyo',         label: 'Oyo' },
+    { value: 'delta',       label: 'Delta' },
+    { value: 'anambra',     label: 'Anambra' },
+    { value: 'edo',         label: 'Edo' },
+    { value: 'enugu',       label: 'Enugu' },
+    { value: 'kwara',       label: 'Kwara' },
+    { value: 'ogun',        label: 'Ogun' },
+    { value: 'ondo',        label: 'Ondo' },
+    { value: 'osun',        label: 'Osun' },
+    { value: 'ekiti',       label: 'Ekiti' },
+    { value: 'cross_river', label: 'Cross River' },
+    { value: 'akwa_ibom',   label: 'Akwa Ibom' },
+    { value: 'bayelsa',     label: 'Bayelsa' },
+    { value: 'imo',         label: 'Imo' },
+    { value: 'abia',        label: 'Abia' },
+    { value: 'benue',       label: 'Benue' },
+    { value: 'kogi',        label: 'Kogi' },
+    { value: 'nasarawa',    label: 'Nasarawa' },
+    { value: 'plateau',     label: 'Plateau' },
+    { value: 'kaduna',      label: 'Kaduna' },
+    { value: 'nationwide',  label: 'Nationwide (All States)' },
+    { value: 'international', label: 'International' },
   ];
 
-  readonly businessSizes: { value: BusinessSize; label: string; description: string }[] = [
-    { value: 'MICRO',      label: 'Micro',      description: '1–9 employees' },
-    { value: 'SMALL',      label: 'Small',      description: '10–49 employees' },
-    { value: 'MEDIUM',     label: 'Medium',     description: '50–249 employees' },
-    { value: 'LARGE',      label: 'Large',      description: '250–999 employees' },
-    { value: 'ENTERPRISE', label: 'Enterprise', description: '1000+ employees' },
+  // ── Dynamic lists ─────────────────────────────────────────────────────────
+  majorClients:     MajorClient[]     = [];
+  keyPersonnel:     KeyPersonnel[]    = [];
+  uploadedDocuments: UploadedDocument[] = [];
+  selectedIsoStandards: string[]      = [];
+  selectedCategories:   SupplyCategory[] = [];
+  selectedRegions:      DeliveryRegion[] = [];
+
+  // ── File upload ───────────────────────────────────────────────────────────
+  logoPreview: string | null = null;
+
+  // ── Document upload type currently being uploaded ─────────────────────────
+  uploadingDocType: DocumentUploadType | null = null;
+  uploadingDocLabel = '';
+
+  readonly requiredDocTypes: { type: DocumentUploadType; label: string; required: boolean; hint: string }[] = [
+    { type: 'cac_certificate',           label: 'CAC Certificate of Incorporation',  required: true,  hint: 'Issued by the Corporate Affairs Commission' },
+    { type: 'tax_clearance',             label: 'Tax Clearance Certificate',          required: true,  hint: 'Must be current — valid for current year' },
+    { type: 'vat_certificate',           label: 'VAT Registration Certificate',       required: false, hint: 'Required if VAT registered' },
+    { type: 'public_liability_insurance',label: 'Public Liability Insurance Policy',  required: true,  hint: 'Must include policy number and expiry date' },
+    { type: 'professional_indemnity',    label: 'Professional Indemnity Certificate', required: false, hint: 'Required for consultancy/professional services' },
+    { type: 'iso_certificate',           label: 'ISO Certification(s)',               required: false, hint: 'If ISO-certified, upload certificate here' },
+    { type: 'annual_accounts',           label: 'Audited Annual Accounts',            required: false, hint: 'Last two years of audited accounts' },
+    { type: 'company_profile',           label: 'Company Profile',                    required: false, hint: 'Detailed company overview document' },
+    { type: 'bank_reference_letter',     label: 'Bank Reference Letter',              required: false, hint: 'Reference letter from your primary bank' },
   ];
-
-  readonly annualTurnovers = [
-    { value: 'BELOW_1M',      label: 'Below ₦1 Million' },
-    { value: '1M_TO_10M',     label: '₦1M – ₦10 Million' },
-    { value: '10M_TO_50M',    label: '₦10M – ₦50 Million' },
-    { value: '50M_TO_100M',   label: '₦50M – ₦100 Million' },
-    { value: 'ABOVE_100M',    label: 'Above ₦100 Million' },
-  ];
-
-  readonly yearsOptions = [
-    { value: 'LESS_THAN_1', label: 'Less than 1 year' },
-    { value: '1_TO_3',      label: '1 – 3 years' },
-    { value: '3_TO_5',      label: '3 – 5 years' },
-    { value: '5_TO_10',     label: '5 – 10 years' },
-    { value: '10_TO_20',    label: '10 – 20 years' },
-    { value: 'MORE_THAN_20',label: 'More than 20 years' },
-  ];
-
-  readonly ownershipTypes = [
-    { value: 'PRIVATE',    label: 'Private' },
-    { value: 'PUBLIC',     label: 'Public' },
-    { value: 'GOVERNMENT', label: 'Government' },
-    { value: 'MIXED',      label: 'Mixed (Private & Government)' },
-    { value: 'FOREIGN',    label: 'Foreign' },
-  ];
-
-  readonly certificationTypes = [
-    { value: 'ISO_9001',  label: 'ISO 9001 – Quality Management' },
-    { value: 'ISO_14001', label: 'ISO 14001 – Environmental Management' },
-    { value: 'ISO_45001', label: 'ISO 45001 – Occupational Health & Safety' },
-    { value: 'NAFDAC',    label: 'NAFDAC Registration' },
-    { value: 'SON',       label: 'Standards Organisation of Nigeria (SON)' },
-    { value: 'COREN',     label: 'COREN – Engineering Regulation' },
-    { value: 'NIA',       label: 'Nigerian Institute of Architects' },
-    { value: 'NBA',       label: 'Nigerian Bar Association' },
-    { value: 'ICAN',      label: 'ICAN – Chartered Accountants' },
-    { value: 'OTHER',     label: 'Other' },
-  ];
-
-  readonly paymentMethods = [
-    { value: 'BANK_TRANSFER',  label: 'Bank Transfer' },
-    { value: 'CHEQUE',         label: 'Cheque' },
-    { value: 'MOBILE_MONEY',   label: 'Mobile Money' },
-    { value: 'ONLINE_PAYMENT', label: 'Online Payment' },
-  ];
-
-  readonly paymentTerms = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Net 90', 'Immediate', 'Custom'];
-  readonly currencies = ['NGN (₦)', 'USD ($)', 'GBP (£)', 'EUR (€)', 'GHS (₵)', 'ZAR (R)'];
-
-  // ─── Forms ────────────────────────────────────────────────────────────────
-  step1Form!: FormGroup;
-  step2Form!: FormGroup;
-  step3Form!: FormGroup;
-  step4Form!: FormGroup;
-  step5Form!: FormGroup;
-  step6Form!: FormGroup;
-
-  // ─── Document Upload State ────────────────────────────────────────────────
-  uploadedFiles: Record<string, { name: string; size: string; type: string } | null> = {};
-  uploadErrors: Record<string, string> = {};
-
-  // ─── UI Flags ─────────────────────────────────────────────────────────────
-  selectedCategories: string[] = [];
-  selectedIndustries: string[] = [];
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private registrationService: VendorRegistrationService,
-    private cdr: ChangeDetectorRef
+    private regService: VendorRegistrationService,
   ) {}
 
   ngOnInit(): void {
     this.buildForms();
-    this.subscribeToConditionalControls();
+    this.loadDraft();
+    this.watchConditionalFields();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.autoSaveTimer) clearInterval(this.autoSaveTimer);
   }
 
-  // ─── Form Builders ────────────────────────────────────────────────────────
-
+  // ── Build forms ───────────────────────────────────────────────────────────
   private buildForms(): void {
-    this.buildStep1Form();
-    this.buildStep2Form();
-    this.buildStep3Form();
-    this.buildStep4Form();
-    this.buildStep5Form();
-    this.buildStep6Form();
-  }
+    this.form1 = this.fb.group({
+      businessName:        ['', [Validators.required, Validators.minLength(3), Validators.maxLength(200)]],
+      tradingName:         [''],
+      businessType:        ['limited_liability', Validators.required],
+      businessSize:        ['small', Validators.required],
+      ownershipType:       ['indigenous', Validators.required],
+      yearEstablished:     [2000, [Validators.required, Validators.min(1800), Validators.max(this.currentYear)]],
+      numberOfEmployees:   ['', Validators.required],
+      annualTurnoverRange: ['', Validators.required],
+      currency:            ['NGN'],
+      businessDescription: ['', [Validators.required, Validators.minLength(50), Validators.maxLength(1000)]],
+      missionStatement:    [''],
+      websiteUrl:          [''],
+      linkedinUrl:         [''],
+    });
 
-  private buildStep1Form(): void {
-    this.step1Form = this.fb.group({
-      businessName:            ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
-      tradingName:             [''],
-      vendorType:              ['', Validators.required],
-      businessSize:            ['', Validators.required],
-      ownershipType:           ['', Validators.required],
-      yearsInOperation:        ['', Validators.required],
-      annualTurnover:          ['', Validators.required],
-      numberOfEmployees:       [null, [Validators.required, Validators.min(1), Validators.max(999999)]],
-      registrationNumber:      ['', [Validators.required, Validators.minLength(5)]],
-      taxIdentificationNumber: ['', [Validators.required, Validators.minLength(8)]],
-      vatRegistrationNumber:   [''],
-      cacNumber:               [''],
-      dateOfIncorporation:     ['', Validators.required],
-      primaryIndustry:         ['', Validators.required],
-      secondaryIndustries:     [[]],
-      supplierCategories:      [[], Validators.required],
-      productServiceDescription: ['', [Validators.required, Validators.minLength(50), Validators.maxLength(1000)]],
-      companyWebsite:          ['', this.optionalUrlValidator()],
-      linkedinProfile:         ['', this.optionalUrlValidator()],
+    this.form2 = this.fb.group({
+      cacRegistrationNumber:   ['', Validators.required],
+      cacRegistrationDate:     ['', Validators.required],
+      tinNumber:               ['', Validators.required],
+      vatRegistered:           [false],
+      vatNumber:               [''],
+      taxClearanceExpiryDate:  [''],
+      nafdacNumber:            [''],
+      dprLicenceNumber:        [''],
+      sonCertificationNumber:  [''],
+      pencomNumber:            [''],
+      nscNumber:               [''],
+      otherLicences:           [''],
+      hasPublicLiabilityInsurance: [false],
+      publicLiabilityInsurer:  [''],
+      publicLiabilityPolicyNo: [''],
+      publicLiabilityExpiryDate: [''],
+      hasProfessionalIndemnity: [false],
+      professionalIndemnityInsurer:  [''],
+      professionalIndemnityPolicyNo: [''],
+      professionalIndemnityExpiry:   [''],
+      otherCertifications:     [''],
+      hasBeenBlacklisted:      [false],
+      blacklistedDetails:      [''],
+      hasLitigationPending:    [false],
+      litigationDetails:       [''],
+      hasCriminalConviction:   [false],
+      criminalDetails:         [''],
+    });
+
+    this.form3 = this.fb.group({
+      primaryContactName:    ['', Validators.required],
+      primaryContactTitle:   ['', Validators.required],
+      primaryContactEmail:   ['', [Validators.required, Validators.email]],
+      primaryContactPhone:   ['', Validators.required],
+      primaryContactPhone2:  [''],
+      hasSecondaryContact:   [false],
+      secondaryContactName:  [''],
+      secondaryContactTitle: [''],
+      secondaryContactEmail: [''],
+      secondaryContactPhone: [''],
+      registeredAddressLine1:  ['', Validators.required],
+      registeredAddressLine2:  [''],
+      registeredCity:          ['', Validators.required],
+      registeredState:         ['', Validators.required],
+      registeredPostalCode:    [''],
+      registeredCountry:       ['Nigeria', Validators.required],
+      operatingAddressSameAsRegistered: [true],
+      operatingAddressLine1:   [''],
+      operatingAddressLine2:   [''],
+      operatingCity:           [''],
+      operatingState:          [''],
+      operatingCountry:        ['Nigeria'],
+      hasWarehouse:            [false],
+      warehouseAddressLine1:   [''],
+      warehouseCity:           [''],
+      warehouseState:          [''],
+      warehouseCapacity:       [''],
+      hasOwnDeliveryFleet:     [false],
+      fleetSize:               [null],
+      deliveryLeadTimeDays:    [7, [Validators.required, Validators.min(1)]],
+      canDeliverNationwide:    [false],
+      canDeliverInternationally: [false],
+    });
+
+    this.form4 = this.fb.group({
+      primaryBankName:         ['', Validators.required],
+      primaryBankBranch:       [''],
+      primaryAccountName:      ['', Validators.required],
+      primaryAccountNumber:    ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      primaryAccountType:      ['current', Validators.required],
+      primaryCurrency:         ['NGN'],
+      primarySortCode:         [''],
+      primarySwiftCode:        [''],
+      hasSecondaryBankAccount: [false],
+      secondaryBankName:       [''],
+      secondaryAccountName:    [''],
+      secondaryAccountNumber:  [''],
+      secondaryAccountType:    ['current'],
+      secondaryCurrency:       ['NGN'],
+      preferredPaymentTerms:   ['Net 30', Validators.required],
+      acceptsAdvancePayment:   [false],
+      advancePaymentPercentage:[null],
+      acceptsLetterOfCredit:   [false],
+      acceptsMobileMoney:      [false],
+      mobileMoneyCurrency:     [''],
+      mobileMoneyNumber:       [''],
+      annualAuditedAccounts:   [false],
+      auditFirmName:           [''],
+      lastAuditYear:           [null],
+      bankReference1Name:      [''],
+      bankReference1Contact:   [''],
+      tradeReference1Company:  [''],
+      tradeReference1Contact:  [''],
+      tradeReference1Email:    [''],
+      tradeReference2Company:  [''],
+      tradeReference2Contact:  [''],
+      tradeReference2Email:    [''],
+    });
+
+    this.form5 = this.fb.group({
+      primaryCategory:          ['', Validators.required],
+      categoryDescription:      ['', [Validators.required, Validators.minLength(30)]],
+      canHandleEmergencyOrders: [false],
+      emergencyLeadTimeHours:   [null],
+      minimumOrderValue:        [null],
+      maximumOrderValue:        [null],
+      bulkDiscountAvailable:    [false],
+      bulkDiscountDetails:      [''],
+      hasQualityManagementSystem: [false],
+      qmsStandard:              [''],
+      hasInspectionFacility:    [false],
+      testingEquipmentList:     [''],
+      isManufacturer:           [false],
+      isDistributor:            [false],
+      isServiceProvider:        [false],
+      isImporter:               [false],
+      primarySuppliersCountries:[''],
+      completedProjectsCount:   [0, [Validators.required, Validators.min(0)]],
+      averageProjectValue:      [null],
+      largestProjectValue:      [null],
+      largestProjectDescription:[''],
+      technicalStaffCount:      [null],
+      industryAssociations:     [''],
+      professionalMemberships:  [''],
+      awardsRecognitions:       [''],
+    });
+
+    this.form6 = this.fb.group({
+      declarantName:    ['', Validators.required],
+      declarantTitle:   ['', Validators.required],
+      declarantEmail:   ['', [Validators.required, Validators.email]],
+      declarantPhone:   ['', Validators.required],
+      declarationDate:  [new Date().toISOString().split('T')[0]],
+      agreedToTerms:         [false, Validators.requiredTrue],
+      agreedToPrivacyPolicy: [false, Validators.requiredTrue],
+      agreedToCodeOfConduct: [false, Validators.requiredTrue],
+      agreedToAntiCorruption:[false, Validators.requiredTrue],
+      confirmedAccuracy:     [false, Validators.requiredTrue],
     });
   }
 
-  private buildStep2Form(): void {
-    const addressGroup = () =>
-      this.fb.group({
-        streetLine1: ['', Validators.required],
-        streetLine2: [''],
-        city:        ['', Validators.required],
-        state:       ['', Validators.required],
-        lga:         [''],
-        country:     ['Nigeria', Validators.required],
-        postalCode:  [''],
-        landmark:    [''],
-      });
+  private watchConditionalFields(): void {
+    // VAT number required if VAT registered
+    this.form2.get('vatRegistered')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
+      const c = this.form2.get('vatNumber');
+      v ? c?.setValidators(Validators.required) : c?.clearValidators();
+      c?.updateValueAndValidity();
+    });
 
-    const contactGroup = (required = true) =>
-      this.fb.group({
-        firstName:              ['', required ? Validators.required : null],
-        lastName:               ['', required ? Validators.required : null],
-        jobTitle:               ['', required ? Validators.required : null],
-        department:             [''],
-        email:                  ['', required ? [Validators.required, Validators.email] : Validators.email],
-        phoneNumber:            ['', required ? [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]{7,20}$/)] : null],
-        phoneNumberAlt:         [''],
-        isAuthorizedSignatory:  [false],
-      });
+    // Blacklisted details required
+    this.form2.get('hasBeenBlacklisted')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
+      const c = this.form2.get('blacklistedDetails');
+      v ? c?.setValidators(Validators.required) : c?.clearValidators();
+      c?.updateValueAndValidity();
+    });
 
-    this.step2Form = this.fb.group({
-      registeredAddress:                  addressGroup(),
-      operatingAddressSameAsRegistered:   [true],
-      operatingAddress:                   addressGroup(),
-      primaryContact:                     contactGroup(true),
-      hasSecondaryContact:                [false],
-      secondaryContact:                   contactGroup(false),
-      businessEmail:                      ['', [Validators.required, Validators.email]],
-      businessPhone:                      ['', [Validators.required, Validators.pattern(/^\+?[0-9\s\-()]{7,20}$/)]],
-      businessPhoneAlt:                   [''],
-      faxNumber:                          [''],
-      twitterHandle:                      [''],
-      facebookPage:                       [''],
+    // Litigation details required
+    this.form2.get('hasLitigationPending')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
+      const c = this.form2.get('litigationDetails');
+      v ? c?.setValidators(Validators.required) : c?.clearValidators();
+      c?.updateValueAndValidity();
+    });
+
+    // Fleet size required if has fleet
+    this.form3.get('hasOwnDeliveryFleet')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
+      const c = this.form3.get('fleetSize');
+      v ? c?.setValidators([Validators.required, Validators.min(1)]) : c?.clearValidators();
+      c?.updateValueAndValidity();
+    });
+
+    // Advance payment percentage
+    this.form4.get('acceptsAdvancePayment')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(v => {
+      const c = this.form4.get('advancePaymentPercentage');
+      v ? c?.setValidators([Validators.required, Validators.min(1), Validators.max(100)]) : c?.clearValidators();
+      c?.updateValueAndValidity();
     });
   }
 
-  private buildStep3Form(): void {
-    const bankAccountGroup = (required = true) =>
-      this.fb.group({
-        bankName:      ['', required ? Validators.required : null],
-        bankBranch:    [''],
-        accountName:   ['', required ? Validators.required : null],
-        accountNumber: ['', required ? [Validators.required, Validators.pattern(/^\d{10}$/)] : null],
-        accountType:   ['CURRENT', required ? Validators.required : null],
-        sortCode:      [''],
-        swiftCode:     [''],
-        iban:          [''],
-        currency:      ['NGN (₦)', required ? Validators.required : null],
-      });
-
-    this.step3Form = this.fb.group({
-      primaryBankAccount:           bankAccountGroup(true),
-      hasSecondaryBankAccount:      [false],
-      secondaryBankAccount:         bankAccountGroup(false),
-      preferredPaymentMethod:       ['BANK_TRANSFER', Validators.required],
-      paymentTermsPreference:       ['Net 30', Validators.required],
-      currencyPreference:           ['NGN (₦)', Validators.required],
-      hasBankReference:             [false],
-      bankReferenceName:            [''],
-      bankReferenceContact:         [''],
-      hasLiabilityInsurance:        [false],
-      liabilityInsuranceProvider:   [''],
-      liabilityInsurancePolicyNumber: [''],
-      liabilityInsuranceExpiryDate: [''],
-      liabilityInsuranceCoverageAmount: [null],
-    });
-  }
-
-  private buildStep4Form(): void {
-    this.step4Form = this.fb.group({
-      certifications:              this.fb.array([]),
-      hasBeenDebarred:             [false],
-      debarmentDetails:            [''],
-      hasPendingLitigation:        [false],
-      litigationDetails:           [''],
-      hasBeenBankrupt:             [false],
-      bankruptcyDetails:           [''],
-      hasHsePolicy:                [false],
-      hsePolicyDocumentRef:        [''],
-      hasEnvironmentalPolicy:      [false],
-      hasQualityManagementSystem:  [false],
-      qualityManagementSystemDetails: [''],
-      acceptsDataProtectionPolicy: [false, Validators.requiredTrue],
-      acceptsAntiCorruptionPolicy: [false, Validators.requiredTrue],
-      acceptsCodeOfConduct:        [false, Validators.requiredTrue],
-    });
-  }
-
-  private buildStep5Form(): void {
-    this.step5Form = this.fb.group({
-      clientReferences:    this.fb.array([this.createClientReferenceGroup()]),
-      keyProjects:         this.fb.array([this.createKeyProjectGroup()]),
-      tradeAssociations:   this.fb.array([]),
-      awards:              [''],
-      additionalInformation: [''],
-    });
-  }
-
-  private buildStep6Form(): void {
-    this.step6Form = this.fb.group({
-      termsAndConditionsAccepted: [false, Validators.requiredTrue],
-      privacyPolicyAccepted:      [false, Validators.requiredTrue],
-    });
-  }
-
-  // ─── FormArray Helpers ────────────────────────────────────────────────────
-
-  get certifications(): FormArray {
-    return this.step4Form.get('certifications') as FormArray;
-  }
-
-  get clientReferences(): FormArray {
-    return this.step5Form.get('clientReferences') as FormArray;
-  }
-
-  get keyProjects(): FormArray {
-    return this.step5Form.get('keyProjects') as FormArray;
-  }
-
-  get tradeAssociations(): FormArray {
-    return this.step5Form.get('tradeAssociations') as FormArray;
-  }
-
-  addCertification(): void {
-    this.certifications.push(
-      this.fb.group({
-        certificationType: ['', Validators.required],
-        certificationName: ['', Validators.required],
-        issuingBody:       ['', Validators.required],
-        certificateNumber: [''],
-        issueDate:         ['', Validators.required],
-        expiryDate:        [''],
-        isNeverExpiring:   [false],
-      })
-    );
-  }
-
-  removeCertification(i: number): void {
-    this.certifications.removeAt(i);
-  }
-
-  private createClientReferenceGroup(): FormGroup {
-    return this.fb.group({
-      companyName:             ['', Validators.required],
-      contactPersonName:       ['', Validators.required],
-      contactEmail:            ['', [Validators.required, Validators.email]],
-      contactPhone:            ['', Validators.required],
-      relationshipDescription: ['', Validators.required],
-      yearsOfRelationship:     [1, [Validators.required, Validators.min(0)]],
-    });
-  }
-
-  addClientReference(): void {
-    this.clientReferences.push(this.createClientReferenceGroup());
-  }
-
-  removeClientReference(i: number): void {
-    if (this.clientReferences.length > 1) {
-      this.clientReferences.removeAt(i);
-    }
-  }
-
-  private createKeyProjectGroup(): FormGroup {
-    return this.fb.group({
-      projectTitle:    ['', Validators.required],
-      clientName:      ['', Validators.required],
-      projectValue:    [null],
-      projectCurrency: ['NGN'],
-      startDate:       ['', Validators.required],
-      endDate:         [''],
-      isOngoing:       [false],
-      description:     ['', [Validators.required, Validators.minLength(30)]],
-    });
-  }
-
-  addKeyProject(): void {
-    this.keyProjects.push(this.createKeyProjectGroup());
-  }
-
-  removeKeyProject(i: number): void {
-    if (this.keyProjects.length > 1) {
-      this.keyProjects.removeAt(i);
-    }
-  }
-
-  addTradeAssociation(): void {
-    this.tradeAssociations.push(
-      this.fb.group({
-        associationName:  ['', Validators.required],
-        membershipNumber: [''],
-        memberSince:      [''],
-      })
-    );
-  }
-
-  removeTradeAssociation(i: number): void {
-    this.tradeAssociations.removeAt(i);
-  }
-
-  // ─── Conditional Control Subscriptions ────────────────────────────────────
-
-  private subscribeToConditionalControls(): void {
-    // Step 2: Operating address toggle
-    this.step2Form
-      .get('operatingAddressSameAsRegistered')!
-      .valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((same) => {
-        const opAddr = this.step2Form.get('operatingAddress')!;
-        same ? opAddr.disable() : opAddr.enable();
-      });
-
-    // Step 3: Secondary bank account toggle
-    this.step3Form
-      .get('hasSecondaryBankAccount')!
-      .valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((has) => {
-        const secBank = this.step3Form.get('secondaryBankAccount')!;
-        has ? secBank.enable() : secBank.disable();
-      });
-
-    // Initially disable operating address (same as registered by default)
-    this.step2Form.get('operatingAddress')!.disable();
-    this.step3Form.get('secondaryBankAccount')!.disable();
-  }
-
-  // ─── Category & Industry Multi-Select ─────────────────────────────────────
-
-  toggleCategory(cat: string): void {
-    const idx = this.selectedCategories.indexOf(cat);
-    if (idx === -1) {
-      this.selectedCategories.push(cat);
-    } else {
-      this.selectedCategories.splice(idx, 1);
-    }
-    this.step1Form.patchValue({ supplierCategories: this.selectedCategories });
-  }
-
-  isCategorySelected(cat: string): boolean {
-    return this.selectedCategories.includes(cat);
-  }
-
-  toggleIndustry(ind: string): void {
-    const idx = this.selectedIndustries.indexOf(ind);
-    if (idx === -1) {
-      if (this.selectedIndustries.length < 3) {
-        this.selectedIndustries.push(ind);
+  private loadDraft(): void {
+    const draft = this.regService.getDraft();
+    if (!draft) return;
+    try {
+      if (draft.step1) this.form1.patchValue(draft.step1);
+      if (draft.step2) {
+        this.form2.patchValue(draft.step2);
+        this.selectedIsoStandards = draft.step2.isoStandards ?? [];
       }
-    } else {
-      this.selectedIndustries.splice(idx, 1);
-    }
-    this.step1Form.patchValue({ secondaryIndustries: this.selectedIndustries });
+      if (draft.step3) {
+        this.form3.patchValue(draft.step3);
+        this.selectedRegions = draft.step3.deliveryRegions ?? [];
+      }
+      if (draft.step4) this.form4.patchValue(draft.step4);
+      if (draft.step5) {
+        this.form5.patchValue(draft.step5);
+        this.selectedCategories = draft.step5.supplyCategories ?? [];
+        this.majorClients       = draft.step5.majorClients ?? [];
+        this.keyPersonnel       = draft.step5.keyPersonnelList ?? [];
+      }
+      if (draft.step6) {
+        this.form6.patchValue(draft.step6);
+        this.uploadedDocuments = draft.step6.uploadedDocuments ?? [];
+      }
+    } catch { /* ignore patch errors */ }
   }
 
-  isIndustrySelected(ind: string): boolean {
-    return this.selectedIndustries.includes(ind);
-  }
-
-  // ─── Document Upload ──────────────────────────────────────────────────────
-
-  onFileSelect(event: Event, documentKey: string): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const validation = this.registrationService.validateFile(file);
-    if (!validation.valid) {
-      this.uploadErrors[documentKey] = validation.error!;
-      this.uploadedFiles[documentKey] = null;
-      this.cdr.markForCheck();
-      return;
-    }
-
-    delete this.uploadErrors[documentKey];
-    this.uploadedFiles[documentKey] = {
-      name: file.name,
-      size: this.registrationService.formatFileSize(file.size),
-      type: file.type,
-    };
-    this.cdr.markForCheck();
-  }
-
-  removeFile(documentKey: string): void {
-    this.uploadedFiles[documentKey] = null;
-    delete this.uploadErrors[documentKey];
-  }
-
-  // ─── Navigation ───────────────────────────────────────────────────────────
-
-  getCurrentForm(): FormGroup {
-    const forms: Record<number, FormGroup> = {
-      1: this.step1Form,
-      2: this.step2Form,
-      3: this.step3Form,
-      4: this.step4Form,
-      5: this.step5Form,
-      6: this.step6Form,
-    };
-    return forms[this.currentStep];
-  }
-
-  canProceed(): boolean {
-    return this.getCurrentForm().valid;
-  }
-
+  // ── Navigation ────────────────────────────────────────────────────────────
   nextStep(): void {
-    const form = this.getCurrentForm();
-    form.markAllAsTouched();
-    if (form.valid && this.currentStep < this.steps.length) {
+    const form = this.currentFormGroup;
+    if (!this.validateStep(form)) return;
+    this.autoSaveStep();
+    if (this.currentStep < this.totalSteps) {
       this.currentStep++;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.cdr.markForCheck();
     }
   }
 
   prevStep(): void {
+    this.autoSaveStep();
     if (this.currentStep > 1) {
       this.currentStep--;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.cdr.markForCheck();
     }
   }
 
-  goToStep(step: number): void {
-    // Allow free navigation to completed steps or adjacent steps
-    if (step <= this.currentStep) {
-      this.currentStep = step;
+  goToStep(n: number): void {
+    if (n < this.currentStep) {
+      this.autoSaveStep();
+      this.currentStep = n;
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.cdr.markForCheck();
     }
   }
 
-  isStepCompleted(stepId: number): boolean {
-    if (stepId < this.currentStep) return true;
-    const form: Record<number, FormGroup> = {
-      1: this.step1Form, 2: this.step2Form, 3: this.step3Form,
-      4: this.step4Form, 5: this.step5Form, 6: this.step6Form,
+  get currentFormGroup(): FormGroup {
+    const map: Record<number, FormGroup> = {
+      1: this.form1, 2: this.form2, 3: this.form3,
+      4: this.form4, 5: this.form5, 6: this.form6,
     };
-    return form[stepId]?.valid ?? false;
+    return map[this.currentStep];
   }
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
+  private validateStep(form: FormGroup): boolean {
+    form.markAllAsTouched();
+    if (form.invalid) {
+      // Scroll to first error
+      setTimeout(() => {
+        const el = document.querySelector('.vr-input--err, .vr-select--err, .vr-textarea--err');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+      return false;
+    }
+    // Step-specific extra validations
+    if (this.currentStep === 5 && this.selectedCategories.length === 0) {
+      alert('Please select at least one supply category.');
+      return false;
+    }
+    if (this.currentStep === 3 && this.selectedRegions.length === 0) {
+      alert('Please select at least one delivery region.');
+      return false;
+    }
+    return true;
+  }
 
+  private autoSaveStep(): void {
+    switch (this.currentStep) {
+      case 1: this.regService.saveStep1({ ...this.form1.value }); break;
+      case 2: this.regService.saveStep2({ ...this.form2.value, isoStandards: this.selectedIsoStandards }); break;
+      case 3: this.regService.saveStep3({ ...this.form3.value, deliveryRegions: this.selectedRegions }); break;
+      case 4: this.regService.saveStep4({ ...this.form4.value }); break;
+      case 5: this.regService.saveStep5({ ...this.form5.value, supplyCategories: this.selectedCategories, majorClients: this.majorClients, keyPersonnelList: this.keyPersonnel }); break;
+      case 6: this.regService.saveStep6({ ...this.form6.value, uploadedDocuments: this.uploadedDocuments }); break;
+    }
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
   onSubmit(): void {
-    this.step6Form.markAllAsTouched();
-    if (!this.step6Form.valid) return;
+    this.form6.markAllAsTouched();
+    if (this.form6.invalid) return;
+
+    const requiredMissing = this.requiredDocTypes
+      .filter(d => d.required && !this.uploadedDocuments.find(u => u.type === d.type));
+
+    if (requiredMissing.length > 0) {
+      alert(`Please upload required document: "${requiredMissing[0].label}"`);
+      return;
+    }
 
     this.isSubmitting = true;
-    this.submitError = '';
-    this.cdr.markForCheck();
+    this.autoSaveStep();
 
-    const registration = this.buildRegistrationPayload();
-    this.registrationService
-      .submitRegistration(registration)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (res) => {
-          this.isSubmitting = false;
-          if (res.success) {
-            this.submitSuccess = true;
-            this.registeredVendorId = res.vendorId ?? '';
-          } else {
-            this.submitError = res.message;
-          }
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.submitError = err.message ?? 'Registration failed. Please try again.';
-          this.cdr.markForCheck();
-        },
+    const fullReg = {
+      status: 'submitted' as const,
+      step1: this.form1.value,
+      step2: { ...this.form2.value, isoStandards: this.selectedIsoStandards },
+      step3: { ...this.form3.value, deliveryRegions: this.selectedRegions },
+      step4: this.form4.value,
+      step5: { ...this.form5.value, supplyCategories: this.selectedCategories, majorClients: this.majorClients, keyPersonnelList: this.keyPersonnel },
+      step6: { ...this.form6.value, uploadedDocuments: this.uploadedDocuments },
+    };
+
+    this.regService.submit(fullReg as any).pipe(take(1)).subscribe({
+      next: (res) => {
+        this.isSubmitting    = false;
+        this.isSubmitted     = true;
+        this.applicationNumber = res.applicationNumber;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: () => {
+        this.isSubmitting = false;
+        alert('Submission failed. Please check your connection and try again.');
+      },
+    });
+  }
+
+  // ── ISO Standards multi-select ────────────────────────────────────────────
+  toggleIso(std: string): void {
+    const idx = this.selectedIsoStandards.indexOf(std);
+    idx > -1 ? this.selectedIsoStandards.splice(idx, 1) : this.selectedIsoStandards.push(std);
+  }
+  isIsoSelected(std: string): boolean { return this.selectedIsoStandards.includes(std); }
+
+  // ── Supply categories multi-select ────────────────────────────────────────
+  toggleCategory(cat: SupplyCategory): void {
+    const idx = this.selectedCategories.indexOf(cat);
+    idx > -1 ? this.selectedCategories.splice(idx, 1) : this.selectedCategories.push(cat);
+    // Auto-set primary if only one selected
+    if (this.selectedCategories.length === 1) {
+      this.form5.get('primaryCategory')?.setValue(this.selectedCategories[0]);
+    }
+  }
+  isCategorySelected(cat: SupplyCategory): boolean { return this.selectedCategories.includes(cat); }
+
+  // ── Delivery regions multi-select ─────────────────────────────────────────
+  toggleRegion(r: DeliveryRegion): void {
+    const idx = this.selectedRegions.indexOf(r);
+    idx > -1 ? this.selectedRegions.splice(idx, 1) : this.selectedRegions.push(r);
+    this.form3.get('canDeliverNationwide')?.setValue(this.selectedRegions.includes('nationwide'));
+  }
+  isRegionSelected(r: DeliveryRegion): boolean { return this.selectedRegions.includes(r); }
+
+  // ── Major clients ─────────────────────────────────────────────────────────
+  addClient(): void {
+    this.majorClients.push({ id: `cl-${Date.now()}`, companyName: '' });
+  }
+  removeClient(i: number): void { this.majorClients.splice(i, 1); }
+
+  // ── Key personnel ─────────────────────────────────────────────────────────
+  addPersonnel(): void {
+    this.keyPersonnel.push({ id: `kp-${Date.now()}`, name: '', title: '' });
+  }
+  removePersonnel(i: number): void { this.keyPersonnel.splice(i, 1); }
+
+  // ── Logo upload ───────────────────────────────────────────────────────────
+  onLogoSelected(e: Event): void {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Logo must be under 5 MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => { this.logoPreview = ev.target?.result as string; };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Document upload ───────────────────────────────────────────────────────
+  triggerDocUpload(type: DocumentUploadType, label: string): void {
+    this.uploadingDocType  = type;
+    this.uploadingDocLabel = label;
+    setTimeout(() => document.getElementById('docFileInput')?.click(), 50);
+  }
+
+  onDocFileSelected(e: Event): void {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file || !this.uploadingDocType) return;
+    if (file.size > 15 * 1024 * 1024) { alert(`${file.name} exceeds 15 MB.`); return; }
+
+    this.regService.uploadFile(file, this.uploadingDocType)
+      .pipe(take(1))
+      .subscribe(doc => {
+        // Replace if same type already uploaded
+        const idx = this.uploadedDocuments.findIndex(d => d.type === doc.type);
+        if (idx > -1) this.uploadedDocuments[idx] = doc;
+        else this.uploadedDocuments.push(doc);
+        this.uploadingDocType = null;
+        // Reset input
+        (e.target as HTMLInputElement).value = '';
       });
   }
 
-  private buildRegistrationPayload(): any {
-    return {
-      businessInformation: this.step1Form.getRawValue(),
-      contactLocation: this.step2Form.getRawValue(),
-      financialBanking: this.step3Form.getRawValue(),
-      compliance: this.step4Form.getRawValue(),
-      referencesExperience: this.step5Form.getRawValue(),
-      documents: {},
-      termsAndConditionsAccepted: this.step6Form.value.termsAndConditionsAccepted,
-      privacyPolicyAccepted: this.step6Form.value.privacyPolicyAccepted,
-      registrationDate: new Date().toISOString(),
-    };
+  removeDoc(id: string): void {
+    this.uploadedDocuments = this.uploadedDocuments.filter(d => d.id !== id);
   }
 
-  navigateToLogin(): void {
-    this.router.navigate(['/vendor/login']);
+  getUploadedDoc(type: DocumentUploadType): UploadedDocument | undefined {
+    return this.uploadedDocuments.find(d => d.type === type);
   }
 
-  // ─── Validators ───────────────────────────────────────────────────────────
-
-  private optionalUrlValidator(): ValidatorFn {
-    return (control: AbstractControl) => {
-      if (!control.value) return null;
-      try {
-        new URL(control.value);
-        return null;
-      } catch {
-        return { invalidUrl: true };
-      }
-    };
-  }
-
-  // ─── Template Helpers ─────────────────────────────────────────────────────
-
+  // ── Helpers ───────────────────────────────────────────────────────────────
   isInvalid(form: FormGroup, field: string): boolean {
-    const ctrl = form.get(field);
-    return !!(ctrl?.invalid && ctrl?.touched);
+    const c = form.get(field);
+    return !!c && c.invalid && (c.dirty || c.touched);
   }
 
-  getError(form: FormGroup, field: string): string {
-    const ctrl = form.get(field);
-    if (!ctrl?.errors) return '';
-    if (ctrl.errors['required'])   return 'This field is required.';
-    if (ctrl.errors['email'])      return 'Please enter a valid email address.';
-    if (ctrl.errors['minlength'])  return `Minimum ${ctrl.errors['minlength'].requiredLength} characters required.`;
-    if (ctrl.errors['maxlength'])  return `Maximum ${ctrl.errors['maxlength'].requiredLength} characters allowed.`;
-    if (ctrl.errors['min'])        return `Value must be at least ${ctrl.errors['min'].min}.`;
-    if (ctrl.errors['pattern'])    return 'Please enter a valid format.';
-    if (ctrl.errors['invalidUrl']) return 'Please enter a valid URL (e.g. https://example.com).';
-    if (ctrl.errors['requiredTrue']) return 'You must accept this to continue.';
-    return 'Invalid value.';
+  get completionPercent(): number {
+    return Math.round(((this.currentStep - 1) / this.totalSteps) * 100);
   }
 
-  getNestedError(form: FormGroup, path: string): string {
-    const ctrl = form.get(path);
-    if (!ctrl?.errors || !ctrl.touched) return '';
-    return this.getError(form, path);
-  }
+  get today(): string { return new Date().toISOString().split('T')[0]; }
+  get maxYear(): number { return this.currentYear; }
 
-  trackByIndex(index: number): number {
-    return index;
-  }
-
-  get progressPercent(): number {
-    return Math.round(((this.currentStep - 1) / (this.steps.length - 1)) * 100);
-  }
+  formatSize(bytes: number): string { return this.regService.formatSize(bytes); }
 }
