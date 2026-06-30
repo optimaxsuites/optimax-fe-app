@@ -153,9 +153,9 @@ export class RfqPreviewComponent implements OnInit {
     if (this.requestId) {
       // Determine which type path to use based on the request
       const typePath = this.request?.procurementType === 'SERVICE' ? 'service' : 'product';
-      this.router.navigate(['/commerce/requests/new', typePath, this.requestId, 'vendors']);
+      this.router.navigate(['admin/sales/commerce/requests/new', typePath, this.requestId, 'vendors']);
     } else {
-      this.router.navigate(['/commerce/requests/new']);
+      this.router.navigate(['admin/sales/commerce/requests/new']);
     }
   }
 
@@ -169,13 +169,13 @@ export class RfqPreviewComponent implements OnInit {
           this.isSubmitting = false;
           // Clear draft from localStorage if exists
           localStorage.removeItem(`rfq_draft_${this.requestId}`);
-          this.router.navigate(['/commerce/requests']);
+          this.router.navigate(['/admin/sales/commerce/requests']);
         },
         error: (err) => {
           console.error('Failed to submit request:', err);
           this.isSubmitting = false;
           // Fallback: navigate anyway
-          this.router.navigate(['/commerce/requests']);
+          this.router.navigate(['/admin/sales/commerce/requests']);
         }
       });
     }
