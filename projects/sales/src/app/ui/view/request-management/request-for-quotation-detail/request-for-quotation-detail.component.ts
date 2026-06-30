@@ -99,7 +99,7 @@ export class RequestForQuotationDetailComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/commerce/requests']);
+    this.router.navigate(['/admin/sales//commerce/requests']);
   }
 
   triggerCancel(): void {
@@ -170,7 +170,7 @@ export class RequestForQuotationDetailComponent implements OnInit {
   goEdit(): void {
     if (this.request) {
       const typePath = this.request.procurementType?.toLowerCase() === 'service' ? 'service' : 'product';
-      this.router.navigate(['/commerce/requests/new', typePath, this.request.id]);
+      this.router.navigate(['admin/sales/commerce/requests/new', typePath, this.request.id]);
     }
   }
 }

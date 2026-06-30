@@ -263,11 +263,11 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       if (this.isEditMode && this.requestId) {
         this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
           next: (req) => {
-            this.router.navigate(['/commerce/requests/new/service', req.id, 'template']);
+            this.router.navigate(['admin/sales/commerce/requests/new/service', req.id, 'template']);
           },
           error: (err) => {
             console.error('Failed to update request', err);
-            this.router.navigate(['/commerce/requests/new/service', requestId, 'template']);
+            this.router.navigate(['admin/sales/commerce/requests/new/service', requestId, 'template']);
           }
         });
       } else {
@@ -276,11 +276,11 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
           id: requestId
         }).subscribe({
           next: (req) => {
-            this.router.navigate(['/commerce/requests/new/service', req.id, 'template']);
+            this.router.navigate(['admin/sales/commerce/requests/new/service', req.id, 'template']);
           },
           error: (err) => {
             console.error('Failed to create request', err);
-            this.router.navigate(['/commerce/requests/new/service', requestId, 'template']);
+            this.router.navigate(['admin/sales/commerce/requests/new/service', requestId, 'template']);
           }
         });
       }
@@ -317,7 +317,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
   }
 
   onBack(): void {
-    this.router.navigate(['/commerce/requests/new']);
+    this.router.navigate(['admin/sales/commerce/requests/new']);
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {
