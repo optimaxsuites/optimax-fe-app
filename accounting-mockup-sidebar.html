@@ -3129,6 +3129,8 @@ function nav(name) {
   if (v) v.classList.add('active');
   if (b) b.classList.add('active');
   document.getElementById('tb-current').textContent = titles[name] || name;
+  if (name === 'auditlog') _atRenderTable(_atData);
+  if (name === 'periodclose') _pcRenderCalendar();
 }
 function showInner(group, tab) {
   document.querySelectorAll('[id^="iview-' + group + '-"]').forEach(el => el.classList.remove('active'));
@@ -3892,14 +3894,6 @@ function showAuditDrawer(ref, entity, desc) {
 function closeAuditDrawer() {
   document.getElementById('at-backdrop').classList.remove('open');
   document.getElementById('at-drawer').classList.remove('open');
-}
-
-/* Init audit table when view opens — hook into nav() */
-var _origNav = nav;
-function nav(name) {
-  _origNav(name);
-  if (name === 'auditlog') _atRenderTable(_atData);
-  if (name === 'periodclose') _pcRenderCalendar();
 }
 
 function showReport(name) {

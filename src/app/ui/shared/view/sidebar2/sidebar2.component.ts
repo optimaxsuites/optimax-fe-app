@@ -62,7 +62,7 @@ tenant: any = {
         return items.reduce<MenuItem[]>((acc, item) => {
           const labelMatch = item.label?.toLowerCase().includes(q);
           if (item.submenu) {
-            const matchedSubs = item.submenu.filter((s: any) => s.label?.toLowerCase().includes(q));
+            const matchedSubs = item.submenu.filter((s: any) => !s.isSectionHeader && s.label?.toLowerCase().includes(q));
             if (labelMatch || matchedSubs.length) {
               acc.push({ ...item, submenu: matchedSubs.length ? matchedSubs : item.submenu, open: true });
             }

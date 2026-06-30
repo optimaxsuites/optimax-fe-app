@@ -62,7 +62,12 @@
       <!-- Submenu -->
       <ul *ngIf="item.submenu" class="sb-sub" [class.sb-sub--open]="item.open">
         <ng-container *ngFor="let sub of item.submenu">
-          <li *ngIf="!sub.isNotSidebarItem">
+          <!-- Section header -->
+          <li *ngIf="!sub.isNotSidebarItem && sub.isSectionHeader" class="sb-sub-section-header">
+            <span *ngIf="!sidebarHidden">{{ sub.label }}</span>
+          </li>
+          <!-- Normal submenu item -->
+          <li *ngIf="!sub.isNotSidebarItem && !sub.isSectionHeader">
             <a [routerLink]="sub.route"
                (click)="onNavigate()"
                routerLinkActive="sb-sub-link--active"

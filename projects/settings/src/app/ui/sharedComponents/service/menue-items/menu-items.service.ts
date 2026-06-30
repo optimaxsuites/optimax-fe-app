@@ -16,12 +16,25 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
       submenu: [
+        // ── Work ──────────────────────────────────────────────────────────────
+        { label: 'Work', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Tasks and Routines',
+          code: 'DASH_FEED',
+          route: this.navigationLink.getLink('feedLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-calendar-plus',
+          description: 'Plan daily tasks, routines, and personal work targets.'
+        },
+
+        // ── Communication ─────────────────────────────────────────────────────
+        { label: 'Communication', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Communications',
           code: 'DASH_COMM',
           route: this.navigationLink.getLink('communicationsLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
+          icon: 'fas fa-envelope',
           description: 'View and manage communications across the organization.'
         },
         {
@@ -32,29 +45,24 @@ export class MenuItemsService {
           icon: 'fas fa-calendar-check',
           description: 'Schedule meetings, appointments, rooms, minutes, attendance, and follow-up actions.'
         },
+
+        // ── Intelligence ──────────────────────────────────────────────────────
+        { label: 'Intelligence', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'OptimaXAI',
           code: 'OPTIMA_AI',
-          route: this.navigationLink.getLink('optimaXAILink'), 
+          route: this.navigationLink.getLink('optimaXAILink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
+          icon: 'fas fa-robot',
           description: 'optimax business artificial intelligence.'
         },
         {
           label: 'Analytics',
           code: 'DASH_ANALY',
-          route: this.navigationLink.getLink('analyticsLink'), 
+          route: this.navigationLink.getLink('analyticsLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fas fa-chart-pie',
           description: 'BUSINESS ANALYTICS.'
-        },
-        {
-          label: 'Tasks and Routines',
-          code: 'DASH_FEED',
-          route: this.navigationLink.getLink('feedLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-calendar-plus',
-          description: 'Plan daily tasks, routines, and personal work targets.'
         }
       ]
     },
@@ -69,71 +77,45 @@ export class MenuItemsService {
       locked: true,
       active: false,
       submenu: [
+        // ── Transactions ──────────────────────────────────────────────────────
+        { label: 'Transactions', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Sales',
           code: 'COM_SALES',
           route: this.navigationLink.getLink('SHLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
+          icon: 'fas fa-receipt',
           description: 'Make procurement requests on behalf of the organization.'
         },
-         {
+        {
           label: 'Procurement',
           code: 'COM_PROCURE',
-          route: this.navigationLink.getLink('PMLink'), 
+          route: this.navigationLink.getLink('PMLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fas fa-shopping-cart',
           description: 'View and manage vendor purchase requests.'
-        }, 
+        },
+
+        // ── Partners ──────────────────────────────────────────────────────────
+        { label: 'Partners', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Vendor Portal',
           code: 'COM_VENDOR',
-          route: this.navigationLink.getLink('VPLink'), 
+          route: this.navigationLink.getLink('VPLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fas fa-handshake',
           description: 'View and manage vendor quotations.'
         },
-       /* {
-          label: 'Delivery management ',
-          code: 'DELIVERY_MGMT',
-          route: this.navigationLink.getLink('deliveryManagementLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
-          description: 'Manage vendor profiles, contracts, and supplier relationships.'
-        },
-        {
-          label: 'Document management',
-          code: 'DOC_MGMT',
-          route: this.navigationLink.getLink('docGenLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View vendor details and manage vendor relationships.'
-        },
-        
-         {
-          label: 'Quotation Management',
-          code: 'QUOTE_MGMT',
-          route: this.navigationLink.getLink('QTLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage vendor purchase requests.'
-        },*/
-        //  {
-        //   label: 'Reports',
-        //   code: 'COM_REPORT',
-        //   route: this.navigationLink.getLink('VPLink'), 
-        //   roles: ['ROLE_USER'],
-        //   icon: 'fa fa-envelope',
-        //   description: 'View and manage vendor quotations.'
-        // },
+
+        // ── Insights ──────────────────────────────────────────────────────────
+        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Reports & Analytics',
           code: 'REPORT_ANALYSIS',
-          route: this.navigationLink.getLink('RALink'), 
+          route: this.navigationLink.getLink('RALink'),
           roles: ['ROLE_USER'],
-          icon: 'fa fa-chart-bar',
+          icon: 'fas fa-chart-bar',
           description: 'View and manage reports and analytics.'
-
         }
       ]
     },    
@@ -160,83 +142,6 @@ export class MenuItemsService {
       active: false
     },    
     {
-      label: 'Procurement',
-      code: 'optimaXProcurement',
-      route: this.navigationLink.getLink('procurementLink'),
-      icon: 'fas fa-shopping-cart',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      description: 'The Procurement module of OptimaXSuites supports the end-to-end process of requisitions, supplier selection, and order processing.',
-      shortDescription: 'Manage requisitions, supplier selection, and procurement workflows.',
-      locked: true,
-      active: true,
-      submenu: [
-        {
-          label: 'PR Management',
-          code: 'PR_MGMT',
-          route: this.navigationLink.getLink('procurementLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
-          description: 'View and manage procurements across the organization.'
-        },
-        {
-          label: 'Vendor management ',
-          code: 'VENDOR_MGMT',
-          route: this.navigationLink.getLink('vendorManagementLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
-          description: 'Manage vendor profiles, contracts, and supplier relationships.'
-        },
-        {
-          label: 'Vendor Dashboard',
-          code: 'PR_VENDOR',
-          route: this.navigationLink.getLink('vendorLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View vendor details and manage vendor relationships.'
-        },
-        // {
-        //   label: 'RFQs',
-        //   code: 'PR_RFQ',
-        //   route: this.navigationLink.getLink('rfqLink'), 
-        //   roles: ['ROLE_USER'],
-        //   icon: 'fas fa-file-alt',
-        //   description: 'Manage RFQs and vendor responses.'
-        // },
-        // {
-        //   label: 'Quotations',
-        //   code: 'PR_QUOTE',
-        //   route: this.navigationLink.getLink('quotationLink'), 
-        //   roles: ['ROLE_USER'],
-        //   icon: 'pi pi-file',
-        //   description: 'View and manage vendor quotations.'
-        // },
-        // {
-        //   label: 'LPO',
-        //   code: 'PR_LPO',
-        //   route: this.navigationLink.getLink('lpoLink'), 
-        //   roles: ['ROLE_USER'],
-        //   icon: 'pi pi-file',
-        //   description: 'View and manage LPOs.'
-        // },
-         {
-          label: 'Vendor PR List',
-          code: 'Vendor_PROL',
-          route: this.navigationLink.getLink('VPLLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage vendor purchase requests.'
-        },
-         {
-          label: 'Vendor Quote List',
-          code: 'Vendor_QUOL',
-          route: this.navigationLink.getLink('VQLLink'), 
-          roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
-          description: 'View and manage vendor quotations.'
-        }
-      ]
-    },    
-    {
       label: 'Accounting',
       code: 'optimaXAccounting',
       icon: 'fas fa-calculator',
@@ -246,40 +151,48 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
+        // ── Core Ledger ───────────────────────────────────────────────────────
+        { label: 'Core Ledger', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Transactions',
           code: 'ACCT_TXN',
           route: this.navigationLink.getLink('transactionLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
+          icon: 'fas fa-exchange-alt',
           description: 'View and manage financial transactions across the organization.'
         },
         {
-          label: 'General ledger',
+          label: 'General Ledger',
           code: 'ACCT_GL',
-          route: this.navigationLink.getLink(''), 
+          route: this.navigationLink.getLink(''),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-file-alt',
+          icon: 'fas fa-book',
           description: 'Maintain and review the general ledger for accurate financial reporting.'
         },
+
+        // ── Reconciliation ────────────────────────────────────────────────────
+        { label: 'Reconciliation', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Reconciliation',
           code: 'ACCT_RECON',
-          route: this.navigationLink.getLink('reconciliationLink'), 
+          route: this.navigationLink.getLink('reconciliationLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fas fa-balance-scale',
           description: 'Match financial records with bank statements for reconciliation purposes.'
         },
+
+        // ── Insights ──────────────────────────────────────────────────────────
+        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Reports',
           code: 'ACCT_REPTS',
           route: this.navigationLink.getLink('accountingReportLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-file',
+          icon: 'fas fa-chart-bar',
           description: 'Generate various financial statements and reports for analysis.'
         }
       ]
-    },    
+    },
     {
       label: 'Human Resources',
       code: 'HR',
@@ -290,14 +203,19 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
-         {
-        label: 'My Dashboard',
-        code: 'HR_EMP_ME',
-        route: this.navigationLink.getLink('employeeDashboardLink'),
-        roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        icon: 'fas fa-user-circle',
-        doNotRegisterAsPermission: true
-      },
+        // ── Overview ──────────────────────────────────────────────────────────
+        { label: 'Overview', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'My Dashboard',
+          code: 'HR_EMP_ME',
+          route: this.navigationLink.getLink('employeeDashboardLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-user-circle',
+          doNotRegisterAsPermission: true
+        },
+
+        // ── People Management ─────────────────────────────────────────────────
+        { label: 'People Management', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Employee Management',
           code: 'HR_EMP_MG',
@@ -314,50 +232,17 @@ export class MenuItemsService {
           icon: 'fas fa-user-plus',
           description: 'Handle job postings, candidate applications, interview schedules, and hiring decisions.'
         },
-        { label: 'Project', 
-          code: 'HR_PROJECT',
-           route: this.navigationLink.getLink('projectLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-check' },
         {
-          label: 'Performance',
-          code: 'HR_PERF',
-          route: this.navigationLink.getLink('performanceLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Monitor employee performance, set goals, and conduct evaluations.'
+          label: 'Org Chart',
+          code: 'HR_ORG_CHART',
+          route: this.navigationLink.getLink('hrOrgChart'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-sitemap',
+          description: 'Visual organisational chart — departments, reporting lines, and headcount.'
         },
-       
-        {
-          label: 'Work Schedule',
-          code: 'HR_WORK_SCH',
-          route: this.navigationLink.getLink('workScheduleLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Monitor employee performance, set goals, and conduct evaluations.'
-        },
-        {
-          label: 'Payroll',
-          code: 'HR_PAYROLL',
-          route: this.navigationLink.getLink('payroll'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-dollar-sign',
-          description: 'Process employee salaries, bonuses, deductions, and payslips.'
-        },
-         {
-          label: 'Payroll Operations',
-          code: 'HR_QUERY',
-          route: this.navigationLink.getLink('queryLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-question-circle',
-          description: 'Manage queries and support tickets raised by employees.'
-        },
-        {
-          label: 'Contribution and Loans',
-          code: 'HR_ADVANCE',
-          route: this.navigationLink.getLink('advance'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-dollar-sign',
-          description: 'Process employee advances and manage advance requests.'
-        },
+
+        // ── Time & Attendance ─────────────────────────────────────────────────
+        { label: 'Time & Attendance', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Attendance',
           code: 'HR_ATTEND',
@@ -375,6 +260,67 @@ export class MenuItemsService {
           description: 'Manage leave requests, approvals, balances, and policies.'
         },
         {
+          label: 'Work Schedule',
+          code: 'HR_WORK_SCH',
+          route: this.navigationLink.getLink('workScheduleLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-clock',
+          description: 'Set and manage employee shift schedules and working hours.'
+        },
+        {
+          label: 'Overtime',
+          code: 'HR_OVERTIME',
+          route: this.navigationLink.getLink('hrOvertime'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-hourglass-half',
+          description: 'Configure overtime rules and manage overtime type catalog.'
+        },
+
+        // ── Compensation ──────────────────────────────────────────────────────
+        { label: 'Compensation', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Payroll',
+          code: 'HR_PAYROLL',
+          route: this.navigationLink.getLink('payroll'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-dollar-sign',
+          description: 'Process employee salaries, bonuses, deductions, and payslips.'
+        },
+        {
+          label: 'Payroll Operations',
+          code: 'HR_QUERY',
+          route: this.navigationLink.getLink('queryLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-sliders-h',
+          description: 'Manage queries and support tickets raised by employees.'
+        },
+        {
+          label: 'Contribution & Loans',
+          code: 'HR_ADVANCE',
+          route: this.navigationLink.getLink('advance'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-hand-holding-usd',
+          description: 'Process employee advances and manage advance requests.'
+        },
+
+        // ── Performance & Projects ────────────────────────────────────────────
+        { label: 'Performance & Projects', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Performance',
+          code: 'HR_PERF',
+          route: this.navigationLink.getLink('performanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-star',
+          description: 'Monitor employee performance, set goals, and conduct evaluations.'
+        },
+        {
+          label: 'Project',
+          code: 'HR_PROJECT',
+          route: this.navigationLink.getLink('projectLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-project-diagram'
+        },
+        {
           label: 'Work Productivity',
           code: 'HR_PRODUCTIVITY',
           route: this.navigationLink.getLink('productivityLink'),
@@ -382,6 +328,9 @@ export class MenuItemsService {
           icon: 'fas fa-chart-line',
           description: 'Track execution, reviews, and operational productivity in one workspace.'
         },
+
+        // ── Reporting & Analytics ─────────────────────────────────────────────
+        { label: 'Reporting & Analytics', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Analytics',
           code: 'HR_ANALYTICS',
@@ -389,22 +338,6 @@ export class MenuItemsService {
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'fas fa-chart-bar',
           description: 'Executive HR analytics — workforce, payroll, leave, turnover, and risk.'
-        },
-        {
-          label: 'Overtime',
-          code: 'HR_OVERTIME',
-          route: this.navigationLink.getLink('hrOvertime'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'fas fa-clock',
-          description: 'Configure overtime rules and manage overtime type catalog.'
-        },
-        {
-          label: 'Org Chart',
-          code: 'HR_ORG_CHART',
-          route: this.navigationLink.getLink('hrOrgChart'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'fas fa-sitemap',
-          description: 'Visual organisational chart — departments, reporting lines, and headcount.'
         },
         {
           label: 'Reports',
@@ -438,6 +371,8 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
+        // ── Catalogue ─────────────────────────────────────────────────────────
+        { label: 'Catalogue', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Product',
           code: 'POS_PDT',
@@ -454,28 +389,15 @@ export class MenuItemsService {
           icon: 'pi pi-warehouse',
           description: 'Manage stock levels, warehouse items, and inventory adjustments.'
         },
-        // {
-        //   label: 'Ingredients',
-        //   code: 'POS_ING',
-        //   route: this.navigationLink.getLink('ingredientLink'),
-        //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
-        //   icon: 'pi pi-warehouse',
-        //   description: 'Track and manage raw materials or ingredients used in product creation.'
-        // },
-        {
-          label: 'Refunds',
-          code: 'POS_RFND',
-          route: this.navigationLink.getLink('refundLink'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-receipt',
-          description: 'Handle refund transactions and maintain refund history.'
-        },
+
+        // ── Selling ───────────────────────────────────────────────────────────
+        { label: 'Selling', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Sales',
           code: 'POS_SALES',
           route: this.navigationLink.getLink('salesLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-receipt',
+          icon: 'fas fa-cash-register',
           description: 'View and manage sales records, transactions, and revenue data.'
         },
         {
@@ -483,7 +405,7 @@ export class MenuItemsService {
           code: 'POS_ESALES',
           route: this.navigationLink.getLink('esalesLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-receipt',
+          icon: 'fas fa-store',
           description: 'View and manage sales records, transactions, and revenue data.'
         },
         {
@@ -495,31 +417,42 @@ export class MenuItemsService {
           description: 'Process payments and manage the customer checkout flow.'
         },
         {
+          label: 'Refunds',
+          code: 'POS_RFND',
+          route: this.navigationLink.getLink('refundLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fas fa-undo',
+          description: 'Handle refund transactions and maintain refund history.'
+        },
+
+        // ── Kitchen ───────────────────────────────────────────────────────────
+        { label: 'Kitchen', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
           label: 'Kitchen',
           code: 'POS_KITCHEN',
           route: this.navigationLink.getLink('kitchenLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-credit-card',
-          description: 'Process payments and manage the customer checkout flow.',
+          icon: 'fas fa-utensils',
+          description: 'Manage kitchen display and order flow.',
           doNotRegisterAsPermission: true
         },
         {
           label: 'Kitchen Order Operations',
-          code: 'POS_KITCHEN_ORDER', 
+          code: 'POS_KITCHEN_ORDER',
           route: "",
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: "",
           description: 'Permission to view kitchen order screens.',
-          isNotSidebarItem: true 
+          isNotSidebarItem: true
         },
         {
           label: 'Kitchen Cashier Operations',
-          code: 'POS_KITCHEN_CASHIER', 
-          route: "", 
+          code: 'POS_KITCHEN_CASHIER',
+          route: "",
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: "",
           description: 'Permission to perform till management and checkout tasks.',
-          isNotSidebarItem: true 
+          isNotSidebarItem: true
         },
         {
           label: 'Kitchen Waiter Operations',
@@ -528,37 +461,32 @@ export class MenuItemsService {
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: "",
           description: 'Permission to manage table orders and serving tasks.',
-          isNotSidebarItem: true 
+          isNotSidebarItem: true
         },
+
+        // ── E-Commerce ────────────────────────────────────────────────────────
+        { label: 'E-Commerce', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Optimerce',
           code: 'POS_STORE',
           route: this.navigationLink.getLink('storeLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-credit-card',
-          description: 'Process payments and manage the customer checkout flow.'
+          icon: 'fas fa-globe',
+          description: 'Manage your online storefront and e-commerce operations.'
         },
+
+        // ── Insights ──────────────────────────────────────────────────────────
+        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Report',
           code: 'POS_REPRT',
           route: this.navigationLink.getLink('reportLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'fa-solid fa-chart-pie',
+          icon: 'fas fa-chart-pie',
           description: 'Generate sales and inventory reports for business insights and analytics.'
         }
       ]
-    }, 
-    {
-      label: 'Inventory Management',
-      code: 'optimaXInventory',
-      route: this.navigationLink.getLink('inventorysLink'),
-      icon: 'fas fa-file-alt',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      description: 'The Tender module of OptimaXSuites allows organizations to manage procurement notices, bids, and evaluations in a centralized system.',
-      shortDescription: 'Manage procurement notices, bids, and evaluation processes.',
-      locked: true,
-      active: false
-    },    
+    },
     {
       label: 'Hospitality',
       code: 'optimaXHospitality',
@@ -569,52 +497,22 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
+        // ── Rooms ─────────────────────────────────────────────────────────────
+        { label: 'Rooms', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Room',
           code: 'HOP_ROOM',
           route: this.navigationLink.getLink('roomLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-user-cog',
+          icon: 'fas fa-bed',
           description: 'Manage hotel room types, availability, rates, and reservations.'
-        },
-        {
-          label: 'Services',
-          code: 'HOP_SERV',
-          route: this.navigationLink.getLink('serviceLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
-        },
-        {
-          label: 'Guests',
-          code: 'HOP_GUEST',
-          route: this.navigationLink.getLink('guestLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
-        },
-        {
-          label: 'Payment',
-          code: 'HOP_PAY',
-          route: this.navigationLink.getLink('payLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
-        },
-        {
-          label: 'House Keeping',
-          code: 'HOP_PAY',
-          route: this.navigationLink.getLink('HKLink'),
-          roles: ['ROLE_USER'],
-          icon: 'fas fa-user-clock',
-          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
         },
         {
           label: 'Booking',
           code: 'HOP_Book',
           route: this.navigationLink.getLink('bookingLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-user-cog',
+          icon: 'fas fa-calendar-plus',
           description: 'Manage hotel room types, availability, rates, and reservations.'
         },
         {
@@ -622,10 +520,44 @@ export class MenuItemsService {
           code: 'HOP_RM_CHK',
           route: this.navigationLink.getLink('eBookingLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-credit-card',
+          icon: 'fas fa-laptop',
           description: 'Handle billing and checkout process for room guests.'
         },
-       
+        {
+          label: 'House Keeping',
+          code: 'HOP_HOUSE',
+          route: this.navigationLink.getLink('HKLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-broom',
+          description: 'Manage housekeeping schedules and room readiness.'
+        },
+
+        // ── Operations ────────────────────────────────────────────────────────
+        { label: 'Operations', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Services',
+          code: 'HOP_SERV',
+          route: this.navigationLink.getLink('serviceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-concierge-bell',
+          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
+        },
+        {
+          label: 'Guests',
+          code: 'HOP_GUEST',
+          route: this.navigationLink.getLink('guestLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-friends',
+          description: 'Manage guest profiles, preferences, and history.'
+        },
+        {
+          label: 'Payment',
+          code: 'HOP_PAY',
+          route: this.navigationLink.getLink('payLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-credit-card',
+          description: 'Process guest payments and manage billing.'
+        }
       ]
     },    
     {
@@ -639,17 +571,37 @@ export class MenuItemsService {
       locked: true,
       active: false,
       submenu: [
+        // ── Overview ──────────────────────────────────────────────────────────
+        { label: 'Overview', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Dashboard',    code: 'CRM_DASHBOARD',  route: this.navigationLink.getLink('crmLink'),             roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tachometer-alt',   description: 'CRM overview dashboard.' },
+
+        // ── Customers ─────────────────────────────────────────────────────────
+        { label: 'Customers', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Contacts',     code: 'CRM_CONTACTS',   route: this.navigationLink.getLink('crmContactsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-address-book',     description: 'Manage CRM contacts.' },
         { label: 'Accounts',     code: 'CRM_ACCOUNTS',   route: this.navigationLink.getLink('crmAccountsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-building',         description: 'Manage CRM accounts.' },
+
+        // ── Sales ─────────────────────────────────────────────────────────────
+        { label: 'Sales', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Pipeline',     code: 'CRM_PIPELINE',   route: this.navigationLink.getLink('crmPipelineLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-stream',           description: 'Manage sales pipeline.' },
         { label: 'Leads',        code: 'CRM_LEADS',      route: this.navigationLink.getLink('crmLeadsLink'),        roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-crosshairs',       description: 'Manage leads.' },
+        { label: 'Quotes & CPQ', code: 'CRM_QUOTES',     route: this.navigationLink.getLink('crmQuotesLink'),       roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-invoice',     description: 'Manage quotes and CPQ.' },
+
+        // ── Marketing ─────────────────────────────────────────────────────────
+        { label: 'Marketing', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Campaigns',    code: 'CRM_CAMPAIGNS',  route: this.navigationLink.getLink('crmCampaignsLink'),    roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bullhorn',         description: 'Manage marketing campaigns.' },
         { label: 'Activities',   code: 'CRM_ACTIVITIES', route: this.navigationLink.getLink('crmActivitiesLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-calendar-alt',     description: 'Manage CRM activities.' },
-        { label: 'Quotes & CPQ', code: 'CRM_QUOTES',     route: this.navigationLink.getLink('crmQuotesLink'),       roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-invoice',     description: 'Manage quotes and CPQ.' },
+
+        // ── Service ───────────────────────────────────────────────────────────
+        { label: 'Service', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Contracts',    code: 'CRM_CONTRACTS',  route: this.navigationLink.getLink('crmContractsLink'),    roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-contract',    description: 'Manage CRM contracts.' },
         { label: 'Support',      code: 'CRM_SUPPORT',    route: this.navigationLink.getLink('crmTicketsLink'),      roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-headset',          description: 'Manage support tickets.' },
+
+        // ── Insights ──────────────────────────────────────────────────────────
+        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Reports',      code: 'CRM_REPORTS',    route: this.navigationLink.getLink('crmReportsLink'),      roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-chart-bar',        description: 'Pre-built and custom CRM reports.' },
+
+        // ── Configuration ─────────────────────────────────────────────────────
+        { label: 'Configuration', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         { label: 'Automation',   code: 'CRM_AUTOMATION', route: this.navigationLink.getLink('crmAutomationLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bolt',             description: 'Workflows and automation rules.' },
         { label: 'Government',   code: 'CRM_GOVERNMENT', route: this.navigationLink.getLink('crmGovernmentLink'),   roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-landmark',         description: 'Government and public sector CRM.' },
         { label: 'CRM Settings', code: 'CRM_SETTINGS',   route: this.navigationLink.getLink('crmSettingsLink'),     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-cog',              description: 'CRM configuration settings.' },
@@ -666,12 +618,14 @@ export class MenuItemsService {
       locked: true,
       active: true,
       submenu: [
+        // ── Expenses ──────────────────────────────────────────────────────────
+        { label: 'Expenses', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Expenses',
           code: 'EXP_EXP',
           route: this.navigationLink.getLink('expensesLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-dollar',
+          icon: 'fas fa-money-bill-wave',
           description: 'Log and manage day-to-day operational and business-related expenses.'
         },
         {
@@ -679,7 +633,7 @@ export class MenuItemsService {
           code: 'EXP_RMBRSE',
           route: this.navigationLink.getLink('reimbursementLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-credit-card',
+          icon: 'fas fa-hand-holding-usd',
           description: 'Submit and approve employee reimbursements for incurred costs.'
         },
         {
@@ -687,15 +641,18 @@ export class MenuItemsService {
           code: 'EXP_ADV',
           route: this.navigationLink.getLink('advanceLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-credit-card',
+          icon: 'fas fa-coins',
           description: 'Manage advance payment requests and track their utilization.'
         },
+
+        // ── Insights ──────────────────────────────────────────────────────────
+        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
           label: 'Report',
           code: 'EXP_RPT',
           route: this.navigationLink.getLink('expenseReportLink'),
           roles: ['ROLE_USER'],
-          icon: 'pi pi-credit-card',
+          icon: 'fas fa-chart-bar',
           description: 'Generate financial reports based on expense data and categories.'
         }
       ]
