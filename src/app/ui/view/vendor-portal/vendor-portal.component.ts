@@ -6,6 +6,8 @@ import { PerformanceComponent } from './performance/performance.component';
 import { DocumentsComponent } from './documents/documents.component';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import {VendorRegistrationComponent} from './vendor-registration/vendor-registration.component';
+import { VendorDashboardComponent } from './vendor-dashboard/vendor-dashboard.component';
+import { VendorProfileComponent } from './vendor-profile/vendor-profile.component';
 
 @Component({
   selector: 'app-vendor-portal',
@@ -22,6 +24,11 @@ export class VendorPortalComponent {
   },
   {
     name: 'Dashboard',
+    component: VendorDashboardComponent,
+    icon: 'fa-solid fa-table-columns',
+  },
+  {
+    name: 'RFQ',
     component: DashboardComponent,
     icon: 'fa-solid fa-table-columns',
   },
@@ -40,10 +47,15 @@ export class VendorPortalComponent {
     component: PerformanceComponent,
     icon: 'fa-solid fa-chart-line',
   },
+  // {
+  //   name: 'Documents',
+  //   component: DocumentsComponent,
+  //   icon: 'fa-solid fa-folder-open',
+  // },
   {
-    name: 'Documents',
-    component: DocumentsComponent,
-    icon: 'fa-solid fa-folder-open',
+    name: 'Profile',
+    component: VendorProfileComponent,
+    icon: 'fa-solid fa-user',
   },
 ]
 }
