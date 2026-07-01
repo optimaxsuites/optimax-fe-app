@@ -11,7 +11,8 @@
   <!-- ── Stats cards ─────────────────────────────────────── -->
   <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="lpoStats && financeStats">
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('lpos','pending')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='pending' && activeTable==='lpos'" [class.ring-[#224957]]="lpoFilter==='pending' && activeTable==='lpos'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending LPOs</span>
         <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -23,9 +24,10 @@
         <ng-container *ngIf="lpoStats.unread > 0"><strong>{{ lpoStats.unread }} unread</strong> — action needed</ng-container>
         <ng-container *ngIf="lpoStats.unread === 0">All reviewed</ng-container>
       </p>
-    </div>
+    </button>
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('lpos','accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='accepted' && activeTable==='lpos'" [class.ring-[#224957]]="lpoFilter==='accepted' && activeTable==='lpos'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Accepted Value</span>
         <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
@@ -34,9 +36,10 @@
       </div>
       <div class="text-xl font-bold tracking-tight text-green-600 mb-1">{{ fmtCurrency(lpoStats.totalValue) }}</div>
       <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ lpoStats.accepted }}</strong> accepted · <strong class="text-[#1a2c35]">{{ lpoStats.fulfilled }}</strong> fulfilled</p>
-    </div>
+    </button>
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('invoices',undefined,'submitted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="invoiceFilter==='submitted' && activeTable==='invoices'" [class.ring-[#224957]]="invoiceFilter==='submitted' && activeTable==='invoices'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Outstanding</span>
         <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
@@ -45,9 +48,10 @@
       </div>
       <div class="text-xl font-bold tracking-tight text-[#224957] mb-1">{{ fmtCurrency(financeStats.totalOutstanding) }}</div>
       <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ financeStats.pendingCount }}</strong> invoices awaiting payment</p>
-    </div>
+    </button>
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('invoices',undefined,'overdue')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="invoiceFilter==='overdue' && activeTable==='invoices'" [class.ring-[#224957]]="invoiceFilter==='overdue' && activeTable==='invoices'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Overdue</span>
         <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
@@ -59,7 +63,7 @@
         <ng-container *ngIf="financeStats.overdueCount > 0"><strong>{{ fmtCurrency(financeStats.totalOverdue) }}</strong> overdue</ng-container>
         <ng-container *ngIf="financeStats.overdueCount === 0">No overdue invoices</ng-container>
       </p>
-    </div>
+    </button>
 
   </div>
 
@@ -127,6 +131,30 @@
     <div class="p-4">
 
       <!-- ── LPO TABLE — 5 columns, 5 <td>s ── -->
+
+      <!-- Active filter chip -->
+      <div *ngIf="activeTable==='lpos' && lpoFilter!=='all'"
+        class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          LPOs: {{ lpoFilter | titlecase }}
+          <button (click)="clearLpoFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredLpos.length }} result{{ filteredLpos.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <div *ngIf="activeTable==='invoices' && invoiceFilter!=='all'"
+        class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Invoices: {{ invoiceFilter | titlecase }}
+          <button (click)="clearInvoiceFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredInvoices.length }} result{{ filteredInvoices.length !== 1 ? 's' : '' }}</span>
+      </div>
       <ng-container *ngIf="activeTable === 'lpos'">
         <app-table
           [columns]="lpoColumns" [rows]="lpos" [actions]="[]"

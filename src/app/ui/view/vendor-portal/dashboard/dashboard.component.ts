@@ -11,7 +11,9 @@ import {
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
-type ActiveTable = 'rfqs' | 'quotations';
+type ActiveTable   = 'rfqs' | 'quotations';
+type RfqFilter     = 'all' | 'open' | 'converted' | 'expired' | 'closed' | 'due_soon';
+type QuotFilter    = 'all' | 'draft' | 'sent' | 'accepted' | 'rejected';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +28,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   stats: VendorStats | null = null;
 
   activeTable: ActiveTable = 'rfqs';
+
+  // ── Card-driven filters ───────────────────────────────────────────────────────
+  rfqFilter:  RfqFilter  = 'all';
+  quotFilter: QuotFilter = 'all';
 
   // ── RFQ side panel ────────────────────────────────────────────────────────────
   showRfqPanel = false;
@@ -145,6 +151,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   switchTable(t: ActiveTable): void {
     this.activeTable = t;
+  }
+
+  // Called by stat cards — switches table and sets the relevant filter
+  filterCard(table: ActiveTable, rfqFilter?: RfqFilter, quotFilter?: QuotFilter): void {
+    this.activeTable = table;
+    if (rfqFilter  !== undefined) { this.rfqFilter  = rfqFilter; }
+    if (quotFilter !== undefined) { this.quotFilter = quotFilter; }
+  }
+
+  clearRfqFilter():  void { this.rfqFilter  = 'all'; }
+  clearQuotFilter(): void { this.quotFilter = 'all'; }
+
+  get filteredRfqs(): Rfq[] {
+    if (this.rfqFilter === 'all')      return this.rfqs;
+    if (this.rfqFilter === 'due_soon') return this.rfqs.filter(r => r.status === 'open' && this.isDueSoon(r.dueDate));
+    return this.rfqs.filter(r => r.status === this.rfqFilter);
+  }
+
+  get filteredQuotations(): Quotation[] {
+    if (this.quotFilter === 'all') return this.quotations;
+    return this.quotations.filter(q => q.status === this.quotFilter);
   }
 
   get unreadCount(): number {

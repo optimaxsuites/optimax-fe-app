@@ -22,7 +22,9 @@ import { CustomerDetailComponent } from './ui/view/sales-hub/customer-management
 import { SalesOrdersDetailComponent } from './ui/view/sales-hub/sales-order/sales-orders-detail/sales-orders-detail.component';
 import { ProductServiceCatalogFormComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-form/product-service-catalog-form.component';
 import { ProductServiceCatalogDetailComponent } from './ui/view/sales-hub/product-service-catalog/product-service-catalog-detail/product-service-catalog-detail.component';
-
+import { RfqDetailWithQuotationsComponent } from './ui/view/request-management/rfq-detail-with-quotations/rfq-detail-with-quotations.component';
+import { QuotationsDashboardComponent } from './ui/view/request-management/quotations-dashboard/quotations-dashboard.component';
+import { QuotationDetailComponent } from './ui/view/request-management/quotation-detail/quotation-detail.component';
 
 export const routes: Routes = [
   {
@@ -227,13 +229,34 @@ export const routes: Routes = [
     component: RequestManagementComponent
   },
   {
+    path: 'commerce/quotations',
+    component: QuotationsDashboardComponent
+  },
+  {
+    path: 'commerce/quotations/:id',
+    component: QuotationDetailComponent
+  },
+  {
+    path: 'commerce/quotations/:id/:uuid',
+    component: QuotationDetailComponent
+  },
+  // RFQ Detail with Quotations
+  {
+    path: 'commerce/requests/:id/quotations',
+    component: RfqDetailWithQuotationsComponent
+  },
+  {
+    path: 'commerce/requests/:id/quotations/:uuid',
+    component: RfqDetailWithQuotationsComponent
+  },
+  {
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
   }
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

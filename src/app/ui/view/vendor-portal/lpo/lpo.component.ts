@@ -6,6 +6,8 @@ import { VendorService } from '../../../service/vendor-portal/vendor.service';
 import { Lpo, LpoStats } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
+type LpoFilter = 'all' | 'pending' | 'accepted' | 'rejected' | 'fulfilled';
+
 @Component({
   selector: 'app-lpo',
   templateUrl: './lpo.component.html',
@@ -17,6 +19,17 @@ export class LpoComponent implements OnInit, OnDestroy {
 
   lpos:  Lpo[]      = [];
   stats: LpoStats | null = null;
+
+  // ── Card-driven filter ────────────────────────────────────────────────────────
+  lpoFilter: LpoFilter = 'all';
+
+  filterCard(f: LpoFilter): void { this.lpoFilter = f; }
+  clearFilter(): void { this.lpoFilter = 'all'; }
+
+  get filteredLpos(): Lpo[] {
+    if (this.lpoFilter === 'all') return this.lpos;
+    return this.lpos.filter(l => l.status === this.lpoFilter);
+  }
 
   // ── LPO side panel ────────────────────────────────────────────────────────────
   showLpoPanel  = false;

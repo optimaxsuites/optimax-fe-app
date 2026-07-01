@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
@@ -7,6 +7,7 @@ import {
   VendorDocument, DocumentStats,
   DocumentCategory, DocumentStatus,
   VendorProfile, DocumentTemplate, TemplateDocType,
+  LogoPosition, TemplateDensity,
 } from '../../../domain/vendor-portal/vendor.dto';
 
 type CategoryFilter = 'all' | DocumentCategory;
@@ -26,7 +27,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   // ── Profile ───────────────────────────────────────────────────────────────────
   profile: VendorProfile | null = null;
 
-  // ── Documents (existing behaviour, unchanged) ───────────────────────────────────
+  // ── Documents ─────────────────────────────────────────────────────────────────
   allDocs:  VendorDocument[] = [];
   docs:     VendorDocument[] = [];
   stats:    DocumentStats | null = null;
@@ -34,13 +35,13 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   showUploadModal = false;
   uploadForm = {
-    name:      '',
-    category:  'registration' as DocumentCategory,
-    fileName:  '',
-    fileSize:  '',
-    fileType:  'pdf',
+    name:       '',
+    category:   'registration' as DocumentCategory,
+    fileName:   '',
+    fileSize:   '',
+    fileType:   'pdf',
     expiryDate: '',
-    notes:     '',
+    notes:      '',
     isRequired: false,
   };
   uploadErrors: Partial<Record<keyof typeof this.uploadForm, string>> = {};
@@ -52,22 +53,22 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   selectedDoc: VendorDocument | null = null;
 
   readonly categoryFilters: { label: string; value: CategoryFilter }[] = [
-    { label: 'All',            value: 'all' },
-    { label: 'Registration',   value: 'registration' },
-    { label: 'Tax',            value: 'tax' },
-    { label: 'Licence',        value: 'licence' },
-    { label: 'Insurance',      value: 'insurance' },
-    { label: 'Certification',  value: 'certification' },
-    { label: 'Other',          value: 'other' },
+    { label: 'All',           value: 'all'           },
+    { label: 'Registration',  value: 'registration'  },
+    { label: 'Tax',           value: 'tax'           },
+    { label: 'Licence',       value: 'licence'       },
+    { label: 'Insurance',     value: 'insurance'     },
+    { label: 'Certification', value: 'certification' },
+    { label: 'Other',         value: 'other'         },
   ];
 
   readonly categoryOptions: { label: string; value: DocumentCategory }[] = [
-    { label: 'Registration',  value: 'registration' },
-    { label: 'Tax',           value: 'tax' },
-    { label: 'Licence',       value: 'licence' },
-    { label: 'Insurance',     value: 'insurance' },
+    { label: 'Registration',  value: 'registration'  },
+    { label: 'Tax',           value: 'tax'           },
+    { label: 'Licence',       value: 'licence'       },
+    { label: 'Insurance',     value: 'insurance'     },
     { label: 'Certification', value: 'certification' },
-    { label: 'Other',         value: 'other' },
+    { label: 'Other',         value: 'other'         },
   ];
 
   // ── Branding / Document Templates ────────────────────────────────────────────
@@ -75,28 +76,41 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   templates: DocumentTemplate[] = [];
   editingTemplate: DocumentTemplate | null = null;
 
+  readonly logoPositions: { v: LogoPosition; label: string }[] = [
+    { v: 'left',   label: 'Left'   },
+    { v: 'center', label: 'Centre' },
+    { v: 'right',  label: 'Right'  },
+  ];
+
+  @ViewChild('previewRef') previewRef!: ElementRef<HTMLDivElement>;
+  isDownloading = false;
+
   templateForm = {
     name:            '',
+    logoPosition:    'left' as LogoPosition,
     accentColor:     '#224957',
+    density:         'detailed' as TemplateDensity,
     footerText:      '',
     showBankDetails: true,
     notesDefault:    '',
   };
 
-  // Preview only reflects what's in the form right now, live, before saving.
-  // Sample data is static on purpose — the point is to preview the *styling*,
-  // not pull a real invoice.
+  // Static sample data — reflects styling choices, not real order data
   readonly previewSample = {
-    docNumber:   'INV-2026-0148',
-    date:        'June 28, 2026',
-    clientName:  'Lagos Continental Hotels Ltd',
+    docNumber:    'INV-2026-0148',
+    date:         'June 28, 2026',
+    dueDate:      'July 12, 2026',
+    clientName:   'Lagos Continental Hotels Ltd',
+    clientAddress: 'Plot 1234, Ozumba Mbadiwe Ave, Victoria Island, Lagos',
+    poReference:  'PO-2026-0089',
     items: [
       { name: 'Industrial Air Compressor (5HP)', qty: 2, unitPrice: 185000, total: 370000 },
-      { name: 'Safety Valve Assembly',            qty: 6, unitPrice: 12500,  total: 75000  },
+      { name: 'Safety Valve Assembly',           qty: 6, unitPrice: 12500,  total: 75000  },
+      { name: 'Pressure Gauge (0-200 PSI)',      qty: 6, unitPrice: 4500,   total: 27000  },
     ],
-    subtotal: 445000,
-    tax:      33375,
-    total:    478375,
+    subtotal: 472000,
+    tax:      35400,
+    total:    507400,
   };
 
   constructor(private vendorService: VendorService) {}
@@ -109,19 +123,26 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.vendorService.getDocuments()
       .pipe(takeUntil(this.destroy$))
       .subscribe(list => { this.allDocs = list; this.applyFilter(); });
-    this.vendorService.getDocumentStats().pipe(take(1)).subscribe(s => this.stats = s);
+
+    this.vendorService.getDocumentStats()
+      .pipe(take(1))
+      .subscribe(s => this.stats = s);
 
     this.loadTemplates();
   }
 
-  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   // ── Tabs ──────────────────────────────────────────────────────────────────────
   setTab(tab: ProfileTab): void { this.activeTab = tab; }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  PROFILE  (view-only for now)
+  //  PROFILE  (view-only)
   // ════════════════════════════════════════════════════════════════════════════
+
   verificationBadge(status: VendorProfile['verificationStatus']): string {
     const m: Record<VendorProfile['verificationStatus'], string> = {
       verified:   'badge badge-active',
@@ -133,7 +154,9 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   verificationLabel(status: VendorProfile['verificationStatus']): string {
     const m: Record<VendorProfile['verificationStatus'], string> = {
-      verified: 'Verified', pending: 'Pending Verification', unverified: 'Not Verified',
+      verified:   'Verified',
+      pending:    'Pending Verification',
+      unverified: 'Not Verified',
     };
     return m[status] ?? status;
   }
@@ -144,8 +167,9 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  DOCUMENTS  (unchanged behaviour from the original component)
+  //  DOCUMENTS
   // ════════════════════════════════════════════════════════════════════════════
+
   setFilter(f: CategoryFilter): void { this.filter = f; this.applyFilter(); }
 
   private applyFilter(): void {
@@ -158,7 +182,10 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   closePanel(): void { this.showPanel = false; this.selectedDoc = null; }
 
   openUploadModal(): void {
-    this.uploadForm = { name: '', category: 'registration', fileName: '', fileSize: '', fileType: 'pdf', expiryDate: '', notes: '', isRequired: false };
+    this.uploadForm = {
+      name: '', category: 'registration', fileName: '', fileSize: '',
+      fileType: 'pdf', expiryDate: '', notes: '', isRequired: false,
+    };
     this.uploadErrors = {};
     this.showUploadModal = true;
   }
@@ -173,20 +200,20 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   submitUpload(): void {
     this.uploadErrors = {};
-    if (!this.uploadForm.name.trim()) { this.uploadErrors['name'] = 'Document name is required.'; }
+    if (!this.uploadForm.name.trim()) { this.uploadErrors['name']     = 'Document name is required.'; }
     if (!this.uploadForm.fileName)    { this.uploadErrors['fileName'] = 'Please select a file.'; }
     if (Object.keys(this.uploadErrors).length > 0) return;
 
     this.vendorService.uploadDocument({
-      name:        this.uploadForm.name.trim(),
-      category:    this.uploadForm.category,
-      fileUrl:     '#',
-      fileName:    this.uploadForm.fileName,
-      fileSize:    this.uploadForm.fileSize || '—',
-      fileType:    this.uploadForm.fileType,
-      expiryDate:  this.uploadForm.expiryDate ? new Date(this.uploadForm.expiryDate) : undefined,
-      notes:       this.uploadForm.notes || undefined,
-      isRequired:  this.uploadForm.isRequired,
+      name:       this.uploadForm.name.trim(),
+      category:   this.uploadForm.category,
+      fileUrl:    '#',
+      fileName:   this.uploadForm.fileName,
+      fileSize:   this.uploadForm.fileSize || '—',
+      fileType:   this.uploadForm.fileType,
+      expiryDate: this.uploadForm.expiryDate ? new Date(this.uploadForm.expiryDate) : undefined,
+      notes:      this.uploadForm.notes || undefined,
+      isRequired: this.uploadForm.isRequired,
     });
 
     this.vendorService.getDocumentStats().pipe(take(1)).subscribe(s => this.stats = s);
@@ -195,8 +222,10 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   openDeleteConfirm(doc: VendorDocument, e: MouseEvent): void {
     e.stopPropagation();
-    this.docToDelete = doc; this.showDeleteConfirm = true;
+    this.docToDelete = doc;
+    this.showDeleteConfirm = true;
   }
+
   closeDeleteConfirm(): void { this.showDeleteConfirm = false; this.docToDelete = null; }
 
   confirmDelete(): void {
@@ -214,7 +243,9 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   fmtDate(d: Date | undefined): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-NG', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    });
   }
 
   daysUntilExpiry(d: Date): number {
@@ -233,37 +264,39 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   statusLabel(status: DocumentStatus): string {
     const m: Record<DocumentStatus, string> = {
-      active: 'Active', expiring_soon: 'Expiring Soon',
-      expired: 'Expired', pending_review: 'Pending Review',
+      active:         'Active',
+      expiring_soon:  'Expiring Soon',
+      expired:        'Expired',
+      pending_review: 'Pending Review',
     };
     return m[status] ?? status;
   }
 
   categoryLabel(cat: DocumentCategory): string {
     const m: Record<DocumentCategory, string> = {
-      registration: 'Registration', tax: 'Tax', licence: 'Licence',
-      insurance: 'Insurance', certification: 'Certification', other: 'Other',
+      registration: 'Registration', tax: 'Tax',  licence: 'Licence',
+      insurance:    'Insurance', certification: 'Certification', other: 'Other',
     };
     return m[cat] ?? cat;
   }
 
   categoryIcon(cat: DocumentCategory): string {
     const m: Record<DocumentCategory, string> = {
-      registration: '🏢', tax: '🧾', licence: '📋',
-      insurance: '🛡️', certification: '🎖️', other: '📄',
+      registration: '🏢', tax: '🧾',  licence: '📋',
+      insurance:    '🛡️', certification: '🎖️', other: '📄',
     };
     return m[cat] ?? '📄';
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  //  BRANDING  (document templates for invoices/quotations)
+  //  BRANDING
   // ════════════════════════════════════════════════════════════════════════════
+
   private loadTemplates(): void {
     this.vendorService.getTemplates(this.templateDocType)
       .pipe(takeUntil(this.destroy$))
       .subscribe(list => {
         this.templates = list;
-        // Default the editor to whichever template is currently active
         const active = list.find(t => t.isActive);
         if (active && !this.editingTemplate) {
           this.loadTemplateIntoForm(active);
@@ -281,8 +314,10 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.editingTemplate = template;
     this.templateForm = {
       name:            template.name,
+      logoPosition:    template.logoPosition,
       accentColor:     template.accentColor,
-      footerText:       template.footerText || '',
+      density:         template.density,
+      footerText:      template.footerText  || '',
       showBankDetails: template.showBankDetails,
       notesDefault:    template.notesDefault || '',
     };
@@ -292,7 +327,9 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.editingTemplate = null;
     this.templateForm = {
       name:            'New Template',
+      logoPosition:    'left',
       accentColor:     '#224957',
+      density:         'detailed',
       footerText:      '',
       showBankDetails: this.templateDocType === 'invoice',
       notesDefault:    '',
@@ -306,8 +343,10 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       name:            this.templateForm.name.trim(),
       docType:         this.templateDocType,
       isActive:        this.editingTemplate?.isActive ?? false,
+      logoPosition:    this.templateForm.logoPosition,
       accentColor:     this.templateForm.accentColor,
-      footerText:      this.templateForm.footerText || undefined,
+      density:         this.templateForm.density,
+      footerText:      this.templateForm.footerText  || undefined,
       showBankDetails: this.templateForm.showBankDetails,
       notesDefault:    this.templateForm.notesDefault || undefined,
     }, this.editingTemplate?.id);
@@ -322,15 +361,63 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   deleteTemplate(template: DocumentTemplate, e: MouseEvent): void {
     e.stopPropagation();
-    if (template.isActive) return; // guard: can't delete the active template
+    if (template.isActive) return;
     this.vendorService.deleteTemplate(template.id);
-    if (this.editingTemplate?.id === template.id) this.editingTemplate = null;
+    if (this.editingTemplate?.id === template.id) { this.editingTemplate = null; }
     this.loadTemplates();
+  }
+
+  // ── Logo position → CSS justify-content value ─────────────────────────────
+  logoJustify(pos: LogoPosition): string {
+    const m: Record<LogoPosition, string> = {
+      left:   'flex-start',
+      center: 'center',
+      right:  'flex-end',
+    };
+    return m[pos];
+  }
+
+  // ── PDF export (jsPDF + html2canvas) ──────────────────────────────────────
+  // Requires:  npm install jspdf html2canvas
+  async downloadTemplatePdf(): Promise<void> {
+    if (!this.previewRef?.nativeElement || this.isDownloading) return;
+    this.isDownloading = true;
+
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF }   = await import('jspdf');
+
+      const el     = this.previewRef.nativeElement;
+      const canvas = await html2canvas(el, {
+        scale:           2,
+        useCORS:         true,
+        backgroundColor: '#ffffff',
+        logging:         false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfW    = pdf.internal.pageSize.getWidth();
+      const pdfH    = (canvas.height * pdfW) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+
+      const docLabel = this.templateDocType === 'invoice' ? 'Invoice' : 'Quotation';
+      const safeName = (this.templateForm.name || 'Template').replace(/\s+/g, '_');
+      pdf.save(`${docLabel}_Template_${safeName}.pdf`);
+    } catch (err) {
+      console.error('[VendorProfile] PDF export failed:', err);
+    } finally {
+      this.isDownloading = false;
+    }
   }
 
   fmtCurrency(n: number): string {
     return new Intl.NumberFormat('en-NG', {
-      style: 'currency', currency: 'NGN', minimumFractionDigits: 0, maximumFractionDigits: 0,
+      style:                 'currency',
+      currency:              'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(n);
   }
 }

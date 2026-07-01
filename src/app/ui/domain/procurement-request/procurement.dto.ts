@@ -196,3 +196,63 @@ export type MasterOrderStatus =
   | 'FULLY_AWARDED'
   | 'COMPLETED'
   | 'CANCELLED';
+
+
+  // procurement.dto.ts
+
+export type VendorQuotationStatus = 
+  | 'PENDING'      // Vendor hasn't responded yet
+  | 'SUBMITTED'    // Vendor submitted quotation
+  | 'ACCEPTED'     // Buyer accepted the quotation
+  | 'DECLINED'     // Vendor declined or buyer rejected
+  | 'EXPIRED'      // Quotation expired
+  | 'WITHDRAWN';   // Vendor withdrew quotation
+
+export interface VendorQuotation {
+  id: string;
+  rfqId: string;
+  vendorId: string;
+  vendorName: string;
+  vendorCode: string;
+  vendorRating: number;
+  status: VendorQuotationStatus;
+  items: QuotationItemDetail[];
+  totalAmount: number;
+  currency: string;
+  deliveryTimeline: string;
+  validityDays: number;
+  vendorEmail?: string;
+  vendorPhone?: string;
+  termsAndConditions?: string;
+  notes?: string;
+  declineReason?: string;
+  submittedAt?: Date;
+  updatedAt: Date;
+  expiresAt: Date;
+  isViewed: boolean;
+}
+
+export interface QuotationItemDetail {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  availability: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+  deliveryDate?: Date;
+  notes?: string;
+}
+
+export interface RFQWithQuotations {
+  rfq: ProcurementRequest;
+  quotations: VendorQuotation[];
+  summary: {
+    totalVendors: number;
+    responded: number;
+    pending: number;
+    accepted: number;
+    declined: number;
+    expired: number;
+  };
+}
