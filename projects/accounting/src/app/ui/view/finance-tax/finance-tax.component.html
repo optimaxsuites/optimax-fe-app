@@ -1,0 +1,104 @@
+<div class="fd-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#fef3c7;color:#92400e;">&#129710;</div>
+      <div>
+        <div class="page-title">Tax Codes &amp; Configuration</div>
+        <div class="page-sub">FIRS-compliant tax codes mapped to GL accounts</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+      <button class="fd-btn fd-btn-primary fd-btn-sm">+ Add Tax Code</button>
+    </div>
+  </div>
+
+  <div class="fd-card">
+    <div class="fd-card-header">
+      <div class="fd-card-title">Configured Tax Codes</div>
+    </div>
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Rate</th>
+            <th>GL Account</th>
+            <th>FIRS Code</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ref-cell">VAT-OUT</td>
+            <td>Output VAT</td>
+            <td><span class="fd-badge badge-blue">VAT</span></td>
+            <td><strong>7.5%</strong></td>
+            <td>2100 &mdash; VAT Payable</td>
+            <td class="ref-cell">FIRS-VAT-01</td>
+            <td><span class="fd-badge badge-green">ACTIVE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn act-edit">&#9998;</button>
+              <button class="act-btn act-reject">&#128465;</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">VAT-IN</td>
+            <td>Input VAT</td>
+            <td><span class="fd-badge badge-blue">VAT</span></td>
+            <td><strong>7.5%</strong></td>
+            <td>1200 &mdash; VAT Receivable</td>
+            <td class="ref-cell">FIRS-VAT-02</td>
+            <td><span class="fd-badge badge-green">ACTIVE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn act-edit">&#9998;</button>
+              <button class="act-btn act-reject">&#128465;</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">WHT-SVC</td>
+            <td>WHT &mdash; Services</td>
+            <td><span class="fd-badge badge-amber">WHT</span></td>
+            <td><strong>5%</strong></td>
+            <td>2101 &mdash; WHT Payable</td>
+            <td class="ref-cell">FIRS-WHT-01</td>
+            <td><span class="fd-badge badge-green">ACTIVE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn act-edit">&#9998;</button>
+              <button class="act-btn act-reject">&#128465;</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">WHT-RENT</td>
+            <td>WHT &mdash; Rent</td>
+            <td><span class="fd-badge badge-amber">WHT</span></td>
+            <td><strong>10%</strong></td>
+            <td>2101 &mdash; WHT Payable</td>
+            <td class="ref-cell">FIRS-WHT-02</td>
+            <td><span class="fd-badge badge-green">ACTIVE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn act-edit">&#9998;</button>
+              <button class="act-btn act-reject">&#128465;</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">CIT</td>
+            <td>Company Income Tax</td>
+            <td><span class="fd-badge badge-purple">CIT</span></td>
+            <td><strong>30%</strong></td>
+            <td>2102 &mdash; CIT Payable</td>
+            <td class="ref-cell">FIRS-CIT-01</td>
+            <td><span class="fd-badge badge-green">ACTIVE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn act-edit">&#9998;</button>
+              <button class="act-btn act-reject">&#128465;</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

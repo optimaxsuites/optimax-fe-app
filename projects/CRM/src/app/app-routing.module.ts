@@ -22,6 +22,7 @@ import { CrmSettingsComponent } from './ui/view/crm-settings/crm-settings.compon
 import { CrmReportsComponent } from './ui/view/crm-reports/crm-reports.component';
 import { CrmAutomationComponent } from './ui/view/crm-automation/crm-automation.component';
 import { CrmGovernmentComponent } from './ui/view/crm-government/crm-government.component';
+import { CrmUiShellComponent } from './ui/view/crm-ui-shell/crm-ui-shell.component';
 
 const routes: Routes = [
   // Legacy vendor routes (must come before the shell catch-all)
@@ -29,6 +30,7 @@ const routes: Routes = [
   { path: 'crm/individualVendor', component: VendorIndividualComponent },
   { path: 'crm/vendorList',       component: VendorListComponent },
   { path: 'crm/vendorManagement', component: VendorManagementComponent },
+  { path: 'crm-ui', component: CrmUiShellComponent },
   // CRM Shell — wraps all section routes; matches section/:uuid pattern
   {
     path: '',

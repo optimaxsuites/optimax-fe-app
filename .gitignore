@@ -43,3 +43,7 @@ testem.log
 .DS_Store
 Thumbs.db
 .vercel
+
+# Design docs / mockups / assessments (managed in optimax-docs/)
+accounting-assessment.html
+*.assessment.html

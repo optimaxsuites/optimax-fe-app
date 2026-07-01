@@ -1,0 +1,555 @@
+<div class="fd-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#ecfdf5;color:#059669;">&#128200;</div>
+      <div>
+        <div class="page-title">Finance Reports</div>
+        <div class="page-sub">FY 2026 &mdash; Management &amp; Statutory Reporting Suite</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export PDF</button>
+      <button class="fd-btn fd-btn-outline fd-btn-sm">&#128200; Export Excel</button>
+    </div>
+  </div>
+
+  <div class="report-layout">
+    <!-- Left Nav -->
+    <nav class="report-nav">
+      <div class="report-nav-section">Core Statements</div>
+      <button class="report-nav-item" [class.active]="activeReport==='income'" (click)="setReport('income')">&#128200; Income Statement</button>
+      <button class="report-nav-item" [class.active]="activeReport==='balance'" (click)="setReport('balance')">&#128203; Balance Sheet</button>
+      <button class="report-nav-item" [class.active]="activeReport==='cashflow'" (click)="setReport('cashflow')">&#128167; Cash Flow</button>
+
+      <div class="report-nav-section">Ledger</div>
+      <button class="report-nav-item" [class.active]="activeReport==='trial'" (click)="setReport('trial')">&#128290; Trial Balance</button>
+
+      <div class="report-nav-section">Receivables &amp; Payables</div>
+      <button class="report-nav-item" [class.active]="activeReport==='aged-ar'" (click)="setReport('aged-ar')">&#128197; Aged Receivables</button>
+      <button class="report-nav-item" [class.active]="activeReport==='aged-ap'" (click)="setReport('aged-ap')">&#128197; Aged Payables</button>
+      <button class="report-nav-item" [class.active]="activeReport==='ap-ledger'" (click)="setReport('ap-ledger')">&#128210; AP Ledger</button>
+
+      <div class="report-nav-section">Assets</div>
+      <button class="report-nav-item" [class.active]="activeReport==='fixedassets'" (click)="setReport('fixedassets')">&#127970; Fixed Asset Register</button>
+
+      <div class="report-nav-section">Management</div>
+      <button class="report-nav-item" [class.active]="activeReport==='budget-vs'" (click)="setReport('budget-vs')">&#127919; Budget vs Actuals</button>
+      <button class="report-nav-item" [class.active]="activeReport==='dept-profit'" (click)="setReport('dept-profit')">&#127959; Profit by Department</button>
+      <button class="report-nav-item" [class.active]="activeReport==='payroll-sum'" (click)="setReport('payroll-sum')">&#128101; Payroll Summary</button>
+
+      <div class="report-nav-section">Tax &amp; Compliance</div>
+      <button class="report-nav-item" [class.active]="activeReport==='taxsum'" (click)="setReport('taxsum')">&#129710; Tax Summary</button>
+      <button class="report-nav-item" [class.active]="activeReport==='vat-return'" (click)="setReport('vat-return')">&#127991;&#65039; VAT Return (FIRS)</button>
+
+      <div class="report-nav-section">Banking</div>
+      <button class="report-nav-item" [class.active]="activeReport==='bank-recon'" (click)="setReport('bank-recon')">&#127970; Recon. Summary</button>
+    </nav>
+
+    <!-- Right Content -->
+    <div class="report-content">
+
+      <!-- Income Statement -->
+      <div *ngIf="activeReport==='income'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Income Statement</div>
+            <div class="rpt-sub">OptimaX Suites Ltd &mdash; January to June 2026 (6 months)</div>
+          </div>
+          <div class="rpt-filter">
+            <select class="filter-select"><option>Jan &ndash; Jun 2026</option></select>
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+          </div>
+        </div>
+
+        <div class="fs-section-head">Revenue</div>
+        <div class="fs-row"><span>Services Revenue</span><span class="amount-cell">&#8358;38,516,000</span></div>
+        <div class="fs-row"><span>Products Revenue</span><span class="amount-cell">&#8358;12,400,000</span></div>
+        <div class="fs-total"><span>Total Revenue</span><span>&#8358;50,916,000</span></div>
+
+        <div class="fs-section-head" style="margin-top:16px;">Cost of Sales</div>
+        <div class="fs-row"><span>Direct Labour</span><span class="amount-cell" style="color:#dc2626;">(&#8358;8,200,000)</span></div>
+        <div class="fs-row"><span>Materials &amp; Supplies</span><span class="amount-cell" style="color:#dc2626;">(&#8358;4,100,000)</span></div>
+        <div class="fs-total"><span>Total Cost of Sales</span><span style="color:#dc2626;">(&#8358;12,300,000)</span></div>
+
+        <div class="fs-gp"><span>Gross Profit</span><span>&#8358;38,616,000</span></div>
+
+        <div class="fs-section-head">Operating Expenses</div>
+        <div class="fs-row"><span>Staff Salaries &amp; Benefits</span><span class="amount-cell" style="color:#dc2626;">(&#8358;14,200,000)</span></div>
+        <div class="fs-row"><span>Rent &amp; Utilities</span><span class="amount-cell" style="color:#dc2626;">(&#8358;2,400,000)</span></div>
+        <div class="fs-row"><span>Marketing &amp; Advertising</span><span class="amount-cell" style="color:#dc2626;">(&#8358;1,200,000)</span></div>
+        <div class="fs-row"><span>Depreciation</span><span class="amount-cell" style="color:#dc2626;">(&#8358;320,000)</span></div>
+        <div class="fs-row"><span>Other Operating Expenses</span><span class="amount-cell" style="color:#dc2626;">(&#8358;630,000)</span></div>
+        <div class="fs-total"><span>Total Operating Expenses</span><span style="color:#dc2626;">(&#8358;18,750,000)</span></div>
+
+        <div class="fs-np"><span>NET PROFIT (EBIT)</span><span>&#8358;19,866,000</span></div>
+      </div>
+
+      <!-- Balance Sheet -->
+      <div *ngIf="activeReport==='balance'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Balance Sheet</div>
+            <div class="rpt-sub">OptimaX Suites Ltd &mdash; As at 30 June 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+          </div>
+        </div>
+        <div class="balance-grid">
+          <!-- Assets -->
+          <div>
+            <div class="fs-section-head">Current Assets</div>
+            <div class="fs-row"><span>Cash &amp; Bank</span><span>&#8358;4,250,000</span></div>
+            <div class="fs-row"><span>Accounts Receivable</span><span>&#8358;32,800,000</span></div>
+            <div class="fs-row"><span>Prepaid Expenses</span><span>&#8358;480,000</span></div>
+            <div class="fs-total"><span>Total Current Assets</span><span>&#8358;37,530,000</span></div>
+
+            <div class="fs-section-head" style="margin-top:16px;">Non-Current Assets</div>
+            <div class="fs-row"><span>Property, Plant &amp; Equipment</span><span>&#8358;12,640,000</span></div>
+            <div class="fs-row"><span>Intangible Assets</span><span>&#8358;1,800,000</span></div>
+            <div class="fs-total"><span>Total Non-Current Assets</span><span>&#8358;14,440,000</span></div>
+
+            <div class="fs-np"><span>TOTAL ASSETS</span><span>&#8358;51,970,000</span></div>
+          </div>
+          <!-- Liabilities + Equity -->
+          <div>
+            <div class="fs-section-head">Current Liabilities</div>
+            <div class="fs-row"><span>Accounts Payable</span><span style="color:#dc2626;">&#8358;9,200,000</span></div>
+            <div class="fs-row"><span>Payroll Payable</span><span style="color:#dc2626;">&#8358;4,500,000</span></div>
+            <div class="fs-row"><span>VAT Payable</span><span style="color:#dc2626;">&#8358;2,896,200</span></div>
+            <div class="fs-row"><span>Income Tax Payable</span><span style="color:#dc2626;">&#8358;5,959,800</span></div>
+            <div class="fs-total"><span>Total Current Liabilities</span><span style="color:#dc2626;">&#8358;22,556,000</span></div>
+
+            <div class="fs-section-head" style="margin-top:16px;">Equity</div>
+            <div class="fs-row"><span>Share Capital</span><span>&#8358;9,548,000</span></div>
+            <div class="fs-row"><span>Retained Earnings</span><span>&#8358;19,866,000</span></div>
+            <div class="fs-total"><span>Total Equity</span><span>&#8358;29,414,000</span></div>
+
+            <div class="fs-np"><span>TOTAL LIABILITIES &amp; EQUITY</span><span>&#8358;51,970,000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cash Flow -->
+      <div *ngIf="activeReport==='cashflow'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Cash Flow Statement</div>
+            <div class="rpt-sub">OptimaX Suites Ltd &mdash; January to June 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+          </div>
+        </div>
+
+        <div class="fs-section-head">Operating Activities</div>
+        <div class="fs-row"><span>Net Profit (EBIT)</span><span>&#8358;19,866,000</span></div>
+        <div class="fs-row"><span>Add: Depreciation</span><span>&#8358;320,000</span></div>
+        <div class="fs-row"><span>Less: Increase in Accounts Receivable</span><span style="color:#dc2626;">(&#8358;8,216,000)</span></div>
+        <div class="fs-row"><span>Add: Increase in Accounts Payable</span><span>&#8358;2,400,000</span></div>
+        <div class="fs-total"><span>Net Cash from Operating Activities</span><span>&#8358;17,146,200</span></div>
+
+        <div class="fs-section-head" style="margin-top:16px;">Investing Activities</div>
+        <div class="fs-row"><span>Purchase of PPE</span><span style="color:#dc2626;">(&#8358;4,500,000)</span></div>
+        <div class="fs-total"><span>Net Cash from Investing Activities</span><span style="color:#dc2626;">(&#8358;4,500,000)</span></div>
+
+        <div class="fs-section-head" style="margin-top:16px;">Financing Activities</div>
+        <div class="fs-row"><span>Payroll Disbursements</span><span style="color:#dc2626;">(&#8358;18,450,000)</span></div>
+        <div class="fs-row"><span>Vendor Payments</span><span style="color:#dc2626;">(&#8358;6,200,000)</span></div>
+        <div class="fs-total"><span>Net Cash from Financing Activities</span><span style="color:#dc2626;">(&#8358;24,650,000)</span></div>
+
+        <div style="margin-top:16px;">
+          <div class="fs-row"><span>Net Change in Cash</span><span style="color:#dc2626;">(&#8358;12,003,800)</span></div>
+          <div class="fs-row"><span>Opening Cash Balance</span><span>&#8358;16,253,800</span></div>
+        </div>
+        <div class="fs-np"><span>Closing Cash Balance</span><span>&#8358;4,250,000</span></div>
+      </div>
+
+      <!-- Trial Balance -->
+      <div *ngIf="activeReport==='trial'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Trial Balance</div>
+            <div class="rpt-sub">OptimaX Suites Ltd &mdash; As at 30 June 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+          </div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Code</th><th>Account Name</th><th style="text-align:right;">Debit (&#8358;)</th><th style="text-align:right;">Credit (&#8358;)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="ref-cell">1001</td><td>Cash &amp; Bank</td><td style="text-align:right;">4,250,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">1002</td><td>Accounts Receivable</td><td style="text-align:right;">32,800,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">1003</td><td>Prepaid Expenses</td><td style="text-align:right;">480,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">1100</td><td>Property, Plant &amp; Equipment</td><td style="text-align:right;">12,640,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">1101</td><td>Intangible Assets</td><td style="text-align:right;">1,800,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">2100</td><td>VAT Payable</td><td style="text-align:right;">—</td><td style="text-align:right;">2,896,200</td></tr>
+              <tr><td class="ref-cell">2101</td><td>WHT Payable</td><td style="text-align:right;">—</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">2102</td><td>Accounts Payable</td><td style="text-align:right;">—</td><td style="text-align:right;">9,200,000</td></tr>
+              <tr><td class="ref-cell">2103</td><td>Payroll Payable</td><td style="text-align:right;">—</td><td style="text-align:right;">4,500,000</td></tr>
+              <tr><td class="ref-cell">2104</td><td>Income Tax Payable</td><td style="text-align:right;">—</td><td style="text-align:right;">5,959,800</td></tr>
+              <tr><td class="ref-cell">3001</td><td>Share Capital</td><td style="text-align:right;">—</td><td style="text-align:right;">9,548,000</td></tr>
+              <tr><td class="ref-cell">3002</td><td>Retained Earnings</td><td style="text-align:right;">—</td><td style="text-align:right;">19,866,000</td></tr>
+              <tr><td class="ref-cell">4001</td><td>Services Revenue</td><td style="text-align:right;">—</td><td style="text-align:right;">38,516,000</td></tr>
+              <tr><td class="ref-cell">4002</td><td>Products Revenue</td><td style="text-align:right;">—</td><td style="text-align:right;">12,400,000</td></tr>
+              <tr><td class="ref-cell">5001</td><td>Salaries &amp; Benefits</td><td style="text-align:right;">14,200,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">5002</td><td>Direct Labour</td><td style="text-align:right;">8,200,000</td><td style="text-align:right;">—</td></tr>
+              <tr><td class="ref-cell">5003</td><td>Rent &amp; Utilities</td><td style="text-align:right;">5,020,000</td><td style="text-align:right;">—</td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#2E6276;color:#fff;font-weight:900;">
+                <td colspan="2" style="padding:12px 16px;">TOTALS</td>
+                <td style="padding:12px 16px;text-align:right;font-weight:900;">79,390,000</td>
+                <td style="padding:12px 16px;text-align:right;font-weight:900;">79,390,000</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aged Receivables -->
+      <div *ngIf="activeReport==='aged-ar'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Aged Receivables Report</div>
+            <div class="rpt-sub">Outstanding customer invoices by aging bucket &middot; As at 30 June 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+            <button class="fd-btn fd-btn-primary fd-btn-sm">&#128231; Bulk Chase</button>
+          </div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
+          <div class="stat-card stat-green" style="padding:14px"><div class="stat-label" style="font-size:10px">Current (&lt;30d)</div><div style="font-size:20px;font-weight:900;color:#16a34a">&#8358;18.0M</div></div>
+          <div class="stat-card stat-amber" style="padding:14px"><div class="stat-label" style="font-size:10px">30&ndash;60 Days</div><div style="font-size:20px;font-weight:900;color:#d97706">&#8358;8.2M</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #f97316"><div class="stat-label" style="font-size:10px">60&ndash;90 Days</div><div style="font-size:20px;font-weight:900;color:#c2410c">&#8358;4.0M</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #dc2626"><div class="stat-label" style="font-size:10px">90&ndash;120 Days</div><div style="font-size:20px;font-weight:900;color:#dc2626">&#8358;1.6M</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #7f1d1d"><div class="stat-label" style="font-size:10px">120+ Days</div><div style="font-size:20px;font-weight:900;color:#7f1d1d">&#8358;1.0M</div></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Customer</th><th style="text-align:right">Current</th><th style="text-align:right">30&ndash;60d</th><th style="text-align:right">60&ndash;90d</th><th style="text-align:right">90&ndash;120d</th><th style="text-align:right">120+d</th><th style="text-align:right">Total</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">Dangote Group</td><td style="text-align:right;color:#16a34a">&#8358;8,216,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;8,216,000</td></tr>
+              <tr><td style="font-weight:700">MTN Nigeria Plc</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#c2410c">&#8358;12,400,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;12,400,000</td></tr>
+              <tr><td style="font-weight:700">Zenith Bank Plc</td><td style="text-align:right;color:#16a34a">&#8358;5,500,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;5,500,000</td></tr>
+              <tr><td style="font-weight:700">UBA Plc</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#d97706">&#8358;4,284,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;4,284,000</td></tr>
+              <tr><td style="font-weight:700">Flour Mills Nigeria</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#dc2626">&#8358;1,600,000</td><td style="text-align:right;color:#7f1d1d">&#8358;1,000,000</td><td style="text-align:right;font-weight:900">&#8358;2,600,000</td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;font-weight:900"><td>TOTAL</td><td style="text-align:right;color:#16a34a">&#8358;13,716,000</td><td style="text-align:right;color:#d97706">&#8358;4,284,000</td><td style="text-align:right;color:#c2410c">&#8358;12,400,000</td><td style="text-align:right;color:#dc2626">&#8358;1,600,000</td><td style="text-align:right;color:#7f1d1d">&#8358;1,000,000</td><td style="text-align:right;color:#2E6276">&#8358;33,000,000</td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 16px;margin-top:16px;font-size:13px;color:#92400e"><strong>&#9888; Credit risk alert:</strong> MTN Nigeria &mdash; &#8358;12.4M overdue 60&ndash;90 days. Recommended action: issue formal demand letter and suspend credit terms.</div>
+      </div>
+
+      <!-- Aged Payables -->
+      <div *ngIf="activeReport==='aged-ap'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Aged Payables Report</div>
+            <div class="rpt-sub">Outstanding vendor bills by aging bucket &middot; As at 30 June 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+            <button class="fd-btn fd-btn-primary fd-btn-sm">&#128178; Schedule Payments</button>
+          </div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+          <div class="stat-card stat-green" style="padding:14px"><div class="stat-label" style="font-size:10px">Current (&lt;30d)</div><div style="font-size:20px;font-weight:900;color:#16a34a">&#8358;3.2M</div></div>
+          <div class="stat-card stat-amber" style="padding:14px"><div class="stat-label" style="font-size:10px">30&ndash;60 Days</div><div style="font-size:20px;font-weight:900;color:#d97706">&#8358;4.2M</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #dc2626"><div class="stat-label" style="font-size:10px">60&ndash;90 Days</div><div style="font-size:20px;font-weight:900;color:#dc2626">&#8358;1.8M</div></div>
+          <div class="stat-card stat-blue" style="padding:14px"><div class="stat-label" style="font-size:10px">Total AP</div><div style="font-size:20px;font-weight:900;color:#2E6276">&#8358;9.2M</div></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Vendor</th><th style="text-align:right">Current</th><th style="text-align:right">30&ndash;60d</th><th style="text-align:right">60&ndash;90d</th><th style="text-align:right">90+d</th><th style="text-align:right">Total</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">Julius Berger Nigeria</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#dc2626">&#8358;1,800,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;1,800,000</td><td><span class="fd-badge badge-red">OVERDUE</span></td></tr>
+              <tr><td style="font-weight:700">EKEDC (Electricity)</td><td style="text-align:right;color:#16a34a">&#8358;420,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;420,000</td><td><span class="fd-badge badge-amber">PENDING</span></td></tr>
+              <tr><td style="font-weight:700">Aluko &amp; Oyebode LP</td><td style="text-align:right;color:#16a34a">&#8358;3,200,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;3,200,000</td><td><span class="fd-badge badge-green">SCHEDULED</span></td></tr>
+              <tr><td style="font-weight:700">Lagos State Water Corp</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#d97706">&#8358;180,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;180,000</td><td><span class="fd-badge badge-amber">PENDING</span></td></tr>
+              <tr><td style="font-weight:700">Ecobank Nigeria</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#d97706">&#8358;3,600,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:900">&#8358;3,600,000</td><td><span class="fd-badge badge-amber">PENDING</span></td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;font-weight:900"><td>TOTAL</td><td style="text-align:right;color:#16a34a">&#8358;3,620,000</td><td style="text-align:right;color:#d97706">&#8358;3,780,000</td><td style="text-align:right;color:#dc2626">&#8358;1,800,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#2E6276">&#8358;9,200,000</td><td></td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- AP Ledger -->
+      <div *ngIf="activeReport==='ap-ledger'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Accounts Payable Ledger</div>
+            <div class="rpt-sub">GL Account 2000 &mdash; AP Control &middot; All entries &middot; June 2026</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; PDF</button></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Date</th><th>Journal Ref</th><th>Vendor / Description</th><th>Source</th><th style="text-align:right">Debit (Dr)</th><th style="text-align:right">Credit (Cr)</th><th style="text-align:right">Balance</th></tr>
+            </thead>
+            <tbody>
+              <tr style="background:#f8fafc"><td colspan="6" style="font-weight:900;font-size:11px;color:#2E6276;padding:10px 16px;letter-spacing:.06em;text-transform:uppercase">Opening Balance &mdash; 1 June 2026</td><td style="text-align:right;font-weight:900;padding:10px 16px">&#8358;4,250,000 Cr</td></tr>
+              <tr><td>03 Jun</td><td class="ref-cell">JE-0830</td><td>Julius Berger &mdash; Construction Invoice</td><td><span class="fd-badge badge-blue">BILL</span></td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:700;color:#dc2626">&#8358;1,800,000</td><td style="text-align:right;font-weight:700">&#8358;6,050,000 Cr</td></tr>
+              <tr><td>05 Jun</td><td class="ref-cell">JE-0831</td><td>EKEDC &mdash; Monthly Utility</td><td><span class="fd-badge badge-blue">BILL</span></td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:700;color:#dc2626">&#8358;420,000</td><td style="text-align:right;font-weight:700">&#8358;6,470,000 Cr</td></tr>
+              <tr><td>10 Jun</td><td class="ref-cell">JE-0835</td><td>Aluko &amp; Oyebode &mdash; Legal Retainer</td><td><span class="fd-badge badge-blue">BILL</span></td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:700;color:#dc2626">&#8358;3,200,000</td><td style="text-align:right;font-weight:700">&#8358;9,670,000 Cr</td></tr>
+              <tr><td>12 Jun</td><td class="ref-cell">JE-0838</td><td>Vendor Batch Payment &mdash; June</td><td><span class="fd-badge badge-green">PMT</span></td><td style="text-align:right;font-weight:700;color:#16a34a">&#8358;470,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:700">&#8358;9,200,000 Cr</td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc"><td colspan="6" style="font-weight:900;color:#2E6276;padding:12px 16px;font-size:13px">Closing Balance &mdash; 30 June 2026</td><td style="text-align:right;font-weight:900;color:#2E6276;padding:12px 16px;font-size:14px">&#8358;9,200,000 Cr</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Fixed Asset Register -->
+      <div *ngIf="activeReport==='fixedassets'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Fixed Asset Register</div>
+            <div class="rpt-sub">As at 30 June 2026 &middot; Straight-line depreciation (IFRS IAS 16)</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-primary fd-btn-sm">+ Add Asset</button>
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button>
+          </div>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1d4ed8"><strong>Note:</strong> Fixed Asset module requires backend integration. Depreciation entries must auto-post to GL each month.</div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Asset Name</th><th>Category</th><th style="text-align:right">Cost</th><th style="text-align:right">Acc. Depreciation</th><th style="text-align:right">Net Book Value</th><th>Useful Life</th><th>Method</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">Company Vehicle &mdash; Toyota Prado</td><td>Motor Vehicles</td><td style="text-align:right;font-weight:700">&#8358;6,500,000</td><td style="text-align:right;color:#dc2626">&#8358;1,950,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;4,550,000</td><td>5 years</td><td>Straight-line</td><td><span class="fd-badge badge-green">ACTIVE</span></td></tr>
+              <tr><td style="font-weight:700">Office Furniture &amp; Fittings</td><td>Furniture</td><td style="text-align:right;font-weight:700">&#8358;1,800,000</td><td style="text-align:right;color:#dc2626">&#8358;540,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;1,260,000</td><td>5 years</td><td>Straight-line</td><td><span class="fd-badge badge-green">ACTIVE</span></td></tr>
+              <tr><td style="font-weight:700">Computer Equipment (10 units)</td><td>IT Equipment</td><td style="text-align:right;font-weight:700">&#8358;2,400,000</td><td style="text-align:right;color:#dc2626">&#8358;1,440,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;960,000</td><td>3 years</td><td>Straight-line</td><td><span class="fd-badge badge-green">ACTIVE</span></td></tr>
+              <tr><td style="font-weight:700">Office Building &mdash; Leasehold</td><td>Property</td><td style="text-align:right;font-weight:700">&#8358;8,200,000</td><td style="text-align:right;color:#dc2626">&#8358;2,870,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;5,330,000</td><td>20 years</td><td>Straight-line</td><td><span class="fd-badge badge-green">ACTIVE</span></td></tr>
+              <tr><td style="font-weight:700">Generator (Mikano 65kVA)</td><td>Plant &amp; Machinery</td><td style="text-align:right;font-weight:700">&#8358;540,000</td><td style="text-align:right;color:#dc2626">&#8358;540,000</td><td style="text-align:right;font-weight:900;color:#9ca3af">&#8358;0</td><td>3 years</td><td>Straight-line</td><td><span class="fd-badge badge-gray">FULLY DEP.</span></td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;font-weight:900"><td colspan="2">TOTALS</td><td style="text-align:right;padding:12px 16px">&#8358;19,440,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;7,340,000</td><td style="text-align:right;padding:12px 16px;color:#2E6276">&#8358;12,100,000</td><td colspan="3"></td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="margin-top:16px;padding:12px 16px;background:#f9fafb;border-radius:10px;font-size:13px;display:flex;justify-content:space-between"><span style="color:#6b7280">Monthly depreciation charge (auto-journal to GL):</span><span style="font-weight:900;color:#2E6276">&#8358;320,000 / month</span></div>
+      </div>
+
+      <!-- Budget vs Actuals -->
+      <div *ngIf="activeReport==='budget-vs'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Budget vs Actuals</div>
+            <div class="rpt-sub">FY 2026 &mdash; Q2 (April&ndash;June) &middot; Variance analysis</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Account / Category</th><th style="text-align:right">Budget (Q2)</th><th style="text-align:right">Actual (Q2)</th><th style="text-align:right">Variance</th><th>Utilisation</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr style="background:#f8fafc"><td colspan="6" style="font-weight:900;font-size:11px;color:#2E6276;padding:10px 16px;text-transform:uppercase;letter-spacing:.06em">Revenue</td></tr>
+              <tr><td style="padding-left:20px">Service Revenue</td><td style="text-align:right;font-weight:700">&#8358;35,000,000</td><td style="text-align:right;font-weight:700">&#8358;38,516,000</td><td style="text-align:right;font-weight:900;color:#16a34a">+&#8358;3,516,000</td><td><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:#16a34a;height:100%;width:100%"></div></div></td><td><span class="fd-badge badge-green">110% &#10003;</span></td></tr>
+              <tr><td style="padding-left:20px">Product Revenue</td><td style="text-align:right;font-weight:700">&#8358;14,000,000</td><td style="text-align:right;font-weight:700">&#8358;12,400,000</td><td style="text-align:right;font-weight:900;color:#dc2626">(&#8358;1,600,000)</td><td><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:#f59e0b;height:100%;width:89%"></div></div></td><td><span class="fd-badge badge-amber">89%</span></td></tr>
+              <tr style="background:#f8fafc"><td colspan="6" style="font-weight:900;font-size:11px;color:#2E6276;padding:10px 16px;text-transform:uppercase;letter-spacing:.06em">Operating Expenses</td></tr>
+              <tr><td style="padding-left:20px">Salaries &amp; Wages</td><td style="text-align:right;font-weight:700">&#8358;15,000,000</td><td style="text-align:right;font-weight:700">&#8358;14,200,000</td><td style="text-align:right;font-weight:900;color:#16a34a">+&#8358;800,000</td><td><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:#16a34a;height:100%;width:95%"></div></div></td><td><span class="fd-badge badge-green">95% &#10003;</span></td></tr>
+              <tr><td style="padding-left:20px">Marketing &amp; Advertising</td><td style="text-align:right;font-weight:700">&#8358;800,000</td><td style="text-align:right;font-weight:700">&#8358;1,200,000</td><td style="text-align:right;font-weight:900;color:#dc2626">(&#8358;400,000)</td><td><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:#dc2626;height:100%;width:100%"></div></div></td><td><span class="fd-badge badge-red">150% &#10007; OVER</span></td></tr>
+              <tr><td style="padding-left:20px">Rent &amp; Utilities</td><td style="text-align:right;font-weight:700">&#8358;2,400,000</td><td style="text-align:right;font-weight:700">&#8358;2,400,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;0</td><td><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:#2E6276;height:100%;width:100%"></div></div></td><td><span class="fd-badge badge-blue">100% =</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profit by Department -->
+      <div *ngIf="activeReport==='dept-profit'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Profit by Department / Cost Centre</div>
+            <div class="rpt-sub">June 2026 &mdash; Management Accounts</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button></div>
+        </div>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1d4ed8"><strong>Note:</strong> Requires <code>costCentreId</code> on JournalEntryLine DTO for automated generation.</div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Department</th><th style="text-align:right">Revenue</th><th style="text-align:right">Cost of Sales</th><th style="text-align:right">Gross Profit</th><th style="text-align:right">Expenses</th><th style="text-align:right">Net Profit</th><th>Margin</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">Technology</td><td style="text-align:right;font-weight:700">&#8358;18,516,000</td><td style="text-align:right;color:#dc2626">&#8358;4,100,000</td><td style="text-align:right;font-weight:700;color:#16a34a">&#8358;14,416,000</td><td style="text-align:right;color:#dc2626">&#8358;5,200,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;9,216,000</td><td><span class="fd-badge badge-green">50%</span></td></tr>
+              <tr><td style="font-weight:700">Operations</td><td style="text-align:right;font-weight:700">&#8358;20,000,000</td><td style="text-align:right;color:#dc2626">&#8358;8,200,000</td><td style="text-align:right;font-weight:700;color:#16a34a">&#8358;11,800,000</td><td style="text-align:right;color:#dc2626">&#8358;7,400,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;4,400,000</td><td><span class="fd-badge badge-amber">22%</span></td></tr>
+              <tr><td style="font-weight:700">Sales</td><td style="text-align:right;font-weight:700">&#8358;12,400,000</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;font-weight:700;color:#16a34a">&#8358;12,400,000</td><td style="text-align:right;color:#dc2626">&#8358;4,800,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;7,600,000</td><td><span class="fd-badge badge-green">61%</span></td></tr>
+              <tr><td style="font-weight:700">Human Resources</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#9ca3af">&mdash;</td><td style="text-align:right;color:#dc2626">&#8358;1,350,000</td><td style="text-align:right;font-weight:900;color:#dc2626">(&#8358;1,350,000)</td><td><span class="fd-badge badge-gray">Cost Centre</span></td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;font-weight:900"><td>TOTAL</td><td style="text-align:right;padding:12px 16px">&#8358;50,916,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;12,300,000</td><td style="text-align:right;padding:12px 16px;color:#16a34a">&#8358;38,616,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;18,750,000</td><td style="text-align:right;padding:12px 16px;color:#2E6276">&#8358;19,866,000</td><td><span class="fd-badge badge-blue">39%</span></td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payroll Summary -->
+      <div *ngIf="activeReport==='payroll-sum'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Payroll Summary Report</div>
+            <div class="rpt-sub">FY 2026 &mdash; Monthly payroll accounting (PENCOM + PAYE)</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button></div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#166534"><strong>PENCOM Compliance:</strong> Employee pension = 8% of gross; Employer contribution = 10% of gross.</div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Month</th><th>Staff</th><th style="text-align:right">Gross Pay</th><th style="text-align:right">PAYE</th><th style="text-align:right">Emp. Pension (8%)</th><th style="text-align:right">Empr. Pension (10%)</th><th style="text-align:right">Net Pay</th><th>GL Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">Jan 2026</td><td>89</td><td style="text-align:right;font-weight:700">&#8358;13,200,000</td><td style="text-align:right;color:#dc2626">&#8358;1,980,000</td><td style="text-align:right;color:#dc2626">&#8358;1,056,000</td><td style="text-align:right;color:#dc2626">&#8358;1,320,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;8,844,000</td><td><span class="fd-badge badge-green">POSTED</span></td></tr>
+              <tr><td style="font-weight:700">Feb 2026</td><td>89</td><td style="text-align:right;font-weight:700">&#8358;13,200,000</td><td style="text-align:right;color:#dc2626">&#8358;1,980,000</td><td style="text-align:right;color:#dc2626">&#8358;1,056,000</td><td style="text-align:right;color:#dc2626">&#8358;1,320,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;8,844,000</td><td><span class="fd-badge badge-green">POSTED</span></td></tr>
+              <tr><td style="font-weight:700">Mar 2026</td><td>92</td><td style="text-align:right;font-weight:700">&#8358;13,800,000</td><td style="text-align:right;color:#dc2626">&#8358;2,070,000</td><td style="text-align:right;color:#dc2626">&#8358;1,104,000</td><td style="text-align:right;color:#dc2626">&#8358;1,380,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;9,246,000</td><td><span class="fd-badge badge-green">POSTED</span></td></tr>
+              <tr><td style="font-weight:700">Apr 2026</td><td>92</td><td style="text-align:right;font-weight:700">&#8358;14,200,000</td><td style="text-align:right;color:#dc2626">&#8358;2,130,000</td><td style="text-align:right;color:#dc2626">&#8358;1,136,000</td><td style="text-align:right;color:#dc2626">&#8358;1,420,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;9,514,000</td><td><span class="fd-badge badge-green">POSTED</span></td></tr>
+              <tr><td style="font-weight:700">May 2026</td><td>95</td><td style="text-align:right;font-weight:700">&#8358;14,200,000</td><td style="text-align:right;color:#dc2626">&#8358;2,130,000</td><td style="text-align:right;color:#dc2626">&#8358;1,136,000</td><td style="text-align:right;color:#dc2626">&#8358;1,420,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;9,514,000</td><td><span class="fd-badge badge-green">POSTED</span></td></tr>
+              <tr style="background:#fef9c3"><td style="font-weight:700">Jun 2026</td><td>95</td><td style="text-align:right;font-weight:700">&#8358;14,500,000</td><td style="text-align:right;color:#dc2626">&#8358;2,175,000</td><td style="text-align:right;color:#dc2626">&#8358;1,160,000</td><td style="text-align:right;color:#dc2626">&#8358;1,450,000</td><td style="text-align:right;font-weight:900;color:#2E6276">&#8358;9,715,000</td><td><span class="fd-badge badge-amber">PENDING</span></td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8fafc;font-weight:900"><td>YTD TOTAL</td><td>&mdash;</td><td style="text-align:right;padding:12px 16px">&#8358;83,100,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;12,465,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;6,648,000</td><td style="text-align:right;padding:12px 16px;color:#dc2626">&#8358;8,310,000</td><td style="text-align:right;padding:12px 16px;color:#2E6276">&#8358;55,677,000</td><td></td></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tax Summary -->
+      <div *ngIf="activeReport==='taxsum'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Tax Summary</div>
+            <div class="rpt-sub">June 2026 &mdash; FIRS Compliance Overview</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export</button></div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+          <div class="stat-card" style="padding:14px;border-left:5px solid #dc2626"><div class="stat-label" style="font-size:10px">VAT Payable</div><div style="font-size:18px;font-weight:900;color:#dc2626">&#8358;2,896,200</div></div>
+          <div class="stat-card stat-amber" style="padding:14px"><div class="stat-label" style="font-size:10px">WHT Withheld</div><div style="font-size:18px;font-weight:900;color:#92400e">&#8358;27,500</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #7c3aed"><div class="stat-label" style="font-size:10px">PAYE (Staff)</div><div style="font-size:18px;font-weight:900;color:#7c3aed">&#8358;2,175,000</div></div>
+          <div class="stat-card stat-blue" style="padding:14px"><div class="stat-label" style="font-size:10px">CIT Provision (30%)</div><div style="font-size:18px;font-weight:900;color:#2E6276">&#8358;5,959,800</div></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Code</th><th>Tax Type</th><th>Rate</th><th style="text-align:right">Taxable Base</th><th style="text-align:right">Tax Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="ref-cell">VAT-OUT</td><td>Output VAT (on sales)</td><td style="font-weight:700">7.5%</td><td style="text-align:right">&#8358;50,916,000</td><td style="text-align:right;font-weight:900">&#8358;3,818,700</td><td><span class="fd-badge badge-amber">DUE</span></td></tr>
+              <tr><td class="ref-cell">VAT-IN</td><td>Input VAT (recoverable)</td><td style="font-weight:700">7.5%</td><td style="text-align:right">&#8358;12,300,000</td><td style="text-align:right;font-weight:700;color:#16a34a">(&#8358;922,500)</td><td><span class="fd-badge badge-green">CREDIT</span></td></tr>
+              <tr style="background:#fffbeb"><td class="ref-cell" style="font-weight:900">VAT-NET</td><td style="font-weight:900">Net VAT Payable (Output &minus; Input)</td><td>&mdash;</td><td style="text-align:right">&mdash;</td><td style="text-align:right;font-weight:900;color:#92400e">&#8358;2,896,200</td><td><span class="fd-badge badge-amber">FILE BY 21 JUL</span></td></tr>
+              <tr><td class="ref-cell">WHT-SVC</td><td>WHT &mdash; Services (vendor payments)</td><td style="font-weight:700">5%</td><td style="text-align:right">&#8358;550,000</td><td style="text-align:right;font-weight:900">&#8358;27,500</td><td><span class="fd-badge badge-amber">DUE</span></td></tr>
+              <tr><td class="ref-cell">PAYE</td><td>Pay As You Earn (staff)</td><td style="font-weight:700">Progressive</td><td style="text-align:right">&#8358;14,500,000</td><td style="text-align:right;font-weight:900">&#8358;2,175,000</td><td><span class="fd-badge badge-amber">DUE</span></td></tr>
+              <tr><td class="ref-cell">PENCOM-EE</td><td>Employee Pension (8%)</td><td style="font-weight:700">8%</td><td style="text-align:right">&#8358;14,500,000</td><td style="text-align:right;font-weight:900">&#8358;1,160,000</td><td><span class="fd-badge badge-green">REMITTED</span></td></tr>
+              <tr><td class="ref-cell">CIT</td><td>Company Income Tax (30% of PBT)</td><td style="font-weight:700">30%</td><td style="text-align:right">&#8358;19,866,000</td><td style="text-align:right;font-weight:900">&#8358;5,959,800</td><td><span class="fd-badge badge-amber">PROVISION</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VAT Return (FIRS) -->
+      <div *ngIf="activeReport==='vat-return'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">VAT Return &mdash; FIRS Form 002</div>
+            <div class="rpt-sub">For the month of June 2026 &middot; Due date: 21 July 2026</div>
+          </div>
+          <div class="rpt-filter">
+            <button class="fd-btn fd-btn-outline fd-btn-sm">&#128424; Print</button>
+            <button class="fd-btn fd-btn-primary fd-btn-sm">Submit to FIRS</button>
+          </div>
+        </div>
+        <div style="background:#fff;border:2px solid #2E6276;border-radius:12px;padding:24px;max-width:600px">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af">Federal Inland Revenue Service</div>
+            <div style="font-size:18px;font-weight:900;color:#2E6276;margin:4px 0">VAT RETURN (Form 002)</div>
+            <div style="font-size:12px;color:#9ca3af">For the period: June 2026</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:8px;padding:14px 16px;margin-bottom:12px">
+            <div style="font-size:11px;font-weight:900;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Taxpayer Information</div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb;font-size:13px"><span style="color:#9ca3af">Registered Name</span><span style="font-weight:700">OptimaX Suites Ltd</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb;font-size:13px"><span style="color:#9ca3af">Tax Identification No. (TIN)</span><span style="font-weight:700;font-family:monospace">12345678-0001</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span style="color:#9ca3af">VAT Registration No.</span><span style="font-weight:700;font-family:monospace">VAT-NG-2024-00189</span></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid #e5e7eb;font-size:13px"><span><strong style="background:#2E6276;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px">Box 1</strong> Value of Standard-Rated Supplies</span><span style="font-weight:900">&#8358;50,916,000</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><span><strong style="background:#2E6276;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px">Box 2</strong> Output VAT (Box 1 &times; 7.5%)</span><span style="font-weight:900">&#8358;3,818,700</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><span><strong style="background:#2E6276;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px">Box 3</strong> Value of Standard-Rated Purchases</span><span style="font-weight:900">&#8358;12,300,000</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><span><strong style="background:#2E6276;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px">Box 4</strong> Input VAT (Box 3 &times; 7.5%)</span><span style="font-weight:900;color:#16a34a">(&#8358;922,500)</span></div>
+          <div style="display:flex;justify-content:space-between;padding:14px 0;border-top:2px solid #2E6276;background:#fef9c3;margin:0 -8px;padding:14px 8px;border-radius:0 0 8px 8px;font-size:13px"><span style="font-weight:900;color:#92400e"><strong style="background:#92400e;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px">Box 5</strong> NET VAT PAYABLE (Box 2 &minus; Box 4)</span><span style="font-weight:900;color:#92400e;font-size:18px">&#8358;2,896,200</span></div>
+          <div style="margin-top:16px;text-align:center">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">Payment due to FIRS by 21 July 2026</div>
+            <button class="fd-btn fd-btn-primary" style="width:100%;justify-content:center;padding:14px;">Confirm &amp; Mark as Remitted</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Reconciliation Summary -->
+      <div *ngIf="activeReport==='bank-recon'" class="fd-card">
+        <div class="rpt-header">
+          <div>
+            <div class="rpt-title">Bank Reconciliation Summary</div>
+            <div class="rpt-sub">As at 30 June 2026 &middot; All connected accounts</div>
+          </div>
+          <div class="rpt-filter"><button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; PDF</button></div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+          <div class="stat-card stat-green" style="padding:14px"><div class="stat-label" style="font-size:10px">Fully Reconciled</div><div style="font-size:20px;font-weight:900;color:#16a34a">1 account</div></div>
+          <div class="stat-card stat-amber" style="padding:14px"><div class="stat-label" style="font-size:10px">Unreconciled Items</div><div style="font-size:20px;font-weight:900;color:#92400e">8 items</div></div>
+          <div class="stat-card" style="padding:14px;border-left:5px solid #dc2626"><div class="stat-label" style="font-size:10px">Total Difference</div><div style="font-size:20px;font-weight:900;color:#dc2626">&#8358;12,500</div></div>
+        </div>
+        <div class="fd-table-wrap">
+          <table class="fd-table">
+            <thead>
+              <tr><th>Bank Account</th><th style="text-align:right">GL Balance (1001)</th><th style="text-align:right">Bank Statement</th><th style="text-align:right">Difference</th><th>Outstanding Items</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">GTBank &mdash; 0123456789</div><div style="font-size:11px;color:#9ca3af">Last sync: 14 Jun 2026</div></td>
+                <td style="text-align:right;font-weight:700">&#8358;4,250,000</td>
+                <td style="text-align:right;font-weight:700">&#8358;4,262,500</td>
+                <td style="text-align:right;font-weight:900;color:#dc2626">&#8358;12,500</td>
+                <td><span class="fd-badge badge-amber">1 unmatched</span></td>
+                <td><span class="fd-badge badge-amber">IN PROGRESS</span></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">Access Bank &mdash; 0987654321</div><div style="font-size:11px;color:#9ca3af">Last sync: 14 Jun 2026</div></td>
+                <td style="text-align:right;font-weight:700">&#8358;1,820,000</td>
+                <td style="text-align:right;font-weight:700">&#8358;1,820,000</td>
+                <td style="text-align:right;font-weight:900;color:#16a34a">&#8358;0</td>
+                <td><span class="fd-badge badge-green">All matched</span></td>
+                <td><span class="fd-badge badge-green">RECONCILED</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;background:#fffbeb;border:1px solid #fde047;border-radius:10px;padding:14px 16px;font-size:13px;color:#92400e">
+          <strong>&#9888; Unmatched item &mdash; GTBank:</strong> Bank charge of &#8358;12,500 (BANK CHARGES - JUNE) appears on bank statement but has no corresponding GL entry.
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="fd-btn fd-btn-primary fd-btn-sm">Create GL Entry (Dr: Bank Charges / Cr: Cash)</button>
+            <button class="fd-btn fd-btn-outline fd-btn-sm">Mark as Not Applicable</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,86 @@
+<div class="fd-content">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#f0fdf4;color:#16a34a;">📋</div>
+      <div>
+        <div class="page-title">General Ledger</div>
+        <div class="page-sub">Complete double-entry transaction history · Trial Balance included</div>
+      </div>
+    </div>
+    <button class="fd-btn fd-btn-outline">⬇ Export</button>
+  </div>
+
+  <div class="inner-tabs">
+    <button class="inner-tab" [class.active]="activeTab==='ledger'" (click)="setTab('ledger')">Ledger View</button>
+    <button class="inner-tab" [class.active]="activeTab==='trial'" (click)="setTab('trial')">Trial Balance <span class="badge-new-inline">NEW</span></button>
+  </div>
+
+  <!-- LEDGER VIEW -->
+  <div *ngIf="activeTab==='ledger'">
+    <div class="filter-bar">
+      <select class="filter-select"><option>All Accounts</option><option>1001 — Cash &amp; Bank</option><option>1002 — Accounts Receivable</option><option>5001 — Salaries Expense</option></select>
+      <input type="date" class="filter-input date-input">
+      <input type="date" class="filter-input date-input">
+      <button class="fd-btn fd-btn-primary fd-btn-sm">Apply</button>
+    </div>
+    <div class="fd-card" style="padding:0">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Date</th><th>Journal Ref</th><th>Description</th><th>Account</th><th>Debit</th><th>Credit</th><th>Running Balance</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>14 Jun</td><td class="ref-cell">JE-0842</td><td>June Payroll</td>
+              <td>5001 — Salaries Expense</td>
+              <td class="dr-cell">&#8358;4,500,000</td><td class="nil-cell">—</td><td class="balance-cell">&#8358;18.2M Dr</td>
+            </tr>
+            <tr>
+              <td>14 Jun</td><td class="ref-cell">JE-0842</td><td>June Payroll</td>
+              <td>2001 — Payroll Payable</td>
+              <td class="nil-cell">—</td><td class="cr-cell">&#8358;4,500,000</td><td class="balance-cell">&#8358;4.5M Cr</td>
+            </tr>
+            <tr>
+              <td>13 Jun</td><td class="ref-cell">JE-0841</td><td>Dangote Invoice</td>
+              <td>1002 — Accounts Receivable</td>
+              <td class="dr-cell">&#8358;8,216,000</td><td class="nil-cell">—</td><td class="balance-cell">&#8358;21.0M Dr</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRIAL BALANCE -->
+  <div *ngIf="activeTab==='trial'">
+    <div class="trial-header">
+      <p class="trial-as-at">As at <strong>30 June 2026</strong></p>
+      <button class="fd-btn fd-btn-outline fd-btn-sm">⬇ Export PDF</button>
+    </div>
+    <div class="fd-card" style="padding:0">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Code</th><th>Account Name</th><th>Type</th><th style="text-align:right">Debit (Dr)</th><th style="text-align:right">Credit (Cr)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="code-cell">1001</td><td>Cash &amp; Bank</td><td><span class="fd-badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">&#8358;4,250,000</td><td style="text-align:right;color:#e5e7eb">—</td></tr>
+            <tr><td class="code-cell">1002</td><td>Accounts Receivable</td><td><span class="fd-badge badge-blue">ASSET</span></td><td style="text-align:right;font-weight:700">&#8358;21,016,000</td><td style="text-align:right;color:#e5e7eb">—</td></tr>
+            <tr><td class="code-cell">2001</td><td>Payroll Payable</td><td><span class="fd-badge badge-red">LIABILITY</span></td><td style="text-align:right;color:#e5e7eb">—</td><td style="text-align:right;font-weight:700">&#8358;4,500,000</td></tr>
+            <tr><td class="code-cell">3001</td><td>Revenue — Services</td><td><span class="fd-badge badge-green">INCOME</span></td><td style="text-align:right;color:#e5e7eb">—</td><td style="text-align:right;font-weight:700">&#8358;38,516,000</td></tr>
+            <tr><td class="code-cell">5001</td><td>Salaries Expense</td><td><span class="fd-badge badge-orange">EXPENSE</span></td><td style="text-align:right;font-weight:700">&#8358;18,200,000</td><td style="text-align:right;color:#e5e7eb">—</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="trial-totals">
+              <td colspan="3">TOTALS — BALANCED ✓</td>
+              <td style="text-align:right">&#8358;43,466,000</td>
+              <td style="text-align:right">&#8358;43,466,000</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

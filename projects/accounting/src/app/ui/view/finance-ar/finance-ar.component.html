@@ -1,0 +1,81 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>AR module</strong> — Tracks unpaid customer invoices by aging bucket. Standard in all global ERP systems.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#dcfce7;color:#16a34a;">💰</div>
+      <div>
+        <div class="page-title">Accounts Receivable</div>
+        <div class="page-sub">Outstanding customer invoices and aging analysis</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-primary">＋ New Invoice</button>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stat-card stat-blue"><div class="stat-label">Total AR</div><div class="stat-value" style="color:#2E6276;font-size:22px">&#8358;32.8M</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Current (&lt;30d)</div><div class="stat-value" style="color:#16a34a;font-size:22px">&#8358;18.0M</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">30–60 Days</div><div class="stat-value" style="color:#92400e;font-size:22px">&#8358;8.2M</div></div>
+    <div class="stat-card stat-60"><div class="stat-label">60–90 Days</div><div class="stat-value" style="color:#c2410c;font-size:22px">&#8358;4.0M</div></div>
+    <div class="stat-card stat-red"><div class="stat-label">90+ Days</div><div class="stat-value" style="color:#dc2626;font-size:22px">&#8358;2.6M</div></div>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Invoice #</th><th>Customer</th><th>Issue Date</th><th>Due Date</th><th>Amount</th><th>Outstanding</th><th>Age</th><th>Status</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ref-cell">INV-2026-089</td>
+            <td>Dangote Group</td>
+            <td>01 Jun 2026</td>
+            <td>30 Jun 2026</td>
+            <td class="amount-cell">&#8358;8,216,000</td>
+            <td style="color:#16a34a;font-weight:700">&#8358;0</td>
+            <td><span class="fd-badge badge-green">CURRENT</span></td>
+            <td><span class="fd-badge badge-green">PAID</span></td>
+            <td class="actions-cell"><button class="act-btn">👁</button></td>
+          </tr>
+          <tr>
+            <td class="ref-cell">INV-2026-088</td>
+            <td>MTN Nigeria</td>
+            <td>15 May 2026</td>
+            <td>14 Jun 2026</td>
+            <td class="amount-cell">&#8358;12,400,000</td>
+            <td style="color:#dc2626;font-weight:700">&#8358;12,400,000</td>
+            <td><span class="fd-badge badge-orange">60+ DAYS</span></td>
+            <td><span class="fd-badge badge-red">OVERDUE</span></td>
+            <td class="actions-cell">
+              <button class="act-btn">👁</button>
+              <button class="act-btn chase-btn">📧 Chase</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">INV-2026-087</td>
+            <td>Zenith Bank Plc</td>
+            <td>01 Jun 2026</td>
+            <td>15 Jul 2026</td>
+            <td class="amount-cell">&#8358;5,500,000</td>
+            <td style="color:#f59e0b;font-weight:700">&#8358;5,500,000</td>
+            <td><span class="fd-badge badge-green">CURRENT</span></td>
+            <td><span class="fd-badge badge-amber">PENDING</span></td>
+            <td class="actions-cell">
+              <button class="act-btn">👁</button>
+              <button class="act-btn pay-btn">💳 Record Payment</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

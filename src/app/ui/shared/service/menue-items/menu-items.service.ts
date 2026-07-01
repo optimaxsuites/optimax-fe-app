@@ -77,14 +77,12 @@ export class MenuItemsService {
     {
       label: 'Accounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-calculator', // PrimeNG icon class
+      icon: 'fas fa-calculator',
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
       locked: true,
       active: false
-
     },
     {
       label: 'Human Resources',
@@ -266,15 +264,11 @@ export class MenuItemsService {
       ],
     },
     {
-      label: 'Accounting',
+      label: 'Finance',
+      code: 'Accounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('accountSettings'),
-
-      icon: 'pi pi-credit-card', 
-      submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      ],
+      route: this.navigationLink.getLink('accountingLink'),
+      icon: 'pi pi-credit-card',
     },
     {
       label: 'Human Resources',

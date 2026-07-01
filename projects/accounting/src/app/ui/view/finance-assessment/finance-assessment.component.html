@@ -1,0 +1,529 @@
+<div class="fd-content">
+
+  <!-- COVER -->
+  <div class="a-cover">
+    <div class="a-cover-label">OptimaXERP · Deep Technical Assessment</div>
+    <h1>Accounting Module — Comprehensive Audit Report</h1>
+    <div class="a-cover-sub">Full-stack evaluation against global ERP accounting standards — UI/UX, terminology, functionality gaps, architecture, and a prioritised improvement roadmap.</div>
+    <div class="a-cover-meta">
+      <div><div class="a-meta-key">Prepared by</div><div class="a-meta-val">Damilola Awe — OptimaXERP</div></div>
+      <div><div class="a-meta-key">Date</div><div class="a-meta-val">26 June 2026</div></div>
+      <div><div class="a-meta-key">Module path</div><div class="a-meta-val">projects/accounting/</div></div>
+      <div><div class="a-meta-key">Benchmark</div><div class="a-meta-val">QuickBooks, Xero, SAP S/4, NetSuite, Sage</div></div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="a-toc">
+    <h2 style="margin-top:0;border:none;padding:0;font-size:16px;">Contents</h2>
+    <ol>
+      <li>Executive Summary &amp; Score</li>
+      <li>Cross-Module Payment Flow Architecture (Disbursement Consolidation)</li>
+      <li>Module Inventory — What We Currently Have</li>
+      <li>Component-by-Component UI Analysis</li>
+      <li>Terminology &amp; Naming Audit</li>
+      <li>Global Standard — World-Class Accounting Module</li>
+      <li>Gap Analysis — Feature Coverage</li>
+      <li>Architecture &amp; Backend Concerns</li>
+      <li>Data Model Assessment</li>
+      <li>Prioritised Improvement Roadmap</li>
+      <li>Recommended Navigation &amp; Module Restructure</li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1 — EXECUTIVE SUMMARY -->
+  <h2>1 · Executive Summary &amp; Score</h2>
+  <p>The OptimaXERP Accounting module has correct core double-entry mechanics, but falls behind global standards in <strong>feature completeness</strong>, <strong>terminology consistency</strong>, and <strong>workflow automation</strong>. Critical sub-modules (AR, AP, Fixed Assets, Tax Management, Period Close) are entirely absent.</p>
+
+  <div class="stat-grid">
+    <div class="stat-card stat-red"><div class="stat-label">Overall Score</div><div class="stat-value" style="color:#dc2626;font-size:28px">47/100</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">vs global ERP standard</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Feature Coverage</div><div class="stat-value" style="color:#92400e;font-size:28px">38%</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">vs Xero / QuickBooks baseline</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Core Ledger Accuracy</div><div class="stat-value" style="color:#16a34a;font-size:28px">82%</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">Double-entry mechanics are sound</div></div>
+    <div class="stat-card stat-purple"><div class="stat-label">Terminology Issues</div><div class="stat-value" style="color:#7c3aed;font-size:28px">23</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">Labels needing correction</div></div>
+    <div class="stat-card stat-red"><div class="stat-label">Missing Modules</div><div class="stat-value" style="color:#dc2626;font-size:28px">11</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">Sub-modules absent entirely</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Architecture Risks</div><div class="stat-value" style="color:#92400e;font-size:28px">4</div><div style="font-size:11px;color:#9ca3af;margin-top:4px">Critical risks identified</div></div>
+  </div>
+
+  <h3>Category Scores</h3>
+  <div class="card">
+    <div class="a-score-row"><div class="a-score-label">Chart of Accounts</div><div class="a-score-bar"><div class="a-score-fill a-score-green" style="width:78%"></div></div><div class="a-score-val" style="color:#16a34a">78</div></div>
+    <div class="a-score-row"><div class="a-score-label">Journal Entries</div><div class="a-score-bar"><div class="a-score-fill a-score-green" style="width:70%"></div></div><div class="a-score-val" style="color:#16a34a">70</div></div>
+    <div class="a-score-row"><div class="a-score-label">General Ledger</div><div class="a-score-bar"><div class="a-score-fill a-score-amber" style="width:65%"></div></div><div class="a-score-val" style="color:#92400e">65</div></div>
+    <div class="a-score-row"><div class="a-score-label">Bank Reconciliation</div><div class="a-score-bar"><div class="a-score-fill a-score-amber" style="width:55%"></div></div><div class="a-score-val" style="color:#92400e">55</div></div>
+    <div class="a-score-row"><div class="a-score-label">Financial Reporting</div><div class="a-score-bar"><div class="a-score-fill a-score-amber" style="width:60%"></div></div><div class="a-score-val" style="color:#92400e">60</div></div>
+    <div class="a-score-row"><div class="a-score-label">Accounts Payable</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:5%"></div></div><div class="a-score-val" style="color:#dc2626">5</div></div>
+    <div class="a-score-row"><div class="a-score-label">Accounts Receivable</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:8%"></div></div><div class="a-score-val" style="color:#dc2626">8</div></div>
+    <div class="a-score-row"><div class="a-score-label">Tax Management</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:15%"></div></div><div class="a-score-val" style="color:#dc2626">15</div></div>
+    <div class="a-score-row"><div class="a-score-label">Fixed Assets</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:0%"></div></div><div class="a-score-val" style="color:#dc2626">0</div></div>
+    <div class="a-score-row"><div class="a-score-label">Budgeting</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:20%"></div></div><div class="a-score-val" style="color:#dc2626">20</div></div>
+    <div class="a-score-row"><div class="a-score-label">Payroll Accounting</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:12%"></div></div><div class="a-score-val" style="color:#dc2626">12</div></div>
+    <div class="a-score-row"><div class="a-score-label">UI / UX Quality</div><div class="a-score-bar"><div class="a-score-fill a-score-amber" style="width:62%"></div></div><div class="a-score-val" style="color:#92400e">62</div></div>
+    <div class="a-score-row"><div class="a-score-label">Terminology Accuracy</div><div class="a-score-bar"><div class="a-score-fill a-score-red" style="width:40%"></div></div><div class="a-score-val" style="color:#dc2626">40</div></div>
+    <div class="a-score-row"><div class="a-score-label">Architecture Safety</div><div class="a-score-bar"><div class="a-score-fill a-score-amber" style="width:48%"></div></div><div class="a-score-val" style="color:#92400e">48</div></div>
+  </div>
+
+  <!-- SECTION 2 — PAYMENT FLOW -->
+  <h2>2 · Cross-Module Payment Flow Architecture — Disbursement Consolidation</h2>
+
+  <div class="a-callout a-callout-pass">
+    <div class="a-callout-icon">✓</div>
+    <div><strong>Payment Runs (formerly "Disburse") is the correct single consolidation point for all outbound payments</strong>, regardless of which module originated the payment request. HR payroll, expense reimbursements, staff loans, vendor payments — all flow through here. This matches SAP (AP Payment Runs), NetSuite (Payment Processing), and Xero (Batch Payments).</div>
+  </div>
+
+  <h3>How it works — the correct flow</h3>
+  <div class="a-flow-box">
+    <div class="a-flow-step">
+      <div class="a-flow-num">1</div>
+      <div class="a-flow-body">
+        <div class="a-flow-title">Source Module raises a payment request</div>
+        <div class="a-flow-desc">Each module creates an <strong>Accounting Event</strong> tagged with its source module. The event definition determines the GL accounts.
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="a-module-tag" style="background:#ede9fe;color:#5b21b6">HR/Payroll → SALARY_PAYMENT</span>
+            <span class="a-module-tag" style="background:#fef9c3;color:#92400e">Expense → EXPENSE_REIMBURSEMENT</span>
+            <span class="a-module-tag" style="background:#dbeafe;color:#1e40af">Loans → LOAN_DISBURSEMENT</span>
+            <span class="a-module-tag" style="background:#dcfce7;color:#14532d">Vendor → VENDOR_PAYMENT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="a-flow-step">
+      <div class="a-flow-num">2</div>
+      <div class="a-flow-body">
+        <div class="a-flow-title">Accounting Events queue — Review &amp; Approve</div>
+        <div class="a-flow-desc">Accountant reviews the event. The event definition maps it to the correct Dr/Cr accounts. Clicking <em>Post to Ledger</em> creates the journal entry. Event status moves to <strong>APPROVED</strong>.</div>
+      </div>
+    </div>
+    <div class="a-flow-step">
+      <div class="a-flow-num">3</div>
+      <div class="a-flow-body">
+        <div class="a-flow-title">Approved payment events surface in Payment Runs</div>
+        <div class="a-flow-desc">All <strong>APPROVED outflow events</strong> appear in the Payment Runs tray — salary runs, expense reimbursements, loan disbursements, and vendor payments in one unified list.</div>
+      </div>
+    </div>
+    <div class="a-flow-step">
+      <div class="a-flow-num">4</div>
+      <div class="a-flow-body">
+        <div class="a-flow-title">CBN Maker-Checker (amounts above ₦500k)</div>
+        <div class="a-flow-desc">Payments above threshold require a second authoriser. The Maker cannot approve their own payment.</div>
+      </div>
+    </div>
+    <div class="a-flow-step">
+      <div class="a-flow-num">5</div>
+      <div class="a-flow-body">
+        <div class="a-flow-title">Select payment method &amp; disburse</div>
+        <div class="a-flow-desc">Once authorised, select a payment channel (Paystack, Bank Transfer, Sterling, Cash). A <strong>Ledger Entry</strong> is automatically posted to close the payable account.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>GL entries generated automatically</h3>
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Source Module</th><th>Event Type</th><th>On Approval (Journal)</th><th>On Payment (Journal)</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-purple">HR/PAYROLL</span></td><td>SALARY_PAYMENT</td><td>Dr: Salaries Expense 5001<br>Cr: Payroll Payable 2001</td><td>Dr: Payroll Payable 2001<br>Cr: Cash &amp; Bank 1010</td></tr>
+        <tr><td><span class="badge" style="background:#fed7aa;color:#c2410c">EXPENSE</span></td><td>EXPENSE_REIMBURSEMENT</td><td>Dr: Staff Expenses 5200<br>Cr: Expense Payable 2002</td><td>Dr: Expense Payable 2002<br>Cr: Cash &amp; Bank 1010</td></tr>
+        <tr><td><span class="badge badge-blue">LOANS</span></td><td>LOAN_DISBURSEMENT</td><td>Dr: Loans Receivable 1050<br>Cr: Loan Payable 2010</td><td>Dr: Loan Payable 2010<br>Cr: Cash &amp; Bank 1010</td></tr>
+        <tr><td><span class="badge badge-green">AP/VENDOR</span></td><td>VENDOR_PAYMENT</td><td>Dr: Expense/Asset Account<br>Cr: Accounts Payable 2000</td><td>Dr: Accounts Payable 2000<br>Cr: Cash &amp; Bank 1010</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="a-callout a-callout-warn">
+    <div class="a-callout-icon">⚠</div>
+    <div><strong>Current gap:</strong> The existing <code>DisbursementFlowComponent</code> only shows HR loans/advances. The fix is for all source modules to emit Accounting Events with the appropriate event type, and Payment Runs to filter for <strong>OUTFLOW + APPROVED</strong> events across all modules.</div>
+  </div>
+
+  <!-- SECTION 3 — MODULE INVENTORY -->
+  <h2>3 · Module Inventory — What We Currently Have</h2>
+
+  <h3>3.1 Navigation Structure (Live Tabs)</h3>
+  <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
+    <span class="a-tab-pill">Accounting Transactions</span>
+    <span class="a-tab-pill">Chart of Accounts</span>
+    <span class="a-tab-pill">Journal Entries</span>
+    <span class="a-tab-pill">General Ledger</span>
+    <span class="a-tab-pill">Bank</span>
+    <span class="a-tab-pill">Settings</span>
+    <span class="a-tab-pill">Disburse</span>
+  </div>
+
+  <h3>3.2 Services Inventory</h3>
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Service</th><th>Location</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>AccountingService</code></td><td>services/</td><td>Event orchestration, COA, transactions, journal entries, ledger</td></tr>
+        <tr><td><code>AccountingService</code> <span class="badge badge-red" style="font-size:9px">DUPLICATE</span></td><td>core/services/</td><td>Report generation — should be renamed <code>FinancialReportService</code></td></tr>
+        <tr><td><code>DisbursementService</code></td><td>services/</td><td>Payout tray, bank connections, disbursements</td></tr>
+        <tr><td><code>PaystackService</code></td><td>services/</td><td>Paystack balance, transfers, recipients</td></tr>
+        <tr><td><code>TaxService</code></td><td>ui/service/tax/</td><td>Tax calculations</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4 — COMPONENT ANALYSIS -->
+  <h2>4 · Component-by-Component UI Analysis</h2>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#2E6276">
+      <div class="a-comp-hdr-icon">📥</div>
+      <div><div class="a-comp-hdr-title">Tab 1: "Accounting Transactions" → AccountingQueueComponent</div><div class="a-comp-hdr-sub">File: accounting-queue.component.html</div></div>
+    </div>
+    <div class="a-comp-body">
+      <ul class="a-warn-list">
+        <li><strong>Name mismatch:</strong> This is an event review queue, not a transaction register. Rename to "Accounting Events".</li>
+        <li><strong>Dual status codes:</strong> Both <code>UNPROCESSED</code> and <code>UNREVIEWED</code> map to "PENDING APPROVAL" — backend inconsistency.</li>
+        <li><strong>Approve disabled silently:</strong> No tooltip when <code>matchedMapping</code> is falsy — users don't know why they can't approve.</li>
+        <li><strong>"Delete/Reject" same button:</strong> Reject returns to submitter; Delete removes it. These must be separate buttons.</li>
+        <li><strong>"Fiduciary Control" modal:</strong> Should be "Confirm Ledger Posting" — "Fiduciary Control" is governance language, not a UI label.</li>
+        <li><strong>₦ hardcoded:</strong> <code>₦{{'{{'}} ev.amount | number:'1.2-2' {{'}}'}}</code> — blocks multi-currency.</li>
+        <li><strong>No bulk approve:</strong> Enterprise queues need ability to bulk-approve low-risk events.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#4c1d95">
+      <div class="a-comp-hdr-icon">🌳</div>
+      <div><div class="a-comp-hdr-title">Tab 2: "Chart of Accounts" → ChartOfAccountsComponent</div><div class="a-comp-hdr-sub">File: chart-of-accounts.component.html</div></div>
+    </div>
+    <div class="a-comp-body">
+      <ul class="a-warn-list">
+        <li><strong>"Deleted Logs" button:</strong> Accounts must never be deleted if they have transactions. Use "Archived Accounts" / <em>Deactivate</em> pattern.</li>
+        <li><strong>"Run Report" has no handler:</strong> Dead button in production.</li>
+        <li><strong>No Active/Inactive toggle:</strong> Can't deactivate without deleting.</li>
+        <li><strong>Missing COST_OF_SALES type:</strong> Without this, P&L cannot show Gross Profit — required for IFRS.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#065f46">
+      <div class="a-comp-hdr-icon">📖</div>
+      <div><div class="a-comp-hdr-title">Tab 3: "Journal Entries" → BookKeepingComponent (h1: "Financial Journals")</div><div class="a-comp-hdr-sub">File: book-keeping.component.html</div></div>
+    </div>
+    <div class="a-comp-body">
+      <ul class="a-warn-list">
+        <li><strong>Three names for one screen:</strong> Component = BookKeeping, Tab = Journal Entries, h1 = Financial Journals. Must unify to "Journal Entries".</li>
+        <li><strong>No journal entry reversal action:</strong> REVERSED is a filter option but there's no Reverse button on posted entries.</li>
+        <li><strong>No recurring journal entry:</strong> Standard ERP feature for monthly depreciation, rent, etc.</li>
+        <li><strong>No attachment support:</strong> Journal entries should support document attachments (scans, receipts).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#1e3a8a">
+      <div class="a-comp-hdr-icon">📤</div>
+      <div><div class="a-comp-hdr-title">Tab 7: "Disburse" → DisbursementFlowComponent</div><div class="a-comp-hdr-sub">File: disbursement-flow.component.html</div></div>
+    </div>
+    <div class="a-comp-body">
+      <ul class="a-warn-list">
+        <li><strong>"Disburse" is a verb, not a module name.</strong> Rename to "Payment Runs".</li>
+        <li><strong>Only shows HR loans/advances.</strong> Should consolidate ALL outbound payment events — payroll, expenses, loans, vendor bills.</li>
+        <li><strong>No payment scheduling:</strong> Standard payment runs allow future-dated payments.</li>
+        <li><strong>No multi-level approval:</strong> CBN requires Maker-Checker for amounts above ₦500k.</li>
+        <li><strong>Only Paystack as channel:</strong> Must support bank transfer, RTGS, cheque, cash.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#92400e">
+      <div class="a-comp-hdr-icon">⚙️</div>
+      <div><div class="a-comp-hdr-title">Tab 6: "Settings" → BankConnectionSettingsComponent</div><div class="a-comp-hdr-sub">File: bank-connection-settings.component.html</div></div>
+    </div>
+    <div class="a-comp-body">
+      <ul class="a-warn-list">
+        <li><strong>Critical naming error:</strong> Top-level "Settings" tab only controls bank API keys — deeply misleading. Should be a sub-section of Banking.</li>
+        <li><strong>Module-wide Accounting Settings entirely absent:</strong> Fiscal year start, base currency, VAT reg number, rounding rules, approval thresholds — not configurable anywhere.</li>
+        <li><strong>API keys visible in settings:</strong> <code>apiKey</code> and <code>secretKey</code> fields must be masked after creation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 5 — TERMINOLOGY -->
+  <h2>5 · Terminology &amp; Naming Audit</h2>
+  <p>Comparison of every significant label against QuickBooks Online, Xero, SAP S/4HANA, NetSuite, and Sage Intacct.</p>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>Location</th><th>Current Label</th><th>Global Standard</th><th>Severity</th></tr></thead>
+      <tbody>
+        <tr><td>Main tab</td><td>Accounting Transactions</td><td>Accounting Events</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td>Main tab</td><td>Financial Journals (h1) / BookKeeping (class)</td><td>Journal Entries — everywhere</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td>Main tab</td><td>Bank</td><td>Banking</td><td><span class="a-priority-medium">Medium</span></td></tr>
+        <tr><td>Main tab</td><td>Settings (bank API only)</td><td>Bank Settings / Integrations</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td>Main tab</td><td>Disburse</td><td>Payment Runs / Payments</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td>Confirm modal</td><td>Fiduciary Control</td><td>Confirm Ledger Posting</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td>Confirm modal</td><td>Discard</td><td>Cancel</td><td><span class="a-priority-medium">Medium</span></td></tr>
+        <tr><td>Queue status</td><td>UNPROCESSED / UNREVIEWED (same UI label)</td><td>PENDING_REVIEW (single enum)</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td>COA button</td><td>Deleted Logs</td><td>Archived Accounts</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td>COA form</td><td>Opening Register Balance</td><td>Opening Balance</td><td><span class="a-priority-medium">Medium</span></td></tr>
+        <tr><td>Amount display</td><td>₦ hardcoded in templates</td><td>Currency symbol from entity base currency</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td>Component class</td><td>BookKeepingComponent</td><td>JournalEntriesComponent</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td>Route</td><td>/transaction/:uuid</td><td>/accounting or /accounting/dashboard</td><td><span class="a-priority-high">High</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 6 — GLOBAL STANDARD -->
+  <h2>6 · Global Standard — World-Class Accounting Module</h2>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>Module</th><th>QuickBooks</th><th>Xero</th><th>SAP S/4</th><th>NetSuite</th><th>OptimaX (current)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dashboard</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added</span></td></tr>
+        <tr><td><strong>Chart of Accounts</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>Journal Entries</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>General Ledger</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>Accounts Receivable</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>Accounts Payable</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>Banking &amp; Reconciliation</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial</span></td></tr>
+        <tr><td><strong>Fixed Assets</strong></td><td>Add-on</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-red">Missing</span></td></tr>
+        <tr><td><strong>Tax Management</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added</span></td></tr>
+        <tr><td><strong>Payment Runs</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-amber">Partial (HR only)</span></td></tr>
+        <tr><td><strong>Budgeting</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added</span></td></tr>
+        <tr><td><strong>Reports (P&amp;L, BS, CF)</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added (14 reports)</span></td></tr>
+        <tr><td><strong>Period / Year-End Close</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added</span></td></tr>
+        <tr><td><strong>Multi-currency</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-red">Missing (hardcoded ₦)</span></td></tr>
+        <tr><td><strong>Audit Trail</strong></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-green">Added</span></td></tr>
+        <tr><td><strong>Maker-Checker Approval</strong></td><td>Limited</td><td>✓</td><td>✓</td><td>✓</td><td><span class="badge badge-red">Missing</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 7 — GAP ANALYSIS -->
+  <h2>7 · Gap Analysis — Feature Coverage</h2>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>Feature / Sub-module</th><th>Status</th><th>What's Missing</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Chart of Accounts</strong></td><td><span class="badge badge-amber">Partial</span></td><td>COST_OF_SALES type, account deactivation, currency per account, CSV import</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Journal Entries</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Line-level form, Dr=Cr balance validation, attachments, recurring journals, reversal action</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>General Ledger</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Opening/closing balance per period, Trial Balance view, drill-through to source</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Trial Balance</strong></td><td><span class="badge badge-green">Added</span></td><td>In Financial Reports — Dr/Cr totals, Dr=Cr verified</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Accounts Receivable</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Customer invoices, credit terms, AR aging, payment allocation</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Accounts Payable</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Vendor bills, purchase invoices, AP aging, payment scheduling</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Payment Runs</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Only HR loans shown — must consolidate PAYROLL, EXPENSE, LOANS, VENDOR outflow events</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Banking</strong></td><td><span class="badge badge-amber">Partial</span></td><td>Multiple accounts, manual transaction entry, CSV/OFX bank import</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Tax Management</strong></td><td><span class="badge badge-green">Added</span></td><td>UI added — backend integration pending</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Fixed Assets</strong></td><td><span class="badge badge-red">Missing</span></td><td>Asset register, depreciation schedules, disposal entries, revaluation</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Budgeting &amp; Forecasting</strong></td><td><span class="badge badge-green">Added</span></td><td>UI added — BudgetDTO backend integration pending</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Period / Year-End Close</strong></td><td><span class="badge badge-green">Added</span></td><td>UI added — backend period locking API pending</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Multi-currency</strong></td><td><span class="badge badge-red">Missing</span></td><td>Currency field on transactions, exchange rate table, FX gain/loss auto-journal</td><td><span class="a-priority-high">High</span></td></tr>
+        <tr><td><strong>Maker-Checker Approval</strong></td><td><span class="badge badge-red">Missing</span></td><td>Two-person authorisation above configurable threshold — CBN compliance</td><td><span class="a-priority-critical">Critical</span></td></tr>
+        <tr><td><strong>Accounting Settings</strong></td><td><span class="badge badge-green">Added</span></td><td>UI added in Settings module — backend config API pending</td><td><span class="a-priority-critical">Critical</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 8 — ARCHITECTURE -->
+  <h2>8 · Architecture &amp; Backend Concerns</h2>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#b91c1c">
+      <div class="a-comp-hdr-icon">🚨</div>
+      <div><div class="a-comp-hdr-title">Critical Risk: Client-Side Accounting Pipeline Orchestration</div></div>
+    </div>
+    <div class="a-comp-body">
+      <p>The <code>orchestrateEventExecution()</code> method in <code>accounting.service.ts</code> runs the complete double-entry pipeline <strong>entirely on the client side</strong>:</p>
+      <ol>
+        <li>POST /transactions → Create Accounting Transaction</li>
+        <li>POST /journal-entries → Create Journal Entry</li>
+        <li>POST /journal-entry-lines × 2 → Debit + Credit lines</li>
+        <li>POST /ledger-entries → Create Ledger Entries</li>
+      </ol>
+      <div class="a-callout a-callout-fail" style="margin-top:12px;">
+        <div class="a-callout-icon">🚨</div>
+        <div><strong>Critical financial integrity risk.</strong> If the user loses internet after step 2 but before step 4, the ledger is in an inconsistent state — journal exists with no ledger posting. This <strong>must</strong> be a server-side atomic transaction: one <code>POST /events/&#123;id&#125;/post</code> endpoint with a single DB transaction and rollback on failure.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#c2410c">
+      <div class="a-comp-hdr-icon">⚠</div>
+      <div><div class="a-comp-hdr-title">High Risk: Duplicate Service Names</div></div>
+    </div>
+    <div class="a-comp-body">
+      <p>Two classes both named <code>AccountingService</code>:</p>
+      <ul>
+        <li><code>projects/accounting/src/app/services/accounting.service.ts</code> — event/transaction orchestration</li>
+        <li><code>projects/accounting/src/app/core/services/accounting.service.ts</code> — report generation</li>
+      </ul>
+      <p>Rename the core service to <code>FinancialReportService</code>.</p>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#a16207">
+      <div class="a-comp-hdr-icon">⚠</div>
+      <div><div class="a-comp-hdr-title">High Risk: 8-Way Token Resolution in Auth Interceptor</div></div>
+    </div>
+    <div class="a-comp-body">
+      <p>Auth interceptor checks <strong>8 different storage keys</strong> (<code>Token</code>, <code>token</code>, <code>accessToken</code> × 2 in both sessionStorage and localStorage). Sign of accumulated tech debt from multiple auth implementations. Use one canonical key and one storage location.</p>
+    </div>
+  </div>
+
+  <div class="a-comp-block">
+    <div class="a-comp-hdr" style="background:#1d4ed8">
+      <div class="a-comp-hdr-icon">ℹ</div>
+      <div><div class="a-comp-hdr-title">Observation: API fetches size=1000 for all report data</div></div>
+    </div>
+    <div class="a-comp-body">
+      <p>Report service fetches <code>?page=1&amp;size=1000</code> for transactions, journal entries, lines, and ledger entries. At scale this causes very slow loads, browser memory pressure, and API timeouts. Reports should be generated server-side as pre-computed results, not raw data for client-side aggregation.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 9 — DATA MODEL -->
+  <h2>9 · Data Model Assessment</h2>
+
+  <h3>What's Correct</h3>
+  <ul class="a-check-list">
+    <li>Double-entry: JournalEntryLine has separate <code>debitAmount</code> and <code>creditAmount</code></li>
+    <li>LedgerEntry has <code>balanceAfter</code> — enables running balance</li>
+    <li>AccountMappingDTO links sourceModule + eventType to Dr/Cr accounts — correct automated bookkeeping pattern</li>
+    <li>JournalEntry → AccountingTransaction → source document → correct audit chain</li>
+    <li>Account hierarchy via <code>parentAccount</code> / <code>parentAccountId</code> — correct COA tree</li>
+  </ul>
+
+  <h3>What's Missing or Incorrect</h3>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>Model / Field</th><th>Issue</th><th>Recommended Fix</th></tr></thead>
+      <tbody>
+        <tr><td><code>AccountType</code> enum</td><td>Missing <strong>COST_OF_SALES</strong> — blocks Gross Profit in P&L</td><td>Add <code>COST_OF_SALES = 'COST_OF_SALES'</code></td></tr>
+        <tr><td><code>AccountDTO.currency</code></td><td>Field exists but all UIs hardcode NGN/₦</td><td>Wire currency to all monetary displays</td></tr>
+        <tr><td><code>AccountDTO</code></td><td>No <code>isActive</code> — accounts cannot be deactivated without deleting</td><td>Add <code>isActive: boolean</code></td></tr>
+        <tr><td><code>AccountDTO</code></td><td>No <code>normalBalance</code> field (Dr or Cr)</td><td>Add <code>normalBalance: 'DEBIT' | 'CREDIT'</code></td></tr>
+        <tr><td><code>JournalEntryDTO</code></td><td>No <code>period</code> / <code>fiscalYear</code> — can't enforce period close rules</td><td>Add <code>accountingPeriod</code> and <code>fiscalYear</code></td></tr>
+        <tr><td><code>AccountingTransactionDTO.transactionDate</code></td><td>Type <code>number[] | string | Date</code> — Java LocalDateTime artifact</td><td>Normalise to ISO string on backend</td></tr>
+        <tr><td><code>SourceModule</code> enum</td><td>No PAYROLL value (HR is too broad)</td><td>Add <code>PAYROLL</code> to SourceModule</td></tr>
+        <tr><td>No <code>TaxDTO</code></td><td>TaxService exists but no domain model</td><td>Create TaxCodeDTO with rate, type (VAT/WHT), effective date</td></tr>
+        <tr><td>No <code>VendorDTO</code></td><td>AP cannot be implemented without vendor master</td><td>Create VendorDTO with bank details, payment terms, TIN</td></tr>
+        <tr><td>No <code>FixedAssetDTO</code></td><td>Fixed Asset Accounting entirely absent</td><td>Create FixedAssetDTO with cost, accumulated depreciation, NBV, useful life</td></tr>
+        <tr><td>No <code>BudgetDTO</code></td><td>BudgetingForecastingComponent exists but no model</td><td>Create BudgetDTO linking account + period + budgeted amount</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 10 — ROADMAP -->
+  <h2>10 · Prioritised Improvement Roadmap</h2>
+
+  <h3>Phase 1 — Critical Fixes (0–4 weeks)</h3>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Issue</th><th>Action</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Client-side accounting pipeline</td><td>Move to single backend endpoint <code>POST /events/&#123;id&#125;/post</code> with atomic DB transaction</td><td>Backend + accounting.service.ts</td></tr>
+        <tr><td>2</td><td>UNPROCESSED vs UNREVIEWED</td><td>Unify to <code>PENDING_REVIEW</code> in backend and UI</td><td>Backend DTO + queue template</td></tr>
+        <tr><td>3</td><td>₦ hardcoded in templates</td><td>Replace all ₦ with currency service reading entity base currency</td><td>All .html files</td></tr>
+        <tr><td>4</td><td>"Settings" tab miscommunication</td><td>Remove top-level Settings tab; move bank connection inside Banking sub-section</td><td>accounting-page.component.ts</td></tr>
+        <tr><td>5</td><td>"Deleted Logs" on COA</td><td>Rename to "Archive"; add <code>isActive</code> flag; guard against deleting accounts with posted transactions</td><td>chart-of-accounts.component.html</td></tr>
+        <tr><td>6</td><td>Duplicate AccountingService names</td><td>Rename <code>core/services/accounting.service.ts</code> → <code>FinancialReportService</code></td><td>core/services/</td></tr>
+        <tr><td>7</td><td>"Fiduciary Control" modal language</td><td>Rename → "Confirm Ledger Posting" · "Discard" → "Cancel" · "Accept &amp; Post" → "Post to Ledger"</td><td>accounting-queue.component.html</td></tr>
+        <tr><td>8</td><td>Payment Runs consolidation</td><td>Expand DisbursementFlowComponent to pull ALL OUTFLOW+APPROVED events, not only HR loans</td><td>disbursement-flow.component.ts</td></tr>
+        <tr><td>9</td><td>Separate Reject from Delete action</td><td>Distinct Reject button (returns to submitter + reason) and Remove button (invalid events only)</td><td>accounting-queue.component.html</td></tr>
+        <tr><td>10</td><td>API fetches size=1000</td><td>Move report aggregation to server-side — server generates pre-computed financial statements</td><td>Backend + report service</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Phase 2 — High Priority Additions (1–3 months)</h3>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Feature</th><th>What to Build</th><th>Complexity</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Trial Balance Report</td><td>Account-level Dr/Cr totals for a period, nets to zero, exportable</td><td>Low</td></tr>
+        <tr><td>2</td><td>Accounts Receivable Module</td><td>Customer invoice creation, payment recording, AR aging (30/60/90/120+ days), customer statement</td><td>High</td></tr>
+        <tr><td>3</td><td>Accounts Payable Module</td><td>Vendor bill entry, payment scheduling, AP aging, vendor master data</td><td>High</td></tr>
+        <tr><td>4</td><td>Tax Management Backend</td><td>Tax code config (VAT 7.5%, WHT 5%/10%), tax codes on transactions, VAT return summary</td><td>Medium</td></tr>
+        <tr><td>5</td><td>Journal Entry Creation UI</td><td>Full form: date, ref, description, lines (account, Dr, Cr), balance validation Dr=Cr, draft/post</td><td>Medium</td></tr>
+        <tr><td>6</td><td>Journal Entry Reversal</td><td>"Reverse" action on posted entries — auto-creates offsetting entry on first of next period</td><td>Low</td></tr>
+        <tr><td>7</td><td>Add COST_OF_SALES account type</td><td>New enum + COA type + P&L Gross Profit calculation</td><td>Low</td></tr>
+        <tr><td>8</td><td>CBN Maker-Checker Approval</td><td>Two-person authorisation for payments above ₦500k — amount-configurable</td><td>Medium</td></tr>
+        <tr><td>9</td><td>Multi-currency</td><td>Currency field on transactions, exchange rate table, FX gain/loss auto-journal</td><td>High</td></tr>
+        <tr><td>10</td><td>Period Locking Backend</td><td>Close accounting period — prevent posting to locked periods</td><td>Medium</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Phase 3 — Strategic Enhancements (3–6 months)</h3>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Feature</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Fixed Asset Register with Depreciation</td><td>Accurate balance sheet — current BS is incomplete without asset depreciation</td></tr>
+        <tr><td>2</td><td>Budgeting vs Actuals (Backend)</td><td>Wire BudgetingForecastingComponent to real BudgetDTO + comparison report</td></tr>
+        <tr><td>3</td><td>Recurring Journal Entries</td><td>Reduce monthly manual work for depreciation, prepayments, accruals</td></tr>
+        <tr><td>4</td><td>Cost Centre / Department Accounting</td><td>Enable profit/loss per department — required for management accounts</td></tr>
+        <tr><td>5</td><td>Payroll Accounting Integration</td><td>Auto-journal payroll runs: salary control account, PAYE, pension (employee 8% / employer 10%)</td></tr>
+        <tr><td>6</td><td>Comparative Reports</td><td>Side-by-side period comparison in P&L, Balance Sheet, Cash Flow</td></tr>
+        <tr><td>7</td><td>PDF/Excel Report Export</td><td>Professional financial statement exports with company branding</td></tr>
+        <tr><td>8</td><td>Move Quotation out of Accounting</td><td>Relocate QuotationComponent to Sales/CRM module — removes scope creep</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 11 — NAVIGATION RESTRUCTURE -->
+  <h2>11 · Recommended Navigation &amp; Module Restructure</h2>
+
+  <h3>Proposed Navigation (completed restructure)</h3>
+  <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
+    <span class="a-tab-pill a-tab-pill-new">Dashboard <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Accounting Events <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Chart of Accounts <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Journal Entries <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">General Ledger <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Accounts Receivable <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Accounts Payable <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Banking <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Payment Runs <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Financial Reports (14) <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Tax <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Budgets <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Period Close <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Accounting Settings <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+    <span class="a-tab-pill a-tab-pill-new">Audit Trail <span class="badge badge-green" style="margin-left:4px;font-size:9px">Done</span></span>
+  </div>
+
+  <h3>Standard Terminology Reference Card</h3>
+  <div class="fd-table-wrap">
+    <table>
+      <thead><tr><th>Concept</th><th>✓ Use This</th><th>✗ Never Use</th></tr></thead>
+      <tbody>
+        <tr><td>Event approval queue</td><td><strong>Accounting Events</strong></td><td>Accounting Transactions, Transaction Queue</td></tr>
+        <tr><td>Manual bookkeeping records</td><td><strong>Journal Entries</strong></td><td>BookKeeping, Financial Journals</td></tr>
+        <tr><td>Running account balances</td><td><strong>General Ledger</strong></td><td>Ledger Book, GL Entries</td></tr>
+        <tr><td>All Dr/Cr totals for a period</td><td><strong>Trial Balance</strong></td><td>Account Summary, Balance Check</td></tr>
+        <tr><td>Revenue minus expenses</td><td><strong>Income Statement / P&L</strong></td><td>Revenue Report, Earnings Report</td></tr>
+        <tr><td>Bank matching</td><td><strong>Bank Reconciliation</strong></td><td>Bank Matching, Bank Sync</td></tr>
+        <tr><td>Deactivate an account</td><td><strong>Archive / Deactivate</strong></td><td>Delete Account, Remove Account</td></tr>
+        <tr><td>Payment to vendor/employee</td><td><strong>Payment Run / Disbursement</strong></td><td>Disburse, Payout</td></tr>
+        <tr><td>Posting journal to ledger</td><td><strong>Post to General Ledger</strong></td><td>Fiduciary Control, Accept &amp; Post</td></tr>
+        <tr><td>Cancel posting dialog</td><td><strong>Cancel</strong></td><td>Discard, Go Back, Dismiss</td></tr>
+        <tr><td>Close a period</td><td><strong>Lock Period / Close Period</strong></td><td>Freeze Month, End Period</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Nigerian Market Compliance Notes</h3>
+  <div class="card">
+    <ul class="a-warn-list">
+      <li><strong>FIRS Requirements:</strong> Tax Summary must support VAT (7.5%), WHT (varying rates by payment type), and CIT (30%). Tax codes must be configurable and mapped to accounts.</li>
+      <li><strong>CBN Maker-Checker:</strong> CBN guidelines require two-person authorisation on financial transactions above threshold. Current single-level approve is insufficient for regulated entities.</li>
+      <li><strong>PENCOM (Pension):</strong> HR-sourced payroll journals must separately identify pension deductions — employee 8% + employer 10% — into dedicated pension liability accounts.</li>
+      <li><strong>IFRS Adoption:</strong> Nigerian listed companies use IFRS. P&L must show Gross Profit (requires COST_OF_SALES type) and EBITDA to be IFRS-compliant.</li>
+      <li><strong>Functional Currency:</strong> Base currency must be explicitly set (NGN). Multi-currency transactions require FIRS-approved exchange rates (CBN rate preferred for tax purposes).</li>
+    </ul>
+  </div>
+
+  <hr class="a-divider">
+  <div class="a-callout a-callout-info">
+    <div class="a-callout-icon">ℹ</div>
+    <div><strong>Summary:</strong> OptimaXERP's Accounting module has a solid foundation — the double-entry mechanics, COA structure, journal entry pipeline, and report API architecture are architecturally sound. The critical work is in three areas: (1) moving the posting pipeline to the server, (2) adding missing sub-modules (AR, AP, Tax, Fixed Assets, Period Close, and full Payment Runs consolidation across all modules), and (3) standardising terminology. A professional financial controller should be able to use this module with minimal training after these changes.</div>
+  </div>
+  <p style="text-align:center;font-size:12px;color:#9ca3af;margin-top:24px;">OptimaXERP Accounting Module Assessment · June 2026 · Prepared by Damilola Awe</p>
+
+</div>

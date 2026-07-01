@@ -1,0 +1,97 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>COST_OF_SALES account type added (IFRS)</strong> — Normal Balance column added.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#ede9fe;color:#7c3aed;">🏗</div>
+      <div>
+        <div class="page-title">Chart of Accounts</div>
+        <div class="page-sub">Hierarchical account structure · IFRS-compliant types</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">📂 Archived Accounts</button>
+      <button class="fd-btn fd-btn-outline">📊 Run Trial Balance</button>
+      <button class="fd-btn fd-btn-primary">＋ New Account</button>
+    </div>
+  </div>
+
+  <div class="coa-type-grid">
+    <div class="stat-card stat-blue coa-mini"><div class="stat-label">Assets</div><div class="coa-count primary">24</div><div class="coa-normal">Normal: Dr</div></div>
+    <div class="stat-card stat-red coa-mini"><div class="stat-label">Liabilities</div><div class="coa-count red">18</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card stat-purple coa-mini"><div class="stat-label">Equity</div><div class="coa-count purple">8</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card stat-green coa-mini"><div class="stat-label">Income</div><div class="coa-count green">12</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card coa-mini coa-cos"><div class="stat-label">Cost of Sales <span class="badge-new-inline">NEW</span></div><div class="coa-count amber">6</div><div class="coa-normal">Normal: Dr</div></div>
+    <div class="stat-card coa-mini coa-exp"><div class="stat-label">Expenses</div><div class="coa-count orange">31</div><div class="coa-normal">Normal: Dr</div></div>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+    <div class="coa-filter">
+      <input class="filter-input" placeholder="Search accounts...">
+      <select class="filter-select"><option>ALL TYPES</option><option>ASSET</option><option>LIABILITY</option><option>EQUITY</option><option>INCOME</option><option>COST_OF_SALES</option><option>EXPENSE</option></select>
+    </div>
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Account Name</th><th>Code</th><th>Type</th><th>Normal Balance</th><th>Opening Balance</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <!-- 1000 group -->
+          <tr class="group-row" (click)="toggle('1000')">
+            <td class="group-name">{{ expanded['1000'] ? '▼' : '▶' }} 1000 — Current Assets</td>
+            <td class="code-cell">1000</td>
+            <td><span class="fd-badge badge-blue">ASSET</span></td>
+            <td class="normal-bal">Debit</td>
+            <td class="nil-cell">—</td>
+            <td class="actions-cell"><button class="act-btn" (click)="$event.stopPropagation()">＋</button><button class="act-btn act-edit" (click)="$event.stopPropagation()">✏</button></td>
+          </tr>
+          <tr class="child-row" *ngIf="expanded['1000']">
+            <td class="child-name">1001 — Cash &amp; Bank</td>
+            <td class="code-cell">1001</td><td><span class="fd-badge badge-blue">ASSET</span></td>
+            <td class="normal-bal">Debit</td><td class="amount-cell">&#8358;4,250,000</td>
+            <td class="actions-cell"><button class="act-btn act-edit">✏</button><button class="act-btn act-reject">🗑</button></td>
+          </tr>
+          <tr class="child-row" *ngIf="expanded['1000']">
+            <td class="child-name">1002 — Accounts Receivable</td>
+            <td class="code-cell">1002</td><td><span class="fd-badge badge-blue">ASSET</span></td>
+            <td class="normal-bal">Debit</td><td class="amount-cell">&#8358;12,800,000</td>
+            <td class="actions-cell"><button class="act-btn act-edit">✏</button><button class="act-btn act-reject">🗑</button></td>
+          </tr>
+          <!-- 4000 group -->
+          <tr class="group-row group-cos" (click)="toggle('4000')">
+            <td class="group-name amber">{{ expanded['4000'] ? '▼' : '▶' }} 4000 — Cost of Sales <span class="badge-new-inline">NEW TYPE</span></td>
+            <td class="code-cell amber">4000</td>
+            <td><span class="fd-badge badge-amber">COST_OF_SALES</span></td>
+            <td class="normal-bal">Debit</td><td class="nil-cell">—</td>
+            <td class="actions-cell"><button class="act-btn" (click)="$event.stopPropagation()">＋</button><button class="act-btn act-edit" (click)="$event.stopPropagation()">✏</button></td>
+          </tr>
+          <tr class="child-row child-cos" *ngIf="expanded['4000']">
+            <td class="child-name">4001 — Direct Labour Cost</td>
+            <td class="code-cell">4001</td><td><span class="fd-badge badge-amber">COST_OF_SALES</span></td>
+            <td class="normal-bal">Debit</td><td class="nil-cell">—</td>
+            <td class="actions-cell"><button class="act-btn act-edit">✏</button><button class="act-btn act-reject">🗑</button></td>
+          </tr>
+          <!-- 5000 group -->
+          <tr class="group-row" (click)="toggle('5000')">
+            <td class="group-name">{{ expanded['5000'] ? '▼' : '▶' }} 5000 — Operating Expenses</td>
+            <td class="code-cell">5000</td>
+            <td><span class="fd-badge badge-orange">EXPENSE</span></td>
+            <td class="normal-bal">Debit</td><td class="nil-cell">—</td>
+            <td class="actions-cell"><button class="act-btn" (click)="$event.stopPropagation()">＋</button><button class="act-btn act-edit" (click)="$event.stopPropagation()">✏</button></td>
+          </tr>
+          <tr class="child-row" *ngIf="expanded['5000']">
+            <td class="child-name">5001 — Salaries Expense</td>
+            <td class="code-cell">5001</td><td><span class="fd-badge badge-orange">EXPENSE</span></td>
+            <td class="normal-bal">Debit</td><td class="amount-cell">&#8358;18,200,000</td>
+            <td class="actions-cell"><button class="act-btn act-edit">✏</button><button class="act-btn act-reject">🗑</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

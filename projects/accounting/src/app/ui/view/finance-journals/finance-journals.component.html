@@ -1,0 +1,142 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>Unified naming — Journal Entries</strong> — Audit-ready double-entry bookkeeping. Reverse action and Recurring Templates available.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#dbeafe;color:#2563eb;">📖</div>
+      <div>
+        <div class="page-title">Journal Entries</div>
+        <div class="page-sub">Audit-ready double-entry bookkeeping records</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">⬇ Export CSV</button>
+      <button class="fd-btn fd-btn-outline">↺ Recurring</button>
+      <button class="fd-btn fd-btn-primary">＋ Manual Journal</button>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Journals</div>
+      <div class="stat-value je-total">842</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">Posted</div>
+      <div class="stat-value je-posted">798</div>
+    </div>
+    <div class="stat-card stat-amber">
+      <div class="stat-label">Draft</div>
+      <div class="stat-value je-draft">44</div>
+    </div>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Entry #</th><th>Date</th><th>Description</th><th>Debit (Dr)</th><th>Credit (Cr)</th><th>Status</th><th>Source</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ref-cell">JE-2026-0842</td>
+            <td>14 Jun 2026</td>
+            <td>June Payroll — Salaries Payable</td>
+            <td class="dr-cell">&#8358;4,500,000</td>
+            <td class="cr-cell">&#8358;4,500,000</td>
+            <td><span class="fd-badge badge-green">POSTED</span></td>
+            <td><span class="fd-badge badge-purple">AUTO</span></td>
+            <td class="actions-cell">
+              <button class="act-btn" title="Audit trail">🔍</button>
+              <button class="act-btn act-reverse" title="Reverse Entry">↺</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">JE-2026-0841</td>
+            <td>13 Jun 2026</td>
+            <td>Client Invoice — Dangote Group</td>
+            <td class="dr-cell">&#8358;8,216,000</td>
+            <td class="cr-cell">&#8358;8,216,000</td>
+            <td><span class="fd-badge badge-green">POSTED</span></td>
+            <td><span class="fd-badge badge-purple">AUTO</span></td>
+            <td class="actions-cell">
+              <button class="act-btn" title="Audit trail">🔍</button>
+              <button class="act-btn act-reverse" title="Reverse Entry">↺</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="ref-cell">JE-2026-0840</td>
+            <td>12 Jun 2026</td>
+            <td>Manual — Prepaid Insurance adj.</td>
+            <td class="dr-cell">&#8358;120,000</td>
+            <td class="cr-cell">&#8358;120,000</td>
+            <td><span class="fd-badge badge-amber">DRAFT</span></td>
+            <td><span class="fd-badge badge-gray">MANUAL</span></td>
+            <td class="actions-cell">
+              <button class="act-btn" title="Audit trail">🔍</button>
+              <button class="act-btn act-edit" title="Edit">✏</button>
+              <button class="act-btn act-approve" title="Post">✔</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="fd-card">
+    <div class="fd-card-header">
+      <span class="fd-card-title">New Manual Journal Entry</span>
+      <span style="font-size:12px;color:#6b7280">All entries must balance: Total Debits = Total Credits</span>
+    </div>
+    <div class="je-meta-grid">
+      <div class="je-field">
+        <label>Entry Date *</label>
+        <input type="date" class="je-input" value="2026-06-28">
+      </div>
+      <div class="je-field" style="grid-column:span 2">
+        <label>Narration / Description *</label>
+        <input type="text" class="je-input" placeholder="e.g. Prepaid insurance adjustment — July 2026">
+      </div>
+      <div class="je-field">
+        <label>Reference (optional)</label>
+        <input type="text" class="je-input" placeholder="e.g. INV-2026-090">
+      </div>
+      <div class="je-field">
+        <label>Period</label>
+        <select class="je-select"><option>June 2026</option><option>July 2026</option><option>Q2 2026</option></select>
+      </div>
+      <div class="je-field">
+        <label>Currency</label>
+        <select class="je-select"><option>NGN — Nigerian Naira</option><option>USD — US Dollar</option><option>GBP — British Pound</option></select>
+      </div>
+    </div>
+    <div class="je-balance-bar">
+      <div class="je-balance-col">
+        <div class="je-balance-label">Total Debits</div>
+        <div class="je-balance-val" style="color:#dc2626">&#8358;0</div>
+      </div>
+      <div class="je-balance-col">
+        <div class="je-balance-label">Total Credits</div>
+        <div class="je-balance-val" style="color:#16a34a">&#8358;0</div>
+      </div>
+      <div class="je-balance-col">
+        <div class="je-balance-label">Difference</div>
+        <div class="je-balance-val" style="color:#9ca3af">&#8358;0</div>
+      </div>
+      <div class="je-balance-col" style="flex:1.4;background:#f9fafb">
+        <div class="je-balance-label">Balance Status</div>
+        <div style="font-size:13px;font-weight:900;color:#9ca3af">— Enter amounts above</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:16px">
+      <button class="fd-btn fd-btn-outline">💾 Save as Draft</button>
+      <button class="fd-btn fd-btn-primary" disabled style="opacity:.5;cursor:not-allowed">✔ Post Journal Entry</button>
+      <span style="margin-left:auto;font-size:12px;color:#9ca3af;align-self:center">Post enabled only when Dr = Cr and at least 2 lines filled.</span>
+    </div>
+  </div>
+
+</div>

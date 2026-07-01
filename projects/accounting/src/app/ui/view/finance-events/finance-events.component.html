@@ -1,0 +1,94 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>Accounting Events</strong> — Events are instances of Event Definitions. Status lifecycle: INITIATED → PENDING → APPROVED → COMPLETED.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#fef3c7;color:#d97706;">📥</div>
+      <div>
+        <div class="page-title">Accounting Events</div>
+        <div class="page-sub">Review, approve and post financial events from all modules</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card stat-red"><div class="stat-label">Initiated</div><div class="stat-value initiated">12</div><div class="stat-ghost">⚡</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Pending</div><div class="stat-value pending">8</div><div class="stat-ghost">⏳</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Approved</div><div class="stat-value approved">47</div><div class="stat-ghost">✔</div></div>
+    <div class="stat-card stat-purple"><div class="stat-label">Completed</div><div class="stat-value completed">234</div><div class="stat-ghost">✅</div></div>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" placeholder="Search reference, counterparty, description...">
+    <select class="filter-select"><option>ALL DIRECTION</option><option>INFLOW</option><option>OUTFLOW</option></select>
+    <select class="filter-select"><option>ALL MODULES</option><option>PAYROLL</option><option>POS</option><option>LOANS</option><option>EXPENSE</option></select>
+    <select class="filter-select"><option>ALL STATUS</option><option>INITIATED</option><option>PENDING</option><option>APPROVED</option><option>COMPLETED</option><option>REJECTED</option></select>
+    <select class="filter-select"><option>ALL CURRENCIES</option><option>NGN</option><option>USD</option><option>GBP</option></select>
+    <button class="fd-btn fd-btn-outline fd-btn-sm">✕ Clear</button>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Date</th><th>Reference</th><th>Event Definition</th><th>Counterparty</th><th>Module</th><th>Dir</th><th>Amount</th><th>CCY</th><th>Status</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ev of events">
+            <td>{{ ev.date }}</td>
+            <td class="ref-cell">{{ ev.ref }}</td>
+            <td>{{ ev.def }}</td>
+            <td>{{ ev.party }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-purple': ev.module==='PAYROLL',
+                'badge-blue':   ev.module==='SALES',
+                'badge-orange': ev.module==='EXPENSE'
+              }">{{ ev.module }}</span>
+            </td>
+            <td>
+              <span [class]="ev.dir==='IN' ? 'tag-in' : 'tag-out'">
+                {{ ev.dir==='IN' ? '↓ INFLOW' : '↑ OUTFLOW' }}
+              </span>
+            </td>
+            <td class="amount-cell" [innerHTML]="ev.amount"></td>
+            <td [class]="ev.currency==='USD' ? 'currency-usd' : 'currency-ngn'">{{ ev.currency }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-amber':  ev.status==='PENDING',
+                'badge-green':  ev.status==='APPROVED' || ev.status==='COMPLETED',
+                'badge-red':    ev.status==='REJECTED',
+                'badge-blue':   ev.status==='INITIATED'
+              }">{{ ev.status }}</span>
+            </td>
+            <td class="actions-cell">
+              <button class="act-btn" title="View">👁</button>
+              <button class="act-btn act-approve" title="Approve" *ngIf="ev.status==='PENDING'" (click)="approve(ev)">✔</button>
+              <button class="act-btn act-edit" title="Edit" *ngIf="ev.status==='PENDING'">✏</button>
+              <button class="act-btn act-reject" title="Reject" *ngIf="ev.status==='PENDING'" (click)="reject(ev)">✕</button>
+              <button class="act-btn" title="Audit trail" *ngIf="ev.status!=='PENDING'">🔍</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span class="table-count">Showing {{ events.length }} of 301 events</span>
+      <div class="page-btns">
+        <button class="fd-btn fd-btn-outline fd-btn-sm">← Prev</button>
+        <button class="fd-btn fd-btn-primary fd-btn-sm">1</button>
+        <button class="fd-btn fd-btn-outline fd-btn-sm">2</button>
+        <button class="fd-btn fd-btn-outline fd-btn-sm">Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -106,6 +106,8 @@ import { ProbationSettingsComponent } from './ui/view/hr/probation/probation-set
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
+import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
+import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -158,6 +160,8 @@ import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
     ModuleRegistryComponent,
     BugTrackerComponent,
     CrmSettingsComponent,
+    FinanceSettingsComponent,
+    FinancePeriodCloseComponent,
   ],
   imports: [
     // BrowserModule,

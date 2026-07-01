@@ -8,6 +8,8 @@ import { UserSettingComponent } from './ui/view/user-setting/user-setting.compon
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
+import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
+import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
 
 const routes: Routes = [
   {
@@ -42,6 +44,14 @@ const routes: Routes = [
       {
         path: 'crm-settings/:uuid',
         component: CrmSettingsComponent,
+      },
+      {
+        path: 'finance-settings/:uuid',
+        component: FinanceSettingsComponent,
+      },
+      {
+        path: 'finance-period-close/:uuid',
+        component: FinancePeriodCloseComponent,
       },
     ],
   },

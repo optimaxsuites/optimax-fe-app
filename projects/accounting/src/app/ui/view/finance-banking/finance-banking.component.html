@@ -1,0 +1,125 @@
+<div class="fd-content">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#dbeafe;color:#2563eb;">🏦</div>
+      <div>
+        <div class="page-title">Bank &amp; Reconciliation</div>
+        <div class="page-sub">Connected accounts, statements, and GL reconciliation</div>
+      </div>
+    </div>
+    <button class="fd-btn fd-btn-primary">＋ Connect Bank</button>
+  </div>
+
+  <div class="inner-tabs">
+    <button class="inner-tab" [class.active]="activeTab==='accounts'" (click)="setTab('accounts')">Accounts</button>
+    <button class="inner-tab" [class.active]="activeTab==='txns'" (click)="setTab('txns')">Transactions</button>
+    <button class="inner-tab" [class.active]="activeTab==='reconcile'" (click)="setTab('reconcile')">Reconciliation</button>
+    <button class="inner-tab" [class.active]="activeTab==='mono'" (click)="setTab('mono')">Connect / Mono</button>
+  </div>
+
+  <!-- ACCOUNTS TAB -->
+  <div *ngIf="activeTab==='accounts'">
+    <div class="bank-accounts-grid">
+      <div class="bank-card">
+        <div class="bank-card-top">
+          <div class="bank-logo" style="background:#f0fdf4;color:#16a34a;">GT</div>
+          <span class="fd-badge badge-green">ACTIVE</span>
+        </div>
+        <div class="bank-name">GTBank</div>
+        <div class="bank-acct-num">0123456789</div>
+        <div class="bank-balance">&#8358;4,250,000</div>
+        <div class="bank-sync">Last sync: 14 Jun 2026, 09:41</div>
+        <div class="bank-actions">
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('txns')">Transactions</button>
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('reconcile')">Reconcile</button>
+        </div>
+      </div>
+      <div class="bank-card">
+        <div class="bank-card-top">
+          <div class="bank-logo" style="background:#fff7ed;color:#c2410c;">AC</div>
+          <span class="fd-badge badge-green">ACTIVE</span>
+        </div>
+        <div class="bank-name">Access Bank</div>
+        <div class="bank-acct-num">0987654321</div>
+        <div class="bank-balance">&#8358;1,820,000</div>
+        <div class="bank-sync">Last sync: 14 Jun 2026, 08:15</div>
+        <div class="bank-actions">
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('txns')">Transactions</button>
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('reconcile')">Reconcile</button>
+        </div>
+      </div>
+      <div class="bank-add-card">
+        <div class="add-icon">＋</div>
+        <div class="add-label">Add Bank Account</div>
+        <div class="add-sub">via Mono Open Banking</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS TAB -->
+  <div *ngIf="activeTab==='txns'">
+    <div class="fd-card" style="padding:0">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th><th>GL Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>14 Jun 2026</td><td>SALARY BULK TRANSFER</td>
+              <td class="dr-cell">&#8358;4,500,000</td><td class="nil-cell">—</td>
+              <td class="balance-cell">&#8358;4,250,000</td><td><span class="fd-badge badge-green">MATCHED</span></td>
+            </tr>
+            <tr>
+              <td>13 Jun 2026</td><td>TRANSFER FROM DANGOTE</td>
+              <td class="nil-cell">—</td><td class="cr-cell">&#8358;8,216,000</td>
+              <td class="balance-cell">&#8358;8,750,000</td><td><span class="fd-badge badge-green">MATCHED</span></td>
+            </tr>
+            <tr>
+              <td>11 Jun 2026</td><td>BANK CHARGES - JUNE</td>
+              <td class="dr-cell">&#8358;12,500</td><td class="nil-cell">—</td>
+              <td class="balance-cell">&#8358;534,000</td><td><span class="fd-badge badge-amber">UNMATCHED</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECONCILIATION TAB -->
+  <div *ngIf="activeTab==='reconcile'">
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card stat-green"><div class="stat-label">Matched</div><div class="stat-value" style="color:#16a34a">142</div></div>
+      <div class="stat-card stat-amber"><div class="stat-label">Unmatched</div><div class="stat-value" style="color:#92400e">8</div></div>
+      <div class="stat-card stat-blue"><div class="stat-label">GL Balance</div><div class="stat-value" style="color:#2E6276;font-size:22px">&#8358;4,250,000</div></div>
+    </div>
+    <div class="recon-two-col">
+      <div class="fd-card" style="padding:0">
+        <div class="recon-col-header">Bank Statement</div>
+        <div class="recon-row recon-match"><span>SALARY BULK TRANSFER</span><span class="recon-amt debit">-&#8358;4,500,000</span></div>
+        <div class="recon-row recon-match"><span>TRANSFER FROM DANGOTE</span><span class="recon-amt credit">+&#8358;8,216,000</span></div>
+        <div class="recon-row recon-unmatch"><span>BANK CHARGES - JUNE</span><span class="recon-amt debit">-&#8358;12,500</span></div>
+      </div>
+      <div class="fd-card" style="padding:0">
+        <div class="recon-col-header">General Ledger (1001)</div>
+        <div class="recon-row recon-match"><span class="ref-cell">JE-0842</span><span class="recon-amt debit">-&#8358;4,500,000</span></div>
+        <div class="recon-row recon-match"><span class="ref-cell">JE-0841</span><span class="recon-amt credit">+&#8358;8,216,000</span></div>
+        <div class="recon-row recon-empty"><span style="font-style:italic;color:#9ca3af">No match found</span><span>—</span></div>
+      </div>
+    </div>
+    <div class="recon-actions">
+      <button class="fd-btn fd-btn-outline">Create Adjustment Entry</button>
+      <button class="fd-btn fd-btn-primary">Post Reconciliation</button>
+    </div>
+  </div>
+
+  <!-- CONNECT / MONO TAB -->
+  <div *ngIf="activeTab==='mono'" class="mono-center">
+    <div class="page-icon mono-icon">🔗</div>
+    <div class="mono-title">Connect via Mono Open Banking</div>
+    <div class="mono-sub">Securely link Nigerian bank accounts for real-time statement sync. Supported: GTBank, Access, Wema, Zenith, UBA, First Bank.</div>
+    <button class="fd-btn fd-btn-primary mono-btn">Launch Mono Connect</button>
+  </div>
+
+</div>
