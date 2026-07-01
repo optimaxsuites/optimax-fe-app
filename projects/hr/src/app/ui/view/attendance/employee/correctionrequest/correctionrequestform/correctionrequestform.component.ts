@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
   styleUrl: './correctionrequestform.component.scss'
 })
 export class CorrectionrequestformComponent {
-   @Output() close = new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
   @Output() submitRequest = new EventEmitter<CorrectionRequest>();
 
   form: FormGroup;
@@ -22,13 +22,17 @@ export class CorrectionrequestformComponent {
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
+      employeeId: ['1', Validators.required],
+      employeeName: ['Employee', Validators.required],
+      department: ['Engineering', Validators.required],
       date: ['', Validators.required],
       issueType: ['', Validators.required],
-      description: ['', Validators.required]
+      requestedClockIn: [''],
+      requestedClockOut: [''],
+      description: ['', Validators.required],
+      evidence: ['']
     });
   }
-
-  department = "Engineering";
 
   submit() {
     if (this.form.invalid) return;
@@ -37,11 +41,16 @@ export class CorrectionrequestformComponent {
       id: uuidv4(),
       employeeId: this.form.value.employeeId,
       employeeName: this.form.value.employeeName,
-      department: this.form.value.employeeId,
+      department: this.form.value.department,
       date: this.form.value.date,
       issueType: this.form.value.issueType,
+      requestedClockIn: this.form.value.requestedClockIn,
+      requestedClockOut: this.form.value.requestedClockOut,
       description: this.form.value.description,
+      evidence: this.form.value.evidence,
       status: 'PENDING',
+      locked: false,
+      history: [],
       createdAt: new Date().toISOString()
     };
 

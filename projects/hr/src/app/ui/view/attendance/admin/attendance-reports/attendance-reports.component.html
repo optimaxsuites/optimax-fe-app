@@ -1,0 +1,398 @@
+<div class="reports-container">
+  <!-- Header -->
+  <div class="reports-header">
+    <h1>Attendance Reports</h1>
+    <p>Comprehensive attendance analytics and compliance reporting</p>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="reports-tabs">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'weekly'"
+      (click)="activeTab = 'weekly'">
+      <i class="fas fa-calendar-week"></i> Weekly Summary
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'monthly'"
+      (click)="activeTab = 'monthly'">
+      <i class="fas fa-calendar"></i> Monthly Summary
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'trend'"
+      (click)="activeTab = 'trend'">
+      <i class="fas fa-chart-line"></i> Absenteeism Trend
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'compliance'"
+      (click)="activeTab = 'compliance'">
+      <i class="fas fa-file-export"></i> Compliance Export
+    </button>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading-indicator">
+    <div class="spinner"></div>
+    <p>Loading report data...</p>
+  </div>
+
+  <!-- WEEKLY SUMMARY TAB -->
+  <div *ngIf="activeTab === 'weekly' && !loading" class="tab-content">
+    <div class="report-section">
+      <h2>Weekly Attendance Summary</h2>
+
+      <!-- Date Range Selector -->
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="weeklyStartDate" class="date-input">
+        </div>
+        <div class="filter-item">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="weeklyEndDate" class="date-input">
+        </div>
+        <button (click)="loadWeeklySummary()" class="btn btn-primary">
+          <i class="fas fa-sync"></i> Load Report
+        </button>
+      </div>
+
+      <!-- Summary Stats -->
+      <div *ngIf="weeklySummary" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ weeklySummary.totalRecords }}</div>
+          <div class="stat-label">Total Records</div>
+        </div>
+        <div class="stat-card stat-card--green">
+          <div class="stat-value">{{ weeklySummary.byStatus?.present || 0 }}</div>
+          <div class="stat-label">Present</div>
+        </div>
+        <div class="stat-card stat-card--orange">
+          <div class="stat-value">{{ weeklySummary.byStatus?.late || 0 }}</div>
+          <div class="stat-label">Late</div>
+        </div>
+        <div class="stat-card stat-card--red">
+          <div class="stat-value">{{ weeklySummary.byStatus?.absent || 0 }}</div>
+          <div class="stat-label">Absent</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ weeklySummary.avgHours }}</div>
+          <div class="stat-label">Avg Hours</div>
+        </div>
+        <div class="stat-card stat-card--blue">
+          <div class="stat-value">{{ weeklySummary.totalOvertime }}h</div>
+          <div class="stat-label">Total Overtime</div>
+        </div>
+      </div>
+
+      <!-- Export Buttons -->
+      <div *ngIf="weeklySummary" class="export-buttons">
+        <button (click)="exportWeeklyCSV()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button (click)="exportWeeklyJSON()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-code"></i> Export JSON
+        </button>
+        <button (click)="printWeeklySummary()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+
+      <!-- Detailed Table -->
+      <div *ngIf="weeklySummary?.records && weeklySummary.records.length > 0" class="table-wrapper">
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Date</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Status</th>
+              <th>Hours</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let record of weeklySummary.records">
+              <td>{{ record.employee }}</td>
+              <td>{{ record.department }}</td>
+              <td>{{ record.date | date:'mediumDate' }}</td>
+              <td>{{ record.checkIn || '-' }}</td>
+              <td>{{ record.checkOut || '-' }}</td>
+              <td>
+                <span class="badge" [ngClass]="'badge-' + record.status.toLowerCase()">
+                  {{ record.status }}
+                </span>
+              </td>
+              <td>{{ record.hours || 0 }}</td>
+              <td>{{ record.checkInLocation?.address || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY SUMMARY TAB -->
+  <div *ngIf="activeTab === 'monthly' && !loading" class="tab-content">
+    <div class="report-section">
+      <h2>Monthly Attendance Summary</h2>
+
+      <!-- Month Navigation -->
+      <div class="month-nav">
+        <button (click)="previousMonth()" class="btn btn-sm">
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <h3>{{ getMonthName() }}</h3>
+        <button (click)="nextMonth()" class="btn btn-sm">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Summary Stats -->
+      <div *ngIf="monthlySummary" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ monthlySummary.totalWorkDays }}</div>
+          <div class="stat-label">Work Days</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ monthlySummary.totalEmployeeRecords }}</div>
+          <div class="stat-label">Total Records</div>
+        </div>
+        <div class="stat-card stat-card--green">
+          <div class="stat-value">{{ formatPercent(monthlySummary.presentRate) }}%</div>
+          <div class="stat-label">Presence Rate</div>
+        </div>
+        <div class="stat-card stat-card--red">
+          <div class="stat-value">{{ formatPercent(monthlySummary.absentRate) }}%</div>
+          <div class="stat-label">Absence Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ monthlySummary.avgHours }}</div>
+          <div class="stat-label">Avg Hours/Day</div>
+        </div>
+        <div class="stat-card stat-card--blue">
+          <div class="stat-value">{{ monthlySummary.totalOvertime }}h</div>
+          <div class="stat-label">Total Overtime</div>
+        </div>
+      </div>
+
+      <!-- Export Buttons -->
+      <div *ngIf="monthlySummary" class="export-buttons">
+        <button (click)="exportMonthlyCSV()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button (click)="printMonthlySummary()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+
+      <!-- Daily Breakdown Table -->
+      <div *ngIf="monthlySummary?.dailyBreakdown && monthlySummary.dailyBreakdown.length > 0" class="table-wrapper">
+        <h3>Daily Breakdown</h3>
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Present</th>
+              <th>Late</th>
+              <th>Absent</th>
+              <th>Total Records</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let day of monthlySummary.dailyBreakdown">
+              <td>{{ day.date | date:'mediumDate' }}</td>
+              <td class="text-green">{{ day.present }}</td>
+              <td class="text-orange">{{ day.late }}</td>
+              <td class="text-red">{{ day.absent }}</td>
+              <td>{{ day.totalRecords }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABSENTEEISM TREND TAB -->
+  <div *ngIf="activeTab === 'trend' && !loading" class="tab-content">
+    <div class="report-section">
+      <h2>Absenteeism Trend Analysis</h2>
+
+      <!-- Day Range Selector -->
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>Last N Days</label>
+          <select [(ngModel)]="trendDays" class="select-input">
+            <option value="7">7 Days</option>
+            <option value="14">14 Days</option>
+            <option value="30">30 Days</option>
+            <option value="60">60 Days</option>
+            <option value="90">90 Days</option>
+          </select>
+        </div>
+        <button (click)="loadAbsenteeismTrend()" class="btn btn-primary">
+          <i class="fas fa-sync"></i> Load Trend
+        </button>
+      </div>
+
+      <!-- Summary Stats -->
+      <div *ngIf="trendData && trendData.length > 0" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">{{ trendData.length }}</div>
+          <div class="stat-label">Days Analyzed</div>
+        </div>
+        <div class="stat-card stat-card--orange">
+          <div class="stat-value">{{ formatPercent(avgAbsenteeRate()) }}%</div>
+          <div class="stat-label">Avg Absence Rate</div>
+        </div>
+        <div class="stat-card stat-card--red">
+          <div class="stat-value">{{ formatPercent(maxAbsenteeRate()) }}%</div>
+          <div class="stat-label">Peak Absence Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ getTotalAbsences() }}</div>
+          <div class="stat-label">Total Absences</div>
+        </div>
+      </div>
+
+      <!-- Export Buttons -->
+      <div *ngIf="trendData && trendData.length > 0" class="export-buttons">
+        <button (click)="exportTrendCSV()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+      </div>
+
+      <!-- Trend Table -->
+      <div *ngIf="trendData && trendData.length > 0" class="table-wrapper">
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Absent Count</th>
+              <th>Total Records</th>
+              <th>Absence Rate (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let day of trendData">
+              <td>{{ day.date | date:'mediumDate' }}</td>
+              <td class="text-red">{{ day.absentCount }}</td>
+              <td>{{ day.totalRecords }}</td>
+              <td>
+                <span [class.text-red]="day.absentRate > 20"
+                      [class.text-orange]="day.absentRate > 10 && day.absentRate <= 20"
+                      [class.text-green]="day.absentRate <= 10">
+                  {{ formatPercent(day.absentRate) }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLIANCE EXPORT TAB -->
+  <div *ngIf="activeTab === 'compliance' && !loading" class="tab-content">
+    <div class="report-section">
+      <h2>Compliance Export</h2>
+      <p class="text-muted">Generate compliance reports for regulatory submission and audits.</p>
+
+      <!-- Filters -->
+      <div class="filter-group">
+        <div class="filter-item">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="exportStartDate" class="date-input">
+        </div>
+        <div class="filter-item">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="exportEndDate" class="date-input">
+        </div>
+        <div class="filter-item">
+          <label>Department (Optional)</label>
+          <select [(ngModel)]="exportDepartment" class="select-input">
+            <option value="">All Departments</option>
+            <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Status (Optional)</label>
+          <select [(ngModel)]="exportStatus" class="select-input">
+            <option value="">All Status</option>
+            <option value="PRESENT">Present</option>
+            <option value="LATE">Late</option>
+            <option value="ABSENT">Absent</option>
+            <option value="ON_LEAVE">On Leave</option>
+          </select>
+        </div>
+        <button (click)="loadComplianceData()" class="btn btn-primary">
+          <i class="fas fa-sync"></i> Load Data
+        </button>
+      </div>
+
+      <!-- Export Buttons -->
+      <div *ngIf="complianceData && complianceData.length > 0" class="export-buttons">
+        <button (click)="exportComplianceCSV()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button (click)="exportComplianceTSV()" [disabled]="exporting" class="btn btn-secondary">
+          <i class="fas fa-file-excel"></i> Export Excel
+        </button>
+      </div>
+
+      <!-- Data Table -->
+      <div *ngIf="complianceData && complianceData.length > 0" class="table-wrapper">
+        <div class="table-info">
+          <p>Total Records: <strong>{{ complianceData.length }}</strong></p>
+        </div>
+        <table class="reports-table reports-table--compliance">
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Employee Name</th>
+              <th>Department</th>
+              <th>Date</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Status</th>
+              <th>Hours</th>
+              <th>Location</th>
+              <th>Verified</th>
+              <th>Verified By</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let record of complianceData">
+              <td>{{ record.employeeId }}</td>
+              <td>{{ record.employeeName }}</td>
+              <td>{{ record.department }}</td>
+              <td>{{ record.date | date:'mediumDate' }}</td>
+              <td>{{ record.clockIn || '-' }}</td>
+              <td>{{ record.clockOut || '-' }}</td>
+              <td>
+                <span class="badge" [ngClass]="'badge-' + record.status.toLowerCase()">
+                  {{ record.status }}
+                </span>
+              </td>
+              <td>{{ record.hours }}</td>
+              <td>{{ record.location }}</td>
+              <td>{{ record.verified }}</td>
+              <td>{{ record.verifiedBy }}</td>
+              <td>{{ record.notes }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="complianceData && complianceData.length === 0" class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No records found. Adjust filters and try again.</p>
+      </div>
+    </div>
+  </div>
+</div>

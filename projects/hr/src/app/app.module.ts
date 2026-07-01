@@ -152,10 +152,11 @@ import { TodaySummaryComponent } from './ui/view/attendance/employee/employeedas
 import { CheckinCheckoutComponent } from './ui/view/attendance/employee/employeedashboard/checkin-checkout/checkin-checkout.component';
 //import { EmployeesummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/employeesummary.component';
 //import { MonthlysummaryComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlysummary/monthlysummary.component';
-//import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
-//import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
+import { CorrectionrequestComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequest.component';
+import { CorrectionrequestformComponent } from './ui/view/attendance/employee/correctionrequest/correctionrequestform/correctionrequestform.component';
 //import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
-//import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
+import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
+import { AttendanceReportsComponent } from './ui/view/attendance/admin/attendance-reports/attendance-reports.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
 import { ProjectComponent } from './ui/view/project/project.component';
@@ -321,9 +322,10 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     EmployeedashboardComponent,
     TodaySummaryComponent,
     CheckinCheckoutComponent,
-    //CorrectionrequestComponent,
-    //CorrectionrequestformComponent,
-    //AdminCorrectionsComponent,
+    CorrectionrequestComponent,
+    CorrectionrequestformComponent,
+    AdminCorrectionsComponent,
+    AttendanceReportsComponent,
     ProjectComponent,
     ProjectDetailComponent,
     ProjectListComponent,
@@ -415,8 +417,8 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
   ],
   imports: [
     AppHrRoutingModule,
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -476,7 +478,6 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
-    AppHrRoutingModule,
     EmployeeRelativesWidgetComponent,
   ],
   providers: [

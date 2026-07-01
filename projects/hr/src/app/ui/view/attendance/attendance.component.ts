@@ -8,8 +8,8 @@ import { AttendashboardComponent } from './admin/attendashboard/attendashboard.c
 //import { AttendancesummaryComponent } from './admin/attendancesummary/attendancesummary.component';
 import { EmployeedashboardComponent } from './employee/employeedashboard/employeedashboard.component';
 //import { EmployeesummaryComponent } from './employee/employeesummary/employeesummary.component';
-//import { CorrectionrequestComponent } from './employee/correctionrequest/correctionrequest.component';
-//import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corrections.component';
+import { CorrectionrequestComponent } from './employee/correctionrequest/correctionrequest.component';
+import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corrections.component';
 
 @Component({
   selector: 'app-attendance',
@@ -22,15 +22,15 @@ export class AttendanceComponent {
     component: AttendashboardComponent,
     icon: 'fa-solid fa-chart-line',
     /*role: 'ROLE_ADMIN'*/},
-    /*{ name: 'Corrections', 
+    { name: 'Corrections',
       component: AdminCorrectionsComponent,
-    icon: 'fa-solid fa-pen-to-square'},*/
+    icon: 'fa-solid fa-pen-to-square'},
     { name: 'Employee Dashboard', 
       component: EmployeedashboardComponent,
     icon: 'fa-solid fa-user'},
-    /*{ name: 'Correction Requests', 
+    { name: 'Correction Requests',
       component: CorrectionrequestComponent,
-    icon: 'fa-solid fa-file-circle-check'},*/
+    icon: 'fa-solid fa-file-circle-check'},
     //{ name: 'My attendance', component: MyAttendanceComponent },
     //{ name: 'Attendance Sheet', component: AttendanceSheetsComponent },
     //{ name: 'Time Sheet', component: TimeSheetComponent }

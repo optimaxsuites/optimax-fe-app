@@ -10,24 +10,29 @@ export class UserSessionService {
     department: string;
   } | null {
 
-    // Logged-in auth user ID
-    const userId = Number(sessionStorage.getItem('userid'));
+    const raw = this.getStoredValue('userRegData');
+    const data = this.parseUserRegData(raw);
+    const userId = Number(
+      this.getStoredValue('userid') ??
+      data?.id ??
+      data?.userId ??
+      0
+    );
 
     if (!userId) {
-      console.warn('userid not found in sessionStorage');
+      console.warn('userid not found in browser storage');
       return null;
     }
 
-     const raw = sessionStorage.getItem('userRegData');
-
-  if (!raw) {
-    console.warn('userRegData not found');
-    return null;
-  }
-
-  try {
-
-    const data = JSON.parse(raw);
+    if (!data) {
+      console.warn('userRegData not found');
+      return {
+        id: userId,
+        userId,
+        name: this.getStoredValue('fullname') ?? this.getStoredValue('username') ?? '',
+        department: ''
+      };
+    }
 
     // IMPORTANT:
     // This MUST be the HR employee record ID
@@ -40,23 +45,20 @@ export class UserSessionService {
     console.log('Parsed userRegData:', data);
 
     return {
-      id: Number(data.id ?? 0), // temporary fallback
+      id: Number(data.employeeId ?? data.id ?? userId),
       userId: userId,
       name:
         data.fullname ??
         data.fullName ??
-        sessionStorage.getItem('fullname') ??
+        data.name ??
+        this.getStoredValue('fullname') ??
+        this.getStoredValue('username') ??
         '',
       department:
         data.department?.name ??
         data.department ??
         ''
     };
-
-  } catch (err) {
-    console.error('Failed to parse userRegData', err);
-    return null;
-  }
 
     /*const primaryRaw = sessionStorage.getItem('userPrimaryInfoRegData');
 
@@ -110,5 +112,22 @@ export class UserSessionService {
       console.error('Failed to parse userPrimaryInfoRegData', err);
       return null;
     }*/
+  }
+
+  private getStoredValue(key: string): string | null {
+    return sessionStorage.getItem(key) || localStorage.getItem(key);
+  }
+
+  private parseUserRegData(raw: string | null): any | null {
+    if (!raw || raw === 'undefined' || raw === 'null') {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error('Failed to parse userRegData', err);
+      return null;
+    }
   }
 }

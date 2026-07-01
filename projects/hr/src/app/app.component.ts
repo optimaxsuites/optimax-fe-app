@@ -86,12 +86,28 @@ export class AppHrComponent {
   }
 
   loadInitParam(data: any) {
-    sessionStorage.setItem('role', data.roles);
-    sessionStorage.setItem('username', data.username);
-    sessionStorage.setItem('fullname', data.fullname || data.fullName || data.name || data.username);
-    sessionStorage.setItem('email', data.email);
-    sessionStorage.setItem('userid', data.id);
-    
+    const role = data.roles;
+    const username = data.username;
+    const fullname = data.fullname || data.fullName || data.name || data.username;
+    const email = data.email;
+    const userId = data.id ?? data.userId;
+
+    sessionStorage.setItem('role', role);
+    sessionStorage.setItem('username', username);
+    sessionStorage.setItem('fullname', fullname);
+    sessionStorage.setItem('email', email);
+    sessionStorage.setItem('userid', userId);
+
+    try {
+      localStorage.setItem('role', role);
+      localStorage.setItem('username', username);
+      localStorage.setItem('fullname', fullname);
+      localStorage.setItem('email', email);
+      localStorage.setItem('userid', userId);
+    } catch (e) {
+      console.warn('localStorage quota exceeded or disabled, proceeding with sessionStorage only', e);
+    }
+
     const token = this.extractToken(data.accessToken);
 
     if (!token) {
@@ -100,12 +116,18 @@ export class AppHrComponent {
 
     sessionStorage.setItem('Token', token);
     sessionStorage.setItem('token', token);
-    localStorage.setItem('Token', token);
-    localStorage.setItem('token', token);
-    localStorage.setItem('Token2', token);
     sessionStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('accessToken2', data.accessToken);
     sessionStorage.setItem('userRegData', JSON.stringify(data));
+
+    try {
+      localStorage.setItem('Token', token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('Token2', token);
+      localStorage.setItem('accessToken2', data.accessToken);
+      localStorage.setItem('userRegData', JSON.stringify(data));
+    } catch (e) {
+      console.warn('localStorage quota exceeded or disabled, proceeding with sessionStorage only', e);
+    }
   }
 
   private extractToken(accessToken: unknown): string {

@@ -1,0 +1,62 @@
+[
+  {
+    "file": "src/app/ui/service/attendance/attendancetable.service.ts",
+    "line": 525,
+    "summary": "Record lookup changed from employee NAME to employee ID",
+    "old_code": "let record = data.find(r => r.employee === employeeName && r.date === today);",
+    "new_code": "let record = data.find(r => r.employeeId === employeeId && r.date === today);",
+    "invariant": "Must locate the correct record for the current employee on the current day. Name-based lookup was vulnerable to name duplicates; ID-based lookup is more reliable.",
+    "status": "FIXED - Correctly migrated to ID-based lookup which is more resilient",
+    "failure_scenario": "OLD: Two employees with same name would collide. NEW: ID-based lookup eliminates this collision risk. No failure."
+  },
+  {
+    "file": "src/app/ui/service/attendance/attendancetable.service.ts",
+    "line": 672,
+    "summary": "OVERTIME status determination moved from simple time comparison to comprehensive shift metrics",
+    "old_code": "const closing = this.convertToDateTime(officeHours.closingTime); ... if (now > closing) { record.status = 'OVERTIME'; }",
+    "new_code": "const metrics = computeShiftTrackingMetrics(...); if (metrics.isOvertime) { record.status = 'OVERTIME'; }",
+    "invariant": "Must correctly identify when an employee has worked beyond their scheduled shift end time. Old code only checked if clock-out time > closing time, didn't account for otThresholdMinutes.",
+    "status": "FIXED - New code applies 30-minute threshold via computeShiftTrackingMetrics()",
+    "failure_scenario": "OLD: Employee clocking out 5 minutes late would be marked OVERTIME. NEW: Only marked OVERTIME if > 30 minutes past shift end (otThresholdMinutes). This is STRICTER and more reasonable."
+  },
+  {
+    "file": "src/app/ui/service/attendance/attendancetable.service.ts",
+    "line": 563,
+    "summary": "Location null-check removed from distance calculation conditional",
+    "old_code": "if (location && officeHours.companyLatitude && officeHours.companyLongitude) { distanceFromOffice = this.calculateDistance(...); }",
+    "new_code": "if (/*location &&*/ officeHours.companyLatitude && officeHours.companyLongitude) { distanceFromOffice = this.calculateDistance(...); }",
+    "invariant": "Must not attempt to access location.lat and location.lng when location is null/undefined.",
+    "status": "SAFE - Early guard added at line 554-559 ensures location is not null before this point",
+    "failure_scenario": "If code at line 554-559 is removed or bypasssed, accessing location.lat/lng at line 565-566 would throw TypeError. Currently protected by early return."
+  },
+  {
+    "file": "src/app/ui/view/attendance/admin/admin-corrections/admin-corrections.component.html",
+    "line": 0,
+    "summary": "Template file deleted without proper replacement",
+    "old_code": "<div class=\"admin-corrections-card\">... [full template from commit 023e43c69]",
+    "new_code": "[FILE MISSING - component.ts references templateUrl: './admin-corrections.component.html' at line 8]",
+    "invariant": "Angular component must have a template file to render. Referencing non-existent template causes runtime error.",
+    "status": "BROKEN - Component declared with template reference but HTML file does not exist",
+    "failure_scenario": "AdminCorrectionsComponent will fail at runtime with 'Template file not found' error. The correction requests UI is non-functional."
+  },
+  {
+    "file": "src/app/ui/service/attendance/attendancetable.service.ts",
+    "line": 581,
+    "summary": "Grace time calculation changed from officeHours to workingWindow",
+    "old_code": "const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);",
+    "new_code": "const graceTime = this.convertToDateTime(workingWindow.latenessGracePeriod);",
+    "invariant": "Must use the correct grace period for lateness detection. Must respect employee's assigned shift grace period, not just global office hours.",
+    "status": "IMPROVED - Now respects shift-specific grace periods when shifts are assigned",
+    "failure_scenario": "OLD: All employees used global grace period even if on custom shifts. NEW: Shift-assigned employees get their shift's grace period. More accurate."
+  },
+  {
+    "file": "src/app/ui/service/attendance/attendancetable.service.ts",
+    "line": 594,
+    "summary": "Status determination moved to dedicated applyTrackingMetrics() method called after location validation",
+    "old_code": "inline status logic after each action; missing comprehensive checks for absent/late/early-departure/undertime",
+    "new_code": "applyTrackingMetrics(record, workingWindow, today) called after all record updates; computes all metrics holistically",
+    "invariant": "Must correctly classify attendance status (ABSENT/PRESENT/LATE/OVERTIME/UNDERTIME) based on comprehensive shift comparison.",
+    "status": "FIXED - New method computes all metrics from shift-tracking.util which handles edge cases (midnight-crossing shifts, grace periods, thresholds)",
+    "failure_scenario": "OLD: Logic scattered, didn't handle midnight-crossing shifts or multiple status conditions. NEW: Centralized, handles all cases."
+  }
+]

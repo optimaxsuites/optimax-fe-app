@@ -31,6 +31,7 @@ export class TodaySummaryComponent implements OnInit {
 
     if(!this.currentUser?.userId) {
       console.error('No logged in user');
+      return;
     }
 
     this.attendanceService.resolveHrEmployeeId(this.currentUser.userId).subscribe(result => {
