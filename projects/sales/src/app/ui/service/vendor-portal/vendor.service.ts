@@ -5,7 +5,7 @@ import {
   Rfq, Quotation, QuotationItem, Lpo,
   Invoice, Payment, VendorDocument,
   VendorStats, LpoStats, FinanceStats, DocumentStats, PerformanceStats,
-  ItemAvailability, MonthlyMetric, ClientPerformance,VendorProfile, DocumentTemplate, TemplateDocType, 
+  ItemAvailability, MonthlyMetric, ClientPerformance,VendorProfile, DocumentTemplate, TemplateDocType, LogoPosition, TemplateDensity,      
 } from '../../domain/vendor-portal/vendor.dto';
 
 @Injectable({ providedIn: 'root' })
@@ -22,11 +22,13 @@ export class VendorService {
   readonly lpos$       = this.lpos$$.asObservable();
   readonly invoices$   = this.invoices$$.asObservable();
   readonly documents$  = this.documents$$.asObservable();
-  private profile$$  = new BehaviorSubject<VendorProfile>(this.seedProfile());
+
+private profile$$  = new BehaviorSubject<VendorProfile>(this.seedProfile());
 private templates$$ = new BehaviorSubject<DocumentTemplate[]>(this.seedTemplates());
 
 readonly profile$   = this.profile$$.asObservable();
 readonly templates$ = this.templates$$.asObservable();
+
 
   // ── RFQ ──────────────────────────────────────────────────────────────────────
   getRfqs(): Observable<Rfq[]> {
@@ -147,6 +149,7 @@ readonly templates$ = this.templates$$.asObservable();
   deleteDocument(id: string): void {
     this.documents$$.next(this.documents$$.getValue().filter(d => d.id !== id));
   }
+
    // ── Vendor Profile ─────────────────────────────────────────────────────────────
   getProfile(): Observable<VendorProfile> {
     return this.profile$;
@@ -352,7 +355,7 @@ readonly templates$ = this.templates$$.asObservable();
       { id: 'doc-007', name: 'Company Profile', category: 'other', fileUrl: '#', fileName: 'TechSupply_Company_Profile.pdf', fileSize: '5.6 MB', fileType: 'pdf', uploadedDate: new Date('2026-04-12'), status: 'pending_review', isRequired: false },
     ];
   }
-   private seedProfile(): VendorProfile {
+ private seedProfile(): VendorProfile {
     return {
       id:                   'vendor-001',
       companyName:          'Apex Industrial Supplies Ltd',
@@ -390,7 +393,9 @@ readonly templates$ = this.templates$$.asObservable();
         name:            'Default',
         docType:         'invoice',
         isActive:        true,
+        logoPosition:    'left',
         accentColor:     '#224957',
+        density:         'detailed',
         footerText:      'Thank you for your business. Payment due within terms stated above.',
         showBankDetails: true,
         notesDefault:    'All amounts in NGN unless otherwise stated.',
@@ -401,7 +406,9 @@ readonly templates$ = this.templates$$.asObservable();
         name:            'Default',
         docType:         'quotation',
         isActive:        true,
+        logoPosition:    'left',
         accentColor:     '#224957',
+        density:         'simple',
         footerText:      'This quotation is valid for 14 days from the date of issue.',
         showBankDetails: false,
         notesDefault:    'Prices are subject to change without prior notice.',

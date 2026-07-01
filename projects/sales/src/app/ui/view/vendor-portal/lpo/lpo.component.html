@@ -12,7 +12,8 @@
   <!-- ── Stats cards ─────────────────────────────────────── -->
   <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('pending')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='pending'" [class.ring-[#224957]]="lpoFilter==='pending'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending Review</span>
         <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -24,9 +25,10 @@
         <ng-container *ngIf="stats.unread > 0"><strong>{{ stats.unread }} unread</strong> — action needed</ng-container>
         <ng-container *ngIf="stats.unread === 0">All reviewed</ng-container>
       </p>
-    </div>
+    </button>
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='accepted'" [class.ring-[#224957]]="lpoFilter==='accepted'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Accepted</span>
         <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
@@ -35,9 +37,10 @@
       </div>
       <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.accepted }}</div>
       <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.fulfilled }}</strong> already fulfilled</p>
-    </div>
+    </button>
 
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('rejected')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='rejected'" [class.ring-[#224957]]="lpoFilter==='rejected'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Rejected</span>
         <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
@@ -46,7 +49,7 @@
       </div>
       <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.rejected }}</div>
       <p class="text-xs text-[#5a7380]">of {{ stats.total }} total LPOs</p>
-    </div>
+    </button>
 
     <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
       <div class="flex items-center justify-between mb-3">
@@ -88,6 +91,18 @@
 
     <div class="p-4">
       <!-- 5 columns → 5 <td>s -->
+
+      <!-- Active filter chip -->
+      <div *ngIf="lpoFilter!=='all'" class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          {{ lpoFilter | titlecase }}
+          <button (click)="clearFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredLpos.length }} result{{ filteredLpos.length !== 1 ? 's' : '' }}</span>
+      </div>
       <app-table
         [columns]="lpoColumns"
         [rows]="lpos"

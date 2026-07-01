@@ -9,7 +9,9 @@ import {
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
-type ActiveTable = 'lpos' | 'invoices';
+type ActiveTable   = 'lpos' | 'invoices';
+type LpoFilter     = 'all' | 'pending' | 'accepted' | 'rejected' | 'fulfilled';
+type InvoiceFilter = 'all' | 'draft' | 'submitted' | 'approved' | 'paid' | 'overdue' | 'disputed';
 
 @Component({
   selector: 'app-finance',
@@ -28,6 +30,29 @@ export class FinanceComponent implements OnInit, OnDestroy {
 
   // ── Table toggle ──────────────────────────────────────────────────────────────
   activeTable: ActiveTable = 'lpos';
+
+  // ── Card-driven filters ───────────────────────────────────────────────────────
+  lpoFilter:     LpoFilter     = 'all';
+  invoiceFilter: InvoiceFilter = 'all';
+
+  filterCard(table: ActiveTable, lpoFilter?: LpoFilter, invoiceFilter?: InvoiceFilter): void {
+    this.activeTable = table;
+    if (lpoFilter     !== undefined) { this.lpoFilter     = lpoFilter; }
+    if (invoiceFilter !== undefined) { this.invoiceFilter = invoiceFilter; }
+  }
+
+  clearLpoFilter():     void { this.lpoFilter     = 'all'; }
+  clearInvoiceFilter(): void { this.invoiceFilter = 'all'; }
+
+  get filteredLpos(): Lpo[] {
+    if (this.lpoFilter === 'all') return this.lpos;
+    return this.lpos.filter(l => l.status === this.lpoFilter);
+  }
+
+  get filteredInvoices(): Invoice[] {
+    if (this.invoiceFilter === 'all') return this.invoices;
+    return this.invoices.filter(i => i.status === this.invoiceFilter);
+  }
 
   // ── LPO side panel ────────────────────────────────────────────────────────────
   showLpoPanel = false;

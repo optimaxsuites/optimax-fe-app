@@ -1,0 +1,311 @@
+<div class="quotations-dashboard">
+  <div class="requests-wrapper">
+
+    <!-- Header - Premium #184440 Card -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <div class="header-badge">
+          <span class="pulse-dot"></span>
+          Live Dashboard
+        </div>
+        <h1 class="page-title">Quotation Review Center</h1>
+        <p class="page-subtitle">Manage, track, and review all vendor quotations at a glance</p>
+      </div>
+      <div class="header-actions">
+        <div class="date-range-selector">
+          <button class="range-btn" [class.active]="dateRange === 'week'" (click)="changeDateRange('week')">
+            <i class="fas fa-calendar-week"></i> Week
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'month'" (click)="changeDateRange('month')">
+            <i class="fas fa-calendar-alt"></i> Month
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'quarter'" (click)="changeDateRange('quarter')">
+            <i class="fas fa-chart-line"></i> Quarter
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'year'" (click)="changeDateRange('year')">
+            <i class="fas fa-calendar"></i> Year
+          </button>
+        </div>
+        <div class="header-right">
+          <a routerLink="/commerce/requests" class="btn-secondary-action">
+            View Requests
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card-total" (click)="onStatusFilter('ALL')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper total">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Quotations</span>
+            <span class="stat-value">{{ stats.total }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 5.4%
+              </span>
+              <span class="stat-period">vs last week</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-progress" (click)="onStatusFilter('PENDING')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper progress">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Pending Response</span>
+            <span class="stat-value">{{ stats.pending }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 1.2%
+              </span>
+              <span class="stat-period">awaiting vendor</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-submitted" (click)="onStatusFilter('SUBMITTED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper submitted">
+            <i class="fas fa-paper-plane"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Awaiting Review</span>
+            <span class="stat-value">{{ stats.submitted }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 8.5%
+              </span>
+              <span class="stat-period">submitted</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-delivered" (click)="onStatusFilter('ACCEPTED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper delivered">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Accepted</span>
+            <span class="stat-value">{{ stats.accepted }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 12.3%
+              </span>
+              <span class="stat-period">completed LPO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-cancelled" (click)="onStatusFilter('DECLINED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper cancelled">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Declined</span>
+            <span class="stat-value">{{ stats.declined }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend negative">
+                <i class="fas fa-arrow-down"></i> 2.1%
+              </span>
+              <span class="stat-period">rejected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-expired" (click)="onStatusFilter('EXPIRED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper expired">
+            <i class="fas fa-hourglass-end"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Expired</span>
+            <span class="stat-value">{{ stats.expired }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend negative">
+                <i class="fas fa-arrow-down"></i> 0.5%
+              </span>
+              <span class="stat-period">outdated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <div class="filter-header">
+        <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem; color: #184440;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+        <h3 class="filter-title" style="font-weight: 600; color: #4a5a6e; margin: 0; font-size: 1rem;">Filter Quotations</h3>
+      </div>
+      
+      <div class="filter-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; margin-bottom: 1rem;">
+        <div class="filter-field">
+          <label class="filter-label" style="display: block; font-size: 0.75rem; font-weight: 600; color: #4a5a6e; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Status</label>
+          <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="filter-select" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #dce3ec; border-radius: 10px; font-size: 0.875rem; background: white; color: #0f1a2e;">
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label" style="display: block; font-size: 0.75rem; font-weight: 600; color: #4a5a6e; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Search</label>
+          <input type="text" [(ngModel)]="searchTerm" (input)="applyFilters()" class="filter-input" placeholder="Search by vendor or RFQ..." style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #dce3ec; border-radius: 10px; font-size: 0.875rem; background: white; color: #0f1a2e;">
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label" style="display: block; font-size: 0.75rem; font-weight: 600; color: #4a5a6e; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">From Date</label>
+          <input type="date" [(ngModel)]="dateFrom" (change)="applyFilters()" class="filter-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #dce3ec; border-radius: 10px; font-size: 0.875rem; background: white; color: #0f1a2e;">
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label" style="display: block; font-size: 0.75rem; font-weight: 600; color: #4a5a6e; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">To Date</label>
+          <input type="date" [(ngModel)]="dateTo" (change)="applyFilters()" class="filter-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #dce3ec; border-radius: 10px; font-size: 0.875rem; background: white; color: #0f1a2e;">
+        </div>
+      </div>
+      
+      <div class="filter-actions" style="display: flex; justify-content: flex-end;">
+        <button (click)="resetFilters()" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: #4a5a6e; background: transparent; border: 1px solid #dce3ec; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Quotations Table -->
+    <div class="table-container">
+      <div class="table-wrapper" *ngIf="!isLoading">
+        <table class="advance-loans-table" *ngIf="paginatedQuotations.length > 0">
+          <thead>
+            <tr>
+              <th style="width: 3.5rem;" class="text-center">
+                <input type="checkbox" [checked]="isAllSelected()" [indeterminate]="isSomeSelected() && !isAllSelected()" (change)="toggleSelectAll($event)">
+              </th>
+              <th class="sn-header text-center" style="width: 4rem;">S/N</th>
+              <th class="sortable" (click)="setSort('rfqId')">RFQ ID <i class="fas" [ngClass]="getSortIcon('rfqId')"></i></th>
+              <th class="sortable" (click)="setSort('vendorName')">Vendor <i class="fas" [ngClass]="getSortIcon('vendorName')"></i></th>
+              <th class="sortable text-right" (click)="setSort('totalAmount')">Amount <i class="fas" [ngClass]="getSortIcon('totalAmount')"></i></th>
+              <th class="sortable" (click)="setSort('submittedAt')">Submitted <i class="fas" [ngClass]="getSortIcon('submittedAt')"></i></th>
+              <th class="sortable text-center" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+              <th class="sortable" (click)="setSort('expiresAt')">Expires In <i class="fas" [ngClass]="getSortIcon('expiresAt')"></i></th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let quote of paginatedQuotations; let i = index">
+              <td class="text-center">
+                <input type="checkbox" [checked]="isSelected(quote.id)" (change)="toggleSelection(quote.id, $event)" (click)="$event.stopPropagation()">
+              </td>
+              <td class="sn-cell text-center">{{ currentPage * pageSize + i + 1 }}</td>
+              <td class="loan-id-cell clickable" (click)="viewQuotationDetail(quote.id)" style="cursor: pointer; color: #38bdf8; font-weight: 600;">
+                {{ quote.rfqId }}
+              </td>
+              <td class="employee-name-cell clickable" (click)="viewQuotationDetail(quote.id)" style="cursor: pointer;">
+                <div class="vendor-info">
+                  <span class="vendor-name" style="font-weight: 600;">{{ quote.vendorName }}</span>
+                  <span class="vendor-code" style="font-size: 0.75rem; color: #6b8a97; display: block;">{{ quote.vendorCode }}</span>
+                </div>
+              </td>
+              <td class="text-right font-semibold text-teal-600">
+                <span *ngIf="quote.totalAmount > 0">
+                  {{ formatCurrency(quote.totalAmount, quote.currency) }}
+                </span>
+                <span class="amount-placeholder" *ngIf="quote.totalAmount === 0" style="color: #9ca3af;">—</span>
+              </td>
+              <td>{{ formatDate(quote.submittedAt) }}</td>
+              <td class="text-center">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(quote.status)">
+                  {{ getStatusLabel(quote.status) }}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="quote.status === 'PENDING' || quote.status === 'SUBMITTED'">
+                  <span class="days-remaining" [class.expired]="isExpired(quote.expiresAt)">
+                    {{ getDaysRemaining(quote.expiresAt) }} days
+                  </span>
+                </span>
+                <span *ngIf="quote.status === 'EXPIRED'" class="text-muted" style="color: #6b7280; font-size: 0.85rem;">Expired</span>
+                <span *ngIf="quote.status === 'ACCEPTED'" class="text-success" style="color: #059669; font-weight: 500;">Completed</span>
+                <span *ngIf="quote.status === 'DECLINED'" class="text-muted" style="color: #6b7280; font-size: 0.85rem;">N/A</span>
+              </td>
+              <td class="actions-col justify-center">
+                <button 
+                  class="action-btn view-btn" 
+                  (click)="viewQuotationDetail(quote.id)"
+                  title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="empty-state" *ngIf="paginatedQuotations.length === 0">
+          <i class="fas fa-inbox" style="font-size: 3rem; color: #dce3ec; margin-bottom: 1rem; display: block;"></i>
+          <p>No quotations found matching your filters.</p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="paginatedQuotations.length > 0 && !isLoading">
+        <div class="pagination-info" style="font-size: 0.875rem; color: #6b7280;">
+          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} quotations
+        </div>
+        
+        <div class="pagination-controls" style="display: flex; align-items: center; gap: 1rem;">
+          <select class="pagination-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)" style="padding: 0.375rem 0.5rem; font-size: 0.875rem; border: 1px solid #dce3ec; border-radius: 8px; background: white; color: #0f1a2e;">
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+            <option [value]="100">100 per page</option>
+          </select>
+          
+          <div class="pagination-buttons" style="display: flex; gap: 0.25rem;">
+            <button class="pagination-nav" (click)="onPageChange(0)" [disabled]="currentPage === 0" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; border: none; background: transparent; cursor: pointer; color: #4a5a6e;">
+              <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; border: none; background: transparent; cursor: pointer; color: #4a5a6e;">
+              <i class="fas fa-angle-left"></i>
+            </button>
+            <button *ngFor="let page of getPageNumbers()" 
+                    class="pagination-page" 
+                    [class.active]="page === currentPage"
+                    (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; border: none; background: transparent; cursor: pointer; color: #4a5a6e;">
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; border: none; background: transparent; cursor: pointer; color: #4a5a6e;">
+              <i class="fas fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading-state" *ngIf="isLoading" style="padding: 4rem; text-align: center; color: #6b7280;">
+        <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f0f4f4; border-top-color: #184440; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem auto;"></div>
+        <p>Loading quotations...</p>
+      </div>
+    </div>
+  </div>
+</div>
