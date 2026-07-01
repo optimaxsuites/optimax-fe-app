@@ -44,6 +44,8 @@ testem.log
 Thumbs.db
 .vercel
 
-# Design docs / mockups / assessments (managed in optimax-docs/)
-accounting-assessment.html
-*.assessment.html
+# Design docs / mockups / assessments / PRDs (managed in optimax-docs/)
+*assessment*.html
+*mockup*.html
+*-prd.html
+*.prd.html
