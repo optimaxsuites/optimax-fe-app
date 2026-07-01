@@ -25,7 +25,7 @@ interface ExtendedProcurementRequest extends ProcurementRequest {
 export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   Math = Math;
 
-  readonly newRequestLink = '/commerce/requests/new';
+  readonly newRequestLink = '/admin/sales/commerce/requests/new';
   readonly draftsLink = '/admin/sales/commerce/requests/drafts/' + uuidV4();
   readonly multiOrderLink = '/admin/sales/commerce/orders/new/' + uuidV4();
   tableColumns: TableColumn<any>[] = [];
@@ -297,7 +297,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        filter(e => e.urlAfterRedirects === '/commerce/requests'),
+        filter(e => e.urlAfterRedirects === '/admin/sales/commerce/requests'),
         takeUntil(this.destroy$)
       )
       .subscribe(() => this.loadRequests());
@@ -533,15 +533,16 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
     if (event.actionId === 'view') {
       if (event.row._rowType === 'ORDER') {
-        this.router.navigate(['/commerce/orders', event.row.id]);
+        this.router.navigate(['/admin/sales/commerce/orders', event.row.id]);
       } else {
-        this.router.navigate(['/commerce/requests', event.row.id]);
+        this.router.navigate(['/admin/sales/commerce/requests', event.row.id]);
       }
       return;
     }
     if (event.row._rowType === 'ORDER') return;
     if (event.actionId === 'edit') {
-      this.router.navigate(['/commerce/requests', event.row.id, 'edit']);
+      const typePath = event.row.procurementType?.toLowerCase() === 'service' ? 'service' : 'product';
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, event.row.id]);
       return;
     }
     if (event.actionId === 'cancel') {
@@ -550,7 +551,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   openViewModal(request: ProcurementRequest): void {
-    this.router.navigate(['/commerce/requests', request.id]);
+    this.router.navigate(['/admin/sales/commerce/requests', request.id]);
   }
 
 
@@ -639,8 +640,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   openNewRequest(): void {
-    this.router.navigate([this.newRequestLink]);
-  }
+  this.router.navigate(['/admin/sales/commerce/requests/new']);
+}
 
   viewAllRequests(): void {
     this.router.navigate(['/admin/sales/commerce/requests']);
@@ -658,7 +659,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   viewRequest(requestId: string): void {
-    this.router.navigate(['/commerce/requests', requestId]);
+    this.router.navigate(['/admin/sales/commerce/requests', requestId]);
   }
 
   openCustomizationModal(): void {

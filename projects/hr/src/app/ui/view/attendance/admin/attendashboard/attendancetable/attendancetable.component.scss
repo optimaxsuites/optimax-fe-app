@@ -47,15 +47,34 @@ tbody tr {
 }
 
 .status {
-  padding: 0.2rem 0.6rem;
-  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
+  display: inline-block;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 
-  &.present { background: #d1fae5; color: #065f46; }
-  &.absent { background: #fee2e2; color: #7f1d1d; }
-  &.late { background: #fef3c7; color: #92400e; }
-  &.on_leave { background: #e0e7ff; color: #3730a3; }
+  &.present {
+    background: #4caf50;
+    color: #ffffff;
+  }
+
+  &.absent {
+    background: #f44336;
+    color: #ffffff;
+  }
+
+  &.late {
+    background: #ff9800;
+    color: #ffffff;
+  }
+
+  &.on_leave {
+    background: #2196f3;
+    color: #ffffff;
+  }
 }
 
 .actions {

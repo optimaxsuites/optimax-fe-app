@@ -1,13 +1,28 @@
 <div class="modal-backdrop" (click)="cancel()"></div>
 
 <div class="modal-card">
-
   <div class="modal-header">
     <h3>New Correction Request</h3>
-    <button class="close-btn" (click)="cancel()">✕</button>
+    <button type="button" class="close-btn" (click)="cancel()">x</button>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Employee ID</label>
+        <input type="text" formControlName="employeeId" />
+      </div>
+
+      <div class="form-group">
+        <label>Employee Name</label>
+        <input type="text" formControlName="employeeName" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Department</label>
+      <input type="text" formControlName="department" />
+    </div>
 
     <div class="form-group">
       <label>Date</label>
@@ -24,9 +39,34 @@
       </select>
     </div>
 
+    <div class="form-row">
+      <div class="form-group">
+        <label>Requested Clock In</label>
+        <input type="time" formControlName="requestedClockIn" />
+      </div>
+
+      <div class="form-group">
+        <label>Requested Clock Out</label>
+        <input type="time" formControlName="requestedClockOut" />
+      </div>
+    </div>
+
     <div class="form-group">
       <label>Description</label>
-      <textarea rows="3" formControlName="description"></textarea>
+      <textarea
+        rows="3"
+        formControlName="description"
+        placeholder="Explain the missing punch or incorrect time">
+      </textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Evidence</label>
+      <textarea
+        rows="3"
+        formControlName="evidence"
+        placeholder="Add supporting details, document references, or manager notes">
+      </textarea>
     </div>
 
     <div class="actions">
@@ -35,7 +75,5 @@
         Submit Request
       </button>
     </div>
-
   </form>
-
 </div>

@@ -17,6 +17,9 @@ export class AuthInterceptor implements HttpInterceptor {
   
   // List of endpoints that should always have authentication
   private readonly protectedEndpoints = [
+    '/hr/corrections',
+    '/hr/attendance',
+    '/hr/officeHours',
     '/accounting/events',
     '/hr/advanceLoans',
     '/cooperativeLoans'

@@ -1,5 +1,5 @@
 <div class="rfq-detail-container" *ngIf="!isLoading && request">
-  <div class="detail-wrapper">
+  <div class="detail-wrapper" id="rfq-detail-sheet">
 
     <!-- Header Section -->
     <div class="detail-header">
@@ -36,6 +36,13 @@
         </div>
       </div>
       <div class="action-bar-right">
+        <button class="btn-action download" (click)="downloadPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading" [class.fa-file-pdf]="!isDownloading"></i>
+          {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+        </button>
+        <button *ngIf="request.status !== 'CANCELLED' && canEdit(request)" (click)="goEdit()" class="btn-action edit-btn-bar">
+          <i class="fas fa-edit"></i> Edit Request
+        </button>
         <button *ngIf="request.status !== 'CANCELLED'" (click)="triggerCancel()" class="btn-action decline">
           <i class="fas fa-ban"></i> Cancel Request
         </button>
@@ -90,7 +97,21 @@
                 </thead>
                 <tbody>
                   <tr *ngFor="let item of request.items">
-                    <td class="product-name">{{ item.name }}</td>
+                    <td class="product-name">
+                      <div>{{ item.name }}</div>
+                      <div class="item-attachments-preview" *ngIf="item.attachments && item.attachments.length > 0">
+                        <div class="item-attachment-thumb" *ngFor="let att of item.attachments">
+                          <img 
+                            *ngIf="att.type?.includes('image') && att.fileUrl" 
+                            [src]="att.fileUrl" 
+                            class="item-img-preview" 
+                            alt="attachment">
+                          <span *ngIf="!att.type?.includes('image')" class="item-doc-link">
+                            <i class="fas fa-file-alt"></i> {{ att.fileName }}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
                     <td class="description">{{ item.description }}</td>
                     <td class="text-right font-semibold">{{ item.quantity }}</td>
                     <td class="text-right">{{ item.unit }}</td>

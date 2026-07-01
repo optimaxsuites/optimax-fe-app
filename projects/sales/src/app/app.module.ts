@@ -78,6 +78,7 @@ import { ProcurementTypeSelectorComponent } from './ui/view/request-management/p
 import { RfqTemplateSelectorComponent } from './ui/view/request-management/rfq-template-selector/rfq-template-selector.component';
 import { VendorSelectionComponent } from './ui/view/request-management/vendor-selection/vendor-selection.component';
 import { RequestForQuotationDetailComponent } from './ui/view/request-management/request-for-quotation-detail/request-for-quotation-detail.component';
+import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
 
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
@@ -101,6 +102,8 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
 
 import { VendorRegistrationComponent } from './ui/view/vendor-portal/vendor-registration/vendor-registration.component';
 import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
+import {VendorDashboardComponent} from './ui/view/vendor-portal/vendor-dashboard/vendor-dashboard.component';
+import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/vendor-profile.component';
 
 
 @NgModule({
@@ -117,6 +120,7 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     RfqTemplateSelectorComponent,
     VendorSelectionComponent,
     RequestForQuotationDetailComponent,
+    RfqPreviewComponent,
     DashboardComponent,
     FinanceComponent,
     LpoComponent,
@@ -129,6 +133,8 @@ import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/templ
     DocumentsComponent,
 
     VendorRegistrationComponent,
+    VendorDashboardComponent,
+    VendorProfileComponent,
   ],
   imports: [
     // BrowserModule,

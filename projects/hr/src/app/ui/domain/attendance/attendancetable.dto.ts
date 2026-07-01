@@ -1,3 +1,5 @@
+import { ShiftTrackingMetrics } from './shift-tracking-metrics.dto';
+
 export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
   employeeId?: number;
@@ -33,4 +35,5 @@ export interface AttendanceTableRecord {
   appliedExpectedStart?: string;
   appliedExpectedEnd?: string;
   appliedShiftName?: string;
+  shiftMetrics?: ShiftTrackingMetrics;
 }

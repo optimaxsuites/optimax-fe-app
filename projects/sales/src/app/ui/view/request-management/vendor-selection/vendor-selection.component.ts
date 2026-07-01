@@ -45,17 +45,29 @@ export class VendorSelectionComponent implements OnInit {
 
   loadVendorSuggestions(): void {
     this.isLoading = true;
-    // If we have a requestId, get real suggestions
     if (this.requestId) {
-      this.procurementService.getVendorSuggestions(this.requestId).subscribe({
-        next: (suggestions) => {
-          this.vendors = suggestions;
-          // Auto-select top recommended vendors (up to 3)
-          const recommended = this.vendors
-            .filter(v => v.isRecommended)
-            .slice(0, 3);
-          recommended.forEach(v => this.selectedVendors.add(v.vendorId));
-          this.isLoading = false;
+      this.procurementService.getRequest(this.requestId).subscribe({
+        next: (req) => {
+          this.procurementService.getVendorSuggestions(this.requestId).subscribe({
+            next: (suggestions) => {
+              this.vendors = suggestions;
+              this.selectedVendors.clear();
+              if (req && req.selectedVendors && req.selectedVendors.length > 0) {
+                req.selectedVendors.forEach(vId => this.selectedVendors.add(vId));
+              } else {
+                // Auto-select top recommended vendors (up to 3)
+                const recommended = this.vendors
+                  .filter(v => v.isRecommended)
+                  .slice(0, 3);
+                recommended.forEach(v => this.selectedVendors.add(v.vendorId));
+              }
+              this.isLoading = false;
+            },
+            error: () => {
+              this.loadMockVendors(req);
+              this.isLoading = false;
+            }
+          });
         },
         error: () => {
           this.loadMockVendors();
@@ -68,7 +80,7 @@ export class VendorSelectionComponent implements OnInit {
     }
   }
 
-  loadMockVendors(): void {
+  loadMockVendors(req?: any): void {
     this.vendors = [
       {
         vendorId: 'v1',
@@ -150,9 +162,14 @@ export class VendorSelectionComponent implements OnInit {
       }
     ];
 
-    // Auto-select top 3 recommended
-    const recommended = this.vendors.filter(v => v.isRecommended).slice(0, 3);
-    recommended.forEach(v => this.selectedVendors.add(v.vendorId));
+    this.selectedVendors.clear();
+    if (req && req.selectedVendors && req.selectedVendors.length > 0) {
+      req.selectedVendors.forEach((vId: string) => this.selectedVendors.add(vId));
+    } else {
+      // Auto-select top 3 recommended
+      const recommended = this.vendors.filter(v => v.isRecommended).slice(0, 3);
+      recommended.forEach(v => this.selectedVendors.add(v.vendorId));
+    }
   }
 
   toggleVendor(vendorId: string): void {
@@ -207,10 +224,10 @@ export class VendorSelectionComponent implements OnInit {
       const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
       if (uuid) {
         this.procurementService.updateRequest(uuid, {
-          selectedVendors: Array.from(this.selectedVendors),
-          status: 'VENDORS_QUOTING'
+          selectedVendors: Array.from(this.selectedVendors)
         }).subscribe(() => {
-          this.router.navigate(['/commerce/requests']);
+          const typePath = this.router.url.includes('/service') ? 'service' : 'product';
+          this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'preview']);
         });
       }
     }
@@ -220,9 +237,9 @@ export class VendorSelectionComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid') || this.requestId;
     if (uuid) {
       const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-      this.router.navigate(['/commerce/requests/new', typePath, uuid, 'template']);
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'template']);
     } else {
-      this.router.navigate(['/commerce/requests/new']);
+      this.router.navigate(['/admin/sales/commerce/requests/new']);
     }
   }
 

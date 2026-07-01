@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { 
   ProcurementRequest, 
@@ -70,23 +70,35 @@ export class ProcurementRequestService {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        this.requests = parsed.map((r: any) => ({
-          ...r,
-          deliveryDeadline: r.deliveryDeadline ? new Date(r.deliveryDeadline) : new Date(),
-          createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
-          updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
-          cancelledAt: r.cancelledAt ? new Date(r.cancelledAt) : undefined
-        }));
+        if (Array.isArray(parsed)) {
+          this.requests = parsed
+            .filter((r: any) => r && typeof r === 'object' && r.id)
+            .map((r: any) => ({
+              ...r,
+              deliveryDeadline: r.deliveryDeadline ? new Date(r.deliveryDeadline) : new Date(),
+              createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+              updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
+              cancelledAt: r.cancelledAt ? new Date(r.cancelledAt) : undefined,
+              items: (r.items || []).map((item: any) => ({
+                ...item,
+                serviceStartDate: item.serviceStartDate ? new Date(item.serviceStartDate) : undefined,
+                serviceEndDate: item.serviceEndDate ? new Date(item.serviceEndDate) : undefined
+              }))
+            }));
+        } else {
+          console.warn('Stored procurement requests is not an array, loading default requests in memory');
+          this.loadDefaultRequests(false);
+        }
       } catch (e) {
         console.error('Error parsing stored procurement requests:', e);
-        this.loadDefaultRequests();
+        this.loadDefaultRequests(false);
       }
     } else {
-      this.loadDefaultRequests();
+      this.loadDefaultRequests(true);
     }
   }
 
-  private loadDefaultRequests(): void {
+  private loadDefaultRequests(save: boolean = true): void {
     this.requests = [
       {
         id: 'PR-001',
@@ -201,7 +213,9 @@ export class ProcurementRequestService {
         selectedVendorId: ''
       }
     ];
-    this.saveToStorage();
+    if (save) {
+      this.saveToStorage();
+    }
   }
 
   private saveToStorage(): void {
@@ -244,13 +258,24 @@ export class ProcurementRequestService {
   getRequest(id: string): Observable<ProcurementRequest> {
     const request = this.requests.find(r => r.id === id);
     if (!request) {
-      throw new Error(`Request not found: ${id}`);
+      return throwError(() => new Error(`Request not found: ${id}`));
     }
     return of(request).pipe(delay(100));
   }
 
+  private generateNextId(): string {
+    const numericIds = this.requests
+      .map(r => r.id)
+      .filter(id => id.startsWith('PR-'))
+      .map(id => parseInt(id.replace('PR-', ''), 10))
+      .filter(num => !isNaN(num));
+    const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 0;
+    const nextId = maxId + 1;
+    return `PR-${String(nextId).padStart(3, '0')}`;
+  }
+
   createRequest(request: Partial<ProcurementRequest>): Observable<ProcurementRequest> {
-    const id = `PR-00${this.requests.length + 1}`;
+    const id = this.generateNextId();
     const newRequest: ProcurementRequest = {
       id,
       customerId: request.customerId || 'CUST-DEFAULT',

@@ -1,9 +1,13 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { AttendanceTableRecord } from '../../domain/attendance/attendancetable.dto';
 //import { MOCK_ATTENDANCE } from '../../domain/attendance/attendancetable.mock';
 import { OfficeHoursService } from './office-hours.service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AttendanceScheduleResolverService } from './attendanceschedulreresolver.service';
+import { WorkingWindow } from '../../domain/attendance/working-window.dto';
+import { computeShiftTrackingMetrics } from '../workschedule-shift/shift-based-tracking.util';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment.prod';
 import { map } from 'rxjs/operators';
 
@@ -31,7 +35,11 @@ export class AttendancetableService {
   private absentInterval: any;
   //private apiRecordId: number | null = null;
 
-  constructor(private officeHoursService: OfficeHoursService, private http: HttpClient) {
+  constructor(
+    private officeHoursService: OfficeHoursService,
+    private http: HttpClient,
+    private attendanceScheduleResolverService: AttendanceScheduleResolverService
+  ) {
   // Seed registeredEmployees from current session so absent check works
   // This will grow as employees clock in — for now at least covers the logged-in user
   this.scheduleAbsentCheck();
@@ -71,27 +79,10 @@ private mergeAndPublish(apiRecords: AttendanceTableRecord[]): void {
   this.attendanceSubject.next(merged);
 }
 
-private getAuthHeaders(): HttpHeaders {
-  const token = sessionStorage.getItem('accessToken')
-             ?? sessionStorage.getItem('token')
-             ?? sessionStorage.getItem('Token')
-             ?? '';
-
-    const tenantId = 'optimax';
-
-  return new HttpHeaders({
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    'X-Tenant-ID': tenantId
-  });
-}
-
 //nna to get the right employee id nnaaaaa
 resolveHrEmployeeId(/*username*/sessionUserId: number): Observable<{ id: number; fullName: string; department: string } | null> {
   return this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`,
-    { headers: this.getAuthHeaders() }
-  ).pipe(
+    `${environment.apiBaseUrl}/x/api/v2/hr/employees?page=1&size=100`  ).pipe(
     map(res => {
       const employees = res.content ?? res;
       console.log('==============================');
@@ -253,13 +244,11 @@ private mapApiRecord(api: any): AttendanceTableRecord {
 // GET all records (admin table on load)
 fetchAllRecords(page: number = 1, size: number = 100): void {
   this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords?page=${page}&size=${size}`,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords?page=${page}&size=${size}`  ).subscribe({
     next: (res) => {
       console.log('RAW API RECORD:', res.content?.[0]);
       const mapped = (res.content ?? [])
-      .map((r: any) => this.mapApiRecord(r))
+      .map((r: any) => this.enrichRecordMetrics(this.mapApiRecord(r)))
       .filter((r: AttendanceTableRecord) => {
         const date = new Date(r.date!);
         const day = date.getDay();
@@ -276,12 +265,10 @@ fetchAllRecords(page: number = 1, size: number = 100): void {
 // GET by date range (admin filter)
 fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100): void {
   this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange?from=${from}&to=${to}&page=${page}&size=${size}`,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/dateRange?from=${from}&to=${to}&page=${page}&size=${size}`  ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? [])
-      .map((r: any) => this.mapApiRecord(r))
+      .map((r: any) => this.enrichRecordMetrics(this.mapApiRecord(r)))
       .filter((r: AttendanceTableRecord) => {
         const date = new Date(r.date!);
 
@@ -300,12 +287,10 @@ fetchByDateRange(from: string, to: string, page: number = 1, size: number = 100)
 // GET by employee ID (employee monthly table)
 fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void {
   this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${employeeId}?page=${page}&size=${size}`,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/employee/${employeeId}?page=${page}&size=${size}`  ).subscribe({
     next: (res) => {
       const mapped = (res.content ?? [])
-      .map((r: any) => this.mapApiRecord(r))
+      .map((r: any) => this.enrichRecordMetrics(this.mapApiRecord(r)))
       .filter((r: AttendanceTableRecord) => {
         const date = new Date(r.date!);
 
@@ -342,10 +327,8 @@ fetchByEmployee(employeeId: number, page: number = 1, size: number = 100): void 
 // GET single record by ID
 fetchRecordById(id: number): Observable<AttendanceTableRecord> {
   return this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`,
-    { headers: this.getAuthHeaders() }
-  ).pipe(
-    map((res: any) => this.mapApiRecord(res))
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${id}`  ).pipe(
+    map((res: any) => this.enrichRecordMetrics(this.mapApiRecord(res)))
   );
 }
 
@@ -367,9 +350,7 @@ private clockInApi(
 
   this.http.post<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockIn`,
-    body,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    body  ).subscribe({
     next: (res) => {
       // Store on both the service-level variable AND the local record
       const returnedId = res?.id ?? res?.attendanceId ?? res?.recordId ?? null;
@@ -427,11 +408,10 @@ private clockOutApi(
 
   this.http.post<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/clockOut`,
-    body,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    body  ).subscribe({
     next: (res) => {
       console.log('Clock-out successful:', res);
+      console.log('CLOCKOUT:', res);
       //this.apiRecordId = null; // reset for next session
     },
     error: (err) => console.error('Clock-out failed:', err)
@@ -447,9 +427,7 @@ overrideOpenApi(
 
   this.http.post<any>(
     `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${apiRecordId}/override/open`,
-    body,
-    { headers: this.getAuthHeaders() }
-  ).subscribe({
+    body  ).subscribe({
     next: (res) => console.log('Override open successful:', res),
     error: (err) => console.error('Override open failed:', err)
   });
@@ -508,10 +486,12 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
   const today = now.toISOString().split('T')[0];
   const data = [...this.attendanceSubject.value];
   const officeHours = this.officeHoursService.getOfficeHours();
-  const closing = this.convertToDateTime(officeHours.closingTime);
+  const workingWindow = await firstValueFrom(
+    this.attendanceScheduleResolverService.resolve(String(employeeId), now)
+  );
 
   // Find or create local record
-  let record = data.find(r => r.employee === employeeName && r.date === today);
+  let record = data.find(r => r.employeeId === employeeId && r.date === today);
   this.ensureRegistered(employeeId, employeeName, department);
 
   if (!record) {
@@ -530,6 +510,12 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
     };
     data.unshift(record);
   }
+
+  record.appliedScheduleType = workingWindow.scheduleType;
+  record.appliedScheduleId = Number(workingWindow.sourceId) || record.appliedScheduleId;
+  record.appliedExpectedStart = workingWindow.openingTime;
+  record.appliedExpectedEnd = workingWindow.closingTime;
+  record.appliedShiftName = workingWindow.shiftName;
 
   // Capture location first
   const location = await this.getCurrentLocation();
@@ -554,7 +540,7 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
       record.status = 'PRESENT';
       record.overrideOpen = false;
     } else {
-      const graceTime = this.convertToDateTime(officeHours.latenessGracePeriod);
+      const graceTime = this.convertToDateTime(workingWindow.latenessGracePeriod);
       record.status = now <= graceTime ? 'PRESENT' : 'LATE';
     }
   }
@@ -565,11 +551,9 @@ async clockAction(employeeId: number, employeeName: string, department: string, 
       ? { address: location.address, lat: location.lat, lng: location.lng }
       : null;
     record.hours = this.calculateHours(record.checkIn!, record.checkOut);
-
-    if (now > closing) {
-      record.status = 'OVERTIME';
-    }
   }
+
+  this.applyTrackingMetrics(record, workingWindow, today);
 
   // Push local update
   //this.attendanceSubject.next(data);
@@ -619,6 +603,108 @@ if (action === 'IN') {
 
 }
 
+
+private applyTrackingMetrics(
+  record: AttendanceTableRecord,
+  workingWindow: WorkingWindow,
+  dateIso: string
+): void {
+  const metrics = computeShiftTrackingMetrics(
+    workingWindow,
+    dateIso,
+    {
+      clockInIso: record.checkIn,
+      clockOutIso: record.checkOut
+    },
+    { otThresholdMinutes: 30 }
+  );
+
+  record.shiftMetrics = metrics;
+  record.hours = +metrics.workedHours.toFixed(2);
+
+  if (record.overrideOpen) {
+    return;
+  }
+
+  if (metrics.isAbsent) {
+    record.status = 'ABSENT';
+    return;
+  }
+
+  if (metrics.isOvertime) {
+    record.status = 'OVERTIME';
+    return;
+  }
+
+  record.status = metrics.isLate ? 'LATE' : 'PRESENT';
+}
+
+private enrichRecordMetrics(record: AttendanceTableRecord): AttendanceTableRecord {
+  if (!record.date || !record.appliedExpectedStart || !record.appliedExpectedEnd) {
+    return record;
+  }
+
+  const openingTime = this.toHHmm(record.appliedExpectedStart);
+  const officeHours = this.officeHoursService.getOfficeHours();
+  const graceMinutes = officeHours.latenessGracePeriod ? this.extractMinutes(officeHours.latenessGracePeriod) : 15;
+  const graceTime = this.addMinutes(openingTime, graceMinutes);
+
+  const workingWindow: WorkingWindow = {
+    scheduleType: record.appliedScheduleType ?? 'office-hours',
+    openingTime: openingTime,
+    latenessGracePeriod: graceTime,
+    absentTime: this.addMinutes(openingTime, 180),
+    closingTime: this.toHHmm(record.appliedExpectedEnd),
+    sourceId: String(record.appliedScheduleId ?? 'api-schedule'),
+    shiftName: record.appliedShiftName
+  };
+
+  this.applyTrackingMetrics(record, workingWindow, record.date);
+  return record;
+}
+
+private toHHmm(value: unknown): string {
+  if (Array.isArray(value)) {
+    const hour = Number(value[0] ?? 0);
+    const minute = Number(value[1] ?? 0);
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  if (value instanceof Date) {
+    return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+  }
+
+  if (value && typeof value === 'object') {
+    const time = value as { hour?: number; minute?: number };
+    if (time.hour !== undefined || time.minute !== undefined) {
+      return `${String(Number(time.hour ?? 0)).padStart(2, '0')}:${String(Number(time.minute ?? 0)).padStart(2, '0')}`;
+    }
+  }
+
+  const text = String(value ?? '').trim();
+  const match = text.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    return `${match[1].padStart(2, '0')}:${match[2]}`;
+  }
+
+  return '00:00';
+}
+
+private extractMinutes(timeStr: string | any[]): number {
+  if (Array.isArray(timeStr)) {
+    return Number(timeStr[1] ?? 0);
+  }
+  const match = String(timeStr).match(/(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+
+private addMinutes(timeStr: string, minutes: number): string {
+  const [hours, mins] = timeStr.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  const newHours = Math.floor(totalMinutes / 60) % 24;
+  const newMins = totalMinutes % 60;
+  return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+}
 
 // helper method
 private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -951,6 +1037,185 @@ private getCurrentLocation(): Promise<{ address: string; lat: number; lng: numbe
 private toIsoTime(localeTime: string): string {
   const date = new Date(`1970-01-01 ${localeTime}`);
   return date.toTimeString().split(' ')[0]; // returns HH:mm:ss
+}
+
+// ============ REPORTING METHODS ============
+
+getWeeklySummary(startDate: string, endDate: string): any {
+  const records = this.attendanceSubject.value;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const filtered = records.filter(r => {
+    if (!r.date) return false;
+    const rDate = new Date(r.date);
+    return rDate >= start && rDate <= end;
+  });
+
+  const summary = {
+    period: { startDate, endDate },
+    totalRecords: filtered.length,
+    byStatus: {
+      present: filtered.filter(r => r.status === 'PRESENT').length,
+      late: filtered.filter(r => r.status === 'LATE').length,
+      absent: filtered.filter(r => r.status === 'ABSENT').length,
+      onLeave: filtered.filter(r => r.status === 'ON_LEAVE').length
+    },
+    avgHours: this.calculateAvgHours(filtered),
+    totalOvertime: this.calculateTotalOvertime(filtered),
+    records: filtered
+  };
+
+  return summary;
+}
+
+getMonthlySummary(year: number, month: number): any {
+  const records = this.attendanceSubject.value;
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+
+  const filtered = records.filter(r => {
+    if (!r.date) return false;
+    const rDate = new Date(r.date);
+    return rDate >= startDate && rDate <= endDate;
+  });
+
+  const dailySummary: any[] = [];
+  const tempMap = new Map<string, AttendanceTableRecord[]>();
+
+  filtered.forEach(r => {
+    if (!r.date) return;
+    if (!tempMap.has(r.date)) {
+      tempMap.set(r.date, []);
+    }
+    tempMap.get(r.date)!.push(r);
+  });
+
+  tempMap.forEach((recs, date) => {
+    dailySummary.push({
+      date,
+      present: recs.filter(r => r.status === 'PRESENT').length,
+      late: recs.filter(r => r.status === 'LATE').length,
+      absent: recs.filter(r => r.status === 'ABSENT').length,
+      totalRecords: recs.length
+    });
+  });
+
+  return {
+    period: { year, month },
+    totalWorkDays: dailySummary.length,
+    totalEmployeeRecords: filtered.length,
+    byStatus: {
+      present: filtered.filter(r => r.status === 'PRESENT').length,
+      late: filtered.filter(r => r.status === 'LATE').length,
+      absent: filtered.filter(r => r.status === 'ABSENT').length,
+      onLeave: filtered.filter(r => r.status === 'ON_LEAVE').length
+    },
+    presentRate: this.calculatePresenceRate(filtered),
+    absentRate: this.calculateAbsenceRate(filtered),
+    avgHours: this.calculateAvgHours(filtered),
+    totalOvertime: this.calculateTotalOvertime(filtered),
+    dailyBreakdown: dailySummary
+  };
+}
+
+getAbsenteeismTrend(days: number): any[] {
+  const records = this.attendanceSubject.value;
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - days);
+
+  const filtered = records.filter(r => {
+    if (!r.date) return false;
+    const rDate = new Date(r.date);
+    return rDate >= startDate && rDate <= endDate;
+  });
+
+  const trendMap = new Map<string, { date: string; absentCount: number; totalRecords: number; absentRate: number }>();
+
+  filtered.forEach(r => {
+    if (!r.date) return;
+    if (!trendMap.has(r.date)) {
+      trendMap.set(r.date, { date: r.date, absentCount: 0, totalRecords: 0, absentRate: 0 });
+    }
+    const entry = trendMap.get(r.date)!;
+    entry.totalRecords++;
+    if (r.status === 'ABSENT') {
+      entry.absentCount++;
+    }
+  });
+
+  const trend: any[] = [];
+  trendMap.forEach((value, key) => {
+    trend.push({
+      ...value,
+      absentRate: value.totalRecords > 0 ? +(value.absentCount / value.totalRecords * 100).toFixed(2) : 0
+    });
+  });
+
+  return trend.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+getComplianceExportData(filters?: { startDate?: string; endDate?: string; department?: string; status?: string }): any[] {
+  let records = this.attendanceSubject.value;
+
+  if (filters?.startDate && filters?.endDate) {
+    const start = new Date(filters.startDate);
+    const end = new Date(filters.endDate);
+    records = records.filter(r => {
+      if (!r.date) return false;
+      const rDate = new Date(r.date);
+      return rDate >= start && rDate <= end;
+    });
+  }
+
+  if (filters?.department) {
+    records = records.filter(r => r.department === filters.department);
+  }
+
+  if (filters?.status) {
+    records = records.filter(r => r.status === filters.status);
+  }
+
+  return records.map(r => ({
+    employeeId: r.employeeId,
+    employeeName: r.employee,
+    department: r.department,
+    date: r.date,
+    clockIn: r.checkIn,
+    clockOut: r.checkOut,
+    status: r.status,
+    hours: r.hours,
+    location: r.checkInLocation?.address || '-',
+    verified: r.overrideOpen ? 'Yes' : 'No',
+    verifiedBy: r.overriddenBy?.adminName || '-',
+    notes: r.overrideReason || '-'
+  }));
+}
+
+private calculateAvgHours(records: AttendanceTableRecord[]): number {
+  if (records.length === 0) return 0;
+  const total = records.reduce((sum, r) => sum + (r.hours || 0), 0);
+  return +(total / records.length).toFixed(2);
+}
+
+private calculateTotalOvertime(records: AttendanceTableRecord[]): number {
+  if (records.length === 0) return 0;
+  // This assumes records have an overtime field; adjust if needed
+  const total = records.reduce((sum, r) => sum + ((r as any).overtime || 0), 0);
+  return +total.toFixed(2);
+}
+
+private calculatePresenceRate(records: AttendanceTableRecord[]): number {
+  if (records.length === 0) return 0;
+  const present = records.filter(r => r.status === 'PRESENT').length;
+  return +(present / records.length * 100).toFixed(2);
+}
+
+private calculateAbsenceRate(records: AttendanceTableRecord[]): number {
+  if (records.length === 0) return 0;
+  const absent = records.filter(r => r.status === 'ABSENT').length;
+  return +(absent / records.length * 100).toFixed(2);
 }
 
 }

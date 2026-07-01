@@ -46,19 +46,46 @@ export class RfqTemplateSelectorComponent implements OnInit {
     this.procurementService.getRFQTemplates().subscribe({
       next: (templates) => {
         this.templates = templates;
-        const defaultTemplate = templates.find(t => t.isDefault);
-        if (defaultTemplate) {
-          this.selectedTemplateId = defaultTemplate.id;
-          this.templateForm.patchValue({ templateId: defaultTemplate.id });
+        
+        const uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid) {
+          this.procurementService.getRequest(uuid).subscribe({
+            next: (req) => {
+              if (req && req.rfqTemplateId) {
+                this.selectedTemplateId = req.rfqTemplateId;
+                this.templateForm.patchValue({ 
+                  templateId: req.rfqTemplateId,
+                  customMessage: req.rfqTitle || ''
+                });
+              } else {
+                this.selectDefaultTemplate(templates);
+              }
+              this.isLoading = false;
+            },
+            error: () => {
+              this.selectDefaultTemplate(templates);
+              this.isLoading = false;
+            }
+          });
+        } else {
+          this.selectDefaultTemplate(templates);
+          this.isLoading = false;
         }
-        this.isLoading = false;
       },
       error: () => {
-        // Load mock templates if API fails
         this.loadMockTemplates();
+        this.selectDefaultTemplate(this.templates);
         this.isLoading = false;
       }
     });
+  }
+
+  private selectDefaultTemplate(templates: RFQTemplate[]): void {
+    const defaultTemplate = templates.find(t => t.isDefault);
+    if (defaultTemplate) {
+      this.selectedTemplateId = defaultTemplate.id;
+      this.templateForm.patchValue({ templateId: defaultTemplate.id });
+    }
   }
 
   loadMockTemplates(): void {
@@ -128,7 +155,7 @@ export class RfqTemplateSelectorComponent implements OnInit {
           rfqTitle: this.templateForm.get('customMessage')?.value
         }).subscribe(() => {
           const typePath = this.router.url.includes('/service') ? 'service' : 'product';
-          this.router.navigate(['/commerce/requests/new', typePath, uuid, 'vendors']);
+          this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid, 'vendors']);
         });
       }
     }
@@ -138,9 +165,9 @@ export class RfqTemplateSelectorComponent implements OnInit {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     const typePath = this.router.url.includes('/service') ? 'service' : 'product';
     if (uuid) {
-      this.router.navigate(['/commerce/requests/new', typePath, uuid]);
+      this.router.navigate(['/admin/sales/commerce/requests/new', typePath, uuid]);
     } else {
-      this.router.navigate(['/commerce/requests/new']);
+      this.router.navigate(['/admin/sales/commerce/requests/new']);
     }
   }
 }

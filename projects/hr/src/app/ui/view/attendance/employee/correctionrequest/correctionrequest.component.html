@@ -1,52 +1,69 @@
 <div class="correction-requests-card">
-
   <div class="header">
     <h3>Correction Requests</h3>
-    <button class="add-btn" (click)="openForm()">+</button>
+    <button class="add-btn" type="button" (click)="openForm()" title="New correction request">+</button>
   </div>
 
-  <!-- Empty State -->
   <div class="empty-state" *ngIf="requests.length === 0">
-    <span>Such empty 🥲</span>
-    <p>No correction requests yet.</p>
+    <span>No correction requests</span>
+    <p>Missing punch requests you submit will appear here.</p>
   </div>
 
-  <!-- Requests Table -->
   <table *ngIf="requests.length > 0">
     <thead>
       <tr>
         <th>Date</th>
         <th>Issue Type</th>
+        <th>Requested Punch</th>
         <th>Status</th>
         <th>Details</th>
+        <th>Evidence</th>
+        <th>Notification</th>
       </tr>
     </thead>
 
     <tbody>
-      <tr *ngFor="let req of requests">
+      <tr *ngFor="let req of requests" [class.locked-row]="req.locked">
         <td>{{ req.date | date:'mediumDate' }}</td>
         <td>{{ getIssueLabel(req.issueType) }}</td>
         <td>
-          <span class="status" [ngClass]="req.status.toLowerCase()">
-            {{ req.status }}
+          <span *ngIf="req.requestedClockIn">In: {{ req.requestedClockIn }}</span>
+          <span *ngIf="req.requestedClockOut">Out: {{ req.requestedClockOut }}</span>
+          <span *ngIf="!req.requestedClockIn && !req.requestedClockOut">Not provided</span>
+        </td>
+        <td>
+          <span class="status" [ngClass]="req.status.toLowerCase().replace('_', '-')">
+            {{ getStatusLabel(req.status) }}
           </span>
+          <span class="locked-pill" *ngIf="req.locked">Locked</span>
         </td>
         <td>
           {{ req.description }}
 
           <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
             Rejection Reason: {{ req.rejectionReason }}
-          </div>          
+          </div>
         </td>
+        <td>
+          <div class="evidence-text">{{ req.evidence || 'No evidence added' }}</div>
+
+          <div *ngIf="canResubmit(req)" class="resubmit-box">
+            <textarea
+              rows="2"
+              placeholder="Add more evidence"
+              [(ngModel)]="resubmissionEvidence[req.id]">
+            </textarea>
+            <button type="button" (click)="resubmit(req)">Resubmit</button>
+          </div>
+        </td>
+        <td>{{ req.latestNotification }}</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Modal Form -->
   <app-correctionrequestform
     *ngIf="showForm"
     (close)="closeForm()"
     (submitRequest)="addRequest($event)">
   </app-correctionrequestform>
-
 </div>

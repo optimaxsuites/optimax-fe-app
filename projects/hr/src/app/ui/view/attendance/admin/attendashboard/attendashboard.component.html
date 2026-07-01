@@ -1,5 +1,21 @@
-<!--<p>attendashboard works!</p>-->
-<div class="dashboard-grid">
+<!-- Tab Navigation -->
+<div class="dashboard-tabs">
+  <button
+    class="tab-btn"
+    [class.active]="activeTab === 'dashboard'"
+    (click)="activeTab = 'dashboard'">
+    <i class="pi pi-chart-bar"></i> Dashboard
+  </button>
+  <button
+    class="tab-btn"
+    [class.active]="activeTab === 'reports'"
+    (click)="activeTab = 'reports'">
+    <i class="pi pi-file-pdf"></i> Reports
+  </button>
+</div>
+
+<!-- Dashboard View -->
+<div class="dashboard-grid" *ngIf="activeTab === 'dashboard'">
     <app-adminexport
   [data]="filteredAttendance"
   [filters]="currentFilters">
@@ -22,6 +38,11 @@
 <div>
  
 </div>
+</div>
+
+<!-- Reports View -->
+<div *ngIf="activeTab === 'reports'" class="reports-view">
+  <app-attendance-reports></app-attendance-reports>
 </div>
 
 <!--<app-attendancesummary [data]="filteredAttendance"></app-attendancesummary>-->

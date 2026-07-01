@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { OfficeHours } from '../../domain/attendance/office-hours.dto';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../shared-component/environments/environment';
 
 const DEFAULT_OFFICE_HOURS: OfficeHours = {
@@ -63,8 +63,7 @@ export class OfficeHoursService {
 
     this.http.put<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${this.officeHoursId}`,
-      body,
-      { headers: this.getAuthHeaders() }
+      body
     ).subscribe({
       next: (res) => {
         console.log('Office hours updated:', res);
@@ -85,8 +84,7 @@ export class OfficeHoursService {
 
     this.http.post<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
-      body,
-      { headers: this.getAuthHeaders() }
+      body
     ).subscribe({
       next: (res) => {
 
@@ -160,30 +158,6 @@ getScheduleMode() {
   this.scheduleMode = mode;
 }*/
 
-//maybetemporary
-/*
-private getAuthHeaders(): HttpHeaders {
-  return new HttpHeaders({
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
-    'X-Tenant-ID': localStorage.getItem('tenantId') || ''
-  });
-}
-*/
-
-private getAuthHeaders(): HttpHeaders {
-  const token = sessionStorage.getItem('accessToken')
-             ?? sessionStorage.getItem('token')
-             ?? sessionStorage.getItem('Token')
-             ?? '';
-
-    const tenantId = 'optimax';
-
-  return new HttpHeaders({
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    'X-Tenant-ID': tenantId
-  });
-}
 
 /*private toBackendTime(time: string) {
   const [hour, minute] = time.split(':').map(Number);
@@ -199,23 +173,20 @@ private getAuthHeaders(): HttpHeaders {
 createOfficeHours(payload: any) {
   return this.http.post(
     `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
-    payload,
-    { headers: this.getAuthHeaders() }
+    payload
   );
 }
 
 updateOfficeHoursApi(id: number, payload: any) {
   return this.http.put(
     `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${id}`,
-    payload,
-    { headers: this.getAuthHeaders() }
+    payload
   );
 }
 
 fetchCurrentOfficeHours() {
   return this.http.get<any>(
-    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/current`,
-    { headers: this.getAuthHeaders() }
+    `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/current`
   );
 }
 
