@@ -56,12 +56,24 @@ export class CorrectionrequestComponent  implements OnInit{
     return map[type] || type;
   }
 
+  getStatusLabel(status: string): string {
+    const map: any = {
+      PENDING: 'Pending',
+      UNDER_REVIEW: 'Under Review',
+      SUBMITTED: 'Submitted',
+      REJECTED: 'Rejected'
+    };
+    return map[status] || status;
+  }
+
   requests: CorrectionRequest[] = [];
+  resubmissionEvidence: { [id: string]: string } = {};
   showForm = false;
 
   constructor(private correctionService: CorrectionrequestService) {}
 
   ngOnInit() {
+    this.correctionService.initialize();
     this.correctionService.getRequests().subscribe(reqs => {
       this.requests = reqs;
     });
@@ -76,8 +88,23 @@ export class CorrectionrequestComponent  implements OnInit{
   }
 
   addRequest(request: CorrectionRequest) {
-    this.correctionService.addRequest(request); // sends to admin
+    this.correctionService.addRequest(request);
     this.closeForm();
+  }
+
+  canResubmit(request: CorrectionRequest): boolean {
+    return this.correctionService.canResubmit(request);
+  }
+
+  resubmit(request: CorrectionRequest) {
+    const evidence = this.resubmissionEvidence[request.id]?.trim();
+    if (!evidence) {
+      alert('Please add evidence before resubmitting.');
+      return;
+    }
+
+    this.correctionService.resubmitRequest(request.id, evidence);
+    this.resubmissionEvidence[request.id] = '';
   }
 
 

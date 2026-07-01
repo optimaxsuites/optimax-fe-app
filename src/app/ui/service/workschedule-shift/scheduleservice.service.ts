@@ -455,191 +455,162 @@ private formatDateLocal(date: Date): string {
   }
 
   /* CONFLICT DETECTION */
-    detectConflict(schedule: ScheduleDTO, ignoreScheduleId?: string): ConflictDTO | null {
-
+  detectConflict(schedule: ScheduleDTO, ignoreScheduleId?: string): ConflictDTO | null {
     const schedules = this.schedulesSubject.value;
-
     const employeeSchedules = schedules.filter(
-      s => s.employeeId === schedule.employeeId && s.date === schedule.date && s.id !== ignoreScheduleId
+      s =>
+        s.employeeId === schedule.employeeId &&
+        s.date === schedule.date &&
+        s.id !== ignoreScheduleId
     );
 
-    if (employeeSchedules.length === 0) return null;
-
     const newShift = this.shiftserviceService.getShiftById(schedule.shiftId);
-
     if (!newShift) return null;
 
+    // 1) Duplicate assignment (same shift id on same date)
+    const duplicate = employeeSchedules.find(s => s.shiftId === schedule.shiftId);
+    if (duplicate) {
+      return {
+        employeeId: schedule.employeeId,
+        shiftId: schedule.shiftId,
+        date: schedule.date,
+        conflictType: 'DUPLICATE_ASSIGNMENT',
+        message: `Employee already assigned to ${newShift.name}`
+      };
+    }
+
+    // 2) Max hours per day (standard work practice)
+    //    Current “standard” is 12 hours/day (same as earlier logic).
+    const maxHoursPerDay = 12;
+
+    const totalHoursToday = employeeSchedules.reduce((total, existingSchedule) => {
+      const shift = this.shiftserviceService.getShiftById(existingSchedule.shiftId);
+      if (!shift) return total;
+      return total + this.calculateHoursForShiftOnDate(existingSchedule.date, shift.startTime, shift.endTime);
+    }, 0);
+
+    const newShiftHours = this.calculateHoursForShiftOnDate(schedule.date, newShift.startTime, newShift.endTime);
+
+    if (totalHoursToday + newShiftHours > maxHoursPerDay) {
+      return {
+        employeeId: schedule.employeeId,
+        shiftId: schedule.shiftId,
+        date: schedule.date,
+        conflictType: 'EXCEEDS_MAX_HOURS',
+        message: `Maximum allowed is ${maxHoursPerDay} hours/day (would be ${(totalHoursToday + newShiftHours).toFixed(2)} hours)`
+      };
+    }
+
+    // 3) Overlapping shifts (supports overnight shifts)
+    const newRange = this.shiftToDateTimeRange(schedule.date, newShift.startTime, newShift.endTime);
     for (const existing of employeeSchedules) {
-
-      const totalHoursToday = employeeSchedules.reduce(
-        (total, existingSchedule) => {
-
-          const shift = this.shiftserviceService.getShiftById(
-            existingSchedule.shiftId
-          );
-
-          if (!shift) return total;
-
-          return total + this.calculateHours(
-            shift.startTime,
-            shift.endTime
-          );
-
-        },
-        0
-      );
-
-const newShiftHours = this.calculateHours(
-  newShift.startTime,
-  newShift.endTime
-);
-
-if (totalHoursToday + newShiftHours > 12) {
-  return {
-    employeeId: schedule.employeeId,
-    shiftId: schedule.shiftId,
-    date: schedule.date,
-    conflictType: 'EXCEEDS_MAX_HOURS',
-    message: 'Employee exceeds maximum daily hours'
-  };
-}
-
       const existingShift = this.shiftserviceService.getShiftById(existing.shiftId);
-
       if (!existingShift) continue;
 
-      /* DUPLICATE SHIFT */
-
-      if (existing.shiftId === schedule.shiftId) {
-        return {
-          employeeId: schedule.employeeId,
-          shiftId: schedule.shiftId,
-          date: schedule.date,
-          conflictType: 'DUPLICATE_ASSIGNMENT',
-          message: `Employee already assigned to ${existingShift.name}`
-        };
-      }
-
-      /* OVERLAPPING SHIFTS */
-
-      const overlap = this.isOverlapping(
-        newShift.startTime,
-        newShift.endTime,
-        existingShift.startTime,
-        existingShift.endTime
-      );
-
+      const existingRange = this.shiftToDateTimeRange(existing.date, existingShift.startTime, existingShift.endTime);
+      const overlap = this.rangesOverlap(newRange, existingRange);
       if (overlap) {
-
         return {
           employeeId: schedule.employeeId,
           shiftId: schedule.shiftId,
           date: schedule.date,
           conflictType: 'OVERLAPPING_SHIFT',
-          message: `Conflict with ${existingShift.name} (${existingShift.startTime}-${existingShift.endTime})`
+          message: `Overlaps with ${existingShift.name} (${existingShift.startTime}-${existingShift.endTime})`
         };
-
       }
-
     }
 
     return null;
-
   }
 
-    /* TIME OVERLAP CHECK */
+  private shiftToDateTimeRange(dateIso: string, startTime: string, endTime: string): { start: Date; end: Date } {
+    const start = this.combineDateAndTime(dateIso, startTime);
+    const end = this.combineDateAndTime(dateIso, endTime);
 
-  private isOverlapping(
-    startA: string,
-    endA: string,
-    startB: string,
-    endB: string
-  ): boolean {
+    // If shift crosses midnight, roll end to next day.
+    if (end.getTime() <= start.getTime()) {
+      end.setDate(end.getDate() + 1);
+    }
 
-    const aStart = this.toMinutes(startA);
-    const aEnd = this.toMinutes(endA);
-    const bStart = this.toMinutes(startB);
-    const bEnd = this.toMinutes(endB);
+    return { start, end };
+  }
 
-    return aStart < bEnd && aEnd > bStart;
+  private combineDateAndTime(dateIso: string, hhmm: string): Date {
+    const [hours, minutes] = hhmm.split(':').map(Number);
+    const d = new Date(dateIso);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  }
 
+  private rangesOverlap(a: { start: Date; end: Date }, b: { start: Date; end: Date }): boolean {
+    return a.start.getTime() < b.end.getTime() && a.end.getTime() > b.start.getTime();
+  }
+
+  private calculateHoursForShiftOnDate(dateIso: string, startTime: string, endTime: string): number {
+    const range = this.shiftToDateTimeRange(dateIso, startTime, endTime);
+    const ms = range.end.getTime() - range.start.getTime();
+    return ms > 0 ? ms / 3600000 : 0;
   }
 
   private toMinutes(time: string): number {
-
     const [hours, minutes] = time.split(':').map(Number);
-
     return hours * 60 + minutes;
-
   }
 
   private calculateHours(
     start: string,
     end: string
   ): number {
-
+    // legacy helper (kept for other methods). Uses 24h wrap logic.
     const startMin = this.toMinutes(start);
     const endMin = this.toMinutes(end);
-
     let diff = endMin - startMin;
-
-    if (diff < 0) {
-      diff += 24 * 60;
-    }
-
+    if (diff < 0) diff += 24 * 60;
     return diff / 60;
   }
 
+
   checkConflict(schedule: ScheduleDTO, ignoreScheduleId?: string) {
-    const previousSchedules =
-    this.schedulesSubject.value.filter(
+    const previousSchedules = this.schedulesSubject.value.filter(
       s =>
         s.employeeId === schedule.employeeId &&
-        new Date(s.date) <
-        new Date(schedule.date)
+        new Date(s.date).getTime() < new Date(schedule.date).getTime() &&
+        s.id !== ignoreScheduleId
     );
-    const latestSchedule =
-    previousSchedules.sort(
+
+    const latestSchedule = previousSchedules.sort(
       (a, b) =>
         new Date(b.date).getTime() -
         new Date(a.date).getTime()
     )[0];
+
     if (latestSchedule) {
-
-  const previousShift =
-    this.shiftserviceService.getShiftById(
-      latestSchedule.shiftId
-    );
-
-  const currentShift =
-    this.shiftserviceService.getShiftById(
-      schedule.shiftId
-    );
-
-  if (previousShift && currentShift) {
-
-    const restHours =
-      this.getHoursBetween(
-        previousShift.endTime,
-        currentShift.startTime
+      const previousShift = this.shiftserviceService.getShiftById(
+        latestSchedule.shiftId
       );
 
-    if (restHours < 8) {
+      const currentShift = this.shiftserviceService.getShiftById(
+        schedule.shiftId
+      );
 
-      return {
-        conflictType: 'INSUFFICIENT_REST',
-        scheduleId: schedule.id,
-        message:
-          `Only ${restHours} hours between shifts`
-      };
+      if (previousShift && currentShift) {
+        const restHours = this.getHoursBetween(
+          previousShift.endTime,
+          currentShift.startTime
+        );
+
+        if (restHours < 8) {
+          return {
+            conflictType: 'INSUFFICIENT_REST',
+            scheduleId: schedule.id,
+            message: `Only ${restHours} hours between shifts`
+          };
+        }
+      }
     }
+
+    return this.detectConflict(schedule, ignoreScheduleId);
   }
-}
-  return this.detectConflict(schedule, ignoreScheduleId);
 
-  
 }
 
-
-  
-}
