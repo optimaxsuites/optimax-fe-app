@@ -12,8 +12,8 @@
           <span *ngIf="tab.hasDropdown" class="tab-caret">▼</span>
         </button>
 
-        <div 
-          class="absolute bg-white p-3 gap-3 shadow-sm text-left" 
+        <div
+          class="absolute bg-white p-3 gap-3 shadow-sm text-left"
           *ngIf="tab.hasDropdown &&  selectedDropdownTab == tab.name && isDropdownOpen">
           <button *ngFor="let option of tab.dropdownOptions" class="pb-3" (click)="selectDropdownOption(tab.name, option)">
             {{ option.label }}
@@ -22,7 +22,7 @@
       </div>
     </div>
     </div>
-  
+
     <div class="tab-content">
       <!-- Loop through tabsConfig to render tab content -->
       <div *ngFor="let tab of tabsConfig">

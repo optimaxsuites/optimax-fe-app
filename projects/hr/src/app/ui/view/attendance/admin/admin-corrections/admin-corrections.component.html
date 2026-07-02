@@ -1,67 +1,123 @@
-<div class="admin-corrections-card">
-  <div class="header">
-    <h3>Correction Requests - Admin Review</h3>
+<div class="admin-corrections-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h2>Correction Requests - Admin Review</h2>
+      <p>Review and approve/reject employee correction requests</p>
+    </div>
+    <div class="header-stats" *ngIf="requests.length > 0">
+      <div class="stat-item">
+        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ getPendingCount() }}</span>
+      </div>
+    </div>
   </div>
 
+  <!-- Empty State -->
   <div class="empty-state" *ngIf="requests.length === 0">
-    <span>No pending correction requests</span>
+    <div class="empty-icon">
+      <i class="fas fa-clipboard-check"></i>
+    </div>
+    <h3>No Pending Requests</h3>
+    <p>All correction requests have been reviewed</p>
   </div>
 
-  <table *ngIf="requests.length > 0" class="corrections-table">
-    <thead>
-      <tr>
-        <th>Employee</th>
-        <th>Date</th>
-        <th>Issue Type</th>
-        <th>Requested Punch</th>
-        <th>Description</th>
-        <th>Evidence</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
+  <!-- Corrections Table -->
+  <div class="corrections-section" *ngIf="requests.length > 0">
+    <div class="table-wrapper">
+      <table class="corrections-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Issue Type</th>
+            <th>Requested Time</th>
+            <th>Description</th>
+            <th>Evidence</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
 
-    <tbody>
-      <ng-container *ngFor="let req of requests">
-        <tr [class.locked-row]="req.locked">
-          <td>{{ req.employeeName }}</td>
-          <td>{{ req.date | date:'mediumDate' }}</td>
-          <td>{{ req.issueType }}</td>
-          <td>
-            <span *ngIf="req.requestedClockIn">In: {{ req.requestedClockIn }}</span>
-            <span *ngIf="req.requestedClockOut">Out: {{ req.requestedClockOut }}</span>
-          </td>
-          <td>{{ req.description }}</td>
-          <td>{{ req.evidence || 'No evidence' }}</td>
-          <td>
-            <span class="status" [ngClass]="req.status.toLowerCase().replace('_', '-')">
-              {{ req.status }}
-            </span>
-          </td>
-          <td class="actions" *ngIf="!req.locked && req.status === 'PENDING'">
-            <button (click)="approve(req)" class="btn-approve" title="Approve">✓</button>
-            <button (click)="toggleRejectReason(req.id)" class="btn-reject" title="Reject">✕</button>
-          </td>
-          <td class="actions" *ngIf="req.locked || req.status !== 'PENDING'">
-            <span class="status-text">{{ req.status }}</span>
-          </td>
-        </tr>
-        <tr *ngIf="activeRejectId === req.id && !req.locked && req.status === 'PENDING'" class="reject-reason-row">
-          <td colspan="8">
-            <div class="reject-form">
-              <textarea
-                [(ngModel)]="rejectReason[req.id]"
-                placeholder="Enter rejection reason (required)"
-                rows="3">
-              </textarea>
-              <div class="btn-group">
-                <button (click)="reject(req)" class="btn-submit">Submit Rejection</button>
-                <button (click)="toggleRejectReason(null)" class="btn-cancel">Cancel</button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </ng-container>
-    </tbody>
-  </table>
+        <tbody>
+          <ng-container *ngFor="let req of requests">
+            <!-- Main Row -->
+            <tr [class.locked-row]="req.locked" [class.pending-row]="req.status === 'PENDING'">
+              <td class="cell-employee">
+                <div class="employee-info">
+                  <span class="employee-name">{{ req.employeeName }}</span>
+                  <span class="employee-id">ID: {{ req.employeeId || '-' }}</span>
+                </div>
+              </td>
+              <td class="cell-date">{{ req.date | date:'MMM dd, yyyy' }}</td>
+              <td class="cell-type">
+                <span class="badge-type">{{ req.issueType }}</span>
+              </td>
+              <td class="cell-time">
+                <div *ngIf="req.requestedClockIn" class="time-slot">
+                  <i class="fas fa-sign-in-alt"></i> {{ req.requestedClockIn }}
+                </div>
+                <div *ngIf="req.requestedClockOut" class="time-slot">
+                  <i class="fas fa-sign-out-alt"></i> {{ req.requestedClockOut }}
+                </div>
+              </td>
+              <td class="cell-description">
+                <div class="description-text">{{ req.description }}</div>
+              </td>
+              <td class="cell-evidence">
+                <span *ngIf="req.evidence" class="evidence-text">{{ req.evidence }}</span>
+                <span *ngIf="!req.evidence" class="evidence-empty">—</span>
+              </td>
+              <td class="cell-status">
+                <span class="status-badge" [ngClass]="'status-' + req.status.toLowerCase().replace('_', '-')">
+                  {{ req.status }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <!-- Pending Actions -->
+                <div *ngIf="!req.locked && req.status === 'PENDING'" class="action-buttons">
+                  <button (click)="approve(req)" class="btn-approve" title="Approve" [disabled]="req.locked">
+                    <i class="fas fa-check"></i> Approve
+                  </button>
+                  <button (click)="toggleRejectReason(req.id)" class="btn-reject" title="Reject" [disabled]="req.locked">
+                    <i class="fas fa-times"></i> Reject
+                  </button>
+                </div>
+                <!-- Locked/Processed Badge -->
+                <div *ngIf="req.locked || req.status !== 'PENDING'" class="status-processed">
+                  <i class="fas fa-lock"></i> {{ req.status }}
+                </div>
+              </td>
+            </tr>
+
+            <!-- Rejection Reason Row -->
+            <tr *ngIf="activeRejectId === req.id && !req.locked && req.status === 'PENDING'" class="reject-reason-row">
+              <td colspan="8">
+                <div class="reject-form">
+                  <div class="reject-header">
+                    <h4>Rejection Reason</h4>
+                    <p>Provide a reason for rejecting this correction request</p>
+                  </div>
+                  <textarea
+                    [(ngModel)]="rejectReason[req.id]"
+                    placeholder="Enter your reason for rejection..."
+                    rows="3"
+                    class="reject-textarea">
+                  </textarea>
+                  <div class="reject-actions">
+                    <button (click)="toggleRejectReason(null)" class="btn-cancel">
+                      <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button (click)="reject(req)" class="btn-submit" [disabled]="!rejectReason[req.id]">
+                      <i class="fas fa-paper-plane"></i> Submit Rejection
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
