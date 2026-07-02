@@ -11,7 +11,8 @@
 
   <!-- ── Stats cards ─────────────────────────────────────── -->
   <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <button (click)="filterCard('rfqs','open')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="rfqFilter==='open' && activeTable==='rfqs'" [class.ring-[#224957]]="rfqFilter==='open' && activeTable==='rfqs'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Open RFQs</span>
         <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -23,8 +24,9 @@
         <ng-container *ngIf="stats.unreadRfqs > 0"><strong>{{ stats.unreadRfqs }} unread</strong> — needs attention</ng-container>
         <ng-container *ngIf="stats.unreadRfqs === 0">All RFQs reviewed</ng-container>
       </p>
-    </div>
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    </button>
+    <button (click)="filterCard('rfqs','due_soon')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="rfqFilter==='due_soon' && activeTable==='rfqs'" [class.ring-[#224957]]="rfqFilter==='due_soon' && activeTable==='rfqs'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Due Soon</span>
         <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -36,8 +38,9 @@
         <ng-container *ngIf="stats.pendingResponseDueSoon > 0">Due within <strong>3 days</strong></ng-container>
         <ng-container *ngIf="stats.pendingResponseDueSoon === 0">No urgent deadlines</ng-container>
       </p>
-    </div>
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    </button>
+    <button (click)="filterCard('quotations',undefined,'sent')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="quotFilter==='sent' && activeTable==='quotations'" [class.ring-[#224957]]="quotFilter==='sent' && activeTable==='quotations'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Quotations Sent</span>
         <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
@@ -46,8 +49,9 @@
       </div>
       <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.sentQuotations }}</div>
       <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.draftQuotations }}</strong> still in draft</p>
-    </div>
-    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    </button>
+    <button (click)="filterCard('quotations',undefined,'accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="quotFilter==='accepted' && activeTable==='quotations'" [class.ring-[#224957]]="quotFilter==='accepted' && activeTable==='quotations'">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Win Rate</span>
         <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
@@ -56,7 +60,7 @@
       </div>
       <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.conversionRate }}%</div>
       <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.acceptedQuotations }}</strong> accepted of {{ stats.sentQuotations + stats.acceptedQuotations }} sent</p>
-    </div>
+    </button>
   </div>
 
   <!-- ── Activity pills ──────────────────────────────────── -->

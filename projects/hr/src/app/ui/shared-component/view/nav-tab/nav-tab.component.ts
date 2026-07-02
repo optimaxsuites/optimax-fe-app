@@ -1,4 +1,4 @@
-import { Component, Input, Type } from '@angular/core';
+import { Component, Input, Type, ChangeDetectionStrategy } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
 import { CommonModule } from '@angular/common';
 
@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
+  changeDetection: ChangeDetectionStrategy.Default,
   // standalone: true,
   // imports: [CommonModule],
 })
@@ -21,7 +22,7 @@ export class NavTabComponent {
 
   ngOnInit(): void {
     console.log('[NavTabComponent] ngOnInit', this.tabsConfig);
-    this.user_role = sessionStorage.getItem('role');
+    this.user_role = sessionStorage.getItem('role') || '';
     this.#sessionStorageCacheKey = this.tabsConfig
       .map((tab) => tab.name)
       .join('-')
@@ -41,7 +42,6 @@ export class NavTabComponent {
 
     if (cachedTabName && isCachedTabAccessible) {
       this.selectedTab = cachedTabName;
-      return;
     }
 
     this.#cacheSelectedTab(this.selectedTab);
@@ -52,12 +52,12 @@ export class NavTabComponent {
   }
 
   selectTab(tab: any) {
+    this.selectedTab = tab.name;
+    this.#cacheSelectedTab(tab.name);
     if (tab.hasDropdown) {
       this.toggleDropdown(tab.name);
       this.selectedDropdownTab = tab.name;
     } else {
-      this.selectedTab = tab.name;
-      this.#cacheSelectedTab(tab.name);
       this.isDropdownOpen = false;
     }
   }

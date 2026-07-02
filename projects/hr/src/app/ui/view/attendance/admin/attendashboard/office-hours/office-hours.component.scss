@@ -1,49 +1,68 @@
+// ========== BRAND COLORS ==========
+$primary-color: #4caf50;
+$text-dark: #111827;
+$text-gray: #6b7280;
+$text-light: #9ca3af;
+$bg-white: #ffffff;
+$bg-light: #f9fafb;
+$border-color: #e5e7eb;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+
 .office-hours-card {
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
-  border-radius: 16px;
-  padding: 1.4rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid #eef2f7;
+  background: $bg-white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: $shadow-lg;
+  border: 1px solid $border-color;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 16px;
+  transition: all 0.2s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+    box-shadow: $shadow-md;
+    border-color: $primary-color;
   }
 
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $border-color;
 
     .title {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 8px;
 
       h2 {
-        font-size: 2.0rem;
-        font-weight: 600;
-        color: #111827;
+        font-size: 16px;
+        font-weight: 700;
+        color: $text-dark;
+        margin: 0;
+        letter-spacing: -0.3px;
       }
 
       .icon {
-        font-size: 2.0rem;
+        font-size: 18px;
+        color: $primary-color;
       }
     }
 
     .edit-btn {
       background: transparent;
       border: none;
-      color: #065f46;
-      font-size: 1.2rem;
+      color: $primary-color;
+      font-size: 13px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
+      transition: all 0.2s ease;
 
       &:hover {
+        opacity: 0.8;
         text-decoration: underline;
       }
     }
@@ -52,25 +71,29 @@
   .hours-display {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 12px;
 
     .hour-item {
-      background: #f1f5f9;
-      padding: 0.8rem 1rem;
-      border-radius: 12px;
+      background: $bg-light;
+      padding: 12px;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 4px;
+      border: 1px solid $border-color;
 
       .label {
-        font-size: 1.2rem;
-        color: #6b7280;
+        font-size: 11px;
+        font-weight: 700;
+        color: $text-light;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
       }
 
       .value {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #111827;
+        font-size: 16px;
+        font-weight: 700;
+        color: $text-dark;
       }
     }
   }
@@ -78,37 +101,39 @@
   .hours-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 12px;
 
     .input-group {
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
+      gap: 6px;
 
       label {
-        font-size: 1.2rem;
-        color: #6b7280;
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-dark;
         display: flex;
         align-items: center;
         gap: 6px;
 
         i {
-          color: #64748b;
-          font-size: 13px;
+          color: $text-light;
+          font-size: 12px;
         }
       }
 
       input {
-        padding: 0.55rem 0.7rem;
-        border-radius: 10px;
-        border: 1px solid #d1d5db;
-        font-size: 1.5rem;
-        transition: border 0.2s ease, box-shadow 0.2s ease;
+        padding: 9px 11px;
+        border-radius: 6px;
+        border: 1px solid $border-color;
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.2s ease;
 
         &:focus {
           outline: none;
-          border-color: #2563eb;
-          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+          border-color: $primary-color;
+          box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
         }
       }
     }
@@ -117,38 +142,42 @@
       grid-column: span 2;
       display: flex;
       justify-content: flex-end;
-      gap: 0.6rem;
+      gap: 10px;
+      padding-top: 6px;
 
       button {
-        padding: 0.5rem 1rem;
-        border-radius: 10px;
-        font-size: 1.2rem;
+        padding: 9px 16px;
+        border-radius: 6px;
+        font-size: 13px;
         font-weight: 600;
         cursor: pointer;
         border: none;
         transition: all 0.2s ease;
+        box-shadow: $shadow-sm;
 
         &.primary {
-          background: #1f9254;
+          background: $primary-color;
           color: white;
 
           &:hover {
-            background: #065f46;
+            background: #388e3c;
+            box-shadow: $shadow-md;
+            transform: translateY(-1px);
           }
         }
 
         &.secondary {
-          background: #f3f4f6;
-          color: #374151;
+          background: $bg-light;
+          color: $text-gray;
+          border: 1px solid $border-color;
 
           &:hover {
-            background: #e5e7eb;
+            background: #f3f4f6;
           }
         }
       }
     }
   }
-
 }
  .hint {
     font-size: 1.2rem;

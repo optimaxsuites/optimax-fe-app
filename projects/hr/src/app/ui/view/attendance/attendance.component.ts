@@ -10,6 +10,7 @@ import { EmployeedashboardComponent } from './employee/employeedashboard/employe
 //import { EmployeesummaryComponent } from './employee/employeesummary/employeesummary.component';
 import { CorrectionrequestComponent } from './employee/correctionrequest/correctionrequest.component';
 import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corrections.component';
+import { AttendanceReportsComponent } from './admin/attendance-reports/attendance-reports.component';
 
 @Component({
   selector: 'app-attendance',
@@ -18,14 +19,17 @@ import { AdminCorrectionsComponent } from './admin/admin-corrections/admin-corre
 })
 export class AttendanceComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Admin Dashboard', 
+    { name: 'Admin Dashboard',
     component: AttendashboardComponent,
     icon: 'fa-solid fa-chart-line',
     /*role: 'ROLE_ADMIN'*/},
     { name: 'Corrections',
       component: AdminCorrectionsComponent,
     icon: 'fa-solid fa-pen-to-square'},
-    { name: 'Employee Dashboard', 
+    { name: 'Reports',
+      component: AttendanceReportsComponent,
+    icon: 'fa-solid fa-file-lines'},
+    { name: 'Employee Dashboard',
       component: EmployeedashboardComponent,
     icon: 'fa-solid fa-user'},
     { name: 'Correction Requests',

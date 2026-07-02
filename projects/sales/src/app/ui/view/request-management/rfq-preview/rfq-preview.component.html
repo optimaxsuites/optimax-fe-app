@@ -50,7 +50,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">Procurement Type</span>
-              <span class="info-value type-badge">{{ request.procurementType?.toLowerCase() || 'N/A' }}</span>
+              <span class="info-value type-badge">{{ request.procurementType ? request.procurementType.toLowerCase() : 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Delivery Location</span>
@@ -108,7 +108,7 @@
           </table>
         </div>
 
-        <div class="doc-section-block" *ngIf="request.attachments?.length">
+        <div class="doc-section-block" *ngIf="request.attachments.length">
           <h3>3. Attachments</h3>
           <ul class="doc-attachments-list">
             <li *ngFor="let att of request.attachments">
