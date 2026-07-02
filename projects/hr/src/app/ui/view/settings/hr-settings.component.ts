@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
 
 export type NotifChannel = 'email' | 'in_app' | 'push' | 'sms';
 
@@ -44,8 +46,25 @@ const PROJECT_DEFAULTS: Omit<ProjectNotifPrefs, 'projectKey' | 'projectLabel'>  
 })
 export class HrSettingsComponent implements OnInit {
 
+  preOnboardingLink: string;
+  employeeUpdateFormLink: string;
+  offboardingFormLink: string;
+
+  constructor(
+    private navLinks: NavigationLinksService,
+    private route: ActivatedRoute,
+  ) {
+    this.preOnboardingLink      = this.navLinks.getLink('preOnboardingForm');
+    this.employeeUpdateFormLink = this.navLinks.getLink('employeeUpdateForm');
+    this.offboardingFormLink    = this.navLinks.getLink('offboardingForm');
+  }
+
+  openForm(route: string): void {
+    window.open(route, '_blank');
+  }
+
   // ── Navigation ─────────────────────────────────────────────────────────────
-  activeSection: 'notifications' | 'odoo' | 'general' = 'notifications';
+  activeSection: 'notifications' | 'odoo' | 'general' | 'forms' = 'notifications';
 
   // ── Notification prefs ─────────────────────────────────────────────────────
   readonly notifChannels: Array<{ key: NotifChannel; label: string; icon: string; desc: string }> = [
@@ -88,6 +107,12 @@ export class HrSettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPrefs();
+    this.route.queryParams.subscribe(params => {
+      const panel = params['panel'];
+      if (panel && ['notifications', 'odoo', 'general', 'forms'].includes(panel)) {
+        this.activeSection = panel as typeof this.activeSection;
+      }
+    });
   }
 
   private clone<T>(obj: T): T {

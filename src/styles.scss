@@ -378,3 +378,23 @@ body.tour-active *:not(.tour-highlight):not(app-tour-guide) {
   border-radius: 0.9rem;
   overflow: hidden;
 }
+
+/* ── Global print: hide shell chrome so only page content prints ── */
+@media print {
+  .sidebar-container,
+  .navbar-container,
+  app-dashboard-footer,
+  .mobile-sidebar-backdrop {
+    display: none !important;
+  }
+
+  .main-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .main {
+    padding: 0 !important;
+  }
+}

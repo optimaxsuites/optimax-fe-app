@@ -50,9 +50,29 @@ export class NavigationLinksService {
 
 
 
-    this.links['transactionLink'] = '/admin/accounting/transaction/' +uuidV4();
-    this.links['accountingReportLink'] = '/admin/accounting/reports/' +uuidV4();
-    this.links['reconciliationLink'] = '/admin/accounting/reconciliation/' +uuidV4();
+    this.links['accountingLink']        = '/admin/accounting/transaction/' + uuidV4();
+    this.links['accountSettings']       = '/admin/accounting/transaction/' + uuidV4();
+    this.links['financeDashboardLink']  = '/admin/accounting/dashboard/'   + uuidV4();
+    this.links['financeEventsLink']   = '/admin/accounting/events/'   + uuidV4();
+    this.links['financeJournalsLink'] = '/admin/accounting/journals/' + uuidV4();
+    this.links['financeLedgerLink']   = '/admin/accounting/ledger/'   + uuidV4();
+    this.links['financeCoaLink']      = '/admin/accounting/coa/'      + uuidV4();
+    this.links['financeArLink']       = '/admin/accounting/ar/'       + uuidV4();
+    this.links['financeApLink']       = '/admin/accounting/ap/'       + uuidV4();
+    this.links['financeBankingLink']  = '/admin/accounting/banking/'  + uuidV4();
+    this.links['financePaymentsLink'] = '/admin/accounting/payments/' + uuidV4();
+    this.links['transactionLink']       = '/admin/accounting/transaction/' + uuidV4();
+    this.links['accountingReportLink'] = '/admin/accounting/reports/'   + uuidV4();
+    this.links['reconciliationLink'] = '/admin/accounting/reconciliation/' + uuidV4();
+    this.links['financeReportsLink']    = '/admin/accounting/finance-reports/'    + uuidV4();
+    this.links['financeTaxLink']        = '/admin/accounting/finance-tax/'        + uuidV4();
+    this.links['financeBudgetsLink']    = '/admin/accounting/finance-budgets/'    + uuidV4();
+    this.links['financeAuditlogLink']   = '/admin/accounting/finance-auditlog/'   + uuidV4();
+    this.links['financeSettingsLink']        = 'finance-settings/'                          + uuidV4();
+    this.links['financePeriodCloseLink']     = 'finance-period-close/'                      + uuidV4();
+    this.links['financeSettingsNavLink']     = '/admin/settings/finance-settings/'          + uuidV4();
+    this.links['financePeriodCloseNavLink']  = '/admin/settings/finance-period-close/'      + uuidV4();
+    this.links['financeAssessmentLink']      = '/admin/accounting/finance-assessment/'      + uuidV4();
 
 
 
@@ -78,6 +98,9 @@ export class NavigationLinksService {
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
     this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
     this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
+    this.links['preOnboardingForm']   = '/admin/hr/pre-onboarding-form/'   + uuidV4();
+    this.links['employeeUpdateForm']  = '/admin/hr/employee-update-form/'  + uuidV4();
+    this.links['offboardingForm']     = '/admin/hr/offboarding-form/'      + uuidV4();
 
 
 // hospitality ================================================================================================================
@@ -140,7 +163,7 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
+this.links['settingsLink'] = '/admin/settings/settings-home/' + uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 this.links['posSettings'] = 'POS-settings/' +uuidV4();

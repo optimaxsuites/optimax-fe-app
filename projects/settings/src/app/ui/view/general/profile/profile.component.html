@@ -25,7 +25,7 @@
           <div class="ps-field">
             <label class="ps-label">Full Name <span class="ps-req">*</span></label>
             <input type="text" formControlName="fullname" class="ps-input"
-                   [readOnly]="!isEditMode" placeholder="John Doe" />
+                   [readOnly]="!isEditMode" placeholder="Rolayo Awe" />
           </div>
 
           <div class="ps-field">
@@ -36,7 +36,7 @@
           <div class="ps-field">
             <label class="ps-label">Email <span class="ps-req">*</span></label>
             <input type="email" formControlName="email" class="ps-input"
-                   [readOnly]="!isEditMode" placeholder="john@example.com" />
+                   [readOnly]="!isEditMode" placeholder="rolayo@centrifugegroup.com" />
           </div>
 
           <div class="ps-field">
@@ -48,7 +48,7 @@
           <div class="ps-field ps-span-2">
             <label class="ps-label">Address <span class="ps-req">*</span></label>
             <input type="text" formControlName="address" class="ps-input"
-                   [readOnly]="!isEditMode" placeholder="123 Main Street, Apt 4B" />
+                   [readOnly]="!isEditMode" placeholder="123 Samuel Ademule CBD, Apt 4B" />
           </div>
 
           <div class="ps-field">
@@ -86,7 +86,7 @@
           <div class="ps-field">
             <label class="ps-label">Company Name <span class="ps-req">*</span></label>
             <input type="text" formControlName="companyName" class="ps-input"
-                   [readOnly]="!isEditMode" placeholder="Acme Ltd." />
+                   [readOnly]="!isEditMode" placeholder="OptimaX Ltd." />
           </div>
 
           <div class="ps-field">
@@ -103,7 +103,7 @@
 
           <div class="ps-field">
             <label class="ps-label">Domain</label>
-            <input type="text" formControlName="companyName" class="ps-input" [readOnly]="true" />
+            <input type="text" formControlName="domain" class="ps-input" [readOnly]="true" />
           </div>
 
           <div class="ps-field ps-span-2">
@@ -138,6 +138,35 @@
                        class="ng-select-custom" [disabled]="!isEditMode"></ng-select>
           </div>
 
+        </div>
+      </div>
+
+      <!-- Logo -->
+      <div class="ps-section">
+        <div class="ps-section-label">Company Logo</div>
+        <div style="display:flex;flex-direction:column;gap:12px;max-width:360px;">
+          <div *ngIf="logoPreview || form.get('companyLogo')?.value"
+               style="width:160px;height:80px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f9fafb;">
+            <img [src]="logoPreview || form.get('companyLogo')?.value"
+                 alt="Company logo" style="max-width:100%;max-height:100%;object-fit:contain;" />
+          </div>
+          <div *ngIf="!logoPreview && !form.get('companyLogo')?.value"
+               style="width:160px;height:80px;border:2px dashed #d1d5db;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;">
+            No logo
+          </div>
+          <div *ngIf="isEditMode" style="display:flex;gap:8px;align-items:center;">
+            <input type="file" id="logoUpload" accept="image/*" (change)="onLogoChange($event)"
+                   style="display:none;" />
+            <label for="logoUpload" class="ps-btn ps-btn-ghost" style="cursor:pointer;font-size:12px;">
+              <i class="fas fa-upload"></i> Upload Logo
+            </label>
+            <button *ngIf="logoPreview" type="button" class="ps-btn ps-btn-ghost" (click)="clearLogo()"
+                    style="font-size:12px;color:#ef4444;">
+              <i class="fas fa-times"></i> Remove
+            </button>
+          </div>
+          <p *ngIf="logoError" style="color:#ef4444;font-size:12px;margin:0;">{{ logoError }}</p>
+          <p style="color:#9ca3af;font-size:11px;margin:0;">PNG, JPG or SVG · Max 2 MB · Used across invoices, payslips and the sidebar</p>
         </div>
       </div>
 

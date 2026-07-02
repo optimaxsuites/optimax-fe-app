@@ -31,14 +31,14 @@ export class ProjectService {
       status: 'Ongoing',
       startDate: '2025-10-01',
       endDate: '2025-11-15',
-      assignedTo: ['John Doe', 'Mary Smith'],
+      assignedTo: ['Rolayo Awe', 'Temi Awe'],
       tasks: [
         { id: 1, title: 'UI Redesign', description: 'Revamp dashboard UI', completed: true },
         { id: 2, title: 'Add Analytics', description: 'Implement viewer stats', completed: false, milestone: true },
         { id: 3, title: 'Optimize API', description: 'Reduce latency by 20%', completed: false },
       ],
       notes: [
-        { user: 'John Doe', message: 'Completed initial UI screens', date: '2025-10-10' },
+        { user: 'Rolayo Awe', message: 'Completed initial UI screens', date: '2025-10-10' },
       ]
     },
     {
@@ -48,7 +48,7 @@ export class ProjectService {
       status: 'Pending',
       startDate: '2025-11-05',
       endDate: '2026-01-30',
-      assignedTo: ['Mary Smith', 'Tunde Ola'],
+      assignedTo: ['Temi Awe', 'Tunde Ola'],
       tasks: [
         { id: 1, title: 'Setup Backend API', description: 'Prepare endpoints', completed: false },
         { id: 2, title: 'UI Wireframes', description: 'Low fidelity mockups', completed: false },

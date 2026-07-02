@@ -31,15 +31,15 @@ export interface ShiftRecord {
 
 @Injectable({ providedIn: 'root' })
 export class ShiftService {
-  private currentEmployee = 'John Doe'
+  private currentEmployee = 'Rolayo Awe'
   private shifts: Shift[] = [
     {
       id: 1,
       name: 'Morning Shift',
       projectName: 'CivicLens Dashboard',
       assignedTo: [
-        { id: 1, name: 'John Doe' },
-        { id: 2, name: 'Mary Smith' }
+        { id: 1, name: 'Rolayo Awe' },
+        { id: 2, name: 'Temi Awe' }
       ],
       startTime: '09:00',
       endTime: '17:00',
@@ -85,7 +85,7 @@ export class ShiftService {
       id: 1,
       shiftId: 1,
       employeeId: 1,
-      employeeName: 'John Doe',
+      employeeName: 'Rolayo Awe',
       date: '2025-10-27',
       expectedClockIn: '09:00',
       expectedClockOut: '17:00',
@@ -96,7 +96,7 @@ export class ShiftService {
       id: 2,
       shiftId: 1,
       employeeId: 2,
-      employeeName: 'Mary Smith',
+      employeeName: 'Temi Awe',
       date: '2025-10-27',
       expectedClockIn: '09:00',
       expectedClockOut: '17:00',

@@ -69,7 +69,7 @@ export class ReconcileSalesComponent implements OnInit {
       id: 'sls_3',
       date: new Date('2026-01-22'),
       reference: 'POS-10235',
-      customer: 'John Doe',
+      customer: 'Rolayo Awe',
       amount: 5200,
       status: 'Unmatched',
       paymentMethod: 'Cash',

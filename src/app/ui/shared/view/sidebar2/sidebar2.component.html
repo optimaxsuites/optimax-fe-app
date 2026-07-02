@@ -2,8 +2,16 @@
 
   <!-- ── Brand ──────────────────────────────────────────────────────────────── -->
   <div class="sb-brand">
-    <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
-    <img *ngIf="sidebarHidden"  src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
+    <ng-container *ngIf="companyProfile$ | async as profile">
+      <img *ngIf="!sidebarHidden && profile.logoUrl" [src]="profile.logoUrl" [alt]="profile.companyName" class="sb-logo" />
+      <img *ngIf="sidebarHidden && profile.logoUrl" [src]="profile.logoUrl" [alt]="profile.companyName" class="sb-logo-sm" />
+      <span *ngIf="!sidebarHidden && !profile.logoUrl" class="sb-brand-name">{{ profile.companyName || 'OptimaX' }}</span>
+      <span *ngIf="sidebarHidden && !profile.logoUrl" class="sb-brand-abbr">{{ (profile.companyName || 'OX').substring(0,2).toUpperCase() }}</span>
+    </ng-container>
+    <ng-container *ngIf="!(companyProfile$ | async)">
+      <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
+      <img *ngIf="sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
+    </ng-container>
   </div>
 
   <!-- ── Toggle ─────────────────────────────────────────────────────────────── -->

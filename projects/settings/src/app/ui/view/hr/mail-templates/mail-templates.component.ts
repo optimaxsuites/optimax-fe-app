@@ -166,7 +166,7 @@ export class MailTemplatesComponent {
   previewValues: Record<string, string> = {
     candidateName:   'Amara Okonkwo',
     jobTitle:        'Senior Product Designer',
-    companyName:     'Acme Corp',
+    companyName:     'Centrifuge Group',
     department:      'Product & Design',
     location:        'Lagos, Nigeria',
     recruiterName:   'Chisom Eze',

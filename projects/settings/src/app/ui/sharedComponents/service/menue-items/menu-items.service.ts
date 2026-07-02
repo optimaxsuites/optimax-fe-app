@@ -142,54 +142,159 @@ export class MenuItemsService {
       active: false
     },    
     {
-      label: 'Accounting',
+      label: 'Finance',
       code: 'optimaXAccounting',
-      icon: 'fas fa-calculator',
+      icon: 'fas fa-landmark',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      description: 'The Accounting module of OptimaXSuites provides tools for managing financial transactions, ledgers, reconciliations, and generating financial reports.',
-      shortDescription: 'Manage financial records, ledgers, and accounting reports.',
+      description: 'The Finance module of OptimaXSuites provides tools for managing financial transactions, ledgers, reconciliations, and generating financial reports.',
+      shortDescription: 'Manage financial records, ledgers, and financial reports.',
       locked: true,
       active: true,
       submenu: [
-        // ── Core Ledger ───────────────────────────────────────────────────────
-        { label: 'Core Ledger', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        // ── Overview ──────────────────────────────────────────────────────────
+        { label: 'Overview', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
-          label: 'Transactions',
-          code: 'ACCT_TXN',
-          route: this.navigationLink.getLink('transactionLink'),
+          label: 'Dashboard',
+          code: 'ACCT_DASH',
+          route: this.navigationLink.getLink('financeDashboardLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-exchange-alt',
-          description: 'View and manage financial transactions across the organization.'
+          icon: 'fas fa-tachometer-alt',
+          description: 'Overview of financial health: revenue, expenses, profit, and pending events.'
+        },
+
+        // ── Core Accounting ────────────────────────────────────────────────────
+        { label: 'Core Accounting', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Accounting Events',
+          code: 'ACCT_EVENTS',
+          route: this.navigationLink.getLink('financeEventsLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-inbox',
+          description: 'Review, approve and post financial events from all modules.'
+        },
+        {
+          label: 'Journal Entries',
+          code: 'ACCT_JE',
+          route: this.navigationLink.getLink('financeJournalsLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-book-open',
+          description: 'Audit-ready double-entry bookkeeping and manual journal entries.'
         },
         {
           label: 'General Ledger',
           code: 'ACCT_GL',
-          route: this.navigationLink.getLink(''),
+          route: this.navigationLink.getLink('financeLedgerLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-book',
-          description: 'Maintain and review the general ledger for accurate financial reporting.'
+          description: 'Complete double-entry transaction history and trial balance.'
         },
-
-        // ── Reconciliation ────────────────────────────────────────────────────
-        { label: 'Reconciliation', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
-          label: 'Reconciliation',
-          code: 'ACCT_RECON',
-          route: this.navigationLink.getLink('reconciliationLink'),
+          label: 'Chart of Accounts',
+          code: 'ACCT_COA',
+          route: this.navigationLink.getLink('financeCoaLink'),
           roles: ['ROLE_USER'],
-          icon: 'fas fa-balance-scale',
-          description: 'Match financial records with bank statements for reconciliation purposes.'
+          icon: 'fas fa-sitemap',
+          description: 'Hierarchical IFRS-compliant account structure.'
         },
 
-        // ── Insights ──────────────────────────────────────────────────────────
-        { label: 'Insights', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        // ── Receivables & Payables ────────────────────────────────────────────
+        { label: 'Receivables & Payables', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
         {
-          label: 'Reports',
+          label: 'Accounts Receivable',
+          code: 'ACCT_AR',
+          route: this.navigationLink.getLink('financeArLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-hand-holding-usd',
+          description: 'Outstanding customer invoices and aging analysis.'
+        },
+        {
+          label: 'Accounts Payable',
+          code: 'ACCT_AP',
+          route: this.navigationLink.getLink('financeApLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-invoice-dollar',
+          description: 'Vendor bills and payment scheduling.'
+        },
+        {
+          label: 'Bank & Reconciliation',
+          code: 'ACCT_BANK',
+          route: this.navigationLink.getLink('financeBankingLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-university',
+          description: 'Connected bank accounts, statements, and GL reconciliation.'
+        },
+        {
+          label: 'Payment Runs',
+          code: 'ACCT_PAY',
+          route: this.navigationLink.getLink('financePaymentsLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-money-bill-wave',
+          description: 'Initiate, review, authorise and disburse payments with CBN dual-auth.'
+        },
+
+        // ── Reporting ─────────────────────────────────────────────────────────
+        { label: 'Reporting', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Financial Reports',
           code: 'ACCT_REPTS',
-          route: this.navigationLink.getLink('accountingReportLink'),
+          route: this.navigationLink.getLink('financeReportsLink'),
           roles: ['ROLE_USER'],
           icon: 'fas fa-chart-bar',
-          description: 'Generate various financial statements and reports for analysis.'
+          description: 'IFRS-compliant financial statements — Income Statement, Balance Sheet, Cash Flow, Trial Balance, and 10 more.'
+        },
+        {
+          label: 'Tax',
+          code: 'ACCT_TAX',
+          route: this.navigationLink.getLink('financeTaxLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-calculator',
+          description: 'VAT, WHT, CIT — FIRS compliance tax codes and rates.'
+        },
+        {
+          label: 'Budgets & Forecasting',
+          code: 'ACCT_BUDGETS',
+          route: this.navigationLink.getLink('financeBudgetsLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-bullseye',
+          description: 'FY 2026 budget tracking vs actuals by department.'
+        },
+
+        // ── Configuration ─────────────────────────────────────────────────────
+        { label: 'Configuration', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Period Close',
+          code: 'ACCT_PERIOD_CLOSE',
+          route: this.navigationLink.getLink('financePeriodCloseNavLink'),
+          roles: ['ROLE_ADMIN'],
+          icon: 'fas fa-lock',
+          description: 'Month-end and year-end close wizard with pre-close checks, soft lock, and hard lock.'
+        },
+        {
+          label: 'Accounting Settings',
+          code: 'ACCT_SETTINGS',
+          route: this.navigationLink.getLink('financeSettingsNavLink'),
+          roles: ['ROLE_ADMIN'],
+          icon: 'fas fa-cogs',
+          description: 'Fiscal year, base currency, VAT registration, event definitions, approval thresholds.'
+        },
+
+        // ── Governance ────────────────────────────────────────────────────────
+        { label: 'Governance', roles: [], isSectionHeader: true, doNotRegisterAsPermission: true },
+        {
+          label: 'Audit Trail',
+          code: 'ACCT_AUDIT',
+          route: this.navigationLink.getLink('financeAuditlogLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-search',
+          description: 'Immutable log of every create, modify, approve, post, reverse, and lock action.'
+        },
+        {
+          label: 'Assessment Report',
+          code: 'ACCT_ASSESSMENT',
+          route: this.navigationLink.getLink('financeAssessmentLink'),
+          roles: ['ROLE_ADMIN'],
+          icon: 'fas fa-clipboard-list',
+          description: 'Comprehensive audit of the Accounting module against global ERP standards.'
         }
       ]
     },
@@ -346,7 +451,8 @@ export class MenuItemsService {
           roles: ['ROLE_ADMIN'],
           icon: 'fas fa-chart-bar',
           description: 'Overtime cost analysis and probation tracking reports.'
-        }
+        },
+
       ]
     },
     {
@@ -741,13 +847,16 @@ export class MenuItemsService {
       submenu: [],
     },
     {
-      label: 'Accounting',
-      code: 'Accounting',
+      label: 'Finance',
+      code: 'optimaXAccounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('accountSettings'),
-      icon: 'fas fa-calculator',
-      description: 'Set fiscal year, chart of accounts and reconciliation rules.',
-      submenu: [],
+      route: this.navigationLink.getLink('financeSettingsLink'),
+      icon: 'fas fa-landmark',
+      description: 'Set fiscal year, chart of accounts, event definitions and reconciliation rules.',
+      submenu: [
+        { label: 'Accounting Settings', route: this.navigationLink.getLink('financeSettingsLink'), roles: ['ROLE_ADMIN'], icon: 'fas fa-cogs' },
+        { label: 'Period Close & Lock', route: this.navigationLink.getLink('financePeriodCloseLink'), roles: ['ROLE_ADMIN'], icon: 'fas fa-lock' },
+      ],
     },
     {
       label: 'Human Resources',
@@ -768,6 +877,7 @@ export class MenuItemsService {
         { label: 'Appraisal Assessment', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'appraisal' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tasks' },
         { label: 'Notifications', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
         { label: 'Import from Odoo', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'odoo' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-puzzle-piece' },
+        { label: 'Forms & Templates', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'forms' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-alt' },
       ],
     },
     {

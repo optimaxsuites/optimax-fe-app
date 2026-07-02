@@ -1,0 +1,267 @@
+<div class="fs-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#f1f5f9;color:#374151;">&#128274;</div>
+      <div>
+        <div class="page-title">Period Close &amp; Lock</div>
+        <div class="page-sub">FY 2026 &middot; January &ndash; December &middot; Base currency: NGN</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select class="fs-input" style="width:auto;padding:9px 14px;">
+        <option>FY 2026</option>
+        <option>FY 2025</option>
+      </select>
+      <button class="fs-btn btn-outline">&#128196; Year-End Report</button>
+    </div>
+  </div>
+
+  <!-- =========== CALENDAR SCREEN =========== -->
+  <div *ngIf="activeScreen==='calendar'">
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;">
+      <div class="fs-card" style="padding:16px;border-left:4px solid #16a34a;">
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:6px;">Open</div>
+        <div style="font-size:28px;font-weight:900;color:#16a34a;">1</div>
+      </div>
+      <div class="fs-card" style="padding:16px;border-left:4px solid #f59e0b;">
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:6px;">Soft-Locked</div>
+        <div style="font-size:28px;font-weight:900;color:#f59e0b;">0</div>
+      </div>
+      <div class="fs-card" style="padding:16px;border-left:4px solid #374151;">
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:6px;">Hard Locked</div>
+        <div style="font-size:28px;font-weight:900;color:#374151;">5</div>
+      </div>
+      <div class="fs-card" style="padding:16px;border-left:4px solid #9ca3af;">
+        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:6px;">Future</div>
+        <div style="font-size:28px;font-weight:900;color:#9ca3af;">6</div>
+      </div>
+    </div>
+
+    <!-- Month Grid -->
+    <div class="pc-month-grid">
+      <div class="pc-month-card" *ngFor="let m of months" [ngClass]="monthStatusClass(m.status)">
+        <div class="pc-month-name">{{ m.name }}</div>
+        <div style="margin-bottom:8px;">
+          <span class="fs-badge" [ngClass]="m.status==='locked' ? 'badge-gray' : m.status==='open' ? 'badge-green' : 'badge-gray'" style="font-size:10px;">
+            {{ m.status === 'locked' ? 'LOCKED' : m.status === 'open' ? 'OPEN' : 'FUTURE' }}
+          </span>
+        </div>
+        <button *ngIf="m.status==='open'" class="fs-btn btn-primary btn-sm" (click)="openWizard(m)" style="width:100%;">Close Period</button>
+      </div>
+    </div>
+
+    <!-- Rules Info -->
+    <div class="fs-card">
+      <div class="card-title-row">
+        <div class="card-title">&#128274; What Period Locking Prevents</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+        <div style="color:#dc2626;">&#10007; New journal entries cannot be posted</div>
+        <div style="color:#dc2626;">&#10007; Existing entries cannot be modified or deleted</div>
+        <div style="color:#dc2626;">&#10007; Invoice dates cannot be backdated into this period</div>
+        <div style="color:#dc2626;">&#10007; Payroll cannot be processed for this period</div>
+        <div style="color:#16a34a;">&#10003; Reports remain available for read-only access</div>
+        <div style="color:#16a34a;">&#10003; Audit trail continues to be recorded</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========== WIZARD SCREEN =========== -->
+  <div *ngIf="activeScreen==='wizard'">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button class="fs-btn btn-outline btn-sm" (click)="backToCalendar()">&#8592; Back</button>
+      <span class="fs-badge badge-green" style="font-size:13px;padding:6px 14px;">June 2026</span>
+      <span style="font-size:15px;font-weight:900;color:#111827;">Period Close Wizard</span>
+    </div>
+
+    <!-- Stepper -->
+    <div class="wizard-stepper" style="margin-bottom:28px;">
+      <div class="wiz-step" [class.active]="wizardStep===0" [class.done]="wizardStep>0">
+        <div class="wiz-bubble">{{ wizardStep > 0 ? '&#10003;' : '1' }}</div>
+        <div class="wiz-label">Pre-Close<br>Checks</div>
+      </div>
+      <div style="flex:1;height:2px;background:#e5e7eb;margin-bottom:20px;"></div>
+      <div class="wiz-step" [class.active]="wizardStep===1" [class.done]="wizardStep>1">
+        <div class="wiz-bubble">{{ wizardStep > 1 ? '&#10003;' : '2' }}</div>
+        <div class="wiz-label">Closing<br>Entries</div>
+      </div>
+      <div style="flex:1;height:2px;background:#e5e7eb;margin-bottom:20px;"></div>
+      <div class="wiz-step" [class.active]="wizardStep===2" [class.done]="wizardStep>2">
+        <div class="wiz-bubble">{{ wizardStep > 2 ? '&#10003;' : '3' }}</div>
+        <div class="wiz-label">Soft Lock</div>
+      </div>
+      <div style="flex:1;height:2px;background:#e5e7eb;margin-bottom:20px;"></div>
+      <div class="wiz-step" [class.active]="wizardStep===3">
+        <div class="wiz-bubble">4</div>
+        <div class="wiz-label">Hard Lock</div>
+      </div>
+    </div>
+
+    <!-- Step 0: Pre-Close Checklist -->
+    <div *ngIf="wizardStep===0">
+      <div class="fs-card">
+        <div class="card-title-row">
+          <div class="card-title">Pre-Close Checklist</div>
+        </div>
+        <div class="pc-checklist">
+          <div class="pc-check-item pass">
+            <span style="font-size:22px;">&#9989;</span>
+            <div>
+              <div class="pc-check-title">No unposted automatic journal entries</div>
+              <div class="pc-check-detail">All system-generated JEs for June 2026 have been posted.</div>
+            </div>
+          </div>
+          <div class="pc-check-item" [ngClass]="draftChecksAcknowledged ? 'pass' : 'warn'">
+            <span style="font-size:22px;">{{ draftChecksAcknowledged ? '&#9989;' : '&#9888;&#65039;' }}</span>
+            <div style="flex:1;">
+              <div class="pc-check-title">3 manual journal entries in DRAFT state</div>
+              <div class="pc-check-detail" *ngIf="!draftChecksAcknowledged">These drafts will be discarded upon period close. Acknowledge to proceed.</div>
+              <div class="pc-check-detail" *ngIf="draftChecksAcknowledged" style="color:#16a34a;font-weight:900;">Acknowledged — drafts will be discarded.</div>
+            </div>
+            <button *ngIf="!draftChecksAcknowledged" class="fs-btn btn-outline btn-sm" (click)="acknowledgeDraft()">Acknowledge</button>
+          </div>
+          <div class="pc-check-item pass">
+            <span style="font-size:22px;">&#9989;</span>
+            <div>
+              <div class="pc-check-title">VAT Return for June 2026 filed</div>
+              <div class="pc-check-detail">VAT return submitted to FIRS on 28 Jun 2026. Ref: FIRS-VAT-2026-06.</div>
+            </div>
+          </div>
+        </div>
+        <button class="fs-btn btn-primary" (click)="setStep(1)" [disabled]="!draftChecksAcknowledged" [style.opacity]="draftChecksAcknowledged ? '1' : '0.5'">
+          Continue to Closing Entries &#8594;
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 1: Closing Entries -->
+    <div *ngIf="wizardStep===1">
+      <div class="fs-card">
+        <div class="card-title-row">
+          <div class="card-title">Auto-Generated Closing Entries</div>
+        </div>
+        <table class="closing-table">
+          <thead>
+            <tr><th>Ref</th><th>Description</th><th>Debit Account</th><th>Credit Account</th><th style="text-align:right;">Amount (&#8358;)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="monospace" style="font-family:monospace;font-weight:900;color:#2E6276;">CLJ-001</td>
+              <td>Close Revenue to Income Summary</td>
+              <td>4001 — Services Revenue</td>
+              <td>9000 — Income Summary</td>
+              <td style="text-align:right;font-weight:900;">50,916,000</td>
+            </tr>
+            <tr>
+              <td class="monospace" style="font-family:monospace;font-weight:900;color:#2E6276;">CLJ-002</td>
+              <td>Close COGS to Income Summary</td>
+              <td>9000 — Income Summary</td>
+              <td>5002 — Direct Labour</td>
+              <td style="text-align:right;font-weight:900;">12,300,000</td>
+            </tr>
+            <tr>
+              <td class="monospace" style="font-family:monospace;font-weight:900;color:#2E6276;">CLJ-003</td>
+              <td>Close OpEx to Income Summary</td>
+              <td>9000 — Income Summary</td>
+              <td>5001 — Salaries &amp; Benefits</td>
+              <td style="text-align:right;font-weight:900;">18,750,000</td>
+            </tr>
+            <tr>
+              <td class="monospace" style="font-family:monospace;font-weight:900;color:#2E6276;">CLJ-004</td>
+              <td>Transfer Net Profit to Retained Earnings</td>
+              <td>9000 — Income Summary</td>
+              <td>3002 — Retained Earnings</td>
+              <td style="text-align:right;font-weight:900;">19,866,000</td>
+            </tr>
+            <tr>
+              <td class="monospace" style="font-family:monospace;font-weight:900;color:#2E6276;">CLJ-005</td>
+              <td>Depreciation Accrual June 2026</td>
+              <td>5004 — Depreciation Expense</td>
+              <td>1100 — PPE Accumulated Dep.</td>
+              <td style="text-align:right;font-weight:900;">320,000</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:16px;">
+          <button class="fs-btn btn-primary" (click)="setStep(2)">Post Closing Entries &amp; Continue &#8594;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Soft Lock -->
+    <div *ngIf="wizardStep===2">
+      <div class="fs-card">
+        <div class="card-title-row">
+          <div class="card-title">Apply Soft Lock</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="fs-label">Lock Date</label>
+            <input class="fs-input" type="date" value="2026-06-30" />
+          </div>
+          <div>
+            <label class="fs-label">Authoriser</label>
+            <select class="fs-input">
+              <option>Chioma Eze — Finance Controller</option>
+              <option>Damilola Awe — Admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="fs-label">Override Policy</label>
+            <select class="fs-input">
+              <option>No override (strict)</option>
+              <option>Finance Controller can override</option>
+            </select>
+          </div>
+          <div>
+            <label class="fs-label">Notes</label>
+            <textarea class="fs-input" rows="2" placeholder="Optional soft lock notes..."></textarea>
+          </div>
+        </div>
+        <button class="fs-btn btn-primary" (click)="setStep(3)">Apply Soft Lock &amp; Continue &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Hard Lock -->
+    <div *ngIf="wizardStep===3">
+      <div class="fs-card">
+        <div class="card-title-row">
+          <div class="card-title">Confirm Hard Lock &mdash; June 2026</div>
+        </div>
+        <div class="preview-box" style="margin-bottom:16px;">
+          <div class="preview-row"><span class="preview-label">Period</span><span class="preview-val">June 2026 (01 Jun &ndash; 30 Jun 2026)</span></div>
+          <div class="preview-row"><span class="preview-label">Net Profit</span><span class="preview-val" style="color:#16a34a;">&#8358;19,866,000</span></div>
+          <div class="preview-row"><span class="preview-label">Closing Entries</span><span class="preview-val">5 posted (CLJ-001 to CLJ-005)</span></div>
+          <div class="preview-row"><span class="preview-label">Soft Lock Applied</span><span class="preview-val">Yes &mdash; 30 Jun 2026</span></div>
+          <div class="preview-row"><span class="preview-label">Authorised By</span><span class="preview-val">Chioma Eze</span></div>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;font-size:13px;color:#c2410c;margin-bottom:16px;">
+          &#9888; <strong>Warning:</strong> Hard locking is permanent. No journal entries, modifications, or reversals will be permitted for this period after locking. This action is audited and cannot be undone.
+        </div>
+        <button class="fs-btn btn-primary" style="background:#dc2626;" (click)="hardLock()">&#128274; Confirm &amp; Hard Lock Period</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========== LOCKED SCREEN =========== -->
+  <div *ngIf="activeScreen==='locked'">
+    <div class="fs-card" style="text-align:center;padding:40px;">
+      <div style="font-size:56px;margin-bottom:16px;">&#128274;</div>
+      <div style="font-size:22px;font-weight:900;color:#111827;margin-bottom:8px;">June 2026 &mdash; Hard Locked</div>
+      <div style="font-size:14px;color:#6b7280;margin-bottom:24px;">This period has been permanently locked. All financial data is sealed for audit and compliance.</div>
+
+      <div class="preview-box" style="max-width:500px;margin:0 auto 24px;">
+        <div class="preview-row"><span class="preview-label">Audit Ref</span><span class="preview-val monospace">PC-2026-06-001</span></div>
+        <div class="preview-row"><span class="preview-label">Locked At</span><span class="preview-val">30 Jun 2026 14:32</span></div>
+        <div class="preview-row"><span class="preview-label">Authorised By</span><span class="preview-val">Chioma Eze</span></div>
+        <div class="preview-row"><span class="preview-label">Net Profit Retained</span><span class="preview-val" style="color:#16a34a;">&#8358;19,866,000</span></div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button class="fs-btn btn-primary">&#128200; View Period Reports</button>
+        <button class="fs-btn btn-outline" (click)="backToCalendar()">&#8592; Back to Calendar</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,283 @@
+<div class="fs-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#f3f4f6;color:#374151;">&#9881;&#65039;</div>
+      <div>
+        <div class="page-title">Accounting Settings</div>
+        <div class="page-sub">Categories &middot; Modules &middot; Event Definitions &middot; Exchange Rates &middot; System</div>
+      </div>
+    </div>
+    <button class="fs-btn btn-primary">&#128190; Save Settings</button>
+  </div>
+
+  <!-- Inner Tabs -->
+  <div class="inner-tabs">
+    <button class="inner-tab" [class.active]="activeTab==='cats'" (click)="setTab('cats')">&#167;1 Categories</button>
+    <button class="inner-tab" [class.active]="activeTab==='mods'" (click)="setTab('mods')">&#167;2 Modules</button>
+    <button class="inner-tab" [class.active]="activeTab==='evdefs'" (click)="setTab('evdefs')">&#167;3 Event Definitions</button>
+    <button class="inner-tab" [class.active]="activeTab==='rates'" (click)="setTab('rates')">&#167;6 Exchange Rates</button>
+    <button class="inner-tab" [class.active]="activeTab==='sys'" (click)="setTab('sys')">System</button>
+  </div>
+
+  <!-- Categories Tab -->
+  <div *ngIf="activeTab==='cats'">
+    <div class="fs-card">
+      <div class="card-title-row">
+        <div class="card-title">Transaction Categories</div>
+        <button class="fs-btn btn-primary btn-sm">+ Add Category</button>
+      </div>
+      <table class="fs-table">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Description</th><th>Defs</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="monospace">1</td>
+            <td><strong>Salaries</strong></td>
+            <td>All staff payroll payments</td>
+            <td><span class="fs-badge badge-blue">3 defs</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">2</td>
+            <td><strong>Procurement</strong></td>
+            <td>Vendor purchases and supplies</td>
+            <td><span class="fs-badge badge-blue">5 defs</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">3</td>
+            <td><strong>Loans</strong></td>
+            <td>Staff and commercial loans</td>
+            <td><span class="fs-badge badge-blue">2 defs</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modules Tab -->
+  <div *ngIf="activeTab==='mods'">
+    <div class="fs-card">
+      <div class="card-title-row">
+        <div class="card-title">Finance Modules</div>
+        <button class="fs-btn btn-primary btn-sm">+ Add Module</button>
+      </div>
+      <table class="fs-table">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Description</th><th>Active Defs</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="monospace">1</td>
+            <td><strong>HR &amp; Payroll</strong></td>
+            <td>Salary, allowances, deductions</td>
+            <td><span class="fs-badge badge-green">4 active</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">2</td>
+            <td><strong>POS / Sales</strong></td>
+            <td>Point-of-sale and invoice events</td>
+            <td><span class="fs-badge badge-green">3 active</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">3</td>
+            <td><strong>Expense Management</strong></td>
+            <td>Staff reimbursements and petty cash</td>
+            <td><span class="fs-badge badge-green">2 active</span></td>
+            <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Event Definitions Tab -->
+  <div *ngIf="activeTab==='evdefs'">
+    <div class="fs-card">
+      <div class="card-title-row">
+        <div class="card-title">Event Definitions</div>
+        <button class="fs-btn btn-primary btn-sm">+ Add Definition</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="fs-table" style="min-width:900px;">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Module</th>
+              <th>Dir</th>
+              <th>Debit Mapping</th>
+              <th>Credit Mapping</th>
+              <th>Currencies</th>
+              <th>Approval</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="monospace">SAL-001</td>
+              <td><strong>Staff Salary Payment</strong></td>
+              <td><span class="fs-badge badge-blue">PAYROLL</span></td>
+              <td><span class="dir-out">OUT</span></td>
+              <td style="font-size:12px;">STATIC 5001 &mdash; Salaries Exp.</td>
+              <td style="font-size:12px;">DYNAMIC counterparty.defaultAcc</td>
+              <td style="font-size:12px;">NGN, USD</td>
+              <td><span class="fs-badge badge-green">YES</span></td>
+              <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+            </tr>
+            <tr>
+              <td class="monospace">INV-001</td>
+              <td><strong>Client Invoice Settlement</strong></td>
+              <td><span class="fs-badge badge-purple">SALES</span></td>
+              <td><span class="dir-in">IN</span></td>
+              <td style="font-size:12px;">STATIC 1002 &mdash; AR</td>
+              <td style="font-size:12px;">STATIC 3001 &mdash; Revenue</td>
+              <td style="font-size:12px;">NGN, USD, GBP, EUR</td>
+              <td><span class="fs-badge badge-gray">NO</span></td>
+              <td><button class="act-btn">&#9998;</button><button class="act-btn">&#128465;</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exchange Rates Tab -->
+  <div *ngIf="activeTab==='rates'">
+    <div class="fs-card">
+      <div class="card-title-row">
+        <div class="card-title">Exchange Rates</div>
+        <div style="display:flex;gap:8px;">
+          <button class="fs-btn btn-outline btn-sm">&#128197; Fetch CBN Rates</button>
+          <button class="fs-btn btn-primary btn-sm">+ Add Manual Rate</button>
+        </div>
+      </div>
+      <table class="fs-table">
+        <thead>
+          <tr><th>Pair</th><th>Rate (to NGN)</th><th>Source</th><th>Rate Date</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="monospace">USD/NGN</td>
+            <td><strong>1,580.00</strong></td>
+            <td><span class="fs-badge badge-blue">CBN</span></td>
+            <td>14 Jun 2026</td>
+            <td><span class="fs-badge badge-green">ACTIVE</span></td>
+            <td><button class="act-btn">&#9998;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">GBP/NGN</td>
+            <td><strong>2,010.50</strong></td>
+            <td><span class="fs-badge badge-purple">FIXER</span></td>
+            <td>14 Jun 2026</td>
+            <td><span class="fs-badge badge-green">ACTIVE</span></td>
+            <td><button class="act-btn">&#9998;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">EUR/NGN</td>
+            <td><strong>1,720.00</strong></td>
+            <td><span class="fs-badge badge-gray">MANUAL</span></td>
+            <td>13 Jun 2026</td>
+            <td><span class="fs-badge badge-amber">STALE</span></td>
+            <td><button class="act-btn">&#9998;</button></td>
+          </tr>
+          <tr>
+            <td class="monospace">AED/NGN</td>
+            <td><strong>430.25</strong></td>
+            <td><span class="fs-badge badge-blue">CBN</span></td>
+            <td>14 Jun 2026</td>
+            <td><span class="fs-badge badge-green">ACTIVE</span></td>
+            <td><button class="act-btn">&#9998;</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div *ngIf="activeTab==='sys'">
+    <div class="sys-grid">
+      <!-- Left -->
+      <div>
+        <div class="fs-card">
+          <div class="card-title-row">
+            <div class="card-title">Company &amp; Fiscal Year</div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">Company Name</label>
+            <input class="fs-input" type="text" value="OptimaX Suites Ltd" />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">TIN</label>
+            <input class="fs-input" type="text" value="12345678-0001" />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">Base Currency</label>
+            <select class="fs-input">
+              <option selected>NGN — Nigerian Naira</option>
+              <option>USD — US Dollar</option>
+              <option>GBP — British Pound</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">Fiscal Year Start</label>
+            <select class="fs-input">
+              <option selected>January</option>
+              <option>April</option>
+              <option>July</option>
+              <option>October</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Right -->
+      <div>
+        <div class="fs-card" style="margin-bottom:16px;">
+          <div class="card-title-row">
+            <div class="card-title">CBN Approval Thresholds</div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">Single Authoriser Limit</label>
+            <input class="fs-input" type="text" value="&#8358;499,999" />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label class="fs-label">Dual Authorisation Above</label>
+            <input class="fs-input" type="text" value="&#8358;500,000" />
+          </div>
+        </div>
+
+        <div class="fs-card">
+          <div class="card-title-row">
+            <div class="card-title">Period Management</div>
+          </div>
+          <table class="fs-table">
+            <thead>
+              <tr><th>Period</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>June 2026</strong></td>
+                <td><span class="fs-badge badge-green">OPEN</span></td>
+                <td><button class="fs-btn btn-outline btn-sm">&#128274; Lock Period</button></td>
+              </tr>
+              <tr>
+                <td><strong>May 2026</strong></td>
+                <td><span class="fs-badge badge-gray">LOCKED</span></td>
+                <td><button class="fs-btn btn-outline btn-sm">&#128275; Unlock</button></td>
+              </tr>
+              <tr>
+                <td><strong>April 2026</strong></td>
+                <td><span class="fs-badge badge-gray">LOCKED</span></td>
+                <td><button class="fs-btn btn-outline btn-sm">&#128275; Unlock</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

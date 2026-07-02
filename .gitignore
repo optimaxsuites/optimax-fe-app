@@ -43,3 +43,9 @@ testem.log
 .DS_Store
 Thumbs.db
 .vercel
+
+# Design docs / mockups / assessments / PRDs (managed in optimax-docs/)
+*assessment*.html
+*mockup*.html
+*-prd.html
+*.prd.html

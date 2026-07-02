@@ -1,0 +1,117 @@
+<div class="fd-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#f1f5f9;color:#374151;">&#128269;</div>
+      <div>
+        <div class="page-title">Audit Trail</div>
+        <div class="page-sub">Immutable log of every create, modify, approve, post, reverse, and lock action</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline fd-btn-sm">&#11015; Export Log</button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Events Today</div>
+      <div class="stat-value" style="color:#2E6276;">12</div>
+      <div class="stat-trend neutral">30 Jun 2026</div>
+      <div class="stat-ghost">&#128200;</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">This Month</div>
+      <div class="stat-value" style="color:#16a34a;">247</div>
+      <div class="stat-trend up">June 2026</div>
+      <div class="stat-ghost">&#128202;</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unique Actors</div>
+      <div class="stat-value" style="color:#374151;">6</div>
+      <div class="stat-trend neutral">Users + SYSTEM</div>
+      <div class="stat-ghost">&#128100;</div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-label">Flagged Events</div>
+      <div class="stat-value" style="color:#dc2626;">1</div>
+      <div class="stat-trend down">Requires review</div>
+      <div class="stat-ghost">&#9888;</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <input class="at-search" type="text" placeholder="Search by reference, actor, description..." [(ngModel)]="searchQuery" />
+    <select class="filter-select" [(ngModel)]="actionFilter">
+      <option value="">All Actions</option>
+      <option value="APPROVED">APPROVED</option>
+      <option value="POSTED">POSTED</option>
+      <option value="MODIFIED">MODIFIED</option>
+      <option value="CREATED">CREATED</option>
+      <option value="LOCKED">LOCKED</option>
+      <option value="EXPORTED">EXPORTED</option>
+      <option value="REJECTED">REJECTED</option>
+      <option value="REVERSED">REVERSED</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="entityFilter">
+      <option value="">All Entities</option>
+      <option value="EVENT">EVENT</option>
+      <option value="JE">JE</option>
+      <option value="SETTING">SETTING</option>
+      <option value="PERIOD">PERIOD</option>
+      <option value="REPORT">REPORT</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="actorFilter">
+      <option value="">All Actors</option>
+      <option value="Chioma Eze">Chioma Eze</option>
+      <option value="Damilola Awe">Damilola Awe</option>
+      <option value="Adaeze Nwosu">Adaeze Nwosu</option>
+      <option value="Olawale Adeyemi">Olawale Adeyemi</option>
+      <option value="SYSTEM">SYSTEM</option>
+    </select>
+    <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="clearFilters()">&#10005; Clear</button>
+  </div>
+
+  <!-- Table -->
+  <div class="fd-card" style="padding:0;">
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Reference</th>
+            <th>Description</th>
+            <th>IP / Session</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of filteredLogs">
+            <td style="white-space:nowrap;color:#6b7280;font-size:12px;">{{ log.ts }}</td>
+            <td><strong>{{ log.actor }}</strong></td>
+            <td>
+              <span class="fd-badge" [ngClass]="actionClass(log.action)">{{ log.action }}</span>
+            </td>
+            <td><span class="fd-badge badge-gray">{{ log.entity }}</span></td>
+            <td class="ref-cell">{{ log.ref }}</td>
+            <td style="font-size:12px;color:#374151;">{{ log.desc }}</td>
+            <td style="font-family:monospace;font-size:12px;color:#9ca3af;">{{ log.ip }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="filteredLogs.length === 0" style="padding:40px;text-align:center;color:#9ca3af;">
+      <div style="font-size:36px;margin-bottom:8px;">&#128269;</div>
+      <div style="font-size:15px;font-weight:900;color:#374151;margin-bottom:4px;">No results found</div>
+      <div style="font-size:13px;">Try adjusting your filters or search query.</div>
+    </div>
+
+    <div class="table-footer">
+      <div class="table-count">{{ filteredLogs.length }} of {{ allLogs.length }} events</div>
+    </div>
+  </div>
+</div>

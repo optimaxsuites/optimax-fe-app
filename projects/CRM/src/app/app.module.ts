@@ -27,6 +27,7 @@ import { CrmSettingsComponent } from './ui/view/crm-settings/crm-settings.compon
 import { CrmReportsComponent } from './ui/view/crm-reports/crm-reports.component';
 import { CrmAutomationComponent } from './ui/view/crm-automation/crm-automation.component';
 import { CrmGovernmentComponent } from './ui/view/crm-government/crm-government.component';
+import { CrmUiShellComponent } from './ui/view/crm-ui-shell/crm-ui-shell.component';
 
 // Auth
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
@@ -90,6 +91,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     CrmReportsComponent,
     CrmAutomationComponent,
     CrmGovernmentComponent,
+    CrmUiShellComponent,
   ],
   imports: [
     CommonModule,

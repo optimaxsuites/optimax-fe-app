@@ -471,3 +471,68 @@
 .setting-row-info { flex: 1; }
 .setting-row-label { font-size: 13.5px; font-weight: 600; color: var(--text); }
 .setting-row-sub   { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+/* ── Forms & Templates section ─────────────────────────────── */
+.form-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  transition: box-shadow .15s;
+
+  &:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+}
+
+.form-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1a56db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.form-card-body { flex: 1; }
+
+.form-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 4px;
+}
+
+.form-card-desc {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.form-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #1a56db;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s;
+
+  &:hover { background: #1648c0; color: #fff; }
+}

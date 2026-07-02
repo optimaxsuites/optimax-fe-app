@@ -17,6 +17,9 @@ export class ProfileComponent {
   isChangePasswordOpen: boolean = false;
   form!: FormGroup;
 
+  logoPreview: string | null = null;
+  logoError: string | null = null;
+
   countries: any[] = countriesData;
   states: any[] = [];
   cities: any[] = [];
@@ -26,6 +29,7 @@ export class ProfileComponent {
     { id: 7, name: 'Groceries & Food Stores' }, { id: 8, name: 'Entertainment & Events' }, { id: 9, name: 'Health & Fitness' },
     { id: 10, name: 'Fashion' }, { id: 11, name: 'Electronics & Gadgets' }, { id: 12, name: 'Construction & Hardware' },
     { id: 13, name: 'Education' }, { id: 14, name: 'Home & Garden' }, { id: 15, name: 'Arts & Crafts' }, { id: 16, name: 'Wholesale Distribution' },
+    { id: 17, name: 'Information Technology' },
   ];
   currencies: { code: string, label: string }[] = [
     { code: 'NGN', label: 'Naira (₦)' }, { code: 'USD', label: 'US Dollar ($)' },
@@ -37,7 +41,7 @@ export class ProfileComponent {
     { value: 'Africa/Accra', label: 'Africa/Accra (GMT+0)' }, { value: 'America/New_York', label: 'New York (GMT-5)' },
   ];
 
-  private actualId: number | null = null;
+  private sessionUserId: number | null = null;
 
     constructor(
       private fb: FormBuilder,
@@ -65,18 +69,13 @@ export class ProfileComponent {
       currency: new FormControl({ value: '', disabled: true }),
       language: new FormControl({ value: '', disabled: true }),
       timeZone: new FormControl({ value: '', disabled: true }),
+      companyLogo: new FormControl({ value: '', disabled: true }),
     });
 
-    // this.passwordForm = this.fb.group({
-    //   currentPassword: ['', Validators.required],
-    //   newPassword: ['', [Validators.required, Validators.minLength(6)]],
-    //   confirmPassword: ['', Validators.required]
-    // });
-
     const storedUserId = sessionStorage.getItem('userid');
-    console.log(storedUserId)
     if (storedUserId) {
-      this.fetchUserData(+storedUserId);
+      this.sessionUserId = +storedUserId;
+      this.fetchUserData(this.sessionUserId);
     } else {
       console.error('User ID not found in session. Cannot fetch user data.');
     }
@@ -86,11 +85,6 @@ export class ProfileComponent {
   fetchUserData(userId: number): void {
     this.generalSettingsService.getUserPrimaryInfo(userId).subscribe({
       next: (data) => {
-        if (data.id) {
-          this.actualId = data.id;
-          // sessionStorage.setItem('userid', data.id.toString());
-        }
-
         this.form.patchValue({
           fullname: data.fullname,
           username: data.username,
@@ -107,7 +101,7 @@ export class ProfileComponent {
           language: data.language,
           timeZone: data.timeZone,
           postalCode: data.postalCode,
-
+          companyLogo: data.companyLogo ?? null,
         });
 
         if (data.country) {
@@ -141,34 +135,26 @@ export class ProfileComponent {
   }
 
   selectSetting(setting: string): void {
-    // this.selectedSetting = setting;
     this.isEditMode = false;
     this.form.disable();
 
-    // 🔹 Open side modal directly if "Security/privacy"
     if (setting === 'Security/privacy') {
       this.openChangePassword();
     }
   }
 
   goBack(): void {
-    // this.selectedSetting = null;
     this.isEditMode = false;
     this.form.disable();
   }
 
   goBackSideModal(): void {
-  
-  // this.selectedSetting = null;
-  this.isEditMode = false;
-  this.form.disable();
-
-  // Close the side modal
-  this.closeChangePassword();
-}
+    this.isEditMode = false;
+    this.form.disable();
+    this.closeChangePassword();
+  }
 
   onCountrySelect(country: any): void {
-  
     if (country && country.states) {
       this.states = country.states;
       this.form.patchValue({ state: null, city: null });
@@ -179,7 +165,6 @@ export class ProfileComponent {
   }
 
   onStateSelect(state: any): void {
-    // const selectedState = this.states.find(s => s.name === state);
     if (state && state.cities) {
       this.cities = state.cities;
       this.form.patchValue({ city: null });
@@ -189,50 +174,34 @@ export class ProfileComponent {
   }
 
   submit(): void {
-    console.log(this.form)
-    console.log(this.actualId)
-
-    if (this.form.valid && this.actualId) {
-      const updatedData = this.form.getRawValue();
-      this.generalSettingsService.updateUserPrimaryInfo(this.actualId, updatedData).subscribe({
-        next: (response) => {
-          console.log('Update successful!', response);
+    if (this.form.valid && this.sessionUserId) {
+      const rawData = this.form.getRawValue();
+      const updatedData = { ...rawData, companyLogo: this.logoPreview ?? rawData.companyLogo };
+      this.generalSettingsService.updateUserPrimaryInfo(this.sessionUserId, updatedData).subscribe({
+        next: () => {
           this.messageService.add({
-          severity: 'success',
-          summary: 'Profile updated',
-          detail: 'Profile updated successfully.',
-          key: 'tl',
-          life: 3000,
-        });
+            severity: 'success', summary: 'Profile updated',
+            detail: 'Profile updated successfully.', key: 'tl', life: 3000,
+          });
           this.toggleEditMode();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.messageService.add({
-          severity: 'error',
-          summary: 'Profile update failed',
-          detail: 'Profile update failed.',
-          key: 'tl',
-          life: 3000,
-        });
-          console.error('Update failed:', err);
-        }
+            severity: 'error', summary: 'Profile update failed',
+            detail: err?.message || 'Profile update failed. Please try again.', key: 'tl', life: 6000,
+          });
+        },
       });
     } else {
-       error: (err: any) => {
-          this.messageService.add({
-          severity: 'error',
-          summary: 'Invalid form',
-          detail: 'Form is invalid. Please correct the errors.',
-          key: 'tl',
-          life: 3000,
-        });
-      console.log('Form is invalid. Please correct the errors.', err);
+      this.messageService.add({
+        severity: 'warn', summary: 'Invalid form',
+        detail: 'Please fill all required fields.', key: 'tl', life: 3000,
+      });
       this.form.markAllAsTouched();
     }
   }
-}
 
-  // 🔹 Side modal control
+  // Side modal control
   openChangePassword(): void {
     this.isChangePasswordOpen = true;
   }
@@ -241,20 +210,28 @@ export class ProfileComponent {
     this.isChangePasswordOpen = false;
   }
 
-  changePassword(): void {
-    if (this.passwordForm.valid) {
-      const { newPassword, confirmPassword } = this.passwordForm.value;
-      if (newPassword !== confirmPassword) {
-        alert('Passwords do not match!');
-        return;
-      }
-
-      console.log('Password updated:', this.passwordForm.value);
-      alert('Password updated successfully!');
-      this.passwordForm.reset();
-      this.closeChangePassword(); // close modal after update
-    } else {
-      this.passwordForm.markAllAsTouched();
+  onLogoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.logoError = 'Please upload an image file.';
+      return;
     }
+    if (file.size > 2 * 1024 * 1024) {
+      this.logoError = 'Logo must be under 2 MB.';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoPreview = reader.result as string;
+      this.logoError = null;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearLogo(): void {
+    this.logoPreview = null;
+    this.logoError = null;
   }
 }

@@ -1,263 +1,139 @@
-p{
-    margin-bottom: 0;
+p { margin-bottom: 0; }
+
+.sp-shell { padding: 24px; font-family: 'Inter', Arial, sans-serif; }
+
+.sp-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding-bottom: 18px; margin-bottom: 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.sp-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+  background: #f0fdfa; color: #0d9488;
+}
+.sp-title { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.sp-sub   { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
+
+.sp-toolbar {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+}
+.sp-section-label { font-size: 14px; font-weight: 600; color: #374151; }
+
+.sp-btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; background: #2563eb; color: #fff;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+  &:hover { background: #1d4ed8; }
 }
 
-.action-buttons {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    // gap: 20px;
-  }
-  
-:host ::ng-deep .ng-select {
-    // background-color: lightgray;
-    @apply bg-gray-50
+.sp-form-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;
+}
+.sp-form-group { margin-bottom: 16px; }
+.sp-label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
+.sp-hint { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+.sp-input {
+  width: 100%; padding: 9px 12px; box-sizing: border-box;
+  border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 13px; color: #111827; outline: none;
+  transition: border-color .15s;
+  &:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.1); }
+  &[readonly] { background: #f9fafb; color: #6b7280; }
 }
 
-:host ::ng-deep .ng-select .ng-select-container {
-    @apply bg-gray-50
+/* Leave allocation rows */
+.sp-leave-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 10px;
+  margin-bottom: 8px; background: #fff;
+}
+.sp-leave-row-name { flex: 1; min-width: 0; }
+.sp-leave-row-title { font-size: 13px; font-weight: 500; color: #111827; }
+.sp-leave-row-hint  { font-size: 11px; color: #9ca3af; }
+.sp-leave-days-input {
+  width: 90px; padding: 7px 10px;
+  border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 13px; color: #111827; outline: none;
+  text-align: center;
+  &:focus { border-color: #0d9488; }
+}
+.sp-leave-del-btn {
+  padding: 6px 8px; color: #dc2626; background: none; border: none;
+  border-radius: 7px; cursor: pointer;
+  &:hover { background: #fef2f2; }
 }
 
-:host ::ng-deep .ng-select .ng-option {
-    @apply bg-gray-50 text-gray-600
+.sp-total-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; margin-top: 8px; border-top: 1px solid #f1f5f9;
+  font-size: 13px; color: #374151;
+}
+.sp-total-val { font-weight: 700; color: #111827; }
+
+.sp-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding-top: 16px; border-top: 1px solid #f1f5f9; margin-top: 8px;
+}
+.sp-btn-cancel {
+  padding: 8px 16px; background: #fff; color: #374151;
+  border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; font-weight: 500;
+  cursor: pointer; &:hover { background: #f9fafb; }
+}
+.sp-btn-submit {
+  padding: 9px 20px; background: #0d9488; color: #fff;
+  border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; &:hover { background: #0f766e; }
+  &:disabled { opacity: .5; cursor: not-allowed; }
 }
 
-:host ::ng-deep .ng-select .ng-option:hover {
-    @apply bg-gray-100 text-gray-700
+/* Accordion action buttons */
+.action-buttons { display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+.act-btn-edit {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 500;
+  color: #059669; background: none; border: none; cursor: pointer;
+  &:hover { background: #f0fdf4; }
+}
+.act-btn-del {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 500;
+  color: #dc2626; background: none; border: none; cursor: pointer;
+  &:hover { background: #fef2f2; }
+}
+.act-btn-add {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 500;
+  color: #2563eb; background: none; border: none; cursor: pointer;
+  &:hover { background: #eff6ff; }
 }
 
-.form-input{
-    @apply outline-none
+:host ::ng-deep {
+  .ng-select .ng-select-container { background: #f9fafb; border-color: #d1d5db; border-radius: 8px; }
+  .ng-select.ng-select-focused .ng-select-container { border-color: #0d9488; }
+  .ng-select .ng-option { background: #f9fafb; color: #374151; font-size: 13px; }
+  .ng-select .ng-option:hover { background: #f3f4f6; }
+
+  .mat-expansion-panel {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    box-shadow: none !important;
+    &.mat-expanded { border-color: #0d9488 !important; }
+  }
+  .mat-expansion-panel-header {
+    background: #f9fafb !important;
+    border-radius: 10px !important;
+    padding: 0 16px !important;
+    min-height: 52px !important;
+    &:hover { background: #f3f4f6 !important; }
+    &.mat-expanded { border-radius: 10px 10px 0 0 !important; }
+  }
+  .mat-expansion-panel-body { padding: 16px !important; }
+  .mat-panel-title { font-size: 13px; font-weight: 600; color: #111827; }
+  .mat-panel-description { justify-content: flex-end; }
 }
 
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-  }
-  
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s;
-  }
-  
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 2px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s;
-  }
-  
-  input:checked + .slider {
-    @apply bg-customGreen
-  }
-  
-  input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-  }
-  
-  input:checked + .slider:before {
-    -webkit-transform: translateX(26px);
-    -ms-transform: translateX(26px);
-    transform: translateX(26px);
-  }
-  
-  .slider.round {
-    border-radius: 34px;
-  }
-  
-  .slider.round:before {
-    border-radius: 50%;
-  }
-
-  
-    
-  .login{
-    padding: 0.5rem 2rem;
-    box-sizing: border-box;
-    width: 100%;
-
-
-    .logo-img{
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-    }
-    .text-center{
-        font-size: 1em;
-    }
-
-    .content{
-        // padding: 1rem;
-        box-sizing: border-box;
-        background-color: red;
-
-        .wrapper-form{
-            width: 100%;
-            // display: flex;
-            .form {
-                width: 100%;
-                @apply bg-customGreen
-            }
-            
-             mat-form-field {
-                width: 100%;
-            }
-            
-            input[matInput] {
-                width: 100%;
-                @apply bg-transparent
-            }
-
-        }
-        .email{
-            width: 100%;
-            .form {
-                width: 100%;
-            }
-            
-             mat-form-field {
-                width: 100%;
-            }
-            
-            input[matInput] {
-                width: 100%;
-            }
-
-        }
-
-
-        .wrapper{
-            .d-flex{
-                .me-2{
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-    
-                    input[type="checkbox"] {
-                        -webkit-appearance: none;
-                        -moz-appearance: none;
-                        appearance: none;
-                        width: 15px;
-                        height: 15px;
-                        border: 2px solid #555;
-                        border-radius: 4px;
-                        outline: none;
-                        cursor: pointer;
-                    }
-                    input[type="checkbox"]:checked {
-                        background-color: #224957; /* Change this to your desired color */
-                        border-color: #224957;
-                    }
-                }
-                label{
-                    cursor: pointer;
-                    font-size: 0.8em;
-                    font-weight: 500;
-
-                    span{
-                        color: #25925B;
-                    }
-                }
-            }
-            p{
-                cursor: pointer;
-                font-size: 0.8em;
-                font-weight: 500;
-                margin: 0;
-            }
-            
-        }
-    }
-    .login-btn-container{
-        text-align: center;
-        display: flex;
-        justify-content: center;
-        button{
-            width: 50%;
-            color: #fff;
-            background-color: #224957;
-            border: none;
-            font-size: 1.2em;
-            font-weight: 500;
-            padding: 1rem 0;
-            border-radius: 5px;
-            transition: all 0.25s ease-out;
-            display: flex;
-            justify-content: center;
-        }
-        button:hover {
-            transform: translateY(-3px);
-        }
-    }
-    .bottom{
-        text-align: center;
-        margin-top: 1rem;
-
-        p{
-            // font-size: 0.8em;
-            font-weight: 500;
-
-            span{
-                color: #25925B;
-                cursor: pointer;
-            }
-        }
-        .pointer{
-            cursor: pointer;
-            color: #224957;
-        }
-    }
-}
-
-
-
-
-
-
-
-
-.name {
-width: 50%;
-}
-
-.example-full-width {
-width: 100%;
-}
-
-.custom-spinner {
-stroke: #224957;
-color: #224957;
-}
-
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto; /* Allow scrolling when content overflows */
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-  }
+.form-input { outline: none; }

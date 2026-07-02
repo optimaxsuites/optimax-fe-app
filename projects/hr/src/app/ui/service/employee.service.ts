@@ -346,6 +346,24 @@ export class EmployeeService {
       .pipe(catchError(this.handleError));
   }
 
+  getOffboarding(employeeId: number | string): Observable<any> {
+    return this.http
+      .get<any>(this.baseurl + `/x/api/v2/hr/offboarding/employee/${employeeId}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  createOffboarding(data: any): Observable<any> {
+    return this.http
+      .post<any>(this.baseurl + `/x/api/v2/hr/offboarding`, data)
+      .pipe(catchError(this.handleError));
+  }
+
+  updateOffboarding(id: number | string, data: any): Observable<any> {
+    return this.http
+      .put<any>(this.baseurl + `/x/api/v2/hr/offboarding/${id}`, data)
+      .pipe(catchError(this.handleError));
+  }
+
   submitGuarantorConfirmation(data: FormData): Observable<any> {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http

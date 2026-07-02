@@ -12,7 +12,7 @@ export class MyProjectDetailComponent {
   project?: Project;
   newTask = '';
   newNote = '';
-  currentUser = 'John Doe';
+  currentUser = 'Rolayo Awe';
 
   constructor(private route: ActivatedRoute, private projectService: ProjectService) {}
 

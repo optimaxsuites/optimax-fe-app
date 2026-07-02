@@ -1,0 +1,122 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>Accounting Events</strong> — Events are instances of Event Definitions. Status lifecycle: INITIATED → PENDING → APPROVED → COMPLETED.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#fef3c7;color:#d97706;">📥</div>
+      <div>
+        <div class="page-title">Accounting Events</div>
+        <div class="page-sub">Review, approve and post financial events from all modules</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card stat-red"><div class="stat-label">Initiated</div><div class="stat-value initiated">{{ stats.initiated }}</div><div class="stat-ghost">⚡</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Pending</div><div class="stat-value pending">{{ stats.pending }}</div><div class="stat-ghost">⏳</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Approved</div><div class="stat-value approved">{{ stats.approved }}</div><div class="stat-ghost">✔</div></div>
+    <div class="stat-card stat-purple"><div class="stat-label">Completed</div><div class="stat-value completed">{{ stats.completed }}</div><div class="stat-ghost">✅</div></div>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" placeholder="Search reference, description..." [(ngModel)]="searchQuery">
+    <select class="filter-select" [(ngModel)]="filterModule">
+      <option value="">ALL MODULES</option>
+      <option value="HR">HR</option>
+      <option value="POS">POS</option>
+      <option value="EXPENSE">EXPENSE</option>
+      <option value="BANK">BANK</option>
+      <option value="HOSPITALITY">HOSPITALITY</option>
+      <option value="MANUAL">MANUAL</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="filterStatus">
+      <option value="">ALL STATUS</option>
+      <option value="INITIATED">INITIATED</option>
+      <option value="PENDING">PENDING</option>
+      <option value="APPROVED">APPROVED</option>
+      <option value="COMPLETED">COMPLETED</option>
+      <option value="REJECTED">REJECTED</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="filterCurrency">
+      <option value="">ALL CURRENCIES</option>
+      <option value="NGN">NGN</option>
+      <option value="USD">USD</option>
+      <option value="GBP">GBP</option>
+    </select>
+    <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="clearFilters()">✕ Clear</button>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+
+    <div *ngIf="loading" class="loading-row">
+      <span>Loading events…</span>
+    </div>
+
+    <div class="fd-table-wrap" *ngIf="!loading">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Date</th><th>Reference</th><th>Description</th><th>Counterparty</th><th>Module</th><th>Dir</th><th>Amount</th><th>CCY</th><th>Status</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ev of filteredEvents">
+            <td>{{ formatDate(ev.transactionDate) }}</td>
+            <td class="ref-cell">{{ ev.reference || '—' }}</td>
+            <td>{{ ev.description || ev.eventType }}</td>
+            <td>{{ getCounterparty(ev) }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-purple': ev.sourceModule==='HR',
+                'badge-blue':   ev.sourceModule==='POS',
+                'badge-orange': ev.sourceModule==='EXPENSE',
+                'badge-gray':   ev.sourceModule==='MANUAL'
+              }">{{ ev.sourceModule }}</span>
+            </td>
+            <td>
+              <span [class]="getDirection(ev)==='IN' ? 'tag-in' : 'tag-out'">
+                {{ getDirection(ev)==='IN' ? '↓ INFLOW' : '↑ OUTFLOW' }}
+              </span>
+            </td>
+            <td class="amount-cell">{{ formatAmount(ev) }}</td>
+            <td [class]="ev.currency==='USD' ? 'currency-usd' : 'currency-ngn'">{{ ev.currency }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-amber':  getStatus(ev)==='PENDING',
+                'badge-green':  getStatus(ev)==='APPROVED' || getStatus(ev)==='COMPLETED',
+                'badge-red':    getStatus(ev)==='REJECTED',
+                'badge-blue':   getStatus(ev)==='INITIATED'
+              }">{{ getStatus(ev) }}</span>
+            </td>
+            <td class="actions-cell">
+              <button class="act-btn" title="View">👁</button>
+              <button class="act-btn act-approve" title="Approve" *ngIf="getStatus(ev)==='PENDING'" (click)="approve(ev)">✔</button>
+              <button class="act-btn act-edit" title="Edit" *ngIf="getStatus(ev)==='PENDING'">✏</button>
+              <button class="act-btn act-reject" title="Reject" *ngIf="getStatus(ev)==='PENDING'" (click)="reject(ev)">✕</button>
+              <button class="act-btn" title="Audit trail" *ngIf="getStatus(ev)!=='PENDING'">🔍</button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredEvents.length === 0">
+            <td colspan="10" style="text-align:center;padding:32px;color:#94a3b8;">No events found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <span class="table-count">Showing {{ filteredEvents.length }} of {{ totalSize }} events</span>
+      <div class="page-btns">
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="prevPage()" [disabled]="page === 0">← Prev</button>
+        <button class="fd-btn fd-btn-primary fd-btn-sm">{{ page + 1 }}</button>
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="nextPage()" [disabled]="(page + 1) * pageSize >= totalSize">Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div>

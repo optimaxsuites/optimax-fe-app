@@ -1,0 +1,129 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>Unified naming — Journal Entries</strong> — Audit-ready double-entry bookkeeping. Reverse action and Recurring Templates available.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#dbeafe;color:#2563eb;">📖</div>
+      <div>
+        <div class="page-title">Journal Entries</div>
+        <div class="page-sub">Audit-ready double-entry bookkeeping records</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">⬇ Export CSV</button>
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
+      <button class="fd-btn fd-btn-primary">＋ Manual Journal</button>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Journals</div>
+      <div class="stat-value je-total">{{ totalCount }}</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">Posted</div>
+      <div class="stat-value je-posted">{{ postedCount }}</div>
+    </div>
+    <div class="stat-card stat-amber">
+      <div class="stat-label">Draft</div>
+      <div class="stat-value je-draft">{{ draftCount }}</div>
+    </div>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+
+    <div *ngIf="loading" class="loading-row">
+      <span>Loading journal entries…</span>
+    </div>
+
+    <div class="fd-table-wrap" *ngIf="!loading">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Entry #</th><th>Date</th><th>Description</th><th>Debit (Dr)</th><th>Credit (Cr)</th><th>Status</th><th>Source</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let j of journals">
+            <td class="ref-cell">{{ entryLabel(j) }}</td>
+            <td>{{ formatDate(j.entryDate) }}</td>
+            <td>{{ j.description || '—' }}</td>
+            <td class="dr-cell">—</td>
+            <td class="cr-cell">—</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-green': j.status === JournalEntryStatus.POSTED,
+                'badge-amber': j.status === JournalEntryStatus.DRAFT,
+                'badge-red':   j.status === JournalEntryStatus.REVERSED
+              }">{{ j.status }}</span>
+            </td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-purple': sourceLabel(j) !== 'MANUAL',
+                'badge-gray':   sourceLabel(j) === 'MANUAL'
+              }">{{ sourceLabel(j) }}</span>
+            </td>
+            <td class="actions-cell">
+              <button class="act-btn" title="Audit trail">🔍</button>
+              <button class="act-btn act-edit" title="Edit" *ngIf="j.status === JournalEntryStatus.DRAFT">✏</button>
+              <button class="act-btn act-approve" title="Post" *ngIf="j.status === JournalEntryStatus.DRAFT">✔</button>
+              <button class="act-btn act-reverse" title="Reverse Entry" *ngIf="j.status === JournalEntryStatus.POSTED">↺</button>
+            </td>
+          </tr>
+          <tr *ngIf="journals.length === 0">
+            <td colspan="8" style="text-align:center;padding:32px;color:#94a3b8;">No journal entries found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-footer">
+      <span class="table-count">Showing {{ journals.length }} of {{ totalCount }}</span>
+      <div class="page-btns">
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="prevPage()" [disabled]="page === 0">← Prev</button>
+        <button class="fd-btn fd-btn-primary fd-btn-sm">{{ page + 1 }}</button>
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="nextPage()" [disabled]="(page + 1) * pageSize >= totalCount">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fd-card">
+    <div class="fd-card-header">
+      <span class="fd-card-title">New Manual Journal Entry</span>
+      <span style="font-size:12px;color:#6b7280">All entries must balance: Total Debits = Total Credits</span>
+    </div>
+    <div class="je-meta-grid">
+      <div class="je-field">
+        <label>Entry Date *</label>
+        <input type="date" class="je-input" [(ngModel)]="newEntry.entryDate">
+      </div>
+      <div class="je-field" style="grid-column:span 2">
+        <label>Narration / Description *</label>
+        <input type="text" class="je-input" placeholder="e.g. Prepaid insurance adjustment — July 2026" [(ngModel)]="newEntry.description">
+      </div>
+      <div class="je-field">
+        <label>Reference (optional)</label>
+        <input type="text" class="je-input" placeholder="e.g. INV-2026-090" [(ngModel)]="newEntry.reference">
+      </div>
+      <div class="je-field">
+        <label>Currency</label>
+        <select class="je-select" [(ngModel)]="newEntry.currency">
+          <option value="NGN">NGN — Nigerian Naira</option>
+          <option value="USD">USD — US Dollar</option>
+          <option value="GBP">GBP — British Pound</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:16px">
+      <button class="fd-btn fd-btn-outline" (click)="saveDraft()" [disabled]="!newEntry.description || saving">
+        {{ saving ? 'Saving…' : '💾 Save as Draft' }}
+      </button>
+      <button class="fd-btn fd-btn-primary" disabled style="opacity:.5;cursor:not-allowed">✔ Post Journal Entry</button>
+      <span style="margin-left:auto;font-size:12px;color:#9ca3af;align-self:center">Post enabled only when Dr = Cr and at least 2 lines filled.</span>
+    </div>
+  </div>
+
+</div>

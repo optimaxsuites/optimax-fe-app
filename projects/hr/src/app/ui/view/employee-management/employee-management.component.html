@@ -98,19 +98,44 @@
           <strong class="toolbar-badge-value">{{ filteredEmployees.length || 0 }}</strong>
         </div>
       </div>
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
           <Button class="btn-primary" (click)="openAddForm = true">
             <span class="fa-solid fa-plus mr-2 text-xs"></span>
             Add new employee
           </Button>
-             <Button class="btn-primary" routerLink="/admin/hr/profile-change-requests/224d408c-01e4-464e-83b6-1bef1a459c1e">
+          <Button class="btn-secondary" (click)="openImportDialog = true">
+            <span class="fa-solid fa-file-import mr-2 text-xs"></span>
+            Import Pre-Onboarding Form
+          </Button>
+          <Button class="btn-primary" routerLink="/admin/hr/profile-change-requests/224d408c-01e4-464e-83b6-1bef1a459c1e">
             Employee change requests
           </Button>
         </div>
+
+        <div class="view-toggle-group">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'card'"
+            (click)="viewMode = 'card'"
+            title="Card view">
+            <span class="fa-solid fa-grip text-xs"></span>
+            <span class="view-toggle-label">Cards</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            [class.active]="viewMode === 'list'"
+            (click)="viewMode = 'list'"
+            title="List view">
+            <span class="fa-solid fa-list text-xs"></span>
+            <span class="view-toggle-label">List</span>
+          </button>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-3">
         <div class="w-full">
           <ng-select
             [items]="uniqueLevels"
@@ -135,7 +160,7 @@
           </ng-select>
         </div>
 
-        <div class="relative w-full md:col-span-1 xl:col-span-2">
+        <div class="relative w-full">
           <span class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm"></span>
           <input
             type="text"
@@ -148,7 +173,7 @@
       </div>
     </div>
 
-    <div class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div *ngIf="viewMode === 'card'" class="grid gap-6 p-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       <div *ngFor="let employee of pagedEmployees; let i = index"
         class="employee-card group"
         (click)="viewThisEmployee(employee)">
@@ -234,7 +259,73 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- List view -->
+    <div *ngIf="viewMode === 'list'" class="dir-list-wrap">
+      <div class="dir-list-header">
+        <span class="dir-list-col dir-list-col--name">Employee</span>
+        <span class="dir-list-col dir-list-col--dept">Department</span>
+        <span class="dir-list-col dir-list-col--role">Role</span>
+        <span class="dir-list-col dir-list-col--level">Level</span>
+        <span class="dir-list-col dir-list-col--type">Type</span>
+        <span class="dir-list-col dir-list-col--joined">Joined</span>
+        <span class="dir-list-col dir-list-col--actions"></span>
+      </div>
+      <div
+        *ngFor="let employee of pagedEmployees; let i = index"
+        class="dir-list-row group">
+        <div class="dir-list-col dir-list-col--name">
+          <div class="dir-list-avatar">
+            <img
+              [src]="employee.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
+              alt="" />
+          </div>
+          <div class="dir-list-name-block">
+            <span class="dir-list-name">{{ employee.lastName }} {{ employee.firstName }}</span>
+            <span class="dir-list-email">{{ employee?.email || '—' }}</span>
+          </div>
+        </div>
+        <div class="dir-list-col dir-list-col--dept">
+          <span class="dir-list-badge">{{ employee?.department?.name || employee?.department || '—' }}</span>
+        </div>
+        <div class="dir-list-col dir-list-col--role">{{ employee?.jobTitle || '—' }}</div>
+        <div class="dir-list-col dir-list-col--level">{{ employee?.level?.name || employee?.level || '—' }}</div>
+        <div class="dir-list-col dir-list-col--type">
+          <span class="dir-list-type-chip">{{ employee?.employmentType?.name || employee?.jobType?.name || '—' }}</span>
+        </div>
+        <div class="dir-list-col dir-list-col--joined">{{ employee?.hireDate || employee?.employmentStartDate || '—' }}</div>
+        <div class="dir-list-col dir-list-col--actions">
+          <button
+            type="button"
+            class="dir-list-action-btn"
+            (click)="openStaffId(employee, $event)"
+            title="View Staff ID">
+            <span class="fa-solid fa-id-badge text-[10px]"></span>
+          </button>
+          <button
+            type="button"
+            class="dir-list-action-btn dir-list-action-btn--delete"
+            [disabled]="deletingEmployeeIds[employee?.id]"
+            (click)="deleteEmployee(employee, $event)"
+            title="Delete employee">
+            <span *ngIf="!deletingEmployeeIds[employee?.id]" class="fa-solid fa-trash text-[10px]"></span>
+            <span *ngIf="deletingEmployeeIds[employee?.id]" class="fa-solid fa-spinner animate-spin text-[10px]"></span>
+          </button>
+          <button
+            type="button"
+            class="dir-list-view-btn"
+            (click)="viewThisEmployee(employee)"
+            title="View profile">
+            <span class="fa-solid fa-arrow-right text-[10px]"></span>
+          </button>
+        </div>
+      </div>
+      <div *ngIf="pagedEmployees.length === 0" class="dir-list-empty">
+        <i class="fa-solid fa-users-slash"></i>
+        <p>No employees found in this view.</p>
+      </div>
+    </div>
+
     <div class="pagination-bar">
       <div class="text-xs text-slate-500">
         Showing
@@ -280,7 +371,14 @@
 </app-large-side-modal>
 
 <app-large-side-modal *ngIf="openAddForm" (close)="closeAddForm()">
-   <app-admin-creation-form></app-admin-creation-form>
+   <app-admin-creation-form [importData]="importedData"></app-admin-creation-form>
+</app-large-side-modal>
+
+<app-large-side-modal *ngIf="openImportDialog" (close)="openImportDialog = false">
+  <app-pre-onboarding-import
+    (importComplete)="onImportComplete($event)"
+    (cancel)="openImportDialog = false">
+  </app-pre-onboarding-import>
 </app-large-side-modal>
 
 <app-modal *ngIf="staffIdEmployee" (close)="closeStaffId()">

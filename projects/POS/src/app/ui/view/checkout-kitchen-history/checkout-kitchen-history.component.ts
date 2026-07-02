@@ -329,7 +329,7 @@ export class CheckoutKitchenHistoryComponent implements OnInit, OnDestroy {
   private setDefaultCompanyInfo(): void {
     this.companyInfo = {
       name: 'Restaurant Name',
-      address: '123 Main Street, City, Country',
+      address: '123 Samuel Ademule CBD, Abuja',
       phone: '+234 123 456 7890',
       email: 'info@restaurant.com',
       vatNumber: 'VAT-123456789'
