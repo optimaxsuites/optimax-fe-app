@@ -1,134 +1,43 @@
-// ========== BRAND COLORS ==========
-$primary-color: #4caf50;
-$text-dark: #111827;
-$text-gray: #6b7280;
-$text-light: #9ca3af;
-$bg-white: #ffffff;
-$border-color: #e5e7eb;
-$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
-
 :host {
   display: block;
-  padding: 0;
+  padding: 1rem;
   border-radius: 12px;
-  box-shadow: $shadow-lg;
-  background-color: $bg-white;
-  border: 1px solid $border-color;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
 }
 
 .heatmap {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  padding: 20px;
-}
-
-.heatmap-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: $text-dark;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: -0.3px;
-
-  &::before {
-    content: '';
-    width: 4px;
-    height: 20px;
-    border-radius: 2px;
-    background: $primary-color;
-  }
+  gap: 0.8rem;
 }
 
 .heatmap-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 8px;
+
+  height: 48px;
+  padding: 0 1.2rem;
+  border-radius: 10px;
+
   font-weight: 600;
-  font-size: 13px;
-  color: $text-dark;
-  background: $bg-white;
-  border: 1px solid $border-color;
-  margin-bottom: 8px;
-  transition: all 0.2s ease;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  &:hover {
-    background: #f9fafb;
-    border-color: $primary-color;
-  }
+  font-size: 1.25rem;
+  color: #1f2937;
 }
 
 .dept-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: $text-dark;
+  font-size: 1.25rem;
 }
 
 .dept-percent {
-  font-size: 14px;
-  font-weight: 700;
-  color: $primary-color;
+  font-size: 1.25rem;
 }
 
-// ========== RESPONSIVE ==========
 @media (max-width: 768px) {
-  :host {
-    padding: 0;
-  }
-
-  .heatmap {
-    padding: 16px;
-  }
-
-  .heatmap-title {
-    font-size: 14px;
-    margin-bottom: 12px;
-  }
-
   .heatmap-row {
-    height: 40px;
-    padding: 0 10px;
-    font-size: 12px;
-    margin-bottom: 6px;
-  }
-
-  .dept-name {
-    font-size: 12px;
-  }
-
-  .dept-percent {
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 480px) {
-  .heatmap {
-    padding: 12px;
-  }
-
-  .heatmap-title {
-    font-size: 13px;
-    margin-bottom: 10px;
-
-    &::before {
-      height: 16px;
-    }
-  }
-
-  .heatmap-row {
-    height: 36px;
-    padding: 0 8px;
-    font-size: 11px;
-    margin-bottom: 5px;
+    font-size: 1.1rem;
+    height: 42px;
+    padding: 0 0.8rem;
   }
 }
