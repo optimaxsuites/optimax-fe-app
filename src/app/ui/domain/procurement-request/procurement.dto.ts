@@ -211,6 +211,7 @@ export type VendorQuotationStatus =
 export interface VendorQuotation {
   id: string;
   rfqId: string;
+  rfqTitle?: string;
   vendorId: string;
   vendorName: string;
   vendorCode: string;

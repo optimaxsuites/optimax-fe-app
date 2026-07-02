@@ -19,14 +19,14 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   selectedQuotation: VendorQuotation | null = null;
   showQuotationDetailModal = false;
   isProcessing = false;
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     public router: Router,
     private quotationService: QuotationManagementService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -44,7 +44,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
 
   loadRFQDetails(): void {
     if (!this.rfqId) return;
-    
+
     this.isLoading = true;
     this.quotationService.getQuotationsForRFQ(this.rfqId).pipe(
       takeUntil(this.destroy$)
@@ -203,7 +203,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   viewQuotationDetail(quotation: VendorQuotation): void {
     this.selectedQuotation = quotation;
     this.showQuotationDetailModal = true;
-    
+
     // Mark as viewed
     if (!quotation.isViewed) {
       this.quotationService.markAsViewed(quotation.id).subscribe();
@@ -286,7 +286,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
 
   getStatusLabel(status: VendorQuotationStatus): string {
     const labels: Record<VendorQuotationStatus, string> = {
-      'PENDING': 'Pending Response',
+      'PENDING': 'Pending',
       'SUBMITTED': 'Submitted',
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',
@@ -309,9 +309,9 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number, currency: string): string {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currency || 'NGN' 
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'NGN'
     }).format(amount || 0);
   }
 
