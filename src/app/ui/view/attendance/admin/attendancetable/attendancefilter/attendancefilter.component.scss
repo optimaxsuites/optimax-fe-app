@@ -1,86 +1,178 @@
-.filters {
-  background: #ffffff;
-  //border: 1px solid #e5e7eb;
-  //border-radius: 16px;
-  padding: 1rem 1.2rem;
-  //box-shadow: 0 10px 28px rgba(0, 0, 0, 0.04);
+// ========== BRAND COLORS ==========
+$primary-color: #4caf50;
+$text-dark: #111827;
+$text-gray: #6b7280;
+$text-light: #9ca3af;
+$bg-white: #ffffff;
+$bg-light: #f9fafb;
+$border-color: #e5e7eb;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 
+.filters {
+  background: $bg-white;
+  padding: 16px;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  margin-bottom: 16px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.8rem 0.9rem;
+  gap: 12px;
   align-items: center;
 }
 
-/* Input & Select Styling */
+// Input & Select Styling
 .filters input,
 .filters select {
   width: 100%;
-  padding: 0.45rem 0.6rem;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  font-size: 1.2rem;
-  color: #111827;
-  background: #f9fafb;
+  padding: 9px 11px;
+  border-radius: 6px;
+  border: 1px solid $border-color;
+  font-size: 13px;
+  color: $text-dark;
+  background: $bg-white;
+  font-family: inherit;
   outline: none;
   transition: all 0.2s ease;
 
   &::placeholder {
-    color: #9ca3af;
-    font-size: 1.2rem;
+    color: $text-light;
+    font-size: 13px;
   }
 
   &:focus {
-    border-color: #10b981;
-    background: #ffffff;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.12);
+    border-color: $primary-color;
+    background: $bg-white;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+  }
+
+  &:disabled {
+    background: $bg-light;
+    color: $text-light;
+    cursor: not-allowed;
   }
 }
 
-/* Select arrow improvement */
+// Select arrow
 .filters select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 14px;
-  padding-right: 1.6rem;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 30px;
 }
 
-/* Apply Button */
+// Apply Button
 .filters button {
   grid-column: span 2;
   justify-self: end;
-  width:50%;
-
-  background: #e5e7eb;//#1f9254/*linear-gradient(135deg, #10b981, #34d399)*
-  border: 1px solid #e5e7eb;//none;
-  border-radius: 10px;
-  padding: 0.45rem 0.6rem;//0.45rem 1.1rem;
-  font-size: 1.2rem;
+  width: auto;
+  background: $primary-color;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 13px;
   font-weight: 600;
-  color: black;
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: $shadow-sm;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 
   &:hover {
+    background: #388e3c;
+    box-shadow: $shadow-md;
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 
-/* Responsive tweaks */
-@media (max-width: 900px) {
+// Reset Button (if present)
+.filters button.reset-btn {
+  background: $bg-light;
+  color: $text-gray;
+  border: 1px solid $border-color;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+}
+
+// ========== RESPONSIVE ==========
+@media (max-width: 1024px) {
   .filters {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .filters input,
+  .filters select {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .filters button {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filters {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .filters input,
+  .filters select {
+    padding: 7px 9px;
+    font-size: 12px;
+
+    &::placeholder {
+      font-size: 12px;
+    }
   }
 
   .filters button {
     grid-column: span 1;
     justify-self: stretch;
-    width: 80%;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .filters {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .filters input,
+  .filters select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .filters button {
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
   }
 }

@@ -1,21 +1,150 @@
+// ========== BRAND COLORS ==========
+$primary-color: #4caf50;
+$danger: #f44336;
+$warning: #ff9800;
+$text-dark: #111827;
+$text-gray: #6b7280;
+$text-light: #9ca3af;
+$bg-white: #ffffff;
+$border-color: #e5e7eb;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: 16px;
 }
 
 .stat-card {
-  padding: 1.2rem;
+  padding: 20px;
   border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,.05);
+  background: $bg-white;
+  box-shadow: $shadow-lg;
+  border: 1px solid $border-color;
+  border-left: 4px solid $text-gray;
+  transition: all 0.2s ease;
 
-  p {
-    font-size: 2rem;
-    font-weight: 600;
+  .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: $text-light;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
   }
 
-  &.present { border-left: 6px solid #2ecc71; }
-  &.absent  { border-left: 6px solid #e74c3c; }
-  &.late    { border-left: 6px solid #f39c12; }
+  p {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+    color: $text-dark;
+    letter-spacing: -0.5px;
+  }
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+
+  &.present {
+    border-left-color: $primary-color;
+
+    .label {
+      color: $primary-color;
+    }
+
+    p {
+      color: $primary-color;
+    }
+  }
+
+  &.absent {
+    border-left-color: $danger;
+
+    .label {
+      color: $danger;
+    }
+
+    p {
+      color: $danger;
+    }
+  }
+
+  &.late {
+    border-left-color: $warning;
+
+    .label {
+      color: $warning;
+    }
+
+    p {
+      color: $warning;
+    }
+  }
+
+  &.on-leave {
+    border-left-color: #2196f3;
+
+    .label {
+      color: #2196f3;
+    }
+
+    p {
+      color: #2196f3;
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 18px;
+
+    p {
+      font-size: 28px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .label {
+      font-size: 11px;
+    }
+
+    p {
+      font-size: 24px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 14px;
+
+    .label {
+      font-size: 10px;
+    }
+
+    p {
+      font-size: 20px;
+    }
+  }
 }
