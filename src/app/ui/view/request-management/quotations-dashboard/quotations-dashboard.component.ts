@@ -24,12 +24,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   filteredRfqGroups: RFQGroup[] = [];
   paginatedRfqGroups: RFQGroup[] = [];
   selectedRfqGroup: RFQGroup | null = null;
-  selectedQuotation: VendorQuotation | null = null;
   showVendorSummaryModal = false;
-  showQuotationDetailModal = false;
-  showRejectionDetailModal = false;
-  isProcessing = false;
-  rejectReason = '';
   isLoading = false;
 
   selectedStatus: string = 'ALL';
@@ -612,105 +607,4 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     this.selectedRfqGroup = null;
   }
 
-  openQuotationDetail(quote: VendorQuotation): void {
-    this.selectedQuotation = quote;
-    this.showQuotationDetailModal = true;
-    
-    // Mark as viewed if not viewed
-    if (!quote.isViewed) {
-      this.quotationService.markAsViewed(quote.id).subscribe();
-      quote.isViewed = true;
-    }
-  }
-
-  closeQuotationDetail(): void {
-    this.showQuotationDetailModal = false;
-    this.selectedQuotation = null;
-  }
-
-  openRejectionDetail(quote: VendorQuotation): void {
-    this.selectedQuotation = quote;
-    this.showRejectionDetailModal = true;
-  }
-
-  closeRejectionDetail(): void {
-    this.showRejectionDetailModal = false;
-    this.selectedQuotation = null;
-  }
-
-  acceptQuotation(quotationId: string): void {
-    if (!confirm('Are you sure you want to accept this quotation? An LPO will be generated and sent to the vendor.')) {
-      return;
-    }
-
-    this.isProcessing = true;
-    this.quotationService.acceptQuotation(quotationId).subscribe({
-      next: (response) => {
-        this.isProcessing = false;
-        alert(`LPO #${response.lpoId} has been generated and sent to the vendor.`);
-        
-        // Update local status
-        if (this.selectedQuotation) {
-          this.selectedQuotation.status = 'ACCEPTED';
-        }
-        this.updateQuotesStatus(quotationId, 'ACCEPTED');
-      },
-      error: (err) => {
-        this.isProcessing = false;
-        console.error('Error accepting quotation:', err);
-        alert('Failed to accept quotation. Please try again.');
-      }
-    });
-  }
-
-  rejectQuotation(quotationId: string): void {
-    const reason = prompt('Please provide a reason for rejecting this quotation:');
-    if (reason === null) return;
-    if (!reason.trim()) {
-      alert('A rejection reason is required.');
-      return;
-    }
-
-    this.isProcessing = true;
-    this.quotationService.rejectQuotation(quotationId, reason.trim()).subscribe({
-      next: () => {
-        this.isProcessing = false;
-        alert('Quotation has been rejected.');
-        
-        // Update local status
-        if (this.selectedQuotation) {
-          this.selectedQuotation.status = 'DECLINED';
-          this.selectedQuotation.declineReason = reason.trim();
-        }
-        this.updateQuotesStatus(quotationId, 'DECLINED', reason.trim());
-      },
-      error: (err) => {
-        this.isProcessing = false;
-        console.error('Error rejecting quotation:', err);
-        alert('Failed to reject quotation. Please try again.');
-      }
-    });
-  }
-
-  private updateQuotesStatus(quotationId: string, status: string, declineReason?: string): void {
-    // Update status in master quotations list
-    const q = this.quotations.find(item => item.id === quotationId);
-    if (q) {
-      q.status = status as any;
-      if (declineReason) {
-        q.declineReason = declineReason;
-      }
-    }
-    // Re-group and re-apply filters to refresh UI
-    this.rfqGroups = this.groupQuotations(this.quotations);
-    this.applyFilters();
-    
-    // Also update selectedRfqGroup references if modal is open
-    if (this.selectedRfqGroup) {
-      const updatedGroup = this.rfqGroups.find(g => g.rfqId === this.selectedRfqGroup?.rfqId);
-      if (updatedGroup) {
-        this.selectedRfqGroup = updatedGroup;
-      }
-    }
-  }
 }
