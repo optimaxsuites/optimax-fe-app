@@ -39,21 +39,21 @@ export class GeneralSettingsService {
       }
     }
 
-    // Decode JWT to get the actual user ID the backend issued the token for
+    // Backend looks up by username from request body — must match JWT sub exactly
     const token = sessionStorage.getItem('Token');
-    let jwtId: number | null = null;
     if (token) {
       try {
         const decoded = this.jwtHelper.decodeToken(token);
-        console.log('[JWT claims]', decoded);
-        jwtId = decoded?.id ?? decoded?.userId ?? decoded?.user_id ?? decoded?.sub ?? null;
-        if (jwtId) jwtId = +jwtId;
-      } catch { /* ignore decode failures */ }
+        if (decoded?.sub) clean['username'] = decoded.sub;
+      } catch { /* ignore */ }
     }
 
-    const resolvedId = jwtId || id;
-    return this.http.post<any>(this.userUpdateApiUrl, { id: resolvedId, ...clean }).pipe(
-      tap(() => this.companyProfileService.refresh()),
+    const logoUrl = clean['companyLogo'] ?? null;
+    return this.http.post<any>(this.userUpdateApiUrl, { ...clean }).pipe(
+      tap(() => {
+        if (logoUrl) this.companyProfileService.updateLogoUrl(logoUrl);
+        this.companyProfileService.refresh();
+      }),
       catchError((error: HttpErrorResponse) => {
         const msg = error.error?.message || error.message || 'Something went wrong. Please try again.';
         return throwError(() => new Error(msg));

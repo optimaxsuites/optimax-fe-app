@@ -93,7 +93,7 @@ tenant: any = {
       items.forEach(item => {
         if (item.submenu) {
           item.open = item.submenu.some(
-            (subItem: { route: string | UrlTree }) => this.router.isActive(subItem.route!, false)
+            (subItem) => subItem.route ? this.router.isActive(subItem.route as string, false) : false
           );
         }
       });

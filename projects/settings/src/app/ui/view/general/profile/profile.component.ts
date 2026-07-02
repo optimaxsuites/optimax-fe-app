@@ -4,6 +4,7 @@ import { GeneralSettingsService } from '../../../service/general-settings-servic
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
 import { countriesData } from '../../../sharedComponents/service/country-data';
 import { MessageService } from 'primeng/api';
+import { JwtHelperService } from '@auth0/angular-jwt';
 
 @Component({
   selector: 'app-profile',
@@ -42,12 +43,14 @@ export class ProfileComponent {
   ];
 
   private sessionUserId: number | null = null;
+  private authUsername: string | null = null;
 
     constructor(
       private fb: FormBuilder,
       private generalSettingsService: GeneralSettingsService,
       private authService: AuthenticationService,
-      private messageService: MessageService
+      private messageService: MessageService,
+      private jwtHelper: JwtHelperService,
     ) {}
 
   ngOnInit(): void {
@@ -72,6 +75,14 @@ export class ProfileComponent {
       companyLogo: new FormControl({ value: '', disabled: true }),
     });
 
+    const token = sessionStorage.getItem('Token');
+    if (token) {
+      try {
+        const decoded = this.jwtHelper.decodeToken(token);
+        this.authUsername = decoded?.sub ?? null;
+      } catch { /* ignore */ }
+    }
+
     const storedUserId = sessionStorage.getItem('userid');
     if (storedUserId) {
       this.sessionUserId = +storedUserId;
@@ -85,15 +96,26 @@ export class ProfileComponent {
   fetchUserData(userId: number): void {
     this.generalSettingsService.getUserPrimaryInfo(userId).subscribe({
       next: (data) => {
+        if (data.country) {
+          const selectedCountry = this.countries.find(c => c.name === data.country);
+          if (selectedCountry) this.states = selectedCountry.states;
+        }
+        if (data.state) {
+          const selectedState = this.states.find(s => s.name === data.state);
+          if (selectedState) this.cities = selectedState.cities;
+        }
+
         this.form.patchValue({
           fullname: data.fullname,
-          username: data.username,
+          username: this.authUsername ?? data.username,
           email: data.email,
           phoneNumber: data.phoneNumber,
           companyName: data.companyName,
           domain: data.domain,
           address: data.address,
           country: data.country,
+          state: data.state,
+          city: data.city,
           industry: data.industry,
           clientType: data.clientType,
           bio: data.bio,
@@ -104,18 +126,7 @@ export class ProfileComponent {
           companyLogo: data.companyLogo ?? null,
         });
 
-        if (data.country) {
-          const selectedCountry = this.countries.find(c => c.name === data.country);
-          if (selectedCountry) {
-            this.states = selectedCountry.states;
-          }
-        }
-        if (data.state) {
-          const selectedState = this.states.find(s => s.name === data.state);
-          if (selectedState) {
-            this.cities = selectedState.cities;
-          }
-        }
+        if (data.companyLogo) this.logoPreview = data.companyLogo;
 
         this.form.updateValueAndValidity();
       },
