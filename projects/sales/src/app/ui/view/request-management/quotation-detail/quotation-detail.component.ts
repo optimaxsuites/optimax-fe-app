@@ -24,7 +24,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private quotationService: QuotationManagementService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -247,7 +247,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
 
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      'PENDING': 'Pending Response',
+      'PENDING': 'Pending',
       'SUBMITTED': 'Submitted',
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',

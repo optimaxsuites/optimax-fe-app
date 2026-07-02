@@ -4,6 +4,14 @@ import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
 import { VendorQuotation } from '../../../domain/procurement-request/procurement.dto';
 
+export interface RFQGroup {
+  rfqId: string;
+  rfqTitle: string;
+  receivedCount: number;
+  totalCount: number;
+  quotes: VendorQuotation[];
+}
+
 @Component({
   selector: 'app-quotations-dashboard',
   templateUrl: './quotations-dashboard.component.html',
@@ -12,9 +20,16 @@ import { VendorQuotation } from '../../../domain/procurement-request/procurement
 export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   Math = Math;
   quotations: VendorQuotation[] = [];
-  filteredQuotations: VendorQuotation[] = [];
-  paginatedQuotations: VendorQuotation[] = [];
-  selectedQuotations: VendorQuotation[] = [];
+  rfqGroups: RFQGroup[] = [];
+  filteredRfqGroups: RFQGroup[] = [];
+  paginatedRfqGroups: RFQGroup[] = [];
+  selectedRfqGroup: RFQGroup | null = null;
+  selectedQuotation: VendorQuotation | null = null;
+  showVendorSummaryModal = false;
+  showQuotationDetailModal = false;
+  showRejectionDetailModal = false;
+  isProcessing = false;
+  rejectReason = '';
   isLoading = false;
 
   selectedStatus: string = 'ALL';
@@ -28,15 +43,15 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   totalElements = 0;
   totalPages = 0;
 
-  sortField = 'submittedAt';
-  sortAsc = false;
-  
+  sortField = 'rfqId';
+  sortAsc = true;
+
   statusOptions = [
     { value: 'ALL', label: 'All Quotations' },
     { value: 'SUBMITTED', label: 'Submitted', color: '#3b82f6' },
     { value: 'ACCEPTED', label: 'Accepted', color: '#22c55e' },
     { value: 'DECLINED', label: 'Declined', color: '#ef4444' },
-    { value: 'PENDING', label: 'Pending Response', color: '#f59e0b' },
+    { value: 'PENDING', label: 'Pending', color: '#f59e0b' },
     { value: 'EXPIRED', label: 'Expired', color: '#6b7280' }
   ];
 
@@ -54,7 +69,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private quotationService: QuotationManagementService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadQuotations();
@@ -72,6 +87,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (data) => {
         this.quotations = data.quotations;
+        this.rfqGroups = this.groupQuotations(this.quotations);
         this.calculateStats();
         this.applyFilters();
         this.isLoading = false;
@@ -85,17 +101,44 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  groupQuotations(quotes: VendorQuotation[]): RFQGroup[] {
+    const groupsMap = new Map<string, VendorQuotation[]>();
+    quotes.forEach(q => {
+      const list = groupsMap.get(q.rfqId) || [];
+      list.push(q);
+      groupsMap.set(q.rfqId, list);
+    });
+
+    const groups: RFQGroup[] = [];
+    groupsMap.forEach((list, rfqId) => {
+      const rfqTitle = list[0]?.rfqTitle || 'Request for Quotation';
+      const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED').length;
+      groups.push({
+        rfqId,
+        rfqTitle,
+        receivedCount: respondedCount,
+        totalCount: list.length,
+        quotes: list
+      });
+    });
+    return groups;
+  }
+
   loadMockData(): void {
     this.quotations = [
       {
         id: 'q1',
         rfqId: 'RFQ1',
+        rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v1',
         vendorName: 'TechPro Solutions Ltd',
         vendorCode: 'TPS001',
         vendorRating: 4.8,
         status: 'SUBMITTED',
-        items: [],
+        items: [
+          { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
+          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'AVAILABLE' }
+        ],
         totalAmount: 450000,
         currency: 'NGN',
         deliveryTimeline: '5-7 business days',
@@ -108,12 +151,16 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       {
         id: 'q2',
         rfqId: 'RFQ1',
+        rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v2',
         vendorName: 'Global Supplies Inc',
         vendorCode: 'GSI002',
         vendorRating: 4.6,
         status: 'ACCEPTED',
-        items: [],
+        items: [
+          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'AVAILABLE' },
+          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'AVAILABLE' }
+        ],
         totalAmount: 420000,
         currency: 'NGN',
         deliveryTimeline: '3-5 business days',
@@ -126,6 +173,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       {
         id: 'q3',
         rfqId: 'RFQ1',
+        rfqTitle: 'Office Equipment & IT Hardware',
         vendorId: 'v3',
         vendorName: 'Quality Goods Co',
         vendorCode: 'QGC003',
@@ -145,6 +193,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       {
         id: 'q4',
         rfqId: 'RFQ2',
+        rfqTitle: 'Premium Ergonomic Chairs',
         vendorId: 'v4',
         vendorName: 'Premium Electronics Hub',
         vendorCode: 'PEH005',
@@ -162,6 +211,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       {
         id: 'q5',
         rfqId: 'RFQ2',
+        rfqTitle: 'Premium Ergonomic Chairs',
         vendorId: 'v5',
         vendorName: 'Express Logistics & Supply',
         vendorCode: 'ELS004',
@@ -175,8 +225,149 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
         expiresAt: new Date('2026-12-10T23:59:59'),
         isViewed: false,
         updatedAt: new Date('2024-01-11T00:00:00')
+      },
+      {
+        id: 'q6',
+        rfqId: 'RFQ3',
+        rfqTitle: 'AWS Cloud Infrastructure Consulting',
+        vendorId: 'v6',
+        vendorName: 'CloudScale Solutions',
+        vendorCode: 'CSS008',
+        vendorRating: 4.7,
+        status: 'SUBMITTED',
+        items: [
+          { id: 'qi5', name: 'AWS Solutions Architecture Services', description: 'Migration setup, end-to-end audit, server deployment', quantity: 1, unitPrice: 12000000, totalPrice: 12000000, availability: 'AVAILABLE' }
+        ],
+        totalAmount: 12000000,
+        currency: 'NGN',
+        deliveryTimeline: '45 business days',
+        validityDays: 60,
+        submittedAt: new Date('2026-06-25T11:00:00'),
+        updatedAt: new Date('2026-06-25T11:00:00'),
+        expiresAt: new Date('2026-08-25T23:59:59'),
+        isViewed: false
+      },
+      {
+        id: 'q7',
+        rfqId: 'RFQ3',
+        rfqTitle: 'AWS Cloud Infrastructure Consulting',
+        vendorId: 'v1',
+        vendorName: 'TechPro Solutions Ltd',
+        vendorCode: 'TPS001',
+        vendorRating: 4.8,
+        status: 'PENDING',
+        items: [],
+        totalAmount: 0,
+        currency: 'NGN',
+        deliveryTimeline: '',
+        validityDays: 0,
+        expiresAt: new Date('2026-07-25T23:59:59'),
+        isViewed: false,
+        updatedAt: new Date('2026-06-26T00:00:00')
+      },
+      {
+        id: 'q8',
+        rfqId: 'RFQ4',
+        rfqTitle: 'Janitorial & Corporate Cleaning Services',
+        vendorId: 'v8',
+        vendorName: 'Lagos Clean Services',
+        vendorCode: 'LCS009',
+        vendorRating: 4.5,
+        status: 'ACCEPTED',
+        items: [
+          { id: 'qi6', name: 'Office Cleaning Services', description: 'Monthly deep sanitisation and cleanup', quantity: 6, unitPrice: 400000, totalPrice: 2400000, availability: 'AVAILABLE' }
+        ],
+        totalAmount: 2400000,
+        currency: 'NGN',
+        deliveryTimeline: 'Recurring Monthly',
+        validityDays: 90,
+        submittedAt: new Date('2026-06-20T09:00:00'),
+        updatedAt: new Date('2026-06-21T10:00:00'),
+        expiresAt: new Date('2026-09-20T23:59:59'),
+        isViewed: true
+      },
+      {
+        id: 'q9',
+        rfqId: 'RFQ4',
+        rfqTitle: 'Janitorial & Corporate Cleaning Services',
+        vendorId: 'v5',
+        vendorName: 'Express Logistics & Supply',
+        vendorCode: 'ELS004',
+        vendorRating: 4.2,
+        status: 'DECLINED',
+        items: [],
+        totalAmount: 0,
+        currency: 'NGN',
+        deliveryTimeline: '',
+        validityDays: 0,
+        declineReason: 'Out of region service region limitations',
+        submittedAt: new Date('2026-06-18T16:45:00'),
+        updatedAt: new Date('2026-06-18T16:45:00'),
+        expiresAt: new Date('2026-07-02T23:59:59'),
+        isViewed: true
+      },
+      {
+        id: 'q10',
+        rfqId: 'RFQ5',
+        rfqTitle: 'Office Furniture Procurement',
+        vendorId: 'v10',
+        vendorName: 'Comfort Seatings Ltd',
+        vendorCode: 'CSL010',
+        vendorRating: 4.6,
+        status: 'SUBMITTED',
+        items: [
+          { id: 'qi7', name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 90000, totalPrice: 1800000, availability: 'AVAILABLE' }
+        ],
+        totalAmount: 1800000,
+        currency: 'NGN',
+        deliveryTimeline: '10 business days',
+        validityDays: 30,
+        submittedAt: new Date('2026-06-28T14:00:00'),
+        updatedAt: new Date('2026-06-28T14:00:00'),
+        expiresAt: new Date('2026-07-28T23:59:59'),
+        isViewed: false
+      },
+      {
+        id: 'q11',
+        rfqId: 'RFQ5',
+        rfqTitle: 'Office Furniture Procurement',
+        vendorId: 'v3',
+        vendorName: 'Quality Goods Co',
+        vendorCode: 'QGC003',
+        vendorRating: 4.4,
+        status: 'SUBMITTED',
+        items: [
+          { id: 'qi8', name: 'High-Back Ergonomic Desk Chairs', description: 'Adjustable dynamic mesh lumbar support chairs', quantity: 20, unitPrice: 97500, totalPrice: 1950000, availability: 'AVAILABLE' }
+        ],
+        totalAmount: 1950000,
+        currency: 'NGN',
+        deliveryTimeline: '7 business days',
+        validityDays: 14,
+        submittedAt: new Date('2026-06-29T15:30:00'),
+        updatedAt: new Date('2026-06-29T15:30:00'),
+        expiresAt: new Date('2026-07-13T23:59:59'),
+        isViewed: false
+      },
+      {
+        id: 'q12',
+        rfqId: 'RFQ5',
+        rfqTitle: 'Office Furniture Procurement',
+        vendorId: 'v2',
+        vendorName: 'Global Supplies Inc',
+        vendorCode: 'GSI002',
+        vendorRating: 4.6,
+        status: 'EXPIRED',
+        items: [],
+        totalAmount: 0,
+        currency: 'NGN',
+        deliveryTimeline: '',
+        validityDays: 0,
+        expiresAt: new Date('2026-06-30T23:59:59'),
+        isViewed: false,
+        updatedAt: new Date('2026-06-15T00:00:00')
       }
     ];
+    this.rfqGroups = this.groupQuotations(this.quotations);
     this.calculateStats();
     this.applyFilters();
   }
@@ -191,43 +382,57 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    let filtered = [...this.quotations];
-    
+    let filtered = [...this.rfqGroups];
+
     if (this.selectedStatus !== 'ALL') {
-      filtered = filtered.filter(q => q.status === this.selectedStatus);
+      filtered = filtered.filter(g => g.quotes.some(q => q.status === this.selectedStatus));
     }
-    
+
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(q => 
-        q.vendorName.toLowerCase().includes(term) ||
-        q.vendorCode.toLowerCase().includes(term) ||
-        q.rfqId.toLowerCase().includes(term)
+      filtered = filtered.filter(g =>
+        g.rfqId.toLowerCase().includes(term) ||
+        g.rfqTitle.toLowerCase().includes(term) ||
+        g.quotes.some(q =>
+          q.vendorName.toLowerCase().includes(term) ||
+          q.vendorCode.toLowerCase().includes(term)
+        )
       );
     }
 
     if (this.dateFrom) {
       const from = new Date(this.dateFrom);
-      filtered = filtered.filter(q => q.submittedAt && new Date(q.submittedAt) >= from);
+      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && new Date(q.submittedAt) >= from));
     }
 
     if (this.dateTo) {
       const to = new Date(this.dateTo);
       to.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(q => q.submittedAt && new Date(q.submittedAt) <= to);
+      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && new Date(q.submittedAt) <= to));
     }
 
     // Sort
     if (this.sortField) {
       filtered.sort((a, b) => {
-        let valA = (a as any)[this.sortField];
-        let valB = (b as any)[this.sortField];
+        let valA: any;
+        let valB: any;
+
+        if (this.sortField === 'rfqId') {
+          valA = a.rfqId;
+          valB = b.rfqId;
+        } else if (this.sortField === 'rfqTitle') {
+          valA = a.rfqTitle;
+          valB = b.rfqTitle;
+        } else if (this.sortField === 'receivedCount') {
+          valA = a.receivedCount;
+          valB = b.receivedCount;
+        } else {
+          valA = a.rfqId;
+          valB = b.rfqId;
+        }
 
         if (valA === undefined || valA === null) valA = '';
         if (valB === undefined || valB === null) valB = '';
-
-        if (valA instanceof Date) valA = valA.getTime();
-        if (valB instanceof Date) valB = valB.getTime();
 
         if (typeof valA === 'string') {
           valA = valA.toLowerCase();
@@ -239,8 +444,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
         return 0;
       });
     }
-    
-    this.filteredQuotations = filtered;
+
+    this.filteredRfqGroups = filtered;
     this.currentPage = 0;
     this.updatePagination();
   }
@@ -288,41 +493,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     return this.sortAsc ? 'fa-sort-up' : 'fa-sort-down';
   }
 
-  // Checkbox helpers
-  isAllSelected(): boolean {
-    return this.filteredQuotations.length > 0 && this.selectedQuotations.length === this.filteredQuotations.length;
-  }
 
-  isSomeSelected(): boolean {
-    return this.selectedQuotations.length > 0 && this.selectedQuotations.length < this.filteredQuotations.length;
-  }
-
-  isSelected(id: string): boolean {
-    return this.selectedQuotations.some(q => q.id === id);
-  }
-
-  toggleSelection(id: string, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    const quote = this.filteredQuotations.find(q => q.id === id);
-    if (!quote) return;
-
-    if (checked) {
-      if (!this.isSelected(id)) {
-        this.selectedQuotations.push(quote);
-      }
-    } else {
-      this.selectedQuotations = this.selectedQuotations.filter(q => q.id !== id);
-    }
-  }
-
-  toggleSelectAll(event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    if (checked) {
-      this.selectedQuotations = [...this.filteredQuotations];
-    } else {
-      this.selectedQuotations = [];
-    }
-  }
 
   onPageChange(page: number): void {
     this.currentPage = page;
@@ -344,9 +515,9 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   }
 
   updatePagination(): void {
-    this.totalElements = this.filteredQuotations.length;
+    this.totalElements = this.filteredRfqGroups.length;
     this.totalPages = Math.ceil(this.totalElements / this.pageSize);
-    this.paginatedQuotations = this.filteredQuotations.slice(
+    this.paginatedRfqGroups = this.filteredRfqGroups.slice(
       this.currentPage * this.pageSize,
       (this.currentPage + 1) * this.pageSize
     );
@@ -380,7 +551,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      'PENDING': 'Pending Response',
+      'PENDING': 'Pending',
       'SUBMITTED': 'Submitted',
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',
@@ -403,8 +574,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number, currency: string): string {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency: currency || 'NGN',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -429,5 +600,117 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
   isExpired(expiresAt: Date): boolean {
     return new Date(expiresAt) < new Date();
+  }
+
+  openVendorSummary(group: RFQGroup): void {
+    this.selectedRfqGroup = group;
+    this.showVendorSummaryModal = true;
+  }
+
+  closeVendorSummary(): void {
+    this.showVendorSummaryModal = false;
+    this.selectedRfqGroup = null;
+  }
+
+  openQuotationDetail(quote: VendorQuotation): void {
+    this.selectedQuotation = quote;
+    this.showQuotationDetailModal = true;
+    
+    // Mark as viewed if not viewed
+    if (!quote.isViewed) {
+      this.quotationService.markAsViewed(quote.id).subscribe();
+      quote.isViewed = true;
+    }
+  }
+
+  closeQuotationDetail(): void {
+    this.showQuotationDetailModal = false;
+    this.selectedQuotation = null;
+  }
+
+  openRejectionDetail(quote: VendorQuotation): void {
+    this.selectedQuotation = quote;
+    this.showRejectionDetailModal = true;
+  }
+
+  closeRejectionDetail(): void {
+    this.showRejectionDetailModal = false;
+    this.selectedQuotation = null;
+  }
+
+  acceptQuotation(quotationId: string): void {
+    if (!confirm('Are you sure you want to accept this quotation? An LPO will be generated and sent to the vendor.')) {
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.acceptQuotation(quotationId).subscribe({
+      next: (response) => {
+        this.isProcessing = false;
+        alert(`LPO #${response.lpoId} has been generated and sent to the vendor.`);
+        
+        // Update local status
+        if (this.selectedQuotation) {
+          this.selectedQuotation.status = 'ACCEPTED';
+        }
+        this.updateQuotesStatus(quotationId, 'ACCEPTED');
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error accepting quotation:', err);
+        alert('Failed to accept quotation. Please try again.');
+      }
+    });
+  }
+
+  rejectQuotation(quotationId: string): void {
+    const reason = prompt('Please provide a reason for rejecting this quotation:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('A rejection reason is required.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.rejectQuotation(quotationId, reason.trim()).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        alert('Quotation has been rejected.');
+        
+        // Update local status
+        if (this.selectedQuotation) {
+          this.selectedQuotation.status = 'DECLINED';
+          this.selectedQuotation.declineReason = reason.trim();
+        }
+        this.updateQuotesStatus(quotationId, 'DECLINED', reason.trim());
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error rejecting quotation:', err);
+        alert('Failed to reject quotation. Please try again.');
+      }
+    });
+  }
+
+  private updateQuotesStatus(quotationId: string, status: string, declineReason?: string): void {
+    // Update status in master quotations list
+    const q = this.quotations.find(item => item.id === quotationId);
+    if (q) {
+      q.status = status as any;
+      if (declineReason) {
+        q.declineReason = declineReason;
+      }
+    }
+    // Re-group and re-apply filters to refresh UI
+    this.rfqGroups = this.groupQuotations(this.quotations);
+    this.applyFilters();
+    
+    // Also update selectedRfqGroup references if modal is open
+    if (this.selectedRfqGroup) {
+      const updatedGroup = this.rfqGroups.find(g => g.rfqId === this.selectedRfqGroup?.rfqId);
+      if (updatedGroup) {
+        this.selectedRfqGroup = updatedGroup;
+      }
+    }
   }
 }
