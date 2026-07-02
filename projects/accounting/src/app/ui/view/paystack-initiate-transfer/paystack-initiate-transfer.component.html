@@ -1,0 +1,403 @@
+<div class="transfer-page">
+
+  <!-- ══════════════════════════════════════════════════════
+       PAGE HEADER
+  ══════════════════════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <button class="back-btn" (click)="navigateToOverview()" id="btn-back-to-overview">
+        <i class="pi pi-arrow-left"></i>
+      </button>
+      <div>
+        <h1 class="page-title">Initiate Transfer</h1>
+        <p class="page-subtitle">Send money to an existing Paystack recipient</p>
+      </div>
+    </div>
+
+    <div class="page-header__right">
+      <!-- Wallet Balance Pill -->
+      <div class="balance-pill">
+        <i class="pi pi-wallet balance-pill__icon"></i>
+        <span class="balance-pill__label">Wallet</span>
+        <span class="balance-pill__value" *ngIf="!balanceLoading">
+          {{ walletBalance != null ? formatNaira(walletBalance) : '—' }}
+        </span>
+        <span class="balance-pill__skeleton" *ngIf="balanceLoading"></span>
+      </div>
+
+      <!-- OTP Toggle -->
+      <div class="otp-toggle-wrap">
+        <span class="otp-toggle-wrap__label">OTP</span>
+        <button
+          class="otp-toggle"
+          [class.otp-toggle--on]="otpEnabled"
+          [class.otp-toggle--off]="!otpEnabled"
+          [class.otp-toggle--working]="otpToggleWorking"
+          [disabled]="otpToggleWorking"
+          (click)="onOtpToggleClick()"
+          [title]="otpEnabled ? 'OTP enabled — click to disable' : 'OTP disabled — click to re-enable'"
+          id="btn-otp-toggle"
+        >
+          <span class="otp-toggle__track">
+            <span class="otp-toggle__thumb">
+              <i class="pi" [class.pi-lock]="otpEnabled && !otpToggleWorking" [class.pi-unlock]="!otpEnabled && !otpToggleWorking"></i>
+              <span class="mini-spin" *ngIf="otpToggleWorking"></span>
+            </span>
+          </span>
+          <span class="otp-toggle__text">{{ otpEnabled ? 'OTP On' : 'OTP Off' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       STEPPER
+  ══════════════════════════════════════════════════════ -->
+  <div class="stepper" *ngIf="currentStep !== 'result'">
+    <div class="stepper__track">
+      <div class="stepper__fill" [style.width.%]="stepPercent"></div>
+    </div>
+    <div class="stepper__steps">
+      <div class="stepper__step" [class.active]="currentStep === 'select-recipient'" [class.done]="progressStepIndex > 0">
+        <div class="stepper__bubble">
+          <i class="pi pi-check" *ngIf="progressStepIndex > 0"></i>
+          <span *ngIf="progressStepIndex <= 0">1</span>
+        </div>
+        <span class="stepper__label">Recipient</span>
+      </div>
+      <div class="stepper__step" [class.active]="currentStep === 'enter-amount'" [class.done]="progressStepIndex > 1">
+        <div class="stepper__bubble">
+          <i class="pi pi-check" *ngIf="progressStepIndex > 1"></i>
+          <span *ngIf="progressStepIndex <= 1">2</span>
+        </div>
+        <span class="stepper__label">Amount</span>
+      </div>
+      <div class="stepper__step" [class.active]="currentStep === 'confirm'" [class.done]="progressStepIndex > 2">
+        <div class="stepper__bubble">
+          <i class="pi pi-check" *ngIf="progressStepIndex > 2"></i>
+          <span *ngIf="progressStepIndex <= 2">3</span>
+        </div>
+        <span class="stepper__label">Confirm</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 1 — SELECT RECIPIENT
+  ══════════════════════════════════════════════════════ -->
+  <div class="step-panel" *ngIf="currentStep === 'select-recipient'">
+    <div class="step-panel__header">
+      <h2 class="step-panel__title">Choose a Recipient</h2>
+      <p class="step-panel__desc">Select an existing Paystack recipient. No new recipients will be created.</p>
+    </div>
+
+    <div class="search-bar">
+      <i class="pi pi-search search-bar__icon"></i>
+      <input id="recipient-search" class="search-bar__input" type="text"
+        placeholder="Search by name, bank, or account number…"
+        [(ngModel)]="searchQuery" (input)="onSearch()" />
+      <button class="search-bar__clear" *ngIf="searchQuery" (click)="searchQuery = ''; onSearch()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="skeleton-list" *ngIf="recipientsLoading">
+      <div class="skeleton-card" *ngFor="let s of [1,2,3,4]"></div>
+    </div>
+
+    <div class="inline-error" *ngIf="recipientsError && !recipientsLoading && filteredRecipients.length === 0">
+      <i class="pi pi-exclamation-triangle"></i> {{ recipientsError }}
+      <button class="inline-error__retry" (click)="loadRecipients()">Retry</button>
+    </div>
+
+    <div class="empty-state" *ngIf="!recipientsLoading && filteredRecipients.length === 0 && !recipientsError">
+      <i class="pi pi-user-minus empty-state__icon"></i>
+      <p>No recipients match your search.</p>
+    </div>
+
+    <div class="recipient-grid" *ngIf="!recipientsLoading">
+      <div class="recipient-card" *ngFor="let r of filteredRecipients"
+        [class.recipient-card--selected]="selectedRecipient?.recipientCode === r.recipientCode"
+        (click)="selectRecipient(r)" [attr.id]="'recipient-' + r.recipientCode">
+        <div class="recipient-card__check" *ngIf="selectedRecipient?.recipientCode === r.recipientCode">
+          <i class="pi pi-check"></i>
+        </div>
+        <div class="recipient-card__avatar">{{ getRecipientInitials(r.name) }}</div>
+        <div class="recipient-card__body">
+          <p class="recipient-card__name">{{ r.name }}</p>
+          <p class="recipient-card__bank">{{ r.details?.bank_name || '—' }}</p>
+          <p class="recipient-card__account">{{ r.details?.account_number || '—' }}</p>
+          <span class="recipient-card__badge">{{ r.type || 'nuban' }}</span>
+        </div>
+        <p class="recipient-card__code">{{ r.recipientCode }}</p>
+      </div>
+    </div>
+
+    <div class="selected-banner" *ngIf="selectedRecipient">
+      <i class="pi pi-check-circle selected-banner__icon"></i>
+      <div class="selected-banner__body">
+        <span class="selected-banner__name">{{ selectedRecipient.name }}</span>
+        <span class="selected-banner__detail">{{ selectedRecipient.details?.bank_name }} · {{ selectedRecipient.details?.account_number }}</span>
+      </div>
+      <button class="selected-banner__clear" (click)="clearRecipient()">Change</button>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn-outline" (click)="navigateToOverview()">Cancel</button>
+      <button class="btn-primary" [disabled]="!selectedRecipient" (click)="proceedFromRecipient()" id="btn-proceed-recipient">
+        Continue <i class="pi pi-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 2 — ENTER AMOUNT & REASON
+  ══════════════════════════════════════════════════════ -->
+  <div class="step-panel" *ngIf="currentStep === 'enter-amount'">
+    <div class="step-panel__header">
+      <h2 class="step-panel__title">Transfer Details</h2>
+      <p class="step-panel__desc">Enter the amount and reason for this transfer.</p>
+    </div>
+
+    <div class="recap-card">
+      <div class="recap-card__avatar">{{ getRecipientInitials(selectedRecipient?.name) }}</div>
+      <div class="recap-card__body">
+        <p class="recap-card__name">{{ selectedRecipient?.name }}</p>
+        <p class="recap-card__meta">{{ selectedRecipient?.details?.bank_name }} · {{ selectedRecipient?.details?.account_number }}</p>
+      </div>
+      <button class="recap-card__change" (click)="goToStep('select-recipient')">
+        <i class="pi pi-pencil"></i> Change
+      </button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="amount-input">Amount <span class="field-currency">(NGN)</span></label>
+      <div class="amount-wrap">
+        <span class="amount-wrap__symbol">₦</span>
+        <input id="amount-input" class="amount-wrap__input" type="number" min="0.01" placeholder="0.00" [(ngModel)]="amountNaira" />
+      </div>
+      <div class="field-hint" *ngIf="walletBalance != null">
+        Available: <strong>{{ formatNaira(walletBalance) }}</strong>
+        <span class="field-hint--danger" *ngIf="insufficientBalance"> · Insufficient balance</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="reason-input">Reason / Narration</label>
+      <input id="reason-input" class="field-input" type="text" maxlength="100"
+        placeholder="e.g. Bonus for the week, Salary payment…" [(ngModel)]="reason" />
+      <div class="field-counter">{{ reason.length }}/100</div>
+    </div>
+
+    <div class="info-box">
+      <i class="pi pi-info-circle info-box__icon"></i>
+      <p>A unique transfer reference will be auto-generated on the next step to prevent duplicate transactions.</p>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn-outline" (click)="goBack()"><i class="pi pi-arrow-left"></i> Back</button>
+      <button class="btn-primary" [disabled]="!amountNaira || amountNaira <= 0 || !reason.trim() || insufficientBalance" (click)="proceedFromAmount()" id="btn-proceed-amount">
+        Review Transfer <i class="pi pi-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 3 — CONFIRM
+  ══════════════════════════════════════════════════════ -->
+  <div class="step-panel" *ngIf="currentStep === 'confirm'">
+    <div class="step-panel__header">
+      <h2 class="step-panel__title">Review &amp; Confirm</h2>
+      <p class="step-panel__desc">Check the details carefully before sending. This action cannot be undone.</p>
+    </div>
+
+    <div class="otp-status-note" [class.otp-status-note--enabled]="otpEnabled" [class.otp-status-note--disabled]="!otpEnabled">
+      <i class="pi" [class.pi-lock]="otpEnabled" [class.pi-unlock]="!otpEnabled"></i>
+      <div>
+        <strong>OTP {{ otpEnabled ? 'Enabled' : 'Disabled' }}</strong>
+        <span *ngIf="otpEnabled"> — You may be prompted for an OTP to complete this transfer.</span>
+        <span *ngIf="!otpEnabled"> — Transfers will process automatically without OTP verification.</span>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-card__hero">
+        <span class="summary-card__amount">{{ formatNaira(amountNaira) }}</span>
+        <span class="summary-card__label">Transfer Amount</span>
+      </div>
+      <div class="summary-card__divider"></div>
+      <div class="summary-row"><span class="summary-row__key">Recipient</span><span class="summary-row__val">{{ selectedRecipient?.name }}</span></div>
+      <div class="summary-row"><span class="summary-row__key">Bank</span><span class="summary-row__val">{{ selectedRecipient?.details?.bank_name || '—' }}</span></div>
+      <div class="summary-row"><span class="summary-row__key">Account No.</span><span class="summary-row__val mono">{{ selectedRecipient?.details?.account_number || '—' }}</span></div>
+      <div class="summary-row"><span class="summary-row__key">Recipient Code</span><span class="summary-row__val mono small">{{ selectedRecipient?.recipientCode }}</span></div>
+      <div class="summary-card__divider"></div>
+      <div class="summary-row"><span class="summary-row__key">Reason</span><span class="summary-row__val">{{ reason }}</span></div>
+      <div class="summary-row"><span class="summary-row__key">Source</span><span class="summary-row__val">Paystack Balance</span></div>
+      <div class="summary-row reference-row">
+        <span class="summary-row__key">Reference</span>
+        <div class="reference-row__right">
+          <span class="summary-row__val mono small">{{ generatedReference }}</span>
+          <button class="ref-regen-btn" (click)="regenerateReference()" title="Regenerate reference">
+            <i class="pi pi-refresh"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button class="btn-outline" (click)="goBack()" [disabled]="isSubmitting"><i class="pi pi-arrow-left"></i> Back</button>
+      <button class="btn-send" [disabled]="isSubmitting" (click)="submitTransfer()" id="btn-submit-transfer">
+        <span *ngIf="!isSubmitting"><i class="pi pi-send"></i> Send {{ formatNaira(amountNaira) }}</span>
+        <span *ngIf="isSubmitting" class="sending-state"><span class="spinner"></span> Processing…</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 4 — RESULT
+  ══════════════════════════════════════════════════════ -->
+  <div class="result-panel" *ngIf="currentStep === 'result'" [ngClass]="resultStatusClass">
+    <div class="result-icon-wrap">
+      <div class="result-icon">
+        <i class="pi" [class.pi-check-circle]="transferResult === 'success'"
+                      [class.pi-clock]="transferResult === 'pending'"
+                      [class.pi-times-circle]="transferResult === 'failed'"
+                      [class.pi-question-circle]="!transferResult"></i>
+      </div>
+    </div>
+    <h2 class="result-title">{{ resultTitle }}</h2>
+    <p class="result-subtitle" *ngIf="transferResult === 'pending'">Your transfer is being processed. You'll be notified via webhook when it completes.</p>
+    <p class="result-subtitle" *ngIf="transferResult === 'success'">The funds have been sent to {{ selectedRecipient?.name }}.</p>
+    <p class="result-subtitle result-subtitle--error" *ngIf="transferResult === 'failed'">{{ transferError || 'The transfer could not be completed. Please try again.' }}</p>
+
+    <div class="receipt-card" *ngIf="transferResult !== 'failed' || transferResponse">
+      <div class="receipt-row"><span class="receipt-key">Amount</span><span class="receipt-val">{{ formatNaira(amountNaira) }}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Recipient</span><span class="receipt-val">{{ selectedRecipient?.name }}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Bank</span><span class="receipt-val">{{ selectedRecipient?.details?.bank_name }}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Reference</span><span class="receipt-val mono small">{{ transferResponse?.reference || generatedReference }}</span></div>
+      <div class="receipt-row" *ngIf="transferResponse?.transfer_code"><span class="receipt-key">Transfer Code</span><span class="receipt-val mono small">{{ transferResponse?.transfer_code }}</span></div>
+      <div class="receipt-row">
+        <span class="receipt-key">Status</span>
+        <span class="receipt-badge" [class.badge--success]="transferResult === 'success'" [class.badge--pending]="transferResult === 'pending'" [class.badge--failed]="transferResult === 'failed'">
+          {{ transferResult | uppercase }}
+        </span>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-outline" *ngIf="transferResult === 'pending'" [disabled]="isVerifying" (click)="verifyTransfer()" id="btn-verify-transfer">
+        <span *ngIf="!isVerifying"><i class="pi pi-refresh"></i> Verify Status</span>
+        <span *ngIf="isVerifying" class="sending-state"><span class="spinner spinner--dark"></span> Checking…</span>
+      </button>
+      <button class="btn-outline" (click)="resetWizard()" id="btn-new-transfer"><i class="pi pi-plus"></i> New Transfer</button>
+      <button class="btn-primary" (click)="navigateToOverview()" id="btn-back-overview"><i class="pi pi-wallet"></i> Back to Wallet</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       MODAL 1 — OTP REQUEST
+  ══════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showOtpModal" (click)="closeOtpModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-box__header">
+        <div class="modal-icon modal-icon--purple"><i class="pi pi-shield"></i></div>
+        <button class="modal-box__close" (click)="closeOtpModal()"><i class="pi pi-times"></i></button>
+      </div>
+
+      <h3 class="modal-box__title">OTP Required</h3>
+      <p class="modal-box__desc">
+        Paystack sent a one-time password to your registered business phone number.
+        Enter it below to complete the transfer.
+      </p>
+
+      <div class="modal-info-row" *ngIf="pendingTransferCode">
+        <span class="modal-info-row__label">Transfer Code</span>
+        <span class="modal-info-row__val mono">{{ pendingTransferCode }}</span>
+      </div>
+      <div class="modal-info-row">
+        <span class="modal-info-row__label">Amount</span>
+        <span class="modal-info-row__val">{{ formatNaira(amountNaira) }}</span>
+      </div>
+      <div class="modal-info-row">
+        <span class="modal-info-row__label">Recipient</span>
+        <span class="modal-info-row__val">{{ selectedRecipient?.name }}</span>
+      </div>
+
+      <div class="field-group" style="margin-top:1.25rem">
+        <label class="field-label" for="otp-modal-input">One-Time Password</label>
+        <input id="otp-modal-input" class="field-input otp-input" type="text"
+          inputmode="numeric" maxlength="6" placeholder="e.g. 928783"
+          [(ngModel)]="otpModalValue" autocomplete="one-time-code" />
+        <div class="field-hint">Enter the 6-digit code. Do not share it with anyone.</div>
+      </div>
+
+      <div class="resend-row">
+        <button class="resend-btn" [disabled]="otpResendCooldown > 0 || isResendingOtp"
+          (click)="resendTransferOtp()" id="btn-resend-otp">
+          <i class="pi pi-refresh" [class.pi-spin]="isResendingOtp"></i>
+          <span *ngIf="otpResendCooldown <= 0 && !isResendingOtp">Resend OTP</span>
+          <span *ngIf="isResendingOtp">Sending…</span>
+          <span *ngIf="otpResendCooldown > 0 && !isResendingOtp">Resend in {{ otpResendCooldown }}s</span>
+        </button>
+      </div>
+
+      <div class="modal-box__actions">
+        <button class="btn-outline" (click)="closeOtpModal()" [disabled]="isFinalisingOtp">Cancel</button>
+        <button class="btn-send" [disabled]="!otpModalValue.trim() || isFinalisingOtp"
+          (click)="submitOtpModal()" id="btn-confirm-otp">
+          <span *ngIf="!isFinalisingOtp"><i class="pi pi-unlock"></i> Verify &amp; Complete</span>
+          <span *ngIf="isFinalisingOtp" class="sending-state"><span class="spinner"></span> Verifying…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       MODAL 2 — DISABLE OTP CONFIRMATION
+  ══════════════════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="showDisableOtpModal" (click)="closeDisableOtpModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-box__header">
+        <div class="modal-icon modal-icon--amber"><i class="pi pi-exclamation-triangle"></i></div>
+        <button class="modal-box__close" (click)="closeDisableOtpModal()"><i class="pi pi-times"></i></button>
+      </div>
+
+      <h3 class="modal-box__title">Confirm Disable OTP</h3>
+      <p class="modal-box__desc">
+        Paystack has sent an OTP to your registered business phone.
+        Enter it below to confirm turning off OTP for all transfers.
+      </p>
+
+      <div class="warning-box">
+        <i class="pi pi-exclamation-triangle warning-box__icon"></i>
+        <p>Disabling OTP removes an extra layer of security. Only do this if you're building an automated payout system.</p>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="disable-otp-input">Confirmation OTP</label>
+        <input id="disable-otp-input" class="field-input otp-input" type="text"
+          inputmode="numeric" maxlength="6" placeholder="e.g. 928783"
+          [(ngModel)]="disableOtpPinValue" autocomplete="one-time-code" />
+        <div class="field-hint">Enter the 6-digit code sent to your phone.</div>
+      </div>
+
+      <div class="modal-box__actions">
+        <button class="btn-outline" (click)="closeDisableOtpModal()" [disabled]="isFinalisingDisableOtp">Cancel</button>
+        <button class="btn-danger" [disabled]="!disableOtpPinValue.trim() || isFinalisingDisableOtp"
+          (click)="finalizeDisableOtpConfirm()" id="btn-confirm-disable-otp">
+          <span *ngIf="!isFinalisingDisableOtp"><i class="pi pi-unlock"></i> Disable OTP</span>
+          <span *ngIf="isFinalisingDisableOtp" class="sending-state"><span class="spinner"></span> Confirming…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

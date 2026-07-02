@@ -1,0 +1,373 @@
+<div class="product-list-container">
+  <div class="list-wrapper">
+
+    <!-- Hero Header - Matching Quote/Invoice/Customer Lists -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="dashboard-badge">
+            <i class="fas fa-boxes"></i>
+            <span>Sales Hub • Products</span>
+          </div>
+          <h1>Product Catalog</h1>
+          <p class="hero-subtitle">Manage, track, and organize your entire product inventory from a single command center.</p>
+        </div>
+        <div class="hero-actions">
+          <div class="view-switcher">
+            <button (click)="setViewMode('list')" [class.active]="viewMode === 'list'" class="switch-btn" title="List View">
+              <i class="fas fa-th-list"></i>
+            </button>
+            <button (click)="setViewMode('icon')" [class.active]="viewMode === 'icon'" class="switch-btn" title="Grid View">
+              <i class="fas fa-th"></i>
+            </button>
+          </div>
+          <button (click)="navigateToNewProduct()" class="btn-primary-hero">
+            <i class="fas fa-plus"></i>
+            Add Product
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards - Larger & More Vibrant -->
+    <div class="stats-grid">
+      <div class="stat-card total" (click)="filters.status = 'ALL'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Total Products</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-arrow-up"></i>
+          <span>8%</span>
+        </div>
+      </div>
+      <div class="stat-card active" (click)="filters.status = 'ACTIVE'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.active }}</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-arrow-up"></i>
+          <span>12%</span>
+        </div>
+      </div>
+      <div class="stat-card out-of-stock" (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.outOfStock }}</div>
+          <div class="stat-label">Out of Stock</div>
+        </div>
+        <div class="stat-trend down">
+          <i class="fas fa-arrow-down"></i>
+          <span>4%</span>
+        </div>
+      </div>
+      <div class="stat-card discontinued" (click)="filters.status = 'DISCONTINUED'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-ban"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.discontinued }}</div>
+          <div class="stat-label">Discontinued</div>
+        </div>
+        <div class="stat-trend down">
+          <i class="fas fa-arrow-down"></i>
+          <span>2%</span>
+        </div>
+      </div>
+      <div class="stat-card revenue">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-naira-sign"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.totalValue) }}</div>
+          <div class="stat-label">Inventory Value</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-arrow-up"></i>
+          <span>18%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar with Status Filters -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()"
+            placeholder="Search by name or SKU...">
+        </div>
+
+        <div class="status-filters">
+          <span class="filter-label">Status:</span>
+          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'" 
+                  (click)="filters.status = 'ALL'; applyFilters()">
+            All
+          </button>
+          <button class="status-filter-btn active" [class.active]="filters.status === 'ACTIVE'" 
+                  (click)="filters.status = 'ACTIVE'; applyFilters()">
+            Active
+          </button>
+          <button class="status-filter-btn out-of-stock" [class.active]="filters.status === 'OUT_OF_STOCK'" 
+                  (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
+            Out of Stock
+          </button>
+          <button class="status-filter-btn discontinued" [class.active]="filters.status === 'DISCONTINUED'" 
+                  (click)="filters.status = 'DISCONTINUED'; applyFilters()">
+            Discontinued
+          </button>
+        </div>
+
+        <div class="filter-group">
+          <label>Category</label>
+          <select [(ngModel)]="filters.category" (change)="applyFilters()" class="filter-select">
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <div class="price-filters">
+          <input type="number" [(ngModel)]="filters.minPrice" (input)="applyFilters()" placeholder="Min" class="price-input">
+          <span>→</span>
+          <input type="number" [(ngModel)]="filters.maxPrice" (input)="applyFilters()" placeholder="Max" class="price-input">
+        </div>
+
+        <button class="btn-reset" (click)="resetFilters()">
+          <i class="fas fa-undo-alt"></i>
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner-glow"></div>
+      <p>Loading products...</p>
+    </div>
+
+    <!-- Products Container -->
+    <div *ngIf="!isLoading">
+
+      <!-- List View -->
+      <div *ngIf="viewMode === 'list'" class="table-container">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="checkbox-col">
+                  <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
+                </th>
+                <th class="sn-col">#</th>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th class="actions-heading">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of products; let i = index" 
+                  [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
+                <td class="checkbox-col">
+                  <input type="checkbox" [value]="product.id" (change)="toggleSelection(product.id, $event)"
+                    [checked]="isSelected(product.id)">
+                </td>
+                <td class="sn-col">{{ (currentPage * pageSize) + i + 1 }}</td>
+                <td>
+                  <div class="product-info">
+                    <div class="product-avatar">
+                      <img *ngIf="product.images && product.images.length > 0; else listNoImage"
+                           [src]="product.images[0]"
+                           [alt]="product.name"
+                           class="product-image-avatar">
+                      <ng-template #listNoImage>
+                        <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                      </ng-template>
+                    </div>
+                    <div>
+                      <div class="product-name">{{ product.name }}</div>
+                      <div class="product-desc">{{ product.description | slice:0:50 }}{{ product.description.length > 50 ? '...' : '' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="sku">{{ product.sku }}</td>
+                <td>
+                  <span class="category-badge">{{ product.category }}</span>
+                </td>
+                <td class="amount">{{ formatCurrency(product.unitPrice) }}</td>
+                <td>
+                  <div class="stock-info">
+                    <span class="stock-badge" [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
+                      {{ product.stockQuantity }}
+                    </span>
+                    <span class="stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [class]="'status-' + getStatusClass(product.status)">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(product.status) | titlecase }}
+                  </span>
+                </td>
+                <td class="actions-col">
+                  <div class="actions-wrapper">
+                    <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="action-btn delete-btn" (click)="deleteProduct(product)" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="products.length === 0">
+                <td colspan="9" class="empty-state">
+                  <div class="empty-state-content">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+                    </svg>
+                    <h3>No products found</h3>
+                    <p>Add your first product to get started</p>
+                    <button (click)="navigateToNewProduct()" class="btn-primary-sm">Add Product</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Icon / Grid View -->
+      <div *ngIf="viewMode === 'icon'" class="grid-container">
+        <div *ngFor="let product of products; let i = index" 
+             class="product-card" 
+             [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
+
+          <!-- Card Header -->
+          <div class="card-top-actions">
+            <input type="checkbox" [value]="product.id" (change)="toggleSelection(product.id, $event)"
+              [checked]="isSelected(product.id)" class="card-checkbox">
+            <div class="card-number">#{{ (currentPage * pageSize) + i + 1 }}</div>
+          </div>
+
+          <!-- Product Card Body -->
+          <div class="card-body">
+            <div class="card-icon-area">
+              <div class="product-avatar-large">
+                <img *ngIf="product.images && product.images.length > 0; else iconNoImage"
+                     [src]="product.images[0]"
+                     [alt]="product.name"
+                     class="product-image-card">
+                <ng-template #iconNoImage>
+                  <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                </ng-template>
+              </div>
+            </div>
+
+            <div class="card-info">
+              <h4 class="card-title" [title]="product.name">{{ product.name }}</h4>
+              <div class="card-sku">{{ product.sku }}</div>
+              <p class="card-desc">{{ product.description | slice:0:60 }}{{ product.description.length > 60 ? '...' : '' }}</p>
+
+              <div class="card-meta">
+                <span class="category-badge">{{ product.category }}</span>
+                <span class="status-badge" [class]="'status-' + getStatusClass(product.status)">
+                  <span class="status-dot"></span>
+                  {{ getStatusLabel(product.status) | titlecase }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Card Footer -->
+          <div class="card-footer-row">
+            <div class="card-price">{{ formatCurrency(product.unitPrice) }}</div>
+            <div class="card-stock">
+              <span class="stock-badge" [class]="'stock-' + getStockStatusClass(product.stockQuantity)">
+                {{ product.stockQuantity }}
+              </span>
+              <span class="stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+            </div>
+            <div class="card-actions">
+              <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
+              <button class="action-btn delete-btn" (click)="deleteProduct(product)" title="Delete">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty Icon View State -->
+        <div *ngIf="products.length === 0" class="empty-state">
+          <div class="empty-state-content">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+            </svg>
+            <h3>No products found</h3>
+            <p>Add your first product to get started</p>
+            <button (click)="navigateToNewProduct()" class="btn-primary-sm">Add Product</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="totalPages > 0">
+        <div class="pagination-info">
+          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{
+          totalElements }} products
+        </div>
+
+        <div class="pagination-controls">
+          <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+          </select>
+
+          <div class="pagination-buttons">
+            <button class="page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-left"></i>
+            </button>
+            <button *ngFor="let page of getPageNumbers()" class="page-number" [class.active]="page === currentPage"
+              (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage + 1)"
+              [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

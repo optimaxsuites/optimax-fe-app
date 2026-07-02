@@ -1,0 +1,200 @@
+<div class="ps-wrap">
+
+  <!-- Header -->
+  <div class="ps-header">
+    <div>
+      <h2 class="ps-title">Email Account Setup</h2>
+      <p class="ps-subtitle">Configure outbound mail via SMTP</p>
+    </div>
+    <button type="button" (click)="createNew = !createNew" class="ps-btn"
+            [class.ps-btn-primary]="!createNew"
+            [class.ps-btn-ghost]="createNew">
+      {{ createNew ? 'View Configurations' : '+ New Configuration' }}
+    </button>
+  </div>
+
+  <!-- ── Create form ─────────────────────────────────────────────────────────── -->
+  <form *ngIf="createNew" [formGroup]="smtpForm" (ngSubmit)="test()" class="ps-wrap">
+    <div class="ps-body">
+
+      <!-- Connection -->
+      <div class="ps-section">
+        <div class="ps-section-label">Connection</div>
+        <div class="ps-grid-2">
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">Configuration Name <span class="ps-req">*</span></label>
+            <input type="text" formControlName="name" class="ps-input" placeholder="e.g. Primary Mailer" />
+            <span *ngIf="smtpForm.get('name')?.invalid && smtpForm.get('name')?.touched"
+                  style="font-size:11px;color:#ef4444;">Name is required</span>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Host <span class="ps-req">*</span></label>
+            <input type="text" formControlName="host" class="ps-input" placeholder="smtp.example.com" />
+            <span *ngIf="smtpForm.get('host')?.invalid && smtpForm.get('host')?.touched"
+                  style="font-size:11px;color:#ef4444;">Host is required</span>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Port <span class="ps-req">*</span></label>
+            <input type="number" formControlName="port" class="ps-input" placeholder="587" />
+            <span *ngIf="smtpForm.get('port')?.invalid && smtpForm.get('port')?.touched"
+                  style="font-size:11px;color:#ef4444;">Port is required</span>
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Protocol <span class="ps-req">*</span></label>
+            <input type="text" formControlName="protocol" class="ps-input" placeholder="SMTP" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Username <span class="ps-req">*</span></label>
+            <input type="text" formControlName="username" class="ps-input" />
+          </div>
+
+          <div class="ps-field">
+            <label class="ps-label">Password <span class="ps-req">*</span></label>
+            <input type="password" formControlName="password" class="ps-input" />
+          </div>
+
+          <div class="ps-field ps-span-2">
+            <label class="ps-label">From Address <span class="ps-req">*</span></label>
+            <input type="email" formControlName="fromAddress" class="ps-input" placeholder="noreply@domain.com" />
+            <span *ngIf="smtpForm.get('fromAddress')?.invalid && smtpForm.get('fromAddress')?.touched"
+                  style="font-size:11px;color:#ef4444;">
+              <span *ngIf="smtpForm.get('fromAddress')?.errors?.['required']">From address is required</span>
+              <span *ngIf="smtpForm.get('fromAddress')?.errors?.['email']">Invalid email format</span>
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="ps-section">
+        <div class="ps-section-label">Options</div>
+        <div class="ps-grid-2">
+          <label class="ps-option">
+            <input type="checkbox" formControlName="authEnabled" />
+            <span class="ps-option-text">Auth Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="startTlsEnabled" />
+            <span class="ps-option-text">STARTTLS Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="sslEnabled" />
+            <span class="ps-option-text">SSL Enabled</span>
+          </label>
+          <label class="ps-option">
+            <input type="checkbox" formControlName="active" />
+            <span class="ps-option-text">Set as Active Configuration</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Timeouts -->
+      <div class="ps-section">
+        <div class="ps-section-label">Timeouts (ms)</div>
+        <div class="ps-grid-3">
+          <div class="ps-field">
+            <label class="ps-label">Connection</label>
+            <input type="number" formControlName="connectionTimeoutMs" class="ps-input" />
+          </div>
+          <div class="ps-field">
+            <label class="ps-label">Read</label>
+            <input type="number" formControlName="timeoutMs" class="ps-input" />
+          </div>
+          <div class="ps-field">
+            <label class="ps-label">Write</label>
+            <input type="number" formControlName="writeTimeoutMs" class="ps-input" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ps-footer">
+      <button type="submit" [disabled]="loading || smtpForm.invalid" class="ps-btn ps-btn-primary">
+        <i class="fas fa-paper-plane"></i>
+        {{ loading ? 'Testing…' : 'Test &amp; Save' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- ── Config list ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="!createNew" class="ps-body">
+    <div class="ps-section-label">Saved Configurations</div>
+
+    <div *ngIf="!allConfigs?.length" class="ps-empty">
+      <i class="fas fa-inbox"></i>
+      <p>No configurations yet.<br>Click <strong>+ New Configuration</strong> to add one.</p>
+    </div>
+
+    <div *ngFor="let config of allConfigs; let i = index" class="ps-config-item">
+      <!-- Row header -->
+      <div class="ps-config-row" (click)="config._expanded = !config._expanded">
+        <span class="ps-status-dot" [class.on]="config.active"></span>
+        <span class="ps-config-name-text">{{ config.name }}</span>
+        <span class="ps-config-host-text">{{ config.host }}:{{ config.port }}</span>
+        <div class="ps-icon-btn toggle" (click)="activateConfig(config, $event)" title="Toggle active">
+          <i class="fas fa-power-off"></i>
+        </div>
+        <div class="ps-icon-btn edit" (click)="editConfig(config, $event)" title="Edit">
+          <i class="fas fa-pen"></i>
+        </div>
+        <div class="ps-icon-btn delete" *ngIf="!config.isEditing"
+             (click)="confirmDeleteConfig(config, $event)" title="Delete">
+          <i class="fas fa-trash"></i>
+        </div>
+        <i class="fas" style="font-size:11px;color:#cbd5e1;margin-left:4px;"
+           [class.fa-chevron-down]="!config._expanded"
+           [class.fa-chevron-up]="config._expanded"></i>
+      </div>
+
+      <!-- Expanded detail -->
+      <div *ngIf="config._expanded" class="ps-config-detail">
+        <div class="ps-detail-grid">
+          <div>
+            <div class="ps-detail-key">Protocol</div>
+            <p class="ps-detail-val">{{ config.protocol }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">From</div>
+            <p class="ps-detail-val">{{ config.fromAddress }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Username</div>
+            <p class="ps-detail-val">{{ config.username }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Status</div>
+            <p class="ps-detail-val" [style.color]="config.active ? '#059669' : '#94a3b8'">
+              {{ config.active ? 'Active' : 'Inactive' }}
+            </p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Auth</div>
+            <p class="ps-detail-val">{{ config.authEnabled ? 'Enabled' : 'Disabled' }}</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">SSL / STARTTLS</div>
+            <p class="ps-detail-val">
+              {{ config.sslEnabled ? 'SSL' : '—' }}{{ config.startTlsEnabled ? ' · STARTTLS' : '' }}
+            </p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Conn. Timeout</div>
+            <p class="ps-detail-val">{{ config.connectionTimeoutMs }}ms</p>
+          </div>
+          <div>
+            <div class="ps-detail-key">Read / Write</div>
+            <p class="ps-detail-val">{{ config.timeoutMs }}ms / {{ config.writeTimeoutMs }}ms</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,97 @@
+<div class="ps-wrap">
+
+  <!-- Header -->
+  <div class="ps-header">
+    <div class="ps-header__icon"><i class="fas fa-user-clock"></i></div>
+    <div>
+      <h2 class="ps-header__title">Probation Tracker</h2>
+      <p class="ps-header__sub">Monitor employee probation periods and take action on overdue cases</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="ps-skeleton" *ngIf="loading">
+    <div class="ps-sk-row" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <!-- Error -->
+  <div class="ps-error" *ngIf="error && !loading">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>Unable to load probation data. Please retry.</p>
+    <button (click)="ngOnInit()">Retry</button>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- Summary cards -->
+    <div class="ps-summary" *ngIf="report">
+      <div class="ps-sum-card ps-sum-card--blue">
+        <span class="ps-sum-num">{{ report.totalOnProbation }}</span>
+        <span class="ps-sum-lbl">On Probation</span>
+      </div>
+      <div class="ps-sum-card ps-sum-card--amber">
+        <span class="ps-sum-num">{{ report.probationDueSoon }}</span>
+        <span class="ps-sum-lbl">Due Within 30 Days</span>
+      </div>
+      <div class="ps-sum-card ps-sum-card--red">
+        <span class="ps-sum-num">{{ report.probationOverdue }}</span>
+        <span class="ps-sum-lbl">Overdue — Action Required</span>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="ps-filter" *ngIf="report && report.rows.length">
+      <button class="ps-filter-btn" [class.ps-filter-btn--active]="filterStatus === 'ALL'" (click)="filterStatus = 'ALL'">All</button>
+      <button class="ps-filter-btn ps-filter-btn--red" [class.ps-filter-btn--active]="filterStatus === 'OVERDUE'" (click)="filterStatus = 'OVERDUE'">Overdue</button>
+      <button class="ps-filter-btn ps-filter-btn--amber" [class.ps-filter-btn--active]="filterStatus === 'DUESOON'" (click)="filterStatus = 'DUESOON'">Due Soon</button>
+      <button class="ps-filter-btn ps-filter-btn--green" [class.ps-filter-btn--active]="filterStatus === 'ACTIVE'" (click)="filterStatus = 'ACTIVE'">Active</button>
+    </div>
+
+    <!-- Table -->
+    <div class="ps-table-wrap" *ngIf="report && filteredRows.length">
+      <table class="ps-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Level</th>
+            <th>Probation End Date</th>
+            <th>Days Remaining</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of filteredRows">
+            <td class="ps-td-name">{{ row.employeeName }}</td>
+            <td>{{ row.department || '—' }}</td>
+            <td>{{ row.level || '—' }}</td>
+            <td>{{ row.probationEndDate || '—' }}</td>
+            <td>
+              <span [class]="daysRemaining(row.probationEndDate) < 0 ? 'ps-days ps-days--neg' : 'ps-days'">
+                {{ daysRemaining(row.probationEndDate) }} days
+              </span>
+            </td>
+            <td>
+              <span [class]="statusClass(row.probationStatus)">{{ statusLabel(row.probationStatus) }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty -->
+    <div class="ps-empty" *ngIf="report && filteredRows.length === 0">
+      <i class="fas fa-check-circle"></i>
+      <p>No employees match the selected filter.</p>
+    </div>
+
+    <!-- Info box -->
+    <div class="ps-info-box" *ngIf="report">
+      <i class="fas fa-info-circle"></i>
+      <p>To update an employee's probation status, go to <strong>Employee Management</strong> and edit the employee's profile directly.</p>
+    </div>
+
+  </ng-container>
+
+</div>

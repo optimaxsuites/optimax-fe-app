@@ -1,0 +1,462 @@
+// ── Variables ─────────────────────────────────────────────────────────────────
+$sidebar-bg:     #1e3a52;
+$sidebar-hover:  #2a5070;
+$sidebar-active: #2e5c80;
+$accent:         #2e9c7a;
+$accent-light:   rgba(46, 156, 122, 0.18);
+$text-muted:     rgba(255,255,255,0.55);
+$text-secondary: rgba(255,255,255,0.85);
+$border-faint:   rgba(255,255,255,0.10);
+$sidebar-width:  250px;
+
+// Card accent colours cycling via data-color-index
+$card-colors: (
+  0: (#2563eb, #eff6ff),
+  1: (#16a34a, #f0fdf4),
+  2: (#d97706, #fffbeb),
+  3: (#7c3aed, #faf5ff),
+  4: (#db2777, #fdf2f8),
+  5: (#0891b2, #ecfeff),
+  6: (#ea580c, #fff7ed),
+  7: (#65a30d, #f7fee7),
+);
+
+// ── Shell ─────────────────────────────────────────────────────────────────────
+.settings-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+.settings-sidebar {
+  width: $sidebar-width;
+  min-width: $sidebar-width;
+  background: $sidebar-bg;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.18);
+  z-index: 10;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid $border-faint;
+  flex-shrink: 0;
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  background: $accent;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  i { color: #fff; font-size: 15px; }
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.brand-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 10px;
+  color: $text-muted;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+// Nav
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-entry { position: relative; }
+
+.nav-item-wrap {
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: $sidebar-hover; }
+
+  &.nav-active { background: $accent-light; }
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  text-decoration: none;
+  color: $text-secondary;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+
+  &.nav-link-active {
+    color: $accent;
+    font-weight: 600;
+    .nav-icon-wrap i { color: $accent; }
+  }
+}
+
+.nav-icon-wrap {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  flex-shrink: 0;
+
+  i {
+    font-size: 11px;
+    color: $text-secondary;
+    transition: color 0.15s;
+  }
+}
+
+.nav-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-chevron {
+  font-size: 10px;
+  color: $text-muted;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+
+  &.rotated { transform: rotate(90deg); }
+}
+
+// Submenu
+.nav-sub {
+  list-style: none;
+  margin: 2px 0 0 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+
+  &.open { max-height: 400px; }
+}
+
+.sub-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 11px 6px 40px;
+  border-radius: 7px;
+  color: $text-secondary;
+  font-size: 12px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: $sidebar-hover; color: #fff; }
+
+  &.sub-active { color: $accent; font-weight: 600;
+    .sub-dot { background: $accent; }
+  }
+}
+
+.sub-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+// Footer
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid $border-faint;
+  flex-shrink: 0;
+}
+
+.footer-avatar {
+  width: 30px;
+  height: 30px;
+  background: $sidebar-hover;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  i { color: $accent; font-size: 13px; }
+}
+
+.footer-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.footer-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: $text-secondary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-hint {
+  font-size: 10px;
+  color: $text-muted;
+}
+
+// ── Main content ──────────────────────────────────────────────────────────────
+.settings-main {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-home {
+  padding: 30px 34px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+// Home header
+.home-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+}
+
+.home-title {
+  margin: 0 0 5px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.home-sub {
+  margin: 0;
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.home-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  flex-shrink: 0;
+  i { color: $accent; }
+}
+
+// Card grid
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.setting-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e8eef4;
+  padding: 20px 18px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: #e2e8f0;
+    transition: background 0.18s;
+  }
+
+  &:hover:not(.card-no-route) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(15,23,42,0.09);
+    border-color: #c7d8e8;
+    &::before { background: $accent; }
+    .card-arrow-btn { background: $accent; transform: translateX(3px); }
+    .card-cta { color: $accent; }
+  }
+
+  &.card-no-route {
+    cursor: default;
+    opacity: 0.65;
+  }
+}
+
+@each $i, $colors in $card-colors {
+  .setting-card[data-color-index="#{$i}"] {
+    .card-icon-wrap {
+      background: rgba(nth($colors, 1), 0.10);
+      i { color: nth($colors, 1); }
+    }
+    &:hover:not(.card-no-route)::before { background: nth($colors, 1); }
+    &:hover:not(.card-no-route) .card-arrow-btn { background: nth($colors, 1); }
+    &:hover:not(.card-no-route) .card-cta { color: nth($colors, 1); }
+  }
+}
+
+.card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+
+  i { font-size: 18px; }
+}
+
+.card-body { flex: 1; }
+
+.card-title {
+  margin: 0 0 5px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.card-desc {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-sub-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 7px;
+  font-size: 11px;
+  color: #94a3b8;
+  i { font-size: 10px; }
+}
+
+.card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.card-cta {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.18s;
+}
+
+.card-arrow-btn {
+  width: 26px;
+  height: 26px;
+  background: #f1f5f9;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, transform 0.18s;
+
+  i { font-size: 10px; color: #fff; }
+}
+
+// Router outlet wrapper
+.router-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 1024px) {
+  .settings-sidebar { width: 200px; min-width: 200px; }
+  .settings-home { padding: 24px; }
+}
+
+@media (max-width: 768px) {
+  .settings-shell { flex-direction: column; height: auto; overflow: auto; }
+  .settings-sidebar {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .sidebar-nav { overflow-x: auto; overflow-y: hidden; }
+  .nav-list { flex-direction: row; gap: 4px; }
+  .nav-sub { display: none; }
+  .settings-home { padding: 18px 14px; }
+  .settings-grid { grid-template-columns: 1fr; }
+}

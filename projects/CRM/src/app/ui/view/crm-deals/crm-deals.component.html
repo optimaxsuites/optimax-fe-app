@@ -1,0 +1,152 @@
+<div class="list-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Deals</h1>
+      <p class="page-subtitle">Track and manage your sales pipeline deals</p>
+    </div>
+    <button class="btn primary" (click)="openForm()">+ New Deal</button>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter" type="search" placeholder="Search deals..."
+      [(ngModel)]="searchTerm" (ngModelChange)="applySearch($event)">
+    <select class="filter" [(ngModel)]="selectedStatus" (ngModelChange)="applyStatusFilter()">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+    </select>
+  </div>
+
+  <mat-progress-bar mode="indeterminate" *ngIf="loading$ | async"></mat-progress-bar>
+
+  <div class="table-wrap">
+    <table mat-table [dataSource]="dataSource" class="crm-table">
+
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef>Deal</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="name">{{ row.title }}</div>
+          <div class="sub" *ngIf="row.pipelineName">{{ row.pipelineName }}</div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="stageName">
+        <th mat-header-cell *matHeaderCellDef>Stage</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="stage-tag">{{ row.stageName || '—' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="contactName">
+        <th mat-header-cell *matHeaderCellDef>Contact</th>
+        <td mat-cell *matCellDef="let row">{{ row.contactName || '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="dealValue">
+        <th mat-header-cell *matHeaderCellDef>Value</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="deal-value">{{ formatValue(row.dealValue) }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="probability">
+        <th mat-header-cell *matHeaderCellDef>Prob %</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="prob-pct" [style.color]="probabilityColor(row.probability)">
+            {{ row.probability != null ? (row.probability + '%') : '—' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-badge"
+            [style.background]="statusColor(row.status) + '1a'"
+            [style.color]="statusColor(row.status)">
+            {{ row.status }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="expectedClose">
+        <th mat-header-cell *matHeaderCellDef>Close Date</th>
+        <td mat-cell *matCellDef="let row">
+          {{ row.expectedClose ? (row.expectedClose | date:'d MMM yyyy') : '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let row">
+          <button class="btn ghost" [matMenuTriggerFor]="dMenu" (click)="$event.stopPropagation()">⋮</button>
+          <mat-menu #dMenu="matMenu">
+            <button mat-menu-item (click)="openForm(row)"><mat-icon>edit</mat-icon> Edit</button>
+            <button mat-menu-item (click)="delete(row)" class="danger-item"><mat-icon>delete</mat-icon> Delete</button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td [attr.colspan]="displayedColumns.length" class="no-data">
+          <mat-icon>handshake</mat-icon><p>No deals found</p>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-paginator [pageSizeOptions]="[25, 50, 100]" showFirstLastButtons></mat-paginator>
+</div>
+
+<div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="side-form" [class.open]="showForm">
+  <div class="side-form-header">
+    <h2>{{ editingDeal ? 'Edit Deal' : 'New Deal' }}</h2>
+    <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
+  </div>
+  <div class="side-form-body" [formGroup]="form">
+    <div class="form-section-label">Deal Info</div>
+    <label class="form-field full-width">Title *<input formControlName="title"></label>
+    <div class="form-row">
+      <label class="form-field">Status
+        <select formControlName="status">
+          <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+        </select>
+      </label>
+      <label class="form-field">Currency<input formControlName="currency"></label>
+    </div>
+    <div class="form-row">
+      <label class="form-field">Deal Value (₦)<input formControlName="dealValue" type="number"></label>
+      <label class="form-field">Probability (%)<input formControlName="probability" type="number" min="0" max="100"></label>
+    </div>
+    <label class="form-field full-width">Expected Close Date<input formControlName="expectedClose" type="date"></label>
+
+    <div class="form-section-label">Association</div>
+    <div class="form-row">
+      <label class="form-field">Contact Name<input formControlName="contactName"></label>
+      <label class="form-field">Account Name<input formControlName="accountName"></label>
+    </div>
+
+    <div class="form-section-label">Pipeline</div>
+    <div class="form-row">
+      <label class="form-field">Pipeline
+        <select formControlName="pipelineId">
+          <option *ngFor="let p of pipelines" [value]="p.id">{{ p.name }}</option>
+        </select>
+      </label>
+      <label class="form-field">Stage<input formControlName="stageName"></label>
+    </div>
+
+    <div class="form-section-label">Other</div>
+    <label class="form-field full-width">Owner<input formControlName="ownerName"></label>
+    <label class="form-field full-width">Lost Reason<input formControlName="lostReason"></label>
+    <label class="form-field full-width">Tags<input formControlName="tags"></label>
+  </div>
+  <div class="side-form-footer">
+    <button class="btn outline" (click)="closeForm()">Cancel</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">
+      {{ editingDeal ? 'Update' : 'Create' }}
+    </button>
+  </div>
+</div>

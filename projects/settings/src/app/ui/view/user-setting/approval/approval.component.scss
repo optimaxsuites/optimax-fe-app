@@ -1,0 +1,48 @@
+p {
+    margin-bottom: 0;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    // gap: 20px;
+  }
+  
+
+  input[type="checkbox"] {
+    @apply accent-customGreen cursor-pointer disabled:accent-customGreen disabled:cursor-not-allowed disabled:opacity-100;
+  }
+
+
+// .workflow-accordion {
+//   ::ng-deep .mat-expansion-panel-body {
+//     padding: 3 !important;
+//   }
+// }
+
+.strategy-card {
+  input:checked + div {
+    border-color: #2E6276 !important; // Replace with your customBlue
+    background-color: rgba(var(--custom-blue-rgb), 0.05);
+  }
+}
+
+// Simple fade-in animation for when "isEnabled" is checked
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+}

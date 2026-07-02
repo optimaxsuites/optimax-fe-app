@@ -1,0 +1,395 @@
+// ─── Main Sidebar — rich mid-dark teal-navy ───────────────────────────────────
+// Background sits between the pitch-black iteration and the white iteration.
+// Brand blue-green base, crisp light labels, green accent on active.
+
+$bg-top:        #213d52;
+$bg-mid:        #1a3244;
+$bg-base:       #152839;
+$label:         #ddeef8;
+$label-dim:     rgba(221, 238, 248, 0.55);
+$icon-color:    rgba(255, 255, 255, 0.55);
+$icon-bg:       rgba(255, 255, 255, 0.09);
+$hover-bg:      rgba(255, 255, 255, 0.07);
+$hover-icon-bg: rgba(255, 255, 255, 0.14);
+$active-bg:     rgba(46, 178, 112, 0.16);
+$active-border: #2EB270;
+$active-icon:   #2EB270;
+$divider:       rgba(255, 255, 255, 0.08);
+$search-bg:     rgba(0, 0, 0, 0.18);
+$search-border: rgba(255, 255, 255, 0.1);
+
+// ─── Shell ────────────────────────────────────────────────────────────────────
+
+.sb {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(175deg, $bg-top 0%, $bg-mid 55%, $bg-base 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Top accent stripe
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2EB270 0%, #4291b1 100%);
+    z-index: 2;
+    flex-shrink: 0;
+  }
+
+  // Right edge glow
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg,
+      rgba(46, 178, 112, 0.4) 0%,
+      rgba(66, 145, 177, 0.15) 40%,
+      transparent 100%);
+  }
+
+  &::-webkit-scrollbar       { width: 3px; }
+  &::-webkit-scrollbar-track  { background: transparent; }
+  &::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.15); border-radius: 10px; }
+}
+
+// ─── Brand ────────────────────────────────────────────────────────────────────
+
+.sb-brand {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  margin-top: 3px;
+  border-bottom: 1px solid $divider;
+  flex-shrink: 0;
+}
+
+.sb-logo    { max-height: 44px; max-width: 100%; object-fit: contain; }
+.sb-logo-sm { max-height: 32px; max-width: 36px; object-fit: contain; }
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+
+.sb-toggle-wrap {
+  flex-shrink: 0;
+
+  &.sb-toggle-wrap--collapsed {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  &.sb-toggle-wrap--expanded {
+    position: absolute;
+    right: -13px;
+    top: 68px;
+    z-index: 100;
+  }
+}
+
+.sb-toggle-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(46, 178, 112, 0.4);
+  background: $bg-mid;
+  color: #2EB270;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    background: rgba(46, 178, 112, 0.2);
+    border-color: #2EB270;
+    box-shadow: 0 0 10px rgba(46, 178, 112, 0.3);
+  }
+}
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+.sb-search-wrap {
+  position: relative;
+  padding: 10px 12px 6px;
+  flex-shrink: 0;
+}
+
+.sb-search-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-25%);
+  font-size: 11px;
+  color: $label-dim;
+  pointer-events: none;
+}
+
+.sb-search {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px 0 30px;
+  border: 1px solid $search-border;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: $label;
+  background: $search-bg;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, background 0.15s;
+
+  &::placeholder { color: $label-dim; }
+
+  &:focus {
+    border-color: rgba(46, 178, 112, 0.5);
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 0 3px rgba(46, 178, 112, 0.1);
+  }
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
+ul, .sb-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.sb-entry { position: relative; }
+
+// ─── Link base ────────────────────────────────────────────────────────────────
+
+.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border-left: 2px solid transparent;
+  text-decoration: none !important;
+  color: $label !important;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:hover {
+    background: $hover-bg;
+    color: #ffffff !important;
+
+    .sb-icon-wrap {
+      background: $hover-icon-bg;
+      i { color: #ffffff; }
+    }
+
+    .sb-label { color: #ffffff !important; }
+  }
+
+  &.sb-link--active {
+    background: $active-bg !important;
+    border-left-color: $active-border !important;
+    color: #ffffff !important;
+    font-weight: 700;
+
+    .sb-icon-wrap {
+      background: rgba(46, 178, 112, 0.2);
+      i { color: $active-icon; }
+    }
+
+    .sb-label { color: #ffffff !important; font-weight: 700; }
+  }
+
+  &.sb-link--open {
+    background: rgba(255, 255, 255, 0.05);
+
+    .sb-icon-wrap i { color: rgba(255, 255, 255, 0.85); }
+    .sb-label        { color: #ffffff !important; }
+  }
+
+  &.sb-link--parent { color: $label !important; }
+}
+
+// ─── Icon wrap ────────────────────────────────────────────────────────────────
+
+.sb-icon-wrap {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: $icon-bg;
+  flex-shrink: 0;
+  transition: background 0.14s;
+
+  i {
+    font-size: 12px;
+    color: $icon-color;
+    transition: color 0.14s;
+  }
+}
+
+// ─── Label & Chevron ─────────────────────────────────────────────────────────
+
+.sb-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit !important;
+}
+
+.sb-chevron {
+  font-size: 9px;
+  color: $label-dim;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.14s;
+
+  &.sb-chevron--open {
+    transform: rotate(90deg);
+    color: $active-border;
+  }
+}
+
+// ─── Submenu ─────────────────────────────────────────────────────────────────
+
+.sb-sub {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.24s ease;
+
+  &.sb-sub--open { max-height: 800px; }
+}
+
+// ─── Sub-menu section header ──────────────────────────────────────────────────
+
+.sb-sub-section-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 10px 4px 16px;
+  margin-top: 4px;
+
+  span {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin-left: 8px;
+  }
+}
+
+.sb-sub-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 16px;
+  border-radius: 8px;
+  border-left: 2px solid transparent;
+  text-decoration: none !important;
+  color: $label-dim !important;
+  font-size: 12.5px;
+  font-weight: 400;
+  transition: background 0.13s, color 0.13s;
+
+  &:hover {
+    background: $hover-bg;
+    color: #ffffff !important;
+    .sb-sub-dot   { background: rgba(255, 255, 255, 0.7); }
+    .sb-sub-icon  { opacity: 1; }
+    .sb-sub-label { color: #ffffff !important; }
+  }
+
+  &.sb-sub-link--active {
+    color: #ffffff !important;
+    font-weight: 600;
+    background: rgba(46, 178, 112, 0.12);
+    border-left-color: $active-border;
+
+    .sb-sub-dot   { background: $active-border; }
+    .sb-sub-icon  { opacity: 1; }
+    .sb-sub-label { color: #ffffff !important; }
+  }
+}
+
+.sb-sub-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+  transition: background 0.14s;
+}
+
+.sb-sub-icon {
+  font-size: 11px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.13s;
+}
+
+.sb-sub-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit !important;
+}
+
+// ─── Collapsed state ─────────────────────────────────────────────────────────
+
+.sb.collapsed {
+  .sb-list { padding: 8px 6px; }
+
+  .sb-link {
+    justify-content: center;
+    padding: 8px;
+    border-left-color: transparent !important;
+
+    .sb-icon-wrap {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      i { font-size: 14px; }
+    }
+  }
+
+  .sb-sub { max-height: 0 !important; }
+}

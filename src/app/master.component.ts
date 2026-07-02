@@ -1,5 +1,7 @@
 import { Component, HostListener } from '@angular/core';
+import { Router, NavigationStart, NavigationEnd, NavigationCancel, NavigationError } from '@angular/router';
 
+// damilola worked on this: main application shell loading state and responsive sidebar behavior.
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
@@ -8,13 +10,25 @@ import { Component, HostListener } from '@angular/core';
 export class MasterComponent {
   sidebarHidden: boolean = true;
   currentYear?: number;
+  isLoading = false;
 
   ngOnInit(): void {
     this.currentYear = new Date().getFullYear();
   }
 
-  constructor() {
+  constructor(private router: Router) {
     this.checkScreenWidth();
+       this.router.events.subscribe((event) => {
+          if (event instanceof NavigationStart) {
+            this.isLoading = true;
+          }
+          if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+            this.isLoading = false;
+            if (this.isMobileViewport()) {
+              this.sidebarHidden = true;
+            }
+          }
+        });
   }
 
   // Detect window resize to adjust sidebar visibility based on screen size
@@ -30,6 +44,10 @@ export class MasterComponent {
     } else {
       this.sidebarHidden = false;  // Show sidebar on large screens
     }
+  }
+
+  isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 992;
   }
 
   toggleSidebar() {

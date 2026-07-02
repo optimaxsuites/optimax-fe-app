@@ -1,0 +1,84 @@
+// General Ledger – Row hover animation (Refined for standard UI)
+.ledger-row {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateX(4px);
+    z-index: 10;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+// Giant Paginator Theming (Refined)
+::ng-deep .ledger-paginator-giant {
+  .p-paginator {
+    background: transparent;
+    border: none;
+    padding: 1rem 0;
+    gap: 0.5rem;
+  }
+
+  .p-paginator-current {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #6B7280;
+    margin-right: 1.5rem;
+  }
+
+  .p-paginator-page,
+  .p-paginator-next,
+  .p-paginator-prev,
+  .p-paginator-first,
+  .p-paginator-last {
+    border-radius: 0.75rem; // xl
+    min-width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #374151;
+    transition: all 0.2s ease;
+    border: 1px solid #E5E7EB;
+
+    &:hover {
+      background: #f0f7f9;
+      border-color: #2E6276;
+      color: #2E6276;
+    }
+  }
+
+  .p-paginator-page.p-highlight {
+    background: #2E6276;
+    color: #fff;
+    border-color: #2E6276;
+    box-shadow: 0 4px 6px -1px rgba(46, 98, 118, 0.2);
+  }
+
+  .p-dropdown {
+    border-radius: 0.75rem;
+    border: 1px solid #E5E7EB;
+    height: 3.5rem;
+    min-width: 7rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+
+    &:hover {
+      border-color: #2E6276;
+    }
+
+    .p-dropdown-label {
+      line-height: 3.5rem;
+    }
+  }
+}
+
+// Table specific fixes
+table {
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}

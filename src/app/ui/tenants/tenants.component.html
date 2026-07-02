@@ -1,0 +1,201 @@
+<div class="p-8">
+
+    <div class="flex items-center justify-between space-x-4 mb-6">
+      <h1 class="text-2xl font-bold mb-4 text-customBlue">Tenants</h1>
+
+      <input type="text" placeholder="Search tenants..." class="p-2 border rounded w-1/3" />
+      <!-- <button (click)="openHistory = !openHistory"
+              class="bg-customBlue text-white px-4 py-2 rounded hover:bg-customBlueHover">
+        {{openHistory? "Back to modules" :"Subscription History"}}
+      </button> -->
+    </div>
+
+   <div *ngIf="loading$ | async" class="space-y-3">
+    <div class="animate-pulse bg-gray-200 h-16 rounded"></div>
+    <div class="animate-pulse bg-gray-200 h-16 rounded"></div>
+    <div class="animate-pulse bg-gray-200 h-16 rounded"></div>
+    <div class="animate-pulse bg-gray-200 h-16 rounded"></div>
+  </div>
+
+  <!-- <div class="overflow-x-auto shadow z-10 relative overflow-y-visible  rounded-lg"> -->
+     <div *ngIf="!(loading$ | async)">
+      <table class="w-full p-5 bg-white rounded-xl text-left border-collapse">
+        <thead class="rounded-t-xl">
+          <tr class="bg-gray-100 rounded-t-xl">
+            <th class="p-3 border-b">Tenant ID</th>
+            <th class="p-3 border-b">Name</th>
+            <th class="p-3 border-b">Domain</th>
+            <th class="p-3 border-b">Admin Contact</th>
+            <th class="p-3 border-b">Status</th>
+            <th class="p-3 border-b">Date</th>
+
+            <th class="p-3 border-b text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of tenants$ | async" class="hover:bg-gray-50 cursor-pointer" (click)="openDetails(order)">
+            <td class="p-3 border-b">{{ order.id || '-' }}</td>
+            <td class="p-3 border-b">{{ order.businessName || '-' }}</td>
+            <td class="p-3 border-b">{{ order.domain }}</td>
+            <td class="p-3 border-b">{{ order.emailAddress }}</td>
+            <td class="p-3 border-b">
+              <span 
+                class="px-2 py-1 rounded text-xs text-white font-medium"
+                [ngClass]="{
+                  'bg-yellow-500': order.status === 'INACTIVE',
+                  'bg-green-600': order.status === 'ACTIVE',
+                  'bg-red-500': order.status === 'SUSPENDED',
+                  'bg-gray-400': order.status === 'CANCELED'
+                }"
+              >
+                {{ order.status }}
+              </span>
+            </td>
+            <td class="p-3 border-b">{{ formatDate(order.dateJoined) | date:'medium' }}</td>
+
+            <td class=" p-3 border-b text-center relative z-20">
+              <div class="inline-block text-left relative" (click)="
+                  $event.stopPropagation();
+                  order.showMenu = !order.showMenu;">
+                <button  class="p-2 rounded relative hover:bg-gray-200">
+                  ⋮
+
+
+                <div 
+                *ngIf="order.showMenu"
+                class="absolute right-0 mt-1 w-32 z-[9999] bg-white border rounded shadow-lg"
+              >
+                <button 
+                  class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100" (click)="openDetails(order)">
+                  View
+                </button>
+
+                <button 
+                  class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  (click)="confirmDelete(order, $event)"
+                >
+                  Delete
+                </button>
+              </div>
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+     </div>
+</div>
+
+<app-side-modal (close)="openDetailsModal = false" *ngIf="openDetailsModal">
+  <div class="p-6 space-y-6" *ngIf="selectedTenant">
+
+  <!-- Tenant Header -->
+  <div class="bg-white shadow rounded-xl p-5 space-y-2">
+    <h2 class="text-2xl font-semibold">{{ selectedTenant.businessName }}</h2>
+    <p class="text-gray-700">Domain: <span class="font-medium">{{ selectedTenant.domain }}</span></p>
+    <p class="text-gray-700">Email: {{ selectedTenant.emailAddress }}</p>
+    <p class="text-gray-700">Status: 
+      <span class="px-2 py-1 rounded text-sm"
+        [ngClass]="{
+          'bg-green-100 text-green-700': selectedTenant.status === 'ACTIVE',
+          'bg-red-100 text-red-700': selectedTenant.status !== 'ACTIVE'
+        }">
+        {{ selectedTenant.status }}
+      </span>
+    </p>
+  </div>
+
+
+
+  <!-- Subscription History -->
+  <div class=" pt-5">
+    <h3 class="text-xl font-semibold mb-4">Subscription History</h3>
+
+    <div *ngIf="!selectedTenant.subscriptionHistory?.length" class="text-gray-600">
+      No subscription history found.
+    </div>
+
+    <div class="space-y-4 " *ngIf="selectedTenant.subscriptionHistory?.length">
+
+      <div 
+        *ngFor="let item of selectedTenant.subscriptionHistory"
+        class="border rounded-lg p-4 bg-white space-y-3"
+      >
+        <!-- Order ID / Dates -->
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">Order:</span>
+          <span class="font-medium">{{ item.orderId || item.id }}</span>
+        </div>
+
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">Start Date:</span>
+          <span>{{ item.startDate }}</span>
+        </div>
+
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">End Date:</span>
+          <span>{{ item.endDate }}</span>
+        </div>
+
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-600">Amount:</span>
+          <span class="font-medium">₦{{ item.amount | number }}</span>
+        </div>
+
+
+
+        <!-- Module Details -->
+        <div class="mt-3 p-3 rounded-lg bg-white border">
+          <h4 class="text-md font-semibold mb-2">Module Details</h4>
+
+          <div *ngIf="item.module">
+            <p class="text-sm">
+              <span class="font-medium">Module Name:</span> {{ item.module.name }}
+            </p>
+            <p class="text-sm">
+              <span class="font-medium">Description:</span> 
+              {{ item.module.description || 'N/A' }}
+            </p>
+          </div>
+
+          <div *ngIf="!item.module" class="text-gray-500 text-sm">
+            No module information.
+          </div>
+        </div>
+
+
+
+        <!-- Plan Details -->
+        <div class="mt-3 p-3 rounded-lg bg-white border">
+          <h4 class="text-md font-semibold mb-2">Plan Details</h4>
+
+          <div *ngIf="item.plan">
+            <p class="text-sm">
+              <span class="font-medium">Plan:</span> {{ item.plan.name }}
+            </p>
+            <p class="text-sm">
+              <span class="font-medium">Price:</span> ₦{{ +item.plan.monthlyPrice | number}} per month / ₦{{ +item.plan.yearlyPrice | number }} per year
+            </p>
+            <!-- <p class="text-sm">
+              <span class="font-medium">Duration:</span> 
+              {{ item.plan.durationInDays }} days
+            </p> -->
+          </div>
+
+          <div *ngIf="!item.plan" class="text-gray-500 text-sm">
+            No plan information.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</app-side-modal>
+
+
+
+ <p-confirmDialog></p-confirmDialog>

@@ -1,0 +1,106 @@
+<!-- rfq-template-selector/rfq-template-selector.component.html -->
+
+<div class="rfq-template-selector">
+  <div class="template-header">
+    <div class="header-content">
+      <h2>Choose RFQ Template</h2>
+      <p class="subtitle">Select how your Request for Quotation will look to vendors</p>
+    </div>
+    <div class="form-progress">
+      <span class="step-badge">Step 3 of 5</span>
+    </div>
+  </div>
+
+  <div class="template-grid">
+    <div 
+      *ngFor="let template of templates"
+      class="template-card"
+      [class.selected]="selectedTemplateId === template.id"
+      (click)="selectTemplate(template.id)">
+      <div class="template-preview">
+        <div class="preview-layout" [ngClass]="template.layout.toLowerCase()">
+          <div class="preview-header">
+            <div class="preview-logo"></div>
+            <div class="preview-title">RFQ</div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-line"></div>
+            <div class="preview-line"></div>
+            <div class="preview-line short"></div>
+          </div>
+          <div class="preview-footer">
+            <div class="preview-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="template-info">
+        <div class="template-name">{{ template.name }}</div>
+        <div class="template-description">{{ template.description }}</div>
+        <div class="template-badge" *ngIf="template.isDefault">
+          <i class="fas fa-star"></i> Default
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="template-config">
+    <h3 class="config-title">Customize Your RFQ</h3>
+    <form [formGroup]="templateForm" class="config-form">
+      <div class="config-row">
+        <div class="config-group">
+          <label class="switch">
+            <input type="checkbox" formControlName="includeHeader">
+            <span class="slider"></span>
+          </label>
+          <span class="config-label">Include Header</span>
+        </div>
+        <div class="config-group">
+          <label class="switch">
+            <input type="checkbox" formControlName="includeItems">
+            <span class="slider"></span>
+          </label>
+          <span class="config-label">Include Items</span>
+        </div>
+        <div class="config-group">
+          <label class="switch">
+            <input type="checkbox" formControlName="includeTerms">
+            <span class="slider"></span>
+          </label>
+          <span class="config-label">Include Terms</span>
+        </div>
+        <div class="config-group">
+          <label class="switch">
+            <input type="checkbox" formControlName="includeFooter">
+            <span class="slider"></span>
+          </label>
+          <span class="config-label">Include Footer</span>
+        </div>
+      </div>
+
+      <div class="config-row full">
+        <div class="form-group">
+          <label for="customMessage">Custom Message to Vendors</label>
+          <textarea 
+            id="customMessage" 
+            formControlName="customMessage" 
+            rows="3"
+            placeholder="Add a personal message or special instructions for vendors"
+            class="form-control"></textarea>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="template-actions">
+    <button type="button" class="btn-secondary" (click)="onBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <button 
+      type="button" 
+      class="btn-primary" 
+      [disabled]="!selectedTemplateId"
+      (click)="onNext()">
+      Next: Select Vendors <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+</div>

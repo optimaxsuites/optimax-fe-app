@@ -1,0 +1,12 @@
+@import '../_panel-shared';
+
+p { margin-bottom: 0; }
+
+// Keep mat-expansion-panel overflow for action buttons
+mat-expansion-panel { overflow: visible !important; }
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}

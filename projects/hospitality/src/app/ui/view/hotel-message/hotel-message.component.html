@@ -1,0 +1,350 @@
+<div
+  class="fixed inset-0 bg-gray-900/90 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto"
+>
+  <div
+    class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border border-gray-200"
+  >
+    <!-- Header -->
+    <div
+      class="h-40 bg-gradient-to-r from-blue-900 to-emerald-800 text-white p-6"
+    >
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-3xl font-bold">Checkout - Room {{ room.number }}</h2>
+          <p class="text-blue-100 text-lg">{{ room.type }}</p>
+        </div>
+        <button
+          (click)="closeCheckoutModal()"
+          class="text-white hover:text-blue-100 transition-colors bg-gray-800/30 rounded-full p-2 hover:bg-gray-800/50"
+        >
+          <i class="pi pi-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <!-- Guest Info -->
+      <div class="mb-8">
+        <h3
+          class="text-2xl font-semibold mb-4 border-b border-gray-200 pb-2 text-blue-600"
+        >
+          Guest Information
+        </h3>
+        <div *ngIf="room?.guest" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Guest Name</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.guest?.title }} {{ room.guest?.firstName }}
+              {{ room.guest?.lastName }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Contact</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.guest?.phone }}
+            </p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.guest?.email }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">ID Number</p>
+            <p class="font-medium text-lg text-gray-800">
+              {{ room.guest?.idNumber }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Country</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.guest?.country }}
+            </p>
+          </div>
+        </div>
+        <div
+          *ngIf="!room?.guest"
+          class="text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200"
+        >
+          No guest information available
+        </div>
+      </div>
+
+      <!-- Stay Details -->
+      <div class="mb-8">
+        <h3
+          class="text-2xl font-semibold mb-4 border-b border-gray-200 pb-2 text-blue-600"
+        >
+          Stay Details
+        </h3>
+        <div
+          *ngIf="room?.bookingDetails"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Check-in Date</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.bookingDetails?.checkinDate | date : "mediumDate" }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Check-out Date</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.bookingDetails?.checkoutDate | date : "mediumDate" }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Nights</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{
+                calculateNights(
+                  room.bookingDetails?.checkinDate,
+                  room.bookingDetails?.checkoutDate
+                )
+              }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Adults/Children</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.bookingDetails?.adults }} /
+              {{ room.bookingDetails?.children || 0 }}
+            </p>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p class="text-xl text-gray-500">Room Rate</p>
+            <p class="text-lg font-medium text-gray-800">
+              ₦{{ room.rate | number : "1.2-2" }} per night
+            </p>
+          </div>
+          <!-- Extended Stay Information (if applicable) -->
+          <div
+            *ngIf="room.extendedStayDays && room.extendedStayDays > 0"
+            class="bg-gray-50 p-4 rounded-lg border border-gray-200"
+          >
+            <p class="text-xl text-gray-500">Extended Stay</p>
+            <p class="text-lg font-medium text-gray-800">
+              {{ room.extendedStayDays }} additional day(s)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Charges -->
+      <div class="mb-8">
+        <h3
+          class="text-2xl font-semibold mb-4 border-b border-gray-200 pb-2 text-blue-600"
+        >
+          Service Charges
+        </h3>
+
+        <!-- Service Charges List -->
+        <div
+          *ngIf="room?.serviceCharges?.length"
+          class="border border-gray-200 rounded-lg overflow-hidden"
+        >
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100">
+              <tr>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                >
+                  Category
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                >
+                  Service
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                >
+                  Price
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                >
+                  Qty
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                >
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr
+                *ngFor="let service of room.serviceCharges"
+                class="hover:bg-gray-50 transition-colors"
+              >
+                <td class="px-4 py-3 text-gray-800">
+                  {{ service.category | titlecase }}
+                </td>
+                <td class="px-4 py-3 text-gray-800">{{ service.name }}</td>
+                <td class="px-4 py-3 text-gray-800">
+                  ₦{{ service.price | number : "1.2-2" }}
+                </td>
+                <td class="px-4 py-3 text-gray-800">{{ service.quantity }}</td>
+                <td class="px-4 py-3 text-gray-800">
+                  ₦{{ service.price * service.quantity | number : "1.2-2" }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div
+          *ngIf="!room?.serviceCharges?.length"
+          class="text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200"
+        >
+          No service charges recorded
+        </div>
+      </div>
+
+      <!-- Payment Section -->
+      <div class="mb-8">
+        <h3
+          class="text-2xl font-semibold mb-4 border-b border-gray-200 pb-2 text-blue-600"
+        >
+          Payment
+        </h3>
+
+        <!-- Summary -->
+        <div class="bg-gray-50 p-6 rounded-lg mb-6 border border-gray-200">
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-gray-600 text-xl">Room Charges:</span>
+              <span class="text-lg font-medium text-gray-800">
+                ₦{{ calculateRoomTotal() | number : "1.2-2" }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 text-xl">Service Charges:</span>
+              <span class="font-medium text-lg text-gray-800">
+                ₦{{ calculateServiceChargesTotal() | number : "1.2-2" }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 text-xl"
+                >Taxes ({{ TAX_RATE * 100 }}%):</span
+              >
+              <span class="font-medium text-lg text-gray-800">
+                ₦{{ calculateTaxes() | number : "1.2-2" }}
+              </span>
+            </div>
+            <div
+              class="flex justify-between border-t border-gray-300 pt-3 font-bold text-lg"
+            >
+              <span class="text-gray-600 text-xl">Total Amount:</span>
+              <span class="text-blue-600 text-lg">
+                ₦{{ calculateTotal() | number : "1.2-2" }}
+              </span>
+            </div>
+            <div
+              *ngIf="room?.bookingDetails?.paidAmount"
+              class="flex justify-between border-t border-gray-300 pt-3"
+            >
+              <span class="text-gray-600 text-xl">Paid Amount:</span>
+              <span class="text-green-600 text-lg font-medium">
+                ₦{{ room.bookingDetails?.paidAmount | number : "1.2-2" }}
+              </span>
+            </div>
+            <div
+              *ngIf="room?.bookingDetails?.paidAmount"
+              class="flex justify-between"
+            >
+              <span class="text-gray-600 text-xl">Balance Due:</span>
+              <span class="text-red-600 text-lg font-medium">
+                ₦{{ calculateBalance() | number : "1.2-2" }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Form - Only show if there's an outstanding balance -->
+        <div
+          *ngIf="calculateBalance() > 0"
+          class="bg-blue-50 p-6 rounded-lg border border-blue-200"
+        >
+          <h4 class="font-medium mb-4 text-xl text-blue-600">
+            Process Payment
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label class="block text-lg font-medium text-gray-600 mb-1"
+                >Payment Method</label
+              >
+              <select
+                [(ngModel)]="paymentMethod"
+                class="w-full p-4 border border-gray-300 text-lg rounded bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="cash">Cash</option>
+                <option value="credit card">Credit Card</option>
+                <option value="debit card">Debit Card</option>
+                <option value="bank transfer">Bank Transfer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xl font-medium text-gray-600 mb-1"
+                >Amount</label
+              >
+              <input
+                type="text"
+                [ngModel]="formattedAmount"
+                (ngModelChange)="onAmountInput($event)"
+                (blur)="onBlur()"
+                class="w-full p-3 text-lg border border-gray-300 rounded bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter amount"
+                [attr.max]="calculateBalance()"
+              />
+            </div>
+            <div class="flex items-end">
+              <button
+                (click)="processPayment()"
+                class="bg-gradient-to-r text-xl from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all w-full flex items-center justify-center space-x-2"
+                [disabled]="
+                  paymentAmount <= 0 || paymentAmount > calculateBalance()
+                "
+              >
+                <i class="pi pi-credit-card"></i>
+                <span>Process Payment</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="bg-gray-50 p-6 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0"
+    >
+      <div class="font-bold text-xl">
+        <span class="text-gray-600">Total Due:</span>
+        <span class="text-blue-600 ml-2">
+          ₦{{ calculateBalance() | number : "1.2-2" }}
+        </span>
+      </div>
+      <div
+        class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto"
+      >
+        <button
+          (click)="closeCheckoutModal()"
+          class="bg-gray-200 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center space-x-2"
+        >
+          <i class="pi pi-times"></i>
+          <span>Cancel</span>
+        </button>
+        <button
+          (click)="completeCheckout()"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-2.5 rounded-lg hover:from-green-600 hover:to-green-700 transition-colors flex items-center justify-center space-x-2"
+          [disabled]="calculateBalance() > 0"
+        >
+          <i class="pi pi-check"></i>
+          <span>Complete Checkout</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<p-toast position="top-right"></p-toast>

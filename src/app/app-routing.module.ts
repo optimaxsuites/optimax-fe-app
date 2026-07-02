@@ -1,467 +1,300 @@
-import { Loan } from './ui/view/loan-management/loan.model';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AppHrComponent } from './app.component';
-import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
-import { LeaveComponent } from './ui/view/leave/leave.component';
-import { AttendanceComponent } from './ui/view/attendance/attendance.component';
-import { EmployeeManagementComponent } from './ui/view/employee-management/employee-management.component';
-import { PerformanceComponent } from './ui/view/performance/performance.component';
-import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
-import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
-import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
-import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
-import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
-import { MasterComponent } from './master.component';
-import { ProjectListComponent } from './ui/view/project/project-list/project-list.component';
-import { ProjectComponent } from './ui/view/project/project.component';
-import { SchedulingComponent } from './ui/view/scheduling/scheduling/scheduling.component';
-import { LoanComponent } from './ui/view/loan-management/loan.component';
-import { LoanDashboardComponent } from './ui/view/loan-management/loan-dashboard/loan-dashboard.component';
-import { LoanApprovalUiComponent } from './ui/view/loan-management/loan-approval-ui/loan-approval-ui.component';
-import { LoanDetailsComponent } from './ui/view/loan-management/loan-details/loan-details.component';
-import { EmployeeLoanHistoryComponent } from './ui/view/loan-management/employee-loan-history/employee-loan-history.component';
-import { EmployeeDashboardComponent } from './ui/view/loan-management/employee-loan-dashboard/employee-loan-dashboard.component';
-import { LoanReportsComponent } from './ui/view/loan-management/loan-reports/loan-reports.component';
-import { LoanDisbursementUiComponent } from './ui/view/loan-management/loan-disbursement-ui/loan-disbursement-ui.component';
-import { CooperativeDashboardComponent } from './ui/view/loan-management/cooperative-dashboard/cooperative-dashboard.component';
-import { CooperativeLoansComponent } from './ui/view/loan-management/cooperative-loans/cooperative-loans.component';
-import { CooperativeLoanDetailComponent } from './ui/view/loan-management/cooperative-loan-detail/cooperative-loan-detail.component';
-import { CooperativeMembersComponent } from './ui/view/loan-management/cooperative-members/cooperative-members.component';
-import { CooperativeMemberDetailComponent } from './ui/view/loan-management/cooperative-member-detail/cooperative-member-detail.component';
-import { CooperativeMemberFormComponent } from './ui/view/loan-management/cooperative-member-form/cooperative-member-form.component';
-import { CooperativeMemberLoanHistoryComponent } from './ui/view/loan-management/cooperative-member-loan-history/cooperative-member-loan-history.component';
-// import { QueryComponent } from './ui/view/query/query.component';
-import { EmployeeProfileDashboardComponent } from './ui/view/employee-dashboard/employee-profile-dashboard.component';
-import { CooperativeMemberDashboardComponent } from './ui/view/loan-management/cooperative-member-dashboard/cooperative-member-dashboard.component';
-import { CooperativeMemberLoansComponent } from './ui/view/loan-management/cooperative-member-loans/cooperative-member-loans.component';
-import { CooperativeMemberGroupDashboardComponent } from './ui/view/loan-management/cooperative-member-group-dashboard/cooperative-member-group-dashboard.component';
-import { CooperativeLoanGroupsComponent } from './ui/view/loan-management/cooperative-loan-groups/cooperative-loan-groups.component';
-import { CooperativeGroupJoinHistoryComponent } from './ui/view/loan-management/cooperative-group-join-history/cooperative-group-join-history.component';
-import { CooperativeGracePeriodRequestsManagementComponent } from './ui/view/loan-management/cooperative-grace-period-requests-management/cooperative-grace-period-requests-management.component';
-import { LoanRequestFormComponent } from './ui/view/loan-management/loan-request-form/loan-request-form.component';
-import { WorkscheduleShiftsComponent } from './ui/view/workschedule-shifts/workschedule-shifts.component';
-import { ShiftAssignmentComponent } from './ui/view/workschedule-shifts/shift-assignment/shift-assignment.component';
-import { ShiftCalendarComponent } from './ui/view/workschedule-shifts/shift-calendar/shift-calendar.component';
-import { ShiftFormComponent } from './ui/view/workschedule-shifts/shift-form/shift-form.component';
-import { ShiftListComponent } from './ui/view/workschedule-shifts/shift-list/shift-list.component';
-// import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
-import { LoanPurposeManagementComponent } from './ui/view/loan-management/loan-purpose-management/loan-purpose-management.component';
-import { CooperativeLoanPurposeManagementComponent } from './ui/view/loan-management/cooperative-loan-purpose-management/cooperative-loan-purpose-management.component';
-import { CooperativeLoanApprovalUiComponent } from './ui/view/loan-management/cooperative-loan-approval-ui/cooperative-loan-approval-ui.component';
-import { CooperativeLoanDisbursementUiComponent } from './ui/view/loan-management/cooperative-loan-disbursement-ui/cooperative-loan-disbursement-ui.component';
-import { CooperativeLoanReportsComponent } from './ui/view/loan-management/cooperative-loan-reports/cooperative-loan-reports.component';
-import { PayrolExtrasComponent } from './ui/view/payrol-extras/payrol-extras.component';
-import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
-import { LoanGracePeriodRequestsManagementComponent } from './ui/view/loan-management/loan-grace-period-request-management/loan-grace-period-requests-management.component';
-import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
-import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
-import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
-import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
-import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
-import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
-import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
+import { DefaultComponent } from './default.component';
+import { LoginComponent } from './ui/auth/view/login/login.component';
+import { RegisterComponent } from './ui/auth/view/register/register.component';
+import { MailVerificationComponent } from './ui/auth/view/mail-verification/mail-verification.component';
+import { VerificationSuccessfullComponent } from './ui/auth/view/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './ui/auth/view/mail-verification/verification-failed.component';
+import { UserRegLayoutComponent } from './ui/auth/view/user-reg-layout.component';
+import { BusinessRegComponent } from './ui/auth/view/business-reg/business-reg.component';
+import { UserComponent } from './user.component';
+// import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
+// import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders.component';
 
-const DEFAULT_LOAN_ROUTE = 'loan/uu';
+import { MasterComponent } from './master.component';
+import { SalesPageComponent } from './ui/sales/view/sales-page.component';
+import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
+// import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
+// import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
+// import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
+
+// import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
+// import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
+// import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
+// import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+import { AuthGuard } from './ui/auth/service/auth.guard';
+// import { JopOpeningsComponent } from './jop.openings.component';
+import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
+import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
+import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
+import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
+import { NotFoundComponent } from './ui/not-found.component';
+import { UnauthourizedComponent } from './ui/unauthourized.component';
+import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
+import { TenantsComponent } from './ui/tenants/tenants.component';
+import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
+import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
+import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
+import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
+
+// dami just modified this to keep login-first routing and full app navigation working with the dashboard changes.
+import { VendorProfileFormComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-profile-form/vendor-profile-form.component';
+import { VendorRegistrationComponent } from 'projects/procurement/src/app/ui/view/vendor-management/vendor-registration/vendor-registration.component';
+import { InterviewResponseComponent } from 'projects/hr/src/app/ui/view/recruitment/candidate/interview-response.component';
 
 const routes: Routes = [
   {
-    path: 'user/onboarding/:id/:uuid',
-    component: AddEmployeeFormComponent,
-  },
-  {
-    path: 'guarantor/confirm/:token/:uuid',
-    component: GuarantorConfirmationComponent,
+    path: 'users/auth/verify',
+    component: VerifyTokenComponent,
   },
 
   {
-    path: 'admin/hr/attendance',
-    redirectTo: 'attendance/uu',
-    pathMatch: 'full',
+    path: 'user/auth',
+    canActivate: [UuidGuard],
+    component: DefaultComponent,
+    children: [
+      {
+        path: ':uuid',
+        component: LoginComponent,
+      },
+      {
+        path: 'sign-up/:uuid',
+        component: RegisterComponent,
+      },
+      {
+        path: 'emv/:uuid',
+        component: MailVerificationComponent,
+      },
+      {
+        path: 'vrs/:uuid',
+        component: VerificationSuccessfullComponent,
+      },
+      {
+        path: 'vrf/:uuid',
+        component: VerificationFailedComponent,
+      },
+  
+    
+    ],
   },
-
-  /*{
+    {
     path: '',
-    // redirectTo: DEFAULT_LOAN_ROUTE,
-    redirectTo: DEFAULT_LOAN_ROUTE,
-    pathMatch: 'full',
-  },
-  // {
-  //   path: 'loan-dashboard',
-  //   redirectTo: 'loan/uu',
-  //   pathMatch: 'full'
-  // },
-  {
-    path: 'loan-dashboard/:legacyId',
-    redirectTo: DEFAULT_LOAN_ROUTE,
+    redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
     pathMatch: 'full',
   },
   {
-    path: 'admin/hr/loan-dashboard',
-    redirectTo: DEFAULT_LOAN_ROUTE,
-    pathMatch: 'full',
+    path: 'onboarding/:id/:uuid',
+    component: AddEmployeeFormComponent,
+    canActivate: [AuthGuard],
   },
-  {
-    path: 'admin/hr/loan-dashboard/:legacyId',
-    redirectTo: DEFAULT_LOAN_ROUTE,
-    pathMatch: 'full',
-  },
-  {
-    path: 'admin/hr/loan-management/loan-dashboard',
-    redirectTo: DEFAULT_LOAN_ROUTE,
-    pathMatch: 'full',
-  },*/
-  {
-    path: 'admin/hr/loan-management/loan-dashboard/:uuid',
-    component: LoanDashboardComponent,
-  },
-  {
-    path: 'workschedule-shifts/:uuid',
-    component: WorkscheduleShiftsComponent,
-  },
-  {
-    path: 'guarantor/confirm/:token',
+    {
+    path: 'guarantor/confirm/:token/:uuid/:name/:mediaNO/:exp/:security',
     component: GuarantorConfirmationComponent,
   },
   {
-    path: 'me/:uuid',
-    component: EmployeeProfileDashboardComponent,
+    path: 'admin/settings/user-reg/:uuid',
+    component: UserRegLayoutComponent,
+    canActivate: [AuthGuard, UuidGuard],
   },
   {
-    path: 'employee-dashboard/:uuid',
-    component: EmployeeProfileDashboardComponent,
+    path: 'business-registration',
+    component: BusinessRegComponent,
+    canActivate: [AuthGuard],
   },
+ 
   {
-    path: 'loan/:uuid',
-    component: LoanComponent,
-  },
-  {
-    path: 'admin/hr/loan/:uuid',
-    component: LoanComponent,
-  },
-  {
-    path: 'loan-management/loan-dashboard/:uuid',
-    component: LoanDashboardComponent,
-  },
-  {
-    path: 'loan-management/request-for-loan/:uuid',
-    component: LoanRequestFormComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/request-for-loan/:uuid',
-    component: LoanRequestFormComponent,
-  },
-  {
-    path: 'loan-management/loan-approval/:uuid',
-    component: LoanApprovalUiComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/loan-approval/:uuid',
-    component: LoanApprovalUiComponent,
-  },
-  {
-    path: 'loan-management/loan-disbursement/:uuid',
-    component: LoanDisbursementUiComponent,
+    path: 'user',
+    component: UserComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: 'checkout',
+        loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'hospitality',
+        loadChildren: () => import('../../projects/hospitality/src/app/user/user.module').then(m => m.UserModule),
+        // canActivate: [UuidGuard],
+        canActivateChild: [ChildUuidGuard],
+
+      },
+    ],
   },
     {
-      path: 'loan-management/loan-purposes/:uuid',
-      component: LoanPurposeManagementComponent,
-    },
-    {
-    path: 'admin/hr/loan-management/loan-purposes/:uuid',
-    component: LoanPurposeManagementComponent,
-  },
-    {
-      path: 'cooperative/loan-purposes/:uuid',
-      component: CooperativeLoanPurposeManagementComponent,
-    },
-    {
-      path: 'admin/hr/cooperative/loan-purposes/:uuid',
-      component: CooperativeLoanPurposeManagementComponent,
-    },
-  {
-    path: 'admin/hr/loan-management/loan-disbursement/:uuid',
-    component: LoanDisbursementUiComponent,
+    path: 'optimerce',
+    component: UserComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () => import('../../projects/POS/src/app/optimerce/optimerce.module').then(m => m.OptimerceModule),
+        // canActivate: [UuidGuard]
+
+      }
+    ],
   },
 
   {
-    path: 'loan-management/grace-period-requests/:uuid',
-    component: LoanGracePeriodRequestsManagementComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/grace-period-requests/:uuid',
-    component: LoanGracePeriodRequestsManagementComponent,
-  },
-  // Added missing route for loan-grace-period-requests (with 'loan-' in path)
-  {
-    path: 'loan-management/loan-grace-period-requests/:uuid',
-    component: LoanGracePeriodRequestsManagementComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/loan-grace-period-requests/:uuid',
-    component: LoanGracePeriodRequestsManagementComponent,
+    path: 'admin',
+    component: MasterComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
+        canActivate: [UuidGuard]
+      },
+      {
+        path: 'hr',
+        loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'settings',
+        loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
+        canActivateChild: [ChildUuidGuard]
+
+      },
+      {
+        path: 'pos',
+        loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'expenses',
+        loadChildren: () => import('../../projects/expense/src/app/app.module').then(m => m.AppExpensesModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'accounting',
+        loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'procurement',
+        loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'crm',
+        loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'vendor',
+        loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'tender',
+        loadChildren: () => import('../../projects/tender/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'productivity',
+        loadChildren: () => import('../../projects/productivity/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'hospitality',
+        loadChildren: () => import('../../projects/hospitality/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'inventory-management',
+        loadChildren: () => import('../../projects/inventory-management/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+       {
+        path: 'sales',
+        loadChildren: () => import('../../projects/sales/src/app/app.module').then(m => m.AppModule),
+        canActivate: [UuidGuard]
+
+      },
+      {
+        path: 'admin/sales/:uuid',
+        component: SalesPageComponent,
+      },
+      {
+        path: 'sales/quotation/quotation-form',
+        component: QuotationModalComponent,
+      },
+      {
+        path: 'sales/quotation/quotation-form/:id',
+        component: QuotationModalComponent,
+      },
+      {
+        path: 'marketplace/:uuid',
+        component: MarketplaceComponent,
+      },
+      {
+        path: 'tenant/:uuid',
+        component: TenantsComponent,
+      },
+     
+    ],
   },
 
-  // {
-  //   path: 'loan-management.loan-details/:loanId',
-  //   component: LoanDetailsComponent
-  //  },
   {
-    path: 'loan-management/loan-details/:loanId/:uuid',
-    component: LoanDetailsComponent,
+    path: 'subscription/:id',
+    component: PaymentComponent
   },
+
   {
-    path: 'admin/hr/loan-management/loan-details/:loanId/:uuid',
-    component: LoanDetailsComponent,
+    path: 'vendor-profile-creation', component: VendorProfileFormComponent
   },
+  { path: 'vendor-portal/vendor-register/:token/:uuid', component: VendorRegistrationComponent },
   {
-    path: 'loan-management/cooperative-member-loan-history/:memberId/:uuid',
-    component: CooperativeMemberLoanHistoryComponent,
+    path: 'interview-response', component: InterviewResponseComponent
   },
+
+
   {
-    path: 'loan-management/employee-loan-history/:employeeId/:uuid',
-    component: EmployeeLoanHistoryComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/cooperative-member-loan-history/:memberId/:uuid',
-    component: CooperativeMemberLoanHistoryComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/employee-loan-history/:employeeId/:uuid',
-    component: EmployeeLoanHistoryComponent,
-  },
-  {
-    path: 'loan-management/reports/:uuid',
-    component: LoanReportsComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/reports/:uuid',
-    component: LoanReportsComponent,
-  },
-  {
-    path: 'admin/hr/loan-management/loans/:uuid',
-    component: LoanDashboardComponent,
-  },
-  // Cooperative Routes
-  {
-    path: 'cooperative/dashboard/:uuid',
-    component: CooperativeDashboardComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/dashboard/:uuid',
-    component: CooperativeDashboardComponent,
-  },
-  {
-    path: 'cooperative/members/:uuid',
-    component: CooperativeMembersComponent,
-  },
-  {
-    path: 'cooperative/members/add/:uuid',
-    component: CooperativeMemberFormComponent,
-  },
-  {
-    path: 'cooperative/members/edit/:id/:uuid',
-    component: CooperativeMemberFormComponent,
-  },
-  {
-    path: 'cooperative/members/:id/:uuid',
-    component: CooperativeMemberDetailComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/members/:uuid',
-    component: CooperativeMembersComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/members/add/:uuid',
-    component: CooperativeMemberFormComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/members/edit/:id/:uuid',
-    component: CooperativeMemberFormComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/members/:id/:uuid',
-    component: CooperativeMemberDetailComponent,
-  },
-  {
-    path: 'cooperative/loans/:uuid',
-    component: CooperativeLoansComponent,
-  },
-  {
-    path: 'cooperative/loans/:id/:uuid',
-    component: CooperativeLoanDetailComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/loans/:uuid',
-    component: CooperativeLoansComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/loans/:id/:uuid',
-    component: CooperativeLoanDetailComponent,
-  },
-  {
-    path: 'cooperative/groups/:uuid',
-    component: CooperativeLoanGroupsComponent,
-  },
-  {
-    path: 'cooperative/patronage-distribution/:uuid',
-    component: CooperativePatronageDistributionComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/patronage-distribution/:uuid',
-    component: CooperativePatronageDistributionComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/groups/:uuid',
-    component: CooperativeLoanGroupsComponent,
-  },
-  {
-    path: 'cooperative/group-join-applications/:uuid',
-    component: CooperativeGroupJoinHistoryComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/group-join-applications/:uuid',
-    component: CooperativeGroupJoinHistoryComponent,
-  },
-  {
-    path: 'cooperative/grace-period-requests/:uuid',
-    component: CooperativeGracePeriodRequestsManagementComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/grace-period-requests/:uuid',
-    component: CooperativeGracePeriodRequestsManagementComponent,
-  },
-  {
-    path: 'cooperative/loan-approval/:uuid',
-    component: CooperativeLoanApprovalUiComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/loan-approval/:uuid',
-    component: CooperativeLoanApprovalUiComponent,
-  },
-  {
-    path: 'cooperative/loan-disbursement/:uuid',
-    component: CooperativeLoanDisbursementUiComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/loan-disbursement/:uuid',
-    component: CooperativeLoanDisbursementUiComponent,
-  },
-  {
-    path: 'cooperative/reports/:uuid',
-    component: CooperativeLoanReportsComponent,
-  },
-  {
-    path: 'admin/hr/cooperative/reports/:uuid',
-    component: CooperativeLoanReportsComponent,
-  },
-  // Member routes
-  {
-    path: 'member/cooperative/dashboard/:uuid',
-    component: CooperativeMemberDashboardComponent,
-  },
-  {
-    path: 'member/cooperative/my-loans/:uuid',
-    component: CooperativeMemberLoansComponent,
-  },
-  {
-    path: 'member/cooperative/groups/:groupId/:uuid',
-    component: CooperativeMemberGroupDashboardComponent,
-  },
-  {
-    path: 'member/cooperative/loans/:id/:uuid',
-    component: CooperativeMemberDetailComponent, // Read-only version
-  },
-  {
-    path: 'leave/:uuid',
-    component: LeaveComponent,
-  },
-  {
-    path: 'attendance/:uuid',
-    component: AttendanceComponent,
+    path: 'careers',
+    component: JopOpeningsComponent, 
+    // children:[
+    //   {
+    //     path:'job-posting',
+    //     component: CareerJobPostingComponent,
+    //     // canActivateChild: [ChildUuidGuard]
+    //   },
+    //   {
+    //     path: 'job-posting/:id',
+    //     component: JobApplicationFormComponent,
+    //   }   
+    // ]
   },
   // {
-  //   path: 'employee-management/:uuid',
-  //   component: EmployeeManagementComponent,
+  //   path: 'job-application',
+  //   component: JopOpeningsComponent, 
   // },
   {
-    path: 'recruitment/:uuid',
-    component: RecruitmentComponent,
+    path:'unauthorized',
+    component: UnauthourizedComponent
   },
 
-  {
-    path: 'performance/:uuid',
-    component: ProductivityWorkspaceComponent,
-  },
-  {
-    path: 'productivity/:uuid',
-    component: ProductivityWorkspaceComponent,
-  },
-  {
-    path: 'employee-management/:uuid',
-    component: EmployeeManagementComponent,
-  },
-  {
-    path: 'payroll/:uuid',
-    component: EmployeePayrollComponent,
-  },
-  {
-    path: 'payroll-operations/:uuid',
-    component: PayrolExtrasComponent,
-  },
-  {
-    path: 'admin/employee-payslip/:uuid',
-    component: EmployeePayslipListComponent,
-  },
-  // {
-  //   path: 'attendance/:uuid',
-  //   component: AttendanceComponent,
-  // },
-  { path: 'mygoal', component: MygoalComponent },
+  { path: '**', component: NotFoundComponent }
 
-  // {
-  //   path: 'onboarding/:id/:uuid',
-  //   component: AddEmployeeFormComponent,
-  // },
-  {
-    path: 'project/:uuid',
-    component: ProjectComponent,
-  },
-  {
-    path: 'work-schedule/:uuid',
-    component: SchedulingComponent,
-  },
-  {
-    path: 'profile-change-requests/:uuid',
-    component: ProfileChangeRequestsComponent,
-  },
-  {
-    path: 'HR-settings/:uuid',
-    component: HrSettingsComponent,
-  },
-  {
-    path: 'analytics/:uuid',
-    component: HrAnalyticsDashboardComponent,
-  },
-  {
-    path: 'overtime/:uuid',
-    component: OvertimeManagementComponent,
-  },
-  {
-    path: 'org-chart/:uuid',
-    component: OrgChartComponent,
-  },
-  {
-    path: 'reports/:uuid',
-    component: HrReportsComponent,
-  },
-  {
-    path: '**',
-    redirectTo: DEFAULT_LOAN_ROUTE,
-  },
+  
 ];
+
+
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
-export class AppHrRoutingModule {}
+export class AppRoutingModule {}

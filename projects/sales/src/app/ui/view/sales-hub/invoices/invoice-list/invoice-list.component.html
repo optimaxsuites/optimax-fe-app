@@ -1,0 +1,300 @@
+<div class="invoice-list-container">
+  <div class="list-wrapper">
+
+    <!-- Header Hero Card -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="dashboard-badge">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Sales Hub • Invoices</span>
+          </div>
+          <h1>Invoices Dashboard</h1>
+          <p class="hero-subtitle">Manage, create, and track all client invoices and payment status from a single command center.</p>
+        </div>
+        <div class="hero-actions">
+          <button (click)="openNewInvoiceModal()" class="btn-primary-hero">
+            <i class="fas fa-plus"></i>
+            New Invoice
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards - Larger & More Vibrant -->
+    <div class="stats-grid">
+      <div class="stat-card total" (click)="filters.status = 'ALL'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Total Invoices</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-arrow-up"></i>
+          <span>18%</span>
+        </div>
+      </div>
+      <div class="stat-card draft" (click)="filters.status = 'DRAFT'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-edit"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.draft }}</div>
+          <div class="stat-label">Draft</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-minus"></i>
+          <span>2%</span>
+        </div>
+      </div>
+      <div class="stat-card sent" (click)="filters.status = 'SENT'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.sent }}</div>
+          <div class="stat-label">Sent</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-arrow-up"></i>
+          <span>10%</span>
+        </div>
+      </div>
+      <div class="stat-card paid" (click)="filters.status = 'PAID'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.paid }}</div>
+          <div class="stat-label">Paid</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-arrow-up"></i>
+          <span>22%</span>
+        </div>
+      </div>
+      <div class="stat-card partial" (click)="filters.status = 'PARTIAL'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.partial }}</div>
+          <div class="stat-label">Partial</div>
+        </div>
+        <div class="stat-trend down">
+          <i class="fas fa-arrow-down"></i>
+          <span>4%</span>
+        </div>
+      </div>
+      <div class="stat-card overdue" (click)="filters.status = 'OVERDUE'; applyFilters()">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.overdue }}</div>
+          <div class="stat-label">Overdue</div>
+        </div>
+        <div class="stat-trend down">
+          <i class="fas fa-arrow-down"></i>
+          <span>8%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar with Status Filters -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()"
+            placeholder="Search by invoice #, customer...">
+        </div>
+
+        <div class="status-filters">
+          <span class="filter-label">Status:</span>
+          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'" 
+                  (click)="filters.status = 'ALL'; applyFilters()">
+            All
+          </button>
+          <button class="status-filter-btn draft" [class.active]="filters.status === 'DRAFT'" 
+                  (click)="filters.status = 'DRAFT'; applyFilters()">
+            Draft
+          </button>
+          <button class="status-filter-btn sent" [class.active]="filters.status === 'SENT'" 
+                  (click)="filters.status = 'SENT'; applyFilters()">
+            Sent
+          </button>
+          <button class="status-filter-btn paid" [class.active]="filters.status === 'PAID'" 
+                  (click)="filters.status = 'PAID'; applyFilters()">
+            Paid
+          </button>
+          <button class="status-filter-btn partial" [class.active]="filters.status === 'PARTIAL'" 
+                  (click)="filters.status = 'PARTIAL'; applyFilters()">
+            Partial
+          </button>
+          <button class="status-filter-btn overdue" [class.active]="filters.status === 'OVERDUE'" 
+                  (click)="filters.status = 'OVERDUE'; applyFilters()">
+            Overdue
+          </button>
+        </div>
+
+        <div class="date-filters">
+          <input type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()" placeholder="From">
+          <span>→</span>
+          <input type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()" placeholder="To">
+        </div>
+
+        <button class="btn-reset" (click)="resetFilters()">
+          <i class="fas fa-undo-alt"></i>
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading invoices...</p>
+    </div>
+
+    <!-- Invoices Table -->
+    <div *ngIf="!isLoading" class="table-container">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col">
+                <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
+              </th>
+              <th class="sn-col">#</th>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th>Balance</th>
+              <th class="actions-heading">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of invoices; let i = index" 
+                [class.overdue-row]="invoice.status === 'OVERDUE'">
+              <td class="checkbox-col">
+                <input type="checkbox" [value]="invoice.id" (change)="toggleSelection(invoice.id, $event)"
+                  [checked]="isSelected(invoice.id)">
+              </td>
+              <td class="sn-col">{{ (currentPage * pageSize) + i + 1 }}</td>
+              <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
+              <td class="customer-name">{{ invoice.customerName }}</td>
+              <td class="amount">{{ formatCurrency(invoice.totalAmount) }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusBadgeClass(invoice.status)">
+                  {{ getStatusLabel(invoice.status) | titlecase }}
+                </span>
+              </td>
+              <td>{{ formatDate(invoice.issueDate) }}</td>
+              <td class="due-date" [class.overdue]="isOverdue(invoice.dueDate) && invoice.status !== 'PAID'">
+                {{ formatDate(invoice.dueDate) }}
+                <span *ngIf="isOverdue(invoice.dueDate) && invoice.status !== 'PAID'" class="due-warning">
+                  ({{ getDaysOverdue(invoice.dueDate) }} days)
+                </span>
+              </td>
+              <td class="balance">{{ formatCurrency(invoice.balanceDue) }}</td>
+              <td class="actions-col">
+                <div class="actions-wrapper">
+                  <button class="action-btn view-btn" (click)="openInvoiceDetail(invoice.id)" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button *ngIf="invoice.status === 'DRAFT'" class="action-btn edit-btn"
+                    (click)="openEditInvoiceModal(invoice.id)" title="Edit Invoice">
+                    <i class="fas fa-pencil-alt"></i>
+                  </button>
+                  <button *ngIf="invoice.status !== 'PAID'" class="action-btn delete-btn"
+                    (click)="deleteInvoice(invoice)" title="Delete">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                  <div class="action-dropdown" *ngIf="invoice.status === 'SENT' || invoice.status === 'PARTIAL'">
+                    <button class="action-btn more-btn action-trigger" title="More Actions">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                      <button (click)="sendReminder(invoice)">
+                        <i class="fas fa-paper-plane"></i> Send Reminder
+                      </button>
+                      <button (click)="markAsPaid(invoice)">
+                        <i class="fas fa-check-circle"></i> Mark as Paid
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="invoices.length === 0">
+              <td colspan="10" class="empty-state">
+                <div class="empty-state-content">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                  </svg>
+                  <h3>No invoices found</h3>
+                  <p>Create your first invoice to get started</p>
+                  <button (click)="openNewInvoiceModal()" class="btn-primary-sm">Create Invoice</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section" *ngIf="totalPages > 0">
+        <div class="pagination-info">
+          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{
+          totalElements }} invoices
+        </div>
+
+        <div class="pagination-controls">
+          <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+          </select>
+
+          <div class="pagination-buttons">
+            <button class="page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-left"></i>
+            </button>
+            <button *ngFor="let page of getPageNumbers()" class="page-number" [class.active]="page === currentPage"
+              (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+            <button class="page-btn" (click)="onPageChange(currentPage + 1)"
+              [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<app-invoice-form *ngIf="showInvoiceModal" [editId]="selectedInvoiceId" (saved)="onInvoiceSaved()" (cancelled)="closeInvoiceModal()"></app-invoice-form>
+
+<app-side-modal *ngIf="showInvoiceDetail" (close)="closeInvoiceDetail()">
+  <app-invoice-detail [detailId]="selectedInvoiceId" (closed)="closeInvoiceDetail()" (edit)="closeInvoiceDetail(); openEditInvoiceModal($event)"></app-invoice-detail>
+</app-side-modal>

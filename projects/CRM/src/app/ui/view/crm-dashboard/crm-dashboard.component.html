@@ -1,0 +1,156 @@
+      <div class="panel-header">
+        <div><h1 class="panel-title">CRM Dashboard</h1><p class="panel-subtitle">{{ today | date:'EEEE, d MMMM yyyy' }} &nbsp;·&nbsp; Q2 2026 — 18 days remaining</p></div>
+        <div class="panel-actions">
+          <select class="filter-select"><option>This Month</option><option>This Quarter</option><option>This Year</option></select>
+          <button class="btn-primary"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Contact</button>
+          <button class="btn-secondary"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>New Deal</button>
+        </div>
+      </div>
+
+      <!-- AI Insights -->
+      <div class="ai-widget" style="margin-bottom:1rem;">
+        <div class="ai-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div>
+        <div class="ai-insights">
+          <div class="ai-insight-row"><span class="ai-insight-icon">🚨</span><span><strong>3 deals stagnant &gt;14 days</strong> — Dangote Phase 2, NNPC Bundle, First Bank Contract at risk of going cold. Recommend immediate outreach.</span></div>
+          <div class="ai-insight-row"><span class="ai-insight-icon">⭐</span><span><strong>Emeka Okafor (AI score 94, UBA) hasn't been contacted in 5 days</strong> — optimal contact window closing. Call today for 3× higher close probability.</span></div>
+          <div class="ai-insight-row"><span class="ai-insight-icon">📈</span><span><strong>Win rate up 4% vs Q1 (64%→68%)</strong> — best quarter in 18 months. Proposal-to-close velocity improved by 3 days.</span></div>
+        </div>
+        <div class="ai-badge">OptimaX AI</div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="stat-card"><div class="stat-icon-wrap green"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div><div class="stat-value">247</div><div class="stat-label">Total Contacts</div><div class="stat-delta up">↑ +12 this month</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap blue"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"></path></svg></div><div class="stat-value">38</div><div class="stat-label">Open Deals</div><div class="stat-delta up">↑ +5 this month</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap teal"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">₦48.2M</div><div class="stat-label">Pipeline Value</div><div class="stat-delta up">↑ +₦6.1M vs last month</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap purple"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div><div class="stat-value">₦48.2M</div><div class="stat-label">Monthly Revenue</div><div class="stat-delta up">↑ +18% vs last month</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap orange"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">68%</div><div class="stat-label">Win Rate</div><div class="stat-delta up">↑ +4% vs Q1</div></div>
+        <div class="stat-card"><div class="stat-icon-wrap red"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div><div class="stat-value">₦8.1M</div><div class="stat-label">Avg Deal Size</div><div class="stat-delta up">↑ +₦1.2M vs Q1</div></div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;background:#fff;border-radius:.75rem;padding:.7rem 1rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #e8edf2;">
+        <span style="font-size:10px;color:#94a3b8;font-weight:700;margin-right:.25rem;">QUICK ACTIONS:</span>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📞 Log Call</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">✉️ Send Email</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;background:#f0fdf4;border-color:#bbf7d0;color:#16a34a;">💬 WhatsApp Blast</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📅 Schedule Meeting</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📄 Send Proposal</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">⚡ Qualify Lead</button>
+        <button class="btn-secondary" style="padding:.3rem .75rem;font-size:10px;">📢 New Campaign</button>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row" style="margin-bottom:1rem;">
+        <!-- Revenue vs Target Bar Chart -->
+        <div class="chart-card" style="flex:2;">
+          <div class="chart-header">
+            <div class="chart-title">Revenue vs Target — 2026</div>
+            <div style="display:flex;gap:.5rem;align-items:center;font-size:10px;color:#94a3b8;">
+              <span style="display:inline-flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:2px;background:#25925B;display:inline-block;"></span>Actual</span>
+              <span style="display:inline-flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:2px;background:#fed7aa;display:inline-block;"></span>Target</span>
+            </div>
+          </div>
+          <div class="bar-chart" style="height:140px;align-items:flex-end;">
+            <div class="bar-group"><div class="bar" style="height:55%;" title="Jan Actual: ₦26M"></div><div class="bar target-bar" style="height:60%;" title="Jan Target: ₦30M"></div><div class="bar-label">Jan</div></div>
+            <div class="bar-group"><div class="bar" style="height:62%;" title="Feb Actual: ₦29M"></div><div class="bar target-bar" style="height:60%;" title="Feb Target: ₦30M"></div><div class="bar-label">Feb</div></div>
+            <div class="bar-group"><div class="bar" style="height:48%;" title="Mar Actual: ₦23M"></div><div class="bar target-bar" style="height:60%;" title="Mar Target: ₦30M"></div><div class="bar-label">Mar</div></div>
+            <div class="bar-group"><div class="bar" style="height:71%;" title="Apr Actual: ₦34M"></div><div class="bar target-bar" style="height:72%;" title="Apr Target: ₦36M"></div><div class="bar-label">Apr</div></div>
+            <div class="bar-group"><div class="bar" style="height:80%;" title="May Actual: ₦38M"></div><div class="bar target-bar" style="height:76%;" title="May Target: ₦38M"></div><div class="bar-label">May</div></div>
+            <div class="bar-group"><div class="bar active-bar" style="height:100%;" title="Jun Actual: ₦48M"></div><div class="bar target-bar" style="height:84%;" title="Jun Target: ₦42M"></div><div class="bar-label">Jun ✓</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;" title="Jul: Projected ₦44M"></div><div class="bar target-bar" style="height:88%;" title="Jul Target: ₦44M"></div><div class="bar-label">Jul</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;"></div><div class="bar target-bar" style="height:90%;"></div><div class="bar-label">Aug</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;"></div><div class="bar target-bar" style="height:88%;"></div><div class="bar-label">Sep</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;"></div><div class="bar target-bar" style="height:92%;"></div><div class="bar-label">Oct</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;"></div><div class="bar target-bar" style="height:96%;"></div><div class="bar-label">Nov</div></div>
+            <div class="bar-group"><div class="bar muted-bar" style="height:4%;"></div><div class="bar target-bar" style="height:100%;"></div><div class="bar-label">Dec</div></div>
+          </div>
+        </div>
+
+        <!-- Forecast Gauge -->
+        <div class="forecast-card" style="flex:1;min-width:220px;">
+          <div class="forecast-top"><div class="forecast-title">Q2 Forecast Attainment</div><div class="forecast-period">Jun 23, 2026</div></div>
+          <div class="gauge-container">
+            <svg width="180" height="100" viewBox="0 0 180 100">
+              <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#e2e8f0" stroke-width="14" stroke-linecap="round"/>
+              <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#25925B" stroke-width="14" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="71"/>
+              <text x="90" y="82" text-anchor="middle" font-size="22" font-weight="800" fill="#2E6276">68%</text>
+              <text x="90" y="96" text-anchor="middle" font-size="10" fill="#94a3b8">of quota</text>
+            </svg>
+          </div>
+          <div class="forecast-breakdown">
+            <div class="fb-item"><div class="fb-dot" style="background:#25925B;"></div><div class="fb-val" style="color:#25925B;">₦32M</div><div class="fb-label">Committed</div></div>
+            <div class="fb-item"><div class="fb-dot" style="background:#2E6276;"></div><div class="fb-val">₦48M</div><div class="fb-label">Best Case</div></div>
+            <div class="fb-item"><div class="fb-dot" style="background:#f59e0b;"></div><div class="fb-val" style="color:#d97706;">₦50M</div><div class="fb-label">Quota</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div style="display:flex;gap:1rem;margin-bottom:.5rem;">
+        <!-- Funnel + Heatmap -->
+        <div class="chart-card" style="flex:1.3;">
+          <div class="chart-header"><div class="chart-title">Pipeline Funnel</div></div>
+          <div class="funnel-wrap">
+            <div class="funnel-row"><div class="funnel-label">Prospecting</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;background:#25925B;"><span>62 — ₦18.4M</span></div><div class="funnel-meta"><span style="color:#94a3b8;font-size:10px;">→ 73%</span></div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Qualified</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:73%;background:#2E6276;"><span>45 — ₦14.7M</span></div><div class="funnel-meta"><span style="color:#94a3b8;font-size:10px;">→ 69%</span></div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Proposal</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:50%;background:#2EB270;"><span>31 — ₦7.3M</span></div><div class="funnel-meta"><span style="color:#94a3b8;font-size:10px;">→ 71%</span></div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Negotiation</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:35%;background:#f59e0b;"><span>22 — ₦5.6M</span></div><div class="funnel-meta"><span style="color:#94a3b8;font-size:10px;">→ 55%</span></div></div></div>
+            <div class="funnel-row"><div class="funnel-label">Closed Won</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:19%;background:#10b981;"><span>12 — ₦7.6M</span></div></div></div>
+          </div>
+          <div class="chart-header" style="margin-top:1rem;margin-bottom:.5rem;"><div class="chart-title">Activity Heatmap — Last 5 Weeks</div></div>
+          <div style="font-size:9px;color:#94a3b8;display:grid;grid-template-columns:repeat(7,1fr);gap:.2rem;margin-bottom:.25rem;text-align:center;">
+            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+          </div>
+          <div class="heatmap">
+            <div class="hm-cell" style="background:rgba(37,146,91,.7)" title="8 activities"></div><div class="hm-cell" style="background:rgba(37,146,91,.4)" title="4"></div><div class="hm-cell" style="background:rgba(37,146,91,.9)" title="11"></div><div class="hm-cell" style="background:rgba(37,146,91,.2)" title="2"></div><div class="hm-cell" style="background:rgba(37,146,91,.6)" title="7"></div><div class="hm-cell" style="background:#f1f5f9" title="0"></div><div class="hm-cell" style="background:#f1f5f9" title="0"></div>
+            <div class="hm-cell" style="background:rgba(37,146,91,.5)"></div><div class="hm-cell" style="background:rgba(37,146,91,.3)"></div><div class="hm-cell" style="background:rgba(37,146,91,.8)"></div><div class="hm-cell" style="background:rgba(37,146,91,.6)"></div><div class="hm-cell" style="background:rgba(37,146,91,.4)"></div><div class="hm-cell" style="background:#f1f5f9"></div><div class="hm-cell" style="background:#f1f5f9"></div>
+            <div class="hm-cell" style="background:rgba(37,146,91,.9)"></div><div class="hm-cell" style="background:rgba(37,146,91,.7)"></div><div class="hm-cell" style="background:rgba(37,146,91,.5)"></div><div class="hm-cell" style="background:rgba(37,146,91,.3)"></div><div class="hm-cell" style="background:rgba(37,146,91,1)" title="13 activities"></div><div class="hm-cell" style="background:#f1f5f9"></div><div class="hm-cell" style="background:#f1f5f9"></div>
+            <div class="hm-cell" style="background:rgba(37,146,91,.4)"></div><div class="hm-cell" style="background:rgba(37,146,91,.6)"></div><div class="hm-cell" style="background:rgba(37,146,91,.2)"></div><div class="hm-cell" style="background:rgba(37,146,91,.8)"></div><div class="hm-cell" style="background:rgba(37,146,91,.5)"></div><div class="hm-cell" style="background:#f1f5f9"></div><div class="hm-cell" style="background:#f1f5f9"></div>
+            <div class="hm-cell" style="background:rgba(37,146,91,.6)"></div><div class="hm-cell" style="background:rgba(37,146,91,.9)"></div><div class="hm-cell" style="background:rgba(37,146,91,.7)"></div><div class="hm-cell" style="background:rgba(37,146,91,.4)"></div><div class="hm-cell" style="background:rgba(37,146,91,1)"></div><div class="hm-cell" style="background:#f1f5f9"></div><div class="hm-cell" style="background:#f1f5f9"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem;font-size:9px;color:#94a3b8;">Less <div style="display:flex;gap:2px;"><div style="width:10px;height:10px;border-radius:2px;background:#f1f5f9;"></div><div style="width:10px;height:10px;border-radius:2px;background:rgba(37,146,91,.2);"></div><div style="width:10px;height:10px;border-radius:2px;background:rgba(37,146,91,.5);"></div><div style="width:10px;height:10px;border-radius:2px;background:rgba(37,146,91,.8);"></div><div style="width:10px;height:10px;border-radius:2px;background:rgba(37,146,91,1);"></div></div> More</div>
+        </div>
+
+        <!-- Top Performers Leaderboard -->
+        <div class="chart-card" style="flex:1;">
+          <div class="chart-header"><div class="chart-title">Top Performers — Q2 2026</div><a class="link-sm">View Details</a></div>
+          <div class="leaderboard">
+            <div class="lb-item"><div class="lb-rank">🥇</div><div class="lb-avatar" style="background:#25925B;">SO</div><div class="lb-info"><div class="lb-name">Sarah Adeyemi</div><div class="lb-stats">14 deals · 72% win rate</div></div><div><div class="lb-value">₦38.4M</div><div class="lb-trend up">↑ +12%</div></div></div>
+            <div class="lb-item"><div class="lb-rank">🥈</div><div class="lb-avatar" style="background:#2E6276;">JA</div><div class="lb-info"><div class="lb-name">James Adebisi</div><div class="lb-stats">11 deals · 65% win rate</div></div><div><div class="lb-value">₦32.1M</div><div class="lb-trend up">↑ +8%</div></div></div>
+            <div class="lb-item"><div class="lb-rank">🥉</div><div class="lb-avatar" style="background:#a78bfa;">YK</div><div class="lb-info"><div class="lb-name">Yemi Kasali</div><div class="lb-stats">8 deals · 61% win rate</div></div><div><div class="lb-value">₦21.0M</div><div class="lb-trend down">↓ -2%</div></div></div>
+            <div class="lb-item"><div class="lb-rank">4</div><div class="lb-avatar" style="background:#0ea5e9;">CE</div><div class="lb-info"><div class="lb-name">Chidi Ezeh</div><div class="lb-stats">6 deals · 58% win rate</div></div><div><div class="lb-value">₦14.2M</div><div class="lb-trend up">↑ +5%</div></div></div>
+            <div class="lb-item"><div class="lb-rank">5</div><div class="lb-avatar" style="background:#ec4899;">NF</div><div class="lb-info"><div class="lb-name">Ngozi Falade</div><div class="lb-stats">4 deals · 55% win rate</div></div><div><div class="lb-value">₦9.8M</div><div class="lb-trend up">↑ +1%</div></div></div>
+          </div>
+        </div>
+
+        <!-- Nigeria Map -->
+        <div class="chart-card" style="flex:1.2;">
+          <div class="chart-header"><div class="chart-title">Deal Map — Nigeria</div><select class="filter-select" style="font-size:10px;padding:.2rem .5rem;">><option>All Pipelines</option><option>Enterprise</option><option>Government</option></select></div>
+          <div class="map-wrap" style="padding:.5rem;">
+            <svg viewBox="0 0 240 270" style="width:100%;max-height:160px;" fill="none">
+              <path d="M60 30 L90 20 L130 25 L160 35 L185 60 L195 90 L200 120 L195 150 L185 175 L165 200 L140 220 L115 235 L90 230 L65 215 L45 195 L30 170 L20 140 L18 110 L25 80 L40 55 Z" fill="#e3eef0" stroke="#2E6276" stroke-width="1.5"/>
+              <!-- State borders simplified -->
+              <path d="M60 30 L90 20 L130 25" stroke="#2E6276" stroke-width=".5" stroke-dasharray="3,2"/>
+              <path d="M80 120 L120 100 L160 115 L155 145 L110 150 L80 140 Z" fill="#d1fae5" stroke="#25925B" stroke-width=".5" opacity=".7"/>
+              <!-- Deal pins -->
+              <circle cx="100" cy="175" r="9" fill="#25925B" opacity=".85" title="Lagos — 14 deals"/>
+              <text x="100" y="179" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">14</text>
+              <circle cx="120" cy="110" r="7" fill="#2E6276" opacity=".85" title="Abuja — 9 deals"/>
+              <text x="120" y="114" text-anchor="middle" fill="#fff" font-size="7" font-weight="bold">9</text>
+              <circle cx="145" cy="75" r="5" fill="#f59e0b" opacity=".9" title="Kano — 5 deals"/>
+              <text x="145" y="79" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">5</text>
+              <circle cx="155" cy="185" r="6" fill="#2EB270" opacity=".9" title="Port Harcourt — 7 deals"/>
+              <text x="155" y="189" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">7</text>
+              <circle cx="80" cy="155" r="4" fill="#6366f1" opacity=".9" title="Ibadan — 4 deals"/>
+              <text x="80" y="159" text-anchor="middle" fill="#fff" font-size="6" font-weight="bold">4</text>
+            </svg>
+            <div class="map-legend">
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:#25925B;"></div>Lagos (₦18.4M)</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:#2E6276;"></div>Abuja (₦12.1M)</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:#2EB270;"></div>PH (₦9.3M)</div>
+              <div class="map-legend-item"><div class="map-legend-dot" style="background:#f59e0b;"></div>Kano (₦5.2M)</div>
+            </div>
+          </div>
+        </div>
+      </div>

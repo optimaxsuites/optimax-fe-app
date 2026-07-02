@@ -1,0 +1,111 @@
+<div class="panel-header">
+  <div><h1 class="panel-title">Support Tickets</h1><p class="panel-subtitle">SLA-managed · auto-escalation · CSAT tracking · knowledge base</p></div>
+  <div class="panel-actions">
+    <button class="btn-secondary">📚 Knowledge Base</button>
+    <button class="btn-secondary">⚙ SLA Policies</button>
+    <button class="btn-primary">+ New Ticket</button>
+  </div>
+</div>
+<div class="stats-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:1rem;">
+  <div class="stat-card"><div class="stat-icon-wrap red"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div><div class="stat-value">2</div><div class="stat-label">SLA Breach Risk</div></div>
+  <div class="stat-card"><div class="stat-icon-wrap orange"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">5</div><div class="stat-label">Open Tickets</div></div>
+  <div class="stat-card"><div class="stat-icon-wrap blue"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></div><div class="stat-value">3</div><div class="stat-label">In Progress</div></div>
+  <div class="stat-card"><div class="stat-icon-wrap green"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><div class="stat-value">18</div><div class="stat-label">Resolved This Month</div></div>
+  <div class="stat-card"><div class="stat-icon-wrap teal"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg></div><div class="stat-value">4.6/5</div><div class="stat-label">CSAT Score</div></div>
+  <div class="stat-card"><div class="stat-icon-wrap purple"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">4.2 hrs</div><div class="stat-label">Avg First Response</div><div class="stat-delta up">↑ SLA target: 6hr</div></div>
+</div>
+<!-- SLA Policy Banner -->
+<div class="sla-policy-banner">
+  <div><div class="sla-tier-label">🏆 Platinum SLA</div><div class="sla-tier-detail">First response: <strong>1 hr</strong> · Resolution: <strong>4 hr</strong></div><div class="sla-tier-accounts">Zenith Insurance, GTBank</div></div>
+  <div><div class="sla-tier-label">🥈 Gold SLA</div><div class="sla-tier-detail">First response: <strong>4 hr</strong> · Resolution: <strong>24 hr</strong></div><div class="sla-tier-accounts">MTN, Access Bank, Dangote</div></div>
+  <div><div class="sla-tier-label">🥉 Standard SLA</div><div class="sla-tier-detail">First response: <strong>8 hr</strong> · Resolution: <strong>48 hr</strong></div><div class="sla-tier-accounts">All other accounts</div></div>
+</div>
+<div class="filter-bar">
+  <div class="search-box"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search tickets…"></div>
+  <select class="filter-select"><option>All Status</option><option>Open</option><option>In Progress</option><option>Pending Client</option><option>Resolved</option><option>Closed</option></select>
+  <select class="filter-select"><option>All Priority</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+  <select class="filter-select"><option>All SLA Tiers</option><option>Platinum</option><option>Gold</option><option>Standard</option></select>
+</div>
+<div class="table-container">
+  <table class="data-table">
+    <thead><tr><th>Ticket #</th><th>Subject</th><th>Account</th><th>Priority</th><th>Status</th><th>SLA Tier</th><th>SLA Remaining</th><th>Assigned</th><th>Opened</th><th></th></tr></thead>
+    <tbody>
+      <tr style="background:#fff5f5;">
+        <td style="font-weight:700;color:#dc2626;">#TKT-1042</td>
+        <td>Payroll module not generating slips after June update</td>
+        <td>Zenith Insurance</td>
+        <td><span class="badge badge-danger">Critical</span></td>
+        <td><span class="badge badge-info">In Progress</span></td>
+        <td><span class="badge badge-purple">Platinum</span></td>
+        <td>
+          <div style="font-size:10px;font-weight:700;color:#dc2626;">0h 48m left</div>
+          <div class="sla-bar"><div class="sla-fill breach" style="width:88%;"></div></div>
+        </td>
+        <td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td>
+        <td style="color:#94a3b8;">2 hr ago</td>
+        <td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs" style="color:#dc2626;border-color:#fecaca;">Escalate</button></td>
+      </tr>
+      <tr style="background:#fff8f0;">
+        <td style="font-weight:700;color:#d97706;">#TKT-1041</td>
+        <td>Invoice PDF not exporting — page break issue</td>
+        <td>GTBank Plc</td>
+        <td><span class="badge badge-warning">High</span></td>
+        <td><span class="badge badge-warning">Open</span></td>
+        <td><span class="badge badge-purple">Platinum</span></td>
+        <td>
+          <div style="font-size:10px;font-weight:700;color:#d97706;">2h 12m left</div>
+          <div class="sla-bar"><div class="sla-fill warn" style="width:65%;"></div></div>
+        </td>
+        <td><div class="owner-cell"><div class="o-avatar">JA</div>James A.</div></td>
+        <td style="color:#94a3b8;">4 hr ago</td>
+        <td class="actions-cell"><button class="btn-xs">View</button><button class="btn-xs">Assign</button></td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;color:#2E6276;">#TKT-1040</td>
+        <td>2FA login failure — user locked out</td>
+        <td>MTN Nigeria</td>
+        <td><span class="badge badge-warning">High</span></td>
+        <td><span class="badge badge-purple">Pending Client</span></td>
+        <td><span class="badge badge-info">Gold</span></td>
+        <td>
+          <div style="font-size:10px;font-weight:700;color:#25925B;">8h left</div>
+          <div class="sla-bar"><div class="sla-fill ok" style="width:35%;"></div></div>
+        </td>
+        <td><div class="owner-cell"><div class="o-avatar" style="background:#a78bfa;">YK</div>Yemi K.</div></td>
+        <td style="color:#94a3b8;">Yesterday</td>
+        <td class="actions-cell"><button class="btn-xs">View</button></td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;color:#2E6276;">#TKT-1039</td>
+        <td>Inventory count sync delay — warehouse module</td>
+        <td>Dangote Group</td>
+        <td><span class="badge badge-info">Medium</span></td>
+        <td><span class="badge badge-warning">Open</span></td>
+        <td><span class="badge badge-info">Gold</span></td>
+        <td>
+          <div style="font-size:10px;font-weight:700;color:#25925B;">16h left</div>
+          <div class="sla-bar"><div class="sla-fill ok" style="width:20%;"></div></div>
+        </td>
+        <td><div class="owner-cell"><div class="o-avatar">JA</div>James A.</div></td>
+        <td style="color:#94a3b8;">2 days ago</td>
+        <td class="actions-cell"><button class="btn-xs">View</button></td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;color:#2E6276;">#TKT-1038</td>
+        <td>Report export date range filter bug</td>
+        <td>Access Bank</td>
+        <td><span class="badge badge-neutral">Low</span></td>
+        <td><span class="badge badge-warning">Open</span></td>
+        <td><span class="badge badge-neutral">Standard</span></td>
+        <td>
+          <div style="font-size:10px;font-weight:700;color:#25925B;">2d left</div>
+          <div class="sla-bar"><div class="sla-fill ok" style="width:10%;"></div></div>
+        </td>
+        <td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td>
+        <td style="color:#94a3b8;">3 days ago</td>
+        <td class="actions-cell"><button class="btn-xs">View</button></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="pagination-row"><span class="pag-info">Showing 1–5 of 5 open tickets</span><div class="pag-btns"><button class="page-btn active">1</button></div></div>
+</div>

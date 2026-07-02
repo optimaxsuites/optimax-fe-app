@@ -1,0 +1,161 @@
+.correction-requests-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h3 {
+      font-size: 2.0rem;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .add-btn {
+      width: 52px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--green-500);
+      color: white;
+      padding-bottom:42px;
+      font-size: 2.0rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+
+      &:hover {
+        background: var(--green-600);
+        transform: scale(1.05);
+      }
+    }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.2rem;
+
+    th, td {
+      padding: 0.75rem 0.4rem;
+      text-align: left;
+    }
+
+    th {
+      color: white;
+      font-size:1.5rem;
+      font-weight: 500;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    td {
+      color: var(--gray-900);
+      border-bottom: 1px solid var(--gray-100);
+
+      span {
+        display: block;
+      }
+    }
+  }
+
+  .status {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 1.2rem;
+    font-weight: 600;
+
+    &.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    &.pending_line_manager,
+    &.pending_hr,
+    &.pending-line_manager,
+    &.pending-hr {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    &.approved {
+      background: var(--green-100);
+      color: var(--green-600);
+    }
+
+    &.rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .approval-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .approval-step,
+  .locked-pill {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    width: fit-content;
+  }
+
+  .approval-step {
+    background: #f3f4f6;
+    color: #4b5563;
+
+    &.approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    &.rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .locked-pill {
+    background: #e5e7eb;
+    color: #374151;
+    margin-top: 0.35rem;
+  }
+
+  .locked-row {
+    background: #fafafa;
+  }
+
+  .rejection-reason {
+    color: #991b1b;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 0.35rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--gray-600);
+
+    span {
+      font-size: 1.85rem;
+      font-weight: 600;
+      display: block;
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin-top: 0.2rem;
+    }
+  }
+}

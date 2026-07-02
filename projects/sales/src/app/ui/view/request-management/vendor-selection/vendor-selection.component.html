@@ -1,0 +1,132 @@
+<!-- vendor-selection/vendor-selection.component.html -->
+
+<div class="vendor-selection">
+  <div class="vendor-header">
+    <div class="header-content">
+      <h2>Select Vendors</h2>
+      <p class="subtitle">AI recommends the best vendors based on your requirements</p>
+    </div>
+    <div class="form-progress">
+      <span class="step-badge">Step 4 of 5</span>
+    </div>
+  </div>
+
+  <div class="selection-info">
+    <div class="info-card">
+      <div class="info-icon">
+        <i class="fas fa-robot"></i>
+      </div>
+      <div class="info-content">
+        <h4>AI-Powered Recommendations</h4>
+        <p>Our AI has analyzed vendor capabilities against your requirements and ranked the best matches.</p>
+      </div>
+    </div>
+    <div class="selection-count">
+      <span class="count-badge">
+        {{ getSelectedCount() }} / {{ getMaxVendors() }} Selected
+      </span>
+      <span class="selection-hint">Select up to 3 vendors</span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Search vendors by name or category..."
+          class="search-input">
+      </div>
+    </div>
+    <div class="filter-group">
+      <select [(ngModel)]="filterCategory" class="filter-select">
+        <option value="">All Categories</option>
+        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="vendor-grid" *ngIf="!isLoading">
+    <div 
+      *ngFor="let vendor of getFilteredVendors()"
+      class="vendor-card"
+      [class.selected]="isVendorSelected(vendor.vendorId)"
+      [class.disabled]="getSelectedCount() >= getMaxVendors() && !isVendorSelected(vendor.vendorId)"
+      (click)="toggleVendor(vendor.vendorId)">
+      <div class="vendor-card-inner">
+        <div class="vendor-avatar">
+          <span class="avatar-text">{{ vendor.vendorName.charAt(0) }}</span>
+          <div class="match-badge" [style.background]="getMatchColor(vendor.matchScore)">
+            {{ vendor.matchScore }}%
+          </div>
+        </div>
+        
+        <div class="vendor-info">
+          <div class="vendor-name-row">
+            <h4 class="vendor-name">{{ vendor.vendorName }}</h4>
+            <div class="recommended-badge" *ngIf="vendor.isRecommended">
+              <i class="fas fa-star"></i> Recommended
+            </div>
+          </div>
+          <div class="vendor-code">{{ vendor.vendorCode }}</div>
+          
+          <div class="vendor-categories">
+            <span *ngFor="let category of vendor.categories" class="category-tag">
+              {{ category }}
+            </span>
+          </div>
+          
+          <div class="vendor-metrics">
+            <div class="metric">
+              <span class="metric-label">Rating</span>
+              <span class="metric-value">{{ vendor.rating }} ★</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Projects</span>
+              <span class="metric-value">{{ vendor.totalProjects }}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Completion</span>
+              <span class="metric-value">{{ vendor.completionRate }}%</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Response</span>
+              <span class="metric-value">{{ vendor.averageResponseTime }}d</span>
+            </div>
+          </div>
+          
+          <div class="vendor-reason" *ngIf="vendor.reason">
+            <i class="fas fa-info-circle"></i>
+            <span>{{ vendor.reason }}</span>
+          </div>
+        </div>
+        
+        <div class="vendor-select">
+          <div class="select-checkbox" [class.checked]="isVendorSelected(vendor.vendorId)">
+            <i class="fas fa-check" *ngIf="isVendorSelected(vendor.vendorId)"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Analyzing vendors...</p>
+  </div>
+
+  <div class="vendor-actions">
+    <button type="button" class="btn-secondary" (click)="onBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <button 
+      type="button" 
+      class="btn-primary" 
+      [disabled]="getSelectedCount() === 0"
+      (click)="onNext()">
+      Next: Preview Request <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
