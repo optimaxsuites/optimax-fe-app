@@ -4,25 +4,25 @@
   <div class="stat-grid">
     <div class="stat-card stat-blue">
       <div class="stat-label">Total Revenue</div>
-      <div class="stat-value revenue">&#8358;50.9M</div>
-      <div class="stat-trend up">&#9650; 18% vs May</div>
+      <div class="stat-value revenue">{{ formatNgn(totalRevenue) }}</div>
+      <div class="stat-trend neutral">From income accounts</div>
       <div class="stat-ghost">&#128200;</div>
     </div>
     <div class="stat-card stat-red">
       <div class="stat-label">Total Expenses</div>
-      <div class="stat-value expenses">&#8358;18.8M</div>
-      <div class="stat-trend down">&#9650; 5% vs May</div>
+      <div class="stat-value expenses">{{ formatNgn(totalExpenses) }}</div>
+      <div class="stat-trend neutral">From expense accounts</div>
       <div class="stat-ghost">&#128201;</div>
     </div>
     <div class="stat-card stat-green">
       <div class="stat-label">Net Profit</div>
-      <div class="stat-value profit">&#8358;19.9M</div>
-      <div class="stat-trend up">&#9650; 22% vs May</div>
+      <div class="stat-value profit">{{ formatNgn(netProfit) }}</div>
+      <div class="stat-trend neutral">Revenue minus expenses</div>
       <div class="stat-ghost">&#128185;</div>
     </div>
     <div class="stat-card stat-amber">
       <div class="stat-label">Pending Events</div>
-      <div class="stat-value pending">8</div>
+      <div class="stat-value pending">{{ loading ? '…' : pendingEvents }}</div>
       <div class="stat-trend neutral">Require approval</div>
       <div class="stat-ghost">&#9203;</div>
     </div>
@@ -122,48 +122,38 @@
 
   </div>
 
-  <!-- Recent Accounting Events -->
+  <!-- Recent Journal Entries -->
   <div class="fd-card">
     <div class="fd-card-header">
-      <span class="fd-card-title">Recent Accounting Events</span>
-      <button class="fd-btn fd-btn-outline fd-btn-sm">View All &rarr;</button>
+      <span class="fd-card-title">Recent Journal Entries</span>
+      <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="load()">↺ Refresh</button>
     </div>
-    <div class="fd-table-wrap">
+    <div *ngIf="loading" class="loading-row"><span>Loading…</span></div>
+    <div class="fd-table-wrap" *ngIf="!loading">
       <table class="fd-table">
         <thead>
           <tr>
             <th>Date</th>
-            <th>Reference</th>
-            <th>Event Definition</th>
-            <th>Counterparty</th>
-            <th>Amount</th>
+            <th>Entry #</th>
+            <th>Description</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>14 Jun 2026</td>
-            <td class="ref-cell">TXN-2026-041</td>
-            <td>Staff Salary Payment</td>
-            <td>Olawale Adeyemi</td>
-            <td class="amount-cell">&#8358;150,000</td>
-            <td><span class="fd-badge badge-amber">PENDING</span></td>
+          <tr *ngFor="let j of recentJournals">
+            <td>{{ formatDate(j.entryDate) }}</td>
+            <td class="ref-cell">{{ entryLabel(j) }}</td>
+            <td>{{ j.description || '—' }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-green': j.status === 'POSTED',
+                'badge-amber': j.status === 'DRAFT',
+                'badge-red':   j.status === 'REVERSED'
+              }">{{ j.status }}</span>
+            </td>
           </tr>
-          <tr>
-            <td>13 Jun 2026</td>
-            <td class="ref-cell">TXN-2026-040</td>
-            <td>Client Invoice Settlement</td>
-            <td>Dangote Group</td>
-            <td class="amount-cell">$5,200 USD</td>
-            <td><span class="fd-badge badge-green">COMPLETED</span></td>
-          </tr>
-          <tr>
-            <td>12 Jun 2026</td>
-            <td class="ref-cell">TXN-2026-039</td>
-            <td>Expense Reimbursement</td>
-            <td>Amaka Okonkwo</td>
-            <td class="amount-cell">&#8358;45,000</td>
-            <td><span class="fd-badge badge-red">REJECTED</span></td>
+          <tr *ngIf="recentJournals.length === 0">
+            <td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">No recent journals.</td>
           </tr>
         </tbody>
       </table>

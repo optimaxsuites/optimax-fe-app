@@ -343,3 +343,5 @@ $gray-900: #111827;
   &.badge-red    { background: #fee2e2; color: $red; }
   &.badge-amber  { background: #fef3c7; color: #92400e; }
 }
+
+.loading-row { display:flex; justify-content:center; align-items:center; padding:32px; color:#94a3b8; font-size:13px; }

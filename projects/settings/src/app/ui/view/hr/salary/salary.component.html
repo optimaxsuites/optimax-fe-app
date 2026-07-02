@@ -1,492 +1,298 @@
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 
-<div class="flex gap-4 items-center">
-    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+<div class="sp-shell">
+
+  <div class="sp-head">
+    <div class="sp-icon"><i class="fas fa-money-bill-wave"></i></div>
     <div>
-        <p class="text-customBlue/60">Human Resources</p>
-        <p class="text-customBlue font-semibold text-[17px]">Salary configuration</p>
+      <h3 class="sp-title">Salary Configuration</h3>
+      <p class="sp-sub">Define base salary, allowances, deductions, bonuses, and overtime per organisational level.</p>
     </div>
-</div>
-<hr>
+  </div>
 
-<div class="mb-4 mt-3 px-3 flex justify-between items-center ">
-  <p class="text-xl font-semibold text-customBlue"><span *ngIf="showAddForm"> {{ isEditMode ? "Update" : "New" }}</span> Salary Structures</p>
-  <button *ngIf="showAddForm"  class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">Cancel</button>
-</div>
+  <div class="sp-toolbar">
+    <p class="sp-section-label"><span *ngIf="showAddForm">{{ isEditMode ? 'Update' : 'New' }} </span>Salary Structures</p>
+    <button *ngIf="showAddForm" class="sp-btn-cancel" (click)="toogleForm()">
+      <i class="fas fa-times"></i> Cancel
+    </button>
+  </div>
 
-<mat-accordion *ngIf="showAddForm == false">
-  <mat-expansion-panel *ngFor="let level of levels, let i = index" #panel>
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <p class="text-gray-600 py-4 font-bold text-[14px]">{{ level.name }}</p>
-      </mat-panel-title>
-      <mat-panel-description *ngIf="getSalaryByLevelId(level.id) "  class="action-buttons">
-        <button (click)=" editSalary( level.id, i, $event)"   class="text-customGreen p-3 hover:bg-green-50 rounded-xl"><p-button
-          icon="fa-solid fa-pen-to-square"
-          class="p-button-text text-green-500 ml-auto rounded-md border-none"
-          pTooltip="Edit Structure"
-          tooltipPosition="top"
-        ></p-button><span class="mt-1" *ngIf="panel.expanded" >Edit</span></button>
-        <button (click)="confirmSalaryDelete(level.id, i, $event)"  class="text-red-500 p-3 hover:bg-red-50 rounded-xl flex items-center justify-center "><p-button
-          icon="fa-solid fa-trash"
-          class="p-button-text text-red-500 ml-auto rounded-md border-none"
-          pTooltip="Clear Structure"
-          tooltipPosition="top"
-        ></p-button><span class="mt-1" *ngIf="panel.expanded">Delete</span></button>
-      </mat-panel-description>
-      <mat-panel-description *ngIf="!getSalaryByLevelId(level.id) "  class="action-buttons">
-        <p-button
-              icon="pi pi-plus"
-              class="text-customBlue rounded-xl p-button-success ml-auto p-4"
-              pTooltip="Create structure"
-              tooltipPosition="top"
-              (click)="createNewStructure(level.id)"
-            ></p-button>
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-  
+  <mat-accordion *ngIf="!showAddForm">
+    <mat-expansion-panel *ngFor="let level of levels; let i = index" #panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>{{ level.name }}</mat-panel-title>
+        <mat-panel-description *ngIf="getSalaryByLevelId(level.id)" class="action-buttons">
+          <button class="act-btn-edit" (click)="editSalary(level.id, i, $event)">
+            <i class="fas fa-pen"></i><span *ngIf="panel.expanded">Edit</span>
+          </button>
+          <button class="act-btn-del" (click)="confirmSalaryDelete(level.id, i, $event)">
+            <i class="fas fa-trash"></i><span *ngIf="panel.expanded">Delete</span>
+          </button>
+        </mat-panel-description>
+        <mat-panel-description *ngIf="!getSalaryByLevelId(level.id)" class="action-buttons">
+          <button class="act-btn-add" (click)="createNewStructure(level.id)">
+            <i class="fas fa-plus"></i> Create Structure
+          </button>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
 
-    <div class="text-gray-600 flex flex-col gap-2" *ngIf="getSalaryByLevelId(level.id) as salary; else noSalary">
-      <p >
-        <strong>Base Salary:</strong> {{ salary.baseSalary | currency: 'NGN' }}
-      </p>
-    
-    <div>
-      <p *ngIf="salary?.allowance?.length"><strong>Allowances:</strong></p>
-      <ul *ngIf="salary?.allowance?.length">
-        <li *ngFor="let allowance of salary.allowance">
-          {{ getAllowanceName(allowance.allowanceTypeId) }}: {{ allowance.amount | currency: 'NGN' }}
-        </li>
-      </ul>
-    </div>
-     
-    <div>
-      <p *ngIf="salary?.deductions?.length"><strong>Deductions:</strong></p>
-      <ul *ngIf="salary?.deductions?.length">
-        <li *ngFor="let deduction of salary.deductions">
-          {{ getDeductionName(deduction.deductionsTypeId) }}: {{ deduction.amount | currency: 'NGN' }}
-        </li>
-      </ul>
-    </div>
-    
-    <div>
-      <p *ngIf="salary?.bonus?.length"><strong>Bonuses:</strong></p>
-      <ul *ngIf="salary?.bonus?.length">
-        <li *ngFor="let bonus of salary.bonus">
-          {{ getBonusName(bonus.bonusTypeId) }}: {{ bonus.amount | currency: 'NGN' }}
-        </li>
-      </ul>
-    </div>
-   
-    <div>
-      <p *ngIf="salary?.overtime?.length">
-        <strong>Overtime:</strong> 
-      </p>
-      <ul *ngIf="salary?.overtime?.length">
-        <li *ngFor="let ot of salary.overtime">
-          {{ getOvertimeName(ot.overtimeTypeId) }}: {{ ot.rate | currency: 'NGN' }}
-        </li>
-      </ul>
-    </div>
-    
-    </div>
-
-    <ng-template #noSalary>
-      <p class="text-gray-500">No salary details available for this level.</p>
-    </ng-template>
-  </mat-expansion-panel>
-</mat-accordion>
-  
-
-<div *ngIf="showAddForm">
-  <form [formGroup]="salaryForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
-    <!-- <h2 class="text-2xl font-bold mb-4">Add New Salary Structure</h2> -->
-  
-    <div class="mb-4">
-      <label for="level" class="block text-[14px] font-medium capitalize">Level</label>
-      <input [value]="getLevelName(salaryForm.get('level')?.value)" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" readonly/>
-
-      <!-- <input formControlName="level" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Level" /> -->
-      <!-- <div *ngIf="salaryForm.get('level').invalid && salaryForm.get('level').touched" class="text-red-500 text-[14px]">Level is required.</div> -->
-    </div>
-  
-    <div class="mb-4">
-      <label for="baseSalary" class="block text-[14px] font-medium">Base Salary</label>
-      <input formControlName="baseSalary" id="baseSalary" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Base Salary" />
-      <!-- <div *ngIf="salaryForm.get('baseSalary').invalid && salaryForm.get('baseSalary').touched" class="text-red-500 text-[14px]">Base Salary is required and must be a positive number.</div> -->
-    </div>
-  
-    <fieldset class="" [formGroup]="allowanceForm">
-      <legend class="text-[15px] font-medium">Allowances</legend>
-    
-      <fieldset class="mt-2">
-        <!-- <div class="flex justify-between items-center">
-          <legend class="text-[14px] font-medium">Custom Allowances</legend>
-        </div> -->
-
-     
-       <div *ngIf="allowances.length > 0"  class="mb-3">
-          <div *ngFor="let allowance of allowances; let i = index" class="pb-3">
-          <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-            <p class="text-[14px]">{{getAllowanceName(allowance.allowanceTypeId) }}</p>
-            <div class="flex gap-3 justify-center">
-            <p class="text-[14px]">{{allowance.amount | currency:'NGN' }}</p>
-
-              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeAllowance(i, allowance.id)"></i>
-            </div>
-          </div>
-            
-          </div>
+      <div class="text-gray-600 flex flex-col gap-2" *ngIf="getSalaryByLevelId(level.id) as salary; else noSalary">
+        <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency: 'NGN' }}</p>
+        <div>
+          <p *ngIf="salary?.allowance?.length"><strong>Allowances:</strong></p>
+          <ul *ngIf="salary?.allowance?.length">
+            <li *ngFor="let allowance of salary.allowance">{{ getAllowanceName(allowance.allowanceTypeId) }}: {{ allowance.amount | currency: 'NGN' }}</li>
+          </ul>
         </div>
+        <div>
+          <p *ngIf="salary?.deductions?.length"><strong>Deductions:</strong></p>
+          <ul *ngIf="salary?.deductions?.length">
+            <li *ngFor="let deduction of salary.deductions">{{ getDeductionName(deduction.deductionsTypeId) }}: {{ deduction.amount | currency: 'NGN' }}</li>
+          </ul>
+        </div>
+        <div>
+          <p *ngIf="salary?.bonus?.length"><strong>Bonuses:</strong></p>
+          <ul *ngIf="salary?.bonus?.length">
+            <li *ngFor="let bonus of salary.bonus">{{ getBonusName(bonus.bonusTypeId) }}: {{ bonus.amount | currency: 'NGN' }}</li>
+          </ul>
+        </div>
+        <div>
+          <p *ngIf="salary?.overtime?.length"><strong>Overtime:</strong></p>
+          <ul *ngIf="salary?.overtime?.length">
+            <li *ngFor="let ot of salary.overtime">{{ getOvertimeName(ot.overtimeTypeId) }}: {{ ot.rate | currency: 'NGN' }}</li>
+          </ul>
+        </div>
+      </div>
+      <ng-template #noSalary>
+        <p class="text-gray-500">No salary details available for this level.</p>
+      </ng-template>
+    </mat-expansion-panel>
+  </mat-accordion>
 
-        <div  class="grid grid-cols-1 gap-2 ">
-          <div class="flex justify-between w-full gap-10" >
-            <div class="w-1/2">
-              <label for="allowanceName"  class="block text-[14px] font-medium">Name</label>
-              <div class="flex items-center">
-                <ng-select 
-                [items]="availableAllowanceTypes"
-                bindLabel="name" 
-                bindValue="id" 
-                placeholder="Select Allowance" 
-                formControlName="type" 
-                id="allowanceName"
-                class="w-full mt-1 rounded-md">
-              </ng-select>
 
-              <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('allowance')">
-                New
-              </div>
-              </div>
-             
-              <div *ngIf="isAllowanceTouched && allowanceForm.get('type')?.invalid" class="text-red-500">
-                <small *ngIf="allowanceForm.get('type')?.errors?.['required']">Allowance name is required.</small>
+  <div *ngIf="showAddForm">
+    <form [formGroup]="salaryForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
+
+      <div class="mb-4">
+        <label for="level" class="block text-[14px] font-medium capitalize">Level</label>
+        <input [value]="getLevelName(salaryForm.get('level')?.value)" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" readonly/>
+      </div>
+
+      <div class="mb-4">
+        <label for="baseSalary" class="block text-[14px] font-medium">Base Salary</label>
+        <input formControlName="baseSalary" id="baseSalary" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Base Salary" />
+      </div>
+
+      <fieldset [formGroup]="allowanceForm">
+        <legend class="text-[15px] font-medium">Allowances</legend>
+        <fieldset class="mt-2">
+          <div *ngIf="allowances.length > 0" class="mb-3">
+            <div *ngFor="let allowance of allowances; let i = index" class="pb-3">
+              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
+                <p class="text-[14px]">{{ getAllowanceName(allowance.allowanceTypeId) }}</p>
+                <div class="flex gap-3 justify-center">
+                  <p class="text-[14px]">{{ allowance.amount | currency:'NGN' }}</p>
+                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeAllowance(i, allowance.id)"></i>
+                </div>
               </div>
             </div>
-    
-            <div class="w-1/2">
-              <label class="block text-[14px] font-medium" id="allowanceAccount">Amount</label>
-              <input 
-                formControlName="amount" 
-                (keydown.enter)="addAllowanceToTotal($event)"
-                id="allowanceAccount"
-                class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" 
-                type="number" 
-                placeholder="Allowance Amount" />
-                <div *ngIf="isAllowanceTouched && allowanceForm.get('amount')?.invalid " class="text-red-500">
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <div class="flex justify-between w-full gap-10">
+              <div class="w-1/2">
+                <label for="allowanceName" class="block text-[14px] font-medium">Name</label>
+                <div class="flex items-center">
+                  <ng-select [items]="availableAllowanceTypes" bindLabel="name" bindValue="id" placeholder="Select Allowance" formControlName="type" id="allowanceName" class="w-full mt-1 rounded-md"></ng-select>
+                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('allowance')">New</div>
+                </div>
+                <div *ngIf="isAllowanceTouched && allowanceForm.get('type')?.invalid" class="text-red-500">
+                  <small *ngIf="allowanceForm.get('type')?.errors?.['required']">Allowance name is required.</small>
+                </div>
+              </div>
+              <div class="w-1/2">
+                <label class="block text-[14px] font-medium" id="allowanceAccount">Amount</label>
+                <input formControlName="amount" (keydown.enter)="addAllowanceToTotal($event)" id="allowanceAccount" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Allowance Amount" />
+                <div *ngIf="isAllowanceTouched && allowanceForm.get('amount')?.invalid" class="text-red-500">
                   <small *ngIf="allowanceForm.get('amount')?.errors?.['required']">Allowance amount is required.</small>
                   <small *ngIf="allowanceForm.get('amount')?.errors?.['min']">Amount must be greater than 0.</small>
                 </div>
+              </div>
+            </div>
+            <div class="flex justify-between">
+              <button></button>
+              <button type="button" (click)="addAllowanceToTotal($event)" class="text-customGreen text-[12px]">+add</button>
             </div>
           </div>
-    
-          <div class="flex justify-between">
-            <button >
-            </button>
-            <button type="button" (click)="addAllowanceToTotal($event)" class="text-customGreen text-[12px]">
-              +add
-            </button>
-          </div>
-        </div>
+        </fieldset>
       </fieldset>
-    </fieldset>
-  
-    <fieldset class=""  [formGroup]="deductionForm">
-      <legend class="text-[14px] font-medium">Deductions</legend>
-      <!-- <div class="mt-3 grid grid-cols-1 gap-2 px-2" > 
-        <div>
-          <label for="tax" class="block text-[14px] font-medium">Tax</label>
-          <input formControlName="tax" id="tax" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Tax Amount" />
-        </div>
-  
-        <div>
-          <label for="pension" class="block text-[14px] font-medium">Pension</label>
-          <input formControlName="pension" id="pension" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Pension Amount" />
-        </div>
-      </div> -->
 
-      <fieldset class="mt-2">
-        <div *ngIf="deductions.length > 0"  class="mb-3">
-          <div *ngFor="let deduction of deductions; let i = index" class="pb-3">
-          <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-            <p class="text-[14px]">{{getDeductionName(deduction.deductionsTypeId) }}</p>
-            <div class="flex gap-3 justify-center">
-            <p class="text-[14px]">{{deduction.amount | currency:'NGN' }}</p>
-
-              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeDeduction(i, deduction.deductionsTypeId)"></i>
-            </div>
-          </div>
-            
-          </div>
-        </div>
-
-        <div  class="grid grid-cols-1 gap-2 ">
-          <div class="flex justify-between w-full gap-10" >
-            <div class="w-1/2">
-              <label for="deductionName"  class="block text-[14px] font-medium">Deduction Name</label>
-              <div class="flex items-center">
-                <ng-select 
-                [items]="availableDeductionTypes"
-                bindLabel="name" 
-                bindValue="id" 
-                placeholder="Select Deduction"
-                formControlName="type" 
-                id="deducionName"
-                class="w-full mt-1 rounded-md">
-              </ng-select>
-
-              <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('deduction')">
-                New
-              </div>
-              </div>
-             
-              <div *ngIf="isDeductionTouched && deductionForm.get('type')?.invalid" class="text-red-500">
-                <small *ngIf="deductionForm.get('type')?.errors?.['required']">Deduction name is required.</small>
+      <fieldset [formGroup]="deductionForm">
+        <legend class="text-[14px] font-medium">Deductions</legend>
+        <fieldset class="mt-2">
+          <div *ngIf="deductions.length > 0" class="mb-3">
+            <div *ngFor="let deduction of deductions; let i = index" class="pb-3">
+              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
+                <p class="text-[14px]">{{ getDeductionName(deduction.deductionsTypeId) }}</p>
+                <div class="flex gap-3 justify-center">
+                  <p class="text-[14px]">{{ deduction.amount | currency:'NGN' }}</p>
+                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeDeduction(i, deduction.deductionsTypeId)"></i>
+                </div>
               </div>
             </div>
-    
-            <div class="w-1/2">
-              <label class="block text-[14px] font-medium" for="deductionAmount">Deduction Amount</label>
-              <input 
-                formControlName="amount" 
-                id="deductionAmount"
-                (keydown.enter)="addDeductionToTotal($event)"
-                class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" 
-                type="number" 
-                placeholder="Deduction Amount" />
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <div class="flex justify-between w-full gap-10">
+              <div class="w-1/2">
+                <label for="deductionName" class="block text-[14px] font-medium">Deduction Name</label>
+                <div class="flex items-center">
+                  <ng-select [items]="availableDeductionTypes" bindLabel="name" bindValue="id" placeholder="Select Deduction" formControlName="type" id="deducionName" class="w-full mt-1 rounded-md"></ng-select>
+                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('deduction')">New</div>
+                </div>
+                <div *ngIf="isDeductionTouched && deductionForm.get('type')?.invalid" class="text-red-500">
+                  <small *ngIf="deductionForm.get('type')?.errors?.['required']">Deduction name is required.</small>
+                </div>
+              </div>
+              <div class="w-1/2">
+                <label class="block text-[14px] font-medium" for="deductionAmount">Deduction Amount</label>
+                <input formControlName="amount" id="deductionAmount" (keydown.enter)="addDeductionToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Deduction Amount" />
                 <div *ngIf="isDeductionTouched && deductionForm.get('amount')?.invalid" class="text-red-500">
                   <small *ngIf="deductionForm.get('amount')?.errors?.['required']">Allowance amount is required.</small>
                   <small *ngIf="deductionForm.get('amount')?.errors?.['min']">Amount must be greater than 0.</small>
                 </div>
+              </div>
+            </div>
+            <div class="flex justify-between">
+              <button></button>
+              <button type="button" (click)="addDeductionToTotal($event)" class="text-customGreen text-[12px]">+add</button>
             </div>
           </div>
-    
-          <div class="flex justify-between">
-            <button >
-            </button>
-            <button type="button" (click)="addDeductionToTotal($event)" class="text-customGreen text-[12px]">
-              +add
-            </button>
-          </div>
-        </div>
-  
+        </fieldset>
       </fieldset>
-    </fieldset>
-   
-  
-    <fieldset class=""  [formGroup]="bonusForm">
-      <legend class="text-[15px] font-medium">Bonuses</legend>
-      <!-- <div class="mt-3 px-2">
-        <label for="internshipCompletionBonus" class="block text-[14px] font-medium">Internship Completion Bonus</label>
-        <input formControlName="internshipCompletionBonus" id="internshipCompletionBonus" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Completion Bonus" />
-      </div> -->
-      <fieldset class="mt-2">
-        <div *ngIf="bonuses.length > 0"  class="mb-3">
-          <div *ngFor="let bonus of bonuses; let i = index" class="pb-3">
-          <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-            <p class="text-[14px]">{{getBonusName(bonus.bonusTypeId) }}</p>
-            <div class="flex gap-3 justify-center">
-            <p class="text-[14px]">{{bonus.amount | currency:'NGN' }}</p>
 
-              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeBonus(i, bonus.bonusTypeId)"></i>
-            </div>
-          </div>
-            
-          </div>
-        </div>
-
-        <div  class="grid grid-cols-1 gap-2 ">
-          <div class="flex justify-between w-full gap-10" >
-            <div class="w-1/2">
-              <label for="bonusName"  class="block text-[14px] font-medium">Bonus Name</label>
-              <div class="flex items-center">
-                <ng-select 
-                [items]="availableBonusesTypes"
-                bindLabel="name" 
-                bindValue="id" 
-                placeholder="Select Bonus"
-                id="bonusName"
-                formControlName="type" 
-                class="w-full mt-1 rounded-md">
-              </ng-select>
-
-              <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('bonus')">
-                New
-              </div>
-              </div>
-             
-              <div *ngIf="isBonusTouched && bonusForm.get('type')?.invalid" class="text-red-500">
-                <small *ngIf="bonusForm.get('type')?.errors?.['required']">Bonus name is required.</small>
+      <fieldset [formGroup]="bonusForm">
+        <legend class="text-[15px] font-medium">Bonuses</legend>
+        <fieldset class="mt-2">
+          <div *ngIf="bonuses.length > 0" class="mb-3">
+            <div *ngFor="let bonus of bonuses; let i = index" class="pb-3">
+              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
+                <p class="text-[14px]">{{ getBonusName(bonus.bonusTypeId) }}</p>
+                <div class="flex gap-3 justify-center">
+                  <p class="text-[14px]">{{ bonus.amount | currency:'NGN' }}</p>
+                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeBonus(i, bonus.bonusTypeId)"></i>
+                </div>
               </div>
             </div>
-    
-            <div class="w-1/2">
-              <label for="bonusAmount"  class="block text-[14px] font-medium">Bonus Amount</label>
-              <input 
-                formControlName="amount" 
-                id="bonusAmount"
-                (keydown.enter)="addBonusToTotal($event)"
-                class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" 
-                type="number" 
-                placeholder="Bonus Amount" />
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <div class="flex justify-between w-full gap-10">
+              <div class="w-1/2">
+                <label for="bonusName" class="block text-[14px] font-medium">Bonus Name</label>
+                <div class="flex items-center">
+                  <ng-select [items]="availableBonusesTypes" bindLabel="name" bindValue="id" placeholder="Select Bonus" id="bonusName" formControlName="type" class="w-full mt-1 rounded-md"></ng-select>
+                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('bonus')">New</div>
+                </div>
+                <div *ngIf="isBonusTouched && bonusForm.get('type')?.invalid" class="text-red-500">
+                  <small *ngIf="bonusForm.get('type')?.errors?.['required']">Bonus name is required.</small>
+                </div>
+              </div>
+              <div class="w-1/2">
+                <label for="bonusAmount" class="block text-[14px] font-medium">Bonus Amount</label>
+                <input formControlName="amount" id="bonusAmount" (keydown.enter)="addBonusToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Bonus Amount" />
                 <div *ngIf="isBonusTouched && bonusForm.get('amount')?.invalid" class="text-red-500">
                   <small *ngIf="bonusForm.get('amount')?.errors?.['required']">Bonus amount is required.</small>
                   <small *ngIf="bonusForm.get('amount')?.errors?.['min']">Bonus must be greater than 0.</small>
                 </div>
+              </div>
+            </div>
+            <div class="flex justify-between">
+              <button></button>
+              <button type="button" (click)="addBonusToTotal($event)" class="text-customGreen text-[12px]">+add</button>
             </div>
           </div>
-    
-          <div class="flex justify-between">
-            <button >
-            </button>
-            <button type="button" (click)="addBonusToTotal($event)" class="text-customGreen text-[12px]">
-              +add
-            </button>
-          </div>
-        </div>
-  
+        </fieldset>
       </fieldset>
-    </fieldset>
-   
-  
-    <fieldset class="mb-4"  [formGroup]="overtimeForm"> 
-      <legend class="text-[15px] font-medium">Overtime</legend>
-      <fieldset class="mt-2">
-        <div *ngIf="overtImes.length > 0"  class="mb-3">
-          <div *ngFor="let overtime of overtImes; let i = index" class="pb-3">
-          <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-            <p class="text-[14px]">{{getOvertimeName(overtime.overtimeTypeId) }}</p>
-            <p class="text-[14px]">{{overtime.rate | currency:'NGN' }}</p>
 
-            <div class="flex gap-3 justify-center">
-              <p class="text-[14px]">Max {{overtime.maxHours}} hour(s)</p>
-              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeOvertime(i, overtime.overtimeTypeId)"></i>
-            </div>
-          </div>
-            
-          </div>
-        </div>
-
-        <div  class="grid grid-cols-1 gap-2 ">
-          <div class="flex justify-between w-full gap-6" >
-            <div class="w-1/2">
-              <label for="overtimeName"  class="block text-[14px] font-medium">Overtime Name</label>
-              <div class="flex items-center">
-                <ng-select 
-                [items]="availableOverTimeTypes"
-                bindLabel="name" 
-                bindValue="id" 
-                placeholder="Select overtime"
-                id="overtimeName"
-                formControlName="type" 
-                class="w-full mt-1 rounded-md">
-              </ng-select>
-
-              <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('overtime')">
-                New
-              </div>
-              </div>
-             
-              <div *ngIf="isBonusTouched && overtimeForm.get('overtime.type')?.invalid" class="text-red-500">
-                <small *ngIf="overtimeForm.get('overtime.type')?.errors?.['required']">Overtime name is required.</small>
-              </div>
-            </div>
-    
-            <div class="w-1/2">
-              <label for="overtimeAmount"  class="block text-[14px] font-medium">Overtime Amount</label>
-              <input 
-                formControlName="amount" 
-                id="overtimeAmount"
-                class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" 
-                type="number" 
-                placeholder="Overtime Amount" />
-                <div *ngIf="isBonusTouched && overtimeForm.get('overtime.amount')?.invalid" class="text-red-500">
-                  <small *ngIf="overtimeForm.get('overtime.amount')?.errors?.['required']">Overtime amount is required.</small>
-                  <small *ngIf="overtimeForm.get('overtime.amount')?.errors?.['min']">Overtime must be greater than 0.</small>
+      <fieldset class="mb-4" [formGroup]="overtimeForm">
+        <legend class="text-[15px] font-medium">Overtime</legend>
+        <fieldset class="mt-2">
+          <div *ngIf="overtImes.length > 0" class="mb-3">
+            <div *ngFor="let overtime of overtImes; let i = index" class="pb-3">
+              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
+                <p class="text-[14px]">{{ getOvertimeName(overtime.overtimeTypeId) }}</p>
+                <p class="text-[14px]">{{ overtime.rate | currency:'NGN' }}</p>
+                <div class="flex gap-3 justify-center">
+                  <p class="text-[14px]">Max {{ overtime.maxHours }} hour(s)</p>
+                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeOvertime(i, overtime.overtimeTypeId)"></i>
                 </div>
+              </div>
             </div>
-
-            <div class="w-1/2">
-              <label for="maxHour"  class="block text-[14px] font-medium">Overtime Maximum Hour</label>
-              <input 
-                formControlName="maxHour" 
-                id="maxHour"
-                (keydown.enter)="addOverTimeToTotal($event)"
-                class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" 
-                type="number" 
-                placeholder="Overtime Max Hour" />
-                <div *ngIf="isBonusTouched && overtimeForm.get('overtime.amount')?.invalid" class="text-red-500">
-                  <small *ngIf="overtimeForm.get('overtime.amount')?.errors?.['required']">Overtime hour is required.</small>
-                  <small *ngIf="overtimeForm.get('overtime.amount')?.errors?.['min']">Hour must be greater than 0.</small>
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <div class="flex justify-between w-full gap-6">
+              <div class="w-1/2">
+                <label for="overtimeName" class="block text-[14px] font-medium">Overtime Name</label>
+                <div class="flex items-center">
+                  <ng-select [items]="availableOverTimeTypes" bindLabel="name" bindValue="id" placeholder="Select overtime" id="overtimeName" formControlName="type" class="w-full mt-1 rounded-md"></ng-select>
+                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('overtime')">New</div>
                 </div>
+              </div>
+              <div class="w-1/2">
+                <label for="overtimeAmount" class="block text-[14px] font-medium">Overtime Amount</label>
+                <input formControlName="amount" id="overtimeAmount" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Overtime Amount" />
+              </div>
+              <div class="w-1/2">
+                <label for="maxHour" class="block text-[14px] font-medium">Max Hours</label>
+                <input formControlName="maxHour" id="maxHour" (keydown.enter)="addOverTimeToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Max Hours" />
+              </div>
+            </div>
+            <div class="flex justify-between">
+              <button></button>
+              <button type="button" (click)="addOverTimeToTotal($event)" class="text-customGreen text-[12px]">+add</button>
             </div>
           </div>
-    
-          <div class="flex justify-between">
-            <button >
-            </button>
-            <button type="button" (click)="addOverTimeToTotal($event)" class="text-customGreen text-[12px]">
-              +add
-            </button>
-          </div>
-        </div>
-  
+        </fieldset>
       </fieldset>
-    </fieldset>
-  
-    <div class="text-right">
-      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="salaryForm.invalid">Submit</button>
+
+      <div class="text-right">
+        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="salaryForm.invalid">Submit</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+
+<!-- New type modal (unchanged) -->
+<div class="w-[75vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center"
+     *ngIf="openTypeForm" (click)="openNewTypeForm('')">
+  <div class="bg-white w-1/2 text-customBlue p-4 rounded shadow-md" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center px-2">
+      <p class="capitalize text-[18px]">Create new {{ typeForm }} type</p>
+      <p class="text-[22px] font-bold cursor-pointer" (click)="openNewTypeForm('')">x</p>
     </div>
-  </form>
+    <form [formGroup]="newTypeForm" class="p-3 flex gap-1 flex-col" (ngSubmit)="addNewType(typeForm, $event)">
+      <div class="mb-2">
+        <label for="name" class="block text-[14px] font-medium capitalize">Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input formControlName="name" id="name" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Name" />
+        <div *ngIf="newTypeForm.get('name')?.invalid && newTypeForm.get('name')?.touched" class="text-red-500 text-[14px]">Name is required.</div>
+      </div>
+      <div class="mb-2" *ngIf="typeForm === 'allowance'">
+        <label for="code" class="block text-[14px] font-medium capitalize">Code</label>
+        <input formControlName="code" id="code" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Code" />
+      </div>
+      <div class="mb-2">
+        <label for="description" class="block text-[14px] font-medium">Description</label>
+        <textarea formControlName="description" id="Description" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" placeholder="Enter Description"></textarea>
+      </div>
+      <div class="mb-2 flex gap-2 items-center" *ngIf="typeForm === 'deduction'">
+        <input formControlName="isTax" id="isTax" class="form-input p-2 border border-gray-300 rounded-md" type="checkbox" />
+        <label for="isTax" class="block text-[14px] font-medium">Tax</label>
+      </div>
+      <div class="text-right">
+        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="newTypeForm.invalid">Submit</button>
+      </div>
+    </form>
+  </div>
 </div>
-
-
-<div 
-class="w-[75vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center" 
-*ngIf="openTypeForm" 
-(click)="openNewTypeForm('')">
-
-<div 
-  class="bg-white w-1/2 text-customBlue p-4 rounded shadow-md" 
-  (click)="$event.stopPropagation()">
-
-<div class="flex justify-between items-center px-2">
-  <p class="capitalize text-[18px]">Create new {{typeForm}} type</p>
-<p class="text-[22px] font-bold cursor-pointer" (click)="openNewTypeForm('')">x</p>
-</div>
-
-<form [formGroup]="newTypeForm" class="p-3 flex gap-1 flex-col" (ngSubmit)="addNewType(typeForm, $event)">
-  <div class="mb-2">
-    <label for="name" class="block text-[14px] font-medium capitalize">Name <span class="ml-1 font-bold text-red-600">*</span></label>
-    <input formControlName="name" id="name" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Name" />
-    <div *ngIf="newTypeForm.get('name')?.invalid && newTypeForm.get('name')?.touched" class="text-red-500 text-[14px]">Name is required.</div>
-  </div>
-
-  <div class="mb-2" *ngIf="typeForm === 'allowance'">
-    <label for="code" class="block text-[14px] font-medium capitalize">Code</label>
-    <input formControlName="code" id="code" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Code" />
-  </div>
-
-  <div class="mb-2">
-    <label for="description" class="block text-[14px] font-medium">Description</label>
-    <textarea formControlName="description" id="Description" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"  placeholder="Enter Description" ></textarea>
-  </div>
-
-  <div class="mb-2 flex gap-2 items-center" *ngIf="typeForm === 'deduction'">
-    <input formControlName="isTax" id="isTax" class="form-input p-2 border border-gray-300 rounded-md" type="checkbox" placeholder="Enter Description" />
-    <label for="isTax" class="block text-[14px] font-medium">Tax </label>
-  </div>
-
-  
-
-  <div class="text-right">
-    <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="newTypeForm.invalid">Submit</button>
-  </div>
-</form>
-</div>
-</div>
-
-
 
 <p-toast position="top-right" key="tl" />
-  

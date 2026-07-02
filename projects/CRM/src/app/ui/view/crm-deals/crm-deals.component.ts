@@ -6,7 +6,6 @@ import { MatPaginator } from '@angular/material/paginator';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
 import { Deal, Pipeline } from '../../domain/crm.model';
-import { SAMPLE_DEALS, SAMPLE_PIPELINES } from '../../service/crm-sample-data';
 
 @Component({
   selector: 'app-crm-deals',
@@ -64,7 +63,6 @@ export class CrmDealsComponent implements OnInit {
   }
 
   loadPipelines() {
-    this.pipelines = SAMPLE_PIPELINES;
     this.api.getPipelines().subscribe({
       next: (data) => { if (data?.length) this.pipelines = data; },
       error: () => {},
@@ -72,33 +70,24 @@ export class CrmDealsComponent implements OnInit {
   }
 
   load() {
-    let filtered = SAMPLE_DEALS;
-    if (this.selectedStatus) {
-      filtered = SAMPLE_DEALS.filter((d) => d.status === this.selectedStatus);
-    }
-    this.dataSource.data = filtered;
+    this.loading$.next(true);
     this.dataSource.filterPredicate = (row, f) => {
       const q = f.toLowerCase();
       return (
-        row.title?.toLowerCase().includes(q) ||
+        (row.title?.toLowerCase().includes(q) ||
         row.contactName?.toLowerCase().includes(q) ||
-        row.stageName?.toLowerCase().includes(q) ||
-        false
+        row.stageName?.toLowerCase().includes(q)) ?? false
       );
     };
-    this.loading$.next(false);
-    setTimeout(() => (this.dataSource.paginator = this.paginator));
-
     this.api.getDeals(1, 200).subscribe({
       next: (data) => {
-        if (data?.length) {
-          let apiFiltered = data;
-          if (this.selectedStatus) apiFiltered = data.filter((d) => d.status === this.selectedStatus);
-          this.dataSource.data = apiFiltered;
-          setTimeout(() => (this.dataSource.paginator = this.paginator));
-        }
+        let list = data || [];
+        if (this.selectedStatus) list = list.filter((d) => d.status === this.selectedStatus);
+        this.dataSource.data = list;
+        this.loading$.next(false);
+        setTimeout(() => (this.dataSource.paginator = this.paginator));
       },
-      error: () => {},
+      error: () => this.loading$.next(false),
     });
   }
 

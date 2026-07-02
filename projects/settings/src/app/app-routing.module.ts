@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { SettingsPageComponent } from './ui/view/settings-page.component';
+import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.component';
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.component';
 import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
@@ -17,6 +18,7 @@ const routes: Routes = [
     component: SettingsPageComponent,
     children: [
       // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
+      { path: 'settings-home/:uuid', component: SettingsHomeComponent },
       {
         path: 'general-settings/:uuid',
         component: GeneralSettingsComponent,

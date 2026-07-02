@@ -1,49 +1,78 @@
-      <div class="panel-header">
-        <div><h1 class="panel-title">Activities</h1><p class="panel-subtitle">Log calls, emails, WhatsApp, meetings, SMS, and tasks · track every touchpoint</p></div>
-        <div class="panel-actions">
-          <button class="btn-secondary">📅 Calendar View</button>
-          <button class="btn-primary">+ Log Activity</button>
+<div class="panel-header">
+  <div>
+    <h1 class="panel-title">Activities</h1>
+    <p class="panel-subtitle">Log calls, emails, WhatsApp, meetings, SMS, and tasks · track every touchpoint</p>
+  </div>
+  <div class="panel-actions">
+    <button class="btn-secondary">📅 Calendar View</button>
+    <button class="btn-primary" (click)="openForm()">+ Log Activity</button>
+  </div>
+</div>
+
+<div class="filter-bar" style="margin-bottom:.75rem;">
+  <select class="filter-select" [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
+    <option value="">All Types</option>
+    <option *ngFor="let t of typeOptions" [value]="t">{{ icon(t) }} {{ t }}</option>
+  </select>
+</div>
+
+<div *ngIf="loading$ | async" style="text-align:center;padding:2rem;color:#94a3b8;">Loading activities…</div>
+
+<div *ngIf="!(loading$ | async)">
+  <div class="section-title">Activity Feed ({{ filtered.length }})</div>
+  <div class="timeline">
+    <div class="tl-item" *ngFor="let a of filtered" [class.overdue]="isOverdue(a)">
+      <div [class]="dotClass(a.activityType)">{{ icon(a.activityType) }}</div>
+      <div style="flex:1;">
+        <div class="tl-main">
+          <strong>{{ a.subject }}</strong>
+          <span *ngIf="a.contactName"> · {{ a.contactName }}</span>
+          <span style="color:#94a3b8;margin-left:.5rem;">{{ timeAgo(a.dueDate || a.createdAt) }}</span>
+          <span class="badge badge-success" style="font-size:9px;margin-left:.5rem;" *ngIf="a.status === 'COMPLETED'">✓ Done</span>
+          <span class="badge badge-danger" style="font-size:9px;margin-left:.5rem;" *ngIf="isOverdue(a)">Overdue</span>
         </div>
+        <div class="tl-sub" *ngIf="a.description || a.outcome">{{ a.description || a.outcome }}</div>
+        <div class="tl-sub" *ngIf="a.dealName" style="color:#2E6276;">Deal: {{ a.dealName }}</div>
       </div>
-      <div style="background:linear-gradient(135deg,#fce7f3,#fdf2f8);border:1px solid #f9a8d4;border-radius:.75rem;padding:.875rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;">
-        <span style="font-size:21px;">📧</span>
-        <div style="flex:1;"><div style="font-size:12px;font-weight:700;color:#be185d;">Email Tracking Active</div><div style="font-size:10px;color:#9d174d;margin-top:.15rem;">Amina Bello opened your GTBank proposal email 3 times today (last: 2:14 PM) — she's reviewing it now. Good time to follow up!</div></div>
-        <button class="btn-xs" style="background:#fce7f3;border-color:#f9a8d4;color:#be185d;">Follow Up Now</button>
+      <div style="display:flex;gap:.5rem;flex-shrink:0;">
+        <button class="btn-xs" *ngIf="a.status !== 'COMPLETED'" (click)="complete(a)">Log</button>
+        <button class="btn-xs" style="color:#dc2626;border-color:#fecaca;" (click)="delete(a)">✕</button>
       </div>
-      <div style="display:flex;gap:1rem;">
-        <div style="flex:1;max-width:360px;">
-          <div class="section-title">Today — 14 Tasks</div>
-          <div class="task-item overdue"><input type="checkbox"><div><div class="task-name">Follow-up call — Emeka Okafor (Dangote)</div><div class="task-meta"><span class="badge badge-danger" style="font-size:9px;">Overdue 2d</span>· James A.</div></div><button class="btn-xs">Log</button></div>
-          <div class="task-item overdue"><input type="checkbox"><div><div class="task-name">Send pricing to First Bank (3yr contract)</div><div class="task-meta"><span class="badge badge-danger" style="font-size:9px;">Overdue 1d</span>· Sarah O.</div></div><button class="btn-xs">Log</button></div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">Product demo — MTN Nigeria (Zoom)</div><div class="task-meta"><span class="badge badge-info" style="font-size:9px;">2:00 PM</span>· Yemi K.</div></div><button class="btn-xs">Log</button></div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">WhatsApp follow-up — Amina Bello (GTBank)</div><div class="task-meta"><span class="badge badge-info" style="font-size:9px;">4:00 PM</span>· You</div></div><button class="btn-xs">Log</button></div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">Send onboarding guide — Zenith Insurance</div><div class="task-meta"><span class="badge badge-neutral" style="font-size:9px;">EOD</span>· You</div></div><button class="btn-xs">Log</button></div>
-          <div class="section-title" style="margin-top:1.25rem;">Upcoming — Next 7 Days</div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">Quarterly review — Access Bank</div><div class="task-meta"><span class="badge badge-neutral" style="font-size:9px;">Thu Jun 26 · 10 AM</span></div></div></div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">Negotiation call — First Bank contract</div><div class="task-meta"><span class="badge badge-neutral" style="font-size:9px;">Fri Jun 27 · 11 AM</span></div></div></div>
-          <div class="task-item"><input type="checkbox"><div><div class="task-name">Send SMS blast (Campaign #4)</div><div class="task-meta"><span class="badge badge-neutral" style="font-size:9px;">Sat Jun 28 · Auto</span></div></div></div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.625rem;padding:.875rem;margin-top:1rem;">
-            <div style="font-size:11px;font-weight:700;color:#166534;margin-bottom:.5rem;">📅 Meeting Scheduler</div>
-            <div style="font-size:10px;color:#166534;margin-bottom:.625rem;">Share your Calendly link for one-click booking</div>
-            <button class="btn-xs green" style="width:100%;">Copy Booking Link</button>
-          </div>
-        </div>
-        <div style="flex:1.4;">
-          <div class="filter-bar" style="margin-bottom:.75rem;">
-            <select class="filter-select"><option>All Types</option><option>📞 Calls</option><option>✉ Emails</option><option>💬 WhatsApp</option><option>📅 Meetings</option><option>💼 Deals</option><option>📄 Notes</option></select>
-            <select class="filter-select"><option>All Owners</option><option>Me</option><option>Sarah O.</option><option>James A.</option><option>Yemi K.</option></select>
-            <input type="date" class="filter-select" value="2026-06-23">
-          </div>
-          <div class="section-title">Activity Feed</div>
-          <div class="timeline">
-            <div class="tl-item"><div class="tl-dot call">📞</div><div><div class="tl-main"><strong>Call logged</strong> · Emeka Okafor (Dangote) · <span style="color:#94a3b8;">18 min ago</span></div><div class="tl-sub">Duration: 12 min · Outcome: Positive — interested in 2-yr contract. Wants pricing by EOW. Next: Send pricing sheet by Friday.</div></div></div>
-            <div class="tl-item"><div class="tl-dot deal">💼</div><div><div class="tl-main"><strong>Deal moved</strong> · Dangote Group → Negotiation · <span style="color:#94a3b8;">1 hr ago</span></div><div class="tl-sub">By: James A. · Value: ₦12.5M · Stage change triggered auto-task: "Prepare contract draft within 48hrs"</div></div></div>
-            <div class="tl-item"><div class="tl-dot email">📧</div><div><div class="tl-main"><strong>Email opened</strong> · Amina Bello opened proposal email · <span style="color:#94a3b8;">2 hr ago</span> <span class="badge badge-purple" style="font-size:9px;">3rd open today</span></div><div class="tl-sub">Subject: OptimaX Enterprise Proposal v2 · PDF attachment viewed for 4 min</div></div></div>
-            <div class="tl-item"><div class="tl-dot whatsapp">💬</div><div><div class="tl-main"><strong>WhatsApp reply received</strong> · Amina Bello (GTBank) · <span style="color:#94a3b8;">2 hr ago</span></div><div class="tl-sub">"Thanks for the proposal. Will confirm by EOD today" — Campaign drip sequence paused, sales notified</div></div></div>
-            <div class="tl-item"><div class="tl-dot meeting">📅</div><div><div class="tl-main"><strong>Meeting completed</strong> · Access Bank (Chidi Ike) · <span style="color:#94a3b8;">Yesterday 3 PM</span></div><div class="tl-sub">Duration: 45 min · Demo of Inventory + HR modules · Call recording saved · Next: Send proposal by Thursday</div></div></div>
-            <div class="tl-item"><div class="tl-dot deal">💼</div><div><div class="tl-main"><strong>Deal WON 🎉</strong> · Zenith Insurance ₦4.8M · <span style="color:#94a3b8;">Jun 20</span></div><div class="tl-sub">Closed by: Sarah O. · Onboarding date: July 5 · Commission: ₦240K</div></div></div>
-            <div class="tl-item"><div class="tl-dot task">✅</div><div><div class="tl-main"><strong>Task completed</strong> · Send Q2 report to MD · <span style="color:#94a3b8;">Jun 21</span></div><div class="tl-sub">By: Sarah O. · Report attached to Zenith Insurance account</div></div></div>
-            <div class="tl-item"><div class="tl-dot sms">💬</div><div><div class="tl-main"><strong>SMS sent</strong> · Bulk SMS to 45 contacts · <span style="color:#94a3b8;">Jun 19</span></div><div class="tl-sub">Campaign: "June Promo Alert" · Delivered: 44/45 · Click rate: 12%</div></div></div>
-          </div>
-        </div>
-      </div>
+    </div>
+
+    <div *ngIf="filtered.length === 0" style="text-align:center;padding:2rem;color:#94a3b8;">
+      No activities found
+    </div>
+  </div>
+</div>
+
+<!-- Side Form -->
+<div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="side-form" [class.open]="showForm">
+  <div class="side-form-header">
+    <h2>Log Activity</h2>
+    <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
+  </div>
+  <div class="side-form-body" [formGroup]="form">
+    <div class="form-row">
+      <label class="form-field">Type
+        <select formControlName="activityType">
+          <option *ngFor="let t of typeOptions" [value]="t">{{ icon(t) }} {{ t }}</option>
+        </select>
+      </label>
+      <label class="form-field">Due Date<input formControlName="dueDate" type="datetime-local"></label>
+    </div>
+    <label class="form-field full-width">Subject *<input formControlName="subject"></label>
+    <div class="form-row">
+      <label class="form-field">Contact Name<input formControlName="contactName"></label>
+      <label class="form-field">Deal Name<input formControlName="dealName"></label>
+    </div>
+    <label class="form-field full-width">Description<textarea formControlName="description" rows="3" style="resize:vertical;"></textarea></label>
+    <label class="form-field full-width">Owner<input formControlName="ownerName"></label>
+    <label class="form-field full-width">Outcome<input formControlName="outcome"></label>
+  </div>
+  <div class="side-form-footer">
+    <button class="btn outline" (click)="closeForm()">Cancel</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">Log Activity</button>
+  </div>
+</div>

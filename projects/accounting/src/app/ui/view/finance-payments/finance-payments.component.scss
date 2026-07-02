@@ -354,3 +354,5 @@ $gray-900: #111827;
 .empty-state { padding: 32px; text-align: center; color: $gray-400; font-size: 13px; font-weight: 700; }
 .loans-bg { background: #92400e; }
 .loans-tag { background: #fef3c7; color: #92400e; }
+
+.loading-row { display:flex; justify-content:center; align-items:center; padding:32px; color:#94a3b8; font-size:13px; }

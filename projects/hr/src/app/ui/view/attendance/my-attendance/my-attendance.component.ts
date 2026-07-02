@@ -39,13 +39,13 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   // // Updated properties for TO DO List
   // isTodoVisible: boolean = false;
   // todoTasks: { name: string; priority: string; dueDate: string; status: string; assignedBy: string }[] = [
-  //   { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
+  //   { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'Rolayo Awe' },
   //   { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
   //   { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed', assignedBy: 'Yourself' },
   //   { name: 'Finish report', priority: 'High', dueDate: '2024-10-25', status: 'Pending', assignedBy: 'Alice' },
   //   { name: 'Prepare presentation', priority: 'Medium', dueDate: '2024-10-28', status: 'In Progress', assignedBy: 'Bob' },
   //   { name: 'Email project update', priority: 'Low', dueDate: '2024-10-23', status: 'Completed', assignedBy: 'Charlie' },
-  //   { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
+  //   { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'Rolayo Awe' },
   //   { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
   //   { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed', assignedBy: 'Yourself' },
   //   { name: 'Finish report', priority: 'High', dueDate: '2024-10-25', status: 'Pending', assignedBy: 'Alice' },
@@ -54,16 +54,16 @@ export class MyAttendanceComponent implements OnInit, OnDestroy {
   // ];
 
   // reviewData = [
-  //   { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+  //   { title: 'Quarterly Review', employee: 'Rolayo Awe', date: '2024-10-20', comments: 'Great performance!' },
   //   { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
   //   { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
-  //   { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+  //   { title: 'Quarterly Review', employee: 'Rolayo Awe', date: '2024-10-20', comments: 'Great performance!' },
   //   { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
   //   { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
-  //   { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+  //   { title: 'Quarterly Review', employee: 'Rolayo Awe', date: '2024-10-20', comments: 'Great performance!' },
   //   { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
   //   { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
-  //   { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+  //   { title: 'Quarterly Review', employee: 'Rolayo Awe', date: '2024-10-20', comments: 'Great performance!' },
   //   { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
   //   { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' }
   // ];

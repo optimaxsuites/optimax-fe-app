@@ -103,11 +103,13 @@ import { MailTemplatesComponent } from './ui/view/hr/mail-templates/mail-templat
 import { HrNotificationsComponent } from './ui/view/hr/hr-notifications/hr-notifications.component';
 import { HrOdooImportComponent } from './ui/view/hr/hr-odoo-import/hr-odoo-import.component';
 import { ProbationSettingsComponent } from './ui/view/hr/probation/probation-settings.component';
+import { HrFormsComponent } from './ui/view/hr/hr-forms/hr-forms.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
+import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -115,6 +117,7 @@ import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/fina
   declarations: [
     AppComponent,
     HrSettingsComponent,
+    SettingsHomeComponent,
     SalaryComponent,
     SettingsPageComponent,
     ScoresheetConfigComponent,
@@ -157,6 +160,7 @@ import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/fina
     HrNotificationsComponent,
     HrOdooImportComponent,
     ProbationSettingsComponent,
+    HrFormsComponent,
     ModuleRegistryComponent,
     BugTrackerComponent,
     CrmSettingsComponent,

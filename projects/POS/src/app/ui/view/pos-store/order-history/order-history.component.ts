@@ -73,9 +73,9 @@ export class OrderHistoryComponent implements OnInit {
       deliveryMethod: 'delivery',
       paymentMethod: 'card',
       deliveryInfo: {
-        fullName: 'John Doe',
+        fullName: 'Rolayo Awe',
         phoneNumber: '+2348012345678',
-        address: '123 Main Street, Lagos Island, Lagos',
+        address: '123 Samuel Ademule CBD, Abuja',
         email: 'john.doe@example.com',
         instructions: 'Call before delivery'
       },
@@ -160,9 +160,9 @@ export class OrderHistoryComponent implements OnInit {
       deliveryMethod: 'delivery',
       paymentMethod: 'card',
       deliveryInfo: {
-        fullName: 'John Doe',
+        fullName: 'Rolayo Awe',
         phoneNumber: '+2348012345678',
-        address: '123 Main Street, Lagos Island, Lagos',
+        address: '123 Samuel Ademule CBD, Abuja',
         instructions: 'Leave at front desk'
       },
       orderDate: new Date().toISOString(),
@@ -191,9 +191,9 @@ export class OrderHistoryComponent implements OnInit {
       deliveryMethod: 'delivery',
       paymentMethod: 'cash',
       deliveryInfo: {
-        fullName: 'John Doe',
+        fullName: 'Rolayo Awe',
         phoneNumber: '+2348012345678',
-        address: '123 Main Street, Lagos Island, Lagos'
+        address: '123 Samuel Ademule CBD, Abuja'
       },
       orderDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       status: 'cancelled'

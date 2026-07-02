@@ -29,7 +29,7 @@ viewMode: 'calendar' | 'table' = 'calendar';
   selectedDateShifts: ShiftWithAttendance[] = [];
   selectedRecord: ShiftRecord | null = null;
 
-  currentUser = { id: 1, name: 'John Doe' }; // Replace with AuthService if available
+  currentUser = { id: 1, name: 'Rolayo Awe' }; // Replace with AuthService if available
 
   constructor(private shiftService: ShiftService) {}
 

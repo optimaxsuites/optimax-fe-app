@@ -37,7 +37,7 @@ export class QueryComponent {
   userRole = sessionStorage.getItem('role') || 'Employee';
   isAdmin = this.userRole.toLowerCase().includes('admin');
   currentUserId = this.isAdmin ? 99 : 1;
-  currentUserName = this.isAdmin ? 'HR Admin' : 'John Doe';
+  currentUserName = this.isAdmin ? 'HR Admin' : 'Rolayo Awe';
   showCreateForm = false;
   showDetail = false;
   selectedQuery: QueryRecord | null = null;

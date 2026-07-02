@@ -19,7 +19,7 @@ export class VendorRfqListComponent {
       projectTitle: 'Building Construction',
       qDate: '2024-09-01',
       qDueDate: '2024-09-10',
-      preparedBy: 'John Doe',
+      preparedBy: 'Rolayo Awe',
       status: 'Pending',
       items:[
         {

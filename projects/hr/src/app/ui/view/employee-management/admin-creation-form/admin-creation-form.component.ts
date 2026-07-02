@@ -1,4 +1,5 @@
-import { Component, OnInit , Input } from '@angular/core';
+import { Component, OnInit , Input, OnChanges, SimpleChanges } from '@angular/core';
+import { ImportedEmployeeData } from '../pre-onboarding-import/pre-onboarding-import.component';
 import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -19,10 +20,11 @@ import { ErrorMessageService } from '../../../shared-component/service/error-mes
   styleUrls: ['./admin-creation-form.component.scss'],
   providers: [MessageService]
 })
-export class AdminCreationFormComponent {
+export class AdminCreationFormComponent implements OnChanges {
 
   @Input() close: () => void = () => {};
-  @Input() admin: boolean = true
+  @Input() admin: boolean = true;
+  @Input() importData: ImportedEmployeeData | null = null;
 
   openInfoModal: boolean = false
   basicForm!: FormGroup;      
@@ -179,6 +181,38 @@ export class AdminCreationFormComponent {
     this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
     this.fetchRoles();
     this.updateSupervisorValidators();
+
+    if (this.importData) {
+      setTimeout(() => this.applyImportData(), 0);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['importData'] && this.importData && this.basicForm) {
+      this.applyImportData();
+    }
+  }
+
+  private applyImportData(): void {
+    if (!this.importData) return;
+    const d = this.importData;
+
+    // Match gender from loaded metadata
+    const genderId = this.gender.find(
+      g => g.name?.toLowerCase() === d.gender?.toLowerCase()
+    )?.id ?? '';
+
+    this.basicForm.patchValue({
+      firstName: d.firstName ?? '',
+      lastName: d.lastName ?? '',
+      email: d.email ?? '',
+      gender: genderId,
+      title: d.jobTitle ?? '',
+    });
+
+    if (d.startDate) {
+      this.employeeForm.patchValue({ startDate: d.startDate });
+    }
   }
 
   get metaTitle(): string {
@@ -493,10 +527,12 @@ private setProbationValidators(): void {
    
   }
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
-  const username = this.basicForm.get('firstName')?.value;
+  const firstName = this.basicForm.get('firstName')?.value ?? '';
+  const lastName = this.basicForm.get('lastName')?.value ?? '';
+  const username = firstName;
   const email = this.basicForm.get('email')?.value || username;
   const password = this.generateRandomPassword();
-  const signupDetails = this.buildSignupDetails(username, password, email);
+  const signupDetails = this.buildSignupDetails(username, password, email, firstName, lastName);
 
   this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
     next: (userData) => {
@@ -622,26 +658,18 @@ private setProbationValidators(): void {
     this.submitContinueLoading = false;
   }
 
-  private buildSignupDetails(username: string, password: string, email: string) {
+  private buildSignupDetails(username: string, password: string, email: string, firstName = '', lastName = '') {
     const business = sessionStorage.getItem('userPrimaryInfoRegData')
       ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}')
       : null;
 
     const businessInfo = {
-      fullname: business?.fullname || '',
+      fullname: `${firstName} ${lastName}`.trim(),
       username: username || '',
-      profileImage: business?.profileImage || '',
       email: email || '',
-      phoneNumber: business?.phoneNumber,
-      address: business?.address,
-      country: business?.country,
-      state: business?.state,
-      city: business?.city,
-      postalCode: business?.postalCode,
       industry: business?.industry,
       companyName: business?.companyName,
       clientType: business?.clientType,
-      bio: business?.bio,
       currency: business?.currency,
       language: business?.language,
       timeZone: business?.timeZone,

@@ -8,7 +8,7 @@ import { Project, ProjectService } from '../../../service/project.service';
   styleUrl: './my-project.component.scss'
 })
 export class MyProjectComponent {
-  currentUser = 'John Doe'; // later you can fetch from auth/userService
+  currentUser = 'Rolayo Awe'; // later you can fetch from auth/userService
   myProjects: Project[] = [];
   selectedProject: number = 0
   viewDetail: boolean = false

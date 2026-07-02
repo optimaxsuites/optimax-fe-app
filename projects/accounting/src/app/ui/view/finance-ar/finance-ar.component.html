@@ -2,7 +2,7 @@
 
   <div class="info-banner">
     <span class="info-banner-icon">ℹ</span>
-    <div><strong>AR module</strong> — Tracks unpaid customer invoices by aging bucket. Standard in all global ERP systems.</div>
+    <div><strong>AR module</strong> — Tracks income-generating transactions by aging bucket. Derived from POS, Hospitality and Marketplace source modules.</div>
   </div>
 
   <div class="page-header">
@@ -14,67 +14,54 @@
       </div>
     </div>
     <div class="btn-group">
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
       <button class="fd-btn fd-btn-outline">⬇ Export</button>
-      <button class="fd-btn fd-btn-primary">＋ New Invoice</button>
     </div>
   </div>
 
   <div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">
-    <div class="stat-card stat-blue"><div class="stat-label">Total AR</div><div class="stat-value" style="color:#2E6276;font-size:22px">&#8358;32.8M</div></div>
-    <div class="stat-card stat-green"><div class="stat-label">Current (&lt;30d)</div><div class="stat-value" style="color:#16a34a;font-size:22px">&#8358;18.0M</div></div>
-    <div class="stat-card stat-amber"><div class="stat-label">30–60 Days</div><div class="stat-value" style="color:#92400e;font-size:22px">&#8358;8.2M</div></div>
-    <div class="stat-card stat-60"><div class="stat-label">60–90 Days</div><div class="stat-value" style="color:#c2410c;font-size:22px">&#8358;4.0M</div></div>
-    <div class="stat-card stat-red"><div class="stat-label">90+ Days</div><div class="stat-value" style="color:#dc2626;font-size:22px">&#8358;2.6M</div></div>
+    <div class="stat-card stat-blue"><div class="stat-label">Total AR</div><div class="stat-value" style="color:#2E6276;font-size:22px">{{ formatNgn(totalAR) }}</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Current (&lt;30d)</div><div class="stat-value" style="color:#16a34a;font-size:22px">{{ formatNgn(current) }}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">30–60 Days</div><div class="stat-value" style="color:#92400e;font-size:22px">{{ formatNgn(days30) }}</div></div>
+    <div class="stat-card stat-60"><div class="stat-label">60–90 Days</div><div class="stat-value" style="color:#c2410c;font-size:22px">{{ formatNgn(days60) }}</div></div>
+    <div class="stat-card stat-red"><div class="stat-label">90+ Days</div><div class="stat-value" style="color:#dc2626;font-size:22px">{{ formatNgn(days90) }}</div></div>
   </div>
 
-  <div class="fd-card" style="padding:0">
+  <div *ngIf="loading" class="loading-row"><span>Loading receivables…</span></div>
+
+  <div class="fd-card" style="padding:0" *ngIf="!loading">
     <div class="fd-table-wrap">
       <table class="fd-table">
         <thead>
-          <tr><th>Invoice #</th><th>Customer</th><th>Issue Date</th><th>Due Date</th><th>Amount</th><th>Outstanding</th><th>Age</th><th>Status</th><th style="text-align:right">Actions</th></tr>
+          <tr><th>Reference</th><th>Description</th><th>Module</th><th>Date</th><th>Amount</th><th>Age</th><th>Status</th><th style="text-align:right">Actions</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td class="ref-cell">INV-2026-089</td>
-            <td>Dangote Group</td>
-            <td>01 Jun 2026</td>
-            <td>30 Jun 2026</td>
-            <td class="amount-cell">&#8358;8,216,000</td>
-            <td style="color:#16a34a;font-weight:700">&#8358;0</td>
-            <td><span class="fd-badge badge-green">CURRENT</span></td>
-            <td><span class="fd-badge badge-green">PAID</span></td>
-            <td class="actions-cell"><button class="act-btn">👁</button></td>
-          </tr>
-          <tr>
-            <td class="ref-cell">INV-2026-088</td>
-            <td>MTN Nigeria</td>
-            <td>15 May 2026</td>
-            <td>14 Jun 2026</td>
-            <td class="amount-cell">&#8358;12,400,000</td>
-            <td style="color:#dc2626;font-weight:700">&#8358;12,400,000</td>
-            <td><span class="fd-badge badge-orange">60+ DAYS</span></td>
-            <td><span class="fd-badge badge-red">OVERDUE</span></td>
+          <tr *ngFor="let inv of invoices">
+            <td class="ref-cell">{{ inv.transactionReference }}</td>
+            <td>{{ inv.description || inv.metadata?.memberName || '—' }}</td>
+            <td><span class="fd-badge badge-blue">{{ inv.sourceModule }}</span></td>
+            <td>{{ formatDate(inv.transactionDate) }}</td>
+            <td class="amount-cell">{{ formatNgn(inv.amount) }}</td>
+            <td><span class="fd-badge" [ngClass]="ageBadgeClass(inv)">{{ ageBucket(inv) }}</span></td>
+            <td><span class="fd-badge" [ngClass]="statusBadgeClass(inv.status)">{{ displayLabel(inv.status) }}</span></td>
             <td class="actions-cell">
-              <button class="act-btn">👁</button>
-              <button class="act-btn chase-btn">📧 Chase</button>
+              <button class="act-btn" title="View">👁</button>
+              <button class="act-btn pay-btn" title="Record Payment" *ngIf="isOutstanding(inv)">💳 Record</button>
             </td>
           </tr>
-          <tr>
-            <td class="ref-cell">INV-2026-087</td>
-            <td>Zenith Bank Plc</td>
-            <td>01 Jun 2026</td>
-            <td>15 Jul 2026</td>
-            <td class="amount-cell">&#8358;5,500,000</td>
-            <td style="color:#f59e0b;font-weight:700">&#8358;5,500,000</td>
-            <td><span class="fd-badge badge-green">CURRENT</span></td>
-            <td><span class="fd-badge badge-amber">PENDING</span></td>
-            <td class="actions-cell">
-              <button class="act-btn">👁</button>
-              <button class="act-btn pay-btn">💳 Record Payment</button>
-            </td>
+          <tr *ngIf="invoices.length === 0">
+            <td colspan="8" style="text-align:center;padding:32px;color:#94a3b8;">No receivable transactions found.</td>
           </tr>
         </tbody>
       </table>
+    </div>
+    <div class="table-footer">
+      <span class="table-count">Showing {{ invoices.length }} of {{ totalSize }}</span>
+      <div class="page-btns">
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="prevPage()" [disabled]="page === 0">← Prev</button>
+        <button class="fd-btn fd-btn-primary fd-btn-sm">{{ page + 1 }}</button>
+        <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="nextPage()" [disabled]="(page + 1) * pageSize >= totalSize">Next →</button>
+      </div>
     </div>
   </div>
 

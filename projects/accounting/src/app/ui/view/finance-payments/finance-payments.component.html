@@ -56,21 +56,23 @@
         <span class="tray-count">{{ requests.length }} pending</span>
       </div>
 
-      <div class="pay-req-card" *ngFor="let r of requests" [ngClass]="moduleClass(r.module)">
+      <div *ngIf="loading" class="loading-row"><span>Loading payment tray…</span></div>
+
+      <div class="pay-req-card" *ngFor="let r of requests" [ngClass]="moduleClass(r.sourceModule)">
         <div class="pay-req-top">
           <div style="display:flex;align-items:center;gap:10px">
-            <div class="pay-avatar" [ngClass]="avatarClass(r.module)">{{ avatarText(r) }}</div>
+            <div class="pay-avatar" [ngClass]="avatarClass(r.sourceModule)">{{ avatarText(r) }}</div>
             <div>
-              <div class="pay-req-name">{{ r.name }}</div>
-              <div class="pay-req-meta">{{ r.meta }}</div>
+              <div class="pay-req-name">{{ displayName(r) }}</div>
+              <div class="pay-req-meta">{{ displayMeta(r) }}</div>
             </div>
           </div>
-          <span class="pay-module-tag" [ngClass]="tagClass(r.module)">{{ r.module }}</span>
+          <span class="pay-module-tag" [ngClass]="tagClass(r.sourceModule)">{{ r.sourceModule }}</span>
         </div>
         <div class="pay-req-bottom">
-          <div class="pay-amount" [innerHTML]="r.amount"></div>
+          <div class="pay-amount">{{ formatNgn(r.amount) }}</div>
           <div>
-            <div class="pay-ref">{{ r.ref }}</div>
+            <div class="pay-ref">{{ r.transactionReference }}</div>
             <div class="pay-action" (click)="setStep(2)" style="cursor:pointer">Review →</div>
           </div>
         </div>
@@ -82,7 +84,7 @@
     <div class="tray-right">
       <div class="tray-sidebar-stat">
         <div class="tray-sidebar-label">Total Awaiting</div>
-        <div class="tray-sidebar-value">&#8358;10,570,000</div>
+        <div class="tray-sidebar-value">{{ formatNgn(totalAwaiting) }}</div>
       </div>
       <div class="tray-sidebar-stat">
         <div class="tray-sidebar-label">Requests</div>
@@ -90,7 +92,7 @@
       </div>
       <div class="tray-sidebar-stat">
         <div class="tray-sidebar-label">Requires 2nd Auth</div>
-        <div class="tray-sidebar-value" style="color:#dc2626">3</div>
+        <div class="tray-sidebar-value" style="color:#dc2626">{{ requiresSecondAuth }}</div>
       </div>
       <button class="fd-btn fd-btn-primary" style="width:100%;justify-content:center;margin-top:8px" (click)="setStep(2)">Process Selected →</button>
     </div>

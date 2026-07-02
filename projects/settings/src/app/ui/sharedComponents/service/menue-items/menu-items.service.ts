@@ -451,7 +451,8 @@ export class MenuItemsService {
           roles: ['ROLE_ADMIN'],
           icon: 'fas fa-chart-bar',
           description: 'Overtime cost analysis and probation tracking reports.'
-        }
+        },
+
       ]
     },
     {
@@ -876,6 +877,7 @@ export class MenuItemsService {
         { label: 'Appraisal Assessment', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'appraisal' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-tasks' },
         { label: 'Notifications', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
         { label: 'Import from Odoo', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'odoo' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-puzzle-piece' },
+        { label: 'Forms & Templates', route: this.navigationLink.getLink('HRSettings'), queryParams: { panel: 'forms' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-file-alt' },
       ],
     },
     {

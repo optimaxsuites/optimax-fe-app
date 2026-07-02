@@ -1,42 +1,89 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { DisbursementService } from '../../../services/disbursement.service';
+import { AccountingTransactionDTO } from '../../domain/accounting.dto';
 
 @Component({
   selector: 'app-finance-payments',
   templateUrl: './finance-payments.component.html',
   styleUrls: ['./finance-payments.component.scss'],
 })
-export class FinancePaymentsComponent {
+export class FinancePaymentsComponent implements OnInit, OnDestroy {
   activeFilter = 'all';
   wizardStep = 1;
+  loading = false;
 
-  setFilter(f: string) { this.activeFilter = f; }
-  setStep(s: number) { this.wizardStep = s; }
+  allTransactions: AccountingTransactionDTO[] = [];
+  private subs = new Subscription();
 
-  allRequests = [
-    { name: 'Jun 2026 Salary Run', meta: 'HR / All Staff · Monthly Salaries', amount: '&#8358;8,450,000', ref: 'PR-2026-020', module: 'PAYROLL' },
-    { name: 'Staff Reimbursements — Jun', meta: 'Finance / Multiple · Staff Expenses', amount: '&#8358;320,000', ref: 'EXP-2026-055', module: 'EXPENSE' },
-    { name: 'Julius Berger Invoice', meta: 'Procurement / Vendor · Construction', amount: '&#8358;1,800,000', ref: 'BILL-2026-041', module: 'VENDOR' },
-    { name: 'Olawale Adeyemi', meta: 'Engineering · Staff Loan', amount: '&#8358;150,000', ref: 'PR-2026-014', module: 'LOANS' },
-  ];
+  constructor(private disbursementService: DisbursementService) {}
 
-  get requests() {
-    if (this.activeFilter === 'all') return this.allRequests;
-    return this.allRequests.filter(r => r.module === this.activeFilter);
+  ngOnInit(): void { this.load(); }
+
+  ngOnDestroy(): void { this.subs.unsubscribe(); }
+
+  load(): void {
+    this.loading = true;
+    const module = this.activeFilter === 'all' ? undefined : this.activeFilter;
+    this.subs.add(
+      this.disbursementService.getApprovedTransactions(module).subscribe({
+        next: res => { this.allTransactions = res.content; this.loading = false; },
+        error: () => { this.loading = false; }
+      })
+    );
+  }
+
+  setFilter(f: string): void {
+    this.activeFilter = f;
+    this.load();
+  }
+
+  setStep(s: number): void { this.wizardStep = s; }
+
+  get requests(): AccountingTransactionDTO[] { return this.allTransactions; }
+
+  get totalAwaiting(): number {
+    return this.allTransactions.reduce((s, t) => s + (t.amount ?? 0), 0);
+  }
+
+  get requiresSecondAuth(): number {
+    return this.allTransactions.filter(t => (t.amount ?? 0) >= 500_000).length;
+  }
+
+  formatNgn(val: number): string {
+    return '₦' + (val ?? 0).toLocaleString();
+  }
+
+  displayName(t: AccountingTransactionDTO): string {
+    return t.description
+      || t.metadata?.memberName
+      || t.metadata?.employeeName
+      || `TXN-${t.id}`;
+  }
+
+  displayMeta(t: AccountingTransactionDTO): string {
+    return [t.sourceModule, t.metadata?.groupName || t.metadata?.purpose]
+      .filter(Boolean).join(' · ');
+  }
+
+  avatarText(t: AccountingTransactionDTO): string {
+    return this.displayName(t).split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
   }
 
   moduleClass(m: string): string {
-    return ({ PAYROLL: 'payroll', EXPENSE: 'expense', VENDOR: 'vendor', LOANS: 'loans' } as any)[m] || '';
+    return ({ HR: 'payroll', EXPENSE: 'expense', BANK: 'vendor', HOSPITALITY: 'loans', MARKETPLACE: 'loans' } as any)[m] || '';
   }
 
   avatarClass(m: string): string {
-    return ({ PAYROLL: 'payroll-bg', EXPENSE: 'expense-bg', VENDOR: 'vendor-bg', LOANS: 'loans-bg' } as any)[m] || '';
+    return ({ HR: 'payroll-bg', EXPENSE: 'expense-bg', BANK: 'vendor-bg', HOSPITALITY: 'loans-bg' } as any)[m] || '';
   }
 
   tagClass(m: string): string {
-    return ({ PAYROLL: 'payroll-tag', EXPENSE: 'expense-tag', VENDOR: 'vendor-tag', LOANS: 'loans-tag' } as any)[m] || '';
+    return ({ HR: 'payroll-tag', EXPENSE: 'expense-tag', BANK: 'vendor-tag', HOSPITALITY: 'loans-tag' } as any)[m] || '';
   }
 
-  avatarText(r: any): string {
-    return r.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+  parseDate(d: any): Date {
+    if (Array.isArray(d)) return DisbursementService.parseJavaDate(d);
+    return new Date(d);
   }
 }

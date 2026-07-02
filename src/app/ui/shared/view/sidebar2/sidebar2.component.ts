@@ -3,6 +3,7 @@ import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationEnd, Router, UrlTree } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
+import { CompanyProfileService, CompanyProfile } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -18,6 +19,7 @@ export class Sidebar2Component {
   menuItems!: Observable<MenuItem[]>;
   filteredMenuItems$!: Observable<MenuItem[]>;
   searchQuery$ = new BehaviorSubject<string>('');
+  companyProfile$ = this.companyProfileService.companyProfile$;
   role: string | null = null;
 marketplace : any =   {
   label: 'Marketplace',
@@ -32,7 +34,7 @@ tenant: any = {
   roles: ['ROLE_USER', 'ROLE_ADMIN'],
   icon: 'fa-solid fa-people-arrows'
 }
-  constructor(private menuService: MenuItemsService,  private router: Router, private navigationLink: NavigationLinksService) {}
+  constructor(private menuService: MenuItemsService,  private router: Router, private navigationLink: NavigationLinksService, private companyProfileService: CompanyProfileService) {}
 
   ngOnInit(): void {
     // this.role = sessionStorage.getItem('role'); // Retrieve role from session storage

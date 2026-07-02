@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { environment } from '../environments/environment.prod';
+import { CompanyProfileService } from '../company-profile/company-profile.service';
 
 
 interface Branch {
@@ -23,11 +24,12 @@ export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
   constructor(
-    private http: HttpClient, 
-    private navigationLink: NavigationLinksService, 
+    private http: HttpClient,
+    private navigationLink: NavigationLinksService,
     private router: Router,
-    private jwtHelper: JwtHelperService
-  ) {  }
+    private jwtHelper: JwtHelperService,
+    private companyProfileService: CompanyProfileService
+  ) {}
 
   isAuthenticated(): boolean {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -42,18 +44,15 @@ export class AuthenticationService {
   logout(): void {
     sessionStorage.removeItem("username");
     sessionStorage.removeItem("token");
-
-    //added by yomi
     sessionStorage.removeItem("userInfoRegData");
     sessionStorage.removeItem("userRegData");
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
     sessionStorage.removeItem("userPrimaryInfoRegData");
+    this.companyProfileService.clear();
 
-
-    // this.router.navigate([''])
-    const loginLink = this.navigationLink.getLink('signinLink')
+    const loginLink = this.navigationLink.getLink('signinLink');
     this.router.navigate([loginLink]);
   }
 

@@ -1,0 +1,249 @@
+<div class="import-shell">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="import-header">
+    <div class="import-header-left">
+      <div class="import-icon"><i class="fas fa-file-import"></i></div>
+      <div>
+        <div class="import-title">Import Pre-Onboarding Form</div>
+        <div class="import-sub">Upload the filled form — the system will read and extract the employee's details</div>
+      </div>
+    </div>
+    <button class="close-btn" (click)="cancel.emit()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- ── Step indicator ──────────────────────────────────────────────────── -->
+  <div class="steps">
+    <div class="step" [class.active]="state === 'upload'" [class.done]="state !== 'upload'">
+      <span class="step-dot"><i class="fas" [class.fa-check]="state !== 'upload'" [class.fa-upload]="state === 'upload'"></i></span>
+      <span class="step-label">Upload</span>
+    </div>
+    <div class="step-line" [class.done]="state !== 'upload'"></div>
+    <div class="step" [class.active]="state === 'processing'" [class.done]="state === 'review'">
+      <span class="step-dot"><i class="fas" [class.fa-check]="state === 'review'" [class.fa-cog]="state !== 'review'"></i></span>
+      <span class="step-label">Extract</span>
+    </div>
+    <div class="step-line" [class.done]="state === 'review'"></div>
+    <div class="step" [class.active]="state === 'review'">
+      <span class="step-dot"><i class="fas fa-user-check"></i></span>
+      <span class="step-label">Review</span>
+    </div>
+  </div>
+
+  <div class="import-body">
+
+    <!-- ══ UPLOAD ══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="state === 'upload'">
+      <div class="drop-zone" [class.drag-over]="isDragOver"
+           (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+        <div class="drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+        <div class="drop-title">Drag &amp; drop the filled form here</div>
+        <div class="drop-or">or</div>
+        <label class="browse-btn">
+          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="onFileSelect($event)" hidden />
+          Browse file
+        </label>
+        <div class="drop-hint">Supported: JPG, PNG, WEBP, PDF &nbsp;·&nbsp; Best results with a clear, flat scan</div>
+      </div>
+      <div *ngIf="error" class="error-msg"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+    </ng-container>
+
+    <!-- ══ PROCESSING ══════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="state === 'processing'">
+      <div class="processing-wrap">
+        <div *ngIf="previewUrl" class="preview-thumb">
+          <img [src]="previewUrl" alt="form preview" />
+        </div>
+        <div class="processing-info">
+          <div class="processing-label">{{ progressLabel }}</div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" [style.width.%]="progress"></div>
+          </div>
+          <div class="progress-pct">{{ progress }}%</div>
+          <div class="processing-hint">This may take a few seconds depending on image quality</div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ══ REVIEW ══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="state === 'review'">
+      <div class="review-notice">
+        <i class="fas fa-info-circle"></i>
+        Review and correct the extracted information below before creating the employee record.
+        Fields left blank will need to be completed inside the form.
+      </div>
+
+      <!-- Personal Information -->
+      <div class="review-section">
+        <div class="review-section-title"><i class="fas fa-user"></i> Personal Information</div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>First Name</label>
+            <input type="text" [(ngModel)]="data.firstName" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Surname</label>
+            <input type="text" [(ngModel)]="data.lastName" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid three">
+          <div class="rv-field">
+            <label>Middle Name</label>
+            <input type="text" [(ngModel)]="data.middleName" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Date of Birth</label>
+            <input type="date" [(ngModel)]="data.dob" />
+          </div>
+          <div class="rv-field">
+            <label>Gender</label>
+            <select [(ngModel)]="data.gender">
+              <option value="">-- Select --</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </div>
+        </div>
+        <div class="review-grid three">
+          <div class="rv-field">
+            <label>Marital Status</label>
+            <select [(ngModel)]="data.maritalStatus">
+              <option value="">-- Select --</option>
+              <option>Single</option>
+              <option>Married</option>
+              <option>Divorced</option>
+              <option>Widowed</option>
+            </select>
+          </div>
+          <div class="rv-field">
+            <label>Religion</label>
+            <select [(ngModel)]="data.religion">
+              <option value="">-- Select --</option>
+              <option>Christianity</option>
+              <option>Islam</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="rv-field">
+            <label>Phone Number</label>
+            <input type="text" [(ngModel)]="data.phone" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid one">
+          <div class="rv-field">
+            <label>Email Address</label>
+            <input type="email" [(ngModel)]="data.email" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid one">
+          <div class="rv-field">
+            <label>Residential Address</label>
+            <input type="text" [(ngModel)]="data.address" placeholder="Not detected" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Employment Details -->
+      <div class="review-section">
+        <div class="review-section-title"><i class="fas fa-briefcase"></i> Employment Details</div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>Department</label>
+            <input type="text" [(ngModel)]="data.department" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Job Title</label>
+            <input type="text" [(ngModel)]="data.jobTitle" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>Employment Type</label>
+            <select [(ngModel)]="data.employmentType">
+              <option value="">-- Select --</option>
+              <option>Full-Time</option>
+              <option>Part-Time</option>
+              <option>Contract</option>
+            </select>
+          </div>
+          <div class="rv-field">
+            <label>Proposed Start Date</label>
+            <input type="date" [(ngModel)]="data.startDate" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Information -->
+      <div class="review-section">
+        <div class="review-section-title"><i class="fas fa-university"></i> Bank Information</div>
+        <div class="review-grid three">
+          <div class="rv-field">
+            <label>Bank Name</label>
+            <input type="text" [(ngModel)]="data.bankName" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Account Number</label>
+            <input type="text" [(ngModel)]="data.accountNumber" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>BVN</label>
+            <input type="text" [(ngModel)]="data.bvn" placeholder="Not detected" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Next of Kin -->
+      <div class="review-section">
+        <div class="review-section-title"><i class="fas fa-users"></i> Next of Kin</div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>Full Name</label>
+            <input type="text" [(ngModel)]="data.nokName" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Relationship</label>
+            <input type="text" [(ngModel)]="data.nokRelationship" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>Phone</label>
+            <input type="text" [(ngModel)]="data.nokPhone" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Email</label>
+            <input type="text" [(ngModel)]="data.nokEmail" placeholder="Not detected" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Guarantors -->
+      <div class="review-section">
+        <div class="review-section-title"><i class="fas fa-handshake"></i> Guarantors</div>
+        <div class="guarantor-cols">
+          <div class="guarantor-col">
+            <div class="g-label">Guarantor 1</div>
+            <div class="rv-field"><label>Full Name</label><input type="text" [(ngModel)]="data.g1Name" placeholder="Not detected" /></div>
+            <div class="rv-field"><label>Phone</label><input type="text" [(ngModel)]="data.g1Phone" placeholder="Not detected" /></div>
+            <div class="rv-field"><label>Email</label><input type="text" [(ngModel)]="data.g1Email" placeholder="Not detected" /></div>
+          </div>
+          <div class="guarantor-col">
+            <div class="g-label">Guarantor 2</div>
+            <div class="rv-field"><label>Full Name</label><input type="text" [(ngModel)]="data.g2Name" placeholder="Not detected" /></div>
+            <div class="rv-field"><label>Phone</label><input type="text" [(ngModel)]="data.g2Phone" placeholder="Not detected" /></div>
+            <div class="rv-field"><label>Email</label><input type="text" [(ngModel)]="data.g2Email" placeholder="Not detected" /></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="review-actions">
+        <button class="btn-ghost" (click)="reset()"><i class="fas fa-redo"></i> Upload Different File</button>
+        <button class="btn-create" (click)="createEmployee()">
+          <i class="fas fa-user-plus"></i> Create Employee
+        </button>
+      </div>
+    </ng-container>
+
+  </div>
+</div>

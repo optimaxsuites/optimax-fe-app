@@ -379,3 +379,20 @@ $gray-900: #111827;
   tr:nth-child(even) td { background: #fafafa; }
   tr:hover td { background: $gray-50; }
 }
+
+.loading-row { display:flex; justify-content:center; align-items:center; padding:32px; color:#94a3b8; font-size:13px; }
+
+.bank-balance-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.balance-label  { color: #15803d; font-weight: 600; }
+.balance-amount { font-size: 20px; font-weight: 800; color: #166534; margin-left: auto; }
+.balance-ccy    { color: #4ade80; font-size: 11px; font-weight: 700; }

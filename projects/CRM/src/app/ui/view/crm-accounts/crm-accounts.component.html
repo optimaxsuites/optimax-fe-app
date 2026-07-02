@@ -1,26 +1,135 @@
 <div class="panel-header">
-  <div><h1 class="panel-title">Accounts</h1><p class="panel-subtitle">89 companies · track relationships at the organisation level</p></div>
+  <div>
+    <h1 class="panel-title">Accounts</h1>
+    <p class="panel-subtitle">{{ filtered.length }} companies · track relationships at the organisation level</p>
+  </div>
   <div class="panel-actions">
     <button class="btn-secondary">⬆ Import Accounts</button>
-    <button class="btn-primary">+ New Account</button>
+    <button class="btn-primary" (click)="openForm()">+ New Account</button>
   </div>
 </div>
+
 <div class="filter-bar">
-  <div class="search-box"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg><input type="text" placeholder="Search accounts…"></div>
-  <select class="filter-select"><option>All Industries</option><option>Banking</option><option>Manufacturing</option><option>Telecom</option><option>Insurance</option><option>Oil &amp; Gas</option><option>Government</option></select>
-  <select class="filter-select"><option>All Sizes</option><option>1-50</option><option>50-500</option><option>500-5000</option><option>5000+</option></select>
-  <select class="filter-select"><option>All Owners</option><option>Me</option><option>Sarah O.</option><option>James A.</option></select>
+  <div class="search-box">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <input type="text" placeholder="Search accounts…" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()">
+  </div>
+  <select class="filter-select" [(ngModel)]="industryFilter" (ngModelChange)="applyFilters()">
+    <option value="">All Industries</option>
+    <option *ngFor="let i of industryOptions" [value]="i">{{ i }}</option>
+  </select>
 </div>
-<div class="table-container">
+
+<div *ngIf="loading$ | async" style="text-align:center;padding:2rem;color:#94a3b8;">Loading accounts…</div>
+
+<div class="table-container" *ngIf="!(loading$ | async)">
   <table class="data-table">
-    <thead><tr><th style="width:36px;"><input type="checkbox"></th><th>Account</th><th>Industry</th><th>Size</th><th>HQ</th><th>Total Deals</th><th>Pipeline Value</th><th>Health Score</th><th>Owner</th><th></th></tr></thead>
+    <thead>
+      <tr>
+        <th style="width:36px;"><input type="checkbox"></th>
+        <th>Account</th>
+        <th>Industry</th>
+        <th>Employees</th>
+        <th>HQ</th>
+        <th>Revenue</th>
+        <th>Health Score</th>
+        <th>Owner</th>
+        <th></th>
+      </tr>
+    </thead>
     <tbody>
-      <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#e11d48;font-size:9px;">DG</div><div><div class="contact-name">Dangote Group</div><div class="contact-email">dangote.com · 12 contacts</div></div></div></td><td>Manufacturing</td><td><span class="badge badge-neutral">10,000+</span></td><td>Lagos, Nigeria</td><td><span style="font-weight:700;color:#2E6276;">3 deals</span></td><td style="font-weight:700;color:#25925B;">₦15.6M</td><td><span class="score-pill high">94</span></td><td><div class="owner-cell"><div class="o-avatar">JA</div>James A.</div></td><td class="actions-cell"><button class="action-btn">👁</button><button class="action-btn">+</button></td></tr>
-      <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#f59e0b;font-size:9px;">GT</div><div><div class="contact-name">GTBank Plc</div><div class="contact-email">gtbank.com · 8 contacts</div></div></div></td><td>Banking</td><td><span class="badge badge-neutral">5,000–10,000</span></td><td>Lagos, Nigeria</td><td><span style="font-weight:700;color:#2E6276;">2 deals</span></td><td style="font-weight:700;color:#25925B;">₦12.2M</td><td><span class="score-pill high">87</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td><td class="actions-cell"><button class="action-btn">👁</button><button class="action-btn">+</button></td></tr>
-      <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#0ea5e9;font-size:9px;">MTN</div><div><div class="contact-name">MTN Nigeria</div><div class="contact-email">mtn.ng · 6 contacts</div></div></div></td><td>Telecom</td><td><span class="badge badge-neutral">5,000–10,000</span></td><td>Lagos, Nigeria</td><td><span style="font-weight:700;color:#2E6276;">2 deals</span></td><td style="font-weight:700;color:#25925B;">₦7.3M</td><td><span class="score-pill med">74</span></td><td><div class="owner-cell"><div class="o-avatar">JA</div>James A.</div></td><td class="actions-cell"><button class="action-btn">👁</button><button class="action-btn">+</button></td></tr>
-      <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#7c3aed;font-size:9px;">AB</div><div><div class="contact-name">Access Bank</div><div class="contact-email">accessbankplc.com · 4 contacts</div></div></div></td><td>Banking</td><td><span class="badge badge-neutral">5,000–10,000</span></td><td>Lagos, Nigeria</td><td><span style="font-weight:700;color:#2E6276;">1 deal</span></td><td style="font-weight:700;color:#25925B;">₦2.8M</td><td><span class="score-pill med">68</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#a78bfa;">YK</div>Yemi K.</div></td><td class="actions-cell"><button class="action-btn">👁</button><button class="action-btn">+</button></td></tr>
-      <tr><td><input type="checkbox"></td><td><div class="contact-cell"><div class="c-avatar" style="background:#10b981;font-size:9px;">ZI</div><div><div class="contact-name">Zenith Insurance</div><div class="contact-email">zenith.ng · 3 contacts</div></div></div></td><td>Insurance</td><td><span class="badge badge-neutral">1,000–5,000</span></td><td>Lagos, Nigeria</td><td><span style="font-weight:700;color:#2E6276;">1 deal</span></td><td style="font-weight:700;color:#25925B;">₦4.8M</td><td><span class="score-pill high">92</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td><td class="actions-cell"><button class="action-btn">👁</button><button class="action-btn">+</button></td></tr>
+      <tr *ngFor="let a of filtered">
+        <td><input type="checkbox"></td>
+        <td>
+          <div class="contact-cell">
+            <div class="c-avatar" [style.background]="avatarColor(a)" style="font-size:9px;">{{ initials(a) }}</div>
+            <div>
+              <div class="contact-name">{{ a.name }}</div>
+              <div class="contact-email">{{ a.website }} · {{ a.accountType }}</div>
+            </div>
+          </div>
+        </td>
+        <td>{{ a.industry || '—' }}</td>
+        <td><span class="badge badge-neutral">{{ empSize(a.employeeCount) }}</span></td>
+        <td>{{ a.city || '—' }}{{ a.state ? ', ' + a.state : '' }}</td>
+        <td style="font-weight:700;color:#25925B;">{{ formatRevenue(a.annualRevenue) }}</td>
+        <td><span class="score-pill" [class]="scoreClass(a.healthScore)">{{ a.healthScore ?? '—' }}</span></td>
+        <td>
+          <div class="owner-cell">
+            <div class="o-avatar">{{ (a.ownerName || '?')[0] }}</div>
+            {{ a.ownerName || '—' }}
+          </div>
+        </td>
+        <td class="actions-cell">
+          <button class="action-btn" title="Edit" (click)="openForm(a)">✏</button>
+          <button class="action-btn" title="Delete" (click)="delete(a)" style="color:#dc2626;">🗑</button>
+        </td>
+      </tr>
+      <tr *ngIf="filtered.length === 0">
+        <td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No accounts found</td>
+      </tr>
     </tbody>
   </table>
-  <div class="pagination-row"><span class="pag-info">Showing 1–5 of 89 accounts</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">›</button></div></div>
+  <div class="pagination-row">
+    <span class="pag-info">Showing {{ filtered.length }} of {{ accounts.length }} accounts</span>
+  </div>
+</div>
+
+<!-- Side Form -->
+<div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="side-form" [class.open]="showForm">
+  <div class="side-form-header">
+    <h2>{{ editingAccount ? 'Edit Account' : 'New Account' }}</h2>
+    <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
+  </div>
+  <div class="side-form-body" [formGroup]="form">
+    <div class="form-section-label">Basic Info</div>
+    <label class="form-field full-width">Account Name *<input formControlName="name"></label>
+    <div class="form-row">
+      <label class="form-field">Industry
+        <select formControlName="industry">
+          <option value="">— Select —</option>
+          <option *ngFor="let i of industryOptions" [value]="i">{{ i }}</option>
+        </select>
+      </label>
+      <label class="form-field">Account Type
+        <select formControlName="accountType">
+          <option value="PROSPECT">Prospect</option>
+          <option value="CUSTOMER">Customer</option>
+          <option value="PARTNER">Partner</option>
+          <option value="CHURNED">Churned</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-row">
+      <label class="form-field">Website<input formControlName="website"></label>
+      <label class="form-field">Phone<input formControlName="phone"></label>
+    </div>
+    <label class="form-field full-width">Email<input formControlName="email" type="email"></label>
+
+    <div class="form-section-label">Location</div>
+    <div class="form-row">
+      <label class="form-field">City<input formControlName="city"></label>
+      <label class="form-field">State<input formControlName="state"></label>
+    </div>
+    <label class="form-field full-width">Address<input formControlName="address"></label>
+
+    <div class="form-section-label">Financials</div>
+    <div class="form-row">
+      <label class="form-field">Annual Revenue (₦)<input formControlName="annualRevenue" type="number"></label>
+      <label class="form-field">Employee Count<input formControlName="employeeCount" type="number"></label>
+    </div>
+
+    <div class="form-section-label">Ownership</div>
+    <div class="form-row">
+      <label class="form-field">Owner<input formControlName="ownerName"></label>
+      <label class="form-field">Tags<input formControlName="tags"></label>
+    </div>
+  </div>
+  <div class="side-form-footer">
+    <button class="btn outline" (click)="closeForm()">Cancel</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">
+      {{ editingAccount ? 'Update' : 'Create' }}
+    </button>
+  </div>
 </div>

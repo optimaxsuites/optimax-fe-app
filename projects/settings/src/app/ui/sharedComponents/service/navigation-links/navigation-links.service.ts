@@ -98,6 +98,9 @@ export class NavigationLinksService {
     this.links['hrOvertime'] = '/admin/hr/overtime/' +uuidV4();
     this.links['hrOrgChart'] = '/admin/hr/org-chart/' +uuidV4();
     this.links['hrReports'] = '/admin/hr/reports/' +uuidV4();
+    this.links['preOnboardingForm']   = '/admin/hr/pre-onboarding-form/'   + uuidV4();
+    this.links['employeeUpdateForm']  = '/admin/hr/employee-update-form/'  + uuidV4();
+    this.links['offboardingForm']     = '/admin/hr/offboarding-form/'      + uuidV4();
 
 
 // hospitality ================================================================================================================
@@ -160,7 +163,7 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
+this.links['settingsLink'] = '/admin/settings/settings-home/' + uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 this.links['posSettings'] = 'POS-settings/' +uuidV4();
