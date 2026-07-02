@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { catchError, throwError, Observable, of, tap } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment';
 import { CompanyProfileService } from '../sharedComponents/service/company-profile/company-profile.service';
+import { JwtHelperService } from '@auth0/angular-jwt';
 
 @Injectable({
   providedIn: 'root'
@@ -12,10 +13,13 @@ export class GeneralSettingsService {
   private baseUrl = environment.apiBaseUrl;
   
   private userApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info`;
-  // private reportApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/settings/report`;
-  private userUpdateApiUrl = `${this.baseUrl}/x/api/v2/us/ur/create/user/primary/info`; 
+  private userUpdateApiUrl = `${this.baseUrl}/x/api/v2/us/ur/create/user/primary/info`;
 
-  constructor(private http: HttpClient, private companyProfileService: CompanyProfileService) {}
+  constructor(
+    private http: HttpClient,
+    private companyProfileService: CompanyProfileService,
+    private jwtHelper: JwtHelperService,
+  ) {}
 
   getUserPrimaryInfo(userId: number): Observable<any> {
     const url = `${this.userApiUrl}/${userId}`;
@@ -28,22 +32,31 @@ export class GeneralSettingsService {
   // }
   
   updateUserPrimaryInfo(id: number, userData: any): Observable<any> {
-    // Strip nulls and send userId instead of id — backend validates against JWT identity
     const clean: any = {};
     for (const key of Object.keys(userData)) {
       if (userData[key] !== null && userData[key] !== undefined) {
         clean[key] = userData[key];
       }
     }
-    const dataToSend = { userId: id, ...clean };
-    console.log('[ProfileUpdate] Sending payload:', JSON.stringify(dataToSend, null, 2));
-    return this.http.post<any>(this.userUpdateApiUrl, dataToSend).pipe(
+
+    // Decode JWT to get the actual user ID the backend issued the token for
+    const token = sessionStorage.getItem('Token');
+    let jwtId: number | null = null;
+    if (token) {
+      try {
+        const decoded = this.jwtHelper.decodeToken(token);
+        console.log('[JWT claims]', decoded);
+        jwtId = decoded?.id ?? decoded?.userId ?? decoded?.user_id ?? decoded?.sub ?? null;
+        if (jwtId) jwtId = +jwtId;
+      } catch { /* ignore decode failures */ }
+    }
+
+    const resolvedId = jwtId || id;
+    return this.http.post<any>(this.userUpdateApiUrl, { id: resolvedId, ...clean }).pipe(
       tap(() => this.companyProfileService.refresh()),
       catchError((error: HttpErrorResponse) => {
-        console.error('[ProfileUpdate] Status:', error.status);
-        console.error('[ProfileUpdate] StatusText:', error.statusText);
-        console.error('[ProfileUpdate] Error body:', JSON.stringify(error.error));
-        return throwError(() => new Error('Something bad happened; please try again later.'));
+        const msg = error.error?.message || error.message || 'Something went wrong. Please try again.';
+        return throwError(() => new Error(msg));
       })
     );
   }

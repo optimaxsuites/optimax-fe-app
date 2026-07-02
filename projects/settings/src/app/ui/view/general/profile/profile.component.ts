@@ -85,7 +85,6 @@ export class ProfileComponent {
   fetchUserData(userId: number): void {
     this.generalSettingsService.getUserPrimaryInfo(userId).subscribe({
       next: (data) => {
-        console.log('[ProfileFetch] Full GET response:', JSON.stringify(data));
         this.form.patchValue({
           fullname: data.fullname,
           username: data.username,
@@ -189,9 +188,8 @@ export class ProfileComponent {
         error: (err: any) => {
           this.messageService.add({
             severity: 'error', summary: 'Profile update failed',
-            detail: 'Profile update failed. Please try again.', key: 'tl', life: 3000,
+            detail: err?.message || 'Profile update failed. Please try again.', key: 'tl', life: 6000,
           });
-          console.error('Update failed:', err);
         },
       });
     } else {

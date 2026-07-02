@@ -5,7 +5,7 @@ import { NavigationLinksService } from '../../service/navigation-links/navigatio
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
 import { CompanyProfileService, CompanyProfile } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar2',
@@ -89,10 +89,14 @@ tenant: any = {
   }
 
   updateActiveState(): void {
-    this.menuItems.forEach((item: any) => {
-      if (item.submenu) {
-        item.open = item.submenu.some((subItem: { route: string | UrlTree; }) => this.router.isActive(subItem.route!, false));
-      }
+    this.menuItems.pipe(take(1)).subscribe(items => {
+      items.forEach(item => {
+        if (item.submenu) {
+          item.open = item.submenu.some(
+            (subItem: { route: string | UrlTree }) => this.router.isActive(subItem.route!, false)
+          );
+        }
+      });
     });
   }
 
