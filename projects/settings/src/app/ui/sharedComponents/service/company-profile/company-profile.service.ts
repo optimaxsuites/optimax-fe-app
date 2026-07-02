@@ -38,11 +38,24 @@ export class CompanyProfileService {
 
   load(userId: number): Observable<CompanyProfile> {
     return this.http
-      .get<CompanyProfile>(`${this.baseUrl}/x/api/v2/us/ur/get/company/profile/${userId}`)
+      .get<any>(`${this.baseUrl}/x/api/v2/us/ur/get/company/profile/${userId}`)
       .pipe(
-        tap(profile => this.store(profile)),
+        tap(raw => {
+          const profile: CompanyProfile = {
+            ...raw,
+            logoUrl: raw.logoUrl ?? raw.companyLogo ?? null,
+          };
+          this.store(profile);
+        }),
         catchError(() => of(this._profile$.value as CompanyProfile))
       );
+  }
+
+  updateLogoUrl(logoUrl: string | null): void {
+    const current = this._profile$.value;
+    if (current) {
+      this.store({ ...current, logoUrl });
+    }
   }
 
   refresh(): void {
