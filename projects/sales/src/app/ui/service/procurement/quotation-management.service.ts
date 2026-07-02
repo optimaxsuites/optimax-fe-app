@@ -28,6 +28,16 @@ export class QuotationManagementService {
     return this.http.post<{ lpoId: string; message: string }>(`${this.apiUrl}/quotations/${quotationId}/accept`, { notes });
   }
 
+  // Send LPO to vendor
+  sendLpoToVendor(quotationId: string, lpoNumber: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/quotations/${quotationId}/send-lpo`, { lpoNumber });
+  }
+
+  // Update quotation status
+  updateQuotationStatus(quotationId: string, status: VendorQuotationStatus): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/quotations/${quotationId}/status`, { status });
+  }
+
   // Reject a quotation
   rejectQuotation(quotationId: string, reason: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/quotations/${quotationId}/reject`, { reason });

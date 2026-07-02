@@ -279,7 +279,9 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'ACCEPTED': '#22c55e',
       'DECLINED': '#ef4444',
       'EXPIRED': '#6b7280',
-      'WITHDRAWN': '#8b5cf6'
+      'WITHDRAWN': '#8b5cf6',
+      'LPO_GENERATED': '#184440',
+      'LPO_SENT': '#22c55e'
     };
     return colors[status] || '#6b7280';
   }
@@ -291,7 +293,9 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',
       'EXPIRED': 'Expired',
-      'WITHDRAWN': 'Withdrawn'
+      'WITHDRAWN': 'Withdrawn',
+      'LPO_GENERATED': 'LPO Draft',
+      'LPO_SENT': 'LPO Sent'
     };
     return labels[status] || status;
   }
@@ -303,7 +307,9 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'fa-check-circle',
       'DECLINED': 'fa-times-circle',
       'EXPIRED': 'fa-hourglass-end',
-      'WITHDRAWN': 'fa-times'
+      'WITHDRAWN': 'fa-times',
+      'LPO_GENERATED': 'fa-file-invoice',
+      'LPO_SENT': 'fa-paper-plane'
     };
     return icons[status] || 'fa-circle';
   }
