@@ -157,7 +157,7 @@
       </div>
       <ng-container *ngIf="activeTable === 'lpos'">
         <app-table
-          [columns]="lpoColumns" [rows]="lpos" [actions]="[]"
+          [columns]="lpoColumns" [rows]="filteredLpos" [actions]="[]"
           [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
           emptyMessage="No purchase orders found. LPOs issued against your quotations will appear here."
           (rowClick)="onLpoRowClick($event)">
@@ -204,7 +204,7 @@
       <!-- ── INVOICE TABLE — 5 columns, 5 <td>s ── -->
       <ng-container *ngIf="activeTable === 'invoices'">
         <app-table
-          [columns]="invoiceColumns" [rows]="invoices" [actions]="[]"
+          [columns]="invoiceColumns" [rows]="filteredInvoices" [actions]="[]"
           [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
           emptyMessage="No invoices yet. Accept an LPO and click 'Create Invoice', or use New Invoice above."
           (rowClick)="onInvoiceRowClick($event)">

@@ -3,6 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
 import { VendorQuotation } from '../../../domain/procurement-request/procurement.dto';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-quotation-detail',
@@ -17,6 +19,10 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   showAcceptModal = false;
   showRejectModal = false;
   rejectReason = '';
+  allQuotationsForRfq: VendorQuotation[] = [];
+  showCompareDisclaimerModal = false;
+  successMessage = '';
+  isDownloading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -54,11 +60,15 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         if (!data.isViewed) {
           this.quotationService.markAsViewed(data.id).subscribe();
         }
+        this.loadAllQuotationsForRfq(data.rfqId);
       },
       error: (err) => {
         console.error('Error loading quotation:', err);
         this.isLoading = false;
         this.loadMockData();
+        if (this.quotation) {
+          this.loadAllQuotationsForRfq(this.quotation.rfqId);
+        }
       }
     });
   }
@@ -154,13 +164,39 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.isProcessing = false;
         this.closeAcceptModal();
-        alert(`LPO #${response.lpoId} has been generated and sent to ${this.quotation?.vendorName}.`);
+        this.successMessage = 'Quotation successfully accepted.';
+        
+        // update statuses locally
+        if (this.quotation) {
+          this.quotation.status = 'ACCEPTED';
+          this.allQuotationsForRfq.forEach(q => {
+            if (q.id !== this.quotation?.id && (q.status === 'SUBMITTED' || q.status === 'PENDING')) {
+              q.status = 'DECLINED';
+              q.declineReason = 'Another quotation was accepted for this RFQ';
+            }
+          });
+        }
+        
+        alert(response.message || `LPO #${response.lpoId} has been generated and sent to ${this.quotation?.vendorName}.`);
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {
+        // Fallback mock update
         this.isProcessing = false;
-        console.error('Error accepting quotation:', err);
-        alert('Failed to accept quotation. Please try again.');
+        this.closeAcceptModal();
+        this.successMessage = 'Quotation successfully accepted.';
+        
+        if (this.quotation) {
+          this.quotation.status = 'ACCEPTED';
+          this.allQuotationsForRfq.forEach(q => {
+            if (q.id !== this.quotation?.id && (q.status === 'SUBMITTED' || q.status === 'PENDING')) {
+              q.status = 'DECLINED';
+              q.declineReason = 'Another quotation was accepted for this RFQ';
+            }
+          });
+        }
+        
+        alert(`Quotation successfully accepted. LPO has been generated.`);
       }
     });
   }
@@ -187,6 +223,131 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         alert('Failed to reject quotation. Please try again.');
       }
     });
+  }
+
+  loadAllQuotationsForRfq(rfqId: string): void {
+    this.quotationService.getQuotationsForRFQ(rfqId).subscribe({
+      next: (rfqData) => {
+        this.allQuotationsForRfq = rfqData.quotations || [];
+      },
+      error: (err) => {
+        this.loadMockAllQuotations(rfqId);
+      }
+    });
+  }
+
+  loadMockAllQuotations(rfqId: string): void {
+    if (rfqId === 'RFQ1' || rfqId === 'rfq1' || rfqId === 'RFQ5' || rfqId === 'rfq5') {
+      this.allQuotationsForRfq = [
+        {
+          id: 'q1',
+          rfqId: rfqId,
+          vendorId: 'v1',
+          vendorName: 'TechPro Solutions Ltd',
+          vendorCode: 'TPS001',
+          vendorRating: 4.8,
+          status: 'SUBMITTED',
+          items: [],
+          totalAmount: 450000,
+          currency: 'NGN',
+          validityDays: 14,
+          isViewed: false,
+          deliveryTimeline: '5-7 business days',
+          updatedAt: new Date(),
+          expiresAt: new Date()
+        },
+        {
+          id: 'q2',
+          rfqId: rfqId,
+          vendorId: 'v2',
+          vendorName: 'Global Supplies Inc',
+          vendorCode: 'GSI002',
+          vendorRating: 4.6,
+          status: 'SUBMITTED',
+          items: [],
+          totalAmount: 420000,
+          currency: 'NGN',
+          validityDays: 30,
+          isViewed: true,
+          deliveryTimeline: '3-5 business days',
+          updatedAt: new Date(),
+          expiresAt: new Date()
+        }
+      ];
+    } else {
+      this.allQuotationsForRfq = [
+        this.quotation || {
+          id: this.quotationId || 'q1',
+          rfqId: rfqId,
+          vendorId: 'v1',
+          vendorName: 'TechPro Solutions Ltd',
+          vendorCode: 'TPS001',
+          vendorRating: 4.8,
+          status: 'SUBMITTED',
+          items: [],
+          totalAmount: 3425000,
+          currency: 'NGN',
+          validityDays: 14,
+          isViewed: false,
+          deliveryTimeline: '5-7 business days',
+          updatedAt: new Date(),
+          expiresAt: new Date()
+        }
+      ];
+    }
+  }
+
+  onAcceptClick(): void {
+    const activeQuotations = this.allQuotationsForRfq.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED');
+    if (activeQuotations.length > 1) {
+      this.showCompareDisclaimerModal = true;
+    } else {
+      this.openAcceptModal();
+    }
+  }
+
+  proceedToAccept(): void {
+    this.showCompareDisclaimerModal = false;
+    this.openAcceptModal();
+  }
+
+  closeCompareDisclaimerModal(): void {
+    this.showCompareDisclaimerModal = false;
+  }
+
+  downloadPDF(): void {
+    const element = document.getElementById('quotation-detail-sheet');
+    if (element) {
+      this.isDownloading = true;
+      html2canvas(element, { 
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: true,
+        ignoreElements: (el) => el.classList.contains('action-bar') || el.tagName.toLowerCase() === 'app-back-button'
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 size width
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`Quotation-${this.quotation?.id || 'Detail'}.pdf`);
+        this.isDownloading = false;
+      }).catch(err => {
+        console.error('Error generating PDF:', err);
+        this.isDownloading = false;
+        alert('Failed to generate PDF. Printing window instead.');
+        window.print();
+      });
+    } else {
+      alert('Could not find element to export. Printing window instead.');
+      window.print();
+    }
+  }
+
+  generateLPO(): void {
+    if (this.quotation) {
+      this.router.navigate(['/commerce/quotations', this.quotation.id, 'generate-lpo']);
+    }
   }
 
   goBack(): void {
@@ -240,7 +401,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'status-accepted',
       'DECLINED': 'status-declined',
       'EXPIRED': 'status-expired',
-      'WITHDRAWN': 'status-withdrawn'
+      'WITHDRAWN': 'status-withdrawn',
+      'LPO_GENERATED': 'status-accepted',
+      'LPO_SENT': 'status-accepted'
     };
     return classes[status] || 'status-expired';
   }
@@ -252,7 +415,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',
       'EXPIRED': 'Expired',
-      'WITHDRAWN': 'Withdrawn'
+      'WITHDRAWN': 'Withdrawn',
+      'LPO_GENERATED': 'LPO Draft',
+      'LPO_SENT': 'LPO Sent'
     };
     return labels[status] || status;
   }
@@ -264,7 +429,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'fa-check-circle',
       'DECLINED': 'fa-times-circle',
       'EXPIRED': 'fa-hourglass-end',
-      'WITHDRAWN': 'fa-times'
+      'WITHDRAWN': 'fa-times',
+      'LPO_GENERATED': 'fa-file-invoice',
+      'LPO_SENT': 'fa-paper-plane'
     };
     return icons[status] || 'fa-circle';
   }

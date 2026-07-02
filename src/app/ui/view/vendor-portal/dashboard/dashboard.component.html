@@ -98,11 +98,39 @@
       </div>
     </div>
 
+    <!-- ── Active filter chip ── -->
+    <div *ngIf="(activeTable==='rfqs' && rfqFilter!=='all') || (activeTable==='quotations' && quotFilter!=='all')"
+      class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+
+      <ng-container *ngIf="activeTable==='rfqs' && rfqFilter!=='all'">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          {{ rfqFilter === 'due_soon' ? 'Due within 3 days' : (rfqFilter | titlecase) }}
+          <button (click)="clearRfqFilter()" class="ml-0.5 hover:text-red-500 transition-colors" title="Clear filter">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredRfqs.length }} result{{ filteredRfqs.length !== 1 ? 's' : '' }}</span>
+      </ng-container>
+
+      <ng-container *ngIf="activeTable==='quotations' && quotFilter!=='all'">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          {{ quotFilter | titlecase }}
+          <button (click)="clearQuotFilter()" class="ml-0.5 hover:text-red-500 transition-colors" title="Clear filter">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredQuotations.length }} result{{ filteredQuotations.length !== 1 ? 's' : '' }}</span>
+      </ng-container>
+
+    </div>
+
     <div class="p-4">
 
       <!-- ── RFQ TABLE — 6 columns, 6 <td>s ── -->
       <ng-container *ngIf="activeTable==='rfqs'">
-        <app-table [columns]="rfqColumns" [rows]="rfqs" [actions]="[]"
+        <app-table [columns]="rfqColumns" [rows]="filteredRfqs" [actions]="[]"
           [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
           emptyMessage="No RFQs found. New requests from clients will appear here."
           (rowClick)="onRfqRowClick($event)">
@@ -145,7 +173,7 @@
 
       <!-- ── QUOTATIONS TABLE — 5 columns, 5 <td>s ── -->
       <ng-container *ngIf="activeTable==='quotations'">
-        <app-table [columns]="quotationColumns" [rows]="quotations" [actions]="[]"
+        <app-table [columns]="quotationColumns" [rows]="filteredQuotations" [actions]="[]"
           [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
           emptyMessage="No quotations yet. Open an RFQ and click 'Convert to Quotation' to start."
           (rowClick)="onQuotationRowClick($event)">

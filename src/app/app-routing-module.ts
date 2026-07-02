@@ -25,6 +25,7 @@ import { ProductServiceCatalogDetailComponent } from './ui/view/sales-hub/produc
 import { RfqDetailWithQuotationsComponent } from './ui/view/request-management/rfq-detail-with-quotations/rfq-detail-with-quotations.component';
 import { QuotationsDashboardComponent } from './ui/view/request-management/quotations-dashboard/quotations-dashboard.component';
 import { QuotationDetailComponent } from './ui/view/request-management/quotation-detail/quotation-detail.component';
+import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
 
 export const routes: Routes = [
   {
@@ -235,6 +236,10 @@ export const routes: Routes = [
   {
     path: 'commerce/quotations/:id',
     component: QuotationDetailComponent
+  },
+  {
+    path: 'commerce/quotations/:id/generate-lpo',
+    component: LpoPreviewComponent
   },
   {
     path: 'commerce/quotations/:id/:uuid',

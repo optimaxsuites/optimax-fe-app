@@ -206,7 +206,9 @@ export type VendorQuotationStatus =
   | 'ACCEPTED'     // Buyer accepted the quotation
   | 'DECLINED'     // Vendor declined or buyer rejected
   | 'EXPIRED'      // Quotation expired
-  | 'WITHDRAWN';   // Vendor withdrew quotation
+  | 'WITHDRAWN'    // Vendor withdrew quotation
+  | 'LPO_GENERATED' // Buyer generated LPO preview
+  | 'LPO_SENT';    // LPO sent to vendor
 
 export interface VendorQuotation {
   id: string;
