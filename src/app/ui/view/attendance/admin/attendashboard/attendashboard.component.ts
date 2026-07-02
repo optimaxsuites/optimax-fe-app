@@ -14,8 +14,6 @@ export class AttendashboardComponent implements OnInit{
   private attendashboardService = inject(AttendashboardService);
   private attendanceService = inject(AttendancetableService);
 
-  activeTab: 'dashboard' | 'reports' = 'dashboard';
-
   stats$ = this.attendashboardService.getTodayStats();
   heatmap$ = this.attendashboardService.getDepartmentHeatmap();
   lateArrivals$ = this.attendashboardService.getLateArrivals();

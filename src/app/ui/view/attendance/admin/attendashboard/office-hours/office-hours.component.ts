@@ -106,32 +106,31 @@ export class OfficeHoursComponent implements OnInit{
 
       console.log('CURRENT OFFICE HOURS:', res);
 
+      if (!res || !res.openingTime) {
+        console.warn('Office hours data incomplete');
+        return;
+      }
+
       this.officeHoursService.officeHoursId = res.id;
 
-      const hours = {
-
-        openingTime:
-          `${res.openingTime.hour.toString().padStart(2, '0')}:${res.openingTime.minute.toString().padStart(2, '0')}`,
-
-        closingTime:
-          `${res.closingTime.hour.toString().padStart(2, '0')}:${res.closingTime.minute.toString().padStart(2, '0')}`,
-
-        absentTime:
-          `${res.absentTime.hour.toString().padStart(2, '0')}:${res.absentTime.minute.toString().padStart(2, '0')}`,
-
-        latenessGracePeriod:
-          `${res.latenessGracePeriod.hour.toString().padStart(2, '0')}:${res.latenessGracePeriod.minute.toString().padStart(2, '0')}`,
-
-        companyLatitude: Number(res.companyLatitude),
-
-        companyLongitude: Number(res.companyLongitude)
+      const formatTime = (time: any) => {
+        if (!time) return '09:00';
+        if (typeof time === 'string') return time;
+        return `${String(time.hour || 0).padStart(2, '0')}:${String(time.minute || 0).padStart(2, '0')}`;
       };
 
+      const hours = {
+        openingTime: formatTime(res.openingTime),
+        closingTime: formatTime(res.closingTime),
+        absentTime: formatTime(res.absentTime),
+        latenessGracePeriod: formatTime(res.latenessGracePeriod),
+        companyLatitude: Number(res.companyLatitude) || 0,
+        companyLongitude: Number(res.companyLongitude) || 0
+      };
 
       // STORE COMPANY LOCATION
       this.companyLatitude = hours.companyLatitude;
       this.companyLongitude = hours.companyLongitude;
-
 
       // PATCH FORM
       this.form.patchValue({

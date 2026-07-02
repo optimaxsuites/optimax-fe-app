@@ -29,7 +29,7 @@ export class AttendancetableComponent implements OnInit{
 
   attendance: AttendanceTableRecord[] = [];
   filteredAttendance: AttendanceTableRecord[] = [];
-  isLoading = false;
+
   editingRecord: AttendanceTableRecord | null = null;
 
 editStatus: AttendanceTableRecord['status'] = 'PRESENT';
@@ -42,7 +42,6 @@ sortDirection: 'asc' | 'desc' = 'asc';
 mapModalOpen = false;
 mapAddress = '';
 mapDistance: number | null = null;
-
 private mapInstance: L.Map | null = null;
  private officeHoursService = inject(OfficeHoursService);
 
@@ -58,7 +57,6 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
   ngOnInit(): void {
       this.startClosingWatcher();
 
-      this.isLoading = true;
       //to load data fromAPI on init
       this.attendancetableService.fetchAllRecords();
 
@@ -68,7 +66,6 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
       console.log('FIRST RECORD DATE:', data[0]?.date);
       console.log('TODAY:', new Date().toISOString().split('T')[0]);
       this.attendance = data;
-      this.isLoading = false;
 
       // Reapply filters instead of resetting table
       const hasFilters =
@@ -136,33 +133,6 @@ openAttendance(record: AttendanceTableRecord) {
 );
 }
 
-private async geocodeAddress(address: string)
-: Promise<{lat:number,lng:number}|null> {
-
-  try {
-
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
-    );
-
-    const results = await response.json();
-
-    if (!results.length) {
-      return null;
-    }
-
-    return {
-      lat: Number(results[0].lat),
-      lng: Number(results[0].lon)
-    };
-
-  } catch {
-
-    return null;
-
-  }
-}
-
 openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
   const location = type === 'in'
   ? record.checkInLocation 
@@ -173,20 +143,7 @@ openLocationMap(record: AttendanceTableRecord, type: 'in' | 'out') {
   //guard since lat and long of location arent gotten from API
   // Records loaded from API have lat: 0, lng: 0 — can't map those
   if (location.lat === 0 && location.lng === 0) {
-    this.geocodeAddress(location.address).then(coords => {
-      if (!coords) {
-        alert("Unable to locate this address on the map.");
-        return;
-      }
-      this.selectedLocation = { recordId: record.id, type };
-      this.mapAddress = location.address;
-      this.mapModalOpen = true;
-
-      setTimeout(() => {
-        this.initMap(coords.lat, coords.lng);
-      }, 100);
-    });
-    //alert(`Location: ${location.address}\n(Map view not available for this record)`);
+    alert(`Location: ${location.address}\n(Map view not available for this record)`);
     return;
   }
 
@@ -293,7 +250,6 @@ onFiltersChange(filters: any) {
   }
 
   if (hasDateRange) {
-    this.isLoading = true;
     // Use the date range API endpoint, then apply remaining filters client-side
     this.attendancetableService.fetchByDateRange(filters.dateFrom, filters.dateTo);
     // applyFilters() will be triggered automatically by the attendance$ subscription
@@ -302,6 +258,19 @@ onFiltersChange(filters: any) {
     this.applyFilters();
   }
 
+  /*const hasFilters =
+    filters.dateFrom ||
+    filters.dateTo ||
+    filters.id ||
+    filters.employee ||
+    filters.department ||
+    filters.status;
+
+  if (!hasFilters) {
+    this.resetToToday();
+  } else {
+    this.applyFilters();
+  }*/
 }
 
 resetToToday() {
