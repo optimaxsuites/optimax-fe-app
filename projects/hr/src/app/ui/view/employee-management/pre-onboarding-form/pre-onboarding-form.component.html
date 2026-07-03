@@ -16,10 +16,13 @@
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <div class="page-header">
     <div class="header-logo">
-      <img src="assets/logo.png" alt="OptimaX Logo" />
+      <ng-container *ngIf="companyProfile$ | async as cp">
+        <img [src]="cp.logoUrl || 'assets/logo.png'" [alt]="cp.companyName || 'Company Logo'" />
+      </ng-container>
+      <img *ngIf="!(companyProfile$ | async)" src="assets/logo.png" alt="Company Logo" />
     </div>
     <div class="header-center">
-      <div class="org-name">OptimaX</div>
+      <div class="org-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
       <div class="form-name">PRE-ONBOARDING INFORMATION FORM</div>
       <div class="form-instruction">To be completed by the new employee and submitted to HR before resumption</div>
     </div>
