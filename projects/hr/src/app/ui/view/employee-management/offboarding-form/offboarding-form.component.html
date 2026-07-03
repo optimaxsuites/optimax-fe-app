@@ -1,6 +1,6 @@
 <!-- Toolbar (no-print) -->
 <div class="form-toolbar no-print">
-  <img src="assets/logo.png" class="toolbar-logo" />
+  <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="toolbar-logo" />
   <span class="toolbar-title">Employee Exit / Offboarding Form</span>
   <button (click)="print()" class="print-btn"><i class="fas fa-print"></i> Print Form</button>
 </div>
@@ -9,9 +9,9 @@
 
   <!-- Header -->
   <div class="form-header">
-    <img src="assets/logo.png" class="form-logo" />
+    <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="form-logo" />
     <div class="form-header-title">
-      <div class="company-name">Centrifuge Information Technology Ltd</div>
+      <div class="company-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
       <div class="form-name">Employee Exit &amp; Offboarding Form</div>
       <div class="form-meta">To be completed by HR and the departing employee. File in the employee folder.</div>
     </div>

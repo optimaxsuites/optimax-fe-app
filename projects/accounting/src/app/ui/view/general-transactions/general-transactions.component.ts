@@ -566,7 +566,7 @@ export class GeneralTransactionsComponent implements OnInit {
       this.isProcessingFile = true;
       this.uploadProgress = 50;
 
-      const rawData = await this.pdfParsingService.extractTableData(buffer);
+      const rawData = await this.pdfParsingService.extractTableData(buffer, this.selectedFile ?? undefined);
       
       if (rawData.length === 0) {
         console.warn('PDF: No rows extracted by PdfParsingService.');

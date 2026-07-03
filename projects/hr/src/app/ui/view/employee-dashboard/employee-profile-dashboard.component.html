@@ -574,9 +574,9 @@
       <div class="staff-id-card">
         <div class="staff-id-card__header">
           <div class="staff-id-card__brand">
-            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
             <div>
-              <p class="staff-id-card__eyebrow">Centrifuge Information Technology Ltd</p>
+              <p class="staff-id-card__eyebrow">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</p>
               <h3>Staff Identification Card</h3>
             </div>
           </div>
@@ -649,7 +649,7 @@
       <div class="staff-id-card staff-id-card--back">
         <div class="staff-id-card__header">
           <div class="staff-id-card__brand">
-            <img src="assets/logo.png" alt="OptimaX logo" class="staff-id-card__logo" />
+            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
             <div>
               <p class="staff-id-card__eyebrow">Reverse side</p>
               <h3>Verification and emergency</h3>

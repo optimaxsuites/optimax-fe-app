@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
 import { ImportedEmployeeData } from './pre-onboarding-import/pre-onboarding-import.component';
 import { finalize } from 'rxjs';
@@ -269,6 +270,8 @@ handleDateClick(arg: DateClickArg) {
 }
 
 
+  companyProfile$ = this.companyProfileService.companyProfile$;
+
   constructor(
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
@@ -277,6 +280,7 @@ handleDateClick(arg: DateClickArg) {
     private sanitizer: DomSanitizer,
     private router: Router,
     private navLinks: NavigationLinksService,
+    private companyProfileService: CompanyProfileService,
   ) {}
 
   openPreOnboardingForm(): void {

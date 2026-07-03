@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../environments/environment';
 
 export interface CompanyProfile {
@@ -31,7 +31,7 @@ export class CompanyProfileService {
 
   constructor(private http: HttpClient) {
     const userId = sessionStorage.getItem('userid');
-    if (userId && !this._profile$.value) {
+    if (userId) {
       this.load(+userId).subscribe();
     }
   }
@@ -40,13 +40,20 @@ export class CompanyProfileService {
     return this.http
       .get<any>(`${this.baseUrl}/x/api/v2/us/ur/get/company/profile/${userId}`)
       .pipe(
-        tap(raw => {
-          const profile: CompanyProfile = {
-            ...raw,
-            logoUrl: raw.logoUrl ?? raw.companyLogo ?? null,
-          };
-          this.store(profile);
+        switchMap(raw => {
+          const logoUrl: string | null = raw.logoUrl ?? raw.companyLogo ?? null;
+          if (logoUrl) {
+            return of({ ...raw, logoUrl } as CompanyProfile);
+          }
+          // Company profile has no logo — fall back to user primary info which stores companyLogo
+          return this.http
+            .get<any>(`${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info/${userId}`)
+            .pipe(
+              map(userInfo => ({ ...raw, logoUrl: userInfo?.companyLogo ?? null } as CompanyProfile)),
+              catchError(() => of({ ...raw, logoUrl: null } as CompanyProfile))
+            );
         }),
+        tap(profile => this.store(profile)),
         catchError(() => of(this._profile$.value as CompanyProfile))
       );
   }
@@ -75,8 +82,14 @@ export class CompanyProfileService {
   }
 
   private store(profile: CompanyProfile): void {
-    sessionStorage.setItem(this.storageKey, JSON.stringify(profile));
-    this._profile$.next(profile);
+    // Preserve existing logoUrl if the incoming profile has none (avoids refresh() clearing it)
+    const existing = this._profile$.value;
+    const merged: CompanyProfile = {
+      ...profile,
+      logoUrl: profile.logoUrl ?? existing?.logoUrl ?? null,
+    };
+    sessionStorage.setItem(this.storageKey, JSON.stringify(merged));
+    this._profile$.next(merged);
   }
 
   private fromStorage(): CompanyProfile | null {
