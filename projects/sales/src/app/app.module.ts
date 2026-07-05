@@ -84,6 +84,8 @@ import { QuotationDetailComponent } from './ui/view/request-management/quotation
 import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
 import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
 
+import { DocumentationHistoryComponent } from './ui/view/request-management/documentation-history/documentation-history.component';
+
 import { DashboardComponent } from './ui/view/vendor-portal/dashboard/dashboard.component';
 import { FinanceComponent } from './ui/view/vendor-portal/finance/finance.component';
 import { LpoComponent } from './ui/view/vendor-portal/lpo/lpo.component';
@@ -129,6 +131,7 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     QuotationDetailComponent,
     LpoPreviewComponent,
     RfqPreviewComponent,
+    DocumentationHistoryComponent,
     DashboardComponent,
     FinanceComponent,
     LpoComponent,

@@ -211,8 +211,39 @@ export class ProcurementRequestService {
         createdAt: new Date('2026-06-10'),
         updatedAt: new Date('2026-06-10'),
         selectedVendorId: ''
+      },
+      {
+        id: 'PR-005',
+        customerId: 'CUST-101',
+        customerName: 'HQ Corporate Operations',
+        procurementType: 'PRODUCT',
+        title: 'Executive Ergonomic Desks',
+        description: 'Procurement of premium height-adjustable executive desks for the management office.',
+        items: [
+          {
+            id: 'item-5',
+            name: 'Premium Standing Desk',
+            description: 'Dual-motor, steel frame, bamboo top executive standing desk',
+            quantity: 15,
+            unit: 'Pieces',
+            estimatedBudget: 4500000,
+            attachments: []
+          }
+        ],
+        totalBudget: 4500000,
+        currency: 'NGN',
+        deliveryLocation: 'HQ Office, Lekki Phase 1, Lagos',
+        deliveryDeadline: new Date('2026-08-15'),
+        status: 'DELIVERED',
+        attachments: [],
+        createdAt: new Date('2026-06-12'),
+        updatedAt: new Date('2026-07-02'),
+        selectedVendorId: 'VND-001',
+        selectedVendorName: 'Apex Tech Distributors',
+        selectedQuotationId: 'q-pr005'
       }
     ];
+
     if (save) {
       this.saveToStorage();
     }
