@@ -22,6 +22,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   units = ['Pieces', 'Boxes', 'Kg', 'Liters', 'Meters', 'Sets', 'Packages', 'Units'];
   isEditMode = false;
   requestId: string | null = null;
+  isLookingUp: { [key: number]: boolean } = {};
 
   constructor(
     private fb: FormBuilder,
@@ -109,6 +110,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 id: item.id,
                 name: item.name,
                 description: item.description,
+                partNumber: (item as any).partNumber || '',
                 quantity: item.quantity,
                 unit: item.unit,
                 estimatedBudget: item.estimatedBudget,
@@ -163,6 +165,7 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       id: [this.generateId()],
       name: ['', [Validators.required, Validators.minLength(3)]],
       description: ['', Validators.required],
+      partNumber: [''],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unit: ['Pieces', Validators.required],
       estimatedBudget: [0, [Validators.required, Validators.min(0)]],
@@ -339,5 +342,98 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(size) / Math.log(k));
     return parseFloat((size / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  lookupProductByPartNumber(index: number): void {
+    const item = this.items.at(index);
+    const partNumber = item.get('partNumber')?.value;
+    if (!partNumber || !partNumber.trim()) {
+      alert('Please enter a part or serial number to look up.');
+      return;
+    }
+
+    this.isLookingUp[index] = true;
+
+    // Simulate looking up details on the internet/global database
+    setTimeout(() => {
+      this.isLookingUp[index] = false;
+      
+      const query = partNumber.trim().toLowerCase();
+      let matchedProduct = {
+        name: 'HP EliteBook 840 G10',
+        description: 'HP EliteBook 840 G10 Laptop, 14" WUXGA Display, Intel Core i7-1355U, 16GB DDR5 RAM, 512GB PCIe SSD, Windows 11 Pro',
+        brand: 'HP',
+        model: 'EliteBook 840 G10',
+        color: 'Silver',
+        size: '14 inch',
+        material: 'Aluminum Chassis',
+        warranty: '3 Years Warranty',
+        unit: 'Pieces',
+        estimatedBudget: 750000,
+        unitPrice: 750000
+      };
+
+      if (query.includes('chair') || query.includes('ergo') || query.includes('ch-')) {
+        matchedProduct = {
+          name: 'Premium Ergonomic Mesh Office Chair',
+          description: 'High-back ergonomic office chair with 3D armrests, adjustable dynamic lumbar support, mesh seat and back, tilt lock mechanism',
+          brand: 'ErgoComfort',
+          model: 'EC-V4-Mesh',
+          color: 'Matte Black',
+          size: 'Adjustable Standard',
+          material: 'Reinforced Nylon and Mesh',
+          warranty: '5 Years Warranty',
+          unit: 'Pieces',
+          estimatedBudget: 120000,
+          unitPrice: 120000
+        };
+      } else if (query.includes('desk') || query.includes('table') || query.includes('dk-')) {
+        matchedProduct = {
+          name: 'Dual-Motor Standing Desk (Bamboo Top)',
+          description: 'Electric height-adjustable standing desk with dual motors, 4 memory presets, anti-collision sensor, solid bamboo tabletop (55" x 28")',
+          brand: 'FlexiDesk',
+          model: 'FD-Dual-Bamboo',
+          color: 'Natural Bamboo / White Frame',
+          size: '55" x 28"',
+          material: 'Bamboo and Steel',
+          warranty: '2 Years Warranty',
+          unit: 'Pieces',
+          estimatedBudget: 350000,
+          unitPrice: 350000
+        };
+      } else if (query.includes('dell') || query.includes('xps') || query.includes('pr-001')) {
+        matchedProduct = {
+          name: 'Dell XPS 15 9530',
+          description: 'Dell XPS 15 Laptop, 15.6" OLED Touch Display, Intel Core i9-13900H, 32GB DDR5 RAM, 1TB SSD, NVIDIA GeForce RTX 4070',
+          brand: 'Dell',
+          model: 'XPS 15 9530',
+          color: 'Platinum Silver',
+          size: '15.6 inch',
+          material: 'CNC Aluminum',
+          warranty: '1 Year Warranty',
+          unit: 'Pieces',
+          estimatedBudget: 2800000,
+          unitPrice: 2800000
+        };
+      }
+
+      item.patchValue({
+        name: matchedProduct.name,
+        description: matchedProduct.description,
+        unit: matchedProduct.unit,
+        estimatedBudget: matchedProduct.estimatedBudget,
+        unitPrice: matchedProduct.unitPrice,
+        specifications: {
+          brand: matchedProduct.brand,
+          model: matchedProduct.model,
+          color: matchedProduct.color,
+          size: matchedProduct.size,
+          material: matchedProduct.material,
+          warranty: matchedProduct.warranty
+        }
+      });
+
+      alert(`Product details successfully retrieved for: "${partNumber}"`);
+    }, 1200);
   }
 }
