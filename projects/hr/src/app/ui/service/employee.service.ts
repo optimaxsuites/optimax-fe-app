@@ -53,9 +53,12 @@ export class EmployeeService {
   }
 
   sendWelcomeEmail(data: any): Observable<any>{
+    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
         .post<any>(
-             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
+             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac",
+             data,
+             { withCredentials: false, context })
         .pipe(catchError(this.handleError));
   }
 

@@ -13,6 +13,45 @@
 
   <hr class="border-slate-100">
 
+  <!-- Credentials card — visible when welcome email could not be delivered -->
+  <div *ngIf="pendingCredentials" class="mx-4 mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+    <div class="flex items-start justify-between gap-2">
+      <div>
+        <p class="text-sm font-semibold text-amber-800">Welcome email could not be delivered</p>
+        <p class="mt-0.5 text-xs text-amber-700">Share these login credentials with <strong>{{ pendingCredentials.name }}</strong> manually.</p>
+      </div>
+      <button type="button" (click)="dismissCredentials()" class="text-amber-600 hover:text-amber-900 text-lg leading-none">&times;</button>
+    </div>
+    <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div class="flex items-center justify-between rounded bg-white border border-amber-200 px-3 py-2">
+        <div class="overflow-hidden">
+          <p class="text-[10px] uppercase tracking-wide text-amber-600">Username</p>
+          <p class="truncate text-sm font-mono font-medium text-slate-800">{{ pendingCredentials.username }}</p>
+        </div>
+        <button type="button" (click)="copyToClipboard(pendingCredentials!.username)" title="Copy username"
+          class="ml-2 flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="flex items-center justify-between rounded bg-white border border-amber-200 px-3 py-2">
+        <div class="overflow-hidden">
+          <p class="text-[10px] uppercase tracking-wide text-amber-600">Password</p>
+          <p class="truncate text-sm font-mono font-medium text-slate-800">{{ pendingCredentials.password }}</p>
+        </div>
+        <button type="button" (click)="copyToClipboard(pendingCredentials!.password)" title="Copy password"
+          class="ml-2 flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="form-steps">
     <div *ngFor="let tab of tabs; let i = index"
       class="step-item"
