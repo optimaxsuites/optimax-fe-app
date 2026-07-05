@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
-import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap, throwError, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, from, map, Observable, of, shareReplay, tap, throwError, switchMap } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
 
@@ -52,14 +52,20 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
-  sendWelcomeEmail(data: any): Observable<any>{
-    const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
-    return this.http
-        .post<any>(
-             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac",
-             data,
-             { withCredentials: false, context })
-        .pipe(catchError(this.handleError));
+  sendWelcomeEmail(data: any): Observable<any> {
+    const promise = fetch(
+      'https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac',
+      {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    ).then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json().catch(() => ({}));
+    });
+    return from(promise);
   }
 
   getAllEmployee(force = false): Observable<any[]> {
