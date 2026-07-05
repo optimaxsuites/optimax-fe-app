@@ -529,8 +529,9 @@ private setProbationValidators(): void {
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
   const firstName = this.basicForm.get('firstName')?.value ?? '';
   const lastName = this.basicForm.get('lastName')?.value ?? '';
-  const username = firstName;
-  const email = this.basicForm.get('email')?.value || username;
+  const workEmail = this.basicForm.get('workemail')?.value ?? '';
+  const email = this.basicForm.get('email')?.value ?? '';
+  const username = workEmail || email;
   const password = this.generateRandomPassword();
   const signupDetails = this.buildSignupDetails(username, password, email, firstName, lastName);
 
@@ -642,15 +643,18 @@ private setProbationValidators(): void {
     }
 
     this.employeeService.sendWelcomeEmail(emailPayload).subscribe({
-      next: (res) => { console.log('Welcome email sent successfully:', res); },
+      next: () => { console.log('Welcome email sent successfully'); },
       error: (err) => {
         console.log('Error sending welcome email:', err);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Email Not Sent',
+          detail: 'Welcome email could not be delivered. Please share the login credentials with the employee manually.',
+          key: 'tl',
+          life: 8000
+        });
       }
     });
-
-    if (shouldRedirect) {
-      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-    }
   }
 
   private resetSubmitLoading() {
