@@ -298,6 +298,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   filterAssignee = '';
   searchText = '';
   selectedTask: BoardTask | null = null;
+  detailPanelVisible = false;
   detailTab: 'overview' | 'subtasks' | 'activity' = 'overview';
   newActivityText = '';
   subtaskInput = '';
@@ -552,7 +553,11 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   }
 
   setTaskViewMode(mode: 'mine' | 'all' | 'team'): void {
+    const prev = this.taskViewMode;
     this.taskViewMode = mode;
+    if (mode !== prev && (mode === 'all' || prev === 'all')) {
+      this.loadBoardFromApi();
+    }
   }
 
   get taskViewLabel(): string {
@@ -821,9 +826,36 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   // ── Lightbox ───────────────────────────────────────────────────────────────
   lightboxSrc = '';
+  lightboxPhotos: string[] = [];
+  lightboxIndex = 0;
   showLightbox = false;
-  openLightbox(src: string): void { this.lightboxSrc = src; this.showLightbox = true; }
-  closeLightbox(): void { this.showLightbox = false; this.lightboxSrc = ''; }
+
+  openLightbox(photosOrSrc: string | string[], index = 0): void {
+    if (Array.isArray(photosOrSrc)) {
+      this.lightboxPhotos = photosOrSrc;
+      this.lightboxIndex = index;
+      this.lightboxSrc = photosOrSrc[index] ?? '';
+    } else {
+      this.lightboxPhotos = [photosOrSrc];
+      this.lightboxIndex = 0;
+      this.lightboxSrc = photosOrSrc;
+    }
+    this.showLightbox = true;
+  }
+
+  prevLightbox(e: Event): void {
+    e.stopPropagation();
+    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxPhotos.length) % this.lightboxPhotos.length;
+    this.lightboxSrc = this.lightboxPhotos[this.lightboxIndex];
+  }
+
+  nextLightbox(e: Event): void {
+    e.stopPropagation();
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxPhotos.length;
+    this.lightboxSrc = this.lightboxPhotos[this.lightboxIndex];
+  }
+
+  closeLightbox(): void { this.showLightbox = false; this.lightboxSrc = ''; this.lightboxPhotos = []; }
 
   // ── Supervisor review form state ───────────────────────────────────────────
   supReviewDecision = 'Approved';
@@ -902,7 +934,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     const currentUserId2 = sessionStorage.getItem('userid') || '';
     if (cachedEmpId && cachedEmpUserId === currentUserId2) {
       this.resolvedEmployeeId = cachedEmpId;
-      this.taskViewMode = this.isAdminOrSupervisor ? 'all' : 'mine';
+      this.taskViewMode = 'mine';
       this.loadBoardFromApi();
     } else {
       this.subscription.add(
@@ -910,7 +942,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
           .pipe(timeout(6000), catchError(() => of(0)))
           .subscribe(empId => {
             this.resolvedEmployeeId = empId;
-            this.taskViewMode = this.isAdminOrSupervisor ? 'all' : 'mine';
+            this.taskViewMode = 'mine';
             this.loadBoardFromApi();
           })
       );
@@ -978,7 +1010,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.boardLoading = true;
     const employeeId = this.resolvedEmployeeId;
     const isSupervisor = this.isAdminOrSupervisor;
-    const tasksRequest = isSupervisor
+    const wantsAll = this.taskViewMode === 'all';
+    const tasksRequest = (isSupervisor || wantsAll)
       ? this.workTaskApi.getAllTasks()
       : employeeId
         ? this.workTaskApi.getTasksByAssignee(employeeId)
@@ -990,15 +1023,15 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
             ? apiTasks.map(t => this.mapApiTaskToBoard(t))
             : [];
           const apiIds = new Set(mapped.map(t => t.id));
-          if (isSupervisor) {
-            // Supervisor/admin: full board cache merged with API results
+          if (isSupervisor || wantsAll) {
+            // Full board: merge API results with any locally-created tasks
             const localRaw = localStorage.getItem(this.boardKey);
             const localOnly: BoardTask[] = localRaw
               ? (JSON.parse(localRaw) as BoardTask[]).filter(t => !apiIds.has(t.id))
               : [];
             this.boardTasks = mapped.length ? [...mapped, ...localOnly] : (localOnly.length ? localOnly : [...HR_SEED]);
           } else {
-            // Regular user: API tasks + user's own locally-saved tasks (batch imports, etc.)
+            // Regular user own-tasks view: API tasks + user's own locally-saved tasks
             const localOwn = this.getMyLocalBoardTasks(apiIds);
             const localImports = this.getLocalImportTasks().filter(t => !apiIds.has(t.id));
             this.boardTasks = [...mapped, ...localOwn, ...localImports];
@@ -1147,6 +1180,7 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       title: t.title,
       description: t.description || '',
       assignee: assigneeName,
+      assignees: assigneeName ? [assigneeName] : [],
       assigneeEmployeeId: t.assigneeEmployee?.id,
       supervisorEmployeeId: t.supervisorEmployee?.id,
       team: supervisorName,
@@ -1299,35 +1333,42 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
 
   get filteredBoard(): BoardTask[] {
     const empId = this.resolvedEmployeeId;
-    const me = this.currentUserFullName;
-    const isSupervisor = this.isAdminOrSupervisor;
+    const me = this.currentUserFullName; // already lowercase
+
+    // True when current user is a direct assignee on the task (by ID or name).
+    // Only checks assignee.includes(me) — never me.includes(assignee) to avoid false positives.
+    const isAssignedToMe = (t: BoardTask): boolean => {
+      if (empId && t.assigneeEmployeeId === empId) return true;
+      if (!me) return false;
+      const assignee = (t.assignee || '').toLowerCase();
+      if (assignee === me || assignee.includes(me)) return true;
+      return (t.assignees || []).some((a: string) => {
+        const al = (a || '').toLowerCase();
+        return al === me || al.includes(me);
+      });
+    };
+
+    // True when current user is the supervisor recorded on the task.
+    // Only checks team.includes(me) — never me.includes(team).
+    const iAmSupervisor = (t: BoardTask): boolean => {
+      if (empId && t.supervisorEmployeeId === empId) return true;
+      if (!me) return false;
+      const team = (t.team || '').toLowerCase();
+      return team === me || team.includes(me);
+    };
 
     return this.boardTasks.filter(t => {
-      // ── View mode filter (ownership-based) ───────────────────────────────
+      // ── View mode filter ──────────────────────────────────────────────────
       if (this.taskViewMode === 'mine') {
-        // Applied for ALL users:
-        //   • Supervisors load all tasks via getAllTasks() → must filter to own
-        //   • Regular users may fall back to getAllTasks() when empId=0 → must filter
-        //   • When pre-scoped (getTasksByAssignee), assigneeEmployeeId matches so the filter passes cleanly
-        const userId = this.currentUserId;
-        const assignee = (t.assignee || '').toLowerCase();
-        const inAssignees = (t.assignees || []).some((a: string) => (a || '').toLowerCase().includes(me));
-        const createdByMe = !!(userId && t.createdByUserId === userId);
-        const assignedToMe = !!(empId && (t.assigneeEmployeeId === empId || t.supervisorEmployeeId === empId));
-        const nameMatch = !!(me && (assignee.includes(me) || me.includes(assignee) || inAssignees));
-        if (!createdByMe && !assignedToMe && !nameMatch) return false;
+        // My Tasks: only tasks where the logged-in user is an assignee
+        if (!isAssignedToMe(t)) return false;
       } else if (this.taskViewMode === 'team') {
-        // Tasks co-assigned: 2+ assignees and current user is one of them
-        const assignees = t.assignees || [];
-        if (assignees.length < 2) return false;
-        const matchById = empId && t.assigneeEmployeeId === empId;
-        const matchByName = me && assignees.some((a: string) => {
-          const al = (a || '').toLowerCase();
-          return al.includes(me) || me.includes(al);
-        });
-        if (!matchById && !matchByName) return false;
+        // My Team: tasks where current user is an assignee (same ownership rule)
+        if (!isAssignedToMe(t)) return false;
+      } else if (this.taskViewMode === 'all') {
+        // All Tasks (supervisor/admin): tasks I supervise OR tasks I'm assigned to
+        if (!iAmSupervisor(t) && !isAssignedToMe(t)) return false;
       }
-      // 'all' mode: supervisor/admin sees everything — no extra filter
 
       // ── Toolbar filters ───────────────────────────────────────────────────
       if (this.filterStatus && t.status !== this.filterStatus) return false;
@@ -1360,8 +1401,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.save();
   }
 
-  openDetail(task: BoardTask): void { this.selectedTask = task; this.detailTab = 'overview'; this.newActivityText = ''; }
-  closeDetail(): void { this.selectedTask = null; this.save(); }
+  openDetail(task: BoardTask): void { this.selectedTask = task; this.detailPanelVisible = true; this.detailTab = 'overview'; this.newActivityText = ''; }
+  closeDetail(): void { this.selectedTask = null; this.detailPanelVisible = false; this.save(); }
 
   toggleSubtask(task: BoardTask, sub: SubTask): void {
     sub.done = !sub.done;
@@ -1501,7 +1542,8 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   openEditTask(task: BoardTask, e: Event): void {
     e.stopPropagation();
     this.editingTask = task;
-    this.editTaskDraft = { ...task, tags: [...(task.tags || [])] };
+    const existingAssignees = task.assignees?.length ? task.assignees : (task.assignee ? [task.assignee] : []);
+    this.editTaskDraft = { ...task, tags: [...(task.tags || [])], assignees: [...existingAssignees] };
     this.showEditTask = true;
   }
 
@@ -1578,6 +1620,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
       }
     }
     return rows;
+  }
+
+  trackGanttRow(_: number, row: { task: BoardTask; sub?: SubTask; isChild: boolean }): string {
+    return row.isChild ? `${row.task.id}-${row.sub?.id}` : row.task.id;
   }
 
   taskProgressDisplay(task: BoardTask): number {

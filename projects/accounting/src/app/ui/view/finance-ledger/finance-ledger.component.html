@@ -1,5 +1,10 @@
 <div class="fd-content">
 
+  <div class="info-banner" [class.info-banner-warn]="!loading && !trialBalanced && ledgerEntries.length > 0">
+    <span class="info-banner-icon">{{ !loading && !trialBalanced && ledgerEntries.length > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
   <div class="page-header">
     <div class="page-header-left">
       <div class="page-icon" style="background:#f0fdf4;color:#16a34a;">📋</div>
@@ -10,7 +15,7 @@
     </div>
     <div class="btn-group">
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
-      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline" (click)="activeTab === 'trial' ? exportTrialCsv() : exportCsv()">⬇ Export</button>
     </div>
   </div>
 

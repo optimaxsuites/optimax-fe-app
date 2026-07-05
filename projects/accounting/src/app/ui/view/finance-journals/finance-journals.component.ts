@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { JournalEntryDTO, JournalEntryStatus, PaginationResult } from '../../domain/accounting.dto';
+import { formatFlexDate } from '../../sharedComponent/date.util';
+import { downloadCsv } from '../../sharedComponent/export.util';
 
 @Component({
   selector: 'app-finance-journals',
@@ -51,9 +53,25 @@ export class FinanceJournalsComponent implements OnInit, OnDestroy {
     );
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatDate(d: any): string { return formatFlexDate(d); }
+
+  postEntry(j: JournalEntryDTO): void {
+    this.subs.add(
+      this.accountingService.createJournalEntry({ ...j, status: JournalEntryStatus.POSTED }).subscribe({
+        next: () => this.load()
+      })
+    );
+  }
+
+  reverseEntry(j: JournalEntryDTO): void {
+    if (!confirm(`Reverse journal entry ${this.entryLabel(j)}? This cannot be undone.`)) return;
+    this.subs.add(
+      this.accountingService.createJournalEntry({
+        entryDate: new Date().toISOString().split('T')[0],
+        description: `Reversal of ${this.entryLabel(j)} — ${j.description || ''}`,
+        status: JournalEntryStatus.DRAFT
+      }).subscribe({ next: () => this.load() })
+    );
   }
 
   entryLabel(j: JournalEntryDTO): string {
@@ -93,5 +111,30 @@ export class FinanceJournalsComponent implements OnInit, OnDestroy {
       entryDate: new Date().toISOString().split('T')[0],
       description: '', reference: '', currency: 'NGN'
     };
+  }
+
+  exportCsv(): void {
+    const headers = ['Entry #', 'Date', 'Description', 'Status', 'Source'];
+    const rows = this.journals.map(j => [
+      this.entryLabel(j),
+      this.formatDate(j.entryDate),
+      j.description || '',
+      j.status,
+      this.sourceLabel(j),
+    ]);
+    downloadCsv(`journal-entries-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  }
+
+  get insightText(): string {
+    if (this.loading) return 'Analysing journal entries…';
+    const n = this.totalSize;
+    if (!n) return 'No journal entries yet. Use the form below to create your first manual journal entry.';
+    const parts: string[] = [`${n} total journal entries`];
+    if (this.postedCount > 0) parts.push(`${this.postedCount} posted`);
+    if (this.draftCount > 0) parts.push(`⚠ ${this.draftCount} draft${this.draftCount > 1 ? 's' : ''} pending`);
+    const action = this.draftCount > 0
+      ? ` → Review and post ${this.draftCount} draft entr${this.draftCount > 1 ? 'ies' : 'y'} to finalise your ledger.`
+      : ' → All entries are posted. Ledger is up to date.';
+    return parts.join(' · ') + action;
   }
 }

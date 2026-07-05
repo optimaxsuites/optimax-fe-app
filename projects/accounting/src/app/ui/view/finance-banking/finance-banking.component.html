@@ -1,5 +1,10 @@
 <div class="fd-content">
 
+  <div class="info-banner" [class.info-banner-warn]="bankConnections.length === 0">
+    <span class="info-banner-icon">{{ bankConnections.length === 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
   <div class="page-header">
     <div class="page-header-left">
       <div class="page-icon" style="background:#dbeafe;color:#2563eb;">🏦</div>

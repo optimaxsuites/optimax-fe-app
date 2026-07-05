@@ -1,5 +1,10 @@
 <div class="fd-content">
 
+  <div class="info-banner" [class.info-banner-warn]="pendingEvents > 0">
+    <span class="info-banner-icon">{{ pendingEvents > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
   <!-- Stat Cards -->
   <div class="stat-grid">
     <div class="stat-card stat-blue">
@@ -92,12 +97,12 @@
         <span class="fd-card-title">Quick Actions</span>
       </div>
       <div class="quick-grid">
-        <button class="fd-btn fd-btn-primary">&#128229; Review Events</button>
-        <button class="fd-btn fd-btn-outline">&#9999;&#65039; Manual Journal</button>
-        <button class="fd-btn fd-btn-outline">&#128184; New Payment Run</button>
-        <button class="fd-btn fd-btn-outline">&#128202; View Reports</button>
-        <button class="fd-btn fd-btn-outline">&#127970; Reconcile Bank</button>
-        <button class="fd-btn fd-btn-accent">&#127959; Chart of Accounts</button>
+        <button class="fd-btn fd-btn-primary" (click)="navigate('events')">&#128229; Review Events</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('journals')">&#9999;&#65039; Manual Journal</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('payments')">&#128184; New Payment Run</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('finance-reports')">&#128202; View Reports</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('banking')">&#127970; Reconcile Bank</button>
+        <button class="fd-btn fd-btn-accent" (click)="navigate('coa')">&#127959; Chart of Accounts</button>
       </div>
 
       <div class="aging-section">

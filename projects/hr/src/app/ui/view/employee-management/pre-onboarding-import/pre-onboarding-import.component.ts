@@ -1,5 +1,7 @@
-import { Component, EventEmitter, Output } from '@angular/core';
-import { createWorker } from 'tesseract.js';
+import { HttpClient } from '@angular/common/http';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../shared-component/service/environments/environment.prod';
 
 export interface ImportedEmployeeData {
   firstName?: string;
@@ -11,18 +13,26 @@ export interface ImportedEmployeeData {
   dob?: string;
   maritalStatus?: string;
   religion?: string;
+  nationality?: string;
+  stateOfOrigin?: string;
+  lgaOfOrigin?: string;
   address?: string;
   jobTitle?: string;
   department?: string;
   employmentType?: string;
   startDate?: string;
+  branch?: string;
+  highestQualification?: string;
+  fieldOfStudy?: string;
   bankName?: string;
+  accountName?: string;
   accountNumber?: string;
   bvn?: string;
   nokName?: string;
   nokPhone?: string;
   nokEmail?: string;
   nokRelationship?: string;
+  nokAddress?: string;
   g1Name?: string;
   g1Phone?: string;
   g1Email?: string;
@@ -40,6 +50,9 @@ export class PreOnboardingImportComponent {
   @Output() importComplete = new EventEmitter<ImportedEmployeeData>();
   @Output() cancel = new EventEmitter<void>();
 
+  private readonly http = inject(HttpClient);
+  private readonly extractUrl = `${environment.apiBaseUrl}/x/api/v2/ai/document/extract-form`;
+
   state: 'upload' | 'processing' | 'review' = 'upload';
   progress = 0;
   progressLabel = 'Initialising...';
@@ -50,14 +63,8 @@ export class PreOnboardingImportComponent {
   data: ImportedEmployeeData = {};
 
   // ── File drop / select ──────────────────────────────────────────────────────
-  onDragOver(e: DragEvent) {
-    e.preventDefault();
-    this.isDragOver = true;
-  }
-
-  onDragLeave() {
-    this.isDragOver = false;
-  }
+  onDragOver(e: DragEvent) { e.preventDefault(); this.isDragOver = true; }
+  onDragLeave() { this.isDragOver = false; }
 
   onDrop(e: DragEvent) {
     e.preventDefault();
@@ -71,7 +78,7 @@ export class PreOnboardingImportComponent {
     if (file) this.handleFile(file);
   }
 
-  // ── OCR pipeline ───────────────────────────────────────────────────────────
+  // ── Extraction pipeline ─────────────────────────────────────────────────────
   async handleFile(file: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowed.includes(file.type)) {
@@ -81,61 +88,67 @@ export class PreOnboardingImportComponent {
 
     this.error = '';
     this.state = 'processing';
-    this.progress = 0;
+    this.progress = 10;
     this.previewUrl = null;
 
     try {
-      let ocrSource: File | Blob;
+      let imageFile: File;
 
       if (file.type === 'application/pdf') {
         this.progressLabel = 'Rendering PDF page...';
-        this.progress = 8;
-        ocrSource = await this.pdfFirstPageToBlob(file);
-        this.previewUrl = URL.createObjectURL(ocrSource);
+        this.progress = 20;
+        const blob = await this.pdfFirstPageToBlob(file);
+        this.previewUrl = URL.createObjectURL(blob);
+        imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
       } else {
-        ocrSource = file;
+        imageFile = file;
         this.previewUrl = URL.createObjectURL(file);
       }
 
-      const worker = await createWorker('eng', 1, {
-        logger: (m: any) => {
-          if (m.status === 'loading tesseract core') {
-            this.progressLabel = 'Loading OCR engine...';
-            this.progress = 15;
-          } else if (m.status === 'loading language traineddata') {
-            this.progressLabel = 'Loading language data...';
-            this.progress = 35;
-          } else if (m.status === 'recognizing text') {
-            this.progressLabel = 'Reading form content...';
-            this.progress = 45 + Math.floor(m.progress * 50);
-          }
-        }
-      });
+      this.progressLabel = 'Reading form with AI...';
+      this.progress = 50;
 
-      const { data: { text } } = await worker.recognize(ocrSource);
-      await worker.terminate();
+      const form = new FormData();
+      form.append('file', imageFile);
+
+      let result: any;
+      try {
+        result = await firstValueFrom(this.http.post<any>(this.extractUrl, form));
+      } catch (httpErr: any) {
+        const msg = httpErr?.error?.message ?? httpErr?.error ?? httpErr?.message ?? String(httpErr);
+        this.error = `Extraction request failed: ${msg}`;
+        this.state = 'upload';
+        console.error('extract-form HTTP error', httpErr);
+        return;
+      }
 
       this.progress = 100;
       this.progressLabel = 'Done';
-      this.data = this.parseFormText(text);
+
+      if (result?.error) {
+        this.error = `AI extraction error: ${result.error}`;
+        this.state = 'upload';
+        return;
+      }
+
+      this.data = this.mapResult(result);
       this.state = 'review';
+
     } catch (err: any) {
-      this.error = 'Could not read the file. Please try a clearer image or ensure the scan is high quality.';
+      this.error = `Unexpected error: ${err?.message ?? String(err)}`;
       this.state = 'upload';
+      console.error('handleFile error', err);
     }
   }
 
-  // ── PDF → image conversion ─────────────────────────────────────────────────
+  // ── PDF → PNG ───────────────────────────────────────────────────────────────
   private async pdfFirstPageToBlob(file: File): Promise<Blob> {
     const arrayBuffer = await file.arrayBuffer();
 
-    let pdfjs: any;
-    try {
-      pdfjs = (window as any).pdfjsLib || await import('pdfjs-dist');
-    } catch {
-      pdfjs = (window as any).pdfjsLib;
+    let pdfjs: any = (window as any).pdfjsLib;
+    if (!pdfjs) {
+      try { pdfjs = await import('pdfjs-dist'); } catch { /* ignore */ }
     }
-
     if (!pdfjs) throw new Error('PDF library not available.');
 
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -146,120 +159,62 @@ export class PreOnboardingImportComponent {
 
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
     const page = await pdf.getPage(1);
-
-    const scale = 2.5;
-    const viewport = page.getViewport({ scale });
+    const viewport = page.getViewport({ scale: 2.5 });
 
     const canvas = document.createElement('canvas');
     canvas.width  = viewport.width;
     canvas.height = viewport.height;
-
-    const ctx = canvas.getContext('2d')!;
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
 
     return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(blob => {
-        if (blob) resolve(blob);
-        else reject(new Error('Failed to convert PDF page to image.'));
-      }, 'image/png');
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
     });
   }
 
-  // ── Text parsing ───────────────────────────────────────────────────────────
-  private parseFormText(raw: string): ImportedEmployeeData {
-    const result: ImportedEmployeeData = {};
-    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-
-    const emailMatch = raw.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    if (emailMatch) result.email = emailMatch[0];
-
-    const phoneMatch = raw.match(/\b0[7-9][01]\d{8}\b/);
-    if (phoneMatch) result.phone = phoneMatch[0];
-
-    const acctMatch = raw.match(/\b\d{10}\b/);
-    if (acctMatch) result.accountNumber = acctMatch[0];
-
-    const bvnMatch = raw.match(/\b\d{11}\b/);
-    if (bvnMatch) result.bvn = bvnMatch[0];
-
-    const dobMatch = raw.match(/(\d{1,2})\s*[\/\-]\s*(\d{1,2})\s*[\/\-]\s*(\d{4})/);
-    if (dobMatch) {
-      result.dob = `${dobMatch[3]}-${dobMatch[2].padStart(2, '0')}-${dobMatch[1].padStart(2, '0')}`;
-    }
-
-    if (/[✓✗xX]\s*Male|Male\s*[✓✗xX]/i.test(raw)) result.gender = 'Male';
-    else if (/[✓✗xX]\s*Female|Female\s*[✓✗xX]/i.test(raw)) result.gender = 'Female';
-
-    for (const s of ['Single', 'Married', 'Divorced', 'Widowed']) {
-      if (new RegExp(`[✓✗xX]\\s*${s}|${s}\\s*[✓✗xX]`, 'i').test(raw)) {
-        result.maritalStatus = s;
-        break;
-      }
-    }
-
-    for (const r of ['Christianity', 'Islam']) {
-      if (new RegExp(`[✓✗xX]\\s*${r}|${r}\\s*[✓✗xX]`, 'i').test(raw)) {
-        result.religion = r;
-        break;
-      }
-    }
-
-    for (const t of ['Full-Time', 'Part-Time', 'Contract']) {
-      if (new RegExp(`[✓✗xX]\\s*${t}|${t}\\s*[✓✗xX]`, 'i').test(raw)) {
-        result.employmentType = t;
-        break;
-      }
-    }
-
-    result.lastName        = this.after(lines, ['SURNAME', 'Surname']);
-    result.firstName       = this.after(lines, ['FIRST NAME', 'First Name']);
-    result.middleName      = this.after(lines, ['MIDDLE NAME', 'Middle Name']);
-    result.address         = this.after(lines, ['RESIDENTIAL ADDRESS', 'Residential Address']);
-    result.department      = this.after(lines, ['DEPARTMENT', 'Department']);
-    result.jobTitle        = this.after(lines, ['JOB TITLE', 'POSITION', 'Job Title', 'Position']);
-    result.startDate       = this.after(lines, ['PROPOSED START DATE', 'Start Date', 'START DATE']);
-    result.bankName        = this.after(lines, ['BANK NAME', 'Bank Name']);
-    result.nokName         = this.after(lines, ['NEXT OF KIN']);
-    result.nokPhone        = this.after(lines, ['NOK PHONE', 'Next of Kin Phone']);
-    result.nokRelationship = this.after(lines, ['RELATIONSHIP', 'Relationship']);
-    result.g1Name          = this.after(lines, ['GUARANTOR 1', 'Guarantor 1']);
-    result.g2Name          = this.after(lines, ['GUARANTOR 2', 'Guarantor 2']);
-
-    return result;
+  // ── Map AI response → ImportedEmployeeData ─────────────────────────────────
+  private mapResult(r: any): ImportedEmployeeData {
+    const s = (v: any) => (v && String(v).trim()) || undefined;
+    return {
+      firstName:           s(r.firstName),
+      lastName:            s(r.lastName),
+      middleName:          s(r.middleName),
+      dob:                 s(r.dob),
+      gender:              s(r.gender),
+      maritalStatus:       s(r.maritalStatus),
+      religion:            s(r.religion),
+      nationality:         s(r.nationality),
+      stateOfOrigin:       s(r.stateOfOrigin),
+      lgaOfOrigin:         s(r.lgaOfOrigin),
+      phone:               s(r.phone),
+      email:               s(r.email),
+      address:             s(r.address),
+      department:          s(r.department),
+      jobTitle:            s(r.jobTitle),
+      highestQualification: s(r.highestQualification),
+      fieldOfStudy:        s(r.fieldOfStudy),
+      employmentType:      s(r.employmentType),
+      startDate:           s(r.startDate),
+      branch:              s(r.branch),
+      bankName:            s(r.bankName),
+      accountName:         s(r.accountName),
+      accountNumber:       s(r.accountNumber),
+      bvn:                 s(r.bvn),
+      nokName:             s(r.nokName),
+      nokRelationship:     s(r.nokRelationship),
+      nokPhone:            s(r.nokPhone),
+      nokEmail:            s(r.nokEmail),
+      nokAddress:          s(r.nokAddress),
+      g1Name:              s(r.g1Name),
+      g1Phone:             s(r.g1Phone),
+      g1Email:             s(r.g1Email),
+      g2Name:              s(r.g2Name),
+      g2Phone:             s(r.g2Phone),
+      g2Email:             s(r.g2Email),
+    };
   }
 
-  private readonly SKIP_LABELS = new Set([
-    'SURNAME', 'FIRST NAME', 'MIDDLE NAME', 'DATE OF BIRTH', 'GENDER',
-    'MARITAL STATUS', 'RELIGION', 'NATIONALITY', 'STATE OF ORIGIN', 'LGA OF ORIGIN',
-    'PHONE NUMBER', 'ALTERNATE PHONE', 'EMAIL ADDRESS', 'PERSONAL EMAIL',
-    'RESIDENTIAL ADDRESS', 'PERMANENT ADDRESS', 'DEPARTMENT', 'JOB TITLE',
-    'EMPLOYMENT TYPE', 'PROPOSED START DATE', 'BRANCH', 'BANK NAME',
-    'ACCOUNT NAME', 'ACCOUNT NUMBER', 'BVN', 'FULL NAME', 'RELATIONSHIP',
-    'NEXT OF KIN', 'GUARANTOR 1', 'GUARANTOR 2', 'EMERGENCY CONTACT',
-    'PERSONAL INFORMATION', 'EMPLOYMENT DETAILS', 'BANK INFORMATION',
-    'DECLARATION', 'OPTIMAX', 'PRE-ONBOARDING'
-  ]);
-
-  private after(lines: string[], labels: string[]): string | undefined {
-    for (let i = 0; i < lines.length; i++) {
-      const up = lines[i].toUpperCase();
-      if (labels.some(l => up.includes(l.toUpperCase()))) {
-        for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-          const candidate = lines[j].trim();
-          if (candidate && !this.SKIP_LABELS.has(candidate.toUpperCase()) &&
-              candidate.length > 1 && !/^\d{1,2}$/.test(candidate)) {
-            return candidate;
-          }
-        }
-      }
-    }
-    return undefined;
-  }
-
-  // ── Actions ────────────────────────────────────────────────────────────────
-  createEmployee() {
-    this.importComplete.emit({ ...this.data });
-  }
+  // ── Actions ─────────────────────────────────────────────────────────────────
+  createEmployee() { this.importComplete.emit({ ...this.data }); }
 
   reset() {
     this.state = 'upload';
@@ -267,5 +222,6 @@ export class PreOnboardingImportComponent {
     this.previewUrl = null;
     this.error = '';
     this.progress = 0;
+    this.progressLabel = 'Initialising...';
   }
 }

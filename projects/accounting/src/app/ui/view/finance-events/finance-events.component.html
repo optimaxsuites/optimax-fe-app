@@ -1,8 +1,8 @@
 <div class="fd-content">
 
-  <div class="info-banner">
-    <span class="info-banner-icon">ℹ</span>
-    <div><strong>Accounting Events</strong> — Events are instances of Event Definitions. Status lifecycle: INITIATED → PENDING → APPROVED → COMPLETED.</div>
+  <div class="info-banner" [class.info-banner-warn]="stats.pending > 0">
+    <span class="info-banner-icon">{{ stats.pending > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
   </div>
 
   <div class="page-header">
@@ -14,7 +14,7 @@
       </div>
     </div>
     <div class="btn-group">
-      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline" (click)="exportCsv()">⬇ Export</button>
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
     </div>
   </div>
@@ -95,11 +95,11 @@
               }">{{ getStatus(ev) }}</span>
             </td>
             <td class="actions-cell">
-              <button class="act-btn" title="View">👁</button>
+              <button class="act-btn" [class.act-active]="selectedEvent?.id === ev.id" title="View detail" (click)="viewEvent(ev)">👁</button>
               <button class="act-btn act-approve" title="Approve" *ngIf="getStatus(ev)==='PENDING'" (click)="approve(ev)">✔</button>
-              <button class="act-btn act-edit" title="Edit" *ngIf="getStatus(ev)==='PENDING'">✏</button>
+              <button class="act-btn act-edit" title="Edit (coming soon)" *ngIf="getStatus(ev)==='PENDING'" disabled style="opacity:.4;cursor:not-allowed">✏</button>
               <button class="act-btn act-reject" title="Reject" *ngIf="getStatus(ev)==='PENDING'" (click)="reject(ev)">✕</button>
-              <button class="act-btn" title="Audit trail" *ngIf="getStatus(ev)!=='PENDING'">🔍</button>
+              <button class="act-btn" title="View audit log" *ngIf="getStatus(ev)!=='PENDING'" (click)="openAuditLog()">🔍</button>
             </td>
           </tr>
           <tr *ngIf="filteredEvents.length === 0">
@@ -116,6 +116,31 @@
         <button class="fd-btn fd-btn-primary fd-btn-sm">{{ page + 1 }}</button>
         <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="nextPage()" [disabled]="(page + 1) * pageSize >= totalSize">Next →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Event detail drawer -->
+  <div class="ev-drawer" *ngIf="selectedEvent">
+    <div class="ev-drawer-header">
+      <span class="ev-drawer-title">Event Detail — {{ selectedEvent.reference || selectedEvent.eventType }}</span>
+      <button class="ev-drawer-close" (click)="closeDetail()">✕</button>
+    </div>
+    <div class="ev-drawer-body">
+      <div class="ev-kv"><span class="ev-key">Reference</span><span class="ev-val">{{ selectedEvent.reference || '—' }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Event Type</span><span class="ev-val">{{ selectedEvent.eventType }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Source Module</span><span class="ev-val">{{ selectedEvent.sourceModule }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Date</span><span class="ev-val">{{ formatDate(selectedEvent.transactionDate) }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Amount</span><span class="ev-val">{{ formatAmount(selectedEvent) }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Currency</span><span class="ev-val">{{ selectedEvent.currency }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Direction</span><span class="ev-val">{{ getDirection(selectedEvent) }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Status</span><span class="ev-val">{{ getStatus(selectedEvent) }}</span></div>
+      <div class="ev-kv"><span class="ev-key">Counterparty</span><span class="ev-val">{{ getCounterparty(selectedEvent) }}</span></div>
+      <div class="ev-kv" *ngIf="selectedEvent.description"><span class="ev-key">Description</span><span class="ev-val">{{ selectedEvent.description }}</span></div>
+    </div>
+    <div class="ev-drawer-foot">
+      <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="openAuditLog()">🔍 Audit Log</button>
+      <button class="fd-btn fd-btn-approve fd-btn-sm" *ngIf="getStatus(selectedEvent)==='PENDING'" (click)="approve(selectedEvent)">✔ Approve</button>
+      <button class="fd-btn fd-btn-reject fd-btn-sm" *ngIf="getStatus(selectedEvent)==='PENDING'" (click)="reject(selectedEvent)">✕ Reject</button>
     </div>
   </div>
 

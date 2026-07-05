@@ -15,7 +15,7 @@
     </div>
     <div class="btn-group">
       <button class="fd-btn fd-btn-outline">📂 Archived Accounts</button>
-      <button class="fd-btn fd-btn-outline">📊 Run Trial Balance</button>
+      <button class="fd-btn fd-btn-outline" (click)="navigateTo('ledger')">📊 Run Trial Balance</button>
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
       <button class="fd-btn fd-btn-primary">＋ New Account</button>
     </div>
@@ -80,7 +80,7 @@
                 <td>{{ child.currency }}</td>
                 <td class="actions-cell">
                   <button class="act-btn act-edit" title="Edit">✏</button>
-                  <button class="act-btn act-reject" title="Delete">🗑</button>
+                  <button class="act-btn act-reject" title="Delete" (click)="deleteAccount(child)">🗑</button>
                 </td>
               </tr>
             </ng-container>

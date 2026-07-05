@@ -15,7 +15,10 @@ const NOTIF_KEY = 'hr_task_notifications_v1';
 
 @Injectable({ providedIn: 'root' })
 export class HrTaskNotificationService {
+  private _notifs$ = new BehaviorSubject<HrNotification[]>([]);
   private _count$ = new BehaviorSubject<number>(0);
+
+  readonly notifications$ = this._notifs$.asObservable();
   readonly unreadCount$ = this._count$.asObservable();
 
   constructor() { this.refresh(); }
@@ -37,6 +40,8 @@ export class HrTaskNotificationService {
   }
 
   private refresh(): void {
-    this._count$.next(this.getAll().filter(n => !n.read).length);
+    const all = this.getAll();
+    this._notifs$.next(all.slice(0, 10));
+    this._count$.next(all.filter(n => !n.read).length);
   }
 }
