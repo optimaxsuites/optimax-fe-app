@@ -1,8 +1,8 @@
 <div class="fd-content">
 
-  <div class="info-banner">
-    <span class="info-banner-icon">ℹ</span>
-    <div><strong>Unified naming — Journal Entries</strong> — Audit-ready double-entry bookkeeping. Reverse action and Recurring Templates available.</div>
+  <div class="info-banner" [class.info-banner-warn]="draftCount > 0">
+    <span class="info-banner-icon">{{ draftCount > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
   </div>
 
   <div class="page-header">
@@ -14,7 +14,7 @@
       </div>
     </div>
     <div class="btn-group">
-      <button class="fd-btn fd-btn-outline">⬇ Export CSV</button>
+      <button class="fd-btn fd-btn-outline" (click)="exportCsv()">⬇ Export CSV</button>
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
       <button class="fd-btn fd-btn-primary">＋ Manual Journal</button>
     </div>
@@ -67,10 +67,10 @@
               }">{{ sourceLabel(j) }}</span>
             </td>
             <td class="actions-cell">
-              <button class="act-btn" title="Audit trail">🔍</button>
+              <button class="act-btn" title="Audit trail" (click)="load()">🔍</button>
               <button class="act-btn act-edit" title="Edit" *ngIf="j.status === JournalEntryStatus.DRAFT">✏</button>
-              <button class="act-btn act-approve" title="Post" *ngIf="j.status === JournalEntryStatus.DRAFT">✔</button>
-              <button class="act-btn act-reverse" title="Reverse Entry" *ngIf="j.status === JournalEntryStatus.POSTED">↺</button>
+              <button class="act-btn act-approve" title="Post" *ngIf="j.status === JournalEntryStatus.DRAFT" (click)="postEntry(j)">✔</button>
+              <button class="act-btn act-reverse" title="Reverse Entry" *ngIf="j.status === JournalEntryStatus.POSTED" (click)="reverseEntry(j)">↺</button>
             </td>
           </tr>
           <tr *ngIf="journals.length === 0">

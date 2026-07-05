@@ -1,8 +1,8 @@
 <div class="fd-content">
 
-  <div class="info-banner">
-    <span class="info-banner-icon">ℹ</span>
-    <div><strong>AP module</strong> — Tracks approved expense and HR disbursement transactions pending payment.</div>
+  <div class="info-banner" [class.info-banner-warn]="overdueCount > 0">
+    <span class="info-banner-icon">{{ overdueCount > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
   </div>
 
   <div class="page-header">
@@ -15,7 +15,7 @@
     </div>
     <div class="btn-group">
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
-      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline" (click)="exportCsv()">⬇ Export</button>
     </div>
   </div>
 
@@ -55,7 +55,7 @@
             <td><span class="fd-badge" [ngClass]="billStatusClass(bill)">{{ billStatusLabel(bill) }}</span></td>
             <td class="actions-cell">
               <button class="act-btn" title="View">👁</button>
-              <button class="fd-btn fd-btn-primary fd-btn-sm" *ngIf="billStatusLabel(bill) !== 'PAID'" title="Pay Now">Pay Now</button>
+              <button class="fd-btn fd-btn-primary fd-btn-sm" *ngIf="billStatusLabel(bill) !== 'PAID'" title="Pay Now" (click)="payNow(bill)">Pay Now</button>
               <button class="fd-btn fd-btn-outline fd-btn-sm" *ngIf="billStatusLabel(bill) === 'APPROVED'" title="Schedule">Schedule</button>
             </td>
           </tr>

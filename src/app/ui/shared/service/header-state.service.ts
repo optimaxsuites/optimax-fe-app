@@ -243,21 +243,20 @@ export class HeaderStateService {
         return this.emptyState();
       }
       const parsed = JSON.parse(raw);
+      // On every page load, reset message unread counts and previews so stale
+      // DM/channel badges don't persist across reloads. The real-time notifier
+      // will re-populate them as live events arrive.
       return {
-        unreadChannels: Number(parsed?.unreadChannels || 0),
-        unreadDirectMessages: Number(parsed?.unreadDirectMessages || 0),
-        unreadMessages: Number(parsed?.unreadMessages || 0),
+        unreadChannels: 0,
+        unreadDirectMessages: 0,
+        unreadMessages: 0,
         unreadNotifications: Number(parsed?.unreadNotifications || 0),
         notifications: Array.isArray(parsed?.notifications)
           ? parsed.notifications.map((entry: any) =>
               this.sanitizeStoredNotification(entry),
             )
           : [],
-        messagePreviews: Array.isArray(parsed?.messagePreviews)
-          ? parsed.messagePreviews.map((entry: any) =>
-              this.sanitizeStoredMessagePreview(entry),
-            )
-          : [],
+        messagePreviews: [],
         profile: parsed?.profile || null,
       };
     } catch (_) {

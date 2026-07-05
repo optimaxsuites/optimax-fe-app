@@ -1,7 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { AccountingEventDTO, PaginationResult } from '../../domain/accounting.dto';
+import { formatFlexDate } from '../../sharedComponent/date.util';
+import { downloadCsv } from '../../sharedComponent/export.util';
 
 @Component({
   selector: 'app-finance-events',
@@ -21,10 +24,15 @@ export class FinanceEventsComponent implements OnInit, OnDestroy {
   filterCurrency = '';
 
   stats = { initiated: 0, pending: 0, approved: 0, completed: 0 };
+  selectedEvent: AccountingEventDTO | null = null;
 
   private subs = new Subscription();
 
-  constructor(private accountingService: AccountingService) {}
+  constructor(
+    private accountingService: AccountingService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -72,10 +80,7 @@ export class FinanceEventsComponent implements OnInit, OnDestroy {
     return symbol + (ev.amount ?? 0).toLocaleString();
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  formatDate(d: any): string { return formatFlexDate(d); }
 
   get filteredEvents(): AccountingEventDTO[] {
     const q = this.searchQuery.toLowerCase();
@@ -106,10 +111,54 @@ export class FinanceEventsComponent implements OnInit, OnDestroy {
   approve(ev: AccountingEventDTO): void {
     (ev as any).status = 'APPROVED';
     this.computeStats();
+    if (this.selectedEvent?.id === ev.id) this.selectedEvent = null;
   }
 
   reject(ev: AccountingEventDTO): void {
     (ev as any).status = 'REJECTED';
     this.computeStats();
+    if (this.selectedEvent?.id === ev.id) this.selectedEvent = null;
+  }
+
+  viewEvent(ev: AccountingEventDTO): void {
+    this.selectedEvent = this.selectedEvent?.id === ev.id ? null : ev;
+  }
+
+  closeDetail(): void { this.selectedEvent = null; }
+
+  openAuditLog(): void {
+    const uuid = this.route.snapshot.params['uuid'];
+    this.router.navigateByUrl(`/admin/accounting/finance-auditlog/${uuid}`);
+  }
+
+  exportCsv(): void {
+    const headers = ['Date', 'Reference', 'Description', 'Counterparty', 'Module', 'Direction', 'Amount', 'Currency', 'Status'];
+    const rows = this.filteredEvents.map(ev => [
+      this.formatDate(ev.transactionDate),
+      ev.reference || '',
+      ev.description || ev.eventType,
+      this.getCounterparty(ev),
+      ev.sourceModule,
+      this.getDirection(ev),
+      ev.amount ?? 0,
+      ev.currency,
+      this.getStatus(ev),
+    ]);
+    downloadCsv(`accounting-events-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  }
+
+  get insightText(): string {
+    if (this.loading) return 'Analysing events…';
+    const n = this.events.length;
+    if (!n) return 'No events found. Events are auto-generated when financial transactions occur across HR, POS, Expense and other modules.';
+    const parts: string[] = [`${n} event${n !== 1 ? 's' : ''} loaded`];
+    if (this.stats.pending > 0) parts.push(`⚠ ${this.stats.pending} pending approval`);
+    if (this.stats.initiated > 0) parts.push(`${this.stats.initiated} initiated`);
+    if (this.stats.approved > 0) parts.push(`${this.stats.approved} approved`);
+    if (this.stats.completed > 0) parts.push(`${this.stats.completed} completed`);
+    const action = this.stats.pending > 0
+      ? ` → ${this.stats.pending} item${this.stats.pending > 1 ? 's' : ''} require your approval before they can post to ledger.`
+      : ' → All events have been reviewed.';
+    return parts.join(' · ') + action;
   }
 }

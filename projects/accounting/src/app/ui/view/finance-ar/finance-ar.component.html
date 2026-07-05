@@ -1,8 +1,8 @@
 <div class="fd-content">
 
-  <div class="info-banner">
-    <span class="info-banner-icon">ℹ</span>
-    <div><strong>AR module</strong> — Tracks income-generating transactions by aging bucket. Derived from POS, Hospitality and Marketplace source modules.</div>
+  <div class="info-banner" [class.info-banner-warn]="days90 > 0 || aging30Plus > 0">
+    <span class="info-banner-icon">{{ days90 > 0 ? '🔴' : aging30Plus > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
   </div>
 
   <div class="page-header">
@@ -15,7 +15,7 @@
     </div>
     <div class="btn-group">
       <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
-      <button class="fd-btn fd-btn-outline">⬇ Export</button>
+      <button class="fd-btn fd-btn-outline" (click)="exportCsv()">⬇ Export</button>
     </div>
   </div>
 
@@ -46,7 +46,7 @@
             <td><span class="fd-badge" [ngClass]="statusBadgeClass(inv.status)">{{ displayLabel(inv.status) }}</span></td>
             <td class="actions-cell">
               <button class="act-btn" title="View">👁</button>
-              <button class="act-btn pay-btn" title="Record Payment" *ngIf="isOutstanding(inv)">💳 Record</button>
+              <button class="act-btn pay-btn" title="Record Payment" *ngIf="isOutstanding(inv)" (click)="recordPayment(inv)">💳 Record</button>
             </td>
           </tr>
           <tr *ngIf="invoices.length === 0">

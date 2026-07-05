@@ -1970,23 +1970,28 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Detail Slide-over Panel — mockup styles
+   Detail Slide-over Panel — PrimeNG Sidebar override
 ═══════════════════════════════════════════════════════════════ */
+.detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1049;
+  background: transparent;
+}
+
 .detail-panel {
   position: fixed;
-  right: -540px;
   top: 0;
-  bottom: 0;
+  right: 0;
   width: 540px;
-  background: var(--white);
+  height: 100vh;
+  z-index: 1050;
+  background: #fff;
   box-shadow: -8px 0 28px rgba(15, 23, 42, 0.14);
-  z-index: 500;
-  transition: right 0.28s ease;
   display: flex;
   flex-direction: column;
-  font-family: var(--font);
-
-  &.open { right: 0; }
+  font-family: 'Roboto Slab', serif;
+  overflow: hidden;
 }
 
 .dp-header {
@@ -2975,6 +2980,53 @@
   justify-content: center;
   cursor: pointer;
   &:hover { background: rgba(255,255,255,.28); }
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,.18);
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  line-height: 1;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+  &:hover { background: rgba(255,255,255,.35); }
+  &.lightbox-prev { left: -52px; }
+  &.lightbox-next { right: -52px; }
+}
+
+.lightbox-dots {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.lightbox-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.4);
+  &.active { background: #fff; }
+}
+
+.lightbox-counter {
+  position: absolute;
+  bottom: -26px;
+  right: 0;
+  color: rgba(255,255,255,.7);
+  font-size: 12px;
 }
 
 /* ── Toast stack ──────────────────────────────────────────────────────── */

@@ -1,7 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { AccountingEventDTO, JournalEntryDTO, LedgerEntryDTO, AccountType } from '../../domain/accounting.dto';
+import { formatFlexDate } from '../../sharedComponent/date.util';
 
 @Component({
   selector: 'app-finance-dashboard',
@@ -23,7 +25,11 @@ export class FinanceDashboardComponent implements OnInit, OnDestroy {
 
   get netProfit(): number { return this.totalRevenue - this.totalExpenses; }
 
-  constructor(private accountingService: AccountingService) {}
+  constructor(
+    private accountingService: AccountingService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -71,9 +77,29 @@ export class FinanceDashboardComponent implements OnInit, OnDestroy {
     return '₦' + val.toLocaleString();
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  formatDate(d: any): string { return formatFlexDate(d); }
+
+  navigate(segment: string): void {
+    const uuid = this.route.snapshot.params['uuid'];
+    this.router.navigateByUrl(`/admin/accounting/${segment}/${uuid}`);
+  }
+
+  get insightText(): string {
+    if (this.loading) return 'Aggregating financial data…';
+    const profit = this.netProfit;
+    const sign = profit >= 0 ? '+' : '';
+    const parts: string[] = [
+      `Revenue: ₦${this.totalRevenue.toLocaleString()}`,
+      `Expenses: ₦${this.totalExpenses.toLocaleString()}`,
+      `Net: ${sign}₦${Math.abs(profit).toLocaleString()}`,
+    ];
+    if (this.pendingEvents > 0) parts.push(`⚠ ${this.pendingEvents} event${this.pendingEvents > 1 ? 's' : ''} awaiting approval`);
+    const action = this.pendingEvents > 0
+      ? ` → Review pending events to keep your ledger current.`
+      : profit < 0
+        ? ` → Net loss detected. Review expense categories for cost optimisation opportunities.`
+        : ` → Financials are healthy. All events reviewed.`;
+    return parts.join(' · ') + action;
   }
 
   entryLabel(j: JournalEntryDTO): string {

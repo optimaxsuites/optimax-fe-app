@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { DisbursementService } from '../../../services/disbursement.service';
 import { PaystackService, PaystackBalanceResponse } from '../../../services/paystack.service';
 import { BankConnectionDTO, PaystackTransactionDTO, PaystackTransactionType } from '../../domain/accounting.dto';
+import { formatFlexDate } from '../../sharedComponent/date.util';
 
 @Component({
   selector: 'app-finance-banking',
@@ -62,10 +63,7 @@ export class FinanceBankingComponent implements OnInit, OnDestroy {
     return '₦' + val.toLocaleString();
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
+  formatDate(d: any): string { return formatFlexDate(d); }
 
   providerInitials(name: string): string {
     return (name || 'BK').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -73,5 +71,22 @@ export class FinanceBankingComponent implements OnInit, OnDestroy {
 
   get totalBalance(): number {
     return (this.paystackBalance?.availableBalance ?? 0) / 100;
+  }
+
+  get insightText(): string {
+    if (this.loading) return 'Connecting to bank data sources…';
+    const conns = this.bankConnections.length;
+    const active = this.bankConnections.filter(c => c.active).length;
+    const bal = this.paystackBalance ? `Paystack balance: ₦${this.totalBalance.toLocaleString()}` : 'Paystack balance unavailable';
+    const parts: string[] = [bal];
+    if (conns > 0) parts.push(`${active} of ${conns} bank connection${conns !== 1 ? 's' : ''} active`);
+    else parts.push('No bank accounts connected via Mono');
+    if (this.paystackTxns.length > 0) parts.push(`${this.paystackTxns.length} recent transactions`);
+    const action = conns === 0
+      ? ' → Connect a bank account via Mono Open Banking to enable statement sync and reconciliation.'
+      : active < conns
+        ? ` → ${conns - active} connection${conns - active > 1 ? 's' : ''} inactive — check API credentials in Settings.`
+        : ' → All bank connections active. Use Reconciliation tab to match statement lines to GL entries.';
+    return parts.join(' · ') + action;
   }
 }

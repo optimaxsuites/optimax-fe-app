@@ -86,4 +86,18 @@ export class FinancePaymentsComponent implements OnInit, OnDestroy {
     if (Array.isArray(d)) return DisbursementService.parseJavaDate(d);
     return new Date(d);
   }
+
+  get insightText(): string {
+    if (this.loading) return 'Loading payment tray…';
+    const n = this.allTransactions.length;
+    if (!n) return 'No pending payment requests. Requests appear here when expense claims or payroll runs are approved.';
+    const auth2 = this.requiresSecondAuth;
+    const total = this.totalAwaiting;
+    const parts: string[] = [`${n} request${n !== 1 ? 's' : ''} pending disbursement · ₦${total.toLocaleString()} total`];
+    if (auth2 > 0) parts.push(`⚠ ${auth2} require CBN dual-authorisation (>₦500k)`);
+    const action = auth2 > 0
+      ? ` → A second authoriser must approve before these can be processed.`
+      : ` → Review requests in the tray, then proceed through the 5-step wizard.`;
+    return parts.join(' · ') + action;
+  }
 }

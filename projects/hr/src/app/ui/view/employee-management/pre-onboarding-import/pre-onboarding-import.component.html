@@ -129,6 +129,20 @@
             <input type="text" [(ngModel)]="data.phone" placeholder="Not detected" />
           </div>
         </div>
+        <div class="review-grid three">
+          <div class="rv-field">
+            <label>Nationality</label>
+            <input type="text" [(ngModel)]="data.nationality" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>State of Origin</label>
+            <input type="text" [(ngModel)]="data.stateOfOrigin" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>LGA of Origin</label>
+            <input type="text" [(ngModel)]="data.lgaOfOrigin" placeholder="Not detected" />
+          </div>
+        </div>
         <div class="review-grid one">
           <div class="rv-field">
             <label>Email Address</label>
@@ -156,7 +170,7 @@
             <input type="text" [(ngModel)]="data.jobTitle" placeholder="Not detected" />
           </div>
         </div>
-        <div class="review-grid two">
+        <div class="review-grid three">
           <div class="rv-field">
             <label>Employment Type</label>
             <select [(ngModel)]="data.employmentType">
@@ -170,17 +184,37 @@
             <label>Proposed Start Date</label>
             <input type="date" [(ngModel)]="data.startDate" />
           </div>
+          <div class="rv-field">
+            <label>Branch / Location</label>
+            <input type="text" [(ngModel)]="data.branch" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid two">
+          <div class="rv-field">
+            <label>Highest Qualification</label>
+            <input type="text" [(ngModel)]="data.highestQualification" placeholder="Not detected" />
+          </div>
+          <div class="rv-field">
+            <label>Field of Study</label>
+            <input type="text" [(ngModel)]="data.fieldOfStudy" placeholder="Not detected" />
+          </div>
         </div>
       </div>
 
       <!-- Bank Information -->
       <div class="review-section">
         <div class="review-section-title"><i class="fas fa-university"></i> Bank Information</div>
-        <div class="review-grid three">
+        <div class="review-grid two">
           <div class="rv-field">
             <label>Bank Name</label>
             <input type="text" [(ngModel)]="data.bankName" placeholder="Not detected" />
           </div>
+          <div class="rv-field">
+            <label>Account Name</label>
+            <input type="text" [(ngModel)]="data.accountName" placeholder="Not detected" />
+          </div>
+        </div>
+        <div class="review-grid two">
           <div class="rv-field">
             <label>Account Number</label>
             <input type="text" [(ngModel)]="data.accountNumber" placeholder="Not detected" />

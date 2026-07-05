@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { AccountDTO, AccountType, PaginationResult } from '../../domain/accounting.dto';
@@ -20,7 +21,11 @@ export class FinanceCoaComponent implements OnInit, OnDestroy {
 
   private subs = new Subscription();
 
-  constructor(private accountingService: AccountingService) {}
+  constructor(
+    private accountingService: AccountingService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -74,5 +79,20 @@ export class FinanceCoaComponent implements OnInit, OnDestroy {
 
   toggle(id: number): void {
     this.expanded[id] = !this.expanded[id];
+  }
+
+  deleteAccount(account: AccountDTO): void {
+    if (!confirm(`Delete account "${account.accountCode} — ${account.accountName}"? This cannot be undone.`)) return;
+    this.subs.add(
+      this.accountingService.deleteAccount(account.id).subscribe({
+        next: () => { this.accounts = this.accounts.filter(a => a.id !== account.id); },
+        error: (err) => { alert('Could not delete account: ' + (err?.error?.message || 'Server error')); }
+      })
+    );
+  }
+
+  navigateTo(segment: string): void {
+    const uuid = this.route.snapshot.params['uuid'];
+    this.router.navigateByUrl(`/admin/accounting/${segment}/${uuid}`);
   }
 }

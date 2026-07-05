@@ -1,8 +1,8 @@
 <div class="fd-content">
 
-  <div class="info-banner">
-    <span class="info-banner-icon">ℹ</span>
-    <div><strong>Renamed from "Disbursement Tray"</strong> — "Payment Runs" is the global ERP standard term. Full 5-step wizard: Tray → Review → Pay → Confirm → Ledger.</div>
+  <div class="info-banner" [class.info-banner-warn]="requiresSecondAuth > 0">
+    <span class="info-banner-icon">{{ requiresSecondAuth > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
   </div>
 
   <div class="page-header">

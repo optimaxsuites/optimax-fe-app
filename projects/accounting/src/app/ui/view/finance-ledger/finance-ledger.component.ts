@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription, forkJoin } from 'rxjs';
 import { AccountingService } from '../../../services/accounting.service';
 import { AccountDTO, LedgerEntryDTO, PaginationResult } from '../../domain/accounting.dto';
+import { formatFlexDate } from '../../sharedComponent/date.util';
+import { downloadCsv } from '../../sharedComponent/export.util';
 
 @Component({
   selector: 'app-finance-ledger',
@@ -62,10 +64,7 @@ export class FinanceLedgerComponent implements OnInit, OnDestroy {
     this.load();
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-  }
+  formatDate(d: any): string { return formatFlexDate(d, { day: '2-digit', month: 'short' }); }
 
   journalRef(entry: LedgerEntryDTO): string {
     const id = entry.journalEntryLine?.journalEntry?.entryNumber
@@ -116,5 +115,43 @@ export class FinanceLedgerComponent implements OnInit, OnDestroy {
 
   nextPage(): void {
     if ((this.page + 1) * this.pageSize < this.totalSize) { this.page++; this.load(); }
+  }
+
+  exportCsv(): void {
+    const headers = ['Date', 'Journal Ref', 'Account', 'Description', 'Debit', 'Credit'];
+    const rows = this.ledgerEntries.map(e => [
+      this.formatDate((e as any).entryDate || (e as any).transactionDate),
+      this.journalRef(e),
+      this.accountLabel(e),
+      (e as any).description || '',
+      e.debit ?? '',
+      e.credit ?? '',
+    ]);
+    downloadCsv(`ledger-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  }
+
+  exportTrialCsv(): void {
+    const headers = ['Account Code', 'Account Name', 'Type', 'Total Debit', 'Total Credit', 'Balance'];
+    const rows = this.trialBalance.map(r => [
+      r.account.accountCode,
+      r.account.accountName,
+      r.account.accountType,
+      r.totalDebit,
+      r.totalCredit,
+      r.totalDebit - r.totalCredit,
+    ]);
+    downloadCsv(`trial-balance-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+  }
+
+  get insightText(): string {
+    if (this.loading) return 'Loading ledger entries…';
+    const n = this.ledgerEntries.length;
+    const accs = this.trialBalance.length;
+    if (!n) return 'No ledger entries found. Entries are auto-posted when journal entries are approved.';
+    const balanced = this.trialBalanced ? 'Trial balance is BALANCED ✓' : '⚠ Trial balance is UNBALANCED — check for missing entries';
+    const totalDr = '₦' + this.trialTotalDebit.toLocaleString();
+    const totalCr = '₦' + this.trialTotalCredit.toLocaleString();
+    const filter = this.filterAccountId ? ` Filtered to 1 account.` : ` Across ${accs} account${accs !== 1 ? 's' : ''}.`;
+    return `${n} ledger entries showing.${filter} Total Dr: ${totalDr} · Total Cr: ${totalCr}. ${balanced}.`;
   }
 }
