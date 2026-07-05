@@ -18,6 +18,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   userRegData: any = {};
   private navigationSubscription?: Subscription;
   private notifSub?: Subscription;
+  private notifListSub?: Subscription;
 
   readonly hrSettingsRoute: string;
 
@@ -44,7 +45,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
     // because it needs to work even before the session is fully populated (new-tab opens).
     this.notifSub = this.notifService.unreadCount$.subscribe((count: number) => {
       this.notifCount = count;
-      this.notifications = this.notifService.getAll().slice(0, 10);
+    });
+    this.notifListSub = this.notifService.notifications$.subscribe(items => {
+      this.notifications = items;
     });
 
     if (sessionStorage.getItem("username") == null) {
@@ -69,6 +72,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.navigationSubscription?.unsubscribe();
     this.notifSub?.unsubscribe();
+    this.notifListSub?.unsubscribe();
   }
 
   @HostListener('document:click')
@@ -76,9 +80,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   toggleNotifPanel(): void {
     this.showNotifPanel = !this.showNotifPanel;
-    if (this.showNotifPanel) {
-      this.notifications = this.notifService.getAll().slice(0, 10);
-    }
   }
 
   markAllRead(): void {

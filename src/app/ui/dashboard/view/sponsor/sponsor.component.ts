@@ -7,6 +7,6 @@ import { Component } from '@angular/core';
 })
 export class SponsorComponent {
   profiles = [
-    { img: 'assets/profile.jpg', name: 'John Doe', position: 'Developer' },
+    { img: 'assets/profile.jpg', name: 'Rolayo Awe', position: 'Developer' },
   ];
 }

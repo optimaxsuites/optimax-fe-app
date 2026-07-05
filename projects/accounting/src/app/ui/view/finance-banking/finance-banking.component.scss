@@ -1,0 +1,401 @@
+$primary: #2E6276;
+$primary-hover: #1f4a5a;
+$accent: #2EB270;
+$accent-amber: #f59e0b;
+$green: #16a34a;
+$red: #dc2626;
+$purple: #7c3aed;
+$blue: #2563eb;
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-700: #374151;
+$gray-900: #111827;
+
+.fd-content {
+  padding: 24px;
+  font-family: 'Roboto Slab', serif;
+  background: $gray-50;
+  min-height: 100%;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: $gray-900;
+}
+
+.page-sub {
+  font-size: 13px;
+  color: $gray-500;
+  margin-top: 2px;
+}
+
+.fd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Roboto Slab', serif;
+
+  &:active { transform: scale(.97); }
+
+  &.fd-btn-primary {
+    background: $primary;
+    color: #fff;
+    &:hover { background: $primary-hover; }
+  }
+
+  &.fd-btn-outline {
+    background: #fff;
+    color: $gray-700;
+    border: 1px solid $gray-200;
+    &:hover { background: $gray-50; }
+  }
+
+  &.fd-btn-sm {
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+}
+
+.fd-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+
+  &.badge-green  { background: #dcfce7; color: $green; }
+  &.badge-red    { background: #fee2e2; color: $red; }
+  &.badge-amber  { background: #fef3c7; color: #92400e; }
+  &.badge-blue   { background: #dbeafe; color: $blue; }
+}
+
+.inner-tabs {
+  display: flex;
+  border-bottom: 2px solid $gray-100;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.inner-tab {
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  color: $gray-400;
+  font-family: 'Roboto Slab', serif;
+  transition: all .15s;
+
+  &.active { border-bottom-color: $primary; color: $primary; }
+
+  &:hover:not(.active) { color: $gray-700; }
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  border: 1px solid $gray-100;
+  position: relative;
+  overflow: hidden;
+  transition: transform .3s, box-shadow .3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    border-radius: 5px 0 0 5px;
+  }
+
+  &.stat-blue::before   { background: $primary; }
+  &.stat-green::before  { background: $green; }
+  &.stat-amber::before  { background: $accent-amber; }
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: $gray-400;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+
+.fd-card {
+  background: #fff;
+  border-radius: 1.5rem;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  border: 1px solid $gray-100;
+  margin-bottom: 20px;
+}
+
+.bank-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.bank-card {
+  background: #fff;
+  border-radius: 1.5rem;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  border: 1px solid $gray-100;
+}
+
+.bank-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.bank-logo {
+  width: 44px;
+  height: 44px;
+  background: $gray-50;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.bank-name {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: $gray-400;
+  margin-bottom: 4px;
+}
+
+.bank-acct-num {
+  font-family: monospace;
+  font-weight: 900;
+  color: $primary;
+  margin-bottom: 8px;
+}
+
+.bank-balance {
+  font-size: 24px;
+  font-weight: 900;
+  color: $primary;
+}
+
+.bank-sync {
+  font-size: 11px;
+  color: $gray-400;
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+.bank-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bank-add-card {
+  border: 2px dashed $gray-200;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  cursor: pointer;
+  color: $gray-400;
+  transition: all .15s;
+
+  &:hover {
+    border-color: $primary;
+    color: $primary;
+  }
+}
+
+.add-icon { font-size: 28px; margin-bottom: 8px; }
+.add-label { font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.add-sub { font-size: 12px; margin-top: 4px; }
+
+.recon-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.recon-col-header {
+  padding: 12px 16px;
+  background: $gray-50;
+  border-bottom: 1px solid $gray-100;
+  font-weight: 900;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: $primary;
+}
+
+.recon-row {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid $gray-100;
+  font-size: 13px;
+
+  &:last-child { border: none; }
+}
+
+.recon-match   { background: #f0fdf4; }
+.recon-unmatch { background: #fffbeb; border-left: 3px solid $accent-amber; }
+.recon-empty   { color: $gray-300; }
+
+.recon-amt {
+  font-weight: 700;
+
+  &.debit  { color: $red; }
+  &.credit { color: $green; }
+}
+
+.recon-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ref-cell {
+  font-family: monospace;
+  color: $primary;
+  font-weight: 900;
+}
+
+.mono-center { max-width: 400px; margin: 40px auto; text-align: center; }
+.mono-icon { background: rgba(46,98,118,.08); color: $primary; width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 16px; font-size: 26px; display: flex; align-items: center; justify-content: center; }
+.mono-title { font-size: 20px; font-weight: 900; margin-bottom: 8px; color: $gray-900; }
+.mono-sub { font-size: 13px; color: $gray-500; margin-bottom: 24px; }
+.mono-btn { width: 100%; justify-content: center; padding: 14px; }
+.dr-cell { color: $red; font-weight: 700; }
+.cr-cell { color: $green; font-weight: 700; }
+.nil-cell { color: $gray-300; }
+.balance-cell { font-weight: 900; }
+
+.fd-table-wrap { overflow-x: auto; }
+
+.fd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  thead tr { background: $primary; color: #fff; }
+  th {
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    text-align: left;
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid $gray-100;
+    color: $gray-700;
+    vertical-align: middle;
+  }
+  tr:nth-child(even) td { background: #fafafa; }
+  tr:hover td { background: $gray-50; }
+}
+
+.loading-row { display:flex; justify-content:center; align-items:center; padding:32px; color:#94a3b8; font-size:13px; }
+
+.bank-balance-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.balance-label  { color: #15803d; font-weight: 600; }
+.balance-amount { font-size: 20px; font-weight: 800; color: #166534; margin-left: auto; }
+.balance-ccy    { color: #4ade80; font-size: 11px; font-weight: 700; }
+
+.info-banner-warn { background:#fef9c3; border-color:#fde68a; }
+.info-banner-warn .info-banner-icon { color:#b45309; }

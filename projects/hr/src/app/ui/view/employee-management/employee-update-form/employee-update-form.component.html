@@ -1,0 +1,146 @@
+<!-- Toolbar (hidden on print) -->
+<div class="form-toolbar no-print">
+  <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="toolbar-logo" />
+  <span class="toolbar-title">Employee Record Update Form</span>
+  <button (click)="print()" class="print-btn"><i class="fas fa-print"></i> Print Form</button>
+</div>
+
+<!-- A4 Form page -->
+<div class="form-page">
+
+  <!-- Company header -->
+  <div class="form-header">
+    <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="form-logo" />
+    <div class="form-header-title">
+      <div class="company-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
+      <div class="form-name">Employee Record Update Form</div>
+      <div class="form-meta">Complete all sections that apply. Return to HR.</div>
+    </div>
+    <div class="form-ref-block">
+      <div class="ref-row"><span>Form No:</span><span class="ref-line">_____________</span></div>
+      <div class="ref-row"><span>Date:</span><span class="ref-line">{{ today }}</span></div>
+      <div class="ref-row"><span>HR Ref:</span><span class="ref-line">_____________</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION A: Employee Identification -->
+  <div class="section-bar">A — Employee Identification</div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Employee ID</label><div class="field-line"></div></div>
+    <div class="field-group"><label>First Name</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Surname</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Department</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Job Title</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Date of Last Update</label><div class="field-line"></div></div>
+  </div>
+
+  <!-- SECTION B: Reason for Update (checkboxes) -->
+  <div class="section-bar">B — Reason for Update <span class="section-note">(tick all that apply)</span></div>
+  <div class="check-grid">
+    <div class="check-item"><div class="check-box"></div><span>Personal Information</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Contact Details</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Residential Address</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Banking Details</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Next of Kin / Emergency Contact</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Guarantor Information</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Position / Grade Change</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Asset Record Update</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Other (specify below)</span></div>
+  </div>
+  <div class="field-group" style="margin-top:6px"><label>Other (specify)</label><div class="field-line"></div></div>
+
+  <!-- SECTION C: Updated Personal / Contact Information -->
+  <div class="section-bar">C — Updated Personal &amp; Contact Information <span class="section-note">(fill only what has changed)</span></div>
+  <div class="field-grid two">
+    <div class="field-group"><label>First Name (new)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Surname (new)</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Middle Name (new)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Phone Number (new)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Alternate Phone</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid two">
+    <div class="field-group"><label>Personal Email (new)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Marital Status (new)</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-group"><label>Residential Address (new)</label><div class="field-line"></div></div>
+  <div class="field-group"><label>Permanent Address (new)</label><div class="field-line"></div></div>
+
+  <!-- SECTION D: Banking Details Update -->
+  <div class="section-bar">D — Banking Details Update</div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Bank Name</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Account Name</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Account Number</label>
+      <div class="digit-row"><div class="digit-box" *ngFor="let d of ten"></div></div>
+    </div>
+  </div>
+  <div class="field-grid two">
+    <div class="field-group"><label>BVN</label>
+      <div class="digit-row"><div class="digit-box" *ngFor="let d of eleven"></div></div>
+    </div>
+    <div class="field-group"><label>Reason for change</label><div class="field-line"></div></div>
+  </div>
+
+  <!-- SECTION E: Next of Kin / Emergency Contact Update -->
+  <div class="section-bar">E — Next of Kin &amp; Emergency Contact Update</div>
+  <div class="field-grid two">
+    <div class="field-group"><label>Full Name</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Relationship</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Phone</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Email</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Address</label><div class="field-line"></div></div>
+  </div>
+
+  <!-- SECTION F: Company Assets in Possession -->
+  <div class="section-bar">F — Company Assets in Possession</div>
+  <div class="assets-note">List all company-owned assets currently in your care. HR will verify and update the asset register.</div>
+  <table class="assets-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Asset Type</th>
+        <th>Description / Model</th>
+        <th>Serial Number / ID</th>
+        <th>Date Issued</th>
+        <th>Condition</th>
+        <th>Return Due</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let i of [1,2,3,4,5,6,7,8]">
+        <td class="num-cell">{{ i }}</td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="assets-note" style="margin-top:4px">Asset types include: Laptop, Mobile Phone, Access Card/Key, Vehicle, Uniform, Tools, Documents, Other</div>
+
+  <!-- SECTION G: Declaration & Signatures -->
+  <div class="section-bar">G — Declaration &amp; Signatures</div>
+  <div class="declaration-box">
+    I, the undersigned, confirm that the information provided in this form is accurate and complete. I understand that providing false information is a disciplinary offence. I consent to the update of my HR records accordingly.
+  </div>
+  <div class="sig-grid four">
+    <div class="sig-block"><div class="sig-line"></div><span>Employee Signature</span><div class="sig-date"></div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>Employee Name (Print)</span><div class="sig-date"></div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>HR Officer</span><div class="sig-date">Date: ________________</div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>Line Manager</span><div class="sig-date">Date: ________________</div></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="form-footer">
+    Centrifuge Information Technology Ltd &middot; HR Department &middot; Confidential &middot; Do not photocopy without HR authorisation
+  </div>
+
+</div>

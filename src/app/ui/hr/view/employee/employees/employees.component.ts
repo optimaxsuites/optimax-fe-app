@@ -40,7 +40,7 @@ employeeList = [
     department: 'IT',
     level: 'Senior Level 1',
     employmentType: 'Full-Time',
-    supervisor: 'John Doe',
+    supervisor: 'Rolayo Awe',
     bankName: 'GTBank',
     accountNumber: '1234567890',
     nin: '9876543210',

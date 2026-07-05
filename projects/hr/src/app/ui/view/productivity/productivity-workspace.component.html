@@ -302,12 +302,13 @@
                   </strong>
                   <span [innerHTML]="sanitizeHtml(task.followUps[0].text)"></span>
                   <div class="fu-thumb" *ngIf="task.followUps[0].photos?.length">
-                    <ng-container *ngFor="let ph of task.followUps[0].photos | slice:0:3">
-                      <div class="ph-thumb" (click)="openLightbox(ph);$event.stopPropagation()">
+                    <ng-container *ngFor="let ph of task.followUps[0].photos | slice:0:3; let pi = index">
+                      <div class="ph-thumb" (click)="openLightbox(task.followUps[0].photos, pi);$event.stopPropagation()">
                         <img [src]="ph" alt="photo">
                       </div>
                     </ng-container>
-                    <div class="more-ph" *ngIf="task.followUps[0].photos.length > 3">
+                    <div class="more-ph" *ngIf="task.followUps[0].photos.length > 3"
+                         (click)="openLightbox(task.followUps[0].photos, 3);$event.stopPropagation()">
                       +{{ task.followUps[0].photos.length - 3 }}
                     </div>
                   </div>
@@ -422,9 +423,9 @@
                    [class.today]="di + 1 === todayColumn()">{{ d }}</div>
             </div>
           </div>
-          <ng-container *ngFor="let row of ganttRows">
-            <div class="gantt-row-g" [class.gantt-child-row]="row.isChild">
-              <div class="gantt-task-label" (click)="!row.isChild && openDetail(row.task)">
+          <ng-container *ngFor="let row of ganttRows; trackBy: trackGanttRow">
+            <div class="gantt-row-g" [class.gantt-child-row]="row.isChild" style="cursor:pointer">
+              <div class="gantt-task-label" (click)="openDetail(row.task)">
                 <span *ngIf="row.isChild" style="color:#9ca3af;font-size:11px;margin-left:16px">↳ {{ row.sub?.title }}</span>
                 <ng-container *ngIf="!row.isChild">
                   <strong style="font-size:12px">{{ row.task.title }}</strong>
@@ -433,7 +434,7 @@
                 </ng-container>
                 <span *ngIf="!row.isChild" style="font-size:11px;color:#9ca3af;margin-left:auto">{{ taskProgressDisplay(row.task) }}%</span>
               </div>
-              <div class="gantt-track-area">
+              <div class="gantt-track-area" (click)="openDetail(row.task)">
                 <div class="today-line" [style.left.%]="(todayColumn() / ganttDays.length) * 100"></div>
                 <!-- Parent task bar -->
                 <div *ngIf="!row.isChild" class="gantt-bar parent-b"
@@ -1346,8 +1347,9 @@
   </div><!-- /pm-content -->
 
   <!-- ══ DETAIL SLIDE-OVER ════════════════════════════════════════════════════ -->
-  <div class="detail-panel" [class.open]="selectedTask !== null">
-    <ng-container *ngIf="selectedTask">
+  <div class="detail-backdrop" *ngIf="detailPanelVisible" (click)="closeDetail()"></div>
+  <div class="detail-panel" *ngIf="detailPanelVisible && selectedTask" (click)="$event.stopPropagation()">
+    <ng-container>
 
       <!-- Panel header -->
       <div class="dp-header">
@@ -1574,12 +1576,12 @@
               <!-- Photos carousel in timeline entry -->
               <div class="tl-carousel" *ngIf="fu.photos?.length">
                 <div class="carousel-single" *ngIf="fu.photos.length === 1">
-                  <img [src]="fu.photos[0]" (click)="openLightbox(fu.photos[0])" class="carousel-img" alt="update photo">
+                  <img [src]="fu.photos[0]" (click)="openLightbox(fu.photos, 0)" class="carousel-img" alt="update photo">
                 </div>
                 <div class="carousel-multi" *ngIf="fu.photos.length > 1">
                   <button class="carousel-nav left" (click)="prevFuPhoto(fu.id, fu.photos.length, $event)">‹</button>
                   <img [src]="fuCurrentPhoto(fu.id, fu.photos)"
-                       (click)="openLightbox(fuCurrentPhoto(fu.id, fu.photos))"
+                       (click)="openLightbox(fu.photos, fuPhotoIndex[fu.id] ?? 0)"
                        class="carousel-img" alt="update photo">
                   <button class="carousel-nav right" (click)="nextFuPhoto(fu.id, fu.photos.length, $event)">›</button>
                   <div class="carousel-dots">
@@ -1668,7 +1670,14 @@
 <div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
   <div class="lightbox-content" (click)="$event.stopPropagation()">
     <button class="lightbox-close" (click)="closeLightbox()">✕</button>
+    <button class="lightbox-nav lightbox-prev" *ngIf="lightboxPhotos.length > 1" (click)="prevLightbox($event)">‹</button>
     <img [src]="lightboxSrc" alt="Full size view">
+    <button class="lightbox-nav lightbox-next" *ngIf="lightboxPhotos.length > 1" (click)="nextLightbox($event)">›</button>
+    <div class="lightbox-dots" *ngIf="lightboxPhotos.length > 1">
+      <span *ngFor="let _ of lightboxPhotos; let pi = index"
+            class="lightbox-dot" [class.active]="pi === lightboxIndex"></span>
+    </div>
+    <span class="lightbox-counter" *ngIf="lightboxPhotos.length > 1">{{ lightboxIndex + 1 }} / {{ lightboxPhotos.length }}</span>
   </div>
 </div>
 

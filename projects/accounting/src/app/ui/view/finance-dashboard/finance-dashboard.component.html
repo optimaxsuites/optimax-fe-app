@@ -1,0 +1,168 @@
+<div class="fd-content">
+
+  <div class="info-banner" [class.info-banner-warn]="pendingEvents > 0">
+    <span class="info-banner-icon">{{ pendingEvents > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Revenue</div>
+      <div class="stat-value revenue">{{ formatNgn(totalRevenue) }}</div>
+      <div class="stat-trend neutral">From income accounts</div>
+      <div class="stat-ghost">&#128200;</div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-label">Total Expenses</div>
+      <div class="stat-value expenses">{{ formatNgn(totalExpenses) }}</div>
+      <div class="stat-trend neutral">From expense accounts</div>
+      <div class="stat-ghost">&#128201;</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">Net Profit</div>
+      <div class="stat-value profit">{{ formatNgn(netProfit) }}</div>
+      <div class="stat-trend neutral">Revenue minus expenses</div>
+      <div class="stat-ghost">&#128185;</div>
+    </div>
+    <div class="stat-card stat-amber">
+      <div class="stat-label">Pending Events</div>
+      <div class="stat-value pending">{{ loading ? '…' : pendingEvents }}</div>
+      <div class="stat-trend neutral">Require approval</div>
+      <div class="stat-ghost">&#9203;</div>
+    </div>
+  </div>
+
+  <!-- Mid Row: Chart + Quick Actions -->
+  <div class="fd-two-col">
+
+    <!-- Revenue vs Expenses Bar Chart -->
+    <div class="fd-card">
+      <div class="fd-card-header">
+        <span class="fd-card-title">Revenue vs Expenses &mdash; Jun 2026</span>
+      </div>
+      <div class="chart-bar-track">
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:85%;"></div>
+            <div class="chart-bar bar-expense" style="height:32%;"></div>
+          </div>
+          <div class="chart-bar-label">Jan</div>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:72%;"></div>
+            <div class="chart-bar bar-expense" style="height:28%;"></div>
+          </div>
+          <div class="chart-bar-label">Feb</div>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:78%;"></div>
+            <div class="chart-bar bar-expense" style="height:35%;"></div>
+          </div>
+          <div class="chart-bar-label">Mar</div>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:88%;"></div>
+            <div class="chart-bar bar-expense" style="height:40%;"></div>
+          </div>
+          <div class="chart-bar-label">Apr</div>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:80%;"></div>
+            <div class="chart-bar bar-expense" style="height:33%;"></div>
+          </div>
+          <div class="chart-bar-label">May</div>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrap">
+            <div class="chart-bar bar-revenue" style="height:100%;"></div>
+            <div class="chart-bar bar-expense" style="height:37%;"></div>
+          </div>
+          <div class="chart-bar-label">Jun</div>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-dot revenue-dot"></span> Revenue</div>
+        <div class="legend-item"><span class="legend-dot expense-dot"></span> Expenses</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions + AR/AP -->
+    <div class="fd-card">
+      <div class="fd-card-header">
+        <span class="fd-card-title">Quick Actions</span>
+      </div>
+      <div class="quick-grid">
+        <button class="fd-btn fd-btn-primary" (click)="navigate('events')">&#128229; Review Events</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('journals')">&#9999;&#65039; Manual Journal</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('payments')">&#128184; New Payment Run</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('finance-reports')">&#128202; View Reports</button>
+        <button class="fd-btn fd-btn-outline" (click)="navigate('banking')">&#127970; Reconcile Bank</button>
+        <button class="fd-btn fd-btn-accent" (click)="navigate('coa')">&#127959; Chart of Accounts</button>
+      </div>
+
+      <div class="aging-section">
+        <div class="aging-title">AR / AP Aging Summary</div>
+
+        <div class="aging-label">Receivables (&#8358;32.8M)</div>
+        <div class="aging-bar-wrap">
+          <div class="aging-seg seg-current" style="width:55%;" title="Current"></div>
+          <div class="aging-seg seg-30" style="width:25%;" title="30 days"></div>
+          <div class="aging-seg seg-60" style="width:12%;" title="60 days"></div>
+          <div class="aging-seg seg-90" style="width:8%;" title="90+ days"></div>
+        </div>
+
+        <div class="aging-label" style="margin-top:12px;">Payables (&#8358;9.2M)</div>
+        <div class="aging-bar-wrap">
+          <div class="aging-seg seg-current" style="width:70%;"></div>
+          <div class="aging-seg seg-30" style="width:20%;"></div>
+          <div class="aging-seg seg-90" style="width:10%;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Journal Entries -->
+  <div class="fd-card">
+    <div class="fd-card-header">
+      <span class="fd-card-title">Recent Journal Entries</span>
+      <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="load()">↺ Refresh</button>
+    </div>
+    <div *ngIf="loading" class="loading-row"><span>Loading…</span></div>
+    <div class="fd-table-wrap" *ngIf="!loading">
+      <table class="fd-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Entry #</th>
+            <th>Description</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let j of recentJournals">
+            <td>{{ formatDate(j.entryDate) }}</td>
+            <td class="ref-cell">{{ entryLabel(j) }}</td>
+            <td>{{ j.description || '—' }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-green': j.status === 'POSTED',
+                'badge-amber': j.status === 'DRAFT',
+                'badge-red':   j.status === 'REVERSED'
+              }">{{ j.status }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="recentJournals.length === 0">
+            <td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">No recent journals.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

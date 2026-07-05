@@ -1,4 +1,8 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
+import { ImportedEmployeeData } from './pre-onboarding-import/pre-onboarding-import.component';
 import { finalize } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { CalendarOptions } from '@fullcalendar/core';
@@ -51,7 +55,9 @@ staffIdBarcodeDataUrl = '';
 searchTerm: any;
 
 selectedPosition: any;
-openAddForm: boolean = false
+openAddForm: boolean = false;
+openImportDialog: boolean = false;
+importedData: ImportedEmployeeData | null = null;
 employeeList = [
   {
     id: 'tok12345abc', // Example token value
@@ -68,7 +74,7 @@ employeeList = [
     department: 'IT',
     level: 'Senior Level 1',
     employmentType: 'Full-Time',
-    supervisor: 'John Doe',
+    supervisor: 'Rolayo Awe',
     bankName: 'GTBank',
     accountNumber: '1234567890',
     nin: '9876543210',
@@ -257,19 +263,34 @@ currentPage = 1;
 pageSize = 12;
 pageSizeOptions = [8, 12, 16, 24];
 deletingEmployeeIds: Record<string, boolean> = {};
+viewMode: 'card' | 'list' = 'card';
 
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
 }
 
 
+  companyProfile$ = this.companyProfileService.companyProfile$;
+
   constructor(
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
     private http: HttpClient,
-   private employeeService: EmployeeService,
-   private sanitizer: DomSanitizer, 
-  ) {
+    private employeeService: EmployeeService,
+    private sanitizer: DomSanitizer,
+    private router: Router,
+    private navLinks: NavigationLinksService,
+    private companyProfileService: CompanyProfileService,
+  ) {}
+
+  openPreOnboardingForm(): void {
+    this.router.navigateByUrl(this.navLinks.getLink('preOnboardingForm'));
+  }
+
+  onImportComplete(data: ImportedEmployeeData): void {
+    this.importedData = data;
+    this.openImportDialog = false;
+    this.openAddForm = true;
   }
    ngOnInit() {
    this.fetchEmployees()
@@ -392,7 +413,8 @@ handleDateClick(arg: DateClickArg) {
 
   closeAddForm() {
     this.openAddForm = false;
-   this.fetchEmployees()
+    this.importedData = null;
+    this.fetchEmployees();
 
   }
   generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {

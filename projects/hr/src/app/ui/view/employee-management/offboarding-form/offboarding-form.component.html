@@ -1,0 +1,191 @@
+<!-- Toolbar (no-print) -->
+<div class="form-toolbar no-print">
+  <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="toolbar-logo" />
+  <span class="toolbar-title">Employee Exit / Offboarding Form</span>
+  <button (click)="print()" class="print-btn"><i class="fas fa-print"></i> Print Form</button>
+</div>
+
+<div class="form-page">
+
+  <!-- Header -->
+  <div class="form-header">
+    <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="form-logo" />
+    <div class="form-header-title">
+      <div class="company-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
+      <div class="form-name">Employee Exit &amp; Offboarding Form</div>
+      <div class="form-meta">To be completed by HR and the departing employee. File in the employee folder.</div>
+    </div>
+    <div class="form-ref-block">
+      <div class="ref-row"><span>Exit Ref:</span><span class="ref-line"></span></div>
+      <div class="ref-row"><span>Date:</span><span class="ref-line">{{ today }}</span></div>
+      <div class="ref-row"><span>HR Case:</span><span class="ref-line"></span></div>
+    </div>
+  </div>
+
+  <div class="header-rule"></div>
+
+  <!-- A: Employee & Exit Details -->
+  <div class="section-bar">A &#8212; Employee &amp; Exit Details</div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Employee ID</label><div class="field-line"></div></div>
+    <div class="field-group"><label>First Name</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Surname</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Department</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Job Title</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Line Manager</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Date of Employment</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Last Working Day</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Notice Period Served</label>
+      <div class="check-inline">
+        <div class="check-box"></div><span>Full</span>
+        <div class="check-box"></div><span>Partial</span>
+        <div class="check-box"></div><span>Waived</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- B: Reason for Leaving -->
+  <div class="section-bar">B &#8212; Reason for Leaving</div>
+  <div class="check-grid-2">
+    <div class="check-item"><div class="check-box"></div><span>Resignation (voluntary)</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Termination (company-initiated)</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Contract End / Expiry</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Retirement</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Redundancy</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Death in Service</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Mutual Separation</span></div>
+    <div class="check-item"><div class="check-box"></div><span>Other (specify below)</span></div>
+  </div>
+  <div class="field-group" style="margin-top:5px"><label>Details / Additional Context</label><div class="field-line tall"></div></div>
+
+  <!-- C: Exit Interview Summary -->
+  <div class="section-bar">C &#8212; Exit Interview Summary</div>
+  <div class="ei-questions">
+    <div class="ei-q">
+      <label>1. What is the primary reason you are leaving?</label>
+      <div class="field-line tall"></div>
+    </div>
+    <div class="ei-q">
+      <label>2. What did you enjoy most about working here?</label>
+      <div class="field-line tall"></div>
+    </div>
+    <div class="ei-q">
+      <label>3. What could the company have done differently?</label>
+      <div class="field-line tall"></div>
+    </div>
+    <div class="ei-q">
+      <label>4. Would you recommend Centrifuge IT as an employer?</label>
+      <div class="check-inline"><div class="check-box"></div><span>Yes</span><div class="check-box"></div><span>No</span><div class="check-box"></div><span>Maybe</span></div>
+    </div>
+  </div>
+
+  <!-- D: Asset Return Checklist -->
+  <div class="section-bar">D &#8212; Asset Return Checklist</div>
+  <table class="assets-table">
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Description / Serial</th>
+        <th>Returned</th>
+        <th>Not Returned</th>
+        <th>Condition</th>
+        <th>HR Signature</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let asset of assets">
+        <td>{{ asset }}</td>
+        <td class="write-cell"></td>
+        <td class="check-cell"><div class="check-box"></div></td>
+        <td class="check-cell"><div class="check-box"></div></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="field-group" style="margin-top:4px"><label>Unreturned asset notes / pending recovery</label><div class="field-line"></div></div>
+
+  <!-- E: System Access Revocation -->
+  <div class="section-bar">E &#8212; System Access Revocation</div>
+  <table class="assets-table">
+    <thead>
+      <tr>
+        <th>System</th>
+        <th>Username / Account</th>
+        <th>Revoked</th>
+        <th>Pending</th>
+        <th>Revocation Date</th>
+        <th>IT Officer</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let sys of systems">
+        <td>{{ sys }}</td>
+        <td class="write-cell"></td>
+        <td class="check-cell"><div class="check-box"></div></td>
+        <td class="check-cell"><div class="check-box"></div></td>
+        <td class="write-cell"></td>
+        <td class="write-cell"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- F: Work Handover -->
+  <div class="section-bar">F &#8212; Work Handover Summary</div>
+  <div class="field-grid two">
+    <div class="field-group"><label>Handover To (Name)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Handover To (Position)</label><div class="field-line"></div></div>
+  </div>
+  <div class="handover-table-wrap">
+    <table class="assets-table">
+      <thead>
+        <tr><th>#</th><th>Responsibility / Project</th><th>Status</th><th>Handed Over To</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let i of [1,2,3,4,5]">
+          <td class="num-cell">{{ i }}</td>
+          <td class="write-cell"></td>
+          <td class="write-cell"></td>
+          <td class="write-cell"></td>
+          <td class="write-cell"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- G: Outstanding Obligations -->
+  <div class="section-bar">G &#8212; Outstanding Obligations</div>
+  <div class="field-grid three">
+    <div class="field-group"><label>Outstanding Loans / Advances (&#8358;)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Leave Balance (days)</label><div class="field-line"></div></div>
+    <div class="field-group"><label>Unpaid Expenses</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-grid two">
+    <div class="field-group"><label>Deduction from Final Pay</label>
+      <div class="check-inline"><div class="check-box"></div><span>Yes</span><div class="check-box"></div><span>No</span></div>
+    </div>
+    <div class="field-group"><label>Final Pay Date</label><div class="field-line"></div></div>
+  </div>
+  <div class="field-group"><label>Other outstanding obligations (describe)</label><div class="field-line"></div></div>
+
+  <!-- H: Declaration -->
+  <div class="section-bar">H &#8212; Declaration &amp; Signatures</div>
+  <div class="declaration-box">
+    I confirm that all company property has been returned (or arrangements made), that all access has been revoked or will be revoked by the last working day, and that the information provided in this form is accurate. I acknowledge my continued obligations under any non-disclosure or non-compete clauses in my contract.
+  </div>
+  <div class="sig-grid four">
+    <div class="sig-block"><div class="sig-line"></div><span>Employee</span><div class="sig-date">Date: ________________</div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>HR Officer</span><div class="sig-date">Date: ________________</div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>Line Manager</span><div class="sig-date">Date: ________________</div></div>
+    <div class="sig-block"><div class="sig-line"></div><span>IT / Systems</span><div class="sig-date">Date: ________________</div></div>
+  </div>
+
+  <div class="form-footer">
+    Centrifuge Information Technology Ltd &middot; HR Department &middot; CONFIDENTIAL &middot; Retain for 7 years post-exit
+  </div>
+
+</div>

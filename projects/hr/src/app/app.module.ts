@@ -3,6 +3,10 @@ import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
 import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
+import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-onboarding-form/pre-onboarding-form.component';
+import { PreOnboardingImportComponent } from './ui/view/employee-management/pre-onboarding-import/pre-onboarding-import.component';
+import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
+import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -10,8 +14,6 @@ import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
 ////primeng
@@ -266,6 +268,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     InterviewScoreSheetComponent,
     AddEmployeeFormComponent,
     EmployeeOnboardingFormComponent,
+    PreOnboardingFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -414,11 +417,12 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
+    PreOnboardingImportComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
   ],
   imports: [
     AppHrRoutingModule,
-    BrowserModule,
-    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

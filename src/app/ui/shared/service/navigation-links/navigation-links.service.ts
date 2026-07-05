@@ -50,6 +50,7 @@ export class NavigationLinksService {
 
     this.links['allPayslip'] = '/admin/employee-payslip/' +uuidV4();
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
+    this.links['preOnboardingForm'] = '/admin/hr/pre-onboarding-form/' +uuidV4();
 
 
 //  resources ================================================================================================================
@@ -87,7 +88,7 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-    this.links['settingsLink'] = 'admin/settings/general-settings/' +uuidV4();
+    this.links['settingsLink'] = 'admin/settings/settings-home/' + uuidV4();
     this.links['generalSettings'] = '/admin/settings/general-settings/' +uuidV4();
     this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 

@@ -84,9 +84,29 @@
         </div>
       </div>
 
+      <!-- Search bar -->
+      <div class="settings-search-wrap">
+        <div class="settings-search-box">
+          <i class="fas fa-search settings-search-icon"></i>
+          <input
+            type="text"
+            class="settings-search-input"
+            placeholder="Search settings..."
+            [(ngModel)]="searchQuery"
+            autocomplete="off"
+          />
+          <button *ngIf="searchQuery" class="settings-search-clear" (click)="searchQuery = ''" title="Clear">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <span class="settings-search-hint" *ngIf="searchQuery">
+          {{ filteredMenuItems.length }} result{{ filteredMenuItems.length !== 1 ? 's' : '' }} for "{{ searchQuery }}"
+        </span>
+      </div>
+
       <div class="settings-grid">
         <div class="setting-card"
-             *ngFor="let item of menuItems; let i = index"
+             *ngFor="let item of filteredMenuItems; let i = index"
              [routerLink]="item.route || null"
              [class.card-no-route]="!item.route"
              [attr.data-color-index]="i % 8">
@@ -114,6 +134,13 @@
           </div>
 
         </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="settings-empty" *ngIf="searchQuery && filteredMenuItems.length === 0">
+        <i class="fas fa-search-minus"></i>
+        <p>No settings found for <strong>"{{ searchQuery }}"</strong></p>
+        <button class="settings-empty-reset" (click)="searchQuery = ''">Clear search</button>
       </div>
 
     </div>

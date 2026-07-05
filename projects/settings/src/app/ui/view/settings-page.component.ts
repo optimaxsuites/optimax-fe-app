@@ -12,6 +12,7 @@ import { MenuItemsService } from '../sharedComponents/service/menue-items/menu-i
 export class SettingsPageComponent implements OnDestroy {
   menuItems: MenuItem[] = [];
   role: string = "";
+  searchQuery = '';
   private subs = new Subscription();
 
   constructor(private menuService: MenuItemsService, private router: Router) {}
@@ -19,13 +20,11 @@ export class SettingsPageComponent implements OnDestroy {
   ngOnInit(): void {
     this.role = JSON.stringify(sessionStorage.getItem('role'));
 
-    // Read once immediately so the sidebar is populated before the API returns
     this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
       ...item,
       open: false
     }));
 
-    // Re-read whenever loadUnlockedSettingsModules() emits (after API resolves)
     this.subs.add(
       this.menuService.settingsMenuItems$.subscribe(() => {
         this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
@@ -68,15 +67,29 @@ export class SettingsPageComponent implements OnDestroy {
     }
   }
 
-  // True when the URL is at a settings child route (general-settings, HR-settings, etc.)
-  // Relative routes in settingsMenuItems look like 'general-settings/<uuid>' — extract
-  // the first segment and test it against the current URL.
+  get filteredMenuItems(): MenuItem[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    if (!q) return this.menuItems;
+    return this.menuItems.filter(item => {
+      if (item.label?.toLowerCase().includes(q)) return true;
+      if (item.description?.toLowerCase().includes(q)) return true;
+      if (item.shortDescription?.toLowerCase().includes(q)) return true;
+      if (item.submenu?.some(sub => sub.label?.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }
+
   get isAnyChildActive(): boolean {
-    return this.menuItems.some(item => {
-      const route = item.route as string;
-      if (!route || route.startsWith('/')) return false;
-      const seg = route.split('/').find(s => s.length > 0);
+    const matchesUrl = (route: any): boolean => {
+      if (!route || (route as string).startsWith('/')) return false;
+      const seg = (route as string).split('/').find(s => s.length > 0);
       return seg ? this.router.url.includes('/' + seg) : false;
+    };
+
+    return this.menuItems.some(item => {
+      if (matchesUrl(item.route)) return true;
+      if (item.submenu) return item.submenu.some(sub => matchesUrl(sub.route));
+      return false;
     });
   }
 }

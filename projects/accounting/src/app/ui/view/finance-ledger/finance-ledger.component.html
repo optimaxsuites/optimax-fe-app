@@ -1,0 +1,118 @@
+<div class="fd-content">
+
+  <div class="info-banner" [class.info-banner-warn]="!loading && !trialBalanced && ledgerEntries.length > 0">
+    <span class="info-banner-icon">{{ !loading && !trialBalanced && ledgerEntries.length > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#f0fdf4;color:#16a34a;">📋</div>
+      <div>
+        <div class="page-title">General Ledger</div>
+        <div class="page-sub">Complete double-entry transaction history · Trial Balance included</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
+      <button class="fd-btn fd-btn-outline" (click)="activeTab === 'trial' ? exportTrialCsv() : exportCsv()">⬇ Export</button>
+    </div>
+  </div>
+
+  <div class="inner-tabs">
+    <button class="inner-tab" [class.active]="activeTab==='ledger'" (click)="setTab('ledger')">Ledger View</button>
+    <button class="inner-tab" [class.active]="activeTab==='trial'" (click)="setTab('trial')">Trial Balance</button>
+  </div>
+
+  <!-- LEDGER VIEW -->
+  <div *ngIf="activeTab==='ledger'">
+    <div class="filter-bar">
+      <select class="filter-select" [(ngModel)]="filterAccountId">
+        <option [ngValue]="null">All Accounts</option>
+        <option *ngFor="let acc of accounts" [ngValue]="acc.id">
+          {{ acc.accountCode }} — {{ acc.accountName }}
+        </option>
+      </select>
+      <input type="date" class="filter-input date-input" [(ngModel)]="dateFrom" placeholder="From">
+      <input type="date" class="filter-input date-input" [(ngModel)]="dateTo" placeholder="To">
+      <button class="fd-btn fd-btn-primary fd-btn-sm" (click)="applyFilter()">Apply</button>
+    </div>
+
+    <div *ngIf="loading" class="loading-row"><span>Loading ledger entries…</span></div>
+
+    <div class="fd-card" style="padding:0" *ngIf="!loading">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Date</th><th>Journal Ref</th><th>Description</th><th>Account</th><th>Debit</th><th>Credit</th><th>Running Balance</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of ledgerEntries">
+              <td>{{ formatDate(entry.entryDate || entry.date || entry.createdAt) }}</td>
+              <td class="ref-cell">{{ journalRef(entry) }}</td>
+              <td>{{ entry.description || '—' }}</td>
+              <td>{{ accountLabel(entry) }}</td>
+              <td class="dr-cell">{{ entry.debit > 0 ? formatNgn(entry.debit) : '—' }}</td>
+              <td class="cr-cell">{{ entry.credit > 0 ? formatNgn(entry.credit) : '—' }}</td>
+              <td class="balance-cell">{{ formatNgn(entry.balanceAfter ?? entry.balance ?? 0) }}</td>
+            </tr>
+            <tr *ngIf="ledgerEntries.length === 0">
+              <td colspan="7" style="text-align:center;padding:32px;color:#94a3b8;">No ledger entries found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="table-count">Showing {{ ledgerEntries.length }} of {{ totalSize }}</span>
+        <div class="page-btns">
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="prevPage()" [disabled]="page === 0">← Prev</button>
+          <button class="fd-btn fd-btn-primary fd-btn-sm">{{ page + 1 }}</button>
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="nextPage()" [disabled]="(page + 1) * pageSize >= totalSize">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRIAL BALANCE -->
+  <div *ngIf="activeTab==='trial'">
+    <div class="trial-header">
+      <p class="trial-as-at">As at <strong>{{ today | date:'dd MMM yyyy' }}</strong>
+        <span *ngIf="trialBalanced" style="margin-left:12px;color:#16a34a;font-weight:700">✓ BALANCED</span>
+        <span *ngIf="!trialBalanced && trialBalance.length > 0" style="margin-left:12px;color:#dc2626;font-weight:700">✗ OUT OF BALANCE</span>
+      </p>
+      <button class="fd-btn fd-btn-outline fd-btn-sm">⬇ Export PDF</button>
+    </div>
+
+    <div *ngIf="loading" class="loading-row"><span>Loading…</span></div>
+
+    <div class="fd-card" style="padding:0" *ngIf="!loading">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Code</th><th>Account Name</th><th>Type</th><th style="text-align:right">Debit (Dr)</th><th style="text-align:right">Credit (Cr)</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of trialBalance">
+              <td class="code-cell">{{ row.account.accountCode }}</td>
+              <td>{{ row.account.accountName }}</td>
+              <td><span class="fd-badge" [ngClass]="typeBadgeClass(row.account.accountType)">{{ row.account.accountType }}</span></td>
+              <td style="text-align:right;font-weight:700">{{ row.totalDebit > 0 ? formatNgn(row.totalDebit) : '—' }}</td>
+              <td style="text-align:right;font-weight:700">{{ row.totalCredit > 0 ? formatNgn(row.totalCredit) : '—' }}</td>
+            </tr>
+            <tr *ngIf="trialBalance.length === 0">
+              <td colspan="5" style="text-align:center;padding:32px;color:#94a3b8;">No data to build trial balance. Load ledger entries first.</td>
+            </tr>
+          </tbody>
+          <tfoot *ngIf="trialBalance.length > 0">
+            <tr class="trial-totals">
+              <td colspan="3">TOTALS — {{ trialBalanced ? 'BALANCED ✓' : 'NOT BALANCED ✗' }}</td>
+              <td style="text-align:right">{{ formatNgn(trialTotalDebit) }}</td>
+              <td style="text-align:right">{{ formatNgn(trialTotalCredit) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,95 +1,77 @@
+<div class="sp-shell">
 
-<div class="flex gap-4 items-center">
-    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+  <div class="sp-head">
+    <div class="sp-icon"><i class="fas fa-layer-group"></i></div>
     <div>
-        <p class="text-customBlue/60">Human Resources</p>
-        <p class="text-customBlue font-semibold text-[17px]">Level configuration</p>
+      <h3 class="sp-title">Level Configuration</h3>
+      <p class="sp-sub">Define organisational levels, codes, and descriptions used across salary and appraisal structures.</p>
     </div>
-</div>
-<hr>
-
-<div class="mb-4 mt-3 px-3 flex justify-between items-center ">
-  <p class="text-xl font-semibold text-customBlue"><span *ngIf="showAddForm">New</span> Level Structures</p>
-  <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">{{showAddForm ? "Cancel" : "Create New"}}</button>
-</div>
-
-<ng-container *ngIf="!showAddForm && !levelStructure || levelStructure.length === 0; else showLevels">
-  <div *ngIf="loading && !showAddForm" class="flex flex-col gap-3 mx-2">
-    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
-    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
-    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
-
   </div>
-  <div *ngIf="!loading && !showAddForm" class="text-center font-bold  text-xl text-customBlue">
-    <p>No levels available to display.</p>
+
+  <div class="sp-toolbar">
+    <span class="sp-section-label">{{ showAddForm ? 'New Level' : 'Levels' }}</span>
+    <button class="sp-btn-primary" (click)="toogleForm()">
+      <i class="fas" [ngClass]="showAddForm ? 'fa-times' : 'fa-plus'"></i>
+      {{ showAddForm ? 'Cancel' : 'Add Level' }}
+    </button>
   </div>
-</ng-container>
 
+  <!-- Loading / empty -->
+  <ng-container *ngIf="!showAddForm && (!levelStructure || levelStructure.length === 0); else showLevels">
+    <div class="sp-sk-list" *ngIf="loading">
+      <div class="sp-sk-row" *ngFor="let i of [1,2,3]"></div>
+    </div>
+    <div class="sp-empty" *ngIf="!loading">
+      <i class="fas fa-layer-group" style="font-size:32px;color:#d1d5db;display:block;margin-bottom:10px"></i>
+      No levels configured yet. Click "Add Level" to get started.
+    </div>
+  </ng-container>
 
-<ng-template #showLevels>
-  <mat-accordion *ngIf="!showAddForm">
-    <mat-expansion-panel *ngFor="let level of levelStructure; let i = index" #panel>
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <p class="text-gray-600 font-bold text-[14px] capitalize">{{ level.name }}</p>
-        </mat-panel-title>
-        <mat-panel-description class="action-buttons">
-          <button 
-            (click)="editSalary(level, i , $event)" 
-            class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
-            <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
-            <span *ngIf="panel.expanded">Edit</span>
-          </button>
-          <button 
-            (click)="confirmSalaryDelete(level, i , $event)" 
-            class="text-red-500 hover:bg-red-50 p-3 rounded-xl">
-            <i class="fa-solid fa-trash text-2xl pr-2"></i>
-            <span *ngIf="panel.expanded">Delete</span>
-          </button>
-        </mat-panel-description>
-      </mat-expansion-panel-header>
-      <div class="text-gray-700 flex flex-col gap-2">
-        <p><strong>Code:</strong> {{ level.code }}</p>
+  <ng-template #showLevels>
+    <mat-accordion *ngIf="!showAddForm">
+      <mat-expansion-panel *ngFor="let level of levelStructure; let i = index" #panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ level.name }}</mat-panel-title>
+          <mat-panel-description class="action-buttons">
+            <button class="act-btn-edit" (click)="editSalary(level, i, $event)">
+              <i class="fas fa-pen"></i><span *ngIf="panel.expanded">Edit</span>
+            </button>
+            <button class="act-btn-del" (click)="confirmSalaryDelete(level, i, $event)">
+              <i class="fas fa-trash"></i><span *ngIf="panel.expanded">Delete</span>
+            </button>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+        <div style="font-size:13px;color:#374151;display:flex;flex-direction:column;gap:6px">
+          <p><strong>Code:</strong> {{ level.code }}</p>
+          <p><strong>Description:</strong> {{ level.description }}</p>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </ng-template>
+
+  <!-- Add / Edit Form -->
+  <div *ngIf="showAddForm">
+    <form [formGroup]="levelForm" (ngSubmit)="onSubmit()" class="sp-form-card">
+      <div class="sp-form-group">
+        <label for="level" class="sp-label">Level Name <span class="sp-req">*</span></label>
+        <input formControlName="level" id="level" class="sp-input" type="text" placeholder="e.g. Junior, Senior, Manager" />
+        <div *ngIf="levelForm.get('level')?.invalid && levelForm.get('level')?.touched" class="sp-error">Level name is required.</div>
       </div>
-      <div class="text-gray-700 flex flex-col gap-2">
-        <p><strong>Description:</strong> {{ level.description }}</p>
+      <div class="sp-form-group">
+        <label for="code" class="sp-label">Code <span class="sp-req">*</span></label>
+        <input formControlName="code" id="code" class="sp-input" type="text" placeholder="e.g. L1, L2, MGR" />
+        <div *ngIf="levelForm.get('code')?.invalid && levelForm.get('code')?.touched" class="sp-error">Code is required.</div>
       </div>
-    </mat-expansion-panel>
-  </mat-accordion>
-</ng-template>
+      <div class="sp-form-group">
+        <label for="Description" class="sp-label">Description <span class="sp-req">*</span></label>
+        <textarea formControlName="description" id="Description" class="sp-input" style="min-height:80px;resize:vertical" placeholder="Brief description of this level"></textarea>
+        <div *ngIf="levelForm.get('description')?.invalid && levelForm.get('description')?.touched" class="sp-error">Description is required.</div>
+      </div>
+      <div class="sp-actions">
+        <button type="button" class="sp-btn-cancel" (click)="toogleForm()">Cancel</button>
+        <button type="submit" class="sp-btn-submit" [disabled]="levelForm.invalid">Save Level</button>
+      </div>
+    </form>
+  </div>
 
-  
-
-<div *ngIf="showAddForm">
-  <form [formGroup]="levelForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
-  
-    <div class="mb-4">
-      <label for="level" class="block text-[14px] font-medium capitalize">Level <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input formControlName="level" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Level" />
-      <div *ngIf="levelForm.get('level')?.invalid && levelForm.get('level')?.touched" class="text-red-500 text-[14px]">Level is required.</div>
-    </div>
-
-    <div class="mb-4">
-      <label for="code" class="block text-[14px] font-medium capitalize">Code <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input formControlName="code" id="code" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Code" />
-      <div *ngIf="levelForm.get('code')?.invalid && levelForm.get('code')?.touched" class="text-red-500 text-[14px]">Code is required.</div>
-    </div>
-  
-    <div class="mb-4">
-      <label for="description" class="block text-[14px] font-medium">Description <span class="ml-1 font-bold text-red-600">*</span></label>
-      <textarea formControlName="description" id="Description" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"  placeholder="Enter Description" ></textarea>
-      <div *ngIf="levelForm.get('description')?.invalid && levelForm.get('description')?.touched" class="text-red-500 text-[14px]">Description is required.</div>
-    </div>
-  
-    
-  
-    <div class="text-right">
-      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="levelForm.invalid">Add</button>
-    </div>
-  </form>
 </div>
-
-
-
-
-  

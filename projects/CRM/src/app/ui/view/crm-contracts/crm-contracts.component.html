@@ -1,26 +1,105 @@
 <div class="panel-header">
-  <div><h1 class="panel-title">Contracts</h1><p class="panel-subtitle">14 contracts · lifecycle management · e-signature · renewal alerts</p></div>
+  <div>
+    <h1 class="panel-title">Contracts</h1>
+    <p class="panel-subtitle">{{ contracts.length }} contracts · lifecycle management · e-signature · renewal alerts</p>
+  </div>
   <div class="panel-actions">
-    <button class="btn-secondary">⬇ Download All</button>
-    <button class="btn-primary">+ New Contract</button>
+    <button class="btn-primary" (click)="openForm()">+ New Contract</button>
   </div>
 </div>
-<div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:1.25rem;">
-  <div class="stat-card"><div class="stat-icon-wrap green"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">8</div><div class="stat-label">Active</div></div>
-  <div class="stat-card"><div class="stat-icon-wrap orange"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"></path></svg></div><div class="stat-value">3</div><div class="stat-label">Under Review</div></div>
-  <div class="stat-card"><div class="stat-icon-wrap blue"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></div><div class="stat-value">2</div><div class="stat-label">Pending E-Sign</div></div>
-  <div class="stat-card"><div class="stat-icon-wrap red"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><div class="stat-value">2</div><div class="stat-label">Renewal Due &lt;90d</div></div>
-  <div class="stat-card"><div class="stat-icon-wrap teal"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"></path></svg></div><div class="stat-value">₦89.3M</div><div class="stat-label">Total Contract Value</div></div>
-</div>
-<div class="table-container">
+
+<div *ngIf="loading$ | async" style="text-align:center;padding:2rem;color:#94a3b8;">Loading contracts…</div>
+
+<div class="table-container" *ngIf="!(loading$ | async)">
   <table class="data-table">
-    <thead><tr><th>Contract #</th><th>Account</th><th>Type</th><th>Value</th><th>Stage</th><th>Start</th><th>End / Renewal</th><th>E-Sign</th><th>Owner</th><th></th></tr></thead>
+    <thead>
+      <tr>
+        <th>Contract #</th>
+        <th>Title</th>
+        <th>Account</th>
+        <th>Value</th>
+        <th>Status</th>
+        <th>Start</th>
+        <th>End / Renewal</th>
+        <th>Owner</th>
+        <th></th>
+      </tr>
+    </thead>
     <tbody>
-      <tr><td style="font-weight:700;color:#2E6276;">CON-0018</td><td>Zenith Insurance</td><td><span class="badge badge-info">SaaS Subscription</span></td><td style="font-weight:700;color:#25925B;">₦4.8M/yr</td><td><span class="badge badge-success">Active</span></td><td style="color:#94a3b8;">Jul 1, 2026</td><td style="color:#94a3b8;">Jun 30, 2027</td><td><span class="badge badge-success">✓ Signed</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td><td class="actions-cell"><button class="btn-xs">View</button></td></tr>
-      <tr><td style="font-weight:700;color:#2E6276;">CON-0017</td><td>GTBank Plc</td><td><span class="badge badge-purple">Enterprise License</span></td><td style="font-weight:700;color:#25925B;">₦9.8M</td><td><span class="badge badge-warning">Pending E-Sign</span></td><td style="color:#94a3b8;">Aug 1, 2026</td><td style="color:#94a3b8;">Jul 31, 2028</td><td><span class="badge badge-warning">Awaiting client</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#25925B;">SO</div>Sarah O.</div></td><td class="actions-cell"><button class="btn-xs">Send Reminder</button></td></tr>
-      <tr><td style="font-weight:700;color:#2E6276;">CON-0016</td><td>MTN Nigeria</td><td><span class="badge badge-info">SaaS Subscription</span></td><td style="font-weight:700;color:#25925B;">₦4.5M/yr</td><td><span class="badge badge-orange">Under Review</span></td><td style="color:#94a3b8;">Sep 1, 2026</td><td style="color:#94a3b8;">Aug 31, 2027</td><td><span class="badge badge-neutral">Draft</span></td><td><div class="owner-cell"><div class="o-avatar">JA</div>James A.</div></td><td class="actions-cell"><button class="btn-xs">Edit</button></td></tr>
-      <tr><td style="font-weight:700;color:#2E6276;">CON-0012</td><td>Access Bank</td><td><span class="badge badge-teal">Managed Service</span></td><td style="font-weight:700;color:#25925B;">₦6.2M/yr</td><td><span class="badge badge-success">Active</span></td><td style="color:#94a3b8;">Jan 1, 2025</td><td style="color:#dc2626;font-weight:700;">Sep 30, 2026 ⚠ Renewal</td><td><span class="badge badge-success">✓ Signed</span></td><td><div class="owner-cell"><div class="o-avatar" style="background:#a78bfa;">YK</div>Yemi K.</div></td><td class="actions-cell"><button class="btn-xs green">Renew</button></td></tr>
+      <tr *ngFor="let c of contracts">
+        <td style="font-weight:700;color:#2E6276;">{{ c.contractNumber || '—' }}</td>
+        <td>{{ c.title }}</td>
+        <td>{{ c.accountName || c.contactName || '—' }}</td>
+        <td style="font-weight:700;color:#25925B;">{{ formatValue(c.contractValue) }}</td>
+        <td><span [class]="statusBadge(c.status)">{{ c.status }}</span></td>
+        <td style="color:#94a3b8;">{{ c.startDate ? (c.startDate | date:'d MMM yyyy') : '—' }}</td>
+        <td [style.color]="renewingSoon(c) ? '#dc2626' : '#94a3b8'" [style.fontWeight]="renewingSoon(c) ? '700' : 'normal'">
+          {{ (c.renewalDate || c.endDate) ? ((c.renewalDate || c.endDate) | date:'d MMM yyyy') + (renewingSoon(c) ? ' ⚠ Renewal' : '') : '—' }}
+        </td>
+        <td>
+          <div class="owner-cell">
+            <div class="o-avatar">{{ (c.ownerName || '?')[0] }}</div>
+            {{ c.ownerName || '—' }}
+          </div>
+        </td>
+        <td class="actions-cell">
+          <button class="btn-xs" (click)="openForm(c)">Edit</button>
+          <button class="btn-xs" style="color:#dc2626;border-color:#fecaca;" (click)="delete(c)">Delete</button>
+        </td>
+      </tr>
+      <tr *ngIf="contracts.length === 0">
+        <td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No contracts found</td>
+      </tr>
     </tbody>
   </table>
-  <div class="pagination-row"><span class="pag-info">Showing 1–4 of 14 contracts</span><div class="pag-btns"><button class="page-btn" disabled>‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">›</button></div></div>
+  <div class="pagination-row">
+    <span class="pag-info">{{ contracts.length }} contract(s)</span>
+  </div>
+</div>
+
+<!-- Side Form -->
+<div class="side-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+<div class="side-form" [class.open]="showForm">
+  <div class="side-form-header">
+    <h2>{{ editingContract ? 'Edit Contract' : 'New Contract' }}</h2>
+    <button class="btn ghost" style="font-size:18px" (click)="closeForm()">✕</button>
+  </div>
+  <div class="side-form-body" [formGroup]="form">
+    <label class="form-field full-width">Contract Title *<input formControlName="title"></label>
+    <div class="form-row">
+      <label class="form-field">Contact Name<input formControlName="contactName"></label>
+      <label class="form-field">Account Name<input formControlName="accountName"></label>
+    </div>
+    <label class="form-field full-width">Deal Name<input formControlName="dealName"></label>
+    <div class="form-row">
+      <label class="form-field">Status
+        <select formControlName="status">
+          <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+        </select>
+      </label>
+      <label class="form-field">Currency<input formControlName="currency"></label>
+    </div>
+    <div class="form-row">
+      <label class="form-field">Contract Value (₦)<input formControlName="contractValue" type="number"></label>
+      <label class="form-field">Owner<input formControlName="ownerName"></label>
+    </div>
+    <div class="form-row">
+      <label class="form-field">Start Date<input formControlName="startDate" type="date"></label>
+      <label class="form-field">End Date<input formControlName="endDate" type="date"></label>
+    </div>
+    <div class="form-row">
+      <label class="form-field">Renewal Date<input formControlName="renewalDate" type="date"></label>
+      <label class="form-field" style="align-items:center;flex-direction:row;gap:.5rem;padding-top:1.25rem;">
+        <input type="checkbox" formControlName="autoRenew"> Auto-Renew
+      </label>
+    </div>
+    <label class="form-field full-width">Terms<textarea formControlName="terms" rows="3" style="resize:vertical;"></textarea></label>
+    <label class="form-field full-width">Document URL<input formControlName="documentUrl" type="url"></label>
+  </div>
+  <div class="side-form-footer">
+    <button class="btn outline" (click)="closeForm()">Cancel</button>
+    <button class="btn primary" (click)="save()" [disabled]="saving$ | async">
+      {{ editingContract ? 'Update' : 'Create' }}
+    </button>
+  </div>
 </div>

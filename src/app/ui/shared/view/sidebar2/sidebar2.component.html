@@ -2,8 +2,34 @@
 
   <!-- ── Brand ──────────────────────────────────────────────────────────────── -->
   <div class="sb-brand">
-    <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
-    <img *ngIf="sidebarHidden"  src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
+    <ng-container *ngIf="companyProfile$ | async as profile">
+
+      <!-- Expanded state -->
+      <ng-container *ngIf="!sidebarHidden">
+        <div *ngIf="profile.logoUrl" class="sb-logo-wrap">
+          <img [src]="profile.logoUrl" [alt]="profile.companyName" class="sb-logo" />
+        </div>
+        <div *ngIf="!profile.logoUrl" class="sb-brand-text">
+          <span class="sb-brand-name">{{ profile.companyName || 'OptimaX' }}</span>
+          <span class="sb-brand-sub">ERP Suite</span>
+        </div>
+      </ng-container>
+
+      <!-- Collapsed state -->
+      <ng-container *ngIf="sidebarHidden">
+        <div *ngIf="profile.logoUrl" class="sb-logo-wrap-sm">
+          <img [src]="profile.logoUrl" [alt]="profile.companyName" class="sb-logo-sm" />
+        </div>
+        <span *ngIf="!profile.logoUrl" class="sb-brand-abbr">
+          {{ (profile.companyName || 'OX').substring(0,2).toUpperCase() }}
+        </span>
+      </ng-container>
+
+    </ng-container>
+    <ng-container *ngIf="!(companyProfile$ | async)">
+      <img *ngIf="!sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo" />
+      <img *ngIf="sidebarHidden" src="assets/logo.png" alt="OptimaX" class="sb-logo-sm" />
+    </ng-container>
   </div>
 
   <!-- ── Toggle ─────────────────────────────────────────────────────────────── -->

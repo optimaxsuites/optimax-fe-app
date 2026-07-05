@@ -44,8 +44,8 @@ export class SchedulesComponent implements OnInit {
   
   // Dropdown options
   availableEmployees: Employee[] = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Mary Smith' },
+    { id: 1, name: 'Rolayo Awe' },
+    { id: 2, name: 'Temi Awe' },
     { id: 3, name: 'Tunde Ola' },
     { id: 4, name: 'Jane Johnson' },
     { id: 5, name: 'Samuel Lee' },

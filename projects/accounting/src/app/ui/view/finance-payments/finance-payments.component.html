@@ -1,0 +1,101 @@
+<div class="fd-content">
+
+  <div class="info-banner" [class.info-banner-warn]="requiresSecondAuth > 0">
+    <span class="info-banner-icon">{{ requiresSecondAuth > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#ede9fe;color:#7c3aed;">💸</div>
+      <div>
+        <div class="page-title">Payment Runs</div>
+        <div class="page-sub">Initiate, review, authorise and disburse payments</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cbn-notice">
+    <span class="cbn-icon">🛡</span>
+    <div>
+      <div class="cbn-title">CBN Dual-Authorisation Required</div>
+      <div class="cbn-body">All payment runs above &#8358;500,000 require a second authoriser. A maker cannot also be the checker.</div>
+    </div>
+  </div>
+
+  <div class="disb-steps">
+    <div class="disb-step" [class.active]="wizardStep===1" [class.done]="wizardStep>1" (click)="setStep(1)">
+      <div class="disb-bubble">{{ wizardStep > 1 ? '✓' : '1' }}</div><div class="disb-step-label">Tray</div>
+    </div>
+    <div class="disb-step" [class.active]="wizardStep===2" [class.done]="wizardStep>2" (click)="setStep(2)">
+      <div class="disb-bubble">{{ wizardStep > 2 ? '✓' : '2' }}</div><div class="disb-step-label">Review</div>
+    </div>
+    <div class="disb-step" [class.active]="wizardStep===3" [class.done]="wizardStep>3" (click)="setStep(3)">
+      <div class="disb-bubble">3</div><div class="disb-step-label">Pay</div>
+    </div>
+    <div class="disb-step" [class.active]="wizardStep===4" [class.done]="wizardStep>4" (click)="setStep(4)">
+      <div class="disb-bubble">4</div><div class="disb-step-label">Confirm</div>
+    </div>
+    <div class="disb-step" [class.active]="wizardStep===5">
+      <div class="disb-bubble">5</div><div class="disb-step-label">Ledger</div>
+    </div>
+  </div>
+
+  <div class="tray-filter-bar">
+    <button class="tray-tab" [class.active]="activeFilter==='all'" (click)="setFilter('all')">All Sources</button>
+    <button class="tray-tab" [class.active]="activeFilter==='PAYROLL'" (click)="setFilter('PAYROLL')">💼 Payroll</button>
+    <button class="tray-tab" [class.active]="activeFilter==='EXPENSE'" (click)="setFilter('EXPENSE')">🧾 Expense</button>
+    <button class="tray-tab" [class.active]="activeFilter==='LOANS'" (click)="setFilter('LOANS')">💰 Loans</button>
+    <button class="tray-tab" [class.active]="activeFilter==='VENDOR'" (click)="setFilter('VENDOR')">🏢 Vendor/AP</button>
+  </div>
+
+  <div class="tray-layout">
+    <div class="tray-left">
+      <div class="tray-header-bar">
+        <span class="tray-header-label">Approved — Awaiting Disbursement</span>
+        <span class="tray-count">{{ requests.length }} pending</span>
+      </div>
+
+      <div *ngIf="loading" class="loading-row"><span>Loading payment tray…</span></div>
+
+      <div class="pay-req-card" *ngFor="let r of requests" [ngClass]="moduleClass(r.sourceModule)">
+        <div class="pay-req-top">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="pay-avatar" [ngClass]="avatarClass(r.sourceModule)">{{ avatarText(r) }}</div>
+            <div>
+              <div class="pay-req-name">{{ displayName(r) }}</div>
+              <div class="pay-req-meta">{{ displayMeta(r) }}</div>
+            </div>
+          </div>
+          <span class="pay-module-tag" [ngClass]="tagClass(r.sourceModule)">{{ r.sourceModule }}</span>
+        </div>
+        <div class="pay-req-bottom">
+          <div class="pay-amount">{{ formatNgn(r.amount) }}</div>
+          <div>
+            <div class="pay-ref">{{ r.transactionReference }}</div>
+            <div class="pay-action" (click)="setStep(2)" style="cursor:pointer">Review →</div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="requests.length === 0" class="empty-state">No pending requests for this source.</div>
+    </div>
+
+    <div class="tray-right">
+      <div class="tray-sidebar-stat">
+        <div class="tray-sidebar-label">Total Awaiting</div>
+        <div class="tray-sidebar-value">{{ formatNgn(totalAwaiting) }}</div>
+      </div>
+      <div class="tray-sidebar-stat">
+        <div class="tray-sidebar-label">Requests</div>
+        <div class="tray-sidebar-value">{{ requests.length }}</div>
+      </div>
+      <div class="tray-sidebar-stat">
+        <div class="tray-sidebar-label">Requires 2nd Auth</div>
+        <div class="tray-sidebar-value" style="color:#dc2626">{{ requiresSecondAuth }}</div>
+      </div>
+      <button class="fd-btn fd-btn-primary" style="width:100%;justify-content:center;margin-top:8px" (click)="setStep(2)">Process Selected →</button>
+    </div>
+  </div>
+
+</div>

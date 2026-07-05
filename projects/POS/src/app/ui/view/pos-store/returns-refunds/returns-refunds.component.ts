@@ -66,8 +66,8 @@ export class ReturnsRefundsComponent implements OnInit {
       cashierComment: 'Waiting for product inspection',
       cashierId: 'user123',
       refundMeans: 'original',
-      customerName: 'John Doe',
-      customerEmail: 'john@example.com',
+      customerName: 'Rolayo Awe',
+      customerEmail: 'rolayo@centrifugegroup.com',
       customerPhone: '+1234567890',
       createdDate: '2024-01-15T10:30:00Z',
       status: 'pending'
@@ -80,7 +80,7 @@ export class ReturnsRefundsComponent implements OnInit {
       cashierId: 'user123',
       refundMeans: 'store-credit',
       customerName: 'Jane Smith',
-      customerEmail: 'jane@example.com',
+      customerEmail: 'rolayo@centrifugegroup.com',
       customerPhone: '+1234567891',
       createdDate: '2024-01-10T14:20:00Z',
       status: 'approved'

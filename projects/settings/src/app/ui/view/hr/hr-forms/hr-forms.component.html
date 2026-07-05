@@ -1,0 +1,21 @@
+<div class="hf-shell">
+  <div class="hf-header">
+    <h3 class="hf-title">Forms &amp; Templates</h3>
+    <p class="hf-sub">Printable HR forms for onboarding, record updates, and employee exit. Open in a new tab to print or download.</p>
+  </div>
+
+  <div class="hf-list">
+    <div class="hf-card" *ngFor="let f of forms">
+      <div class="hf-icon" [style.background]="f.iconBg" [style.color]="f.iconColor">
+        <i [class]="f.icon"></i>
+      </div>
+      <div class="hf-body">
+        <div class="hf-card-title">{{ f.title }}</div>
+        <div class="hf-card-desc">{{ f.desc }}</div>
+      </div>
+      <button class="hf-btn" (click)="open(f.link)">
+        <i class="fas fa-print"></i> Open &amp; Print
+      </button>
+    </div>
+  </div>
+</div>

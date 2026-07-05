@@ -1,7 +1,9 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, throwError, Observable, of } from 'rxjs';
+import { catchError, throwError, Observable, of, tap } from 'rxjs';
 import { environment } from '../sharedComponents/service/environments/environment';
+import { CompanyProfileService } from '../sharedComponents/service/company-profile/company-profile.service';
+import { JwtHelperService } from '@auth0/angular-jwt';
 
 @Injectable({
   providedIn: 'root'
@@ -11,10 +13,13 @@ export class GeneralSettingsService {
   private baseUrl = environment.apiBaseUrl;
   
   private userApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info`;
-  // private reportApiUrl = `${this.baseUrl}/x/api/v2/us/ur/get/settings/report`;
-  private userUpdateApiUrl = `${this.baseUrl}/x/api/v2/us/ur/create/user/primary/info`; 
+  private userUpdateApiUrl = `${this.baseUrl}/x/api/v2/us/ur/create/user/primary/info`;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private companyProfileService: CompanyProfileService,
+    private jwtHelper: JwtHelperService,
+  ) {}
 
   getUserPrimaryInfo(userId: number): Observable<any> {
     const url = `${this.userApiUrl}/${userId}`;
@@ -26,18 +31,34 @@ export class GeneralSettingsService {
   //   return this.http.get<any>(url);
   // }
   
-  // Method to update user data using POST
   updateUserPrimaryInfo(id: number, userData: any): Observable<any> {
-    const url = this.userUpdateApiUrl; 
-    const dataToSend = { id, ...userData };
-    return this.http.post<any>(url, dataToSend).pipe(
-      catchError(this.handleError)
-    );
-  }
+    const clean: any = {};
+    for (const key of Object.keys(userData)) {
+      if (userData[key] !== null && userData[key] !== undefined) {
+        clean[key] = userData[key];
+      }
+    }
 
-  private handleError(error: HttpErrorResponse) {
-    console.error('An error occurred:', error.error);
-    return throwError(() => new Error('Something bad happened; please try again later.'));
+    // Backend looks up by username from request body — must match JWT sub exactly
+    const token = sessionStorage.getItem('Token');
+    if (token) {
+      try {
+        const decoded = this.jwtHelper.decodeToken(token);
+        if (decoded?.sub) clean['username'] = decoded.sub;
+      } catch { /* ignore */ }
+    }
+
+    const logoUrl = clean['companyLogo'] ?? null;
+    return this.http.post<any>(this.userUpdateApiUrl, { ...clean }).pipe(
+      tap(() => {
+        if (logoUrl) this.companyProfileService.updateLogoUrl(logoUrl);
+        this.companyProfileService.refresh();
+      }),
+      catchError((error: HttpErrorResponse) => {
+        const msg = error.error?.message || error.message || 'Something went wrong. Please try again.';
+        return throwError(() => new Error(msg));
+      })
+    );
   }
 
   getCountries(): Observable<any[]> {

@@ -1,0 +1,97 @@
+<div class="fd-content">
+
+  <div class="info-banner">
+    <span class="info-banner-icon">ℹ</span>
+    <div><strong>Chart of Accounts</strong> — IFRS-compliant hierarchical account structure. Normal balance drives debit/credit rules.</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#ede9fe;color:#7c3aed;">🏗</div>
+      <div>
+        <div class="page-title">Chart of Accounts</div>
+        <div class="page-sub">Hierarchical account structure · IFRS-compliant types</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline">📂 Archived Accounts</button>
+      <button class="fd-btn fd-btn-outline" (click)="navigateTo('ledger')">📊 Run Trial Balance</button>
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
+      <button class="fd-btn fd-btn-primary">＋ New Account</button>
+    </div>
+  </div>
+
+  <div class="coa-type-grid">
+    <div class="stat-card stat-blue coa-mini"><div class="stat-label">Assets</div><div class="coa-count primary">{{ countByType('ASSET') }}</div><div class="coa-normal">Normal: Dr</div></div>
+    <div class="stat-card stat-red coa-mini"><div class="stat-label">Liabilities</div><div class="coa-count red">{{ countByType('LIABILITY') }}</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card stat-purple coa-mini"><div class="stat-label">Equity</div><div class="coa-count purple">{{ countByType('EQUITY') }}</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card stat-green coa-mini"><div class="stat-label">Income</div><div class="coa-count green">{{ countByType('INCOME') }}</div><div class="coa-normal">Normal: Cr</div></div>
+    <div class="stat-card coa-mini coa-cos"><div class="stat-label">Cost of Sales</div><div class="coa-count amber">{{ countByType('COST_OF_SALES') }}</div><div class="coa-normal">Normal: Dr</div></div>
+    <div class="stat-card coa-mini coa-exp"><div class="stat-label">Expenses</div><div class="coa-count orange">{{ countByType('EXPENSE') }}</div><div class="coa-normal">Normal: Dr</div></div>
+  </div>
+
+  <div class="fd-card" style="padding:0">
+    <div class="coa-filter">
+      <input class="filter-input" placeholder="Search accounts…" [(ngModel)]="searchQuery">
+      <select class="filter-select" [(ngModel)]="filterType">
+        <option value="">ALL TYPES</option>
+        <option value="ASSET">ASSET</option>
+        <option value="LIABILITY">LIABILITY</option>
+        <option value="EQUITY">EQUITY</option>
+        <option value="INCOME">INCOME</option>
+        <option value="COST_OF_SALES">COST_OF_SALES</option>
+        <option value="EXPENSE">EXPENSE</option>
+      </select>
+    </div>
+
+    <div *ngIf="loading" class="loading-row">
+      <span>Loading accounts…</span>
+    </div>
+
+    <div class="fd-table-wrap" *ngIf="!loading">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Account Name</th><th>Code</th><th>Type</th><th>Normal Balance</th><th>Currency</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let parent of parentAccounts">
+            <!-- Parent / group row -->
+            <tr class="group-row" (click)="toggle(parent.id)">
+              <td class="group-name">
+                {{ expanded[parent.id] ? '▼' : '▶' }}
+                {{ parent.accountCode }} — {{ parent.accountName }}
+              </td>
+              <td class="code-cell">{{ parent.accountCode }}</td>
+              <td><span class="fd-badge" [ngClass]="typeBadgeClass(parent.accountType)">{{ parent.accountType }}</span></td>
+              <td class="normal-bal">{{ normalBalance(parent.accountType) }}</td>
+              <td>{{ parent.currency }}</td>
+              <td class="actions-cell">
+                <button class="act-btn" title="Add child" (click)="$event.stopPropagation()">＋</button>
+                <button class="act-btn act-edit" title="Edit" (click)="$event.stopPropagation()">✏</button>
+              </td>
+            </tr>
+            <!-- Child rows -->
+            <ng-container *ngIf="expanded[parent.id]">
+              <tr class="child-row" *ngFor="let child of childrenOf(parent)">
+                <td class="child-name">{{ child.accountCode }} — {{ child.accountName }}</td>
+                <td class="code-cell">{{ child.accountCode }}</td>
+                <td><span class="fd-badge" [ngClass]="typeBadgeClass(child.accountType)">{{ child.accountType }}</span></td>
+                <td class="normal-bal">{{ normalBalance(child.accountType) }}</td>
+                <td>{{ child.currency }}</td>
+                <td class="actions-cell">
+                  <button class="act-btn act-edit" title="Edit">✏</button>
+                  <button class="act-btn act-reject" title="Delete" (click)="deleteAccount(child)">🗑</button>
+                </td>
+              </tr>
+            </ng-container>
+          </ng-container>
+
+          <tr *ngIf="parentAccounts.length === 0 && !loading">
+            <td colspan="6" style="text-align:center;padding:32px;color:#94a3b8;">No accounts found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

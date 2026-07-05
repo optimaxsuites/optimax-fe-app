@@ -1,0 +1,70 @@
+<div class="fd-content">
+
+  <div class="info-banner" [class.info-banner-warn]="overdueCount > 0">
+    <span class="info-banner-icon">{{ overdueCount > 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#fee2e2;color:#dc2626;">🧾</div>
+      <div>
+        <div class="page-title">Accounts Payable</div>
+        <div class="page-sub">Vendor bills and payment scheduling</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline" (click)="load()">↺ Refresh</button>
+      <button class="fd-btn fd-btn-outline" (click)="exportCsv()">⬇ Export</button>
+    </div>
+  </div>
+
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat-card stat-blue"><div class="stat-label">Total AP</div><div class="stat-value" style="color:#2E6276;font-size:22px">{{ formatNgn(totalAP) }}</div></div>
+    <div class="stat-card stat-red"><div class="stat-label">Due Today</div><div class="stat-value" style="color:#dc2626;font-size:22px">{{ formatNgn(dueToday) }}</div></div>
+    <div class="stat-card stat-amber"><div class="stat-label">Due This Week</div><div class="stat-value" style="color:#92400e;font-size:22px">{{ formatNgn(dueThisWeek) }}</div></div>
+    <div class="stat-card stat-green"><div class="stat-label">Disbursed Bills</div><div class="stat-value" style="color:#16a34a;font-size:22px">{{ paidCount }}</div></div>
+  </div>
+
+  <div class="tray-filter-bar" style="margin-bottom:16px">
+    <button class="tray-tab" [class.active]="activeFilter==='all'"     (click)="setFilter('all')">All Sources</button>
+    <button class="tray-tab" [class.active]="activeFilter==='EXPENSE'" (click)="setFilter('EXPENSE')">🧾 Expense</button>
+    <button class="tray-tab" [class.active]="activeFilter==='HR'"      (click)="setFilter('HR')">💼 HR / Payroll</button>
+  </div>
+
+  <div *ngIf="loading" class="loading-row"><span>Loading payables…</span></div>
+
+  <div class="fd-card" style="padding:0" *ngIf="!loading">
+    <div class="fd-table-wrap">
+      <table class="fd-table">
+        <thead>
+          <tr><th>Reference</th><th>Vendor / Employee</th><th>Module</th><th>Date</th><th>Amount</th><th>Status</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let bill of bills">
+            <td class="ref-cell">{{ bill.transactionReference }}</td>
+            <td>{{ displayVendor(bill) }}</td>
+            <td>
+              <span class="fd-badge" [ngClass]="{
+                'badge-purple': bill.sourceModule === 'HR',
+                'badge-orange': bill.sourceModule === 'EXPENSE'
+              }">{{ bill.sourceModule }}</span>
+            </td>
+            <td>{{ formatDate(bill.transactionDate) }}</td>
+            <td class="amount-cell">{{ formatNgn(bill.amount) }}</td>
+            <td><span class="fd-badge" [ngClass]="billStatusClass(bill)">{{ billStatusLabel(bill) }}</span></td>
+            <td class="actions-cell">
+              <button class="act-btn" title="View">👁</button>
+              <button class="fd-btn fd-btn-primary fd-btn-sm" *ngIf="billStatusLabel(bill) !== 'PAID'" title="Pay Now" (click)="payNow(bill)">Pay Now</button>
+              <button class="fd-btn fd-btn-outline fd-btn-sm" *ngIf="billStatusLabel(bill) === 'APPROVED'" title="Schedule">Schedule</button>
+            </td>
+          </tr>
+          <tr *ngIf="bills.length === 0">
+            <td colspan="7" style="text-align:center;padding:32px;color:#94a3b8;">No payable transactions found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

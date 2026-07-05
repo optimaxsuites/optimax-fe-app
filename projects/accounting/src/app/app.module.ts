@@ -130,6 +130,20 @@ import { PaystackComponent } from './ui/view/paystack/paystack.component';
 import { BankTransactionsComponent } from './ui/view/bank-transactions/bank-transactions.component';
 import { PaystackTransferDetailComponent } from './ui/view/bank-account-overview/paystack-transfer-detail/paystack-transfer-detail.component';
 import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-transfer/paystack-initiate-transfer.component';
+import { FinanceDashboardComponent } from './ui/view/finance-dashboard/finance-dashboard.component';
+import { FinanceEventsComponent } from './ui/view/finance-events/finance-events.component';
+import { FinanceJournalsComponent } from './ui/view/finance-journals/finance-journals.component';
+import { FinanceLedgerComponent } from './ui/view/finance-ledger/finance-ledger.component';
+import { FinanceCoaComponent } from './ui/view/finance-coa/finance-coa.component';
+import { FinanceArComponent } from './ui/view/finance-ar/finance-ar.component';
+import { FinanceApComponent } from './ui/view/finance-ap/finance-ap.component';
+import { FinanceBankingComponent } from './ui/view/finance-banking/finance-banking.component';
+import { FinancePaymentsComponent } from './ui/view/finance-payments/finance-payments.component';
+import { FinanceReportsComponent } from './ui/view/finance-reports/finance-reports.component';
+import { FinanceTaxComponent } from './ui/view/finance-tax/finance-tax.component';
+import { FinanceBudgetsComponent } from './ui/view/finance-budgets/finance-budgets.component';
+import { FinanceAuditTrailComponent } from './ui/view/finance-auditlog/finance-auditlog.component';
+import { FinanceAssessmentComponent } from './ui/view/finance-assessment/finance-assessment.component';
 
 @NgModule({
   declarations: [
@@ -184,7 +198,21 @@ import { PaystackInitiateTransferComponent } from './ui/view/paystack-initiate-t
     PaystackComponent,
     BankTransactionsComponent,
     PaystackTransferDetailComponent,
-    PaystackInitiateTransferComponent
+    PaystackInitiateTransferComponent,
+    FinanceDashboardComponent,
+    FinanceEventsComponent,
+    FinanceJournalsComponent,
+    FinanceLedgerComponent,
+    FinanceCoaComponent,
+    FinanceArComponent,
+    FinanceApComponent,
+    FinanceBankingComponent,
+    FinancePaymentsComponent,
+    FinanceReportsComponent,
+    FinanceTaxComponent,
+    FinanceBudgetsComponent,
+    FinanceAuditTrailComponent,
+    FinanceAssessmentComponent,
   ],
   imports: [
     // BrowserModule,

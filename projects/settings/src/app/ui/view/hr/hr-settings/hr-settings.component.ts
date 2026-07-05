@@ -12,6 +12,7 @@ import { MailTemplatesComponent } from '../mail-templates/mail-templates.compone
 import { HrNotificationsComponent } from '../hr-notifications/hr-notifications.component';
 import { HrOdooImportComponent } from '../hr-odoo-import/hr-odoo-import.component';
 import { ProbationSettingsComponent } from '../probation/probation-settings.component';
+import { HrFormsComponent } from '../hr-forms/hr-forms.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -50,6 +51,8 @@ export class HrSettingsComponent implements OnInit {
       subSetting: ['XML-RPC connection', 'Preview & import tasks', 'CSV export alternative'] },
     { name: 'Probation Tracker', key: 'probation', icon: 'fas fa-user-clock', component: ProbationSettingsComponent,
       subSetting: ['Active probation list', 'Overdue cases', 'Due-soon alerts'] },
+    { name: 'Forms & Templates', key: 'forms', icon: 'fas fa-file-alt', component: HrFormsComponent,
+      subSetting: ['Pre-Onboarding Form', 'Employee Record Update Form', 'Exit / Offboarding Form'] },
   ];
 
   filteredSettings = [...this.settings];

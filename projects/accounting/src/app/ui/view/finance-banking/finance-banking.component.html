@@ -1,0 +1,136 @@
+<div class="fd-content">
+
+  <div class="info-banner" [class.info-banner-warn]="bankConnections.length === 0">
+    <span class="info-banner-icon">{{ bankConnections.length === 0 ? '⚠' : 'ℹ' }}</span>
+    <div>{{ insightText }}</div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:#dbeafe;color:#2563eb;">🏦</div>
+      <div>
+        <div class="page-title">Bank &amp; Reconciliation</div>
+        <div class="page-sub">Connected accounts, statements, and GL reconciliation</div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="fd-btn fd-btn-outline" (click)="loadAll()">↺ Refresh</button>
+      <button class="fd-btn fd-btn-primary">＋ Connect Bank</button>
+    </div>
+  </div>
+
+  <div class="inner-tabs">
+    <button class="inner-tab" [class.active]="activeTab==='accounts'"   (click)="setTab('accounts')">Accounts</button>
+    <button class="inner-tab" [class.active]="activeTab==='txns'"       (click)="setTab('txns')">Transactions</button>
+    <button class="inner-tab" [class.active]="activeTab==='reconcile'"  (click)="setTab('reconcile')">Reconciliation</button>
+    <button class="inner-tab" [class.active]="activeTab==='mono'"       (click)="setTab('mono')">Connect / Mono</button>
+  </div>
+
+  <!-- ACCOUNTS TAB -->
+  <div *ngIf="activeTab==='accounts'">
+
+    <div *ngIf="loading" class="loading-row"><span>Loading bank connections…</span></div>
+
+    <!-- Paystack balance card -->
+    <div class="bank-balance-banner" *ngIf="paystackBalance && !loading">
+      <span class="balance-label">Paystack Available Balance</span>
+      <span class="balance-amount">{{ formatNgn(totalBalance) }}</span>
+      <span class="balance-ccy">{{ paystackBalance.currency }}</span>
+    </div>
+
+    <div class="bank-accounts-grid" *ngIf="!loading">
+      <!-- Real bank connections from API -->
+      <div class="bank-card" *ngFor="let conn of bankConnections">
+        <div class="bank-card-top">
+          <div class="bank-logo">{{ providerInitials(conn.providerName) }}</div>
+          <span class="fd-badge" [ngClass]="conn.active ? 'badge-green' : 'badge-red'">
+            {{ conn.active ? 'ACTIVE' : 'INACTIVE' }}
+          </span>
+        </div>
+        <div class="bank-name">{{ conn.providerName }}</div>
+        <div class="bank-acct-num">Connected via API</div>
+        <div class="bank-sync">Added: {{ formatDate(conn.createdAt || '') }}</div>
+        <div class="bank-actions">
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('txns')">Transactions</button>
+          <button class="fd-btn fd-btn-outline fd-btn-sm" (click)="setTab('reconcile')">Reconcile</button>
+        </div>
+      </div>
+
+      <!-- No connections state -->
+      <div class="bank-card" *ngIf="bankConnections.length === 0" style="opacity:0.6;cursor:default">
+        <div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">No bank connections configured yet.</div>
+      </div>
+
+      <div class="bank-add-card" (click)="setTab('mono')">
+        <div class="add-icon">＋</div>
+        <div class="add-label">Add Bank Account</div>
+        <div class="add-sub">via Mono Open Banking</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS TAB -->
+  <div *ngIf="activeTab==='txns'">
+
+    <div *ngIf="loading" class="loading-row"><span>Loading transactions…</span></div>
+
+    <div class="fd-card" style="padding:0" *ngIf="!loading">
+      <div class="fd-table-wrap">
+        <table class="fd-table">
+          <thead>
+            <tr><th>Date</th><th>Reference</th><th>Description</th><th>Debit</th><th>Credit</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let txn of paystackTxns">
+              <td>{{ formatDate(txn.createdAt) }}</td>
+              <td class="ref-cell">{{ txn.reference }}</td>
+              <td>{{ txn.description || '—' }}</td>
+              <td class="dr-cell">
+                {{ txn.type === PaystackTransactionType.DEBIT ? formatNgn(txn.amount / 100) : '—' }}
+              </td>
+              <td class="cr-cell">
+                {{ txn.type === PaystackTransactionType.CREDIT ? formatNgn(txn.amount / 100) : '—' }}
+              </td>
+              <td>
+                <span class="fd-badge" [ngClass]="{
+                  'badge-green': txn.status === 'SUCCESS',
+                  'badge-amber': txn.status === 'PENDING',
+                  'badge-red':   txn.status === 'FAILED'
+                }">{{ txn.status }}</span>
+              </td>
+            </tr>
+            <tr *ngIf="paystackTxns.length === 0">
+              <td colspan="6" style="text-align:center;padding:32px;color:#94a3b8;">No transactions found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECONCILIATION TAB -->
+  <div *ngIf="activeTab==='reconcile'">
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card stat-green"><div class="stat-label">Matched</div><div class="stat-value" style="color:#16a34a">—</div></div>
+      <div class="stat-card stat-amber"><div class="stat-label">Unmatched</div><div class="stat-value" style="color:#92400e">—</div></div>
+      <div class="stat-card stat-blue">
+        <div class="stat-label">Paystack Balance</div>
+        <div class="stat-value" style="color:#2E6276;font-size:22px">{{ paystackBalance ? formatNgn(totalBalance) : '—' }}</div>
+      </div>
+    </div>
+    <div class="recon-actions" style="margin-top:16px">
+      <p style="color:#64748b;font-size:13px">Full reconciliation requires bank statement import. Connect via Mono or upload a CSV.</p>
+      <button class="fd-btn fd-btn-outline">Import Bank Statement</button>
+      <button class="fd-btn fd-btn-primary">Post Reconciliation</button>
+    </div>
+  </div>
+
+  <!-- CONNECT / MONO TAB -->
+  <div *ngIf="activeTab==='mono'" class="mono-center">
+    <div class="page-icon mono-icon">🔗</div>
+    <div class="mono-title">Connect via Mono Open Banking</div>
+    <div class="mono-sub">Securely link Nigerian bank accounts for real-time statement sync. Supported: GTBank, Access, Wema, Zenith, UBA, First Bank.</div>
+    <button class="fd-btn fd-btn-primary mono-btn">Launch Mono Connect</button>
+  </div>
+
+</div>
