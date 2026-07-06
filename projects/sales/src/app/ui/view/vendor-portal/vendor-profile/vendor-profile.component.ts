@@ -81,7 +81,13 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   isDownloading   = false;
   showSignaturePad = false;
   isDrawing        = false;
-  savedSignatureDataUrl: string | null = null;
+
+  // Your signature is a profile-level asset (like your logo) — draw it once
+  // here, then decide per-document whether to attach it when you create a
+  // quotation or invoice. It's not a template setting.
+  get savedSignatureDataUrl(): string | null {
+    return this.profile?.signatureDataUrl ?? null;
+  }
 
   // ── Base style picker ────────────────────────────────────────────────────────
   readonly baseStyles: { value: TemplateBaseStyle; label: string; desc: string }[] = [
@@ -103,7 +109,6 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     logoPosition:      'left'    as LogoPosition,
     accentColor:       '#224957',
     density:           'detailed' as TemplateDensity,
-    showSignatureLine: true,
     footerText:        '',
     showBankDetails:   true,
     notesDefault:      '',
@@ -332,7 +337,6 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       logoPosition:      template.logoPosition,
       accentColor:       template.accentColor,
       density:           template.density,
-      showSignatureLine: template.showSignatureLine,
       footerText:        template.footerText   || '',
       showBankDetails:   template.showBankDetails,
       notesDefault:      template.notesDefault || '',
@@ -347,7 +351,6 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       logoPosition:      'left',
       accentColor:       '#224957',
       density:           'detailed',
-      showSignatureLine: true,
       footerText:        '',
       showBankDetails:   this.templateDocType === 'invoice',
       notesDefault:      '',
@@ -365,7 +368,6 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       logoPosition:      this.templateForm.logoPosition,
       accentColor:       this.templateForm.accentColor,
       density:           this.templateForm.density,
-      showSignatureLine: this.templateForm.showSignatureLine,
       footerText:        this.templateForm.footerText   || undefined,
       showBankDetails:   this.templateForm.showBankDetails,
       notesDefault:      this.templateForm.notesDefault || undefined,
@@ -448,11 +450,13 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   saveSignature(): void {
     const canvas = this.signatureCanvas?.nativeElement;
     if (!canvas) return;
-    this.savedSignatureDataUrl = canvas.toDataURL('image/png');
+    this.vendorService.updateProfile({ signatureDataUrl: canvas.toDataURL('image/png') });
     this.closeSignaturePad();
   }
 
-  clearSavedSignature(): void { this.savedSignatureDataUrl = null; }
+  clearSavedSignature(): void {
+    this.vendorService.updateProfile({ signatureDataUrl: undefined });
+  }
 
   // ── PDF export ────────────────────────────────────────────────────────────────
   async downloadTemplatePdf(): Promise<void> {

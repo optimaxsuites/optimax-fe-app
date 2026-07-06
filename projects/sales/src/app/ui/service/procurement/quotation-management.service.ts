@@ -10,7 +10,7 @@ import { VendorQuotation, RFQWithQuotations, VendorQuotationStatus } from '../..
   providedIn: 'root'
 })
 export class QuotationManagementService {
-  private readonly STORAGE_KEY = 'vendor_quotations_db';
+  private readonly STORAGE_KEY = 'vendor_quotations_db_v3';
   private quotations: VendorQuotation[] = [];
 
   constructor(private http: HttpClient) {
@@ -56,7 +56,7 @@ export class QuotationManagementService {
         status: 'SUBMITTED',
         items: [
           { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
-          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'AVAILABLE' }
+          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'SUBSTITUTE', alternativeProduct: 'Canon imageCLASS LBP226dw' }
         ],
         totalAmount: 450000,
         currency: 'NGN',
@@ -81,8 +81,8 @@ export class QuotationManagementService {
         vendorPhone: '+234-811-333-2211',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'AVAILABLE' },
-          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'AVAILABLE' }
+          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'PARTIAL', availableQuantity: 1 },
+          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'UNAVAILABLE' }
         ],
         totalAmount: 420000,
         currency: 'NGN',

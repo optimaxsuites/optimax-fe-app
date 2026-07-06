@@ -290,6 +290,45 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     }
   }
 
+  saveDraft(): void {
+    const formValue = this.serviceForm.value;
+    formValue.totalBudget = this.getTotalBudget();
+    formValue.procurementType = 'SERVICE';
+    formValue.status = 'DRAFT';
+
+    if (!formValue.title || !formValue.title.trim()) {
+      formValue.title = `Draft Service Request - ${new Date().toLocaleDateString()}`;
+    }
+
+    const requestId = this.requestId || uuidV4();
+
+    if (this.isEditMode && this.requestId) {
+      this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+        next: (req) => {
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        },
+        error: (err) => {
+          console.error('Failed to update request draft', err);
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        }
+      });
+    } else {
+      this.procurementRequestService.createRequest({
+        ...formValue,
+        id: requestId,
+        status: 'DRAFT'
+      }).subscribe({
+        next: (req) => {
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        },
+        error: (err) => {
+          console.error('Failed to create request draft', err);
+          this.router.navigate(['/admin/sales/commerce/requests']);
+        }
+      });
+    }
+  }
+
   getFormValidationErrors(): any {
     const errors: any = {};
     Object.keys(this.serviceForm.controls).forEach(key => {
