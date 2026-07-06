@@ -1,4 +1,74 @@
-<app-navbar2></app-navbar2>
-<div class="py-4">
-    <app-add-employee-form [admin]="false"></app-add-employee-form>
-</div>
+<ng-container *ngIf="companyProfile$ | async as profile; else noProfile">
+  <div class="ob-shell">
+
+    <!-- Header -->
+    <header class="ob-header">
+      <div class="ob-header__inner">
+        <div class="ob-header__logo-wrap">
+          <img *ngIf="profile.logoUrl" [src]="profile.logoUrl" alt="Company logo" class="ob-header__logo" />
+          <div *ngIf="!profile.logoUrl" class="ob-header__logo-placeholder">
+            {{ (profile.companyName || 'C').charAt(0).toUpperCase() }}
+          </div>
+        </div>
+        <div class="ob-header__titles">
+          <span class="ob-header__company">{{ profile.companyName }}</span>
+          <span class="ob-header__subtitle">Staff Onboarding Portal</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Welcome Banner -->
+    <div class="ob-welcome">
+      <p class="ob-welcome__text">
+        Welcome! Please complete all sections below to finish setting up your employee profile.
+        Your information is securely stored and only accessible to authorised HR personnel.
+      </p>
+    </div>
+
+    <!-- Form Body -->
+    <main class="ob-body">
+      <app-add-employee-form [admin]="false"></app-add-employee-form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="ob-footer">
+      <div class="ob-footer__inner">
+        <span class="ob-footer__company">{{ profile.companyName }}</span>
+        <span class="ob-footer__sep">·</span>
+        <span class="ob-footer__note">For assistance, contact the HR department.</span>
+        <span class="ob-footer__sep">·</span>
+        <span class="ob-footer__year">{{ year }}</span>
+      </div>
+    </footer>
+
+  </div>
+</ng-container>
+
+<ng-template #noProfile>
+  <div class="ob-shell">
+    <header class="ob-header">
+      <div class="ob-header__inner">
+        <div class="ob-header__logo-placeholder">S</div>
+        <div class="ob-header__titles">
+          <span class="ob-header__company">Staff Onboarding Portal</span>
+          <span class="ob-header__subtitle">Employee Self-Service</span>
+        </div>
+      </div>
+    </header>
+    <div class="ob-welcome">
+      <p class="ob-welcome__text">
+        Welcome! Please complete all sections below to finish setting up your employee profile.
+      </p>
+    </div>
+    <main class="ob-body">
+      <app-add-employee-form [admin]="false"></app-add-employee-form>
+    </main>
+    <footer class="ob-footer">
+      <div class="ob-footer__inner">
+        <span class="ob-footer__note">For assistance, contact the HR department.</span>
+        <span class="ob-footer__sep">·</span>
+        <span class="ob-footer__year">{{ year }}</span>
+      </div>
+    </footer>
+  </div>
+</ng-template>
