@@ -2,18 +2,20 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
-import { VendorService } from '../../../service/vendor-portal/vendor.service';
+import { VendorService, computeQuotationTotals, isQuotationSubmittable } from '../../../service/vendor-portal/vendor.service';
 import {
   Rfq,
   Quotation,
   QuotationItem,
   VendorStats,
+  ItemAvailability,
+  MAX_REVISION_ROUNDS,
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
-type ActiveTable   = 'rfqs' | 'quotations';
-type RfqFilter     = 'all' | 'open' | 'converted' | 'expired' | 'closed' | 'due_soon';
-type QuotFilter    = 'all' | 'draft' | 'sent' | 'accepted' | 'rejected';
+type ActiveTable = 'rfqs' | 'quotations';
+type RfqFilter   = 'all' | 'open' | 'converted' | 'expired' | 'closed' | 'due_soon';
+type QuotFilter  = 'all' | 'draft' | 'sent' | 'revision_requested' | 'accepted' | 'rejected' | 'withdrawn';
 
 @Component({
   selector: 'app-dashboard',
@@ -22,6 +24,8 @@ type QuotFilter    = 'all' | 'draft' | 'sent' | 'accepted' | 'rejected';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+
+  readonly MAX_REVISION_ROUNDS = MAX_REVISION_ROUNDS;
 
   rfqs: Rfq[] = [];
   quotations: Quotation[] = [];
@@ -41,14 +45,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showQuotationPanel = false;
   selectedQuotation: Quotation | null = null;
 
-  // ── Quotation editor centre modal (shared for both Convert and Edit flows) ────
+  // ── Quotation editor centre modal (shared for both Convert, Edit and Revise flows) ──
   showQuotationModal = false;
   editingQuotation: Quotation | null = null;
   isQuotationReadOnly = false;
 
-  // ── Send confirm modal ────────────────────────────────────────────────────────
+  // ── Send / resubmit confirm modal ─────────────────────────────────────────────
   showSendConfirm = false;
   quotationToSend: Quotation | null = null;
+
+  // ── Withdraw confirm modal ────────────────────────────────────────────────────
+  showWithdrawConfirm = false;
+  quotationToWithdraw: Quotation | null = null;
+  withdrawReason = '';
+
+  // ── Simulate client revision request modal (demo stand-in — see method docs) ──
+  showSimulateRevisionModal = false;
+  quotationToSimulate: Quotation | null = null;
+  simulateRevisionNote = '';
+  simulateRevisionError: string | null = null;
 
   // ── RFQ columns
   // Each column has a formatter so resolveCell() always returns a value.
@@ -132,7 +147,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.vendorService
       .getQuotations()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((list) => (this.quotations = list));
+      .subscribe((list) => {
+        this.quotations = list;
+        // Keep the open side-panel in sync if the underlying record changed
+        // (e.g. after a simulated client revision request or a withdrawal).
+        if (this.selectedQuotation) {
+          const fresh = list.find((q) => q.id === this.selectedQuotation!.id);
+          this.selectedQuotation = fresh ? JSON.parse(JSON.stringify(fresh)) : null;
+          if (!fresh) this.showQuotationPanel = false;
+        }
+      });
 
     this.refreshStats();
   }
@@ -179,6 +203,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   get draftCount(): number {
     return this.quotations.filter((q) => q.status === 'draft').length;
+  }
+  get needsRevisionCount(): number {
+    return this.quotations.filter((q) => q.status === 'revision_requested').length;
   }
 
   // ── RFQ panel ─────────────────────────────────────────────────────────────────
@@ -231,6 +258,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.selectedQuotation = null;
   }
 
+  // Draft quotations, and quotations the client sent back for changes, are
+  // both editable — everything else (sent / accepted / rejected / withdrawn)
+  // opens read-only.
+  isEditableStatus(q: Quotation): boolean {
+    return q.status === 'draft' || q.status === 'revision_requested';
+  }
+
   openQuotationEditor(q: Quotation): void {
     this.editingQuotation = JSON.parse(JSON.stringify(q));
     this.isQuotationReadOnly = false;
@@ -252,41 +286,62 @@ export class DashboardComponent implements OnInit, OnDestroy {
   onPriceChange(item: QuotationItem, raw: string): void {
     const v = parseFloat(raw.replace(/,/g, ''));
     item.unitPrice = isNaN(v) || v < 0 ? null : v;
-    item.totalPrice = item.unitPrice !== null ? item.unitPrice * item.quantity : null;
     this.recalcEditing();
   }
 
-  toggleUnavailable(item: QuotationItem): void {
-    item.availability = item.availability === 'available' ? 'unavailable' : 'available';
-    if (item.availability === 'unavailable') {
-      item.unitPrice = null;
-      item.totalPrice = null;
-    }
+  onOfferedQtyChange(item: QuotationItem, raw: string): void {
+    const v = parseInt(raw.replace(/,/g, ''), 10);
+    item.offeredQuantity = isNaN(v) || v <= 0 ? null : v;
     this.recalcEditing();
+  }
+
+  // Switches a line item between Full / Partial / Substitute / Unavailable
+  // and resets whichever fields don't apply to the new state so stale data
+  // (e.g. a substitute description left over from a previous choice) can't
+  // leak into the submitted quotation.
+  setAvailability(item: QuotationItem, availability: ItemAvailability): void {
+    item.availability = availability;
+    if (availability === 'available') {
+      item.offeredQuantity = null;
+      item.substituteDescription = null;
+    } else if (availability === 'unavailable') {
+      item.unitPrice = null;
+      item.offeredQuantity = null;
+      item.substituteDescription = null;
+    } else if (availability === 'partial') {
+      item.substituteDescription = null;
+      if (item.offeredQuantity !== null && item.offeredQuantity >= item.quantity) {
+        item.offeredQuantity = null;
+      }
+    }
+    // 'substitute' — unitPrice/offeredQuantity are left as-is; vendor fills in substituteDescription.
+    this.recalcEditing();
+  }
+
+  itemAvailabilityLabel(a: ItemAvailability): string {
+    const m: Record<ItemAvailability, string> = {
+      available: 'Full qty',
+      partial: 'Partial',
+      substitute: 'Substitute',
+      unavailable: 'Unavailable',
+    };
+    return m[a];
   }
 
   private recalcEditing(): void {
     if (!this.editingQuotation) return;
-    const q = this.editingQuotation;
-    const subtotal = q.items.reduce(
-      (s, i) =>
-        i.availability === 'available' && i.unitPrice !== null ? s + i.unitPrice * i.quantity : s,
-      0,
-    );
-    q.subtotal = subtotal;
-    q.tax = subtotal * 0.075;
-    q.total = subtotal + q.tax;
+    this.editingQuotation = computeQuotationTotals(this.editingQuotation);
   }
 
   isComplete(q: Quotation): boolean {
-    return q.items.some((i) => i.availability === 'available' && i.unitPrice !== null);
+    return isQuotationSubmittable(q);
   }
 
   get editingComplete(): boolean {
     return !!this.editingQuotation && this.isComplete(this.editingQuotation);
   }
 
-  // ── Save / Send ───────────────────────────────────────────────────────────────
+  // ── Save / Send / Resubmit ────────────────────────────────────────────────────
   saveDraft(): void {
     if (!this.editingQuotation) return;
     this.vendorService.updateQuotation(this.editingQuotation);
@@ -295,6 +350,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     this.refreshStats();
     this.closeQuotationModal();
+  }
+
+  get isResubmitFlow(): boolean {
+    return this.quotationToSend?.status === 'revision_requested';
   }
 
   openSendConfirm(q: Quotation): void {
@@ -315,10 +374,62 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   executeSend(): void {
     if (!this.quotationToSend) return;
-    this.vendorService.sendQuotation(this.quotationToSend.id);
+    if (this.quotationToSend.status === 'revision_requested') {
+      this.vendorService.resubmitQuotation(this.quotationToSend);
+    } else {
+      this.vendorService.sendQuotation(this.quotationToSend.id);
+    }
     this.showSendConfirm = false;
     this.quotationToSend = null;
     this.closeQuotationModal();
+    this.closeQuotationPanel();
+    this.refreshStats();
+  }
+
+  // ── Withdraw ──────────────────────────────────────────────────────────────────
+  openWithdrawConfirm(q: Quotation): void {
+    this.quotationToWithdraw = q;
+    this.withdrawReason = '';
+    this.showWithdrawConfirm = true;
+  }
+  cancelWithdraw(): void {
+    this.showWithdrawConfirm = false;
+    this.quotationToWithdraw = null;
+  }
+  executeWithdraw(): void {
+    if (!this.quotationToWithdraw) return;
+    this.vendorService.withdrawQuotation(this.quotationToWithdraw.id, this.withdrawReason.trim() || undefined);
+    this.showWithdrawConfirm = false;
+    this.quotationToWithdraw = null;
+    this.closeQuotationPanel();
+    this.refreshStats();
+  }
+
+  // ── Simulate client revision request ─────────────────────────────────────────
+  // The real trigger for this lives on the client side (request-management
+  // module), which currently talks to a separate backend-backed quotation
+  // model. Until both sides share one API, this lets the vendor portal
+  // exercise and demo the full negotiation loop on its own mock data.
+  // Swap this out for a real inbound event once the two are wired together.
+  openSimulateRevision(q: Quotation): void {
+    this.quotationToSimulate = q;
+    this.simulateRevisionNote = '';
+    this.simulateRevisionError = null;
+    this.showSimulateRevisionModal = true;
+  }
+  cancelSimulateRevision(): void {
+    this.showSimulateRevisionModal = false;
+    this.quotationToSimulate = null;
+  }
+  executeSimulateRevision(): void {
+    if (!this.quotationToSimulate || !this.simulateRevisionNote.trim()) return;
+    const result = this.vendorService.requestRevision(this.quotationToSimulate.id, this.simulateRevisionNote.trim());
+    if (!result.ok) {
+      this.simulateRevisionError = result.reason ?? 'Could not request a revision on this quotation.';
+      return;
+    }
+    this.showSimulateRevisionModal = false;
+    this.quotationToSimulate = null;
     this.closeQuotationPanel();
     this.refreshStats();
   }
@@ -340,6 +451,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+    });
+  }
+
+  fmtDateTime(d: Date | undefined): string {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-NG', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
@@ -390,9 +512,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const m: Record<string, string> = {
       draft: 'badge-draft',
       sent: 'badge-sent',
+      revision_requested: 'badge-revision_requested',
       accepted: 'badge-accepted',
       rejected: 'badge-rejected',
+      withdrawn: 'badge-withdrawn',
     };
     return `badge ${m[s] ?? ''}`;
+  }
+
+  quotStatusLabel(s: string): string {
+    const m: Record<string, string> = {
+      draft: 'Draft',
+      sent: 'Sent',
+      revision_requested: 'Needs Revision',
+      accepted: 'Accepted',
+      rejected: 'Rejected',
+      withdrawn: 'Withdrawn',
+    };
+    return m[s] ?? s;
   }
 }

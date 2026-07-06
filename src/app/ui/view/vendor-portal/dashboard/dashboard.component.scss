@@ -81,6 +81,40 @@
     background: #fef2f2;
     color: #dc2626;
   }
+  &-revision_requested {
+    background: #fff7ed;
+    color: #ea580c;
+  }
+  &-withdrawn {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+}
+
+// ── Item-level availability tags (quotation editor + side panel) ─────────────
+.item-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &-partial {
+    background: #fffbeb;
+    color: #d97706;
+  }
+  &-substitute {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  &-unavailable {
+    background: #fef2f2;
+    color: #dc2626;
+  }
 }
 
 // ── app-table deep overrides ──────────────────────────────────────────────────
