@@ -23,6 +23,7 @@ import { CrmReportsComponent } from './ui/view/crm-reports/crm-reports.component
 import { CrmAutomationComponent } from './ui/view/crm-automation/crm-automation.component';
 import { CrmGovernmentComponent } from './ui/view/crm-government/crm-government.component';
 import { CrmUiShellComponent } from './ui/view/crm-ui-shell/crm-ui-shell.component';
+import { CrmCommissionComponent } from './ui/view/crm-commission/crm-commission.component';
 
 const routes: Routes = [
   // Legacy vendor routes (must come before the shell catch-all)
@@ -50,7 +51,8 @@ const routes: Routes = [
       { path: 'settings/:uuid',   component: CrmSettingsComponent },
       { path: 'reports/:uuid',    component: CrmReportsComponent },
       { path: 'automation/:uuid', component: CrmAutomationComponent },
-      { path: 'government/:uuid', component: CrmGovernmentComponent },
+      { path: 'government/:uuid',   component: CrmGovernmentComponent },
+      { path: 'commission/:uuid',   component: CrmCommissionComponent },
     ],
   },
 ];

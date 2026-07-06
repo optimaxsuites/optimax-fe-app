@@ -1,0 +1,528 @@
+<div class="comm-page">
+
+  <!-- ── Page Header ── -->
+  <div class="comm-header">
+    <div class="comm-header__left">
+      <div class="comm-header__icon">💰</div>
+      <div>
+        <h1 class="comm-header__title">Business Commissions</h1>
+        <p class="comm-header__sub">Define schemes, set targets, log actuals, and approve commission payables</p>
+      </div>
+    </div>
+    <button mat-raised-button color="primary" *ngIf="activeTab === 'schemes'" (click)="openSchemeForm()">+ New Scheme</button>
+    <button mat-raised-button color="primary" *ngIf="activeTab === 'targets'" (click)="openTargetForm()">+ Set Target</button>
+    <button mat-raised-button color="primary" *ngIf="activeTab === 'entries'" (click)="openEntryForm()">+ Log Actuals</button>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <mat-tab-group [(selectedIndex)]="tabIndex" class="comm-tabs" animationDuration="150ms">
+
+    <!-- ════ SCHEMES TAB ════ -->
+    <mat-tab label="Commission Schemes">
+      <ng-template matTabContent>
+        <div class="comm-content">
+
+          <div *ngIf="loading$ | async" class="comm-loading">
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+          </div>
+
+          <div class="tbl-wrap mat-elevation-z1">
+            <table mat-table [dataSource]="schemeDS">
+
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Scheme Name</th>
+                <td mat-cell *matCellDef="let s"><strong>{{s.name}}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="categoryName">
+                <th mat-header-cell *matHeaderCellDef>Category</th>
+                <td mat-cell *matCellDef="let s">{{s.categoryName || '—'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="calculationMethod">
+                <th mat-header-cell *matHeaderCellDef>Method</th>
+                <td mat-cell *matCellDef="let s">
+                  <span class="tag tag-blue">{{calcLabel(s.calculationMethod)}}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="ratePercent">
+                <th mat-header-cell *matHeaderCellDef>Rate</th>
+                <td mat-cell *matCellDef="let s">
+                  <span *ngIf="s.calculationMethod !== 'TIERED'">{{s.ratePercent != null ? s.ratePercent + '%' : '—'}}</span>
+                  <span *ngIf="s.calculationMethod === 'TIERED'" class="tag tag-purple">{{(s.tiers?.length || 0)}} tiers</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="frequency">
+                <th mat-header-cell *matHeaderCellDef>Frequency</th>
+                <td mat-cell *matCellDef="let s">{{s.frequency}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="paymentMode">
+                <th mat-header-cell *matHeaderCellDef>Payment</th>
+                <td mat-cell *matCellDef="let s">
+                  <span class="tag" [ngClass]="s.paymentMode === 'PAYROLL' ? 'tag-green' : 'tag-amber'">{{s.paymentMode}}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="active">
+                <th mat-header-cell *matHeaderCellDef>Active</th>
+                <td mat-cell *matCellDef="let s">
+                  <span class="dot" [style.background]="s.active ? '#10b981' : '#94a3b8'"></span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let s">
+                  <button mat-icon-button (click)="openSchemeForm(s)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="warn" (click)="deleteScheme(s)" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="schemeCols; sticky: true"></tr>
+              <tr mat-row *matRowDef="let row; columns: schemeCols;"></tr>
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-row" [attr.colspan]="schemeCols.length">No commission schemes yet. Click <strong>+ New Scheme</strong> to get started.</td>
+              </tr>
+            </table>
+            <mat-paginator #schemePag [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+          </div>
+
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- ════ TARGETS TAB ════ -->
+    <mat-tab label="Sales Targets">
+      <ng-template matTabContent>
+        <div class="comm-content">
+          <div class="tbl-wrap mat-elevation-z1">
+            <table mat-table [dataSource]="targetDS">
+
+              <ng-container matColumnDef="employeeName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let t"><strong>{{t.employeeName}}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="schemeName">
+                <th mat-header-cell *matHeaderCellDef>Scheme</th>
+                <td mat-cell *matCellDef="let t"><span class="tag tag-blue">{{t.schemeName || '—'}}</span></td>
+              </ng-container>
+
+              <ng-container matColumnDef="periodStart">
+                <th mat-header-cell *matHeaderCellDef>Period Start</th>
+                <td mat-cell *matCellDef="let t">{{t.periodStart | date:'mediumDate'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="periodEnd">
+                <th mat-header-cell *matHeaderCellDef>Period End</th>
+                <td mat-cell *matCellDef="let t">{{t.periodEnd | date:'mediumDate'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="targetValue">
+                <th mat-header-cell *matHeaderCellDef>Target</th>
+                <td mat-cell *matCellDef="let t"><strong>{{fmt(t.targetValue)}}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let t">
+                  <button mat-icon-button (click)="openTargetForm(t)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="warn" (click)="deleteTarget(t)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="targetCols; sticky: true"></tr>
+              <tr mat-row *matRowDef="let row; columns: targetCols;"></tr>
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-row" [attr.colspan]="targetCols.length">No targets set yet.</td>
+              </tr>
+            </table>
+            <mat-paginator #targetPag [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+          </div>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- ════ ENTRIES TAB ════ -->
+    <mat-tab label="Actuals & Approval">
+      <ng-template matTabContent>
+        <div class="comm-content">
+
+          <!-- Filter + bulk approve bar -->
+          <div class="entries-toolbar">
+            <mat-form-field appearance="outline" class="status-filter">
+              <mat-label>Filter by status</mat-label>
+              <mat-select [(ngModel)]="entryStatusFilter" (selectionChange)="filterEntries()">
+                <mat-option value="">All</mat-option>
+                <mat-option value="DRAFT">Draft</mat-option>
+                <mat-option value="PENDING_APPROVAL">Pending Approval</mat-option>
+                <mat-option value="APPROVED">Approved</mat-option>
+                <mat-option value="PAID">Paid</mat-option>
+                <mat-option value="REJECTED">Rejected</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button color="primary" (click)="approveSelected()" [disabled]="selectedEntryIds.size === 0">
+              ✓ Approve Selected ({{selectedEntryIds.size}})
+            </button>
+          </div>
+
+          <div class="tbl-wrap mat-elevation-z1">
+            <table mat-table [dataSource]="entryDS">
+
+              <ng-container matColumnDef="select">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let e">
+                  <mat-checkbox
+                    *ngIf="e.status === 'PENDING_APPROVAL'"
+                    [checked]="selectedEntryIds.has(e.id)"
+                    (change)="toggleEntrySelect(e.id)">
+                  </mat-checkbox>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="employeeName">
+                <th mat-header-cell *matHeaderCellDef>Employee</th>
+                <td mat-cell *matCellDef="let e"><strong>{{e.employeeName}}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="schemeName">
+                <th mat-header-cell *matHeaderCellDef>Scheme</th>
+                <td mat-cell *matCellDef="let e"><span class="tag tag-blue">{{e.schemeName || '—'}}</span></td>
+              </ng-container>
+
+              <ng-container matColumnDef="periodStart">
+                <th mat-header-cell *matHeaderCellDef>Period</th>
+                <td mat-cell *matCellDef="let e">{{e.periodStart | date:'MMM y'}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actualValue">
+                <th mat-header-cell *matHeaderCellDef>Actuals</th>
+                <td mat-cell *matCellDef="let e">{{fmt(e.actualValue)}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="targetValue">
+                <th mat-header-cell *matHeaderCellDef>Target</th>
+                <td mat-cell *matCellDef="let e">{{fmt(e.targetValue)}}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="achievementPercent">
+                <th mat-header-cell *matHeaderCellDef>Achievement</th>
+                <td mat-cell *matCellDef="let e">
+                  <span class="ach-badge" [style.color]="achColor(e.achievementPercent)">
+                    {{pct(e.achievementPercent)}}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="computedAmount">
+                <th mat-header-cell *matHeaderCellDef>Commission</th>
+                <td mat-cell *matCellDef="let e"><strong>{{fmt(e.computedAmount)}}</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let e">
+                  <span class="status-chip" [style.background]="statusColor(e.status) + '20'" [style.color]="statusColor(e.status)">
+                    {{e.status | titlecase}}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let e">
+                  <button mat-icon-button (click)="openEntryForm(e)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="primary" *ngIf="e.status === 'DRAFT'" (click)="submitForApproval(e)" matTooltip="Submit for approval"><mat-icon>send</mat-icon></button>
+                  <button mat-icon-button color="warn" *ngIf="e.status === 'PENDING_APPROVAL'" (click)="rejectEntry(e)" matTooltip="Reject"><mat-icon>close</mat-icon></button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="entryCols; sticky: true"></tr>
+              <tr mat-row *matRowDef="let row; columns: entryCols;"></tr>
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-row" [attr.colspan]="entryCols.length">No entries. Click <strong>+ Log Actuals</strong> to record period performance.</td>
+              </tr>
+            </table>
+            <mat-paginator #entryPag [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+          </div>
+
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <!-- ════ DASHBOARD TAB ════ -->
+    <mat-tab label="Dashboard">
+      <ng-template matTabContent>
+        <div class="comm-content">
+          <div class="dash-grid">
+
+            <div class="dash-card">
+              <div class="dash-card__num" style="color:#f59e0b;">{{dashStats.pending}}</div>
+              <div class="dash-card__lbl">Pending Approval</div>
+              <div class="dash-card__amt">{{fmt(dashStats.pendingAmount)}}</div>
+            </div>
+
+            <div class="dash-card">
+              <div class="dash-card__num" style="color:#10b981;">{{dashStats.approved}}</div>
+              <div class="dash-card__lbl">Approved (awaiting payment)</div>
+              <div class="dash-card__amt">{{fmt(dashStats.approvedAmount)}}</div>
+            </div>
+
+            <div class="dash-card">
+              <div class="dash-card__num" style="color:#6366f1;">{{dashStats.paid}}</div>
+              <div class="dash-card__lbl">Paid This Cycle</div>
+              <div class="dash-card__amt">{{fmt(dashStats.paidAmount)}}</div>
+            </div>
+
+            <div class="dash-card">
+              <div class="dash-card__num" style="color:#0ea5e9;">{{schemes.length}}</div>
+              <div class="dash-card__lbl">Active Schemes</div>
+              <div class="dash-card__amt">{{targets.length}} targets set</div>
+            </div>
+
+          </div>
+
+          <!-- Entries breakdown by scheme -->
+          <div class="dash-section-title">Commission by Scheme</div>
+          <div class="tbl-wrap mat-elevation-z1">
+            <table mat-table [dataSource]="schemeBreakdown">
+              <ng-container matColumnDef="schemeName">
+                <th mat-header-cell *matHeaderCellDef>Scheme</th>
+                <td mat-cell *matCellDef="let r"><strong>{{r.schemeName}}</strong></td>
+              </ng-container>
+              <ng-container matColumnDef="entries">
+                <th mat-header-cell *matHeaderCellDef>Entries</th>
+                <td mat-cell *matCellDef="let r">{{r.count}}</td>
+              </ng-container>
+              <ng-container matColumnDef="totalComputed">
+                <th mat-header-cell *matHeaderCellDef>Total Computed</th>
+                <td mat-cell *matCellDef="let r"><strong>{{fmt(r.total)}}</strong></td>
+              </ng-container>
+              <ng-container matColumnDef="approved">
+                <th mat-header-cell *matHeaderCellDef>Approved</th>
+                <td mat-cell *matCellDef="let r">{{fmt(r.approved)}}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="['schemeName','entries','totalComputed','approved']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['schemeName','entries','totalComputed','approved']"></tr>
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-row" colspan="4">No data yet.</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+  </mat-tab-group>
+
+</div>
+
+<!-- ════ SCHEME FORM DRAWER ════ -->
+<div class="drawer-overlay" *ngIf="showSchemeForm" (click)="closeSchemeForm()"></div>
+<aside class="drawer" [class.drawer--open]="showSchemeForm">
+  <div class="drawer-header">
+    <span>{{editingScheme ? 'Edit Scheme' : 'New Commission Scheme'}}</span>
+    <button mat-icon-button (click)="closeSchemeForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body">
+    <form [formGroup]="schemeForm" class="drawer-form">
+
+      <mat-form-field appearance="outline">
+        <mat-label>Scheme Name *</mat-label>
+        <input matInput formControlName="name" placeholder="e.g. Sales Rep Monthly Commission">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Category</mat-label>
+        <mat-select formControlName="categoryId">
+          <mat-option *ngFor="let c of categories" [value]="c.id">{{c.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Calculation Method *</mat-label>
+        <mat-select formControlName="calculationMethod">
+          <mat-option *ngFor="let m of calcMethods" [value]="m.value">{{m.label}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" *ngIf="!isTiered()">
+        <mat-label>Rate (%)</mat-label>
+        <input matInput type="number" formControlName="ratePercent" placeholder="e.g. 2.5">
+      </mat-form-field>
+
+      <!-- Tier rows -->
+      <div *ngIf="isTiered()" class="tier-section">
+        <div class="tier-section__header">
+          <span>Tier Bands</span>
+          <button mat-stroked-button type="button" (click)="addTier()">+ Add Tier</button>
+        </div>
+        <div formArrayName="tiers">
+          <div *ngFor="let tier of tiersArray.controls; let i = index" [formGroupName]="i" class="tier-row">
+            <mat-form-field appearance="outline" class="tier-field">
+              <mat-label>From %</mat-label>
+              <input matInput type="number" formControlName="thresholdFrom">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="tier-field">
+              <mat-label>To % (blank = ∞)</mat-label>
+              <input matInput type="number" formControlName="thresholdTo">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="tier-field">
+              <mat-label>Commission %</mat-label>
+              <input matInput type="number" formControlName="ratePercent">
+            </mat-form-field>
+            <button mat-icon-button color="warn" type="button" (click)="removeTier(i)"><mat-icon>remove_circle</mat-icon></button>
+          </div>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Minimum Threshold (₦ or %)</mat-label>
+        <input matInput type="number" formControlName="minThreshold" placeholder="0 = no floor">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Cap (₦ max, leave blank = uncapped)</mat-label>
+        <input matInput type="number" formControlName="capAmount">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Frequency *</mat-label>
+        <mat-select formControlName="frequency">
+          <mat-option *ngFor="let f of frequencies" [value]="f">{{f | titlecase}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Payment Mode *</mat-label>
+        <mat-select formControlName="paymentMode">
+          <mat-option value="PAYROLL">Payroll — merged into next payroll run</mat-option>
+          <mat-option value="STANDALONE">Standalone — separate payment run</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="toggle-row">
+        <mat-slide-toggle formControlName="active">Active</mat-slide-toggle>
+      </div>
+
+      <div class="drawer-actions">
+        <button mat-button type="button" (click)="closeSchemeForm()">Cancel</button>
+        <button mat-raised-button color="primary" type="button" (click)="saveScheme()" [disabled]="saving$ | async">
+          {{(saving$ | async) ? 'Saving…' : (editingScheme ? 'Update' : 'Create Scheme')}}
+        </button>
+      </div>
+    </form>
+  </div>
+</aside>
+
+<!-- ════ TARGET FORM DRAWER ════ -->
+<div class="drawer-overlay" *ngIf="showTargetForm" (click)="closeTargetForm()"></div>
+<aside class="drawer" [class.drawer--open]="showTargetForm">
+  <div class="drawer-header">
+    <span>{{editingTarget ? 'Edit Target' : 'Set Sales Target'}}</span>
+    <button mat-icon-button (click)="closeTargetForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body">
+    <form [formGroup]="targetForm" class="drawer-form">
+
+      <mat-form-field appearance="outline">
+        <mat-label>Employee Name *</mat-label>
+        <input matInput formControlName="employeeName" placeholder="Full name">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Commission Scheme *</mat-label>
+        <mat-select formControlName="schemeId">
+          <mat-option *ngFor="let s of schemes" [value]="s.id">{{s.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Period Start *</mat-label>
+        <input matInput type="date" formControlName="periodStart">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Period End *</mat-label>
+        <input matInput type="date" formControlName="periodEnd">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Target Value (₦) *</mat-label>
+        <input matInput type="number" formControlName="targetValue">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="2"></textarea>
+      </mat-form-field>
+
+      <div class="drawer-actions">
+        <button mat-button type="button" (click)="closeTargetForm()">Cancel</button>
+        <button mat-raised-button color="primary" type="button" (click)="saveTarget()" [disabled]="saving$ | async">
+          {{(saving$ | async) ? 'Saving…' : (editingTarget ? 'Update' : 'Set Target')}}
+        </button>
+      </div>
+    </form>
+  </div>
+</aside>
+
+<!-- ════ ENTRY FORM DRAWER ════ -->
+<div class="drawer-overlay" *ngIf="showEntryForm" (click)="closeEntryForm()"></div>
+<aside class="drawer" [class.drawer--open]="showEntryForm">
+  <div class="drawer-header">
+    <span>{{editingEntry ? 'Edit Entry' : 'Log Actuals'}}</span>
+    <button mat-icon-button (click)="closeEntryForm()"><mat-icon>close</mat-icon></button>
+  </div>
+  <div class="drawer-body">
+    <form [formGroup]="entryForm" class="drawer-form">
+
+      <mat-form-field appearance="outline">
+        <mat-label>Employee Name *</mat-label>
+        <input matInput formControlName="employeeName">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Commission Scheme *</mat-label>
+        <mat-select formControlName="schemeId">
+          <mat-option *ngFor="let s of schemes" [value]="s.id">{{s.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Period Start *</mat-label>
+        <input matInput type="date" formControlName="periodStart">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Period End *</mat-label>
+        <input matInput type="date" formControlName="periodEnd">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Actual Value (₦) *</mat-label>
+        <input matInput type="number" formControlName="actualValue" placeholder="e.g. total sales this period">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Target Value (₦) — for % achievement</mat-label>
+        <input matInput type="number" formControlName="targetValue">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="2"></textarea>
+      </mat-form-field>
+
+      <div class="drawer-actions">
+        <button mat-button type="button" (click)="closeEntryForm()">Cancel</button>
+        <button mat-raised-button color="primary" type="button" (click)="saveEntry()" [disabled]="saving$ | async">
+          {{(saving$ | async) ? 'Saving…' : (editingEntry ? 'Update' : 'Save Entry')}}
+        </button>
+      </div>
+    </form>
+  </div>
+</aside>

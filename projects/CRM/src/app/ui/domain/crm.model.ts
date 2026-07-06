@@ -257,3 +257,72 @@ export interface Ticket {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// ── Business Commissions ─────────────────────────────────────
+
+export interface CommissionCategory {
+  id?: number;
+  name: string;
+  description?: string;
+  active?: boolean;
+}
+
+export interface CommissionTier {
+  id?: number;
+  schemeId?: number;
+  thresholdFrom: number;
+  thresholdTo?: number;
+  ratePercent: number;
+}
+
+export interface CommissionScheme {
+  id?: number;
+  name: string;
+  categoryId?: number;
+  categoryName?: string;
+  calculationMethod: string; // PERCENT_SALES | PERCENT_PROFIT | PERCENT_REVENUE | FLAT_PER_UNIT | TIERED
+  ratePercent?: number;
+  capAmount?: number;
+  minThreshold?: number;
+  frequency: string; // MONTHLY | QUARTERLY | ANNUAL | PER_EVENT
+  paymentMode: string; // PAYROLL | STANDALONE
+  active?: boolean;
+  validFrom?: string;
+  validTo?: string;
+  tiers?: CommissionTier[];
+  createdAt?: string;
+}
+
+export interface CommissionTarget {
+  id?: number;
+  schemeId?: number;
+  schemeName?: string;
+  employeeId?: number;
+  employeeName?: string;
+  periodStart: string;
+  periodEnd: string;
+  targetValue: number;
+  currency?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface CommissionEntry {
+  id?: number;
+  targetId?: number;
+  schemeId?: number;
+  schemeName?: string;
+  employeeId?: number;
+  employeeName?: string;
+  periodStart?: string;
+  periodEnd?: string;
+  actualValue?: number;
+  targetValue?: number;
+  achievementPercent?: number;
+  computedAmount?: number;
+  status?: string; // DRAFT | PENDING_APPROVAL | APPROVED | PAID | REJECTED
+  approvedBy?: string;
+  approvedAt?: string;
+  notes?: string;
+  createdAt?: string;
+}
