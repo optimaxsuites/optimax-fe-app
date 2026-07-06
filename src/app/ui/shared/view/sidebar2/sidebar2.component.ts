@@ -1,26 +1,32 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
-import { NavigationEnd, Router, UrlTree } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
-import { CompanyProfileService, CompanyProfile } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
-import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+
+// Matches a trailing UUID v4 segment so we can compare paths without UUIDs
+const UUID_RE = /\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 @Component({
   selector: 'app-sidebar2',
   templateUrl: './sidebar2.component.html',
   styleUrl: './sidebar2.component.scss'
 })
-export class Sidebar2Component {
-   @Input() sidebarHidden!: boolean;
-     @Output() toggleSidebar = new EventEmitter<void>();
-    showAdminUI = false;
+export class Sidebar2Component implements OnInit, OnDestroy {
+  @Input() sidebarHidden!: boolean;
+  @Output() toggleSidebar = new EventEmitter<void>();
+  showAdminUI = false;
   menuItems!: Observable<MenuItem[]>;
   filteredMenuItems$!: Observable<MenuItem[]>;
   searchQuery$ = new BehaviorSubject<string>('');
   companyProfile$ = this.companyProfileService.companyProfile$;
   role: string | null = null;
+
+  private subs = new Subscription();
+  private currentPath = '';
 marketplace : any =   {
   label: 'Marketplace',
   route: this.navigationLink.getLink('marketplaceLink'),
@@ -37,17 +43,8 @@ tenant: any = {
   constructor(private menuService: MenuItemsService,  private router: Router, private navigationLink: NavigationLinksService, private companyProfileService: CompanyProfileService) {}
 
   ngOnInit(): void {
-    // this.role = sessionStorage.getItem('role'); // Retrieve role from session storage
-    // console.log("role = ", this.role)
-    // if (this.role) {
-    //   this.menuService.getUnlockedModulesObservable().subscribe(modules => {
-    //     this.menuItems = modules;
-    //   });
-    // }
-    // const items = this.menuService.getMenuItems();
-    const hostname = window.location.hostname; 
-    const subdomain = hostname.split('.')[0]; 
-
+    const hostname = window.location.hostname;
+    const subdomain = hostname.split('.')[0];
     this.showAdminUI = subdomain === 'optimax' || subdomain === 'localhost';
 
     const token = sessionStorage.getItem('Token');
@@ -56,9 +53,12 @@ tenant: any = {
     }
 
     this.menuItems = this.menuService.getMenuItems$();
+    this.currentPath = this.stripUuid(this.router.url.split('?')[0]);
 
     this.filteredMenuItems$ = combineLatest([this.menuItems, this.searchQuery$]).pipe(
       map(([items, query]) => {
+        // Restore open state based on current path every time items are re-emitted
+        this.applyOpenState(items);
         if (!query.trim()) return items;
         const q = query.toLowerCase();
         return items.reduce<MenuItem[]>((acc, item) => {
@@ -76,28 +76,45 @@ tenant: any = {
       })
     );
 
-  // console.log("menuItems = ")
-    this.router.events.subscribe(event => {
-      if (event instanceof NavigationEnd) {
+    this.subs.add(
+      this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
+        this.currentPath = this.stripUuid((e.urlAfterRedirects || e.url).split('?')[0]);
         const latestToken = sessionStorage.getItem('Token');
         if (latestToken) {
           this.menuService.getRegisterApps();
         }
         this.updateActiveState();
+      })
+    );
+  }
+
+  ngOnDestroy(): void { this.subs.unsubscribe(); }
+
+  private stripUuid(url: string): string {
+    return url.replace(UUID_RE, '');
+  }
+
+  isSubItemActive(route: string | undefined): boolean {
+    if (!route) return false;
+    const routePath = this.stripUuid(route);
+    return !!routePath && this.currentPath.startsWith(routePath);
+  }
+
+  private applyOpenState(items: MenuItem[]): void {
+    items.forEach(item => {
+      if (item.submenu) {
+        const shouldBeOpen = item.submenu.some(sub => this.isSubItemActive(sub.route));
+        if (shouldBeOpen) item.open = true;
       }
     });
   }
 
   updateActiveState(): void {
-    this.menuItems.pipe(take(1)).subscribe(items => {
-      items.forEach(item => {
-        if (item.submenu) {
-          item.open = item.submenu.some(
-            (subItem) => subItem.route ? this.router.isActive(subItem.route as string, false) : false
-          );
-        }
-      });
-    });
+    this.menuItems.pipe(
+      filter(items => !!items?.length),
+    ).subscribe(items => {
+      this.applyOpenState(items);
+    }).unsubscribe();
   }
 
   toggleSubMenu(item: MenuItem, allItems?: MenuItem[]): void {

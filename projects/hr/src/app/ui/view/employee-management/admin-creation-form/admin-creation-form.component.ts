@@ -27,7 +27,8 @@ export class AdminCreationFormComponent implements OnChanges {
   @Input() importData: ImportedEmployeeData | null = null;
 
   openInfoModal: boolean = false
-  basicForm!: FormGroup;      
+  pendingCredentials: { name: string; username: string; password: string } | null = null;
+  basicForm!: FormGroup;
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
   leaveForm!: FormGroup
@@ -529,8 +530,9 @@ private setProbationValidators(): void {
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
   const firstName = this.basicForm.get('firstName')?.value ?? '';
   const lastName = this.basicForm.get('lastName')?.value ?? '';
-  const username = firstName;
-  const email = this.basicForm.get('email')?.value || username;
+  const workEmail = this.basicForm.get('workemail')?.value ?? '';
+  const email = this.basicForm.get('email')?.value ?? '';
+  const username = workEmail || email;
   const password = this.generateRandomPassword();
   const signupDetails = this.buildSignupDetails(username, password, email, firstName, lastName);
 
@@ -639,18 +641,22 @@ private setProbationValidators(): void {
     if (options?.username && options?.password) {
       emailPayload.username = options.username;
       emailPayload.password = options.password;
+      this.pendingCredentials = {
+        name: `${data.firstName} ${data.lastName}`,
+        username: options.username,
+        password: options.password,
+      };
     }
 
     this.employeeService.sendWelcomeEmail(emailPayload).subscribe({
-      next: (res) => { console.log('Welcome email sent successfully:', res); },
+      next: () => {
+        console.log('Welcome email sent successfully');
+        this.pendingCredentials = null;
+      },
       error: (err) => {
         console.log('Error sending welcome email:', err);
       }
     });
-
-    if (shouldRedirect) {
-      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-    }
   }
 
   private resetSubmitLoading() {
@@ -829,6 +835,12 @@ console.log(this.guarantorForm.value)
     }
   
     return '';
+  }
+
+  dismissCredentials() { this.pendingCredentials = null; }
+
+  copyToClipboard(value: string) {
+    navigator.clipboard.writeText(value).catch(() => {});
   }
 
   addLeave(){

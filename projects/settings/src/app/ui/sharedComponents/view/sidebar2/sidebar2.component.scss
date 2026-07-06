@@ -108,3 +108,18 @@ nav::-webkit-scrollbar-thumb:hover {
     scrollbar-width: thin;
     scrollbar-color: lightgray #f1f1f1; 
 }
+.section-header {
+  pointer-events: none;
+  cursor: default;
+}
+.submenu-section-label {
+  display: block;
+  padding: 6px 16px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  border-top: 1px solid rgba(0,0,0,.07);
+  margin-top: 4px;
+}

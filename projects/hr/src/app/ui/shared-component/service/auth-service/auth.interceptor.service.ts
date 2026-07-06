@@ -31,12 +31,12 @@ export class AuthInterceptor implements HttpInterceptor {
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
-    // Skip automation and n8n endpoints
+    // Skip automation and n8n endpoints — force withCredentials:false so CORS preflight passes
     if (
       request.url.startsWith('https://automation.optimaxsuites.com') ||
       request.url.startsWith('https://n8n.royalvilletechnologies.com')
     ) {
-      return next.handle(request);
+      return next.handle(request.clone({ withCredentials: false }));
     }
     
     // Skip LocationIQ requests
