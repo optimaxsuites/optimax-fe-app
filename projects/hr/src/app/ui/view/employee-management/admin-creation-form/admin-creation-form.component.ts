@@ -27,6 +27,8 @@ export class AdminCreationFormComponent implements OnChanges {
   @Input() importData: ImportedEmployeeData | null = null;
 
   openInfoModal: boolean = false
+  submitted = false;
+  lastSubmittedName = '';
   pendingCredentials: { name: string; username: string; password: string } | null = null;
   basicForm!: FormGroup;
   employeeForm!: FormGroup;
@@ -625,11 +627,8 @@ private setProbationValidators(): void {
       life: 3000
     });
 
-    this.basicForm.reset();
-    this.guarantorForm.reset();
-    this.leaveForm.reset();
-    this.employeeForm.reset();
-    this.currentTab = 1;
+    this.submitted = true;
+    this.lastSubmittedName = `${data.firstName} ${data.lastName}`.trim();
 
     const emailPayload: any = {
       name: `${data.firstName} ${data.lastName}`,
@@ -662,6 +661,18 @@ private setProbationValidators(): void {
   private resetSubmitLoading() {
     this.submitLoading = false;
     this.submitContinueLoading = false;
+  }
+
+  addAnother() {
+    this.submitted = false;
+    this.lastSubmittedName = '';
+    this.basicForm.reset();
+    this.guarantorForm.reset();
+    this.leaveForm.reset();
+    this.employeeForm.reset();
+    this.currentTab = 1;
+    this.selectedLeaves = [];
+    this.totalLeaveDays = 0;
   }
 
   private buildSignupDetails(username: string, password: string, email: string, firstName = '', lastName = '') {

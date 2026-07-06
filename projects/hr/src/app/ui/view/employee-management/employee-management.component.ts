@@ -15,8 +15,10 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { EmployeeNokComponent } from './employee-nok/employee-nok.component';
 import { EmployeeGuarantorComponent } from './employee-guarantor/employee-guarantor.component';
 import { EmployeeOffboardingComponent } from './employee-offboarding/employee-offboarding.component';
+import { EmploymentLetterComponent } from './employment-letter/employment-letter.component';
 import { EmployeeService } from '../../service/employee.service';
 import { DataService } from '../../service/data.service';
+import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { EmployeeProfileDashboardComponent } from '../employee-dashboard/employee-profile-dashboard.component';
@@ -41,6 +43,7 @@ export class EmployeeManagementComponent {
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
     { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
     { name: 'Offboarding', component:  EmployeeOffboardingComponent, },
+    { name: 'Employment Letter', component: EmploymentLetterComponent },
   ];
   uniqueLevels: any;
   uniquePositions: any;
@@ -263,6 +266,9 @@ currentPage = 1;
 pageSize = 12;
 pageSizeOptions = [8, 12, 16, 24];
 deletingEmployeeIds: Record<string, boolean> = {};
+activatingEmployeeIds: Record<number, boolean> = {};
+resendingOnboardingIds: Record<number, boolean> = {};
+resendCredentials: { name: string; username: string; password: string } | null = null;
 viewMode: 'card' | 'list' = 'card';
 
 handleDateClick(arg: DateClickArg) {
@@ -281,6 +287,7 @@ handleDateClick(arg: DateClickArg) {
     private router: Router,
     private navLinks: NavigationLinksService,
     private companyProfileService: CompanyProfileService,
+    private authenticationService: AuthenticationService,
   ) {}
 
   openPreOnboardingForm(): void {
@@ -564,14 +571,97 @@ handleDateClick(arg: DateClickArg) {
             this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Employee removed successfully.', key: 'tl', life: 3000 });
             this.fetchEmployees();
           },
-          error: () => {
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete employee. Please try again.', key: 'tl', life: 3000 });
+          error: (err) => {
+            const msg = err?.error?.message || err?.error?.error || err?.message || 'Failed to delete employee. Please try again.';
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, key: 'tl', life: 5000 });
           }
         });
       }
     });
   }
 
+
+  activateEmployee(employee: any, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim() || 'this employee';
+    this.confirmationService.confirm({
+      message: `Confirm ${name} as a full active staff member?`,
+      header: 'Activate Employee',
+      icon: 'pi pi-user-edit',
+      acceptLabel: 'Activate',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        const idKey = +employee.id;
+        this.activatingEmployeeIds[idKey] = true;
+        const payload = { ...employee, employeeStatus: 'ACTIVE', department: employee.department?.id ?? employee.department, level: employee.level?.id ?? employee.level };
+        const formData = new FormData();
+        formData.append('employee', JSON.stringify(payload));
+        this.employeeService.updateEmployee(formData, employee.id).pipe(
+          finalize(() => { delete this.activatingEmployeeIds[idKey]; })
+        ).subscribe({
+          next: () => {
+            employee.employeeStatus = 'ACTIVE';
+            this.messageService.add({ severity: 'success', summary: 'Activated', detail: `${name} is now an active staff member.`, key: 'tl', life: 3000 });
+            this.fetchEmployees();
+          },
+          error: (err) => {
+            const msg = err?.error?.message || err?.message || 'Failed to activate employee.';
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, key: 'tl', life: 4000 });
+          }
+        });
+      }
+    });
+  }
+
+  resendOnboarding(employee: any, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    if (!employee?.userId) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Resend', detail: 'No system account is linked to this employee.', key: 'tl', life: 4000 });
+      return;
+    }
+    const idKey = +employee.id;
+    this.resendingOnboardingIds[idKey] = true;
+    const newPassword = this.generateRandomPassword();
+    const username = employee.workEmail || employee.email;
+    const name = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+
+    this.authenticationService.resetPasswordByAdmin(employee.userId, newPassword).pipe(
+      finalize(() => { delete this.resendingOnboardingIds[idKey]; })
+    ).subscribe({
+      next: () => {
+        const emailPayload = {
+          name, email: employee.email, employeeId: employee.id,
+          url: `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`,
+          username, password: newPassword,
+        };
+        this.employeeService.sendWelcomeEmail(emailPayload).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Sent', detail: 'Onboarding credentials resent successfully.', key: 'tl', life: 3000 });
+            this.resendCredentials = null;
+          },
+          error: () => {
+            this.resendCredentials = { name, username, password: newPassword };
+            this.messageService.add({ severity: 'warn', summary: 'Email Failed', detail: 'Password reset but email failed. Credentials shown on screen.', key: 'tl', life: 6000 });
+          }
+        });
+      },
+      error: (err) => {
+        const msg = err?.error?.message || err?.message || 'Failed to reset password.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, key: 'tl', life: 4000 });
+      }
+    });
+  }
+
+  dismissResendCredentials() { this.resendCredentials = null; }
+  copyToClipboard(value: string) { navigator.clipboard.writeText(value).catch(() => {}); }
+
+  private generateRandomPassword(length = 12): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%*?';
+    const pick = () => chars[Math.floor(Math.random() * chars.length)];
+    return Array.from({ length }, pick).join('');
+  }
 
     closeViewEmployee() {
   this.viewEmployee = false
