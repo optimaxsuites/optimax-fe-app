@@ -73,6 +73,7 @@
       <div *ngIf="item.submenu"
            class="sb-link sb-link--parent"
            [class.sb-link--open]="item.open"
+           [class.sb-link--active]="item.open"
            (click)="toggleSubMenu(item, menuItems)"
            [pTooltip]="item.label" tooltipPosition="right"
            [tooltipDisabled]="!sidebarHidden">
@@ -96,9 +97,8 @@
           <li *ngIf="!sub.isNotSidebarItem && !sub.isSectionHeader">
             <a [routerLink]="sub.route"
                (click)="onNavigate()"
-               routerLinkActive="sb-sub-link--active"
-               [routerLinkActiveOptions]="{ exact: true }"
                class="sb-sub-link"
+               [class.sb-sub-link--active]="isSubItemActive(sub.route)"
                [pTooltip]="sub.label" tooltipPosition="right"
                [tooltipDisabled]="!sidebarHidden">
               <i *ngIf="sub.icon" [class]="sub.icon + ' sb-sub-icon'"></i>
