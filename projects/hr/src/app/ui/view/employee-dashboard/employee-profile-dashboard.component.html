@@ -237,6 +237,14 @@
             </div>
           </div>
         </div>
+        <div class="detail-item">
+          <span class="detail-label">Employment Type</span>
+          <span class="detail-value">{{ employeeInView?.employmentType?.name || employeeInView?.employmentType || employeeInView?.jobType?.name || '-' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Status</span>
+          <span class="detail-value">{{ employeeInView?.employeeStatus || '-' }}</span>
+        </div>
       </div>
     </section>
 
@@ -262,7 +270,7 @@
             <div class="info-row">
               <span class="info-label">Date of birth</span>
               <span class="row-leader"></span>
-              <span class="info-value">{{ employeeInView?.dob || '-' }}</span>
+              <span class="info-value">{{ formatDate(employeeInView?.dob) }}</span>
             </div>
           </div>
 
@@ -565,126 +573,133 @@
 </app-modal>
 
 <app-modal *ngIf="isStaffIdOpen" (close)="closeStaffId()">
-  <div class="staff-id-modal">
-    <div class="staff-id-toolbar">
+  <div class="sid-shell">
+    <div class="sid-toolbar">
       <button type="button" class="secondary-link-btn" (click)="closeStaffId()">Close</button>
       <button type="button" class="edit-btn" (click)="printStaffId()">Download PDF</button>
     </div>
-    <div class="staff-id-layout" id="staff-id-download">
-      <div class="staff-id-card">
-        <div class="staff-id-card__header">
-          <div class="staff-id-card__brand">
-            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
+
+    <div class="sid-layout" id="staff-id-download">
+
+      <!-- FRONT FACE -->
+      <div class="sid-card sid-card--front">
+        <div class="sid-card__stripe">
+          <div class="sid-card__stripe-brand">
+            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'"
+                 [alt]="(companyProfile$ | async)?.companyName || 'Company'"
+                 class="sid-card__stripe-logo" />
             <div>
-              <p class="staff-id-card__eyebrow">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</p>
-              <h3>Staff Identification Card</h3>
+              <p class="sid-card__org">{{ (companyProfile$ | async)?.companyName || 'The Company' }}</p>
+              <p class="sid-card__doc-title">Employee Identification</p>
             </div>
           </div>
-          <span class="staff-id-card__badge">HR Verified</span>
+          <div class="sid-card__stripe-id">
+            <span class="sid-card__id-label">ID</span>
+            <span class="sid-card__id-value">{{ printableStaffId }}</span>
+          </div>
         </div>
 
-        <div class="staff-id-card__body">
-          <div class="staff-id-card__identity">
-            <div class="staff-id-card__avatar">
+        <div class="sid-card__body">
+          <div class="sid-card__photo-col">
+            <div class="sid-card__photo-frame">
               <img
                 [src]="employeeInView?.imageUrl?.changingThisBreaksApplicationSecurity || employeeInView?.imageUrl || employeeProfilePhotoUrl"
-                alt=""
+                alt="Staff photo"
+                class="sid-card__photo"
               />
             </div>
-            <div>
-              <p class="staff-id-card__name">{{ printableStaffName || 'Employee' }}</p>
-              <p class="staff-id-card__role">{{ employeeInView?.jobTitle || 'Role pending' }}</p>
-              <div class="staff-id-card__chips">
-                <span>{{ employeeInView?.department?.name || employeeInView?.department || 'Department' }}</span>
-                <span>{{ employeeInView?.level?.name || employeeInView?.level || 'Level' }}</span>
+            <div class="sid-card__qr-wrap">
+              <img *ngIf="staffIdQrDataUrl" [src]="staffIdQrDataUrl" alt="QR" class="sid-card__qr-img" />
+              <div *ngIf="!staffIdQrDataUrl" class="sid-card__qr-empty"></div>
+              <p class="sid-card__qr-label">Scan to verify</p>
+            </div>
+          </div>
+
+          <div class="sid-card__info-col">
+            <div class="sid-card__name-block">
+              <h2 class="sid-card__name">{{ printableStaffName || 'Employee' }}</h2>
+              <p class="sid-card__title">{{ employeeInView?.jobTitle || 'Role pending' }}</p>
+            </div>
+
+            <div class="sid-card__field-grid">
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Department</span>
+                <span class="sid-card__field-value">{{ employeeInView?.department?.name || employeeInView?.department || '—' }}</span>
+              </div>
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Level / Grade</span>
+                <span class="sid-card__field-value">{{ employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
+              </div>
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Work Email</span>
+                <span class="sid-card__field-value sid-card__field-value--sm">{{ employeeInView?.workEmail || employeeInView?.email || '—' }}</span>
+              </div>
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Date Joined</span>
+                <span class="sid-card__field-value">{{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</span>
+              </div>
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Phone</span>
+                <span class="sid-card__field-value">{{ employeeInView?.phone || '—' }}</span>
+              </div>
+              <div class="sid-card__field">
+                <span class="sid-card__field-label">Status</span>
+                <span class="sid-card__status-badge sid-card__status-badge--{{ (employeeInView?.employeeStatus || 'ACTIVE') | lowercase }}">
+                  {{ employeeInView?.employeeStatus || 'ACTIVE' }}
+                </span>
               </div>
             </div>
-          </div>
 
-          <div class="staff-id-card__details">
-            <div class="staff-id-card__detail">
-              <span>Staff ID</span>
-              <strong>{{ printableStaffId }}</strong>
-            </div>
-            <div class="staff-id-card__detail">
-              <span>Work email</span>
-              <strong>{{ employeeInView?.workEmail || employeeInView?.email || '-' }}</strong>
-            </div>
-            <div class="staff-id-card__detail">
-              <span>Phone</span>
-              <strong>{{ employeeInView?.phone || '-' }}</strong>
-            </div>
-            <div class="staff-id-card__detail">
-              <span>Date joined</span>
-              <strong>{{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</strong>
+            <div class="sid-card__barcode-row">
+              <img *ngIf="staffIdBarcodeDataUrl" [src]="staffIdBarcodeDataUrl" alt="Barcode" class="sid-card__barcode" />
+              <p class="sid-card__barcode-num">{{ printableStaffId }}</p>
             </div>
           </div>
         </div>
 
-        <div class="staff-id-card__scan-row">
-          <div class="staff-id-card__qr" *ngIf="staffIdQrDataUrl; else qrFallback">
-            <img [src]="staffIdQrDataUrl" alt="Staff QR code" />
-            <small>HR scan code</small>
-          </div>
-          <ng-template #qrFallback>
-            <div class="staff-id-card__qr staff-id-card__qr--empty">
-              <small>QR unavailable</small>
-            </div>
-          </ng-template>
-          <div class="staff-id-card__barcode-wrap">
-            <img *ngIf="staffIdBarcodeDataUrl" [src]="staffIdBarcodeDataUrl" alt="Staff barcode" class="staff-id-card__barcode-image" />
-            <p>{{ printableStaffId }}</p>
-          </div>
-        </div>
-
-        <div class="staff-id-card__footer">
-          <p>Valid for internal identity, facility access, and HR record verification.</p>
-          <div class="staff-id-card__actions">
-            <button type="button" class="secondary-link-btn" (click)="closeStaffId()">Close</button>
-            <button type="button" class="edit-btn" (click)="printStaffId()">Download PDF</button>
-          </div>
+        <div class="sid-card__foot">
+          <p>This card is the property of {{ (companyProfile$ | async)?.companyName || 'the company' }}. If found, please return to HR.</p>
+          <span class="sid-card__validity">Valid while employed</span>
         </div>
       </div>
 
-      <div class="staff-id-card staff-id-card--back">
-        <div class="staff-id-card__header">
-          <div class="staff-id-card__brand">
-            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
-            <div>
-              <p class="staff-id-card__eyebrow">Reverse side</p>
-              <h3>Verification and emergency</h3>
-            </div>
+      <!-- BACK FACE -->
+      <div class="sid-card sid-card--back">
+        <div class="sid-card__back-head">
+          <p class="sid-card__org sid-card__org--light">{{ (companyProfile$ | async)?.companyName || 'The Company' }}</p>
+          <p class="sid-card__doc-title sid-card__doc-title--light">Reverse / Verification</p>
+        </div>
+
+        <div class="sid-card__back-body">
+          <div class="sid-card__back-panel">
+            <span class="sid-card__back-label">Emergency Contact</span>
+            <strong class="sid-card__back-value">{{ employeeInView?.nextOfKin?.[0]?.fullName || employeeInView?.nextOfKin?.[0]?.name || 'Not on file' }}</strong>
+            <span class="sid-card__back-sub">{{ employeeInView?.nextOfKin?.[0]?.phone || '' }}</span>
+            <span class="sid-card__back-sub">{{ employeeInView?.nextOfKin?.[0]?.relationship || '' }}</span>
+          </div>
+
+          <div class="sid-card__back-panel">
+            <span class="sid-card__back-label">Card Policy</span>
+            <p class="sid-card__back-copy">This card remains company property and must be presented for access, identity verification, and HR record validation. Report loss immediately to HR Operations.</p>
+          </div>
+
+          <div class="sid-card__back-panel">
+            <span class="sid-card__back-label">Issue Details</span>
+            <span class="sid-card__back-value">Issue date: {{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</span>
+            <span class="sid-card__back-sub">Authorised by HR Operations</span>
+          </div>
+
+          <div class="sid-card__back-panel">
+            <span class="sid-card__back-label">Holder Signature</span>
+            <div class="sid-card__sig-line"></div>
           </div>
         </div>
 
-        <div class="staff-id-card__back-grid">
-          <div class="staff-id-card__panel">
-            <span class="staff-id-card__panel-title">Emergency contact</span>
-            <strong>{{ employeeInView?.nextOfKin?.[0]?.fullName || employeeInView?.nextOfKin?.[0]?.name || 'Not available' }}</strong>
-            <p>{{ employeeInView?.nextOfKin?.[0]?.phone || '-' }}</p>
-            <p>{{ employeeInView?.nextOfKin?.[0]?.relationship || '-' }}</p>
-          </div>
-          <div class="staff-id-card__panel">
-            <span class="staff-id-card__panel-title">Verification policy</span>
-            <p>This card remains company property and must be presented for internal identity, access, and HR record validation.</p>
-          </div>
-          <div class="staff-id-card__panel">
-            <span class="staff-id-card__panel-title">Issue control</span>
-            <strong>Issue date: {{ formatDate(employeeInView?.hireDate || employeeInView?.employementStartDate || employeeInView?.employmentStartDate) }}</strong>
-            <p>Expiry: Valid while employment status remains active and identity records are current.</p>
-            <p>Authorized by: HR Operations</p>
-          </div>
-          <div class="staff-id-card__panel">
-            <span class="staff-id-card__panel-title">Signature</span>
-            <div class="staff-id-card__signature-line"></div>
-            <p>For and on behalf of Centrifuge Information Technology Ltd.</p>
-          </div>
-          <div class="staff-id-card__panel">
-            <span class="staff-id-card__panel-title">Report issues</span>
-            <p>Contact HR Operations immediately if this card is lost, damaged, or employee details change.</p>
-          </div>
+        <div class="sid-card__back-foot">
+          <p>{{ (companyProfile$ | async)?.companyName || 'The Company' }} — HR Operations</p>
         </div>
       </div>
+
     </div>
   </div>
 </app-modal>

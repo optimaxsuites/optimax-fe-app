@@ -1,3 +1,4 @@
+<p-toast position="top-right" key="tl"></p-toast>
 <div class="employee-management-shell">
   <div *ngIf="loading" class="surface-loading-overlay">
     <div class="surface-loading-card">
@@ -135,16 +136,41 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="w-full">
+          <ng-select
+            [items]="statusOptions"
+            bindLabel="label"
+            bindValue="value"
+            [clearable]="false"
+            placeholder="Filter by status"
+            [(ngModel)]="selectedStatus"
+            (ngModelChange)="applyFilters()">
+            <ng-template ng-label-tmp let-item="item">
+              <span class="flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full"
+                  [ngClass]="{
+                    'bg-emerald-500': item.value === 'ACTIVE',
+                    'bg-yellow-400': item.value === 'JOINING',
+                    'bg-blue-400': item.value === 'PROBATION',
+                    'bg-slate-400': item.value === 'LEFT',
+                    'bg-slate-300': item.value === 'ALL'
+                  }"></span>
+                {{ item.label }}
+              </span>
+            </ng-template>
+          </ng-select>
+        </div>
+
         <div class="w-full">
           <ng-select
             [items]="uniqueLevels"
             bindLabel="name"
             bindValue="id"
             [multiple]="true"
-            placeholder="Filter by level type"
+            placeholder="Filter by level"
             [(ngModel)]="selectedEmployeeType"
-            (ngModelChange)="filterBySelectedEmployeeType()">
+            (ngModelChange)="applyFilters()">
           </ng-select>
         </div>
 
@@ -156,7 +182,7 @@
             [multiple]="true"
             placeholder="Filter by position"
             [(ngModel)]="selectedPosition"
-            (ngModelChange)="filterBySelectedPosition()">
+            (ngModelChange)="applyFilters()">
           </ng-select>
         </div>
 
@@ -187,6 +213,29 @@
               <span class="status-dot" [ngClass]="{ 'bg-customGreen animate-pulse': i % 2 === 0, 'bg-yellow-500': i % 2 !== 0 }"></span>
               <span>{{ i % 2 === 0 ? 'Active' : 'Away' }}</span>
             </span>
+            <button *ngIf="employee?.employeeStatus === 'JOINING'"
+              type="button"
+              title="Activate as full staff"
+              [disabled]="activatingEmployeeIds[employee?.id]"
+              (click)="activateEmployee(employee, $event)"
+              class="p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </button>
+            <button *ngIf="employee?.employeeStatus === 'JOINING'"
+              type="button"
+              title="Resend onboarding credentials"
+              [disabled]="resendingOnboardingIds[employee?.id]"
+              (click)="resendOnboarding(employee, $event)"
+              class="p-1 rounded text-blue-600 hover:bg-blue-50 disabled:opacity-50">
+              <svg *ngIf="!resendingOnboardingIds[employee?.id]" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+              <svg *ngIf="resendingOnboardingIds[employee?.id]" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
             <button
               type="button"
               class="employee-action delete-action"
@@ -302,6 +351,29 @@
             title="View Staff ID">
             <span class="fa-solid fa-id-badge text-[10px]"></span>
           </button>
+          <button *ngIf="employee?.employeeStatus === 'JOINING'"
+            type="button"
+            title="Activate as full staff"
+            [disabled]="activatingEmployeeIds[employee?.id]"
+            (click)="activateEmployee(employee, $event)"
+            class="p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+          <button *ngIf="employee?.employeeStatus === 'JOINING'"
+            type="button"
+            title="Resend onboarding credentials"
+            [disabled]="resendingOnboardingIds[employee?.id]"
+            (click)="resendOnboarding(employee, $event)"
+            class="p-1 rounded text-blue-600 hover:bg-blue-50 disabled:opacity-50">
+            <svg *ngIf="!resendingOnboardingIds[employee?.id]" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <svg *ngIf="resendingOnboardingIds[employee?.id]" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
           <button
             type="button"
             class="dir-list-action-btn dir-list-action-btn--delete"
@@ -364,10 +436,166 @@
     </div>
   </div>
 
+<div *ngIf="resendCredentials" class="mx-4 mb-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+  <div class="flex items-start justify-between gap-2">
+    <div>
+      <p class="text-sm font-semibold text-amber-800">Credentials for {{ resendCredentials.name }}</p>
+      <p class="mt-0.5 text-xs text-amber-700">Email delivery failed — share these manually.</p>
+    </div>
+    <button type="button" (click)="dismissResendCredentials()" class="text-amber-600 hover:text-amber-900 text-lg leading-none">&times;</button>
+  </div>
+  <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <div class="flex items-center justify-between rounded bg-white border border-amber-200 px-3 py-2">
+      <div class="overflow-hidden">
+        <p class="text-[10px] uppercase tracking-wide text-amber-600">Username</p>
+        <p class="truncate text-sm font-mono font-medium text-slate-800">{{ resendCredentials.username }}</p>
+      </div>
+      <button type="button" (click)="copyToClipboard(resendCredentials!.username)" class="ml-2 flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      </button>
+    </div>
+    <div class="flex items-center justify-between rounded bg-white border border-amber-200 px-3 py-2">
+      <div class="overflow-hidden">
+        <p class="text-[10px] uppercase tracking-wide text-amber-600">Password</p>
+        <p class="truncate text-sm font-mono font-medium text-slate-800">{{ resendCredentials.password }}</p>
+      </div>
+      <button type="button" (click)="copyToClipboard(resendCredentials!.password)" class="ml-2 flex-shrink-0 rounded p-1 text-amber-600 hover:bg-amber-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <p-confirmDialog></p-confirmDialog>
 
-<app-large-side-modal *ngIf="viewEmployee" (close)="closeViewEmployee()" class="flex flex-col gap-8 table-item">
-<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> 
+<app-large-side-modal *ngIf="viewEmployee" (close)="closeViewEmployee()">
+
+  <!-- ── Employee Profile Header ──────────────────────────────── -->
+  <div class="ep-header">
+
+    <!-- Top bar: close + actions -->
+    <div class="ep-topbar">
+      <div class="flex items-center gap-2">
+        <span class="ep-eyebrow">Employee Profile</span>
+        <span class="ep-id-chip">#{{ employeeInView?.id }}</span>
+      </div>
+      <button type="button" class="ep-close-btn" (click)="closeViewEmployee()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Identity block -->
+    <div class="ep-identity">
+      <div class="ep-avatar-wrap">
+        <img
+          [src]="employeeInView?.imageUrl || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='"
+          class="ep-avatar-img" alt="" />
+        <span class="ep-status-ring"
+          [ngClass]="{
+            'ep-status-ring--active':     employeeInView?.employeeStatus === 'ACTIVE',
+            'ep-status-ring--joining':    employeeInView?.employeeStatus === 'JOINING',
+            'ep-status-ring--probation':  employeeInView?.employeeStatus === 'PROBATION',
+            'ep-status-ring--left':       employeeInView?.employeeStatus === 'LEFT'
+          }"></span>
+      </div>
+
+      <div class="ep-identity-copy">
+        <h2 class="ep-name">{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</h2>
+        <p class="ep-role">{{ employeeInView?.jobTitle || '—' }}</p>
+        <div class="ep-badges">
+          <span class="ep-dept-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            {{ employeeInView?.department?.name || employeeInView?.department || 'Department' }}
+          </span>
+          <span class="ep-status-badge"
+            [ngClass]="{
+              'ep-status-badge--active':    employeeInView?.employeeStatus === 'ACTIVE',
+              'ep-status-badge--joining':   employeeInView?.employeeStatus === 'JOINING',
+              'ep-status-badge--probation': employeeInView?.employeeStatus === 'PROBATION',
+              'ep-status-badge--left':      employeeInView?.employeeStatus === 'LEFT'
+            }">
+            {{ employeeInView?.employeeStatus || 'UNKNOWN' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick stats row -->
+    <div class="ep-stats-row">
+      <div class="ep-stat">
+        <span class="ep-stat-label">Employment Type</span>
+        <span class="ep-stat-value">{{ employeeInView?.employmentType?.name || employeeInView?.employmentType || '—' }}</span>
+      </div>
+      <div class="ep-stat">
+        <span class="ep-stat-label">Level</span>
+        <span class="ep-stat-value">{{ employeeInView?.level?.name || employeeInView?.level || '—' }}</span>
+      </div>
+      <div class="ep-stat">
+        <span class="ep-stat-label">Hire Date</span>
+        <span class="ep-stat-value">{{ employeeInView?.hireDate || employeeInView?.employmentStartDate || '—' }}</span>
+      </div>
+      <div class="ep-stat">
+        <span class="ep-stat-label">Work Email</span>
+        <span class="ep-stat-value ep-stat-value--email">{{ employeeInView?.workEmail || employeeInView?.email || '—' }}</span>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="ep-actions-row">
+      <button *ngIf="employeeInView?.employeeStatus === 'JOINING'"
+        type="button"
+        class="ep-action-btn ep-action-btn--activate"
+        [disabled]="activatingEmployeeIds[employeeInView?.id]"
+        (click)="activateEmployee(employeeInView, $event)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        {{ activatingEmployeeIds[employeeInView?.id] ? 'Activating…' : 'Activate as Full Staff' }}
+      </button>
+
+      <button *ngIf="employeeInView?.employeeStatus === 'JOINING'"
+        type="button"
+        class="ep-action-btn ep-action-btn--resend"
+        [disabled]="resendingOnboardingIds[employeeInView?.id]"
+        (click)="resendOnboarding(employeeInView, $event)">
+        <svg *ngIf="!resendingOnboardingIds[employeeInView?.id]" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <svg *ngIf="resendingOnboardingIds[employeeInView?.id]" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        {{ resendingOnboardingIds[employeeInView?.id] ? 'Sending…' : 'Resend Onboarding Credentials' }}
+      </button>
+
+      <button
+        type="button"
+        class="ep-action-btn ep-action-btn--staffid"
+        (click)="openStaffId(employeeInView, $event)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c-.552 0-1.056.1-1.5.28M15 18c.448.18.952.28 1.5.28m-6-.56A5.99 5.99 0 003 21"/>
+        </svg>
+        Staff ID
+      </button>
+
+      <button
+        type="button"
+        class="ep-action-btn ep-action-btn--delete"
+        [disabled]="deletingEmployeeIds[employeeInView?.id]"
+        (click)="deleteEmployee(employeeInView, $event)">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        {{ deletingEmployeeIds[employeeInView?.id] ? 'Deleting…' : 'Delete Employee' }}
+      </button>
+    </div>
+
+  </div>
+  <!-- ── End Profile Header ─────────────────────────────────── -->
+
+  <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>
+
 </app-large-side-modal>
 
 <app-large-side-modal *ngIf="openAddForm" (close)="closeAddForm()">

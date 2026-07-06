@@ -52,6 +52,17 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  sendNotificationEmail(to: string, subject: string, htmlBody: string): Observable<any> {
+    return this.http
+      .post<any>(this.baseurl + '/x/api/v2/notification/send-email', {
+        to,
+        subject,
+        body: htmlBody,
+        html: true,
+      })
+      .pipe(catchError(this.handleError));
+  }
+
   sendWelcomeEmail(data: any): Observable<any> {
     const promise = fetch(
       'https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac',

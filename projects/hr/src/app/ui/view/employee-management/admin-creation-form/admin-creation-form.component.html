@@ -52,6 +52,21 @@
     </div>
   </div>
 
+  <ng-container *ngIf="submitted">
+    <div class="flex flex-col items-center justify-center py-16 gap-4">
+      <div class="flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <p class="text-lg font-semibold text-slate-800">Employee Created Successfully</p>
+      <p class="text-sm text-slate-500">{{ lastSubmittedName }} has been added to the system.</p>
+      <button type="button" class="btn-primary mt-2" (click)="addAnother()">Add Another Employee</button>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="!submitted">
+
   <div class="form-steps">
     <div *ngFor="let tab of tabs; let i = index"
       class="step-item"
@@ -462,6 +477,8 @@
       </div>
     </div>
   </form>
+
+  </ng-container>
 
 <app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
       <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>

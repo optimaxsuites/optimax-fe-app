@@ -18,15 +18,21 @@ export class SidebarComponent {
   ) {}
 
   ngOnInit(): void {
-    this.role = sessionStorage.getItem('role'); // Retrieve role from session storage
-    console.log('role = ', this.role);
+    this.role = sessionStorage.getItem('role');
+
+    // JOINING employees only access My Dashboard in HR
+    try {
+      const employeeStr = localStorage.getItem('currentEmployee') || localStorage.getItem('employeeData') || '';
+      const employee = employeeStr ? JSON.parse(employeeStr) : null;
+      if (employee?.employeeStatus === 'JOINING') {
+        this.role = 'ROLE_JOINING';
+      }
+    } catch { /* ignore */ }
+
     if (this.role) {
       this.menuItems = this.menuService
         .getMenuItemsForRole(this.role)
-        .map((item) => ({
-          ...item,
-          open: false,
-        }));
+        .map((item) => ({ ...item, open: false }));
     }
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
