@@ -49,7 +49,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     { value: 'LPO_SENT', label: 'LPO Sent', color: '#22c55e' },
     { value: 'DECLINED', label: 'Declined', color: '#ef4444' },
     { value: 'PENDING', label: 'Pending', color: '#f59e0b' },
-    { value: 'EXPIRED', label: 'Expired', color: '#6b7280' }
+    { value: 'EXPIRED', label: 'Expired', color: '#6b7280' },
+    { value: 'REVIEW_REQUESTED', label: 'Review Requested', color: '#f97316' }
   ];
 
   stats = {
@@ -109,7 +110,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     const groups: RFQGroup[] = [];
     groupsMap.forEach((list, rfqId) => {
       const rfqTitle = list[0]?.rfqTitle || 'Request for Quotation';
-      const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED' || q.status === 'LPO_GENERATED' || q.status === 'LPO_SENT').length;
+      const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED' || q.status === 'LPO_GENERATED' || q.status === 'LPO_SENT' || q.status === 'REVIEW_REQUESTED').length;
       groups.push({
         rfqId,
         rfqTitle,
@@ -539,7 +540,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'EXPIRED': 'status-expired',
       'WITHDRAWN': 'status-withdrawn',
       'LPO_GENERATED': 'status-accepted',
-      'LPO_SENT': 'status-accepted'
+      'LPO_SENT': 'status-accepted',
+      'REVIEW_REQUESTED': 'status-review'
     };
     return classes[status] || 'status-expired';
   }
@@ -553,7 +555,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'EXPIRED': 'Expired',
       'WITHDRAWN': 'Withdrawn',
       'LPO_GENERATED': 'LPO Draft',
-      'LPO_SENT': 'LPO Sent'
+      'LPO_SENT': 'LPO Sent',
+      'REVIEW_REQUESTED': 'Review Requested'
     };
     return labels[status] || status;
   }
@@ -567,7 +570,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'EXPIRED': 'fa-hourglass-end',
       'WITHDRAWN': 'fa-times',
       'LPO_GENERATED': 'fa-file-invoice',
-      'LPO_SENT': 'fa-paper-plane'
+      'LPO_SENT': 'fa-paper-plane',
+      'REVIEW_REQUESTED': 'fa-reply'
     };
     return icons[status] || 'fa-circle';
   }

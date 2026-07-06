@@ -7,7 +7,7 @@ import {
   VendorDocument, DocumentStats,
   DocumentCategory, DocumentStatus,
   VendorProfile, DocumentTemplate, TemplateDocType,
-  LogoPosition, TemplateDensity,
+  LogoPosition, TemplateDensity, TemplateBaseStyle,
 } from '../../../domain/vendor-portal/vendor.dto';
 
 type CategoryFilter = 'all' | DocumentCategory;
@@ -76,33 +76,52 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   templates: DocumentTemplate[] = [];
   editingTemplate: DocumentTemplate | null = null;
 
+  @ViewChild('previewRef')    previewRef!:    ElementRef<HTMLDivElement>;
+  @ViewChild('signatureCanvas') signatureCanvas!: ElementRef<HTMLCanvasElement>;
+  isDownloading   = false;
+  showSignaturePad = false;
+  isDrawing        = false;
+
+  // Your signature is a profile-level asset (like your logo) — draw it once
+  // here, then decide per-document whether to attach it when you create a
+  // quotation or invoice. It's not a template setting.
+  get savedSignatureDataUrl(): string | null {
+    return this.profile?.signatureDataUrl ?? null;
+  }
+
+  // ── Base style picker ────────────────────────────────────────────────────────
+  readonly baseStyles: { value: TemplateBaseStyle; label: string; desc: string }[] = [
+    { value: 'classic', label: 'Classic',  desc: 'Clean letterhead, ruled table' },
+    { value: 'bold',    label: 'Bold',     desc: 'Full-width accent header bar'  },
+    { value: 'sidebar', label: 'Sidebar',  desc: 'Rotated doc label on left edge'},
+    { value: 'modern',  label: 'Modern',   desc: 'Two-tone header, label boxes'  },
+  ];
+
   readonly logoPositions: { v: LogoPosition; label: string }[] = [
     { v: 'left',   label: 'Left'   },
     { v: 'center', label: 'Centre' },
     { v: 'right',  label: 'Right'  },
   ];
 
-  @ViewChild('previewRef') previewRef!: ElementRef<HTMLDivElement>;
-  isDownloading = false;
-
   templateForm = {
-    name:            '',
-    logoPosition:    'left' as LogoPosition,
-    accentColor:     '#224957',
-    density:         'detailed' as TemplateDensity,
-    footerText:      '',
-    showBankDetails: true,
-    notesDefault:    '',
+    name:              '',
+    baseStyle:         'classic' as TemplateBaseStyle,
+    logoPosition:      'left'    as LogoPosition,
+    accentColor:       '#224957',
+    density:           'detailed' as TemplateDensity,
+    footerText:        '',
+    showBankDetails:   true,
+    notesDefault:      '',
   };
 
-  // Static sample data — reflects styling choices, not real order data
+  // Static sample data — reflects styling only, not real order data
   readonly previewSample = {
-    docNumber:    'INV-2026-0148',
-    date:         'June 28, 2026',
-    dueDate:      'July 12, 2026',
-    clientName:   'Lagos Continental Hotels Ltd',
+    docNumber:     'INV-2026-0148',
+    date:          'June 28, 2026',
+    dueDate:       'July 12, 2026',
+    clientName:    'Lagos Continental Hotels Ltd',
     clientAddress: 'Plot 1234, Ozumba Mbadiwe Ave, Victoria Island, Lagos',
-    poReference:  'PO-2026-0089',
+    poReference:   'PO-2026-0089',
     items: [
       { name: 'Industrial Air Compressor (5HP)', qty: 2, unitPrice: 185000, total: 370000 },
       { name: 'Safety Valve Assembly',           qty: 6, unitPrice: 12500,  total: 75000  },
@@ -178,7 +197,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       : this.allDocs.filter(d => d.category === this.filter);
   }
 
-  openPanel(doc: VendorDocument): void { this.selectedDoc = doc; this.showPanel = true; }
+  openPanel(doc: VendorDocument): void  { this.selectedDoc = doc; this.showPanel = true; }
   closePanel(): void { this.showPanel = false; this.selectedDoc = null; }
 
   openUploadModal(): void {
@@ -313,26 +332,28 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   loadTemplateIntoForm(template: DocumentTemplate): void {
     this.editingTemplate = template;
     this.templateForm = {
-      name:            template.name,
-      logoPosition:    template.logoPosition,
-      accentColor:     template.accentColor,
-      density:         template.density,
-      footerText:      template.footerText  || '',
-      showBankDetails: template.showBankDetails,
-      notesDefault:    template.notesDefault || '',
+      name:              template.name,
+      baseStyle:         template.baseStyle,
+      logoPosition:      template.logoPosition,
+      accentColor:       template.accentColor,
+      density:           template.density,
+      footerText:        template.footerText   || '',
+      showBankDetails:   template.showBankDetails,
+      notesDefault:      template.notesDefault || '',
     };
   }
 
   startNewTemplate(): void {
     this.editingTemplate = null;
     this.templateForm = {
-      name:            'New Template',
-      logoPosition:    'left',
-      accentColor:     '#224957',
-      density:         'detailed',
-      footerText:      '',
-      showBankDetails: this.templateDocType === 'invoice',
-      notesDefault:    '',
+      name:              'New Template',
+      baseStyle:         'classic',
+      logoPosition:      'left',
+      accentColor:       '#224957',
+      density:           'detailed',
+      footerText:        '',
+      showBankDetails:   this.templateDocType === 'invoice',
+      notesDefault:      '',
     };
   }
 
@@ -340,15 +361,16 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     if (!this.templateForm.name.trim()) return;
 
     this.vendorService.saveTemplate({
-      name:            this.templateForm.name.trim(),
-      docType:         this.templateDocType,
-      isActive:        this.editingTemplate?.isActive ?? false,
-      logoPosition:    this.templateForm.logoPosition,
-      accentColor:     this.templateForm.accentColor,
-      density:         this.templateForm.density,
-      footerText:      this.templateForm.footerText  || undefined,
-      showBankDetails: this.templateForm.showBankDetails,
-      notesDefault:    this.templateForm.notesDefault || undefined,
+      name:              this.templateForm.name.trim(),
+      docType:           this.templateDocType,
+      isActive:          this.editingTemplate?.isActive ?? false,
+      baseStyle:         this.templateForm.baseStyle,
+      logoPosition:      this.templateForm.logoPosition,
+      accentColor:       this.templateForm.accentColor,
+      density:           this.templateForm.density,
+      footerText:        this.templateForm.footerText   || undefined,
+      showBankDetails:   this.templateForm.showBankDetails,
+      notesDefault:      this.templateForm.notesDefault || undefined,
     }, this.editingTemplate?.id);
 
     this.loadTemplates();
@@ -367,44 +389,92 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.loadTemplates();
   }
 
-  // ── Logo position → CSS justify-content value ─────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────────
   logoJustify(pos: LogoPosition): string {
     const m: Record<LogoPosition, string> = {
-      left:   'flex-start',
-      center: 'center',
-      right:  'flex-end',
+      left: 'flex-start', center: 'center', right: 'flex-end',
     };
     return m[pos];
   }
 
-  // ── PDF export (jsPDF + html2canvas) ──────────────────────────────────────
-  // Requires:  npm install jspdf html2canvas
+  docLabel(): string {
+    return this.templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION';
+  }
+
+  // ── Signature canvas ──────────────────────────────────────────────────────────
+  openSignaturePad(): void  { this.showSignaturePad = true; }
+  closeSignaturePad(): void { this.showSignaturePad = false; }
+
+  // Pointer events (works for mouse, touch and stylus)
+  onSignaturePointerDown(e: PointerEvent): void {
+    const canvas = this.signatureCanvas?.nativeElement;
+    if (!canvas) return;
+    canvas.setPointerCapture(e.pointerId);
+    this.isDrawing = true;
+    const ctx = canvas.getContext('2d')!;
+    ctx.beginPath();
+    ctx.moveTo(...this.canvasPoint(e, canvas));
+  }
+
+  onSignaturePointerMove(e: PointerEvent): void {
+    if (!this.isDrawing) return;
+    const canvas = this.signatureCanvas?.nativeElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    ctx.lineWidth   = e.pressure > 0 ? Math.max(1, e.pressure * 4) : 2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.strokeStyle = '#1a2c35';
+    ctx.lineTo(...this.canvasPoint(e, canvas));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(...this.canvasPoint(e, canvas));
+  }
+
+  onSignaturePointerUp(): void { this.isDrawing = false; }
+
+  private canvasPoint(e: PointerEvent, canvas: HTMLCanvasElement): [number, number] {
+    const rect = canvas.getBoundingClientRect();
+    return [
+      (e.clientX - rect.left) * (canvas.width  / rect.width),
+      (e.clientY - rect.top)  * (canvas.height / rect.height),
+    ];
+  }
+
+  clearSignature(): void {
+    const canvas = this.signatureCanvas?.nativeElement;
+    if (!canvas) return;
+    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  saveSignature(): void {
+    const canvas = this.signatureCanvas?.nativeElement;
+    if (!canvas) return;
+    this.vendorService.updateProfile({ signatureDataUrl: canvas.toDataURL('image/png') });
+    this.closeSignaturePad();
+  }
+
+  clearSavedSignature(): void {
+    this.vendorService.updateProfile({ signatureDataUrl: undefined });
+  }
+
+  // ── PDF export ────────────────────────────────────────────────────────────────
   async downloadTemplatePdf(): Promise<void> {
     if (!this.previewRef?.nativeElement || this.isDownloading) return;
     this.isDownloading = true;
-
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF }   = await import('jspdf');
-
-      const el     = this.previewRef.nativeElement;
-      const canvas = await html2canvas(el, {
-        scale:           2,
-        useCORS:         true,
-        backgroundColor: '#ffffff',
-        logging:         false,
+      const canvas      = await html2canvas(this.previewRef.nativeElement, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false,
       });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf     = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfW    = pdf.internal.pageSize.getWidth();
-      const pdfH    = (canvas.height * pdfW) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
-
-      const docLabel = this.templateDocType === 'invoice' ? 'Invoice' : 'Quotation';
+      const pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = (canvas.height * pdfW) / canvas.width;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfW, pdfH);
+      const label    = this.templateDocType === 'invoice' ? 'Invoice' : 'Quotation';
       const safeName = (this.templateForm.name || 'Template').replace(/\s+/g, '_');
-      pdf.save(`${docLabel}_Template_${safeName}.pdf`);
+      pdf.save(`${label}_Template_${safeName}.pdf`);
     } catch (err) {
       console.error('[VendorProfile] PDF export failed:', err);
     } finally {
@@ -414,10 +484,8 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   fmtCurrency(n: number): string {
     return new Intl.NumberFormat('en-NG', {
-      style:                 'currency',
-      currency:              'NGN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      style: 'currency', currency: 'NGN',
+      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(n);
   }
 }

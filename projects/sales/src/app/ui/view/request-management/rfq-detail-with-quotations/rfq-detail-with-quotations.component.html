@@ -1,5 +1,3 @@
-<!-- rfq-detail-with-quotations/rfq-detail-with-quotations.component.html -->
-
 <div class="rfq-detail-container" *ngIf="!isLoading && rfqData">
   <!-- RFQ Header -->
   <div class="rfq-header">
@@ -11,7 +9,8 @@
         <h1>{{ rfqData!.rfq.title }}</h1>
         <div class="meta-info">
           <span class="rfq-id">RFQ #{{ rfqData!.rfq.id }}</span>
-          <span class="rfq-status" [style.background]="rfqData!.rfq.status === 'VENDORS_QUOTING' ? '#3b82f6' : '#22c55e'">
+          <span class="rfq-status"
+            [style.background]="rfqData!.rfq.status === 'VENDORS_QUOTING' ? '#3b82f6' : '#22c55e'">
             {{ rfqData!.rfq.status === 'VENDORS_QUOTING' ? 'Quotes In Progress' : 'Completed' }}
           </span>
         </div>
@@ -19,8 +18,8 @@
     </div>
     <div class="header-actions">
       <button class="btn-summary" (click)="openVendorSummary()">
-        <i class="fas fa-users"></i> 
-        Vendor Responses 
+        <i class="fas fa-users"></i>
+        Vendor Responses
         <span class="badge">{{ rfqData!.summary.responded }}/{{ rfqData!.summary.totalVendors }}</span>
       </button>
     </div>
@@ -50,13 +49,10 @@
   <div class="quotations-summary">
     <h3>Vendor Quotations</h3>
     <div class="quotation-cards">
-      <div 
-        *ngFor="let quote of rfqData.quotations" 
-        class="quotation-card" 
-        [class.accepted]="quote.status === 'ACCEPTED'"
-        [class.declined]="quote.status === 'DECLINED'"
-        [class.pending]="quote.status === 'PENDING'"
-        [class.submitted]="quote.status === 'SUBMITTED'">
+      <div *ngFor="let quote of rfqData.quotations" class="quotation-card"
+        [class.accepted]="quote.status === 'ACCEPTED'" [class.declined]="quote.status === 'DECLINED'"
+        [class.pending]="quote.status === 'PENDING'" [class.submitted]="quote.status === 'SUBMITTED'"
+        [class.review-requested]="quote.status === 'REVIEW_REQUESTED'">
         <div class="card-header">
           <div class="vendor-info">
             <div class="vendor-avatar">
@@ -77,7 +73,7 @@
             <span class="amount">{{ formatCurrency(quote.totalAmount, quote.currency) }}</span>
             <span class="submitted-date">Submitted: {{ formatDate(quote.submittedAt) }}</span>
           </div>
-          <div class="quote-expiry" *ngIf="quote.status === 'PENDING' || quote.status === 'SUBMITTED'">
+          <div class="quote-expiry" *ngIf="quote.status === 'PENDING' || quote.status === 'SUBMITTED' || quote.status === 'REVIEW_REQUESTED'">
             <span class="expiry-label">Expires in:</span>
             <span class="expiry-days" [class.expired]="getDaysRemaining(quote.expiresAt) <= 0">
               {{ getDaysRemaining(quote.expiresAt) }} days
@@ -86,6 +82,10 @@
           <div class="decline-reason" *ngIf="quote.status === 'DECLINED' && quote.declineReason">
             <i class="fas fa-info-circle"></i>
             {{ quote.declineReason }}
+          </div>
+          <div class="decline-reason" *ngIf="quote.status === 'REVIEW_REQUESTED' && quote.revisionRequestNote" style="color: #ea580c; background: #fff7ed; border: 1px solid rgba(249, 115, 22, 0.2);">
+            <i class="fas fa-reply" style="color: #f97316; margin-right: 0.3rem;"></i>
+            Changes Requested: "{{ quote.revisionRequestNote }}"
           </div>
           <div class="pending-message" *ngIf="quote.status === 'PENDING'">
             <i class="fas fa-clock"></i>
@@ -96,9 +96,7 @@
           <button class="btn-view" (click)="viewQuotationDetail(quote)">
             <i class="fas fa-arrow-right"></i> View Details
           </button>
-          <button 
-            class="btn-cancel" 
-            *ngIf="quote.status === 'PENDING'"
+          <button class="btn-cancel" *ngIf="quote.status === 'PENDING'"
             (click)="cancelPendingVendor(rfqData!.rfq.id, quote.vendorId, quote.vendorName)">
             <i class="fas fa-times"></i> Cancel
           </button>
@@ -141,11 +139,8 @@
         </div>
 
         <div class="vendor-response-list">
-          <div 
-            *ngFor="let quote of rfqData.quotations" 
-            class="vendor-response-item"
-            [class.accepted]="quote.status === 'ACCEPTED'"
-            [class.declined]="quote.status === 'DECLINED'"
+          <div *ngFor="let quote of rfqData.quotations" class="vendor-response-item"
+            [class.accepted]="quote.status === 'ACCEPTED'" [class.declined]="quote.status === 'DECLINED'"
             [class.pending]="quote.status === 'PENDING'">
             <div class="vendor-row">
               <div class="vendor-avatar-sm">
@@ -159,10 +154,7 @@
                 <i class="fas" [class]="getStatusIcon(quote.status)"></i>
                 {{ getStatusLabel(quote.status) }}
               </span>
-              <button 
-                class="btn-view-detail" 
-                (click)="viewQuotationDetail(quote)"
-                title="View Detailed Quotation">
+              <button class="btn-view-detail" (click)="viewQuotationDetail(quote)" title="View Detailed Quotation">
                 <i class="fas fa-arrow-right"></i>
               </button>
             </div>

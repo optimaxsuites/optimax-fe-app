@@ -1,5 +1,3 @@
-// rfq-detail-with-quotations/rfq-detail-with-quotations.component.ts
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -281,7 +279,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'EXPIRED': '#6b7280',
       'WITHDRAWN': '#8b5cf6',
       'LPO_GENERATED': '#184440',
-      'LPO_SENT': '#22c55e'
+      'LPO_SENT': '#22c55e',
+      'REVIEW_REQUESTED': '#f97316'
     };
     return colors[status] || '#6b7280';
   }
@@ -295,7 +294,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'EXPIRED': 'Expired',
       'WITHDRAWN': 'Withdrawn',
       'LPO_GENERATED': 'LPO Draft',
-      'LPO_SENT': 'LPO Sent'
+      'LPO_SENT': 'LPO Sent',
+      'REVIEW_REQUESTED': 'Review Requested'
     };
     return labels[status] || status;
   }
@@ -309,7 +309,8 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
       'EXPIRED': 'fa-hourglass-end',
       'WITHDRAWN': 'fa-times',
       'LPO_GENERATED': 'fa-file-invoice',
-      'LPO_SENT': 'fa-paper-plane'
+      'LPO_SENT': 'fa-paper-plane',
+      'REVIEW_REQUESTED': 'fa-reply'
     };
     return icons[status] || 'fa-circle';
   }

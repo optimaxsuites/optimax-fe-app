@@ -22,7 +22,7 @@ export class DocumentationHistoryComponent implements OnInit {
   mockLpo: any = null;
   mockInvoice: any = null;
 
-  constructor(private procurementService: ProcurementRequestService) {}
+  constructor(private procurementService: ProcurementRequestService) { }
 
   ngOnInit(): void {
     this.loadRequests();
@@ -98,7 +98,7 @@ export class DocumentationHistoryComponent implements OnInit {
 
     switch (type) {
       case 'rfq':
-        return true; // RFQ is always unlocked once created
+        return true;
       case 'quotation':
         return status !== 'PENDING' && status !== 'DRAFT' && status !== 'PENDING_APPROVAL' && status !== 'REJECTED' && status !== 'CANCELLED';
       case 'lpo':
@@ -116,10 +116,40 @@ export class DocumentationHistoryComponent implements OnInit {
     }
   }
 
+  getStatusBadgeClass(status: string): string {
+    const classes: Record<string, string> = {
+      'PENDING': 'status-pending',
+      'VENDORS_QUOTING': 'status-quoting',
+      'VENDOR_SELECTED': 'status-selected',
+      'LPO_ISSUED': 'status-lpo-issued',
+      'PAYMENT_PENDING': 'status-payment-pending',
+      'PAYMENT_CONFIRMED': 'status-payment-confirmed',
+      'DELIVERY_IN_PROGRESS': 'status-delivering',
+      'DELIVERED': 'status-delivered',
+      'CANCELLED': 'status-cancelled'
+    };
+    return classes[status] || 'status-pending';
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'PENDING': 'Pending RFQ',
+      'VENDORS_QUOTING': 'Vendors Quoting',
+      'VENDOR_SELECTED': 'Vendor Selected',
+      'LPO_ISSUED': 'LPO Issued',
+      'PAYMENT_PENDING': 'Payment Pending',
+      'PAYMENT_CONFIRMED': 'Payment Confirmed',
+      'DELIVERY_IN_PROGRESS': 'Delivery In Progress',
+      'DELIVERED': 'Delivered',
+      'CANCELLED': 'Cancelled'
+    };
+    return labels[status] || status;
+  }
+
   generateMockDocuments(request: ProcurementRequest): void {
     const vendorName = request.selectedVendorName || 'Apex Tech Distributors';
     const vendorCode = request.selectedVendorId || 'VND-001';
-    
+
     const quoteItems = request.items.map((item, idx) => ({
       id: `qi-${idx}`,
       name: item.name,
@@ -194,16 +224,16 @@ export class DocumentationHistoryComponent implements OnInit {
     this.isDownloading = true;
     const docTitle = `${this.selectedDocType.toUpperCase()}-${this.selectedRequest.id}`;
 
-    html2canvas(element, { 
-      scale: 2, 
-      useCORS: true, 
-      allowTaint: true 
+    html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true
     }).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`${docTitle}.pdf`);
       this.isDownloading = false;
@@ -230,35 +260,5 @@ export class DocumentationHistoryComponent implements OnInit {
       month: 'long',
       day: 'numeric'
     });
-  }
-
-  getStatusClass(status: string): string {
-    const classes: Record<string, string> = {
-      'PENDING': 'pending',
-      'VENDORS_QUOTING': 'quoting',
-      'VENDOR_SELECTED': 'selected',
-      'LPO_ISSUED': 'lpo-issued',
-      'PAYMENT_PENDING': 'payment-pending',
-      'PAYMENT_CONFIRMED': 'payment-confirmed',
-      'DELIVERY_IN_PROGRESS': 'delivering',
-      'DELIVERED': 'delivered',
-      'CANCELLED': 'cancelled'
-    };
-    return classes[status] || 'pending';
-  }
-
-  getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      'PENDING': 'Pending RFQ',
-      'VENDORS_QUOTING': 'Vendors Quoting',
-      'VENDOR_SELECTED': 'Vendor Selected',
-      'LPO_ISSUED': 'LPO Issued',
-      'PAYMENT_PENDING': 'Payment Pending',
-      'PAYMENT_CONFIRMED': 'Payment Confirmed',
-      'DELIVERY_IN_PROGRESS': 'Delivery In Progress',
-      'DELIVERED': 'Delivered',
-      'CANCELLED': 'Cancelled'
-    };
-    return labels[status] || status;
   }
 }

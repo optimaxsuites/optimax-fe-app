@@ -381,26 +381,27 @@
   </ng-container>
 
 
+
   <!-- ════════════════════════════════════════════════════════════════════════
-       TAB 3 — DOCUMENT BRANDING  (invoice / quotation templates + live preview)
+       TAB 3 — DOCUMENT BRANDING
   ═════════════════════════════════════════════════════════════════════════ -->
   <ng-container *ngIf="activeTab === 'branding'">
 
-    <!-- ── Top bar: doc-type switch + new template ── -->
+    <!-- ── Top bar ── -->
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div class="flex gap-1.5">
         <button (click)="setTemplateDocType('invoice')"
           class="px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
-          [class.bg-[#224957]]="templateDocType === 'invoice'" [class.text-white]="templateDocType === 'invoice'"
-          [class.bg-white]="templateDocType !== 'invoice'" [class.text-[#5a7380]]="templateDocType !== 'invoice'"
-          [class.border]="templateDocType !== 'invoice'" [class.border-[#e6edf2]]="templateDocType !== 'invoice'">
+          [class.bg-[#224957]]="templateDocType==='invoice'" [class.text-white]="templateDocType==='invoice'"
+          [class.bg-white]="templateDocType!=='invoice'" [class.text-[#5a7380]]="templateDocType!=='invoice'"
+          [class.border]="templateDocType!=='invoice'" [class.border-[#e6edf2]]="templateDocType!=='invoice'">
           Invoice Templates
         </button>
         <button (click)="setTemplateDocType('quotation')"
           class="px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
-          [class.bg-[#224957]]="templateDocType === 'quotation'" [class.text-white]="templateDocType === 'quotation'"
-          [class.bg-white]="templateDocType !== 'quotation'" [class.text-[#5a7380]]="templateDocType !== 'quotation'"
-          [class.border]="templateDocType !== 'quotation'" [class.border-[#e6edf2]]="templateDocType !== 'quotation'">
+          [class.bg-[#224957]]="templateDocType==='quotation'" [class.text-white]="templateDocType==='quotation'"
+          [class.bg-white]="templateDocType!=='quotation'" [class.text-[#5a7380]]="templateDocType!=='quotation'"
+          [class.border]="templateDocType!=='quotation'" [class.border-[#e6edf2]]="templateDocType!=='quotation'">
           Quotation Templates
         </button>
       </div>
@@ -413,7 +414,7 @@
 
     <div class="grid grid-cols-12 gap-5 items-start">
 
-      <!-- ════ LEFT RAIL — saved templates list ════ -->
+      <!-- ════ LEFT RAIL — saved templates ════ -->
       <div class="col-span-2 bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
         <div class="px-4 py-3 border-b border-[#eef2f6]">
           <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Saved Templates</p>
@@ -422,28 +423,16 @@
           <div *ngFor="let t of templates" (click)="loadTemplateIntoForm(t)"
             class="px-4 py-3.5 cursor-pointer hover:bg-[#f8fafb] transition-colors group"
             [class.bg-[#f0f6f9]]="editingTemplate?.id === t.id">
-
-            <!-- colour swatch + name -->
-            <div class="flex items-center gap-2 mb-2">
-              <span class="w-3 h-3 rounded-full shrink-0 ring-1 ring-black/10"
-                [style.background-color]="t.accentColor"></span>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="w-3 h-3 rounded-full shrink-0 ring-1 ring-black/10" [style.background-color]="t.accentColor"></span>
               <p class="text-sm font-semibold text-[#1a2c35] truncate">{{ t.name }}</p>
             </div>
-
-            <!-- density chip -->
-            <div class="flex items-center justify-between gap-2">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium"
-                [class.bg-[#e8f2f7]]="t.density === 'detailed'" [class.text-[#224957]]="t.density === 'detailed'"
-                [class.bg-[#f5f7f9]]="t.density === 'simple'"   [class.text-[#5a7380]]="t.density === 'simple'">
-                {{ t.density === 'detailed' ? 'Detailed' : 'Simple' }}
-              </span>
-              <span *ngIf="t.isActive"
-                class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#f5f7f9] text-[#5a7380] capitalize">{{ t.baseStyle }}</span>
+              <span *ngIf="t.isActive" class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
             </div>
-
-            <!-- delete (only on inactive) -->
             <button *ngIf="!t.isActive" (click)="deleteTemplate(t, $event)"
-              class="mt-2 w-full opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[11px] text-red-400 hover:text-red-600 transition-all">
+              class="mt-1 w-full opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[11px] text-red-400 hover:text-red-600 transition-all">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               Delete
             </button>
@@ -454,7 +443,6 @@
         </div>
       </div>
 
-
       <!-- ════ CENTRE — editor ════ -->
       <div class="col-span-4 bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
         <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-5">
@@ -464,41 +452,127 @@
         <!-- Template name -->
         <div class="mb-5">
           <label class="field-label">Template Name</label>
-          <input [(ngModel)]="templateForm.name" type="text" placeholder="e.g. Default, Q4 Promo"
-            class="field-input" />
+          <input [(ngModel)]="templateForm.name" type="text" placeholder="e.g. Default, Q4 Promo" class="field-input" />
         </div>
 
-        <!-- Logo upload + position -->
+        <!-- Base style picker -->
         <div class="mb-5">
-          <label class="field-label">Logo</label>
-          <div class="flex gap-2">
-            <button type="button"
-              class="flex-1 px-3 py-4 border-2 border-dashed border-[#e6edf2] rounded-xl text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex flex-col items-center gap-1.5">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span class="text-xs">Upload logo</span>
+          <label class="field-label">Base Style</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button *ngFor="let s of baseStyles" (click)="templateForm.baseStyle = s.value"
+              class="flex flex-col gap-1 p-3 rounded-xl border text-left transition-all"
+              [class.border-[#224957]]="templateForm.baseStyle === s.value"
+              [class.bg-[#f0f6f9]]="templateForm.baseStyle === s.value"
+              [class.border-[#e6edf2]]="templateForm.baseStyle !== s.value">
+
+              <!-- mini style thumbnail -->
+              <ng-container [ngSwitch]="s.value">
+
+                <!-- Classic thumbnail -->
+                <ng-container *ngSwitchCase="'classic'">
+                  <div class="w-full h-10 rounded bg-white border border-[#e6edf2] overflow-hidden flex flex-col p-1 gap-0.5">
+                    <div class="flex justify-between items-center">
+                      <div class="w-4 h-1.5 rounded bg-[#e6edf2]"></div>
+                      <div class="w-6 h-1.5 rounded" [style.background-color]="templateForm.baseStyle==='classic' ? templateForm.accentColor : '#e6edf2'"></div>
+                    </div>
+                    <div class="h-px w-full bg-[#e6edf2] mt-0.5"></div>
+                    <div class="flex gap-0.5 mt-0.5">
+                      <div class="h-1 flex-1 rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-4 rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-3 rounded bg-[#f0f4f8]"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="h-1 flex-1 rounded bg-[#f8fafb]"></div>
+                      <div class="h-1 w-4 rounded bg-[#f8fafb]"></div>
+                      <div class="h-1 w-3 rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Bold thumbnail -->
+                <ng-container *ngSwitchCase="'bold'">
+                  <div class="w-full h-10 rounded overflow-hidden flex flex-col">
+                    <div class="h-3 w-full flex items-center px-1" [style.background-color]="templateForm.baseStyle==='bold' ? templateForm.accentColor : '#c9dde8'">
+                      <div class="w-5 h-1 rounded bg-white opacity-70"></div>
+                    </div>
+                    <div class="flex-1 bg-white border border-t-0 border-[#e6edf2] p-1 flex flex-col gap-0.5">
+                      <div class="h-1 w-8 rounded bg-[#e6edf2]"></div>
+                      <div class="h-0.5 w-full rounded bg-[#f0f4f8]"></div>
+                      <div class="h-0.5 w-full rounded bg-[#f0f4f8]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Sidebar thumbnail -->
+                <ng-container *ngSwitchCase="'sidebar'">
+                  <div class="w-full h-10 rounded overflow-hidden flex border border-[#e6edf2] bg-white">
+                    <div class="w-2.5 h-full flex items-center justify-center" [style.background-color]="templateForm.baseStyle==='sidebar' ? templateForm.accentColor : '#c9dde8'">
+                      <span class="text-white font-bold" style="font-size:4px;writing-mode:vertical-rl;transform:rotate(180deg)">INV</span>
+                    </div>
+                    <div class="flex-1 p-1 flex flex-col gap-0.5">
+                      <div class="h-1.5 w-6 rounded bg-[#1a2c35] opacity-30"></div>
+                      <div class="h-px w-full bg-[#e6edf2]"></div>
+                      <div class="h-1 w-full rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-full rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Modern thumbnail -->
+                <ng-container *ngSwitchCase="'modern'">
+                  <div class="w-full h-10 rounded overflow-hidden flex flex-col border border-[#e6edf2]">
+                    <div class="flex h-4">
+                      <div class="w-1/2 flex items-center px-1" [style.background-color]="templateForm.baseStyle==='modern' ? templateForm.accentColor : '#c9dde8'">
+                        <div class="w-3 h-1 rounded bg-white opacity-70"></div>
+                      </div>
+                      <div class="w-1/2 bg-[#1a2c35] flex items-center justify-end px-1">
+                        <div class="w-4 h-1 rounded bg-white opacity-40"></div>
+                      </div>
+                    </div>
+                    <div class="flex-1 bg-white p-1 flex gap-0.5">
+                      <div class="flex-1 h-full rounded bg-[#f0f4f8]"></div>
+                      <div class="flex-1 h-full rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+              </ng-container>
+
+              <span class="text-xs font-semibold mt-1"
+                [class.text-[#224957]]="templateForm.baseStyle === s.value"
+                [class.text-[#5a7380]]="templateForm.baseStyle !== s.value">{{ s.label }}</span>
+              <span class="text-[10px] text-[#9ab0bb] leading-tight">{{ s.desc }}</span>
             </button>
           </div>
+        </div>
+
+        <!-- Logo upload -->
+        <div class="mb-5">
+          <label class="field-label">Logo</label>
+          <button type="button"
+            class="w-full px-3 py-4 border-2 border-dashed border-[#e6edf2] rounded-xl text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex items-center justify-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Upload logo</span>
+          </button>
           <p class="text-[10px] text-[#9ab0bb] mt-1.5">PNG or SVG, transparent background recommended</p>
         </div>
 
-        <!-- Logo position -->
-        <div class="mb-5">
+        <!-- Logo position (only for classic / bold / modern) -->
+        <div class="mb-5" *ngIf="templateForm.baseStyle !== 'sidebar'">
           <label class="field-label">Logo Position</label>
           <div class="grid grid-cols-3 gap-2">
-            <button *ngFor="let pos of logoPositions"
-              (click)="templateForm.logoPosition = pos.v"
-              class="flex flex-col items-center gap-1.5 py-2.5 px-2 rounded-xl border transition-all text-xs font-medium"
+            <button *ngFor="let pos of logoPositions" (click)="templateForm.logoPosition = pos.v"
+              class="flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition-all text-xs font-medium"
               [class.border-[#224957]]="templateForm.logoPosition === pos.v"
               [class.bg-[#f0f6f9]]="templateForm.logoPosition === pos.v"
               [class.text-[#224957]]="templateForm.logoPosition === pos.v"
               [class.border-[#e6edf2]]="templateForm.logoPosition !== pos.v"
               [class.text-[#5a7380]]="templateForm.logoPosition !== pos.v">
-              <!-- mini letterhead diagram -->
-              <div class="w-full h-5 rounded bg-[#e6edf2] flex items-center px-1.5"
+              <div class="w-full h-4 rounded bg-[#e6edf2] flex items-center px-1"
                 [class.justify-start]="pos.v === 'left'"
                 [class.justify-center]="pos.v === 'center'"
                 [class.justify-end]="pos.v === 'right'">
-                <div class="w-3 h-3 rounded bg-[#224957] opacity-60" [class.opacity-100]="templateForm.logoPosition === pos.v"></div>
+                <div class="w-2.5 h-2.5 rounded" [style.background-color]="templateForm.accentColor"></div>
               </div>
               {{ pos.label }}
             </button>
@@ -509,11 +583,8 @@
         <div class="mb-5">
           <label class="field-label">Accent Colour</label>
           <div class="flex items-center gap-3">
-            <input [(ngModel)]="templateForm.accentColor" type="color"
-              class="w-10 h-10 rounded-xl border border-[#e6edf2] cursor-pointer shrink-0" />
-            <input [(ngModel)]="templateForm.accentColor" type="text"
-              class="flex-1 field-input font-mono" />
-            <!-- quick presets -->
+            <input [(ngModel)]="templateForm.accentColor" type="color" class="w-10 h-10 rounded-xl border border-[#e6edf2] cursor-pointer shrink-0" />
+            <input [(ngModel)]="templateForm.accentColor" type="text" class="flex-1 field-input font-mono" />
             <div class="flex gap-1.5">
               <button *ngFor="let c of ['#224957','#1a1a2e','#2D6A4F','#9B2226','#6B4226']"
                 (click)="templateForm.accentColor = c"
@@ -532,70 +603,79 @@
           <div class="grid grid-cols-2 gap-2">
             <button (click)="templateForm.density = 'simple'"
               class="flex flex-col gap-1.5 p-3 rounded-xl border transition-all text-left"
-              [class.border-[#224957]]="templateForm.density === 'simple'"
-              [class.bg-[#f0f6f9]]="templateForm.density === 'simple'"
-              [class.border-[#e6edf2]]="templateForm.density !== 'simple'">
-              <div class="flex gap-1 mb-0.5">
-                <div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div>
-                <div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div>
-              </div>
+              [class.border-[#224957]]="templateForm.density==='simple'" [class.bg-[#f0f6f9]]="templateForm.density==='simple'"
+              [class.border-[#e6edf2]]="templateForm.density!=='simple'">
+              <div class="flex gap-1"><div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div><div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div></div>
               <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
               <div class="h-0.5 w-3/4 bg-[#e6edf2] rounded"></div>
-              <span class="text-xs font-semibold mt-1"
-                [class.text-[#224957]]="templateForm.density === 'simple'"
-                [class.text-[#5a7380]]="templateForm.density !== 'simple'">Simple</span>
-              <span class="text-[10px] text-[#9ab0bb] leading-tight">Total only, clean and minimal</span>
+              <span class="text-xs font-semibold mt-1" [class.text-[#224957]]="templateForm.density==='simple'" [class.text-[#5a7380]]="templateForm.density!=='simple'">Simple</span>
+              <span class="text-[10px] text-[#9ab0bb]">Total only, minimal</span>
             </button>
-
             <button (click)="templateForm.density = 'detailed'"
               class="flex flex-col gap-1.5 p-3 rounded-xl border transition-all text-left"
-              [class.border-[#224957]]="templateForm.density === 'detailed'"
-              [class.bg-[#f0f6f9]]="templateForm.density === 'detailed'"
-              [class.border-[#e6edf2]]="templateForm.density !== 'detailed'">
-              <div class="flex gap-1 mb-0.5">
-                <div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div>
-                <div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div>
-              </div>
+              [class.border-[#224957]]="templateForm.density==='detailed'" [class.bg-[#f0f6f9]]="templateForm.density==='detailed'"
+              [class.border-[#e6edf2]]="templateForm.density!=='detailed'">
+              <div class="flex gap-1"><div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div><div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div></div>
               <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
               <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
               <div class="h-0.5 w-3/4 bg-[#e6edf2] rounded"></div>
-              <span class="text-xs font-semibold mt-1"
-                [class.text-[#224957]]="templateForm.density === 'detailed'"
-                [class.text-[#5a7380]]="templateForm.density !== 'detailed'">Detailed</span>
-              <span class="text-[10px] text-[#9ab0bb] leading-tight">All line items + subtotals</span>
+              <span class="text-xs font-semibold mt-1" [class.text-[#224957]]="templateForm.density==='detailed'" [class.text-[#5a7380]]="templateForm.density!=='detailed'">Detailed</span>
+              <span class="text-[10px] text-[#9ab0bb]">Full line items</span>
             </button>
           </div>
         </div>
 
-        <!-- Show bank details toggle -->
-        <label class="flex items-start gap-3 mb-5 cursor-pointer group">
-          <div class="mt-0.5 relative">
-            <input [(ngModel)]="templateForm.showBankDetails" type="checkbox"
-              class="sr-only peer" id="bankToggle" />
-            <div class="w-9 h-5 rounded-full border-2 border-[#e6edf2] bg-[#f5f7f9] transition-colors
-              peer-checked:bg-[#224957] peer-checked:border-[#224957]"></div>
-            <div class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform
-              peer-checked:translate-x-4"></div>
+        <!-- Toggles -->
+        <div class="flex flex-col gap-3 mb-5">
+
+          <!-- Bank details toggle -->
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium text-[#1a2c35]">Show bank details</p>
+              <p class="text-[10px] text-[#9ab0bb]">Payment account on document</p>
+            </div>
+            <div class="relative">
+              <input [(ngModel)]="templateForm.showBankDetails" type="checkbox" class="sr-only peer" />
+              <div class="w-9 h-5 rounded-full border-2 border-[#e6edf2] bg-[#f5f7f9] transition-colors peer-checked:bg-[#224957] peer-checked:border-[#224957]"></div>
+              <div class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></div>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- Your signature — a vendor-level asset, not a template setting.
+             Whether it's attached is now decided per document, when you
+             create a quotation or invoice. -->
+        <div class="mb-5 p-3.5 rounded-xl border border-[#e6edf2] bg-[#f8fafb]">
+          <p class="text-xs font-semibold text-[#1a2c35] mb-1">Your Signature</p>
+          <p class="text-[10px] text-[#9ab0bb] mb-3">Saved once here — you'll choose whether to include it each time you create a quotation or invoice</p>
+          <div *ngIf="savedSignatureDataUrl" class="mb-2 h-12 bg-white rounded-lg border border-[#e6edf2] flex items-center justify-center overflow-hidden">
+            <img [src]="savedSignatureDataUrl" class="max-h-10 object-contain" />
           </div>
-          <div>
-            <p class="text-sm font-medium text-[#1a2c35]">Show bank details</p>
-            <p class="text-[10px] text-[#9ab0bb]">Displays payment account on the document footer</p>
+          <div class="flex gap-2">
+            <button (click)="openSignaturePad()"
+              class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#224957] text-white text-xs font-semibold rounded-lg hover:bg-[#2d6478] transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              {{ savedSignatureDataUrl ? 'Re-draw' : 'Draw Signature' }}
+            </button>
+            <button *ngIf="savedSignatureDataUrl" (click)="clearSavedSignature()"
+              class="px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-xs font-semibold rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">
+              Clear
+            </button>
           </div>
-        </label>
+        </div>
 
         <!-- Footer text -->
         <div class="mb-5">
           <label class="field-label">Footer Text</label>
-          <textarea [(ngModel)]="templateForm.footerText" rows="2"
-            placeholder="e.g. Thank you for your business."
+          <textarea [(ngModel)]="templateForm.footerText" rows="2" placeholder="e.g. Thank you for your business."
             class="field-input resize-none"></textarea>
         </div>
 
-        <!-- Default notes / terms -->
+        <!-- Default notes -->
         <div class="mb-6">
           <label class="field-label">Default Notes / Terms</label>
-          <textarea [(ngModel)]="templateForm.notesDefault" rows="2"
-            placeholder="Pre-filled notes text for every new document"
+          <textarea [(ngModel)]="templateForm.notesDefault" rows="2" placeholder="Pre-filled notes for every new document"
             class="field-input resize-none"></textarea>
         </div>
 
@@ -618,15 +698,14 @@
       </div>
 
 
-      <!-- ════ RIGHT — live preview ════ -->
+      <!-- ════ RIGHT — live preview (4 base styles) ════ -->
       <div class="col-span-6">
         <div class="flex items-center justify-between mb-3 px-1">
           <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Live Preview</p>
           <button (click)="downloadTemplatePdf()" [disabled]="isDownloading"
             class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border"
             [class.border-[#224957]]="!isDownloading" [class.text-[#224957]]="!isDownloading"
-            [class.hover:bg-[#f0f6f9]]="!isDownloading"
-            [class.border-[#e6edf2]]="isDownloading" [class.text-[#9ab0bb]]="isDownloading"
+            [class.border-[#e6edf2]]="isDownloading"  [class.text-[#9ab0bb]]="isDownloading"
             [class.cursor-not-allowed]="isDownloading">
             <svg *ngIf="!isDownloading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -638,121 +717,324 @@
           </button>
         </div>
 
-        <!-- ── The preview pane itself — every form change reflects here live ── -->
-        <div #previewRef class="bg-white rounded-2xl shadow-sm overflow-hidden border border-[#e6edf2] preview-root">
+        <!-- ══ CLASSIC preview ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'classic'"
+          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
 
-          <!-- Letterhead bar -->
-          <div class="preview-header" [style.border-bottom-color]="templateForm.accentColor">
-            <div class="flex items-start" [style.justify-content]="logoJustify(templateForm.logoPosition)">
-              <div class="logo-placeholder" [style.background-color]="templateForm.accentColor">
-                {{ profile?.companyName?.charAt(0) || 'A' }}
-              </div>
-            </div>
-            <div class="flex items-end justify-between mt-3">
-              <div>
-                <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName || 'Your Company' }}</p>
+          <!-- Letterhead -->
+          <div class="px-8 pt-8 pb-5 border-b-2" [style.border-color]="templateForm.accentColor">
+            <div class="flex items-start justify-between">
+              <!-- Logo side -->
+              <div class="flex flex-col gap-1">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                  [style.background-color]="templateForm.accentColor">
+                  {{ profile?.companyName?.charAt(0) || 'A' }}
+                </div>
+                <p class="text-sm font-bold text-[#1a2c35] mt-1">{{ profile?.companyName }}</p>
                 <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
                 <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
               </div>
+              <!-- Doc type + meta -->
               <div class="text-right">
-                <p class="text-sm font-bold uppercase tracking-wide" [style.color]="templateForm.accentColor">
-                  {{ templateDocType === 'invoice' ? 'Invoice' : 'Quotation' }}
+                <p class="text-2xl font-bold tracking-tight" [style.color]="templateForm.accentColor">
+                  {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
                 </p>
-                <p class="text-[10px] text-[#9ab0bb]">{{ previewSample.docNumber }}</p>
-                <p class="text-[10px] text-[#9ab0bb]">Date: {{ previewSample.date }}</p>
+                <div class="mt-2 text-[10px] text-[#5a7380] space-y-0.5">
+                  <p><span class="text-[#9ab0bb]">No: </span>{{ previewSample.docNumber }}</p>
+                  <p><span class="text-[#9ab0bb]">Date: </span>{{ previewSample.date }}</p>
+                  <p><span class="text-[#9ab0bb]">Due: </span>{{ previewSample.dueDate }}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Bill-to row -->
-          <div class="px-6 py-4 flex gap-8 text-[11px] border-b border-[#f0f4f8]">
-            <div>
-              <p class="text-[#9ab0bb] uppercase tracking-wide text-[9px] mb-0.5">Billed To</p>
-              <p class="font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
-              <p *ngIf="templateForm.density === 'detailed'" class="text-[#5a7380]">{{ previewSample.clientAddress }}</p>
-            </div>
-            <div *ngIf="templateForm.density === 'detailed'">
-              <p class="text-[#9ab0bb] uppercase tracking-wide text-[9px] mb-0.5">Due Date</p>
-              <p class="font-semibold text-[#1a2c35]">{{ previewSample.dueDate }}</p>
-            </div>
+          <!-- Bill-to -->
+          <div class="px-8 py-4 border-b border-[#f0f4f8]">
+            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Bill To</p>
+            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
           </div>
 
-          <!-- Line items — only shown in detailed mode -->
-          <div *ngIf="templateForm.density === 'detailed'" class="px-6 pt-4 pb-2">
-            <div class="grid grid-cols-12 text-[9px] font-bold uppercase tracking-widest text-[#9ab0bb] pb-2 border-b" [style.border-color]="templateForm.accentColor + '40'">
-              <span class="col-span-6">Description</span>
-              <span class="col-span-2 text-center">Qty</span>
-              <span class="col-span-2 text-right">Unit Price</span>
-              <span class="col-span-2 text-right">Total</span>
-            </div>
-            <div *ngFor="let item of previewSample.items; let last = last"
-              class="grid grid-cols-12 text-[11px] py-2"
-              [class.border-b]="!last" [class.border-[#f0f4f8]]="!last">
-              <span class="col-span-6 text-[#1a2c35]">{{ item.name }}</span>
-              <span class="col-span-2 text-center text-[#5a7380]">{{ item.qty }}</span>
-              <span class="col-span-2 text-right text-[#5a7380]">{{ fmtCurrency(item.unitPrice) }}</span>
-              <span class="col-span-2 text-right font-medium text-[#1a2c35]">{{ fmtCurrency(item.total) }}</span>
-            </div>
-          </div>
-
-          <!-- Totals block -->
-          <div class="px-6 pt-3 pb-4">
-            <div class="flex flex-col items-end gap-1 text-[11px]">
-              <div *ngIf="templateForm.density === 'detailed'" class="flex gap-6">
-                <span class="text-[#5a7380]">Subtotal</span>
-                <span class="w-24 text-right">{{ fmtCurrency(previewSample.subtotal) }}</span>
-              </div>
-              <div *ngIf="templateForm.density === 'detailed'" class="flex gap-6">
-                <span class="text-[#5a7380]">Tax (7.5%)</span>
-                <span class="w-24 text-right">{{ fmtCurrency(previewSample.tax) }}</span>
-              </div>
-              <div class="flex gap-6 font-bold text-sm pt-1.5 border-t border-[#e6edf2] mt-1" [style.color]="templateForm.accentColor">
-                <span>Total</span>
-                <span class="w-24 text-right">{{ fmtCurrency(previewSample.total) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes / terms — shown in detailed only -->
-          <div *ngIf="templateForm.density === 'detailed' && templateForm.notesDefault"
-            class="px-6 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
-            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-wide mb-0.5">Notes</p>
-            <p class="text-[10px] text-[#5a7380]">{{ templateForm.notesDefault }}</p>
-          </div>
-
-          <!-- Bank details -->
-          <div *ngIf="templateForm.showBankDetails && profile"
-            class="px-6 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
-            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-wide mb-1">Payment Details</p>
-            <div class="flex gap-6 text-[10px]">
-              <div>
-                <p class="text-[#9ab0bb]">Bank</p>
-                <p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p>
-              </div>
-              <div>
-                <p class="text-[#9ab0bb]">Account Name</p>
-                <p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p>
-              </div>
-              <div>
-                <p class="text-[#9ab0bb]">Account No.</p>
-                <p class="font-medium text-[#1a2c35] font-mono">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div *ngIf="templateForm.footerText"
-            class="px-6 py-3 border-t-4" [style.border-color]="templateForm.accentColor">
-            <p class="text-[10px] text-[#9ab0bb] italic text-center">{{ templateForm.footerText }}</p>
-          </div>
-
+          <!-- Line items -->
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
         </div>
+
+
+        <!-- ══ BOLD preview ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'bold'"
+          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
+
+          <!-- Full-width accent header -->
+          <div class="px-8 py-5" [style.background-color]="templateForm.accentColor">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm">
+                  {{ profile?.companyName?.charAt(0) || 'A' }}
+                </div>
+                <div>
+                  <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
+                  <p class="text-white/70 text-[10px]">{{ profile?.address }}</p>
+                </div>
+              </div>
+              <p class="text-white font-black text-xl tracking-widest opacity-90">
+                {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Summary bar -->
+          <div class="px-8 py-3 bg-[#1a2c35] flex items-center justify-between">
+            <div class="text-[10px] text-white/60 space-x-4">
+              <span>No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></span>
+              <span>Date: <span class="text-white font-medium">{{ previewSample.date }}</span></span>
+              <span>Due: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
+            </div>
+            <p class="text-white font-bold text-sm">{{ fmtCurrency(previewSample.total) }}</p>
+          </div>
+
+          <!-- Bill-to -->
+          <div class="px-8 py-4 border-b border-[#f0f4f8]">
+            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Bill To</p>
+            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+          </div>
+
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
+
+        <!-- ══ SIDEBAR preview ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'sidebar'"
+          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root flex">
+
+          <!-- Vertical label -->
+          <div class="w-8 shrink-0 flex flex-col items-center justify-start py-6 gap-2"
+            [style.background-color]="templateForm.accentColor">
+            <div class="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-white font-bold text-[9px]">
+              {{ profile?.companyName?.charAt(0) || 'A' }}
+            </div>
+            <p class="text-white font-black text-[9px] tracking-widest whitespace-nowrap"
+              style="writing-mode:vertical-rl;transform:rotate(180deg)">
+              {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+            </p>
+          </div>
+
+          <!-- Main body -->
+          <div class="flex-1 flex flex-col">
+
+            <!-- Header -->
+            <div class="px-6 pt-6 pb-4 border-b border-[#f0f4f8]">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
+                  <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
+                  <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
+                </div>
+                <div class="text-right text-[10px] text-[#5a7380] space-y-0.5">
+                  <p class="font-semibold text-[#1a2c35]">{{ previewSample.docNumber }}</p>
+                  <p>{{ previewSample.date }}</p>
+                  <p class="font-medium" [style.color]="templateForm.accentColor">Due {{ previewSample.dueDate }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bill-to -->
+            <div class="px-6 py-3 border-b border-[#f0f4f8]">
+              <div class="flex gap-1.5 items-center mb-1">
+                <div class="w-1 h-3 rounded-full" [style.background-color]="templateForm.accentColor"></div>
+                <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest">Bill To</p>
+              </div>
+              <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+              <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+            </div>
+
+            <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+            <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+          </div>
+        </div>
+
+
+        <!-- ══ MODERN preview ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'modern'"
+          class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
+
+          <!-- Split header -->
+          <div class="flex">
+            <div class="w-1/2 px-8 py-6 flex flex-col justify-between" [style.background-color]="templateForm.accentColor">
+              <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm mb-2">
+                {{ profile?.companyName?.charAt(0) || 'A' }}
+              </div>
+              <div>
+                <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
+                <p class="text-white/70 text-[10px]">{{ profile?.city }}, {{ profile?.state }}</p>
+              </div>
+            </div>
+            <div class="w-1/2 bg-[#1a2c35] px-8 py-6 flex flex-col justify-between">
+              <p class="text-white font-black text-lg tracking-widest">
+                {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+              </p>
+              <div class="text-[10px] space-y-0.5">
+                <p class="text-white/50">No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></p>
+                <p class="text-white/50">Date: <span class="text-white font-medium">{{ previewSample.date }}</span></p>
+                <p class="text-white/50">Due: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bill-to label box -->
+          <div class="px-8 py-4 border-b border-[#f0f4f8]">
+            <div class="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest text-white mb-2"
+              [style.background-color]="templateForm.accentColor">Bill To</div>
+            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+          </div>
+
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
         <p class="text-[10px] text-[#9ab0bb] mt-2 px-1">
           Preview reflects your settings live — actual documents use real order data
         </p>
       </div>
-
     </div>
+
+
+    <!-- ── Shared preview sub-templates ── -->
+
+    <ng-template #itemsTable>
+      <div *ngIf="templateForm.density === 'detailed'" class="px-6 pt-3 pb-1">
+        <div class="grid grid-cols-12 text-[9px] font-bold uppercase tracking-widest text-[#9ab0bb] pb-2 border-b"
+          [style.border-color]="templateForm.accentColor + '40'">
+          <span class="col-span-6">Description</span>
+          <span class="col-span-2 text-center">Qty</span>
+          <span class="col-span-2 text-right">Unit Price</span>
+          <span class="col-span-2 text-right">Total</span>
+        </div>
+        <div *ngFor="let item of previewSample.items; let last = last"
+          class="grid grid-cols-12 text-[11px] py-2"
+          [class.border-b]="!last" [class.border-[#f0f4f8]]="!last">
+          <span class="col-span-6 text-[#1a2c35]">{{ item.name }}</span>
+          <span class="col-span-2 text-center text-[#5a7380]">{{ item.qty }}</span>
+          <span class="col-span-2 text-right text-[#5a7380]">{{ fmtCurrency(item.unitPrice) }}</span>
+          <span class="col-span-2 text-right font-medium text-[#1a2c35]">{{ fmtCurrency(item.total) }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #totalsBlock>
+      <div class="px-6 pt-3 pb-4 flex flex-col items-end gap-1 text-[11px]">
+        <div *ngIf="templateForm.density==='detailed'" class="flex gap-6">
+          <span class="text-[#5a7380]">Subtotal</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.subtotal) }}</span>
+        </div>
+        <div *ngIf="templateForm.density==='detailed'" class="flex gap-6">
+          <span class="text-[#5a7380]">Tax (7.5%)</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.tax) }}</span>
+        </div>
+        <div class="flex gap-6 font-bold text-sm pt-1.5 border-t border-[#e6edf2] mt-1" [style.color]="templateForm.accentColor">
+          <span>Total</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.total) }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #bankBlock>
+      <div *ngIf="templateForm.showBankDetails && profile"
+        class="px-6 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
+        <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Payment Details</p>
+        <div class="flex gap-6 text-[10px]">
+          <div><p class="text-[#9ab0bb]">Bank</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p></div>
+          <div><p class="text-[#9ab0bb]">Account</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p></div>
+          <div><p class="text-[#9ab0bb]">Number</p><p class="font-medium text-[#1a2c35] font-mono">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p></div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #signatureBlock>
+      <div class="px-6 py-4 border-t border-[#f0f4f8]">
+        <div class="flex items-end justify-between">
+          <div *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">
+            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Notes</p>
+            <p>{{ templateForm.notesDefault || 'All amounts in NGN unless otherwise stated.' }}</p>
+          </div>
+          <div class="text-right">
+            <div class="h-10 w-32 border-b border-[#1a2c35] mb-1 flex items-end justify-center overflow-hidden">
+              <img *ngIf="savedSignatureDataUrl" [src]="savedSignatureDataUrl" class="max-h-9 object-contain" />
+            </div>
+            <p class="text-[9px] text-[#9ab0bb]">Authorised Signature</p>
+            <p class="text-[10px] font-medium text-[#1a2c35]">{{ profile?.contactPersonName }}</p>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #footerBlock>
+      <div *ngIf="templateForm.footerText" class="px-6 py-3 border-t-4 text-center" [style.border-color]="templateForm.accentColor">
+        <p class="text-[10px] text-[#9ab0bb] italic">{{ templateForm.footerText }}</p>
+      </div>
+    </ng-template>
+
+
+    <!-- ════ SIGNATURE PAD MODAL ════ -->
+    <div *ngIf="showSignaturePad" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeSignaturePad()">
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="modal-pop relative bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#eef2f6]">
+          <div>
+            <h3 class="text-base font-bold text-[#1a2c35]">Draw Your Signature</h3>
+            <p class="text-xs text-[#9ab0bb] mt-0.5">Use your mouse, finger, or stylus</p>
+          </div>
+          <button (click)="closeSignaturePad()" class="w-8 h-8 rounded-lg hover:bg-[#f5f7f9] flex items-center justify-center text-[#5a7380]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="px-5 pt-4 pb-2">
+          <div class="relative rounded-xl border-2 border-dashed border-[#e6edf2] bg-[#fafbfc] overflow-hidden">
+            <canvas #signatureCanvas width="440" height="180"
+              class="w-full touch-none cursor-crosshair block"
+              (pointerdown)="onSignaturePointerDown($event)"
+              (pointermove)="onSignaturePointerMove($event)"
+              (pointerup)="onSignaturePointerUp()"
+              (pointerleave)="onSignaturePointerUp()">
+            </canvas>
+            <!-- Guide line -->
+            <div class="absolute bottom-10 left-6 right-6 border-b border-[#e6edf2] pointer-events-none"></div>
+            <p class="absolute bottom-3 left-0 right-0 text-center text-[10px] text-[#c9dde8] pointer-events-none">Sign above the line</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3 px-5 py-4">
+          <button (click)="clearSignature()"
+            class="flex items-center gap-1.5 px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-sm font-semibold rounded-xl hover:bg-[#f5f7f9] transition-colors">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear
+          </button>
+          <button (click)="saveSignature()"
+            class="flex-1 px-4 py-2 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+            Save Signature
+          </button>
+        </div>
+
+      </div>
+    </div>
+
   </ng-container>
 
 </div>

@@ -19,6 +19,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   showAcceptModal = false;
   showRejectModal = false;
   rejectReason = '';
+  showRequestChangesModal = false;
+  requestChangesNotes = '';
+  simulationNewTotal = 0;
   allQuotationsForRfq: VendorQuotation[] = [];
   showCompareDisclaimerModal = false;
   successMessage = '';
@@ -55,6 +58,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (data) => {
         this.quotation = data;
+        this.simulationNewTotal = data.totalAmount;
         this.isLoading = false;
         // Mark as viewed
         if (!data.isViewed) {
@@ -67,6 +71,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.loadMockData();
         if (this.quotation) {
+          this.simulationNewTotal = this.quotation.totalAmount;
           this.loadAllQuotationsForRfq(this.quotation.rfqId);
         }
       }
@@ -88,7 +93,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         status: 'SUBMITTED',
         items: [
           { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
-          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'AVAILABLE' }
+          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'SUBSTITUTE', alternativeProduct: 'Canon imageCLASS LBP226dw' }
         ],
         totalAmount: 450000,
         currency: 'NGN',
@@ -113,8 +118,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         vendorPhone: '+234-811-333-2211',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'AVAILABLE' },
-          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'AVAILABLE' }
+          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'PARTIAL', availableQuantity: 1 },
+          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'UNAVAILABLE' }
         ],
         totalAmount: 420000,
         currency: 'NGN',
@@ -404,6 +409,67 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     this.rejectReason = '';
   }
 
+  openRequestChangesModal(): void {
+    this.requestChangesNotes = '';
+    this.showRequestChangesModal = true;
+  }
+
+  closeRequestChangesModal(): void {
+    this.showRequestChangesModal = false;
+    this.requestChangesNotes = '';
+  }
+
+  confirmRequestChanges(): void {
+    if (!this.quotation) return;
+
+    if (!this.requestChangesNotes.trim()) {
+      alert('Please provide detailed request notes.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.requestChanges(this.quotation.id, this.requestChangesNotes.trim()).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.closeRequestChangesModal();
+        alert('Changes requested. Status updated to "Review Requested".');
+        this.loadQuotationDetail(); // Refresh
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error requesting changes:', err);
+        alert('Failed to request changes. Please try again.');
+      }
+    });
+  }
+
+  confirmSimulateResubmit(): void {
+    if (!this.quotation) return;
+
+    if (!this.simulationNewTotal || this.simulationNewTotal <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.simulateVendorResubmit(
+      this.quotation.id, 
+      this.simulationNewTotal,
+      `Vendor updated pricing to ${this.formatCurrency(this.simulationNewTotal)} based on customer review requested changes.`
+    ).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        alert('Vendor resubmission simulated successfully. Quotation has been updated.');
+        this.loadQuotationDetail(); // Refresh
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error simulating resubmit:', err);
+        alert('Failed to simulate resubmission.');
+      }
+    });
+  }
+
   confirmAccept(): void {
     if (!this.quotation) return;
 
@@ -651,7 +717,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'status-expired',
       'WITHDRAWN': 'status-withdrawn',
       'LPO_GENERATED': 'status-accepted',
-      'LPO_SENT': 'status-accepted'
+      'LPO_SENT': 'status-accepted',
+      'REVIEW_REQUESTED': 'status-review'
     };
     return classes[status] || 'status-expired';
   }
@@ -665,7 +732,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'Expired',
       'WITHDRAWN': 'Withdrawn',
       'LPO_GENERATED': 'LPO Draft',
-      'LPO_SENT': 'LPO Sent'
+      'LPO_SENT': 'LPO Sent',
+      'REVIEW_REQUESTED': 'Review Requested'
     };
     return labels[status] || status;
   }
@@ -679,7 +747,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'fa-hourglass-end',
       'WITHDRAWN': 'fa-times',
       'LPO_GENERATED': 'fa-file-invoice',
-      'LPO_SENT': 'fa-paper-plane'
+      'LPO_SENT': 'fa-paper-plane',
+      'REVIEW_REQUESTED': 'fa-reply'
     };
     return icons[status] || 'fa-circle';
   }
@@ -688,7 +757,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     const colors: Record<string, string> = {
       'AVAILABLE': '#059669',
       'PARTIAL': '#d97706',
-      'UNAVAILABLE': '#dc2626'
+      'UNAVAILABLE': '#dc2626',
+      'SUBSTITUTE': '#3b82f6'
     };
     return colors[availability] || '#6b7280';
   }
@@ -697,7 +767,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     const labels: Record<string, string> = {
       'AVAILABLE': 'Available',
       'PARTIAL': 'Partial',
-      'UNAVAILABLE': 'Unavailable'
+      'UNAVAILABLE': 'Unavailable',
+      'SUBSTITUTE': 'Substitute'
     };
     return labels[availability] || availability;
   }

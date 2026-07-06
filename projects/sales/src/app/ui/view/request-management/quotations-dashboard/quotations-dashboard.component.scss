@@ -596,6 +596,12 @@
       color: #6d28d9 !important;
       border: 1px solid rgba(139, 92, 246, 0.2) !important;
     }
+
+    &.status-review {
+      background: rgba(249, 115, 22, 0.12) !important;
+      color: #ea580c !important;
+      border: 1px solid rgba(249, 115, 22, 0.2) !important;
+    }
   }
 
   .days-remaining {

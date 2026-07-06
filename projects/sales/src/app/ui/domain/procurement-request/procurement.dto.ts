@@ -1,20 +1,32 @@
 // procurement.dto.ts
 
-export type RequestStatus = 
-  | 'PENDING' 
-  | 'VENDORS_QUOTING' 
-  | 'VENDOR_SELECTED' 
-  | 'LPO_ISSUED' 
-  | 'PAYMENT_PENDING'
-  | 'PAYMENT_CONFIRMED'
-  | 'DELIVERY_IN_PROGRESS'
-  | 'DELIVERED'
-  | 'CANCELLED'
-  | 'DRAFT'
-  | 'PENDING_APPROVAL'
-  | 'REJECTED';
+/**
+ * RequestStatus represents the current phase in the RFQ (Request for Quotation)
+ * and procurement request lifecycle.
+ */
+export type RequestStatus =
+  | 'PENDING'             // Initial request state, waiting for procurement team processing
+  | 'VENDORS_QUOTING'     // RFQ is active and open for selected vendors to submit pricing quotations
+  | 'VENDOR_SELECTED'     // A specific vendor quotation has been approved and accepted by the buyer
+  | 'LPO_ISSUED'          // A Local Purchase Order (LPO) has been generated and officially sent to the vendor
+  | 'PAYMENT_PENDING'     // Fulfillment is complete, awaiting final invoice settlement authorization
+  | 'PAYMENT_CONFIRMED'   // Payment has been successfully released and confirmed for this request
+  | 'DELIVERY_IN_PROGRESS'// Vendor is in the process of shipping/delivering goods or executing services
+  | 'DELIVERED'           // Procurement items have been fully received and verified at the destination
+  | 'CANCELLED'           // The request has been cancelled/aborted by the procurement department
+  | 'DRAFT'               // Draft request saved locally by the initiator before formal submission
+  | 'PENDING_APPROVAL'    // Awaiting internal managerial approval or review board authorization
+  | 'REJECTED';           // Rejected by internal manager/approver during the review phase
 
-export type ProcurementType = 'PRODUCT' | 'SERVICE';
+
+
+/**
+ * ProcurementType determines whether the request is for physical items (PRODUCTS)
+ * or external services (SERVICES), impacting the validation and routing forms.
+ */
+export type ProcurementType =
+  | 'PRODUCT'             // Materials, goods, hardware or physical equipment procurement
+  | 'SERVICE';            // Professional labor, cleaning, maintenance, or consultation services
 
 export interface Attachment {
   id: string;
@@ -138,26 +150,6 @@ export interface VendorSuggestion {
   reason: string;
 }
 
-// RFQ Generation Request
-export interface RFQGenerationRequest {
-  procurementRequestId: string;
-  templateId: string;
-  vendorIds: string[];
-  customMessage?: string;
-}
-
-// RFQ Generation Response
-export interface RFQGenerationResponse {
-  rfqId: string;
-  rfqNumber: string;
-  preview: {
-    html: string;
-    pdf?: string;
-  };
-  sentToVendors: string[];
-  sentAt: Date;
-}
-
 export interface MasterOrder {
   id: string;
   customerId: string;
@@ -188,7 +180,7 @@ export interface OrderItem {
   attachments?: Attachment[];
 }
 
-export type MasterOrderStatus = 
+export type MasterOrderStatus =
   | 'DRAFT'
   | 'PENDING_VENDOR_QUOTES'
   | 'VENDOR_SELECTION_IN_PROGRESS'
@@ -198,17 +190,20 @@ export type MasterOrderStatus =
   | 'CANCELLED';
 
 
-  // procurement.dto.ts
-
-export type VendorQuotationStatus = 
-  | 'PENDING'      // Vendor hasn't responded yet
-  | 'SUBMITTED'    // Vendor submitted quotation
-  | 'ACCEPTED'     // Buyer accepted the quotation
-  | 'DECLINED'     // Vendor declined or buyer rejected
-  | 'EXPIRED'      // Quotation expired
-  | 'WITHDRAWN'    // Vendor withdrew quotation
-  | 'LPO_GENERATED' // Buyer generated LPO preview
-  | 'LPO_SENT';    // LPO sent to vendor
+/**
+ * VendorQuotationStatus represents the lifecycle of a vendor's response
+ * to an RFQ, including submission, buyer reviews, awards, and LPO issuances.
+ */
+export type VendorQuotationStatus =
+  | 'PENDING'           // Vendor has been invited/suggested but has not submitted a response yet
+  | 'SUBMITTED'         // Vendor has successfully submitted their quotation details to the buyer
+  | 'ACCEPTED'          // Buyer approved this specific quotation, triggering subsequent LPO steps
+  | 'DECLINED'          // Vendor declined to quote, or buyer rejected the submitted quotation
+  | 'EXPIRED'           // The quotation is no longer valid because its validity period has elapsed
+  | 'WITHDRAWN'         // The vendor withdrew their quotation before the buyer could accept/decline it
+  | 'LPO_GENERATED'     // Customer generated the Local Purchase Order draft from this quotation
+  | 'LPO_SENT'          // Customer has sent the finalized LPO document to the vendor
+  | 'REVIEW_REQUESTED'; // Customer requested changes or price adjustments, expecting a revised quote
 
 export interface VendorQuotation {
   id: string;
@@ -229,6 +224,7 @@ export interface VendorQuotation {
   termsAndConditions?: string;
   notes?: string;
   declineReason?: string;
+  revisionRequestNote?: string; // Notes describing revision instructions/changes requested by the customer
   submittedAt?: Date;
   updatedAt: Date;
   expiresAt: Date;
@@ -239,10 +235,12 @@ export interface QuotationItemDetail {
   id: string;
   name: string;
   description: string;
-  quantity: number;
+  quantity: number; // Requested quantity from the customer
   unitPrice: number;
   totalPrice: number;
-  availability: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
+  availability: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE' | 'SUBSTITUTE'; // Current availability status committed by the vendor
+  alternativeProduct?: string; // Alternative product name (applicable only when availability is SUBSTITUTE)
+  availableQuantity?: number; // Partial quantity the vendor can provide (applicable only when availability is PARTIAL)
   deliveryDate?: Date;
   notes?: string;
 }

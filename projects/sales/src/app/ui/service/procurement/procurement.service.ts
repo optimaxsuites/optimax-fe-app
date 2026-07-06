@@ -8,8 +8,6 @@ import {
   MasterOrder,
   RFQTemplate,
   VendorSuggestion,
-  RFQGenerationRequest,
-  RFQGenerationResponse,
   ProcurementType,
   RequestStatus,
   OrderItem,
@@ -328,7 +326,7 @@ export class ProcurementRequestService {
       currency: request.currency || 'NGN',
       deliveryLocation: request.deliveryLocation || 'Office HQ',
       deliveryDeadline: request.deliveryDeadline ? new Date(request.deliveryDeadline) : new Date(),
-      status: 'PENDING',
+      status: request.status || 'PENDING',
       attachments: request.attachments || [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -455,19 +453,6 @@ export class ProcurementRequestService {
       }
     ];
     return of(suggestions);
-  }
-
-  generateRFQ(request: RFQGenerationRequest): Observable<RFQGenerationResponse> {
-    return of({
-      rfqId: `RFQ-${Date.now()}`,
-      rfqNumber: `RFQ-OUT-2026-${Math.floor(Math.random() * 900) + 100}`,
-      preview: {
-        html: '<p>RFQ Preview Document</p>',
-        pdf: '/exports/rfq_preview.pdf'
-      },
-      sentToVendors: request.vendorIds,
-      sentAt: new Date()
-    });
   }
 
   uploadAttachment(requestId: string, file: File): Observable<{ attachmentId: string; url: string }> {

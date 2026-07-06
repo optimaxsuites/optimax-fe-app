@@ -104,12 +104,26 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
   // ── Quotation badge ───────────────────────────────────────────────────────────
   quotBadge(status: string): string {
     const map: Record<string, string> = {
-      draft:    'badge badge-draft',
-      sent:     'badge badge-sent',
-      accepted: 'badge badge-accepted',
-      rejected: 'badge badge-rejected',
+      draft:               'badge badge-draft',
+      sent:                'badge badge-sent',
+      revision_requested:  'badge badge-revision_requested',
+      accepted:            'badge badge-accepted',
+      rejected:            'badge badge-rejected',
+      withdrawn:           'badge badge-withdrawn',
     };
     return map[status] ?? 'badge';
+  }
+
+  quotStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      draft:               'Draft',
+      sent:                'Sent',
+      revision_requested:  'Needs Revision',
+      accepted:            'Accepted',
+      rejected:            'Rejected',
+      withdrawn:           'Withdrawn',
+    };
+    return map[status] ?? status;
   }
 
   // ── RFQ badge ────────────────────────────────────────────────────────────────
