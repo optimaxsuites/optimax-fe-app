@@ -19,6 +19,9 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   showAcceptModal = false;
   showRejectModal = false;
   rejectReason = '';
+  showRequestChangesModal = false;
+  requestChangesNotes = '';
+  simulationNewTotal = 0;
   allQuotationsForRfq: VendorQuotation[] = [];
   showCompareDisclaimerModal = false;
   successMessage = '';
@@ -55,6 +58,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (data) => {
         this.quotation = data;
+        this.simulationNewTotal = data.totalAmount;
         this.isLoading = false;
         // Mark as viewed
         if (!data.isViewed) {
@@ -67,6 +71,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.loadMockData();
         if (this.quotation) {
+          this.simulationNewTotal = this.quotation.totalAmount;
           this.loadAllQuotationsForRfq(this.quotation.rfqId);
         }
       }
@@ -404,6 +409,67 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     this.rejectReason = '';
   }
 
+  openRequestChangesModal(): void {
+    this.requestChangesNotes = '';
+    this.showRequestChangesModal = true;
+  }
+
+  closeRequestChangesModal(): void {
+    this.showRequestChangesModal = false;
+    this.requestChangesNotes = '';
+  }
+
+  confirmRequestChanges(): void {
+    if (!this.quotation) return;
+
+    if (!this.requestChangesNotes.trim()) {
+      alert('Please provide detailed request notes.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.requestChanges(this.quotation.id, this.requestChangesNotes.trim()).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.closeRequestChangesModal();
+        alert('Changes requested. Status updated to "Review Requested".');
+        this.loadQuotationDetail(); // Refresh
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error requesting changes:', err);
+        alert('Failed to request changes. Please try again.');
+      }
+    });
+  }
+
+  confirmSimulateResubmit(): void {
+    if (!this.quotation) return;
+
+    if (!this.simulationNewTotal || this.simulationNewTotal <= 0) {
+      alert('Please enter a valid amount.');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.quotationService.simulateVendorResubmit(
+      this.quotation.id, 
+      this.simulationNewTotal,
+      `Vendor updated pricing to ${this.formatCurrency(this.simulationNewTotal)} based on customer review requested changes.`
+    ).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        alert('Vendor resubmission simulated successfully. Quotation has been updated.');
+        this.loadQuotationDetail(); // Refresh
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        console.error('Error simulating resubmit:', err);
+        alert('Failed to simulate resubmission.');
+      }
+    });
+  }
+
   confirmAccept(): void {
     if (!this.quotation) return;
 
@@ -651,7 +717,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'status-expired',
       'WITHDRAWN': 'status-withdrawn',
       'LPO_GENERATED': 'status-accepted',
-      'LPO_SENT': 'status-accepted'
+      'LPO_SENT': 'status-accepted',
+      'REVIEW_REQUESTED': 'status-review'
     };
     return classes[status] || 'status-expired';
   }
@@ -665,7 +732,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'Expired',
       'WITHDRAWN': 'Withdrawn',
       'LPO_GENERATED': 'LPO Draft',
-      'LPO_SENT': 'LPO Sent'
+      'LPO_SENT': 'LPO Sent',
+      'REVIEW_REQUESTED': 'Review Requested'
     };
     return labels[status] || status;
   }
@@ -679,7 +747,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       'EXPIRED': 'fa-hourglass-end',
       'WITHDRAWN': 'fa-times',
       'LPO_GENERATED': 'fa-file-invoice',
-      'LPO_SENT': 'fa-paper-plane'
+      'LPO_SENT': 'fa-paper-plane',
+      'REVIEW_REQUESTED': 'fa-reply'
     };
     return icons[status] || 'fa-circle';
   }
