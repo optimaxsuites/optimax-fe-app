@@ -435,7 +435,7 @@
               <p class="text-[10px] text-[#5a7380]">{{ fmtDate(q.createdDate) }}</p>
             </div>
 
-            <span [ngClass]="quotBadge(q.status)" class="shrink-0">{{ q.status }}</span>
+            <span [ngClass]="quotBadge(q.status)" class="shrink-0">{{ quotStatusLabel(q.status) }}</span>
 
           </div>
         </ng-container>
