@@ -474,4 +474,50 @@
       }
     }
   }
+
+  .serial-lookup-group {
+    margin-bottom: 0.5rem;
+
+    .input-with-button {
+      display: flex;
+      gap: 0.5rem;
+
+      .form-control {
+        flex: 1;
+      }
+
+      .btn-lookup {
+        padding: 0.6rem 1.2rem;
+        background: #184440;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) {
+          background: #0d2e2a;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.35rem;
+      display: block;
+    }
+  }
 }

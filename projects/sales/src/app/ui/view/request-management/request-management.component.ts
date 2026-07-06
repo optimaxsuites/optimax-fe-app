@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { RequestForQuotationListComponent } from './request-for-quotation-list/request-for-quotation-list.component';
 import { QuotationsDashboardComponent } from './quotations-dashboard/quotations-dashboard.component';
+import { DocumentationHistoryComponent } from './documentation-history/documentation-history.component';
 
 @Component({
   selector: 'app-request-management',
@@ -21,6 +22,11 @@ export class RequestManagementComponent {
       name: 'Review Vendor Quotations',
       component: QuotationsDashboardComponent,
       icon: 'fa-solid fa-file-invoice',
+    },
+    {
+      name: 'Archives',
+      component: DocumentationHistoryComponent,
+      icon: 'fa-solid fa-box-archive',
     },
     // {
     //   name: 'Approval Inbox',

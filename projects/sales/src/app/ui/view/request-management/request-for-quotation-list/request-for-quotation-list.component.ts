@@ -346,7 +346,32 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
           this.selectedRequests = this.selectedRequests.filter((selected) =>
             this.requests.some((request) => request.id === selected.id)
           );
-          const orderRows = orders.map((o: any) => this.mapOrderToRow(o));
+          let orderRows = orders.map((o: any) => this.mapOrderToRow(o));
+          
+          if (filters.searchTerm) {
+            const term = filters.searchTerm.toLowerCase();
+            orderRows = orderRows.filter((o: any) =>
+              o.id.toLowerCase().includes(term) ||
+              o.title.toLowerCase().includes(term) ||
+              (o.description && o.description.toLowerCase().includes(term))
+            );
+          }
+
+          if (filters.status && filters.status !== 'ALL') {
+            orderRows = orderRows.filter((o: any) => o.status === filters.status);
+          }
+
+          if (filters.dateFrom) {
+            const from = new Date(filters.dateFrom);
+            orderRows = orderRows.filter((o: any) => o.createdAt && new Date(o.createdAt) >= from);
+          }
+
+          if (filters.dateTo) {
+            const to = new Date(filters.dateTo);
+            to.setHours(23, 59, 59, 999);
+            orderRows = orderRows.filter((o: any) => o.createdAt && new Date(o.createdAt) <= to);
+          }
+
           // Cast to ExtendedProcurementRequest[]
           this.allRows = [...orderRows, ...this.requests] as ExtendedProcurementRequest[];
           this.sortAllRows();

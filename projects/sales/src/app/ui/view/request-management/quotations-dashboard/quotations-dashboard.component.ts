@@ -42,9 +42,11 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   sortAsc = true;
 
   statusOptions = [
-    { value: 'ALL', label: 'All Quotations' },
+    { value: 'ALL', label: 'All Requests' },
     { value: 'SUBMITTED', label: 'Submitted', color: '#3b82f6' },
     { value: 'ACCEPTED', label: 'Accepted', color: '#22c55e' },
+    { value: 'LPO_GENERATED', label: 'LPO Draft', color: '#184440' },
+    { value: 'LPO_SENT', label: 'LPO Sent', color: '#22c55e' },
     { value: 'DECLINED', label: 'Declined', color: '#ef4444' },
     { value: 'PENDING', label: 'Pending', color: '#f59e0b' },
     { value: 'EXPIRED', label: 'Expired', color: '#6b7280' }
@@ -107,7 +109,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     const groups: RFQGroup[] = [];
     groupsMap.forEach((list, rfqId) => {
       const rfqTitle = list[0]?.rfqTitle || 'Request for Quotation';
-      const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED').length;
+      const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED' || q.status === 'LPO_GENERATED' || q.status === 'LPO_SENT').length;
       groups.push({
         rfqId,
         rfqTitle,
@@ -387,11 +389,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(g =>
         g.rfqId.toLowerCase().includes(term) ||
-        g.rfqTitle.toLowerCase().includes(term) ||
-        g.quotes.some(q =>
-          q.vendorName.toLowerCase().includes(term) ||
-          q.vendorCode.toLowerCase().includes(term)
-        )
+        g.rfqTitle.toLowerCase().includes(term)
       );
     }
 
@@ -539,7 +537,9 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'status-accepted',
       'DECLINED': 'status-declined',
       'EXPIRED': 'status-expired',
-      'WITHDRAWN': 'status-withdrawn'
+      'WITHDRAWN': 'status-withdrawn',
+      'LPO_GENERATED': 'status-accepted',
+      'LPO_SENT': 'status-accepted'
     };
     return classes[status] || 'status-expired';
   }
@@ -551,7 +551,9 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'Accepted',
       'DECLINED': 'Declined',
       'EXPIRED': 'Expired',
-      'WITHDRAWN': 'Withdrawn'
+      'WITHDRAWN': 'Withdrawn',
+      'LPO_GENERATED': 'LPO Draft',
+      'LPO_SENT': 'LPO Sent'
     };
     return labels[status] || status;
   }
@@ -563,7 +565,9 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
       'ACCEPTED': 'fa-check-circle',
       'DECLINED': 'fa-times-circle',
       'EXPIRED': 'fa-hourglass-end',
-      'WITHDRAWN': 'fa-times'
+      'WITHDRAWN': 'fa-times',
+      'LPO_GENERATED': 'fa-file-invoice',
+      'LPO_SENT': 'fa-paper-plane'
     };
     return icons[status] || 'fa-circle';
   }
