@@ -135,9 +135,9 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
-  resetPasswordByAdmin(userId: string | number, newPassword: string): Observable<any> {
+  resetPasswordByAdmin(email: string, newPassword: string): Observable<any> {
     return this.http
-      .post<any>(this.getBaseApiUrl() + '/x/api/v2/us/ur/admin/resetPassword', { userId, newPassword })
+      .post(this.getBaseApiUrl() + '/x/api/v2/us/register/resetpassword', { email, password: newPassword }, { responseType: 'text' })
       .pipe(catchError(this.handleError));
   }
 
