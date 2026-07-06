@@ -730,7 +730,8 @@ handleDateClick(arg: DateClickArg) {
     const profile = this.companyProfileService.get();
     const companyName = profile?.companyName || 'The Company';
     const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
-    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
+    const expiry = this.addWorkingDays(new Date(), 5).getTime();
+    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1&exp=${expiry}`;
 
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
@@ -859,6 +860,17 @@ handleDateClick(arg: DateClickArg) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%*?';
     const pick = () => chars[Math.floor(Math.random() * chars.length)];
     return Array.from({ length }, pick).join('');
+  }
+
+  private addWorkingDays(start: Date, days: number): Date {
+    const result = new Date(start);
+    let added = 0;
+    while (added < days) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) added++;
+    }
+    return result;
   }
 
     closeViewEmployee() {
