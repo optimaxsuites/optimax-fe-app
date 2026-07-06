@@ -72,6 +72,7 @@ import { NavTabComponent } from './ui/shared-component/view/nav-tab/nav-tab.comp
 
 import { RequestManagementComponent } from './ui/view/request-management/request-management.component';
 import { RequestForQuotationListComponent } from './ui/view/request-management/request-for-quotation-list/request-for-quotation-list.component';
+import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
 import { RequestForQuotationFormComponent } from './ui/view/request-management/request-for-quotation-form/request-for-quotation-form.component';
 import { RequestForQuotationServiceFormComponent } from './ui/view/request-management/request-for-quotation-service-form/request-for-quotation-service-form.component';
 import { ProcurementTypeSelectorComponent } from './ui/view/request-management/procurement-type-selector/procurement-type-selector.component';
@@ -120,6 +121,7 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     NavTabComponent,
     RequestManagementComponent,
     RequestForQuotationListComponent,
+    RequestForQuotationDraftsComponent,
     RequestForQuotationFormComponent,
     RequestForQuotationServiceFormComponent,
     ProcurementTypeSelectorComponent,

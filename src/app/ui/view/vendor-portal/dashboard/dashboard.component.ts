@@ -10,6 +10,8 @@ import {
   VendorStats,
   ItemAvailability,
   MAX_REVISION_ROUNDS,
+  Lpo,
+  VendorProfile,
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
@@ -29,7 +31,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   rfqs: Rfq[] = [];
   quotations: Quotation[] = [];
+  // Not shown as a table here — just used to tell whether an LPO has already
+  // been raised against a given quotation, for the lifecycle stepper.
+  private lpos: Lpo[] = [];
   stats: VendorStats | null = null;
+  profile: VendorProfile | null = null;
 
   activeTable: ActiveTable = 'rfqs';
 
@@ -145,6 +151,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe((list) => (this.rfqs = list));
 
     this.vendorService
+      .getLpos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((list) => (this.lpos = list));
+
+    this.vendorService
+      .getProfile()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((p) => (this.profile = p));
+
+    this.vendorService
       .getQuotations()
       .pipe(takeUntil(this.destroy$))
       .subscribe((list) => {
@@ -258,6 +274,40 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.selectedQuotation = null;
   }
 
+  // Where this quotation sits in the RFQ → Quotation → LPO → Invoice chain.
+  // LPO awareness comes from a lightweight lpos subscription (see ngOnInit) —
+  // dashboard.component doesn't own LPO/Invoice data, so "Invoice" is a
+  // conservative signal (current once an LPO exists) rather than a hard fact.
+  quotationLifecycleStages(q: Quotation): { label: string; state: 'done' | 'current' | 'upcoming' | 'stopped' }[] {
+    if (q.status === 'rejected' || q.status === 'withdrawn') {
+      return [
+        { label: 'RFQ', state: 'done' },
+        { label: 'Quotation', state: 'stopped' },
+        { label: 'LPO', state: 'upcoming' },
+        { label: 'Invoice', state: 'upcoming' },
+        { label: 'Paid', state: 'upcoming' },
+      ];
+    }
+    const relatedLpo = this.lpos.find((l) => l.quotationNumber === q.quotationNumber);
+    const quotDone = q.status === 'accepted';
+    return [
+      { label: 'RFQ', state: 'done' },
+      { label: 'Quotation', state: quotDone ? 'done' : 'current' },
+      { label: 'LPO', state: relatedLpo ? 'done' : quotDone ? 'current' : 'upcoming' },
+      { label: 'Invoice', state: relatedLpo ? 'current' : 'upcoming' },
+      { label: 'Paid', state: 'upcoming' },
+    ];
+  }
+
+  // Jump from a quotation straight to the RFQ it was raised from.
+  viewRfqFromQuotation(q: Quotation): void {
+    const rfq = this.rfqs.find((r) => r.id === q.rfqId);
+    if (!rfq) return;
+    this.closeQuotationPanel();
+    this.activeTable = 'rfqs';
+    this.onRfqRowClick(rfq);
+  }
+
   // Draft quotations, and quotations the client sent back for changes, are
   // both editable — everything else (sent / accepted / rejected / withdrawn)
   // opens read-only.
@@ -326,6 +376,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       unavailable: 'Unavailable',
     };
     return m[a];
+  }
+
+  // computeQuotationTotals() rebuilds every item object on each recalc (see its
+  // doc comment). Without a stable trackBy, Angular's *ngFor treats that as an
+  // entirely new list on every keystroke/click and tears down + rebuilds every
+  // item card's DOM — inputs included — which is what caused fields to
+  // intermittently render blank while editing. rfqItemId never changes for a
+  // given line, so it's a safe, stable identity for Angular to track against.
+  trackByRfqItemId(_index: number, item: QuotationItem): string {
+    return item.rfqItemId;
   }
 
   private recalcEditing(): void {

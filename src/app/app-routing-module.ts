@@ -26,6 +26,7 @@ import { RfqDetailWithQuotationsComponent } from './ui/view/request-management/r
 import { QuotationsDashboardComponent } from './ui/view/request-management/quotations-dashboard/quotations-dashboard.component';
 import { QuotationDetailComponent } from './ui/view/request-management/quotation-detail/quotation-detail.component';
 import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
+import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
 
 export const routes: Routes = [
   {
@@ -174,6 +175,10 @@ export const routes: Routes = [
     component: RequestManagementComponent
   },
   {
+    path: 'commerce/requests/drafts/:uuid',
+    component: RequestForQuotationDraftsComponent
+  },
+  {
     path: 'commerce/requests/home/:uuid',
     component: RequestManagementComponent
   },
@@ -261,7 +266,7 @@ export const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

@@ -150,6 +150,7 @@ export class VendorService {
       notes: '',
       version: 1,
       revisionCount: 0,
+      includeSignature: true,
       history: [
         { id: `hist-${Date.now()}`, version: 1, action: 'CREATED', actor: 'VENDOR', timestamp: new Date() },
       ],
@@ -300,6 +301,42 @@ export class VendorService {
           l.id === id ? { ...l, status: 'rejected' as const, rejectionReason: reason } : l,
         ),
     );
+  }
+
+  // How much of each LPO line item has already been invoiced, across every
+  // invoice raised against that LPO (any status — a draft invoice still
+  // claims the quantity so two drafts can't both bill the same units).
+  // Keyed by lpoItemId; lines a vendor added manually (no lpoItemId) aren't included.
+  getInvoicedQuantities(lpoId: string): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const inv of this.invoices$$.getValue()) {
+      if (inv.lpoId !== lpoId) continue;
+      for (const item of inv.items) {
+        if (!item.lpoItemId) continue;
+        out[item.lpoItemId] = (out[item.lpoItemId] ?? 0) + item.quantity;
+      }
+    }
+    return out;
+  }
+
+  // Vendor's action: raise an invoice (optionally against an LPO). Persists it
+  // and, if every LPO line is now fully billed, marks that LPO 'fulfilled'.
+  createInvoice(invoice: Invoice): Invoice {
+    this.invoices$$.next([invoice, ...this.invoices$$.getValue()]);
+
+    if (invoice.lpoId) {
+      const lpo = this.lpos$$.getValue().find((l) => l.id === invoice.lpoId);
+      if (lpo) {
+        const invoicedNow = this.getInvoicedQuantities(lpo.id);
+        const fullyBilled = lpo.items.every((li) => (invoicedNow[li.id] ?? 0) >= li.quantity);
+        if (fullyBilled && lpo.status !== 'fulfilled') {
+          this.lpos$$.next(
+            this.lpos$$.getValue().map((l) => (l.id === lpo.id ? { ...l, status: 'fulfilled' as const } : l)),
+          );
+        }
+      }
+    }
+    return invoice;
   }
 
   // ── Finance ───────────────────────────────────────────────────────────────────
@@ -989,7 +1026,7 @@ export class VendorService {
         rfqNumber: 'RFQ-2026-004',
         issuedDate: new Date('2026-06-04'),
         deliveryDate: new Date('2026-06-25'),
-        status: 'accepted',
+        status: 'fulfilled',
         isRead: true,
         currency: 'NGN',
         deliveryAddress: '22–24 Industrial Ave, Ilupeju, Lagos',
@@ -1122,6 +1159,45 @@ export class VendorService {
           },
         ],
       },
+      {
+        // Demo seed: accepted, nothing invoiced against it yet — a ready
+        // starting point for trying the "Create Invoice" flow.
+        id: 'lpo-006',
+        lpoNumber: 'LPO-2026-006',
+        clientName: 'Julius Berger Nigeria Plc',
+        clientEmail: 'supplychain@julius-berger.com',
+        issuedDate: new Date('2026-06-20'),
+        deliveryDate: new Date('2026-07-10'),
+        status: 'accepted',
+        isRead: true,
+        currency: 'NGN',
+        deliveryAddress: 'Plot 1023, Josif Broz Tito St, Utako, Abuja',
+        paymentTerms: 'Net 30 days from delivery, staged',
+        subtotal: 4_500_000,
+        tax: 337_500,
+        total: 4_837_500,
+        specialConditions: 'Delivery may be staged across two batches; invoice per batch delivered.',
+        items: [
+          {
+            id: 'lpo-006-i1',
+            name: 'Reinforced Steel Mesh 6mm',
+            description: '2.4m × 6m sheets, BRC standard',
+            quantity: 300,
+            unit: 'sheets',
+            unitPrice: 12_500,
+            totalPrice: 3_750_000,
+          },
+          {
+            id: 'lpo-006-i2',
+            name: 'Concrete Spacer Blocks 40mm',
+            description: 'High-density, load-bearing',
+            quantity: 5_000,
+            unit: 'pcs',
+            unitPrice: 150,
+            totalPrice: 750_000,
+          },
+        ],
+      },
     ];
   }
 
@@ -1153,6 +1229,7 @@ export class VendorService {
         items: [
           {
             id: 'inv-001-i1',
+            lpoItemId: 'lpo-004-i1',
             description: 'Executive Office Chair (25 units × ₦58,000)',
             quantity: 25,
             unit: 'units',
@@ -1187,6 +1264,7 @@ export class VendorService {
         items: [
           {
             id: 'inv-002-i1',
+            lpoItemId: 'lpo-002-i1',
             description: 'BOPP Laminated Woven Bags (10,000 pcs × ₦580)',
             quantity: 10_000,
             unit: 'pcs',
@@ -1195,6 +1273,7 @@ export class VendorService {
           },
           {
             id: 'inv-002-i2',
+            lpoItemId: 'lpo-002-i2',
             description: 'Corrugated Carton 30×20×15 cm (1,000 pcs × ₦400)',
             quantity: 1_000,
             unit: 'pcs',
@@ -1493,7 +1572,6 @@ export class VendorService {
         logoPosition: 'left',
         accentColor: '#224957',
         density: 'detailed',
-        showSignatureLine: true,
         footerText: 'Thank you for your business. Payment due within terms stated above.',
         showBankDetails: true,
         notesDefault: 'All amounts in NGN unless otherwise stated.',
@@ -1508,7 +1586,6 @@ export class VendorService {
         logoPosition: 'left',
         accentColor: '#224957',
         density: 'simple',
-        showSignatureLine: true,
         footerText: 'This quotation is valid for 14 days from the date of issue.',
         showBankDetails: false,
         notesDefault: 'Prices are subject to change without prior notice.',

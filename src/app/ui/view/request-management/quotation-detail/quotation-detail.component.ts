@@ -93,7 +93,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         status: 'SUBMITTED',
         items: [
           { id: 'qi1', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 150000, totalPrice: 300000, availability: 'AVAILABLE' },
-          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'AVAILABLE' }
+          { id: 'qi2', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 150000, totalPrice: 150000, availability: 'SUBSTITUTE', alternativeProduct: 'Canon imageCLASS LBP226dw' }
         ],
         totalAmount: 450000,
         currency: 'NGN',
@@ -118,8 +118,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
         vendorPhone: '+234-811-333-2211',
         status: 'ACCEPTED',
         items: [
-          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'AVAILABLE' },
-          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'AVAILABLE' }
+          { id: 'qi3', name: 'Dell XPS 15 Laptop', description: '15-inch i7, 16GB RAM, 512GB SSD', quantity: 2, unitPrice: 140000, totalPrice: 280000, availability: 'PARTIAL', availableQuantity: 1 },
+          { id: 'qi4', name: 'HP LaserJet Printer', description: 'Multifunction monochrome printer', quantity: 1, unitPrice: 140000, totalPrice: 140000, availability: 'UNAVAILABLE' }
         ],
         totalAmount: 420000,
         currency: 'NGN',
@@ -757,7 +757,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     const colors: Record<string, string> = {
       'AVAILABLE': '#059669',
       'PARTIAL': '#d97706',
-      'UNAVAILABLE': '#dc2626'
+      'UNAVAILABLE': '#dc2626',
+      'SUBSTITUTE': '#3b82f6'
     };
     return colors[availability] || '#6b7280';
   }
@@ -766,7 +767,8 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
     const labels: Record<string, string> = {
       'AVAILABLE': 'Available',
       'PARTIAL': 'Partial',
-      'UNAVAILABLE': 'Unavailable'
+      'UNAVAILABLE': 'Unavailable',
+      'SUBSTITUTE': 'Substitute'
     };
     return labels[availability] || availability;
   }

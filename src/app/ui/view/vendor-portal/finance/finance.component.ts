@@ -5,7 +5,7 @@ import { takeUntil, take } from 'rxjs/operators';
 import { VendorService } from '../../../service/vendor-portal/vendor.service';
 import {
   Lpo, Invoice, FinanceStats, LpoStats,
-  InvoiceLineItem,
+  InvoiceLineItem, VendorProfile,
 } from '../../../domain/vendor-portal/vendor.dto';
 import { TableColumn } from '../../../shared-component/view/table/table.component';
 
@@ -27,6 +27,7 @@ export class FinanceComponent implements OnInit, OnDestroy {
   invoices:    Invoice[] = [];
   financeStats: FinanceStats | null = null;
   lpoStats:     LpoStats | null = null;
+  profile:      VendorProfile | null = null;
 
   // ── Table toggle ──────────────────────────────────────────────────────────────
   activeTable: ActiveTable = 'lpos';
@@ -73,10 +74,13 @@ export class FinanceComponent implements OnInit, OnDestroy {
   selectedInvoice:  Invoice | null = null;
 
   // ── Create Invoice centre modal ───────────────────────────────────────────────
-  // Opened from either the LPO panel (pre-filled) or standalone
+  // Opened from either the LPO panel (pre-filled, locked to the LPO's items) or standalone
   showInvoiceModal  = false;
   invoiceForm: Partial<Invoice> & { items: InvoiceLineItem[] } = { items: [] };
   invoiceFormErrors: Record<string, string> = {};
+  sourceLpo: Lpo | null = null;                    // set when this draft was raised against an LPO
+  private lpoRemaining: Record<string, number> = {}; // lpoItemId -> qty still invoiceable, snapshotted when the modal opened
+  excludedFullyInvoicedCount = 0;                   // LPO lines left out of the draft because nothing remains to bill
 
   // ── LPO columns — 5 <td>s ────────────────────────────────────────────────────
   lpoColumns: TableColumn[] = [
@@ -111,6 +115,10 @@ export class FinanceComponent implements OnInit, OnDestroy {
     this.vendorService.getInvoices()
       .pipe(takeUntil(this.destroy$))
       .subscribe(list => this.invoices = list);
+
+    this.vendorService.getProfile()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(p => this.profile = p);
 
     this.refreshStats();
   }
@@ -179,44 +187,76 @@ export class FinanceComponent implements OnInit, OnDestroy {
     this.refreshStats();
   }
 
-  // Create invoice from an accepted LPO — pre-fills the invoice form
+  // How much of this LPO is left to invoice, per line item (already-invoiced
+  // quantity subtracted out). Used to decide whether "Create Invoice" should
+  // even be offered, and to show a running total in the LPO panel.
+  lpoRemainingByItem(lpo: Lpo): Record<string, number> {
+    const invoiced = this.vendorService.getInvoicedQuantities(lpo.id);
+    const out: Record<string, number> = {};
+    lpo.items.forEach((li) => (out[li.id] = Math.max(0, li.quantity - (invoiced[li.id] ?? 0))));
+    return out;
+  }
+
+  lpoFullyInvoiced(lpo: Lpo): boolean {
+    const remaining = this.lpoRemainingByItem(lpo);
+    return lpo.items.every((li) => remaining[li.id] <= 0);
+  }
+
+  // Create invoice from an accepted LPO — pre-fills the invoice form with the
+  // LPO's items. Description and unit price are locked (they were already
+  // agreed when the LPO was raised); quantity is editable but capped at
+  // what's actually left to invoice, so staged/partial deliveries work
+  // without ever letting an LPO be over-billed. Extra items can still be
+  // added for things genuinely outside the LPO (e.g. freight).
   createInvoiceFromLpo(lpo: Lpo): void {
     const num = `INV-${new Date().getFullYear()}-${String(this.invoices.length + 1).padStart(3, '0')}`;
     const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    this.lpoRemaining = this.lpoRemainingByItem(lpo);
+    this.sourceLpo = lpo;
+
+    const invoiceableItems = lpo.items.filter((li) => this.lpoRemaining[li.id] > 0);
+    this.excludedFullyInvoicedCount = lpo.items.length - invoiceableItems.length;
 
     this.invoiceForm = {
       invoiceNumber: num,
       lpoId:         lpo.id,
       lpoNumber:     lpo.lpoNumber,
+      quotationNumber: lpo.quotationNumber,
       clientName:    lpo.clientName,
       clientEmail:   lpo.clientEmail,
       currency:      lpo.currency,
       issuedDate:    new Date(),
       dueDate,
       status:        'draft',
-      subtotal:      lpo.subtotal,
-      tax:           lpo.tax,
-      total:         lpo.total,
-      amountPaid:    0,
-      amountOutstanding: lpo.total,
+      includeSignature: !!this.profile?.signatureDataUrl,
       notes:         '',
-      items: lpo.items.map((item, idx) => ({
-        id:          `item-${idx}`,
-        description: `${item.name} (${item.quantity} ${item.unit} × ${this.fmtCurrency(item.unitPrice, lpo.currency)})`,
-        quantity:    item.quantity,
-        unit:        item.unit,
-        unitPrice:   item.unitPrice,
-        totalPrice:  item.totalPrice,
-      })),
+      items: invoiceableItems.map((item, idx) => {
+        const qty = this.lpoRemaining[item.id];
+        return {
+          id:          `item-${idx}`,
+          lpoItemId:   item.id,
+          description: `${item.name} (${item.description})`,
+          quantity:    qty,
+          unit:        item.unit,
+          unitPrice:   item.unitPrice,
+          totalPrice:  item.unitPrice * qty,
+        };
+      }),
     };
 
+    this.recalcInvoiceForm();
     this.invoiceFormErrors = {};
     this.showInvoiceModal  = true;
   }
 
-  // Create blank invoice
+  // Create blank invoice — fully free-form, not tied to any LPO (e.g. a
+  // retainer or one-off charge that was never quoted through the portal).
   openBlankInvoiceModal(): void {
     const num = `INV-${new Date().getFullYear()}-${String(this.invoices.length + 1).padStart(3, '0')}`;
+    this.sourceLpo = null;
+    this.lpoRemaining = {};
+    this.excludedFullyInvoicedCount = 0;
     this.invoiceForm = {
       invoiceNumber: num,
       clientName:    '',
@@ -224,6 +264,7 @@ export class FinanceComponent implements OnInit, OnDestroy {
       issuedDate:    new Date(),
       dueDate:       new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status:        'draft',
+      includeSignature: !!this.profile?.signatureDataUrl,
       subtotal:      0, tax: 0, total: 0,
       amountPaid:    0, amountOutstanding: 0,
       notes:         '',
@@ -233,7 +274,21 @@ export class FinanceComponent implements OnInit, OnDestroy {
     this.showInvoiceModal  = true;
   }
 
-  closeInvoiceModal(): void { this.showInvoiceModal = false; }
+  closeInvoiceModal(): void {
+    this.showInvoiceModal = false;
+    this.sourceLpo = null;
+    this.lpoRemaining = {};
+  }
+
+  // An item is "locked" — description/price fixed, quantity capped — when it
+  // came from an LPO. Manually-added lines (no lpoItemId) stay fully editable.
+  isLockedItem(item: InvoiceLineItem): boolean {
+    return !!item.lpoItemId;
+  }
+
+  maxQtyForItem(item: InvoiceLineItem): number | null {
+    return item.lpoItemId ? (this.lpoRemaining[item.lpoItemId] ?? item.quantity) : null;
+  }
 
   recalcInvoiceForm(): void {
     const subtotal = (this.invoiceForm.items || []).reduce((s, i) => s + i.unitPrice * i.quantity, 0);
@@ -244,13 +299,17 @@ export class FinanceComponent implements OnInit, OnDestroy {
   }
 
   updateItemPrice(item: InvoiceLineItem, raw: string): void {
+    if (this.isLockedItem(item)) return; // price is fixed once it's tied to an LPO line
     item.unitPrice  = parseFloat(raw.replace(/,/g, '')) || 0;
     item.totalPrice = item.unitPrice * item.quantity;
     this.recalcInvoiceForm();
   }
 
   updateItemQty(item: InvoiceLineItem, raw: string): void {
-    item.quantity   = parseInt(raw, 10) || 1;
+    let qty = parseInt(raw, 10) || 1;
+    const max = this.maxQtyForItem(item);
+    if (max !== null) { qty = Math.min(Math.max(1, qty), Math.max(1, max)); }
+    item.quantity   = qty;
     item.totalPrice = item.unitPrice * item.quantity;
     this.recalcInvoiceForm();
   }
@@ -261,6 +320,8 @@ export class FinanceComponent implements OnInit, OnDestroy {
   }
 
   removeInvoiceItem(idx: number): void {
+    const item = this.invoiceForm.items?.[idx];
+    if (item && this.isLockedItem(item)) return; // can't drop an LPO line — reduce its quantity instead
     this.invoiceForm.items?.splice(idx, 1);
     this.recalcInvoiceForm();
   }
@@ -269,10 +330,37 @@ export class FinanceComponent implements OnInit, OnDestroy {
     this.invoiceFormErrors = {};
     if (!this.invoiceForm.clientName?.trim()) { this.invoiceFormErrors['clientName'] = 'Client name is required.'; }
     if (!this.invoiceForm.items?.length)      { this.invoiceFormErrors['items'] = 'At least one line item is required.'; }
+    for (const item of this.invoiceForm.items ?? []) {
+      const max = this.maxQtyForItem(item);
+      if (max !== null && item.quantity > max) {
+        this.invoiceFormErrors['items'] = `"${item.description}" exceeds what's left to invoice on this LPO.`;
+      }
+    }
     if (Object.keys(this.invoiceFormErrors).length > 0) return;
 
-    // In real implementation call vendorService.createInvoice(...)
-    console.log('[Finance] Submit invoice:', this.invoiceForm);
+    const invoice: Invoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNumber: this.invoiceForm.invoiceNumber!,
+      lpoId: this.invoiceForm.lpoId,
+      lpoNumber: this.invoiceForm.lpoNumber,
+      quotationNumber: this.invoiceForm.quotationNumber,
+      clientName: this.invoiceForm.clientName!.trim(),
+      clientEmail: this.invoiceForm.clientEmail,
+      issuedDate: this.invoiceForm.issuedDate ?? new Date(),
+      dueDate: this.invoiceForm.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      status: 'submitted',
+      items: this.invoiceForm.items!,
+      subtotal: this.invoiceForm.subtotal ?? 0,
+      tax: this.invoiceForm.tax ?? 0,
+      total: this.invoiceForm.total ?? 0,
+      amountPaid: 0,
+      amountOutstanding: this.invoiceForm.total ?? 0,
+      currency: this.invoiceForm.currency ?? 'NGN',
+      notes: this.invoiceForm.notes,
+      includeSignature: this.invoiceForm.includeSignature,
+    };
+
+    this.vendorService.createInvoice(invoice);
     this.closeInvoiceModal();
     this.closeLpoPanel();
     this.activeTable = 'invoices';
@@ -295,6 +383,43 @@ export class FinanceComponent implements OnInit, OnDestroy {
   paymentProgress(inv: Invoice): number {
     if (inv.total === 0) return 0;
     return Math.min(100, Math.round((inv.amountPaid / inv.total) * 100));
+  }
+
+  // ── Lifecycle visibility ─────────────────────────────────────────────────────
+  // A quick "where does this sit in the pipeline" readout. RFQ/Quotation are
+  // assumed complete by the time an LPO exists (that's the only way one gets
+  // raised); everything past LPO is inferred from real invoice/payment data.
+  lpoLifecycleStages(lpo: Lpo): { label: string; state: 'done' | 'current' | 'upcoming' | 'stopped' }[] {
+    if (lpo.status === 'rejected') {
+      return [
+        { label: 'RFQ', state: 'done' },
+        { label: 'Quotation', state: 'done' },
+        { label: 'LPO', state: 'stopped' },
+        { label: 'Invoice', state: 'upcoming' },
+        { label: 'Paid', state: 'upcoming' },
+      ];
+    }
+    const related = this.invoices.filter((i) => i.lpoId === lpo.id);
+    const hasInvoice = related.length > 0;
+    const fullyPaid  = hasInvoice && related.every((i) => i.status === 'paid');
+    return [
+      { label: 'RFQ', state: 'done' },
+      { label: 'Quotation', state: 'done' },
+      { label: 'LPO', state: lpo.status === 'pending' ? 'current' : 'done' },
+      { label: 'Invoice', state: hasInvoice ? 'done' : (lpo.status === 'pending' ? 'upcoming' : 'current') },
+      { label: 'Paid', state: fullyPaid ? 'done' : (hasInvoice ? 'current' : 'upcoming') },
+    ];
+  }
+
+  invoiceLifecycleStages(inv: Invoice): { label: string; state: 'done' | 'current' | 'upcoming' | 'stopped' }[] {
+    const paid = inv.status === 'paid';
+    return [
+      { label: 'RFQ', state: 'done' },
+      { label: 'Quotation', state: 'done' },
+      { label: 'LPO', state: inv.lpoNumber ? 'done' : 'upcoming' },
+      { label: 'Invoice', state: paid ? 'done' : 'current' },
+      { label: 'Paid', state: paid ? 'done' : 'upcoming' },
+    ];
   }
 
   // ── Formatting ────────────────────────────────────────────────────────────────

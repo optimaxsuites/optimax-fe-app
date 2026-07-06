@@ -161,10 +161,12 @@
                   <tr>
                     <th>Item</th>
                     <th>Specification / Description</th>
-                    <th class="text-right">Qty</th>
+                    <th class="text-right">Requested Qty</th>
+                    <th class="text-right">Provided Qty</th>
                     <th class="text-right">Unit Price</th>
                     <th class="text-right">Total</th>
                     <th class="text-center">Availability</th>
+                    <th>Alternatives</th>
                     <th>Delivery Date</th>
                   </tr>
                 </thead>
@@ -173,6 +175,9 @@
                     <td class="product-name">{{ item.name }}</td>
                     <td class="description">{{ item.description }}</td>
                     <td class="text-right font-semibold">{{ item.quantity }}</td>
+                    <td class="text-right font-semibold" style="color: #4b5563;">
+                      {{ item.availability === 'PARTIAL' ? item.availableQuantity : (item.availability === 'UNAVAILABLE' ? 0 : item.quantity) }}
+                    </td>
                     <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
                     <td class="text-right font-semibold text-teal-600" style="color: #184440 !important;">{{ formatCurrency(item.totalPrice) }}</td>
                     <td class="text-center">
@@ -180,13 +185,14 @@
                         {{ getAvailabilityLabel(item.availability) }}
                       </span>
                     </td>
+                    <td>{{ item.availability === 'SUBSTITUTE' && item.alternativeProduct ? item.alternativeProduct : '-' }}</td>
                     <td>{{ formatDate(item.deliveryDate) }}</td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colspan="4" class="text-right"><strong>Grand Total</strong></td>
-                    <td class="text-right" colspan="3">
+                    <td class="text-right" colspan="5">
                       <strong class="grand-total" style="color: #184440; font-size: 1.15rem; font-weight: 700;">{{ formatCurrency(quotation.totalAmount) }}</strong>
                     </td>
                   </tr>

@@ -125,6 +125,7 @@ export interface Quotation {
   revisionRequestNote?: string;        // the client's active request note — shown to vendor while status is 'revision_requested'
   revisionRequestedAt?: Date;
   history: QuotationHistoryEntry[];
+  includeSignature?: boolean;   // decided per-document, at creation — see VendorProfile.signatureDataUrl
 }
 
 // ─── LPO ─────────────────────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export type InvoiceStatus = 'draft' | 'submitted' | 'approved' | 'paid' | 'overd
 
 export interface InvoiceLineItem {
   id: string;
+  lpoItemId?: string;        // links back to the originating LPO line — absent for manually-added lines
   description: string;
   quantity: number;
   unit: string;
@@ -194,6 +196,7 @@ export interface Invoice {
   currency: string;
   notes?: string;
   bankDetails?: BankDetails;
+  includeSignature?: boolean;   // decided per-document, at creation — see VendorProfile.signatureDataUrl
 }
 
 export interface BankDetails {
@@ -343,6 +346,7 @@ export interface VendorProfile {
   contactPersonRole: string;
   bankDetails: BankDetails;
   logoUrl?: string;
+  signatureDataUrl?: string;   // drawn once here; whether to attach it is decided per-document (quotation/invoice), not by the template
   verificationStatus: VerificationStatus;
   memberSince: Date;
 }
@@ -363,7 +367,6 @@ export interface DocumentTemplate {
   logoPosition: LogoPosition;
   accentColor: string;
   density: TemplateDensity;
-  showSignatureLine: boolean;
   footerText?: string;
   showBankDetails: boolean;
   notesDefault?: string;
