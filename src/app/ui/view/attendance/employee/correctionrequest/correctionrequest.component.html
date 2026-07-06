@@ -1,0 +1,107 @@
+<div class="correction-requests-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <div class="header-text">
+        <h2>Correction Requests</h2>
+        <p>Manage and track your attendance correction requests</p>
+      </div>
+      <button class="btn-add-request" type="button" (click)="openForm()" title="New correction request">
+        <i class="fas fa-plus"></i> New Request
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="requests.length === 0">
+    <div class="empty-icon">
+      <i class="fas fa-inbox"></i>
+    </div>
+    <h3>No Correction Requests</h3>
+    <p>You haven't submitted any correction requests yet.</p>
+    <button class="btn-primary" type="button" (click)="openForm()">
+      <i class="fas fa-plus"></i> Submit Your First Request
+    </button>
+  </div>
+
+  <!-- Requests Table -->
+  <div class="requests-section" *ngIf="requests.length > 0">
+    <div class="table-wrapper">
+      <table class="requests-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Issue Type</th>
+            <th>Requested Time</th>
+            <th>Status</th>
+            <th>Description</th>
+            <th>Evidence</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of requests" [class.locked-row]="req.locked">
+            <td class="cell-date">{{ req.date | date:'MMM dd, yyyy' }}</td>
+            <td class="cell-type">
+              <span class="badge-type">{{ getIssueLabel(req.issueType) }}</span>
+            </td>
+            <td class="cell-time">
+              <div *ngIf="req.requestedClockIn" class="time-slot">
+                <i class="fas fa-sign-in-alt"></i> {{ req.requestedClockIn }}
+              </div>
+              <div *ngIf="req.requestedClockOut" class="time-slot">
+                <i class="fas fa-sign-out-alt"></i> {{ req.requestedClockOut }}
+              </div>
+              <div *ngIf="!req.requestedClockIn && !req.requestedClockOut" class="time-slot empty">
+                Not specified
+              </div>
+            </td>
+            <td class="cell-status">
+              <span class="status-badge" [ngClass]="'status-' + req.status.toLowerCase().replace('_', '-')">
+                {{ getStatusLabel(req.status) }}
+              </span>
+              <span class="locked-badge" *ngIf="req.locked">
+                <i class="fas fa-lock"></i> Locked
+              </span>
+            </td>
+            <td class="cell-description">
+              <div class="description-text">{{ req.description }}</div>
+              <div *ngIf="req.status === 'REJECTED'" class="rejection-reason">
+                <strong>Rejection:</strong> {{ req.rejectionReason }}
+              </div>
+            </td>
+            <td class="cell-evidence">
+              <div class="evidence-display">
+                <span *ngIf="req.evidence" class="evidence-text">{{ req.evidence }}</span>
+                <span *ngIf="!req.evidence" class="evidence-empty">—</span>
+              </div>
+              <div *ngIf="canResubmit(req)" class="resubmit-section">
+                <textarea
+                  class="resubmit-textarea"
+                  rows="2"
+                  placeholder="Add more evidence..."
+                  [(ngModel)]="resubmissionEvidence[req.id]">
+                </textarea>
+                <button type="button" class="btn-resubmit" (click)="resubmit(req)">
+                  <i class="fas fa-redo"></i> Resubmit
+                </button>
+              </div>
+            </td>
+            <td class="cell-action">
+              <span class="notification-badge" *ngIf="req.latestNotification">
+                <i class="fas fa-bell"></i>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Correction Request Form Modal -->
+  <app-correctionrequestform
+    *ngIf="showForm"
+    (close)="closeForm()"
+    (submitRequest)="addRequest($event)">
+  </app-correctionrequestform>
+</div>

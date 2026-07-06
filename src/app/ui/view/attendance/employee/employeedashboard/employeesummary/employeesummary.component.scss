@@ -1,0 +1,145 @@
+// ========== BRAND COLORS ==========
+$primary-color: #4caf50;
+$text-dark: #111827;
+$text-gray: #6b7280;
+$text-light: #9ca3af;
+$bg-white: #ffffff;
+$border-color: #e5e7eb;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+.summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+}
+
+.summary-card {
+  background: $bg-white;
+  border-radius: 12px;
+  border: 1px solid $border-color;
+  padding: 20px;
+  box-shadow: $shadow-lg;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: $primary-color;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $text-dark;
+    margin: 0 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.3px;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      border-radius: 2px;
+      background: $primary-color;
+      flex-shrink: 0;
+    }
+  }
+
+  // Summary items styling
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid $border-color;
+    font-size: 13px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    span {
+      color: $text-gray;
+      font-weight: 500;
+    }
+
+    strong {
+      color: $text-dark;
+      font-weight: 700;
+      font-size: 16px;
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+@media (max-width: 1024px) {
+  .summary-container {
+    gap: 14px;
+  }
+
+  .summary-card {
+    padding: 18px;
+
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+
+      &::before {
+        height: 20px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-container {
+    gap: 12px;
+  }
+
+  .summary-card {
+    padding: 16px;
+    border-radius: 10px;
+
+    h2 {
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .summary-item {
+      padding: 10px 0;
+      font-size: 12px;
+
+      strong {
+        font-size: 15px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-card {
+    padding: 14px;
+
+    h2 {
+      font-size: 14px;
+      margin-bottom: 10px;
+
+      &::before {
+        height: 18px;
+      }
+    }
+
+    .summary-item {
+      padding: 8px 0;
+      font-size: 11px;
+
+      strong {
+        font-size: 14px;
+      }
+    }
+  }
+}

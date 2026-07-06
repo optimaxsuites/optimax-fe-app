@@ -1,32 +1,24 @@
-
-
-<div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
-    <span class="text-[#2EB270] font-bold text-xl animate-pulse">Loading...</span>
+<div class="master-container d-flex">
+  <div
+    class="sidebar-container"
+    [ngClass]="{ show: !sidebarHidden, hidden: sidebarHidden }"
+  >
+    <app-sidebar></app-sidebar>
   </div>
-    <div *ngIf="isOffline$ | async" class="bg-orange-100 text-gray-600 font-bold text-center py-3">
-      ⚠️ You are offline. Some features may not be available.
+
+  <div class="main-container">
+    <div class="navbar-container">
+      <app-navbar
+        [sidebarHidden]="sidebarHidden"
+        (toggleSidebar)="toggleSidebar()"
+      ></app-navbar>
     </div>
-
-    <div *ngIf="syncMessage" class="flex items-center justify-center gap-3 py-3 font-semibold"
-         [class.bg-blue-100]="syncInProgress" [class.bg-green-50]="!syncInProgress">
-      <span class="text-gray-600">{{ syncMessage }}</span>
-      <button *ngIf="!syncInProgress" (click)="syncMessage = ''"
-              class="text-gray-400 hover:text-gray-600 leading-none">&times;</button>
+    <div class="main">
+      <router-outlet></router-outlet>
     </div>
+    <app-dashboard-footer></app-dashboard-footer>
+  </div>
+</div>
 
-<router-outlet></router-outlet>
-
-
-
-<p-toast position="top-right" key="tf" />
-
-
-  <!-- <app-tour-guide 
-      *ngIf="showTour()"
-      [steps]="tourSteps"
-      [currentStep]="currentStep()"
-      [position]="guidePosition()"
-      (nextStep)="nextStep()"
-      (prevStep)="prevStep()"
-      (skipTour)="completeTour()"
-    ></app-tour-guide> -->
+<!-- <router-outlet></router-outlet> -->
+<p-toast position="top-right" key="global"></p-toast>

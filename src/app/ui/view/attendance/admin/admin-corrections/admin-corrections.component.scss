@@ -1,0 +1,589 @@
+// ========== BRAND COLORS ==========
+$primary-color: #4caf50;
+$danger: #f44336;
+$warning: #ff9800;
+$info: #2196f3;
+$text-dark: #111827;
+$text-gray: #6b7280;
+$text-light: #9ca3af;
+$bg-white: #ffffff;
+$bg-light: #f9fafb;
+$border-color: #e5e7eb;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+
+// ========== MAIN CONTAINER ==========
+.admin-corrections-container {
+  padding: 0;
+}
+
+// ========== MAIN CONTAINER ==========
+.admin-corrections-container {
+  padding: 0;
+}
+
+// ========== HEADER SECTION ==========
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  .header-content {
+    flex: 1;
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.3px;
+    }
+
+    p {
+      font-size: 13px;
+      color: $text-light;
+      margin: 0;
+    }
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 12px;
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px;
+      background: $bg-light;
+      border-radius: 8px;
+      border: 1px solid $border-color;
+      box-shadow: $shadow-sm;
+
+      .stat-label {
+        font-size: 10px;
+        color: $text-light;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-weight: 700;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: $warning;
+        margin-top: 5px;
+      }
+    }
+  }
+}
+
+// ========== EMPTY STATE ==========
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background: $bg-white;
+  border-radius: 12px;
+  border: 1px solid $border-color;
+  box-shadow: $shadow-lg;
+
+  .empty-icon {
+    font-size: 56px;
+    color: $text-light;
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: $text-dark;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 13px;
+    color: $text-gray;
+    margin: 0;
+  }
+}
+
+// ========== CORRECTIONS SECTION ==========
+.corrections-section {
+  margin-top: 16px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: $shadow-lg;
+  background: $bg-white;
+}
+
+// ========== TABLE STYLING ==========
+.corrections-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: $bg-white;
+
+  thead {
+    background: $text-dark;
+  }
+
+  th {
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    border-bottom: 1px solid $border-color;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border-color;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background-color: $bg-light;
+    }
+
+    &.locked-row {
+      background-color: #fafafa;
+      opacity: 0.7;
+
+      &:hover {
+        background-color: #fafafa;
+      }
+    }
+
+    &.pending-row:hover {
+      background-color: #fef9f2;
+    }
+  }
+
+  td {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: $text-gray;
+    vertical-align: middle;
+  }
+
+  // ========== TABLE CELLS ==========
+  .cell-employee {
+    .employee-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+
+      .employee-name {
+        font-weight: 600;
+        color: $text-dark;
+      }
+
+      .employee-id {
+        font-size: 11px;
+        color: $text-light;
+      }
+    }
+  }
+
+  .cell-date {
+    color: $text-dark;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .cell-type {
+    .badge-type {
+      display: inline-block;
+      padding: 0.35rem 0.8rem;
+      background: $info;
+      color: white;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+  }
+
+  .cell-time {
+    .time-slot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 3px 0;
+      font-size: 12px;
+      color: $text-gray;
+
+      i {
+        font-size: 13px;
+        color: $text-light;
+        width: 14px;
+      }
+    }
+  }
+
+  .cell-status {
+    white-space: nowrap;
+  }
+
+  .cell-description {
+    max-width: 200px;
+    color: $text-gray;
+    font-size: 12px;
+  }
+
+  .cell-evidence {
+    max-width: 180px;
+    color: $text-gray;
+    font-size: 12px;
+  }
+
+  .cell-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+// ========== STATUS BADGES ==========
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+
+  &.status-pending {
+    background: $warning;
+    color: white;
+  }
+
+  &.status-pending_line_manager,
+  &.status-pending_hr,
+  &.status-pending-line_manager,
+  &.status-pending-hr {
+    background: $warning;
+    color: white;
+  }
+
+  &.status-approved {
+    background: $primary-color;
+    color: white;
+  }
+
+  &.status-rejected {
+    background: $danger;
+    color: white;
+  }
+
+  &.status-under_review,
+  &.status-under-review {
+    background: #2196f3;
+    color: white;
+  }
+}
+
+// ========== ACTION BUTTONS ==========
+.action-buttons {
+  display: flex;
+  gap: 8px;
+
+  button {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    box-shadow: $shadow-sm;
+
+    i {
+      font-size: 11px;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+  }
+
+  .btn-approve {
+    background: $primary-color;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #388e3c;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+
+  .btn-reject {
+    background: $danger;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #d32f2f;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.status-processed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  color: $text-gray;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+
+  i {
+    font-size: 11px;
+  }
+}
+
+// ========== REJECTION FORM ==========
+.reject-reason-row {
+  background: #fef9f2;
+  border-bottom: 1px solid $border-color;
+
+  td {
+    padding: 0;
+  }
+}
+
+.reject-form {
+  padding: 18px;
+
+  .reject-header {
+    margin-bottom: 14px;
+
+    h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: $text-dark;
+      margin: 0 0 3px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    p {
+      font-size: 12px;
+      color: $text-light;
+      margin: 0;
+    }
+  }
+
+  .reject-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    resize: vertical;
+    min-height: 80px;
+    margin-bottom: 12px;
+    color: $text-gray;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+      background: $bg-white;
+    }
+
+    &::placeholder {
+      color: $text-light;
+    }
+  }
+
+  .reject-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: $shadow-sm;
+
+      i {
+        font-size: 11px;
+      }
+    }
+
+    .btn-cancel {
+      background: $bg-light;
+      color: $text-gray;
+      border: 1px solid $border-color;
+
+      &:hover {
+        background: #f3f4f6;
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .btn-submit {
+      background: $danger;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: #d32f2f;
+        box-shadow: $shadow-md;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+@media (max-width: 1200px) {
+  .header-section {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-stats {
+      align-self: flex-start;
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header-section {
+    .header-content h2 {
+      font-size: 20px;
+    }
+
+    .header-stats {
+      gap: 10px;
+
+      .stat-item {
+        padding: 10px 14px;
+      }
+    }
+  }
+
+  .corrections-table {
+    font-size: 12px;
+
+    th, td {
+      padding: 10px 12px;
+    }
+
+    .cell-type .badge-type {
+      font-size: 10px;
+      padding: 0.3rem 0.7rem;
+    }
+  }
+
+  .action-buttons {
+    gap: 6px;
+
+    button {
+      padding: 6px 10px;
+      font-size: 11px;
+
+      i {
+        display: none;
+      }
+    }
+  }
+
+  .reject-form {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-section {
+    .header-content h2 {
+      font-size: 18px;
+    }
+
+    .header-stats {
+      width: 100%;
+      gap: 8px;
+
+      .stat-item {
+        flex: 1;
+        padding: 10px 12px;
+      }
+    }
+  }
+
+  .corrections-table {
+    font-size: 11px;
+
+    th, td {
+      padding: 8px;
+    }
+
+    .cell-description,
+    .cell-evidence {
+      max-width: 120px;
+    }
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+
+    button {
+      width: 100%;
+      justify-content: center;
+      padding: 8px 12px;
+    }
+  }
+
+  .reject-actions {
+    flex-direction: column;
+    gap: 8px;
+
+    button {
+      width: 100%;
+    }
+  }
+}

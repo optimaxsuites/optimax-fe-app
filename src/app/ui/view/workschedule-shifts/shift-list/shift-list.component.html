@@ -1,0 +1,140 @@
+<div class="shift-container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h2>Shift Management</h2>
+
+    <button class="add-btn" (click)="createShift()">
+      + Create Shift
+    </button>
+
+    <div *ngIf="batchSelected.size > 0" class="batch-actions">
+      <span class="batch-count">{{ batchSelected.size }} selected</span>
+      <button class="batch-btn delete" (click)="bulkDeleteShifts()">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+      <button class="batch-btn clear" (click)="clearBatchSelection()">
+        <i class="fa-solid fa-x"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary-cards">
+
+    <div class="card">
+      <div class="title">Total Shifts</div>
+      <div class="value">{{ shifts.length }}</div>
+    </div>
+
+    <div class="card">
+      <div class="title">Morning Shifts</div>
+      <div class="value">{{ morningCount }}</div>
+    </div>
+
+    <div class="card">
+      <div class="title">Evening Shifts</div>
+      <div class="value">{{ eveningCount }}</div>
+    </div>
+
+    <div class="card">
+      <div class="title">Night Shifts</div>
+      <div class="value">{{ nightCount }}</div>
+    </div>
+
+  </div>
+
+
+  <!-- FILTER BAR -->
+  <div class="filter-card">
+    <input
+      type="text"
+      placeholder="Search shift name..."
+      [(ngModel)]="searchText"
+    />
+    <select [(ngModel)]="shiftTypeFilter">
+      <option value="">
+        All Types
+      </option>
+
+      <option value="morning">
+        Morning
+      </option>
+
+      <option value="evening">
+        Evening
+      </option>
+
+      <option value="night">
+        Night
+      </option>
+    </select>
+    <!--<select [(ngModel)]="departmentFilter">
+      <option value="">All Departments</option>
+      <option value="HR">HR</option>
+      <option value="Engineering">Engineering</option>
+      <option value="Operations">Operations</option>
+    </select>-->
+    <button class="apply-btn" (click)="applyFilter()">Apply</button>
+    <button class="reset-btn" (click)="resetFilter()">Reset</button>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 30px"></th>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let shift of filteredShifts" [class.selected]="isBatchSelected(shift.id)">
+          <td class="checkbox-cell">
+            <input
+              type="checkbox"
+              [checked]="isBatchSelected(shift.id)"
+              (change)="toggleBatchSelect(shift.id)"
+            />
+          </td>
+          <td>
+            <span
+              class="color-dot"
+              [style.background]="shift.color"
+            ></span>
+            {{ shift.name }}
+          </td>
+          <td>
+            <span
+              class="shift-type"
+              [ngClass]="shift.type"
+            >
+              {{ shift.type }}
+            </span>
+          </td>
+          <td>{{ shift.startTime }}</td>
+          <td>{{ shift.endTime }}</td>
+          <td>{{ shift.description }}</td>
+
+          <td class="actions">
+            <button class="edit" (click)="editShift(shift)">
+                Edit
+            </button>
+            <button class="delete" (click)="deleteShift(shift.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <app-shift-form
+  *ngIf="showForm"
+  [shift]="selectedShift"
+  (closeForm)="closeForm()">
+</app-shift-form>
+</div>
