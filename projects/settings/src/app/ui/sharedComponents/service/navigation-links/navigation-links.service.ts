@@ -131,7 +131,8 @@ export class NavigationLinksService {
     this.links['crmSettingsLink']   = '/admin/crm/settings/'   + uuidV4();
     this.links['crmReportsLink']    = '/admin/crm/reports/'    + uuidV4();
     this.links['crmAutomationLink'] = '/admin/crm/automation/' + uuidV4();
-    this.links['crmGovernmentLink'] = '/admin/crm/government/' + uuidV4();
+    this.links['crmGovernmentLink']  = '/admin/crm/government/'  + uuidV4();
+    this.links['crmCommissionLink']  = '/admin/crm/commission/'  + uuidV4();
     this.links['expensesLink'] = '/admin/expenses/expense/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
     this.links['productivityLink'] = '/admin/hr/productivity/' +uuidV4();
