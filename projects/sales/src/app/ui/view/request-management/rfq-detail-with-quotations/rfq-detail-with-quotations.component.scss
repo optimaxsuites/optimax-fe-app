@@ -154,6 +154,10 @@
       border-left: 4px solid #3b82f6;
     }
 
+    &.review-requested {
+      border-left: 4px solid #f97316;
+    }
+
     .card-header {
       display: flex;
       justify-content: space-between;

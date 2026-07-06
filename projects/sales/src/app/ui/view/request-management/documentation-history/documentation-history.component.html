@@ -1,19 +1,22 @@
-<div class="archive-dashboard-container">
-  <div class="archive-wrapper">
+<!-- src/app/ui/view/documentation-history/documentation-history.component.html -->
 
-    <!-- Header Section -->
-    <div class="archive-header-card">
+<div class="procurement-requests-container">
+  <div class="requests-wrapper">
+
+    <!-- Header - Premium #184440 Card (Matches RFQ List) -->
+    <div class="dashboard-header">
       <div class="header-left">
         <div class="header-badge">
           <span class="pulse-dot"></span>
           Archive Center
         </div>
         <h1 class="page-title">Documentation History</h1>
-        <p class="page-subtitle">Track the complete document lifecycle (RFQs, Quotations, LPOs, Invoices) for each order</p>
+        <p class="page-subtitle">Track the complete document lifecycle (RFQs, Quotations, LPOs, Invoices) for each order
+        </p>
       </div>
     </div>
 
-    <!-- Loading Spinner -->
+    <!-- Loading State -->
     <div class="loading-state" *ngIf="isLoading">
       <div class="spinner-container">
         <i class="fas fa-spinner fa-spin"></i>
@@ -21,32 +24,33 @@
       </div>
     </div>
 
-    <!-- Table Section -->
+    <!-- Table Container (Matches RFQ List) -->
     <div class="table-container" *ngIf="!isLoading && requests.length > 0">
       <div class="table-wrapper">
-        <table class="archive-table">
+        <table class="advance-loans-table">
           <thead>
             <tr>
-              <th class="sn-header text-center" style="width: 5rem;">S/N</th>
-              <th>Product / Order Name</th>
-              <th class="text-center" style="width: 8rem;">Current Lifecycle Status</th>
-              <th class="text-center" style="width: 10rem;">Action</th>
+              <th style="width: 4rem;" class="text-center">S/N</th>
+              <th class="sortable">Product / Order Name</th>
+              <th style="width: 12rem;" class="text-center">Current Lifecycle Status</th>
+              <th style="width: 12rem;" class="text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let request of requests; let i = index">
               <td class="sn-cell text-center">{{ i + 1 }}</td>
-              <td class="order-name-cell">
+              <td class="employee-name-cell">
                 <div class="order-title">{{ request.title }}</div>
-                <div class="order-subtitle">ID: {{ request.id }} | Budget: {{ formatCurrency(request.totalBudget, request.currency) }}</div>
+                <div class="order-subtitle">ID: {{ request.id }} | Budget: {{ formatCurrency(request.totalBudget,
+                  request.currency) }}</div>
               </td>
               <td class="text-center">
-                <span class="status-badge" [class]="getStatusClass(request.status)">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(request.status)">
                   {{ getStatusLabel(request.status) }}
                 </span>
               </td>
               <td class="text-center">
-                <button class="btn-view-archive" (click)="openArchiveModal(request)">
+                <button class="action-btn view-btn" (click)="openArchiveModal(request)" title="View Documents">
                   <i class="fas fa-folder-open"></i> View Documents
                 </button>
               </td>
@@ -54,21 +58,21 @@
           </tbody>
         </table>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div class="empty-state" *ngIf="!isLoading && requests.length === 0">
-      <i class="fas fa-archive"></i>
-      <h3>No archive records found</h3>
-      <p>Documents will appear here as procurement requests progress through the lifecycle.</p>
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading && requests.length === 0">
+        <i class="fas fa-archive"></i>
+        <p>No archive records found. Documents will appear here as procurement requests progress through the lifecycle.
+        </p>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Dynamic Side Modal -->
+<!-- Dynamic Side Modal (Same as Before - Kept the View Documents functionality) -->
 <app-side-modal *ngIf="showModal && selectedRequest" (close)="closeArchiveModal()">
   <div class="modal-inner">
-    
+
     <!-- Modal Header -->
     <div class="modal-header">
       <div class="modal-title-group">
@@ -83,14 +87,10 @@
 
     <!-- Square Widget Buttons Grid (2x2) -->
     <div class="widgets-grid">
-      
+
       <!-- RFQ Widget -->
-      <button 
-        class="widget-btn" 
-        [class.active]="selectedDocType === 'rfq'"
-        [class.unlocked]="isUnlocked('rfq')"
-        [disabled]="!isUnlocked('rfq')"
-        (click)="selectDocType('rfq')">
+      <button class="widget-btn" [class.active]="selectedDocType === 'rfq'" [class.unlocked]="isUnlocked('rfq')"
+        [disabled]="!isUnlocked('rfq')" (click)="selectDocType('rfq')">
         <div class="widget-icon-wrapper">
           <i class="fas fa-file-signature"></i>
         </div>
@@ -101,33 +101,25 @@
       </button>
 
       <!-- Quotation Widget -->
-      <button 
-        class="widget-btn" 
-        [class.active]="selectedDocType === 'quotation'"
-        [class.unlocked]="isUnlocked('quotation')"
-        [class.locked]="!isUnlocked('quotation')"
-        [disabled]="!isUnlocked('quotation')"
-        (click)="selectDocType('quotation')">
+      <button class="widget-btn" [class.active]="selectedDocType === 'quotation'"
+        [class.unlocked]="isUnlocked('quotation')" [class.locked]="!isUnlocked('quotation')"
+        [disabled]="!isUnlocked('quotation')" (click)="selectDocType('quotation')">
         <div class="widget-icon-wrapper">
           <i class="fas fa-comment-dollar"></i>
           <span class="lock-indicator" *ngIf="!isUnlocked('quotation')"><i class="fas fa-lock"></i></span>
         </div>
         <div class="widget-info">
           <span class="widget-name">2. Quotation Received</span>
-          <span class="widget-status" [class.unlocked]="isUnlocked('quotation')" [class.locked]="!isUnlocked('quotation')">
+          <span class="widget-status" [class.unlocked]="isUnlocked('quotation')"
+            [class.locked]="!isUnlocked('quotation')">
             {{ isUnlocked('quotation') ? 'Available' : 'Pending Receipt' }}
           </span>
         </div>
       </button>
 
       <!-- LPO Widget -->
-      <button 
-        class="widget-btn" 
-        [class.active]="selectedDocType === 'lpo'"
-        [class.unlocked]="isUnlocked('lpo')"
-        [class.locked]="!isUnlocked('lpo')"
-        [disabled]="!isUnlocked('lpo')"
-        (click)="selectDocType('lpo')">
+      <button class="widget-btn" [class.active]="selectedDocType === 'lpo'" [class.unlocked]="isUnlocked('lpo')"
+        [class.locked]="!isUnlocked('lpo')" [disabled]="!isUnlocked('lpo')" (click)="selectDocType('lpo')">
         <div class="widget-icon-wrapper">
           <i class="fas fa-file-invoice"></i>
           <span class="lock-indicator" *ngIf="!isUnlocked('lpo')"><i class="fas fa-lock"></i></span>
@@ -141,13 +133,8 @@
       </button>
 
       <!-- Invoice Widget -->
-      <button 
-        class="widget-btn" 
-        [class.active]="selectedDocType === 'invoice'"
-        [class.unlocked]="isUnlocked('invoice')"
-        [class.locked]="!isUnlocked('invoice')"
-        [disabled]="!isUnlocked('invoice')"
-        (click)="selectDocType('invoice')">
+      <button class="widget-btn" [class.active]="selectedDocType === 'invoice'" [class.unlocked]="isUnlocked('invoice')"
+        [class.locked]="!isUnlocked('invoice')" [disabled]="!isUnlocked('invoice')" (click)="selectDocType('invoice')">
         <div class="widget-icon-wrapper">
           <i class="fas fa-receipt"></i>
           <span class="lock-indicator" *ngIf="!isUnlocked('invoice')"><i class="fas fa-lock"></i></span>
@@ -166,11 +153,14 @@
     <div class="preview-section">
       <div class="preview-toolbar">
         <h3 class="preview-doc-title">
-          <i class="fas" [class.fa-file-signature]="selectedDocType === 'rfq'" [class.fa-comment-dollar]="selectedDocType === 'quotation'" [class.fa-file-invoice]="selectedDocType === 'lpo'" [class.fa-receipt]="selectedDocType === 'invoice'"></i>
+          <i class="fas" [class.fa-file-signature]="selectedDocType === 'rfq'"
+            [class.fa-comment-dollar]="selectedDocType === 'quotation'"
+            [class.fa-file-invoice]="selectedDocType === 'lpo'" [class.fa-receipt]="selectedDocType === 'invoice'"></i>
           {{ selectedDocType | uppercase }} Document Preview
         </h3>
         <button class="btn-download-pdf" (click)="downloadCurrentDocPDF()" [disabled]="isDownloading">
-          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading" [class.fa-file-pdf]="!isDownloading"></i>
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"
+            [class.fa-file-pdf]="!isDownloading"></i>
           {{ isDownloading ? 'Generating...' : 'Download PDF' }}
         </button>
       </div>
@@ -217,7 +207,7 @@
                 <td><strong>{{ formatCurrency(selectedRequest.totalBudget, selectedRequest.currency) }}</strong></td>
               </tr>
             </table>
-            
+
             <h4 class="section-subheading">Scope & Requirements Description</h4>
             <p class="desc-text">{{ selectedRequest.description }}</p>
           </div>
@@ -306,13 +296,15 @@
                   <td>{{ item.description }}</td>
                   <td class="text-right">{{ item.quantity }}</td>
                   <td class="text-right">{{ formatCurrency(item.unitPrice, mockQuotation.currency) }}</td>
-                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, mockQuotation.currency) }}</td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, mockQuotation.currency) }}
+                  </td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="grand-total-row">
                   <td colspan="4" class="text-right font-bold">GRAND TOTAL AMOUNT:</td>
-                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(mockQuotation.totalAmount, mockQuotation.currency) }}</td>
+                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(mockQuotation.totalAmount,
+                    mockQuotation.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -343,7 +335,7 @@
           <div class="parties-grid">
             <div class="party-card">
               <h4>BUYER DETAILS</h4>
-              <strong class="party-name">Queen Sheba Procurement Corp.</strong>
+              <strong class="party-name">Queendom Procurement Corp.</strong>
               <p>Plot 12, Corporate Avenue,<br>Victoria Island, Lagos,<br>Nigeria</p>
               <p class="contact-line"><i class="fas fa-envelope"></i> orders&#64;queensheba.example</p>
             </div>
@@ -381,7 +373,8 @@
               <tfoot>
                 <tr class="grand-total-row">
                   <td colspan="3" class="text-right font-bold">GRAND TOTAL VALUE:</td>
-                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(mockLpo.totalAmount, mockLpo.currency) }}</td>
+                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(mockLpo.totalAmount,
+                    mockLpo.currency) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -401,7 +394,7 @@
             <div class="sig-line">
               <div class="line"></div>
               <strong>Authorized Signatory</strong>
-              <p>Queen Sheba Procurement Corp</p>
+              <p>Queendom Procurement Corp</p>
             </div>
             <div class="sig-line">
               <div class="line"></div>
@@ -424,7 +417,8 @@
             <div class="doc-meta-section">
               <p><strong>Issue Date:</strong> {{ formatDate(mockInvoice.issueDate) }}</p>
               <p><strong>Due Date:</strong> {{ formatDate(mockInvoice.dueDate) }}</p>
-              <p><strong>Status:</strong> <span class="status-pill" [class]="mockInvoice.status.toLowerCase()">{{ mockInvoice.status }}</span></p>
+              <p><strong>Status:</strong> <span class="status-pill" [class]="mockInvoice.status.toLowerCase()">{{
+                  mockInvoice.status }}</span></p>
             </div>
           </div>
 
@@ -439,7 +433,7 @@
             </div>
             <div class="bill-to">
               <h5>BILL TO</h5>
-              <strong>Queen Sheba Corp.</strong>
+              <strong>Queendom Corp.</strong>
               <p>Customer ID: {{ mockInvoice.customerName }}</p>
               <p>Reference RFQ: #{{ mockInvoice.orderId }}</p>
             </div>
@@ -489,7 +483,8 @@
               </div>
               <div class="summary-line balance">
                 <span>Balance Due</span>
-                <span class="due-amount font-bold text-red-600">{{ formatCurrency(mockInvoice.balanceDue, mockInvoice.currency) }}</span>
+                <span class="due-amount font-bold text-red-600">{{ formatCurrency(mockInvoice.balanceDue,
+                  mockInvoice.currency) }}</span>
               </div>
             </div>
           </div>

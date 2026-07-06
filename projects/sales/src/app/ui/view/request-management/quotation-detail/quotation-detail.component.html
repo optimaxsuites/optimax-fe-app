@@ -40,11 +40,14 @@
       <div class="action-bar-right">
         <!-- Accept / Reject Actions -->
         <ng-container *ngIf="quotation.status === 'SUBMITTED'">
-          <button class="btn-action edit-btn-bar" (click)="onAcceptClick()" [disabled]="isProcessing">
+          <button class="btn-action accept" (click)="onAcceptClick()" [disabled]="isProcessing">
             <i class="fas fa-check"></i> Accept Quotation
           </button>
           <button class="btn-action decline" (click)="openRejectModal()" [disabled]="isProcessing">
             <i class="fas fa-times"></i> Reject
+          </button>
+          <button class="btn-action request-changes" (click)="openRequestChangesModal()" [disabled]="isProcessing">
+            <i class="fas fa-edit"></i> Request Changes
           </button>
         </ng-container>
 
@@ -95,6 +98,30 @@
         <div class="status-alert error" *ngIf="quotation.status === 'EXPIRED'">
           <i class="fas fa-hourglass-end"></i>
           <span>This quotation has expired and is no longer valid.</span>
+        </div>
+        <div class="status-alert warning" *ngIf="quotation.status === 'REVIEW_REQUESTED'" style="border-left-color: #f97316; background-color: #fff7ed; border: 1px solid rgba(249, 115, 22, 0.2); border-left-width: 4px;">
+          <i class="fas fa-reply" style="color: #f97316;"></i>
+          <span>Changes have been requested on this quotation. Revision request comments: <strong>"{{ quotation.revisionRequestNote }}"</strong>. Waiting for vendor updates.</span>
+        </div>
+
+        <!-- Simulator Card -->
+        <div class="info-card glass" *ngIf="quotation.status === 'REVIEW_REQUESTED'" style="border: 1px dashed #f97316; background: #fffaf0; margin-bottom: 1.5rem;">
+          <div class="card-header" style="border-bottom: 1px dashed rgba(249, 115, 22, 0.2); padding: 1rem 1.5rem;">
+            <h3 style="color: #ea580c; margin: 0; display: flex; align-items: center; gap: 0.5rem;"><i class="fas fa-flask"></i> Simulator: Vendor Resubmission</h3>
+          </div>
+          <div class="card-body" style="padding: 1.5rem;">
+            <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 1rem; margin-top: 0;">
+              Simulate the vendor receiving your request and sending an updated quotation back (overwriting the old quote).
+            </p>
+            <div class="form-group" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: #374151;">New Total Amount (NGN)</label>
+              <input type="number" [(ngModel)]="simulationNewTotal" class="form-control" style="max-width: 300px; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;" />
+            </div>
+            <button class="btn-action" style="background: #ea580c; color: white;" (click)="confirmSimulateResubmit()" [disabled]="isProcessing">
+              <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-spin]="isProcessing" [class.fa-paper-plane]="!isProcessing"></i>
+              Send Revised Quotation
+            </button>
+          </div>
         </div>
 
         <!-- Vendor Info Card -->
@@ -375,5 +402,42 @@
         Proceed to Accept
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Request Changes Modal -->
+<div class="dialog-mask" *ngIf="showRequestChangesModal && quotation" (click)="closeRequestChangesModal()">
+  <div class="dialog-card glass" (click)="$event.stopPropagation()">
+     <div class="dialog-header">
+       <h3>Request Changes</h3>
+       <button class="btn-close" (click)="closeRequestChangesModal()"><i class="fas fa-times"></i></button>
+     </div>
+     <div class="dialog-body">
+       <div class="confirm-icon" style="color: #2563eb; font-size: 3rem; margin-bottom: 1rem; text-align: center;">
+         <i class="fas fa-edit"></i>
+       </div>
+       <p style="text-align: center; color: #4b5563; margin-bottom: 1.5rem;">
+         Provide notes detailing the changes you'd like the vendor to make to this quotation.
+       </p>
+       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+         <label for="requestChangesNotes" style="color: #4b5563; font-size: 0.85rem; font-weight: 600;">Request Notes <span class="required" style="color: #ef4444;">*</span></label>
+         <textarea
+           id="requestChangesNotes"
+           [(ngModel)]="requestChangesNotes"
+           rows="4"
+           placeholder="Specify what should be changed (e.g. lower the unit price, increase quantity, speed up delivery)..."
+           class="form-control"
+           [class.error]="!requestChangesNotes.trim() && isProcessing">
+         </textarea>
+         <small class="hint" style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">This comment will be sent directly to the vendor.</small>
+       </div>
+     </div>
+     <div class="dialog-footer">
+       <button class="btn-secondary" (click)="closeRequestChangesModal()" [disabled]="isProcessing">Cancel</button>
+       <button class="btn-action" style="background-color: #2563eb; color: white;" (click)="confirmRequestChanges()" [disabled]="isProcessing">
+         <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-spin]="isProcessing" [class.fa-paper-plane]="!isProcessing"></i>
+         {{ isProcessing ? 'Processing...' : 'Send Request' }}
+       </button>
+     </div>
   </div>
 </div>

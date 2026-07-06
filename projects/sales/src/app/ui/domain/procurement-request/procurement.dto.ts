@@ -208,7 +208,8 @@ export type VendorQuotationStatus =
   | 'EXPIRED'      // Quotation expired
   | 'WITHDRAWN'    // Vendor withdrew quotation
   | 'LPO_GENERATED' // Buyer generated LPO preview
-  | 'LPO_SENT';    // LPO sent to vendor
+  | 'LPO_SENT'     // LPO sent to vendor
+  | 'REVIEW_REQUESTED'; // Customer requested changes/review
 
 export interface VendorQuotation {
   id: string;
@@ -229,6 +230,7 @@ export interface VendorQuotation {
   termsAndConditions?: string;
   notes?: string;
   declineReason?: string;
+  revisionRequestNote?: string;
   submittedAt?: Date;
   updatedAt: Date;
   expiresAt: Date;
