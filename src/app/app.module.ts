@@ -414,6 +414,9 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
+    // LargeSideModalComponent,
+    // FooterComponent,
+    // EmployeeRelativesWidgetComponent,
   ],
   imports: [
     AppHrRoutingModule,
@@ -473,11 +476,11 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     FullCalendarModule,
     NgApexchartsModule,
     BackButtonModule,
-    LargeSideModalComponent,
-    FooterComponent,
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
+    LargeSideModalComponent,
+    FooterComponent,
     EmployeeRelativesWidgetComponent,
   ],
   providers: [
