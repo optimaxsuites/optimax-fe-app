@@ -116,7 +116,7 @@ export interface Invoice {
   paymentTerms: string;
 }
 
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 'CANCELLED';
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'CANCELLED';
 
 export interface InvoiceItem {
   id: string;

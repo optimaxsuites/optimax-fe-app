@@ -197,7 +197,7 @@ $radius-xl: 24px;
 // Stats Cards - Bigger & More Dynamic (Matching Quote List)
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.75rem;
   margin-bottom: 1.25rem;
   
