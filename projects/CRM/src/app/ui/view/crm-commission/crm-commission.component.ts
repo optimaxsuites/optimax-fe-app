@@ -1,8 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatPaginator } from '@angular/material/paginator';
 import { BehaviorSubject, finalize } from 'rxjs';
 import { CrmApiService } from '../../service/crm-api.service';
 import {
@@ -17,8 +15,7 @@ import {
 export class CrmCommissionComponent implements OnInit {
 
   // ── Tab state ──────────────────────────────────────────────
-  activeTab: 'schemes' | 'targets' | 'entries' | 'dashboard' = 'schemes';
-  tabIndex = 0;
+  activeTab: 'schemes' | 'targets' | 'entries' | 'dashboard' | 'categories' = 'schemes';
 
   // ── Loading ────────────────────────────────────────────────
   loading$ = new BehaviorSubject(false);
@@ -26,14 +23,22 @@ export class CrmCommissionComponent implements OnInit {
 
   // ── Categories ─────────────────────────────────────────────
   categories: CommissionCategory[] = [];
+  showCategoryForm = false;
+  editingCategory: CommissionCategory | null = null;
+  categoryForm!: FormGroup;
 
   // ── Schemes ────────────────────────────────────────────────
   schemes: CommissionScheme[] = [];
-  schemeDS = new MatTableDataSource<CommissionScheme>();
-  schemeCols = ['name', 'categoryName', 'calculationMethod', 'ratePercent', 'frequency', 'paymentMode', 'active', 'actions'];
   showSchemeForm = false;
   editingScheme: CommissionScheme | null = null;
   schemeForm!: FormGroup;
+
+  readonly applicableToOptions = [
+    { value: 'INDIVIDUAL', label: 'Individual Employee' },
+    { value: 'DEPARTMENT', label: 'Department (all members)' },
+    { value: 'UNIT',       label: 'Unit / Branch (all members)' },
+    { value: 'ROLE',       label: 'Job Role (all holders)' },
+  ];
 
   readonly calcMethods = [
     { value: 'PERCENT_SALES',   label: '% of Sales' },
@@ -47,16 +52,12 @@ export class CrmCommissionComponent implements OnInit {
 
   // ── Targets ────────────────────────────────────────────────
   targets: CommissionTarget[] = [];
-  targetDS = new MatTableDataSource<CommissionTarget>();
-  targetCols = ['employeeName', 'schemeName', 'periodStart', 'periodEnd', 'targetValue', 'actions'];
   showTargetForm = false;
   editingTarget: CommissionTarget | null = null;
   targetForm!: FormGroup;
 
   // ── Entries ────────────────────────────────────────────────
   entries: CommissionEntry[] = [];
-  entryDS = new MatTableDataSource<CommissionEntry>();
-  entryCols = ['select', 'employeeName', 'schemeName', 'periodStart', 'actualValue', 'targetValue', 'achievementPercent', 'computedAmount', 'status', 'actions'];
   showEntryForm = false;
   editingEntry: CommissionEntry | null = null;
   entryForm!: FormGroup;
@@ -65,10 +66,6 @@ export class CrmCommissionComponent implements OnInit {
 
   // ── Dashboard stats ────────────────────────────────────────
   dashStats = { pending: 0, approved: 0, pendingAmount: 0, approvedAmount: 0, paid: 0, paidAmount: 0 };
-
-  @ViewChild('schemePag') schemePag!: MatPaginator;
-  @ViewChild('targetPag') targetPag!: MatPaginator;
-  @ViewChild('entryPag')  entryPag!: MatPaginator;
 
   constructor(
     private api: CrmApiService,
@@ -84,6 +81,12 @@ export class CrmCommissionComponent implements OnInit {
   // ── Forms ──────────────────────────────────────────────────
 
   buildForms() {
+    this.categoryForm = this.fb.group({
+      name:        ['', Validators.required],
+      description: [''],
+      active:      [true],
+    });
+
     this.schemeForm = this.fb.group({
       name:              ['', Validators.required],
       categoryId:        [null],
@@ -93,6 +96,7 @@ export class CrmCommissionComponent implements OnInit {
       minThreshold:      [null],
       frequency:         ['MONTHLY', Validators.required],
       paymentMode:       ['PAYROLL', Validators.required],
+      applicableTo:      ['INDIVIDUAL'],
       active:            [true],
       validFrom:         [null],
       validTo:           [null],
@@ -162,34 +166,21 @@ export class CrmCommissionComponent implements OnInit {
   loadSchemes() {
     this.loading$.next(true);
     this.api.getCommissionSchemes().pipe(finalize(() => this.loading$.next(false))).subscribe({
-      next: (data) => {
-        this.schemes = data || [];
-        this.schemeDS.data = this.schemes;
-        setTimeout(() => (this.schemeDS.paginator = this.schemePag));
-      },
+      next: (data) => { this.schemes = data || []; },
       error: () => {},
     });
   }
 
   loadTargets() {
     this.api.getCommissionTargets().subscribe({
-      next: (data) => {
-        this.targets = data || [];
-        this.targetDS.data = this.targets;
-        setTimeout(() => (this.targetDS.paginator = this.targetPag));
-      },
+      next: (data) => { this.targets = data || []; },
       error: () => {},
     });
   }
 
   loadEntries(status?: string) {
     this.api.getCommissionEntries(status).subscribe({
-      next: (data) => {
-        this.entries = data || [];
-        this.entryDS.data = this.entries;
-        this.recalcDash();
-        setTimeout(() => (this.entryDS.paginator = this.entryPag));
-      },
+      next: (data) => { this.entries = data || []; this.recalcDash(); },
       error: () => {},
     });
   }
@@ -283,6 +274,38 @@ export class CrmCommissionComponent implements OnInit {
     });
   }
 
+  // ── Category CRUD ─────────────────────────────────────────
+
+  openCategoryForm(c?: CommissionCategory) {
+    this.editingCategory = c || null;
+    this.categoryForm.reset({ active: true });
+    if (c) this.categoryForm.patchValue(c);
+    this.showCategoryForm = true;
+  }
+
+  closeCategoryForm() { this.showCategoryForm = false; this.editingCategory = null; }
+
+  saveCategory() {
+    if (this.categoryForm.invalid) { this.categoryForm.markAllAsTouched(); return; }
+    const payload: CommissionCategory = this.categoryForm.value;
+    this.saving$.next(true);
+    const op = this.editingCategory?.id
+      ? this.api.updateCommissionCategory(this.editingCategory.id, payload)
+      : this.api.createCommissionCategory(payload);
+    op.pipe(finalize(() => this.saving$.next(false))).subscribe({
+      next: () => { this.snack.open(`Category ${this.editingCategory ? 'updated' : 'created'}`, 'Close', { duration: 3000 }); this.closeCategoryForm(); this.loadCategories(); },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
+  deleteCategory(c: CommissionCategory) {
+    if (!confirm(`Delete category "${c.name}"?`)) return;
+    this.api.deleteCommissionCategory(c.id!).subscribe({
+      next: () => { this.snack.open('Category deleted', 'Close', { duration: 3000 }); this.loadCategories(); },
+      error: (e) => this.snack.open(e, 'Close', { duration: 4000 }),
+    });
+  }
+
   // ── Entry CRUD + Approval ──────────────────────────────────
 
   openEntryForm(e?: CommissionEntry) {
@@ -338,6 +361,29 @@ export class CrmCommissionComponent implements OnInit {
     else this.selectedEntryIds.add(id);
   }
 
+  // ── HR Payroll Push ────────────────────────────────────────
+
+  pushToPayroll(e: CommissionEntry) {
+    if (!e.employeeId || !e.computedAmount) {
+      this.snack.open('Entry must have an employee and computed amount', 'Close', { duration: 3000 });
+      return;
+    }
+    const period = e.periodStart ? e.periodStart.slice(0, 7) : '';
+    this.saving$.next(true);
+    this.api.pushCommissionToPayroll({
+      id: e.id!, employeeId: e.employeeId, amount: e.computedAmount,
+      period, schemeName: e.schemeName,
+    }).pipe(finalize(() => this.saving$.next(false))).subscribe({
+      next: (res: any) => {
+        this.api.updateCommissionEntry(e.id!, { status: 'PAID', hrBonusId: res?.id }).subscribe({
+          next: () => { this.snack.open('Pushed to payroll run ✓', 'Close', { duration: 3000 }); this.loadEntries(); },
+          error: () => this.snack.open('Pushed to HR payroll — status update pending', 'Close', { duration: 4000 }),
+        });
+      },
+      error: (err) => this.snack.open(err, 'Close', { duration: 4000 }),
+    });
+  }
+
   // ── Helpers ────────────────────────────────────────────────
 
   statusColor(s?: string): string {
@@ -361,6 +407,10 @@ export class CrmCommissionComponent implements OnInit {
 
   pct(v?: number): string {
     return v != null ? v.toFixed(1) + '%' : '—';
+  }
+
+  entryStatusClass(s?: string): string {
+    return (s || '').toLowerCase().replace(/_/g, '_');
   }
 
   achColor(v?: number): string {

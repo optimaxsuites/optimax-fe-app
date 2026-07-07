@@ -28,7 +28,6 @@ import { AuthGuard } from './ui/auth/service/auth.guard';
 // import { JopOpeningsComponent } from './jop.openings.component';
 import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
-import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { NotFoundComponent } from './ui/not-found.component';
 import { UnauthourizedComponent } from './ui/unauthourized.component';
@@ -36,6 +35,7 @@ import { PaymentComponent } from './ui/marketplace/view/payment/payment.componen
 import { TenantsComponent } from './ui/tenants/tenants.component';
 import { ChildUuidGuard, UuidGuard } from './ui/auth/domain/uuid-route.guard';
 import { AddEmployeeFormComponent } from 'projects/hr/src/app/ui/view/employee-management/add-employee-form/add-employee-form.component';
+import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { GuarantorConfirmationComponent } from 'projects/hr/src/app/ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
 import { JopOpeningsComponent } from 'projects/hr/src/app/ui/view/recruitment/job-opening/jop.openings.component';
 
@@ -87,7 +87,6 @@ const routes: Routes = [
   {
     path: 'onboarding/:id/:uuid',
     component: AddEmployeeFormComponent,
-    canActivate: [AuthGuard],
   },
     {
     path: 'guarantor/confirm/:token/:uuid/:name/:mediaNO/:exp/:security',

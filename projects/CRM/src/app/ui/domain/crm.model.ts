@@ -286,6 +286,7 @@ export interface CommissionScheme {
   minThreshold?: number;
   frequency: string; // MONTHLY | QUARTERLY | ANNUAL | PER_EVENT
   paymentMode: string; // PAYROLL | STANDALONE
+  applicableTo?: string; // INDIVIDUAL | DEPARTMENT | UNIT | ROLE
   active?: boolean;
   validFrom?: string;
   validTo?: string;
@@ -299,6 +300,10 @@ export interface CommissionTarget {
   schemeName?: string;
   employeeId?: number;
   employeeName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  unitId?: number;
+  unitName?: string;
   periodStart: string;
   periodEnd: string;
   targetValue: number;
@@ -314,6 +319,8 @@ export interface CommissionEntry {
   schemeName?: string;
   employeeId?: number;
   employeeName?: string;
+  departmentId?: number;
+  departmentName?: string;
   periodStart?: string;
   periodEnd?: string;
   actualValue?: number;
@@ -321,6 +328,7 @@ export interface CommissionEntry {
   achievementPercent?: number;
   computedAmount?: number;
   status?: string; // DRAFT | PENDING_APPROVAL | APPROVED | PAID | REJECTED
+  hrBonusId?: number;
   approvedBy?: string;
   approvedAt?: string;
   notes?: string;
