@@ -219,15 +219,12 @@
                     class="action-btn delete-btn" (click)="deleteQuote(quote)" title="Delete">
                     <i class="fas fa-trash-alt"></i>
                   </button>
-                  <div class="action-dropdown" *ngIf="quote.status === 'ACCEPTED' || quote.status === 'DRAFT'">
+                                  <div class="action-dropdown" *ngIf="quote.status === 'DRAFT'">
                     <button class="action-btn more-btn action-trigger" title="More Actions">
                       <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="dropdown-menu">
-                      <button *ngIf="quote.status === 'ACCEPTED'" (click)="openInvoiceModal(quote.id)">
-                        <i class="fas fa-file-invoice-dollar"></i> Create Invoice
-                      </button>
-                      <button *ngIf="quote.status === 'DRAFT'" (click)="sendQuote(quote)">
+                      <button (click)="sendQuote(quote)">
                         <i class="fas fa-paper-plane"></i> Send to Customer
                       </button>
                     </div>

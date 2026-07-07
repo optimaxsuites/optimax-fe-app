@@ -1,10 +1,12 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Quote, Invoice } from '../../../../domain/sales/sales.dto';
+import { Quote, Invoice, SalesOrder } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-quote-detail',
@@ -20,6 +22,7 @@ export class QuoteDetailComponent implements OnInit {
 
   quote: Quote | null = null;
   isLoading = true;
+  isDownloading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -192,49 +195,47 @@ export class QuoteDetailComponent implements OnInit {
 
   acceptQuote(): void {
     if (this.quote && confirm(`Accept quote ${this.quote.quoteNumber}?`)) {
-      this.salesService.updateQuote(this.quote.id, { status: 'ACCEPTED' }).subscribe({
+      this.salesService.updateQuote(this.quote.id, { status: 'CONVERTED' }).subscribe({
         next: (updated: Quote) => {
           this.quote = updated;
           
-          const invoiceData: Partial<Invoice> = {
+          const orderData: Partial<SalesOrder> = {
             quoteId: updated.id,
             customerId: updated.customerId,
             customerName: updated.customerName,
             items: updated.items.map(item => ({
               id: Math.random().toString(36).substr(2, 9),
+              productId: item.productId,
               productName: item.productName,
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
+              discount: item.discount || 0,
               total: item.total
             })),
             subtotal: updated.subtotal,
             taxAmount: updated.taxAmount,
             discountAmount: updated.discountAmount,
             totalAmount: updated.totalAmount,
-            amountPaid: 0,
-            balanceDue: updated.totalAmount,
             currency: updated.currency,
-            status: 'DRAFT',
-            notes: updated.notes,
-            paymentTerms: updated.terms || 'Net 30',
-            issueDate: new Date(),
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Default 30 days due
+            status: 'PENDING',
+            orderDate: new Date(),
+            notes: updated.notes
           };
 
-          this.salesService.createInvoice(invoiceData).subscribe({
-            next: (createdInvoice: Invoice) => {
-              alert(`Quote ${updated.quoteNumber} accepted. Draft Invoice ${createdInvoice.invoiceNumber} has been created.`);
+          this.salesService.createSalesOrder(orderData).subscribe({
+            next: (createdOrder: SalesOrder) => {
+              alert(`Quote ${updated.quoteNumber} accepted. Sales Order ${createdOrder.orderNumber} has been created.`);
               const uuid = this.route.snapshot.paramMap.get('uuid');
               if (uuid) {
-                this.router.navigate(['/admin/sales/invoices', createdInvoice.id, uuid]);
+                this.router.navigate(['/admin/sales/orders', createdOrder.id, uuid]);
               } else {
-                this.router.navigate(['/admin/sales/invoices', createdInvoice.id]);
+                this.router.navigate(['/admin/sales/orders', createdOrder.id]);
               }
             },
-            error: (invoiceErr: any) => {
-              console.error('Error creating invoice from quote:', invoiceErr);
-              alert('Quote was accepted, but failed to create draft invoice.');
+            error: (orderErr: any) => {
+              console.error('Error creating sales order from quote:', orderErr);
+              alert('Quote was accepted, but failed to create sales order.');
             }
           });
         },
@@ -310,6 +311,41 @@ export class QuoteDetailComponent implements OnInit {
       } else {
         this.router.navigate(['/admin/sales/customers', this.quote.customerId]);
       }
+    }
+  }
+
+  downloadPDF(): void {
+    const element = document.getElementById('quote-detail-sheet');
+    if (element) {
+      this.isDownloading = true;
+      element.classList.add('pdf-printing-active');
+      
+      setTimeout(() => {
+        html2canvas(element, { 
+          scale: 2, 
+          useCORS: true, 
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        }).then((canvas) => {
+          element.classList.remove('pdf-printing-active');
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210; // A4 size width
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`Quote-${this.quote?.quoteNumber || 'Detail'}.pdf`);
+          this.isDownloading = false;
+        }).catch(err => {
+          element.classList.remove('pdf-printing-active');
+          console.error('Error generating PDF:', err);
+          this.isDownloading = false;
+          alert('Failed to generate PDF. Printing window instead.');
+          window.print();
+        });
+      }, 50);
+    } else {
+      alert('Could not find element to export. Printing window instead.');
+      window.print();
     }
   }
 }

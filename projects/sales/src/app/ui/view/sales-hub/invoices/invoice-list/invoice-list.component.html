@@ -62,43 +62,17 @@
           <span>10%</span>
         </div>
       </div>
-      <div class="stat-card paid" (click)="filters.status = 'PAID'; applyFilters()">
+      <div class="stat-card cancelled" (click)="filters.status = 'CANCELLED'; applyFilters()">
         <div class="stat-icon-wrapper">
-          <i class="fas fa-check-circle"></i>
+          <i class="fas fa-ban"></i>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ stats.paid }}</div>
-          <div class="stat-label">Paid</div>
-        </div>
-        <div class="stat-trend up">
-          <i class="fas fa-arrow-up"></i>
-          <span>22%</span>
-        </div>
-      </div>
-      <div class="stat-card partial" (click)="filters.status = 'PARTIAL'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-clock"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.partial }}</div>
-          <div class="stat-label">Partial</div>
+          <div class="stat-value">{{ stats.cancelled }}</div>
+          <div class="stat-label">Cancelled</div>
         </div>
         <div class="stat-trend down">
           <i class="fas fa-arrow-down"></i>
-          <span>4%</span>
-        </div>
-      </div>
-      <div class="stat-card overdue" (click)="filters.status = 'OVERDUE'; applyFilters()">
-        <div class="stat-icon-wrapper">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.overdue }}</div>
-          <div class="stat-label">Overdue</div>
-        </div>
-        <div class="stat-trend down">
-          <i class="fas fa-arrow-down"></i>
-          <span>8%</span>
+          <span>5%</span>
         </div>
       </div>
     </div>
@@ -215,20 +189,17 @@
                     (click)="openEditInvoiceModal(invoice.id)" title="Edit Invoice">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
-                  <button *ngIf="invoice.status !== 'PAID'" class="action-btn delete-btn"
+                  <button *ngIf="invoice.status !== 'CANCELLED'" class="action-btn delete-btn"
                     (click)="deleteInvoice(invoice)" title="Delete">
                     <i class="fas fa-trash-alt"></i>
                   </button>
-                  <div class="action-dropdown" *ngIf="invoice.status === 'SENT' || invoice.status === 'PARTIAL'">
+                  <div class="action-dropdown" *ngIf="invoice.status === 'SENT'">
                     <button class="action-btn more-btn action-trigger" title="More Actions">
                       <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="dropdown-menu">
                       <button (click)="sendReminder(invoice)">
                         <i class="fas fa-paper-plane"></i> Send Reminder
-                      </button>
-                      <button (click)="markAsPaid(invoice)">
-                        <i class="fas fa-check-circle"></i> Mark as Paid
                       </button>
                     </div>
                   </div>

@@ -112,9 +112,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     { value: 'ALL', label: 'All Invoices', icon: 'M4 6h16M4 12h16M4 18h16', color: 'gray' },
     { value: 'DRAFT', label: 'Draft', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', color: 'gray' },
     { value: 'SENT', label: 'Sent', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'blue' },
-    { value: 'PAID', label: 'Paid', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'green' },
-    { value: 'PARTIAL', label: 'Partial', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1', color: 'orange' },
-    { value: 'OVERDUE', label: 'Overdue', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'red' },
     { value: 'CANCELLED', label: 'Cancelled', icon: 'M6 18L18 6M6 6l12 12', color: 'gray' }
   ];
   
@@ -160,9 +157,9 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
       total: this.invoices.length,
       draft: this.invoices.filter(i => i.status === 'DRAFT').length,
       sent: this.invoices.filter(i => i.status === 'SENT').length,
-      paid: this.invoices.filter(i => i.status === 'PAID').length,
-      overdue: this.invoices.filter(i => i.status === 'OVERDUE').length,
-      partial: this.invoices.filter(i => i.status === 'PARTIAL').length,
+      paid: 0,
+      overdue: 0,
+      partial: 0,
       cancelled: this.invoices.filter(i => i.status === 'CANCELLED').length
     };
   }
@@ -223,9 +220,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     const classes: Record<InvoiceStatus, string> = {
       'DRAFT': 'status-draft',
       'SENT': 'status-sent',
-      'PAID': 'status-paid',
-      'PARTIAL': 'status-partial',
-      'OVERDUE': 'status-overdue',
       'CANCELLED': 'status-cancelled'
     };
     return classes[status] || 'status-draft';
@@ -235,9 +229,6 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     const labels: Record<InvoiceStatus, string> = {
       'DRAFT': 'Draft',
       'SENT': 'Sent',
-      'PAID': 'Paid',
-      'PARTIAL': 'Partial',
-      'OVERDUE': 'Overdue',
       'CANCELLED': 'Cancelled'
     };
     return labels[status] || status;
@@ -282,25 +273,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
     }
   }
 
-  markAsPaid(invoice: Invoice): void {
-    if (confirm(`Mark ${invoice.invoiceNumber} as paid?`)) {
-      this.salesService.updateInvoice(invoice.id, { 
-        status: 'PAID', 
-        amountPaid: invoice.totalAmount, 
-        balanceDue: 0,
-        paidAt: new Date()
-      }).subscribe({
-        next: () => {
-          alert(`Invoice ${invoice.invoiceNumber} marked as paid`);
-          this.loadInvoices();
-        },
-        error: (error: any) => {
-          console.error('Error marking invoice as paid:', error);
-          alert('Failed to mark invoice as paid. Please try again.');
-        }
-      });
-    }
-  }
+
 
   deleteInvoice(invoice: Invoice): void {
     if (confirm(`Delete invoice ${invoice.invoiceNumber}? This action cannot be undone.`)) {
@@ -336,7 +309,7 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
         id: '1', invoiceNumber: 'INV-001', orderId: 'ORD-001', customerId: 'CUST-001',
         customerName: 'Mama Nkechi Enterprises', items: [], subtotal: 500000, taxAmount: 0,
         discountAmount: 0, totalAmount: 500000, amountPaid: 500000, balanceDue: 0,
-        currency: 'NGN', status: 'PAID', issueDate: new Date('2026-06-10'),
+        currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-10'),
         dueDate: new Date('2026-06-20'), paidAt: new Date('2026-06-15'), notes: '', paymentTerms: 'Net 30'
       },
       {
@@ -350,14 +323,14 @@ export class InvoiceListComponent implements OnInit, OnDestroy {
         id: '3', invoiceNumber: 'INV-003', orderId: 'ORD-003', customerId: 'CUST-003',
         customerName: 'Global Services NG', items: [], subtotal: 350000, taxAmount: 0,
         discountAmount: 0, totalAmount: 350000, amountPaid: 0, balanceDue: 350000,
-        currency: 'NGN', status: 'OVERDUE', issueDate: new Date('2026-05-20'),
+        currency: 'NGN', status: 'CANCELLED', issueDate: new Date('2026-05-20'),
         dueDate: new Date('2026-06-01'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
       },
       {
         id: '4', invoiceNumber: 'INV-004', orderId: 'ORD-004', customerId: 'CUST-004',
         customerName: 'Aliko Dangote Wholesale', items: [], subtotal: 750000, taxAmount: 0,
         discountAmount: 0, totalAmount: 750000, amountPaid: 500000, balanceDue: 250000,
-        currency: 'NGN', status: 'PARTIAL', issueDate: new Date('2026-06-05'),
+        currency: 'NGN', status: 'SENT', issueDate: new Date('2026-06-05'),
         dueDate: new Date('2026-06-19'), paidAt: undefined, notes: '', paymentTerms: 'Net 30'
       }
     ];
