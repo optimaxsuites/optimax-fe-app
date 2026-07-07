@@ -1,0 +1,147 @@
+<div class="hl-shell">
+
+  <!-- ── Sidebar: letter type list ── -->
+  <aside class="hl-sidebar">
+    <p class="hl-sidebar-heading">Letter Type</p>
+    <button
+      *ngFor="let lt of letterTypes"
+      type="button"
+      class="hl-sidebar-item"
+      [class.hl-sidebar-item--active]="selectedLetterKey === lt.key"
+      (click)="selectLetter(lt.key)">
+      <svg xmlns="http://www.w3.org/2000/svg" class="hl-sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" [attr.d]="lt.icon"/>
+      </svg>
+      <span class="hl-sidebar-label">{{ lt.label }}</span>
+    </button>
+  </aside>
+
+  <!-- ── Main panel ── -->
+  <div class="hl-main">
+
+    <!-- Toolbar row -->
+    <div class="hl-toolbar">
+
+      <!-- Tone selector -->
+      <div class="hl-tone-group">
+        <span class="hl-tone-heading">Tone</span>
+        <div class="hl-tone-pills">
+          <button
+            *ngFor="let t of tones"
+            type="button"
+            class="hl-tone-pill"
+            [class.hl-tone-pill--active]="selectedTone === t.key"
+            (click)="selectTone(t.key)">
+            {{ t.label }}
+          </button>
+        </div>
+        <span *ngIf="hasCustomTemplate()" class="hl-custom-badge">Custom template saved</span>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="hl-action-group">
+        <button
+          type="button"
+          class="hl-btn hl-btn--ghost"
+          (click)="isEditing = !isEditing">
+          <svg xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          {{ isEditing ? 'Cancel Edit' : 'Edit Template' }}
+        </button>
+
+        <button
+          *ngIf="isEditing"
+          type="button"
+          class="hl-btn hl-btn--save"
+          (click)="saveTemplate()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+          </svg>
+          Save as Company Template
+        </button>
+
+        <button
+          *ngIf="hasCustomTemplate()"
+          type="button"
+          class="hl-btn hl-btn--reset"
+          (click)="resetTemplate()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Reset to Default
+        </button>
+
+        <button
+          type="button"
+          class="hl-btn hl-btn--pdf"
+          [disabled]="generatingPdf"
+          (click)="generatePdf()">
+          <svg *ngIf="!generatingPdf" xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <svg *ngIf="generatingPdf" xmlns="http://www.w3.org/2000/svg" class="hl-btn-icon animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          {{ generatingPdf ? 'Generating…' : 'Download PDF' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Editor panel (visible when editing) -->
+    <div *ngIf="isEditing" class="hl-editor-panel">
+      <p class="hl-editor-hint">
+        Edit the template body below. Use these placeholders:
+        <code>[Employee Name]</code>&nbsp;
+        <code>[Company Name]</code>&nbsp;
+        <code>[Job Title]</code>&nbsp;
+        <code>[Department]</code>&nbsp;
+        <code>[Start Date]</code>
+      </p>
+      <textarea
+        class="hl-editor-textarea"
+        [(ngModel)]="editableBody"
+        rows="14"
+        placeholder="Paste or type your letter template here...">
+      </textarea>
+    </div>
+
+    <!-- Letter preview (always shown; also the PDF capture target) -->
+    <div class="hl-preview-wrap">
+      <div id="hr-letter-content" class="hl-letter">
+
+        <!-- Letterhead -->
+        <div class="hl-letterhead">
+          <img *ngIf="logoUrl" [src]="logoUrl" alt="Company Logo" class="hl-letter-logo"/>
+          <div class="hl-letterhead-right">
+            <h2 class="hl-letter-company">{{ companyName }}</h2>
+          </div>
+        </div>
+        <div class="hl-letter-rule"></div>
+
+        <!-- Letter meta -->
+        <div class="hl-letter-meta">
+          <p class="hl-letter-date">{{ today }}</p>
+          <p class="hl-letter-subject">RE: {{ selectedLetter.label }}</p>
+        </div>
+
+        <!-- Body (filled with real data) -->
+        <div class="hl-letter-body" [innerHTML]="getFilledBody()"></div>
+
+        <!-- Signature block -->
+        <div class="hl-sig-section">
+          <div class="hl-sig-block">
+            <div class="hl-sig-line"></div>
+            <p class="hl-sig-name">HR Manager / Director</p>
+            <p class="hl-sig-company">{{ companyName }}</p>
+          </div>
+          <div class="hl-sig-block">
+            <div class="hl-sig-stamp-box">Company<br/>Stamp</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
