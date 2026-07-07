@@ -22,7 +22,10 @@ export class SidebarComponent {
 
     // JOINING employees only access My Dashboard in HR
     try {
-      const employeeStr = localStorage.getItem('currentEmployee') || localStorage.getItem('employeeData') || '';
+      const employeeStr =
+        sessionStorage.getItem('currentEmployee') ||
+        localStorage.getItem('currentEmployee') ||
+        localStorage.getItem('employeeData') || '';
       const employee = employeeStr ? JSON.parse(employeeStr) : null;
       if (employee?.employeeStatus === 'JOINING') {
         this.role = 'ROLE_JOINING';
