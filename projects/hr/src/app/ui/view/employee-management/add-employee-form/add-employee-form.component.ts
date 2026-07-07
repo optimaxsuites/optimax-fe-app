@@ -2,11 +2,14 @@ import { Component, Input } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { v4 as uuidV4 } from "uuid"
+import { environment } from '../../../shared-component/environments/environment';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 
 interface Employee {
   id: number;
@@ -54,7 +57,10 @@ export class AddEmployeeFormComponent {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
+  readonly year = new Date().getFullYear();
   readonly maxProfilePhotoSizeInMb = 0.5;
+  obCompanyName = '';
+  obLogoUrl: string | null = null;
   readonly maxProfilePhotoSizeInBytes = this.maxProfilePhotoSizeInMb * 1024 * 1024;
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
@@ -138,16 +144,22 @@ export class AddEmployeeFormComponent {
   maxDate: string ="";
   isExpired = false;
   constructor(
-    private fb: FormBuilder,  
+    private fb: FormBuilder,
     private metadataService: MetadataService,
     private messageService: MessageService,
-    private employeeService: EmployeeService, 
+    private employeeService: EmployeeService,
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService,
-    private router: Router
+    private router: Router,
+    private http: HttpClient,
+    private companyProfileService: CompanyProfileService
   ) {  }
 
   ngOnInit(): void {
+    if (!sessionStorage.getItem('userid')) {
+      this.admin = false;
+    }
+
     const expParam = this.route.snapshot.queryParamMap.get('exp');
     if (expParam) {
       const expMs = Number(expParam);
@@ -229,10 +241,28 @@ export class AddEmployeeFormComponent {
       next: (employee: any) => {
         this.employeeData = employee;
         this.applyEmployeeData(employee);
+        if (!this.admin) {
+          const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
+          if (userId) this.loadCompanyBranding(userId);
+        }
       }
-    })
+    });
+  }
 
-    console.log(this.employeeData)
+  private loadCompanyBranding(userId: number): void {
+    // Use the same in-memory source as the main-menu sidebar
+    const cached = this.companyProfileService.get();
+    if (cached?.companyName) this.obCompanyName = cached.companyName;
+    if (cached?.logoUrl) this.obLogoUrl = cached.logoUrl;
+
+    // If the service already has the logo, no need to fetch
+    if (this.obLogoUrl) return;
+
+    // Otherwise trigger a load (works for both authenticated and public-whitelisted calls)
+    this.companyProfileService.load(userId).subscribe(profile => {
+      if (profile?.companyName) this.obCompanyName = profile.companyName;
+      if (profile?.logoUrl) this.obLogoUrl = profile.logoUrl;
+    });
   }
 
   private applyEmployeeData(employee: any): void {
@@ -261,20 +291,21 @@ export class AddEmployeeFormComponent {
       nin: employee.nin
     });
 
+    const opts = { emitModelToViewChange: false };
     const savedPhoto = sessionStorage.getItem(`onboarding_photo_${this.employeeId}`);
     if (savedPhoto) {
       this.imageURL = savedPhoto;
-      this.basicForm.get('profilePhoto')?.setValue(savedPhoto);
+      this.basicForm.get('profilePhoto')?.setValue(savedPhoto, opts);
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     } else {
       const mediaNo = employee?.employeeMedia?.mediaNo;
       const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
       if (mediaNo) {
         this.loadProfilePhoto(mediaNo);
-        this.basicForm.get('profilePhoto')?.setValue(mediaNo);
+        this.basicForm.get('profilePhoto')?.setValue(mediaNo, opts);
       } else if (profileImage) {
         this.imageURL = profileImage;
-        this.basicForm.get('profilePhoto')?.setValue(profileImage);
+        this.basicForm.get('profilePhoto')?.setValue(profileImage, opts);
       }
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
