@@ -346,6 +346,17 @@ $radius-xl: 24px;
     }
   }
   
+  &.download {
+    background: rgba(46, 98, 118, 0.08);
+    color: #2E6276;
+    border: 1px solid rgba(46, 98, 118, 0.15);
+    
+    &:hover {
+      background: rgba(46, 98, 118, 0.16);
+      transform: translateY(-1px);
+    }
+  }
+  
   &.delete {
     background: rgba(220, 38, 38, 0.06);
     color: #dc2626;
@@ -924,6 +935,17 @@ $radius-xl: 24px;
     }
   }
   
+  &.download {
+    background: rgba(46, 98, 118, 0.08);
+    color: #2E6276;
+    border: 1px solid rgba(46, 98, 118, 0.15);
+    
+    &:hover {
+      background: rgba(46, 98, 118, 0.16);
+      transform: translateY(-1px);
+    }
+  }
+  
   &.delete {
     background: rgba(220, 38, 38, 0.06);
     color: #dc2626;
@@ -1254,3 +1276,12 @@ $radius-xl: 24px;
   }
 }
 .detail-wrapper::-webkit-scrollbar-thumb:hover { background: $text-muted; }
+
+#invoice-detail-sheet.pdf-printing-active {
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 2.5rem !important;
+}

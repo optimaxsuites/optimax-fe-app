@@ -174,7 +174,7 @@ export class SalesService {
             { id: 'item-inv-1', productName: 'Executive Office Chair', description: 'Office chairs', quantity: 10, unitPrice: 50000, total: 500000 }
           ],
           subtotal: 500000, taxAmount: 0, discountAmount: 0, totalAmount: 500000, amountPaid: 500000, balanceDue: 0,
-          currency: 'NGN', status: 'PAID' as InvoiceStatus, issueDate: new Date('2026-06-10'), dueDate: new Date('2026-06-20'), paidAt: new Date('2026-06-15'), notes: '', paymentTerms: 'Net 30'
+          currency: 'NGN', status: 'SENT' as InvoiceStatus, issueDate: new Date('2026-06-10'), dueDate: new Date('2026-06-20'), paidAt: new Date('2026-06-15'), notes: '', paymentTerms: 'Net 30'
         },
         {
           id: '2', invoiceNumber: 'INV-002', orderId: 'ORD-002', customerId: 'CUST-002', customerName: 'Tech Solutions Ltd',
@@ -296,7 +296,7 @@ export class SalesService {
     const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
     const customers = JSON.parse(localStorage.getItem(this.CUSTOMERS_KEY) || '[]');
 
-    const totalRevenue = invoices.filter(i => i.status === 'PAID').reduce((sum, i) => sum + i.totalAmount, 0);
+    const totalRevenue = invoices.filter(i => i.status === 'SENT').reduce((sum, i) => sum + i.totalAmount, 0);
 
     return of({
       totalRevenue: totalRevenue || 2845000,
@@ -304,8 +304,8 @@ export class SalesService {
       pendingQuotes: quotes.filter(q => q.status === 'SENT' || q.status === 'DRAFT').length,
       acceptedQuotes: quotes.filter(q => q.status === 'ACCEPTED' || q.status === 'CONVERTED').length,
       totalInvoices: invoices.length,
-      paidInvoices: invoices.filter(i => i.status === 'PAID').length,
-      overdueInvoices: invoices.filter(i => i.status === 'OVERDUE').length,
+      paidInvoices: 0,
+      overdueInvoices: 0,
       totalCustomers: customers.length
     }).pipe(delay(300));
   }
@@ -459,12 +459,19 @@ export class SalesService {
 
   getInvoices(filters: any): Observable<{ data: Invoice[]; total: number }> {
     let invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
-    invoices = invoices.map(i => ({
-      ...i,
-      issueDate: new Date(i.issueDate),
-      dueDate: new Date(i.dueDate),
-      paidAt: i.paidAt ? new Date(i.paidAt) : undefined
-    }));
+    invoices = invoices.map(i => {
+      let status = i.status;
+      if (status !== 'DRAFT' && status !== 'SENT' && status !== 'CANCELLED') {
+        status = 'SENT';
+      }
+      return {
+        ...i,
+        status,
+        issueDate: new Date(i.issueDate),
+        dueDate: new Date(i.dueDate),
+        paidAt: i.paidAt ? new Date(i.paidAt) : undefined
+      };
+    });
 
     if (filters && filters.status && filters.status !== 'ALL') {
       invoices = invoices.filter(i => i.status === filters.status);
@@ -490,8 +497,13 @@ export class SalesService {
     const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
     const invoice = invoices.find(i => i.id === id);
     if (invoice) {
+      let status = invoice.status;
+      if (status !== 'DRAFT' && status !== 'SENT' && status !== 'CANCELLED') {
+        status = 'SENT';
+      }
       return of({
         ...invoice,
+        status,
         issueDate: new Date(invoice.issueDate),
         dueDate: new Date(invoice.dueDate),
         paidAt: invoice.paidAt ? new Date(invoice.paidAt) : undefined

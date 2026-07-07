@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { catchError, map, Observable, of, shareReplay } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
@@ -104,7 +104,7 @@ export class EmployeeProfileDashboardComponent {
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
 
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  // companyProfile$ = this.companyProfileService.companyProfile$;
 
   constructor(
     private employeeService: EmployeeService,
@@ -113,7 +113,7 @@ export class EmployeeProfileDashboardComponent {
     private fb: FormBuilder,
     private router: Router,
     private profileChangeRequestService: ProfileChangeRequestService,
-    private companyProfileService: CompanyProfileService,
+    // private companyProfileService: CompanyProfileService,
     // private http: HttpClient
   ) {
     this.editForm = this.fb.group({

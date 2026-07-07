@@ -8,7 +8,7 @@ import { CustomerListComponent } from './customer-management/customer-list/custo
 import { DeliveryManagementComponent } from './delivery-management/delivery-management.component';
 import { QuoteListComponent } from './quotations/quote-list/quote-list.component';
 import { InvoiceListComponent } from './invoices/invoice-list/invoice-list.component';
-
+import { TransactionsHistoryComponent } from './transactions-history/transactions-history.component';
 
 @Component({
   selector: 'app-sales-hub',
@@ -48,7 +48,12 @@ export class SalesHubComponent {
       component: CustomerListComponent,
       icon: 'fa-solid fa-users',
       // icon: 'fa-solid fa-list',
-    }
+    },
+    {
+      name: 'Transactions',
+      component: TransactionsHistoryComponent,
+      icon: 'fa-solid fa-money-bill',
+    },
   ];
 
 }

@@ -21,6 +21,13 @@
           {{ getStatusLabel(order.status) }}
         </span>
         <div class="action-buttons">
+          <button *ngIf="!invoiceGenerated && order.status !== 'CANCELLED'" (click)="generateInvoice()" class="action-btn accept" style="background: #2EB270; color: white;">
+            <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
+          </button>
+          <button *ngIf="invoiceGenerated" (click)="viewInvoice()" class="action-btn download" style="background: rgba(46, 98, 118, 0.08); color: #2E6276; border: 1px solid rgba(46, 98, 118, 0.15);">
+            <i class="fas fa-eye"></i> View Invoice
+          </button>
+          
           <button *ngIf="order.status === 'PENDING'" (click)="processOrder()" class="action-btn send">
             Process Order
           </button>

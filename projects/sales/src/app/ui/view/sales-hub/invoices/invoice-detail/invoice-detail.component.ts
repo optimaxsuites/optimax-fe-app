@@ -8,6 +8,8 @@ import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-invoice-detail',
@@ -25,6 +27,7 @@ export class InvoiceDetailComponent implements OnInit {
   isLoading = true;
   showPaymentModal = false;
   paymentAmount = 0;
+  isDownloading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -173,25 +176,7 @@ export class InvoiceDetailComponent implements OnInit {
     return result;
   }
 
-  markAsPaid(): void {
-    if (this.invoice && confirm(`Mark invoice ${this.invoice.invoiceNumber} as paid?`)) {
-      this.salesService.updateInvoice(this.invoice.id, { 
-        status: 'PAID', 
-        amountPaid: this.invoice.totalAmount, 
-        balanceDue: 0,
-        paidAt: new Date()
-      }).subscribe({
-        next: (updated: Invoice) => {
-          this.invoice = updated;
-          alert(`Invoice ${this.invoice!.invoiceNumber} has been marked as paid`);
-        },
-        error: (err: any) => {
-          console.error('Error marking invoice as paid:', err);
-          alert('Failed to mark invoice as paid. Please try again.');
-        }
-      });
-    }
-  }
+
 
   sendInvoice(): void {
     if (this.invoice && confirm(`Send invoice ${this.invoice.invoiceNumber} to ${this.invoice.customerName}?`)) {
@@ -215,41 +200,6 @@ export class InvoiceDetailComponent implements OnInit {
     }
   }
 
-  recordPayment(amount: number): void {
-    if (!this.invoice || amount <= 0) {
-      alert('Please enter a valid payment amount.');
-      return;
-    }
-
-    const currentPaid = this.invoice.amountPaid || 0;
-    const newPaid = currentPaid + amount;
-    const balance = Math.max(0, this.invoice.totalAmount - newPaid);
-    const newStatus: InvoiceStatus = balance <= 0 ? 'PAID' : 'PARTIAL';
-
-    const updates: Partial<Invoice> = {
-      amountPaid: newPaid,
-      balanceDue: balance,
-      status: newStatus
-    };
-
-    if (newStatus === 'PAID') {
-      updates.paidAt = new Date();
-    }
-
-    this.salesService.updateInvoice(this.invoice.id, updates).subscribe({
-      next: (updated: Invoice) => {
-        this.invoice = updated;
-        this.showPaymentModal = false;
-        this.paymentAmount = 0;
-        alert(`Payment of ${this.formatCurrency(amount)} recorded successfully. Invoice status: ${newStatus}`);
-      },
-      error: (err: any) => {
-        console.error('Error recording payment:', err);
-        alert('Failed to record payment. Please try again.');
-      }
-    });
-  }
-
   cancelInvoice(): void {
     if (this.invoice && confirm(`Are you sure you want to cancel invoice ${this.invoice.invoiceNumber}?`)) {
       this.salesService.updateInvoice(this.invoice.id, { status: 'CANCELLED' }).subscribe({
@@ -260,21 +210,6 @@ export class InvoiceDetailComponent implements OnInit {
         error: (err: any) => {
           console.error('Error cancelling invoice:', err);
           alert('Failed to cancel invoice. Please try again.');
-        }
-      });
-    }
-  }
-
-  markAsOverdue(): void {
-    if (this.invoice && confirm(`Mark invoice ${this.invoice.invoiceNumber} as overdue?`)) {
-      this.salesService.updateInvoice(this.invoice.id, { status: 'OVERDUE' }).subscribe({
-        next: (updated: Invoice) => {
-          this.invoice = updated;
-          alert(`Invoice ${updated.invoiceNumber} marked as overdue.`);
-        },
-        error: (err: any) => {
-          console.error('Error marking invoice as overdue:', err);
-          alert('Failed to mark invoice as overdue. Please try again.');
         }
       });
     }
@@ -314,6 +249,41 @@ export class InvoiceDetailComponent implements OnInit {
       } else {
         this.router.navigate(['/admin/sales/customers', this.invoice.customerId]);
       }
+    }
+  }
+
+  downloadPDF(): void {
+    const element = document.getElementById('invoice-detail-sheet');
+    if (element) {
+      this.isDownloading = true;
+      element.classList.add('pdf-printing-active');
+      
+      setTimeout(() => {
+        html2canvas(element, { 
+          scale: 2, 
+          useCORS: true, 
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        }).then((canvas) => {
+          element.classList.remove('pdf-printing-active');
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210; // A4 size width
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`Invoice-${this.invoice?.invoiceNumber || 'Detail'}.pdf`);
+          this.isDownloading = false;
+        }).catch(err => {
+          element.classList.remove('pdf-printing-active');
+          console.error('Error generating PDF:', err);
+          this.isDownloading = false;
+          alert('Failed to generate PDF. Printing window instead.');
+          window.print();
+        });
+      }, 50);
+    } else {
+      alert('Could not find element to export. Printing window instead.');
+      window.print();
     }
   }
 }
