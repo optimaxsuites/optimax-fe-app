@@ -715,7 +715,7 @@ export class MenuItemsService {
       ],
     },    
     {
-      label: 'Expense',
+      label: 'Expense', 
       code: 'optimaXExpense',
       icon: 'fas fa-money-bill-wave',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
