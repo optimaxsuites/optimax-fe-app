@@ -4,7 +4,8 @@ import { catchError, throwError } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment.prod';
 import {
   Account, Activity, Campaign, Contact, Contract, Deal,
-  DealLineItem, Lead, Pipeline, PipelineStage, Quote, Ticket
+  DealLineItem, Lead, Pipeline, PipelineStage, Quote, Ticket,
+  CommissionCategory, CommissionScheme, CommissionTarget, CommissionEntry,
 } from '../domain/crm.model';
 
 @Injectable({ providedIn: 'root' })
@@ -208,6 +209,69 @@ export class CrmApiService {
   }
   deleteTicket(id: number) {
     return this.http.delete<void>(`${this.base()}/tickets/${id}`).pipe(catchError(this.err));
+  }
+
+  // ── Commission Categories ────────────────────────────────────
+  getCommissionCategories() {
+    return this.http.get<CommissionCategory[]>(`${this.base()}/commission/categories`).pipe(catchError(this.err));
+  }
+  createCommissionCategory(body: CommissionCategory) {
+    return this.http.post<CommissionCategory>(`${this.base()}/commission/categories`, body).pipe(catchError(this.err));
+  }
+  updateCommissionCategory(id: number, body: CommissionCategory) {
+    return this.http.put<CommissionCategory>(`${this.base()}/commission/categories/${id}`, body).pipe(catchError(this.err));
+  }
+  deleteCommissionCategory(id: number) {
+    return this.http.delete<void>(`${this.base()}/commission/categories/${id}`).pipe(catchError(this.err));
+  }
+
+  // ── Commission Schemes ────────────────────────────────────────
+  getCommissionSchemes() {
+    return this.http.get<CommissionScheme[]>(`${this.base()}/commission/schemes`).pipe(catchError(this.err));
+  }
+  getCommissionScheme(id: number) {
+    return this.http.get<CommissionScheme>(`${this.base()}/commission/schemes/${id}`).pipe(catchError(this.err));
+  }
+  createCommissionScheme(body: CommissionScheme) {
+    return this.http.post<CommissionScheme>(`${this.base()}/commission/schemes`, body).pipe(catchError(this.err));
+  }
+  updateCommissionScheme(id: number, body: CommissionScheme) {
+    return this.http.put<CommissionScheme>(`${this.base()}/commission/schemes/${id}`, body).pipe(catchError(this.err));
+  }
+  deleteCommissionScheme(id: number) {
+    return this.http.delete<void>(`${this.base()}/commission/schemes/${id}`).pipe(catchError(this.err));
+  }
+
+  // ── Commission Targets ────────────────────────────────────────
+  getCommissionTargets() {
+    return this.http.get<CommissionTarget[]>(`${this.base()}/commission/targets`).pipe(catchError(this.err));
+  }
+  createCommissionTarget(body: CommissionTarget) {
+    return this.http.post<CommissionTarget>(`${this.base()}/commission/targets`, body).pipe(catchError(this.err));
+  }
+  updateCommissionTarget(id: number, body: CommissionTarget) {
+    return this.http.put<CommissionTarget>(`${this.base()}/commission/targets/${id}`, body).pipe(catchError(this.err));
+  }
+  deleteCommissionTarget(id: number) {
+    return this.http.delete<void>(`${this.base()}/commission/targets/${id}`).pipe(catchError(this.err));
+  }
+
+  // ── Commission Entries ────────────────────────────────────────
+  getCommissionEntries(status?: string) {
+    const params = status ? `?status=${status}` : '';
+    return this.http.get<CommissionEntry[]>(`${this.base()}/commission/entries${params}`).pipe(catchError(this.err));
+  }
+  createCommissionEntry(body: CommissionEntry) {
+    return this.http.post<CommissionEntry>(`${this.base()}/commission/entries`, body).pipe(catchError(this.err));
+  }
+  updateCommissionEntry(id: number, body: Partial<CommissionEntry>) {
+    return this.http.put<CommissionEntry>(`${this.base()}/commission/entries/${id}`, body).pipe(catchError(this.err));
+  }
+  approveCommissionEntries(ids: number[]) {
+    return this.http.post<void>(`${this.base()}/commission/entries/approve`, { ids }).pipe(catchError(this.err));
+  }
+  rejectCommissionEntry(id: number, reason: string) {
+    return this.http.post<void>(`${this.base()}/commission/entries/${id}/reject`, { reason }).pipe(catchError(this.err));
   }
 
   private err(e: any) {

@@ -120,6 +120,7 @@ import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
 import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok/employee-nok.component';
 import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
+import { EmploymentLetterComponent } from './ui/view/employee-management/employment-letter/employment-letter.component';
 import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
 import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
 import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
@@ -288,6 +289,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     EmployeeNokComponent,
     EmployeeGuarantorComponent,
     EmployeeOffboardingComponent,
+    EmploymentLetterComponent,
     GoalComponent,
     MygoalComponent,
     TargetComponent,

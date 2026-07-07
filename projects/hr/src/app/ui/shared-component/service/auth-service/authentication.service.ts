@@ -135,6 +135,12 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+  resetPasswordByAdmin(email: string, newPassword: string): Observable<any> {
+    return this.http
+      .post(this.getBaseApiUrl() + '/x/api/v2/us/register/resetpassword', { email, password: newPassword }, { responseType: 'text' })
+      .pipe(catchError(this.handleError));
+  }
+
   userVerification(token: string): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 

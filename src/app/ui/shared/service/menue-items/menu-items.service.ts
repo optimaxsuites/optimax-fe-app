@@ -161,6 +161,7 @@ export class MenuItemsService {
         { label: 'Reports',      route: this.navigationLink.getLink('crmLink') + '/reports',     roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-chart-bar' },
         { label: 'Automation',   route: this.navigationLink.getLink('crmLink') + '/automation',  roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bolt' },
         { label: 'Government',   route: this.navigationLink.getLink('crmLink') + '/government',  roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-landmark' },
+        { label: 'Commissions',  route: this.navigationLink.getLink('crmLink') + '/commission',  roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-money-bill-wave' },
         { label: 'CRM Settings', route: this.navigationLink.getLink('crmLink') + '/settings',    roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-cog' },
       ],
     },

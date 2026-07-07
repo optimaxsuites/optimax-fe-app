@@ -100,6 +100,7 @@ export class AddEmployeeFormComponent {
 
   nigerianBanks = [
     "Access Bank",
+    "Carbon (One Finance)",
     "Citibank Nigeria",
     "Ecobank Nigeria",
     "Fidelity Bank",
@@ -109,12 +110,19 @@ export class AddEmployeeFormComponent {
     "Heritage Bank",
     "Jaiz Bank",
     "Keystone Bank",
+    "Kuda Microfinance Bank",
+    "Moniepoint Microfinance Bank",
+    "OPay (OPay Digital Services)",
+    "PalmPay",
     "Polaris Bank",
+    "Rubies Microfinance Bank",
     "Stanbic IBTC Bank",
     "Standard Chartered Bank",
     "Sterling Bank",
+    "Taj Bank",
     "Union Bank of Nigeria",
     "United Bank for Africa",
+    "VFD Microfinance Bank",
     "Wema Bank",
     "Zenith Bank"
   ];
@@ -128,6 +136,7 @@ export class AddEmployeeFormComponent {
   employeeId:number = 0
   employeeData: any;
   maxDate: string ="";
+  isExpired = false;
   constructor(
     private fb: FormBuilder,  
     private metadataService: MetadataService,
@@ -139,6 +148,15 @@ export class AddEmployeeFormComponent {
   ) {  }
 
   ngOnInit(): void {
+    const expParam = this.route.snapshot.queryParamMap.get('exp');
+    if (expParam) {
+      const expMs = Number(expParam);
+      if (!isNaN(expMs) && Date.now() > expMs) {
+        this.isExpired = true;
+        return;
+      }
+    }
+
     this.employeeId = parseFloat(this.route.snapshot.paramMap.get('id') as string);
     const today = new Date();
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
@@ -243,16 +261,23 @@ export class AddEmployeeFormComponent {
       nin: employee.nin
     });
 
-    const mediaNo = employee?.employeeMedia?.mediaNo;
-    const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
-    if (mediaNo) {
-      this.loadProfilePhoto(mediaNo);
-      this.basicForm.get('profilePhoto')?.setValue(mediaNo);
-    } else if (profileImage) {
-      this.imageURL = profileImage;
-      this.basicForm.get('profilePhoto')?.setValue(profileImage);
+    const savedPhoto = sessionStorage.getItem(`onboarding_photo_${this.employeeId}`);
+    if (savedPhoto) {
+      this.imageURL = savedPhoto;
+      this.basicForm.get('profilePhoto')?.setValue(savedPhoto);
+      this.basicForm.get('profilePhoto')?.updateValueAndValidity();
+    } else {
+      const mediaNo = employee?.employeeMedia?.mediaNo;
+      const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
+      if (mediaNo) {
+        this.loadProfilePhoto(mediaNo);
+        this.basicForm.get('profilePhoto')?.setValue(mediaNo);
+      } else if (profileImage) {
+        this.imageURL = profileImage;
+        this.basicForm.get('profilePhoto')?.setValue(profileImage);
+      }
+      this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
-    this.basicForm.get('profilePhoto')?.updateValueAndValidity();
 
     const nextOfKin = employee?.nextOfKin || employee?.nextOfKins;
     if (Array.isArray(nextOfKin)) {
@@ -770,12 +795,13 @@ private buildEmployeeFormData(): FormData {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event: any) => {
-        
-          this.imageURL = event.target.result;
-         
+        this.imageURL = event.target.result;
+        if (this.employeeId) {
+          sessionStorage.setItem(`onboarding_photo_${this.employeeId}`, event.target.result);
+        }
       };
       reader.readAsDataURL(file);
-  }
+    }
   }
 
  
