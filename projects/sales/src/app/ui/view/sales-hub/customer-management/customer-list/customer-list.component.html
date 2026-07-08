@@ -94,22 +94,12 @@
 
         <div class="status-filters">
           <span class="filter-label">Status:</span>
-          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'"
-            (click)="filters.status = 'ALL'; applyFilters()">
-            All
-          </button>
-          <button class="status-filter-btn active" [class.active]="filters.status === 'ACTIVE'"
-            (click)="filters.status = 'ACTIVE'; applyFilters()">
-            Active
-          </button>
-          <button class="status-filter-btn inactive" [class.active]="filters.status === 'INACTIVE'"
-            (click)="filters.status = 'INACTIVE'; applyFilters()">
-            Inactive
-          </button>
-          <button class="status-filter-btn blacklisted" [class.active]="filters.status === 'BLACKLISTED'"
-            (click)="filters.status = 'BLACKLISTED'; applyFilters()">
-            Blacklisted
-          </button>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+            <option value="BLACKLISTED">Blacklisted</option>
+          </select>
         </div>
 
         <div class="date-filters">
