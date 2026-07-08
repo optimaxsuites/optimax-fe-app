@@ -19,18 +19,28 @@
     z-index: 1001;
     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
     overflow-y: auto;
-    padding: 1.25rem;
-    @apply rounded-l-[28px] bg-gray-50
+    padding: 0;
+    border-radius: 0;
+    @apply bg-gray-50
+  }
+
+  .modal-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 1rem 0.4rem 0;
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
   }
 
   .drag-handle {
-    position: sticky;
-    top: 0;
-    z-index: 2;
     display: flex;
     justify-content: center;
-    width: 100%;
-    padding: 0.25rem 0 0.75rem;
+    flex: 1;
+    padding: 0.25rem 0 0.5rem;
     background: transparent;
     border: 0;
     cursor: grab;
@@ -43,15 +53,26 @@
     border-radius: 999px;
     background: #cbd5e1;
   }
-  
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
+
+  .modal-close-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
     cursor: pointer;
+    font-size: 14px;
+    transition: background .15s, color .15s;
+    &:hover {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+    }
   }
   
   @media screen and (max-width: 767.98px) {

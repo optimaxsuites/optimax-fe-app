@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { MenuService } from '../../service/menu.service';
 import { MenuItem } from '../../domain/menuItem.dto';
+import { EmployeeService } from '../../service/employee.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,12 +16,33 @@ export class SidebarComponent {
   constructor(
     private menuService: MenuService,
     private router: Router,
+    private employeeService: EmployeeService,
   ) {}
 
   ngOnInit(): void {
     this.role = sessionStorage.getItem('role');
+    this.applyJoiningRestrictionFromStorage();
+    this.buildMenu();
 
-    // JOINING employees only access My Dashboard in HR
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.updateActiveState();
+      }
+    });
+
+    // Also fetch live employee data to catch JOINING status after async load
+    this.employeeService.getCurrentEmployee().subscribe({
+      next: (employee) => {
+        if (employee?.employeeStatus === 'JOINING' && this.role !== 'ROLE_JOINING') {
+          this.role = 'ROLE_JOINING';
+          this.buildMenu();
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  private applyJoiningRestrictionFromStorage(): void {
     try {
       const employeeStr =
         sessionStorage.getItem('currentEmployee') ||
@@ -31,17 +53,14 @@ export class SidebarComponent {
         this.role = 'ROLE_JOINING';
       }
     } catch { /* ignore */ }
+  }
 
+  private buildMenu(): void {
     if (this.role) {
       this.menuItems = this.menuService
         .getMenuItemsForRole(this.role)
         .map((item) => ({ ...item, open: false }));
     }
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) {
-        this.updateActiveState();
-      }
-    });
   }
 
   updateActiveState(): void {
@@ -62,8 +81,7 @@ export class SidebarComponent {
           menuItem.open = false;
         }
       });
-      item.open = willOpen; // Toggle the 'open' property to show/hide submenu
-      console.log(`Toggled submenu for ${item.label}, open: ${item.open}`);
+      item.open = willOpen;
     }
   }
 }

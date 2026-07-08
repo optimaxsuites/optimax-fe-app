@@ -363,7 +363,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
-    // EmployeeProfileDashboardComponent,
+    EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
     CooperativeMemberGroupDashboardComponent,
