@@ -319,6 +319,18 @@ export class InvoiceDetailComponent implements OnInit {
     }
   }
 
+  goToInvoicesList(): void {
+    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    sessionStorage.setItem(sessionStorageKey, 'Invoices');
+
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
+  }
+
   editInvoice(): void {
     if (this.edit.observed) {
       this.edit.emit(this.invoice!.id);

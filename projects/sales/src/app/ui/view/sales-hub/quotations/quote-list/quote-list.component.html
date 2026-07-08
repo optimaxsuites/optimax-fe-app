@@ -211,6 +211,10 @@
                   <button class="action-btn view-btn" (click)="openQuoteDetail(quote.id)" title="View Details">
                     <i class="fas fa-eye"></i>
                   </button>
+                  <button *ngIf="quote.status === 'CONVERTED'" class="action-btn generate-invoice-btn"
+                    (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                  </button>
                   <button *ngIf="quote.status === 'DRAFT'" class="action-btn edit-btn"
                     (click)="openEditQuoteModal(quote.id)" title="Edit Quote">
                     <i class="fas fa-pencil-alt"></i>

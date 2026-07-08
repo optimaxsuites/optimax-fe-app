@@ -227,6 +227,9 @@
                     <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
                       <i class="fas fa-eye"></i>
                     </button>
+                    <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product.id)" title="Generate Quote">
+                      <i class="fas fa-file-invoice"></i>
+                    </button>
                     <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
                       <i class="fas fa-pencil-alt"></i>
                     </button>
@@ -308,6 +311,9 @@
             <div class="card-actions">
               <button class="action-btn view-btn" (click)="viewProduct(product.id)" title="View Details">
                 <i class="fas fa-eye"></i>
+              </button>
+              <button class="action-btn generate-quote-btn" (click)="generateQuoteFromProduct(product.id)" title="Generate Quote">
+                <i class="fas fa-file-invoice"></i>
               </button>
               <button class="action-btn edit-btn" (click)="editProduct(product.id)" title="Edit Product">
                 <i class="fas fa-pencil-alt"></i>

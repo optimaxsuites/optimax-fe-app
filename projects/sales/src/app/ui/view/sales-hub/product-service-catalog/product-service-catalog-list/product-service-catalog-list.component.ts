@@ -220,6 +220,12 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     }
   }
 
+  generateQuoteFromProduct(productId: string): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
+    this.router.navigate(path, { queryParams: { productId: productId } });
+  }
+
   viewProduct(productId: string): void {
     const uuid = this.route.snapshot.paramMap.get('uuid');
     if (uuid) {

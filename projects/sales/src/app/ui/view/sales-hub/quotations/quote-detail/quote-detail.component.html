@@ -21,6 +21,9 @@
             {{ getStatusLabel(quote.status) | titlecase }}
           </span>
         </div>
+        <button (click)="goToQuotesList()" class="btn-save-header" style="background-color: #2E6276; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;">
+          <i class="fas fa-list"></i> See Quotes
+        </button>
         <button *ngIf="quote.status === 'DRAFT'" (click)="editQuote()" class="btn-save-header">
           <i class="fas fa-pencil-alt"></i> Edit
         </button>
