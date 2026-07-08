@@ -159,6 +159,11 @@ import { CorrectionrequestformComponent } from './ui/view/attendance/employee/co
 //import { MonthlyattendancelistComponent } from './ui/view/attendance/employee/employeedashboard/employeesummary/monthlyattendancelist/monthlyattendancelist.component';
 import { AdminCorrectionsComponent } from './ui/view/attendance/admin/admin-corrections/admin-corrections.component';
 import { AttendanceReportsComponent } from './ui/view/attendance/admin/attendance-reports/attendance-reports.component';
+import { BiometricEnrollmentComponent } from './ui/view/biometric/biometric-enrollment/biometric-enrollment.component';
+import { RemoteCheckinComponent } from './ui/view/attendance/employee/remote-checkin/remote-checkin.component';
+import { CrossBranchRequestComponent } from './ui/view/attendance/employee/cross-branch/cross-branch-request.component';
+import { FraudDetectionDashboardComponent } from './ui/view/attendance/admin/fraud-detection-dashboard/fraud-detection-dashboard.component';
+import { SupervisorApprovalQueueComponent } from './ui/view/attendance/admin/supervisor-approval-queue/supervisor-approval-queue.component';
 import { CalendarModule } from 'primeng/calendar';
 import { AttendanceDetailsComponent } from './ui/view/attendance/attendance-details/attendance-details.component';
 import { ProjectComponent } from './ui/view/project/project.component';
@@ -332,6 +337,11 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     CorrectionrequestformComponent,
     AdminCorrectionsComponent,
     AttendanceReportsComponent,
+    BiometricEnrollmentComponent,
+    RemoteCheckinComponent,
+    CrossBranchRequestComponent,
+    FraudDetectionDashboardComponent,
+    SupervisorApprovalQueueComponent,
     ProjectComponent,
     ProjectDetailComponent,
     ProjectListComponent,

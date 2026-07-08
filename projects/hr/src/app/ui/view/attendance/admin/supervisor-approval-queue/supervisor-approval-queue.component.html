@@ -1,0 +1,163 @@
+<div class="approval-queue-container">
+  <div class="queue-header">
+    <h2>Cross-Branch Approval Queue</h2>
+    <div class="header-actions">
+      <span class="badge bg-danger" *ngIf="getPendingCount() > 0">
+        {{ getPendingCount() }} Pending
+      </span>
+      <button class="btn btn-sm btn-primary" (click)="loadOutstandingRequests()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show">
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show">
+    <i class="fas fa-check-circle"></i> {{ successMessage }}
+    <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary"></div>
+    <p>Loading pending requests...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading" class="queue-content">
+    <div class="requests-list">
+      <h3>Pending Requests ({{ getPendingCount() }})</h3>
+
+      <div *ngIf="getPendingCount() === 0" class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <p>No pending requests to review</p>
+      </div>
+
+      <div *ngFor="let request of outstandingRequests"
+           class="request-card"
+           [class.selected]="selectedRequest?.id === request.id"
+           (click)="selectRequest(request)">
+        <div class="request-header">
+          <div class="employee-info">
+            <strong>{{ request.employeeName }}</strong>
+            <span class="time-ago">{{ request.requestDate }}</span>
+          </div>
+          <span class="approval-type badge"
+                [class.bg-info]="request.approvalType === 'PRE_APPROVAL'"
+                [class.bg-warning]="request.approvalType === 'RETROSPECTIVE'">
+            {{ getApprovalTypeLabel(request.approvalType) }}
+          </span>
+        </div>
+
+        <div class="request-body">
+          <p class="branch-info">
+            <i class="fas fa-arrow-right"></i>
+            <strong>{{ request.homeBranchName }}</strong>
+            →
+            <strong>{{ request.requestedBranchName }}</strong>
+          </p>
+        </div>
+
+        <div class="request-footer">
+          <span class="status">Status: <strong>{{ request.supervisorApprovalStatus }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="details-panel" *ngIf="selectedRequest">
+      <h3>Request Details</h3>
+
+      <div class="detail-section">
+        <h5>Employee Information</h5>
+        <div class="detail-item">
+          <span class="label">Name:</span>
+          <span class="value">{{ selectedRequest.employeeName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Employee ID:</span>
+          <span class="value">{{ selectedRequest.employeeId }}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h5>Branch Information</h5>
+        <div class="detail-item">
+          <span class="label">Home Branch:</span>
+          <span class="value">{{ selectedRequest.homeBranchName }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Requested Branch:</span>
+          <span class="value">{{ selectedRequest.requestedBranchName }}</span>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h5>Request Details</h5>
+        <div class="detail-item">
+          <span class="label">Request Date:</span>
+          <span class="value">{{ selectedRequest.requestDate | date:'medium' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Approval Type:</span>
+          <span class="value">{{ getApprovalTypeLabel(selectedRequest.approvalType) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Status:</span>
+          <span class="value">
+            <span class="badge" [class.bg-warning]="selectedRequest.supervisorApprovalStatus === 'PENDING'">
+              {{ selectedRequest.supervisorApprovalStatus }}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Rejection Reason (if needed) -->
+      <div class="action-section">
+        <h5>Decision</h5>
+
+        <div class="button-group">
+          <button class="btn btn-success"
+                  (click)="approveRequest(selectedRequest)"
+                  [disabled]="isProcessing">
+            <span *ngIf="!isProcessing">
+              <i class="fas fa-check"></i> Approve Request
+            </span>
+            <span *ngIf="isProcessing">
+              <i class="fas fa-spinner fa-spin"></i> Processing...
+            </span>
+          </button>
+
+          <button class="btn btn-danger"
+                  (click)="rejectRequest(selectedRequest)"
+                  [disabled]="isProcessing || !rejectionReason.trim()">
+            <span *ngIf="!isProcessing">
+              <i class="fas fa-times"></i> Reject Request
+            </span>
+            <span *ngIf="isProcessing">
+              <i class="fas fa-spinner fa-spin"></i> Processing...
+            </span>
+          </button>
+        </div>
+
+        <div class="rejection-form">
+          <label class="form-label">Rejection Reason (if rejecting):</label>
+          <textarea class="form-control"
+                    [(ngModel)]="rejectionReason"
+                    rows="3"
+                    placeholder="Explain why you are rejecting this request..."
+                    [disabled]="isProcessing"></textarea>
+        </div>
+
+        <button class="btn btn-secondary btn-sm mt-2" (click)="clearSelection()">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

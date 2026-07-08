@@ -1,4 +1,5 @@
 import { ShiftTrackingMetrics } from './shift-tracking-metrics.dto';
+import { RemoteAttendanceMetadata, CheckInSource, FraudDetectionFlags } from './remote-attendance.dto';
 
 export interface AttendanceTableRecord {
   id: number; //attendance record id from backend
@@ -36,4 +37,22 @@ export interface AttendanceTableRecord {
   appliedExpectedEnd?: string;
   appliedShiftName?: string;
   shiftMetrics?: ShiftTrackingMetrics;
+
+  // --- BIOMETRIC DEVICE INTEGRATION ---
+  biometricDeviceId?: string;
+  biometricEnrollmentId?: number;
+  fingerprintMatched?: boolean;
+  checkInSource?: CheckInSource;
+
+  // --- REMOTE ATTENDANCE & FRAUD DETECTION ---
+  remoteMetadata?: RemoteAttendanceMetadata;
+  fraudFlags?: FraudDetectionFlags[];
+  hasFraudFlags?: boolean;
+  riskScore?: number;
+
+  // --- CROSS-BRANCH ATTENDANCE ---
+  checkedInBranchId?: number;
+  homeBranchId?: number;
+  crossBranchRequestId?: string;
+  crossBranchApprovalStatus?: 'APPROVED' | 'PENDING' | 'REJECTED';
 }
