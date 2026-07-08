@@ -38,11 +38,11 @@ export class SalesHubComponent {
       component: InvoiceListComponent,
       icon: 'fa-solid fa-file-invoice-dollar',
     },
-    // {
-    //   name: 'Orders',
-    //   component: SalesOrdersListComponent,
-    //   icon: 'fa-solid fa-clock-rotate-left',
-    // },
+    {
+      name: 'Orders',
+      component: SalesOrdersListComponent,
+      icon: 'fa-solid fa-clock-rotate-left',
+    },
     {
       name: 'Customers',
       component: CustomerListComponent,

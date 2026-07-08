@@ -155,6 +155,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.loadInvoice();
     } else if (this.quoteId) {
       this.loadQuoteForInvoice();
+      this.currentStep = 3;
     } else {
       this.addLineItem();
     }
@@ -390,6 +391,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       next: (quote: Quote | null) => {
         if (quote) {
           this.populateFromQuote(quote);
+          this.validateStep2();
         }
         this.isLoading = false;
       },
@@ -401,13 +403,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private populateFromQuote(quote: Quote): void {
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+
     this.invoiceForm.patchValue({
       customerId: quote.customerId,
       customerName: quote.customerName,
       currency: quote.currency,
       notes: quote.notes,
       terms: quote.terms,
-      paymentTerms: quote.terms || 'Net 30'
+      paymentTerms: quote.terms || 'Net 30',
+      dueDate: this.formatDateForInput(defaultDueDate)
     });
 
     // Add items from quote

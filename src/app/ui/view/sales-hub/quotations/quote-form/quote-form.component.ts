@@ -8,6 +8,8 @@ import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../do
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { lastValueFrom } from 'rxjs';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-quote-form',
@@ -34,6 +36,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   isLoading = false;
   isEditMode = false;
   quoteId: string = '';
+  generatedQuoteNumber: string = '';
+  productId: string = '';
   
   // ============ WIZARD STATE ============
   currentStep: 1 | 2 | 3 = 1;
@@ -151,6 +155,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     if (!this.customerId) {
       this.customerId = this.route.snapshot.queryParamMap.get('customerId') || '';
     }
+    this.productId = this.route.snapshot.queryParamMap.get('productId') || '';
     
     this.loadCustomers();
     this.loadProducts();
@@ -158,7 +163,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     
     if (this.isEditMode) {
       this.loadQuote();
-    } else {
+    } else if (!this.productId) {
       this.addLineItem();
     }
   }
@@ -464,6 +469,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             this.quoteForm.patchValue({ customerName: customer.name });
           }
         }
+        this.checkAndAddProductFromParam();
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
@@ -475,6 +481,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
             this.quoteForm.patchValue({ customerName: customer.name });
           }
         }
+        this.checkAndAddProductFromParam();
       }
     });
   }
@@ -484,12 +491,92 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.products = response.data;
         this.filteredProducts = this.products;
+        this.checkAndAddProductFromParam();
       },
       error: (error: any) => {
         console.error('Error loading products:', error);
         this.setMockProducts();
+        this.checkAndAddProductFromParam();
       }
     });
+  }
+
+  private checkAndAddProductFromParam(): void {
+    if (!this.isEditMode && this.productId) {
+      const product = this.products.find(p => p.id === this.productId);
+      if (product && this.items.length === 0) {
+        // Clear items form array first to avoid empty/default item
+        while (this.items.length) {
+          this.items.removeAt(0);
+        }
+        
+        // Add new line item
+        this.addLineItem();
+        const index = this.items.length - 1;
+        const itemForm = this.items.at(index);
+        itemForm.patchValue({
+          productId: product.id,
+          productName: product.name,
+          description: product.description || '',
+          quantity: 1,
+          unitPrice: product.unitPrice,
+          taxRate: 0
+        });
+        
+        this.calculateItemTotal(itemForm);
+        
+        // Select the first customer as default if available
+        if (this.customers && this.customers.length > 0) {
+          const firstCustomer = this.customers[0];
+          this.quoteForm.patchValue({
+            customerId: firstCustomer.id,
+            customerName: firstCustomer.name
+          });
+        }
+        
+        // Skip straight to Step 3 (Live Document Preview) so they can view as a preview before sending!
+        this.currentStep = 3;
+        
+        // Set a default template if not set
+        if (!this.selectedTemplate) {
+          this.selectedTemplate = {
+            id: 'standard',
+            name: 'Standard Professional',
+            description: 'Clean, balanced layout with all essential business information',
+            sections: {
+              showCustomerDetails: true,
+              showCompanyLogo: true,
+              showTaxBreakdown: true,
+              showShippingDetails: true,
+              showPaymentTerms: true,
+              showNotes: true,
+              showTermsConditions: true,
+              showSignature: true,
+              showAttachments: false,
+              showItemImages: false,
+              showSKU: true,
+              showSerialNumbers: false,
+              showBatchDetails: false,
+              showSubtotalPerGroup: true,
+              showTotalInWords: true,
+              showCurrencySymbol: true,
+              showVendorInfo: true,
+              showCustomFields: false
+            },
+            layout: 'standard',
+            fontSize: 'medium',
+            colorTheme: 'professional'
+          };
+        }
+      } else if (product && this.items.length > 0 && !this.quoteForm.get('customerId')?.value && this.customers && this.customers.length > 0) {
+        // Populate customer default if customer list finishes loading after product
+        const firstCustomer = this.customers[0];
+        this.quoteForm.patchValue({
+          customerId: firstCustomer.id,
+          customerName: firstCustomer.name
+        });
+      }
+    }
   }
 
   private loadQuote(): void {
@@ -677,15 +764,37 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Generate PDF (placeholder)
+  // Generate PDF from live preview mockup
   private async generateQuotePDF(quote: Quote): Promise<Blob> {
-    const content = `
-      QUOTE: ${quote.quoteNumber}
-      Customer: ${quote.customerName}
-      Total: ${quote.totalAmount} ${quote.currency}
-      Template: ${this.selectedTemplate?.name || 'Standard'}
-    `;
-    return new Blob([content], { type: 'application/pdf' });
+    this.generatedQuoteNumber = quote.quoteNumber;
+    
+    // Allow small delay for Angular to bind the new quote number to the DOM
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const element = document.getElementById('quote-preview-document');
+    if (!element) {
+      throw new Error('Preview document element not found');
+    }
+    
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+    
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210; // A4 size width in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    
+    const pdfBlob = pdf.output('blob');
+    
+    // Reset the generated quote number
+    this.generatedQuoteNumber = '';
+    
+    return pdfBlob;
   }
 
   // Send email (placeholder)

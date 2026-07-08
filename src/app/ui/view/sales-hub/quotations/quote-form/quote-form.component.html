@@ -557,7 +557,7 @@
             </div>
 
             <!-- Paper Mockup Document -->
-            <div class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
+            <div id="quote-preview-document" class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
               <div class="doc-header">
                 <div class="doc-company-info">
                   <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
@@ -571,7 +571,7 @@
                 </div>
                 <div class="doc-meta-info">
                   <h1 class="doc-title">QUOTATION</h1>
-                  <p><strong>Quote #:</strong> {{ isEditMode ? quoteId : 'DRAFT' }}</p>
+                  <p><strong>Quote #:</strong> {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</p>
                   <p><strong>Date:</strong> {{ quoteForm.get('quoteDate')?.value || today }}</p>
                   <p><strong>Valid Till:</strong> {{ quoteForm.get('validUntil')?.value }}</p>
                 </div>
