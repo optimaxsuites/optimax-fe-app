@@ -595,7 +595,7 @@
             </div>
 
             <!-- Paper Mockup Document -->
-            <div class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
+            <div id="invoice-preview-document" class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
               <div class="doc-header">
                 <div class="doc-company-info">
                   <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
@@ -609,7 +609,7 @@
                 </div>
                 <div class="doc-meta-info">
                   <h1 class="doc-title">INVOICE</h1>
-                  <p><strong>Invoice #:</strong> {{ isEditMode ? invoiceId : 'DRAFT' }}</p>
+                  <p><strong>Invoice #:</strong> {{ generatedInvoiceNumber || (isEditMode ? invoiceId : 'DRAFT') }}</p>
                   <p><strong>Date:</strong> {{ invoiceForm.get('issueDate')?.value || today }}</p>
                   <p><strong>Due Date:</strong> {{ invoiceForm.get('dueDate')?.value }}</p>
                 </div>
