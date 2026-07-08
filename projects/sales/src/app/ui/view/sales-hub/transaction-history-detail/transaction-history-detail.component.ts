@@ -35,7 +35,7 @@ export class TransactionHistoryDetailComponent implements OnInit {
 
   timelineEvents: TimelineEvent[] = [];
 
-  constructor(private salesService: SalesService) {}
+  constructor(private salesService: SalesService) { }
 
   ngOnInit(): void {
     if (this.paymentId) {
@@ -59,7 +59,7 @@ export class TransactionHistoryDetailComponent implements OnInit {
         this.salesService.getInvoiceById(payment.invoiceId).subscribe({
           next: (invoice) => {
             this.invoice = invoice;
-            
+
             // Parallel fetch for Sales Orders, Quotes, Customer, and Payments Log
             const orderObs = invoice ? this.salesService.getSalesOrders({ status: 'ALL', size: 100 }) : of({ data: [] as SalesOrder[] });
             const quoteObs = invoice ? this.salesService.getQuotes({ status: 'ALL', size: 100 }) : of({ data: [] as Quote[] });
@@ -73,7 +73,7 @@ export class TransactionHistoryDetailComponent implements OnInit {
                 if (invoice) {
                   // Robust order matching
                   const invoiceOrderIdClean = invoice.orderId.replace('ORD-', '').replace(/^0+/, '');
-                  this.salesOrder = ordersResponse.data.find(o => 
+                  this.salesOrder = ordersResponse.data.find(o =>
                     o.id === invoice.orderId ||
                     o.orderNumber === invoice.orderId ||
                     o.id === invoiceOrderIdClean ||
@@ -83,7 +83,7 @@ export class TransactionHistoryDetailComponent implements OnInit {
                   if (this.salesOrder) {
                     // Robust quote matching
                     const orderQuoteIdClean = this.salesOrder.quoteId ? this.salesOrder.quoteId.replace('QT-', '').replace(/^0+/, '') : '';
-                    this.quote = quotesResponse.data.find(q => 
+                    this.quote = quotesResponse.data.find(q =>
                       q.id === this.salesOrder!.quoteId ||
                       q.quoteNumber === this.salesOrder!.quoteId ||
                       q.id === orderQuoteIdClean ||
@@ -299,7 +299,26 @@ export class TransactionHistoryDetailComponent implements OnInit {
     });
   }
 
+  formatDate(date: any): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-NG', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
   getTimelineClass(status: string): string {
     return `timeline-node-${status}`;
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      'COMPLETED': 'completed',
+      'FAILED': 'failed',
+      'PENDING': 'pending',
+      'REFUNDED': 'refunded'
+    };
+    return classes[status] || 'pending';
   }
 }

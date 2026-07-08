@@ -1,159 +1,214 @@
-<div class="detail-overlay-container" *ngIf="!isLoading && payment">
+<div class="transaction-detail-container" *ngIf="!isLoading && payment">
   <div class="detail-wrapper">
 
-    <!-- Header Panel -->
-    <div class="detail-header">
-      <div class="header-left">
-        <app-back-button (click)="goBack()"></app-back-button>
-        <div class="header-info">
-          <div class="header-badge">
+    <!-- Hero Header - Matching Quote List -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="dashboard-badge">
             <i class="fas fa-route"></i>
-            <span>Sales Lifecycle Tracking</span>
+            <span>Sales Hub • Transaction Details</span>
           </div>
-          <h1 class="header-title">Transaction Details: {{ payment.paymentNumber }}</h1>
-          <p class="header-subtitle">Follow the end-to-end journey from the initial quote to this final settlement log.</p>
+          <h1>Transaction: {{ payment.paymentNumber }}</h1>
+          <p class="hero-subtitle">Follow the end-to-end journey from the initial quote to this final settlement log.
+          </p>
         </div>
-      </div>
-      <div class="header-actions">
-        <span class="status-badge" [class]="'status-' + (payment.status === 'COMPLETED' ? 'paid' : payment.status === 'FAILED' ? 'failed' : 'pending')">
-          <span class="status-dot"></span>
-          {{ payment.status }}
-        </span>
+        <div class="hero-actions">
+          <span class="status-badge-large" [class]="'status-' + getStatusClass(payment.status)">
+            <span class="status-dot"></span>
+            {{ payment.status | titlecase }}
+          </span>
+          <button class="btn-secondary-hero" (click)="goBack()">
+            <i class="fas fa-arrow-left"></i>
+            Back
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Info Cards Grid -->
-    <div class="summary-cards-grid">
-      <!-- Customer Card -->
-      <div class="summary-card glass">
-        <div class="card-header">
-          <i class="fas fa-user-tie text-primary-light"></i>
-          <h3>Customer Details</h3>
+    <!-- Stats Cards - Matching Quote List -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-money-bill-wave"></i>
         </div>
-        <div class="card-body" *ngIf="customer">
-          <div class="customer-profile">
-            <div class="avatar-lg">
-              <span>{{ customer.name.charAt(0).toUpperCase() }}</span>
-            </div>
-            <div class="profile-meta">
-              <strong>{{ customer.name }}</strong>
-              <span class="text-xs text-muted">{{ customer.email }}</span>
-              <span class="text-xs text-muted">{{ customer.phone }}</span>
-            </div>
-          </div>
-          <div class="profile-details-list">
-            <div class="detail-row">
-              <span class="label">Tax ID:</span>
-              <span class="value">{{ customer.taxId || 'N/A' }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Total spent:</span>
-              <span class="value font-semibold text-success">{{ formatCurrency(customer.totalSpent) }}</span>
-            </div>
-          </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(payment.amount, payment.currency) }}</div>
+          <div class="stat-label">Amount Paid</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-arrow-up"></i>
+          <span>Paid</span>
         </div>
       </div>
 
-      <!-- Financial Transaction Card -->
-      <div class="summary-card glass">
+      <div class="stat-card method">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ payment.method.replace('_', ' ') | titlecase }}</div>
+          <div class="stat-label">Payment Method</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-check-circle"></i>
+          <span>{{ payment.status }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card date" *ngIf="payment.paymentDate">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatDate(payment.paymentDate) }}</div>
+          <div class="stat-label">Payment Date</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-clock"></i>
+          <span>Processed</span>
+        </div>
+      </div>
+
+      <div class="stat-card reference" *ngIf="payment.reference">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-hashtag"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ payment.reference }}</div>
+          <div class="stat-label">Reference</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-barcode"></i>
+          <span>Transaction ID</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer & Invoice Info Cards - Matching Quote List Style -->
+    <div class="info-cards-grid">
+      <!-- Customer Card -->
+      <div class="info-card glass" *ngIf="customer">
         <div class="card-header">
-          <i class="fas fa-wallet text-primary-light"></i>
-          <h3>Payment Overview</h3>
+          <div class="card-header-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <h3>Customer Information</h3>
         </div>
         <div class="card-body">
-          <div class="payment-metrics">
-            <div class="metric-block">
-              <span class="label">Amount Paid</span>
-              <span class="value text-success font-bold">{{ formatCurrency(payment.amount, payment.currency) }}</span>
+          <div class="customer-profile">
+            <div class="customer-avatar">
+              <span>{{ customer.name.charAt(0).toUpperCase() }}</span>
             </div>
-            <div class="metric-divider"></div>
-            <div class="metric-block">
-              <span class="label">Payment Method</span>
-              <span class="value font-semibold text-primary-dark">
-                {{ payment.method.replace('_', ' ') | titlecase }}
+            <div class="customer-details">
+              <strong>{{ customer.name }}</strong>
+              <span>{{ customer.email }}</span>
+              <span>{{ customer.phone }}</span>
+            </div>
+          </div>
+          <div class="details-list">
+            <div class="detail-row">
+              <span class="detail-label">Tax ID</span>
+              <span class="detail-value">{{ customer.taxId || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Spent</span>
+              <span class="detail-value amount">{{ formatCurrency(customer.totalSpent) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <span class="detail-value">
+                <span class="status-badge" [class]="'status-' + getStatusClass(customer.status)">
+                  <span class="status-dot"></span>
+                  {{ customer.status | titlecase }}
+                </span>
               </span>
             </div>
           </div>
-          <div class="profile-details-list mt-3">
-            <div class="detail-row">
-              <span class="label">Reference:</span>
-              <span class="value font-mono text-xs">{{ payment.reference }}</span>
-            </div>
-            <div class="detail-row" *ngIf="payment.notes">
-              <span class="label">Notes:</span>
-              <span class="value text-xs text-muted truncate-cell" [title]="payment.notes">{{ payment.notes }}</span>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Invoice Summary Card -->
-      <div class="summary-card glass" *ngIf="invoice">
+      <!-- Invoice Card -->
+      <div class="info-card glass" *ngIf="invoice">
         <div class="card-header">
-          <i class="fas fa-file-invoice-dollar text-primary-light"></i>
+          <div class="card-header-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
           <h3>Linked Invoice</h3>
         </div>
         <div class="card-body">
-          <div class="invoice-summary-details">
-            <div class="detail-row mb-2">
-              <span class="label">Invoice Number:</span>
-              <span class="value font-bold text-primary-light">{{ invoice.invoiceNumber }}</span>
-            </div>
-            <div class="detail-row mb-2">
-              <span class="label">Invoice Total:</span>
-              <span class="value font-semibold">{{ formatCurrency(invoice.totalAmount, invoice.currency) }}</span>
-            </div>
-            <div class="detail-row mb-2">
-              <span class="label">Remaining Balance:</span>
-              <span class="value font-bold text-danger">{{ formatCurrency(invoice.balanceDue, invoice.currency) }}</span>
+          <div class="invoice-summary">
+            <div class="detail-row">
+              <span class="detail-label">Invoice #</span>
+              <span class="detail-value invoice-number">{{ invoice.invoiceNumber }}</span>
             </div>
             <div class="detail-row">
-              <span class="label">Payment Terms:</span>
-              <span class="value text-muted text-xs">{{ invoice.paymentTerms }}</span>
+              <span class="detail-label">Total Amount</span>
+              <span class="detail-value amount">{{ formatCurrency(invoice.totalAmount, invoice.currency) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Balance Due</span>
+              <span class="detail-value balance">{{ formatCurrency(invoice.balanceDue, invoice.currency) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Payment Terms</span>
+              <span class="detail-value">{{ invoice.paymentTerms }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <span class="detail-value">
+                <span class="status-badge" [class]="'status-' + getStatusClass(invoice.status)">
+                  <span class="status-dot"></span>
+                  {{ invoice.status | titlecase }}
+                </span>
+              </span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MAIN TIMELINE SECTION -->
-    <div class="timeline-container glass">
+    <!-- Timeline Section -->
+    <div class="table-container">
       <div class="timeline-header">
-        <h2><i class="fas fa-history text-primary-light"></i> Audit Sales Lifecycle</h2>
-        <span class="timeline-counter">{{ timelineEvents.length }} Lifecycle Logs Found</span>
+        <div class="timeline-header-left">
+          <i class="fas fa-history"></i>
+          <h3>Audit Sales Lifecycle</h3>
+          <span class="timeline-count">{{ timelineEvents.length }} Events</span>
+        </div>
       </div>
 
       <div class="lifecycle-timeline">
         <div class="timeline-track-line"></div>
 
         <div class="timeline-event-wrapper" *ngFor="let event of timelineEvents; let i = index">
-          
+
           <!-- Left side: Timestamp -->
           <div class="timeline-event-time">
-            <i class="far fa-clock mr-1"></i>
+            <i class="far fa-clock"></i>
             {{ formatDateTime(event.timestamp) }}
           </div>
 
           <!-- Center: Node Indicator -->
-          <div class="timeline-event-node" [ngClass]="getTimelineClass(event.status)">
+          <div class="timeline-event-node" [class]="'timeline-node-' + event.status">
             <i class="fas" [ngClass]="event.icon"></i>
           </div>
 
           <!-- Right side: Event Card -->
           <div class="timeline-event-card">
-            <div class="card-header-inner">
-              <h3 class="event-title">{{ event.title }}</h3>
-              <span class="badge" [ngClass]="'badge-' + event.status">
+            <div class="event-header">
+              <h4 class="event-title">{{ event.title }}</h4>
+              <span class="event-badge" [class]="'badge-' + event.status">
                 {{ event.status }}
               </span>
             </div>
-            
-            <p class="event-desc">{{ event.description }}</p>
 
-            <!-- Meta details if present (e.g. quote totals, order items count, invoice status) -->
+            <p class="event-description">{{ event.description }}</p>
+
+            <!-- Meta details -->
             <div class="event-meta-grid" *ngIf="event.meta && event.meta.length > 0">
               <div class="meta-item" *ngFor="let item of event.meta">
-                <span class="meta-label">{{ item.label }}:</span>
+                <span class="meta-label">{{ item.label }}</span>
                 <span class="meta-value">{{ item.value }}</span>
               </div>
             </div>
@@ -167,20 +222,18 @@
 </div>
 
 <!-- Loading State -->
-<div class="loading-state-overlay" *ngIf="isLoading">
-  <div class="spinner-wrapper">
-    <div class="spinner-ring"></div>
-    <p>Reconstructing audit log history...</p>
-  </div>
+<div *ngIf="isLoading" class="loading-state">
+  <div class="spinner"></div>
+  <p>Loading transaction details...</p>
 </div>
 
 <!-- Error State -->
-<div class="error-state-overlay" *ngIf="!isLoading && !payment">
-  <div class="error-box glass">
-    <i class="fas fa-circle-exclamation fa-4x text-danger mb-3"></i>
-    <h2>Transaction Log Not Found</h2>
+<div *ngIf="!isLoading && !payment" class="error-state">
+  <div class="empty-state-content">
+    <i class="fas fa-circle-exclamation"></i>
+    <h3>Transaction Not Found</h3>
     <p>Could not locate the billing transaction. It might have been cleared or removed.</p>
-    <button class="btn-primary" (click)="goBack()">
+    <button class="btn-primary-sm" (click)="goBack()">
       <i class="fas fa-arrow-left"></i> Back to Transactions
     </button>
   </div>
