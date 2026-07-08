@@ -1,0 +1,187 @@
+<div class="detail-overlay-container" *ngIf="!isLoading && payment">
+  <div class="detail-wrapper">
+
+    <!-- Header Panel -->
+    <div class="detail-header">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-info">
+          <div class="header-badge">
+            <i class="fas fa-route"></i>
+            <span>Sales Lifecycle Tracking</span>
+          </div>
+          <h1 class="header-title">Transaction Details: {{ payment.paymentNumber }}</h1>
+          <p class="header-subtitle">Follow the end-to-end journey from the initial quote to this final settlement log.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-badge" [class]="'status-' + (payment.status === 'COMPLETED' ? 'paid' : payment.status === 'FAILED' ? 'failed' : 'pending')">
+          <span class="status-dot"></span>
+          {{ payment.status }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Info Cards Grid -->
+    <div class="summary-cards-grid">
+      <!-- Customer Card -->
+      <div class="summary-card glass">
+        <div class="card-header">
+          <i class="fas fa-user-tie text-primary-light"></i>
+          <h3>Customer Details</h3>
+        </div>
+        <div class="card-body" *ngIf="customer">
+          <div class="customer-profile">
+            <div class="avatar-lg">
+              <span>{{ customer.name.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="profile-meta">
+              <strong>{{ customer.name }}</strong>
+              <span class="text-xs text-muted">{{ customer.email }}</span>
+              <span class="text-xs text-muted">{{ customer.phone }}</span>
+            </div>
+          </div>
+          <div class="profile-details-list">
+            <div class="detail-row">
+              <span class="label">Tax ID:</span>
+              <span class="value">{{ customer.taxId || 'N/A' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Total spent:</span>
+              <span class="value font-semibold text-success">{{ formatCurrency(customer.totalSpent) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Transaction Card -->
+      <div class="summary-card glass">
+        <div class="card-header">
+          <i class="fas fa-wallet text-primary-light"></i>
+          <h3>Payment Overview</h3>
+        </div>
+        <div class="card-body">
+          <div class="payment-metrics">
+            <div class="metric-block">
+              <span class="label">Amount Paid</span>
+              <span class="value text-success font-bold">{{ formatCurrency(payment.amount, payment.currency) }}</span>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric-block">
+              <span class="label">Payment Method</span>
+              <span class="value font-semibold text-primary-dark">
+                {{ payment.method.replace('_', ' ') | titlecase }}
+              </span>
+            </div>
+          </div>
+          <div class="profile-details-list mt-3">
+            <div class="detail-row">
+              <span class="label">Reference:</span>
+              <span class="value font-mono text-xs">{{ payment.reference }}</span>
+            </div>
+            <div class="detail-row" *ngIf="payment.notes">
+              <span class="label">Notes:</span>
+              <span class="value text-xs text-muted truncate-cell" [title]="payment.notes">{{ payment.notes }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Summary Card -->
+      <div class="summary-card glass" *ngIf="invoice">
+        <div class="card-header">
+          <i class="fas fa-file-invoice-dollar text-primary-light"></i>
+          <h3>Linked Invoice</h3>
+        </div>
+        <div class="card-body">
+          <div class="invoice-summary-details">
+            <div class="detail-row mb-2">
+              <span class="label">Invoice Number:</span>
+              <span class="value font-bold text-primary-light">{{ invoice.invoiceNumber }}</span>
+            </div>
+            <div class="detail-row mb-2">
+              <span class="label">Invoice Total:</span>
+              <span class="value font-semibold">{{ formatCurrency(invoice.totalAmount, invoice.currency) }}</span>
+            </div>
+            <div class="detail-row mb-2">
+              <span class="label">Remaining Balance:</span>
+              <span class="value font-bold text-danger">{{ formatCurrency(invoice.balanceDue, invoice.currency) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Payment Terms:</span>
+              <span class="value text-muted text-xs">{{ invoice.paymentTerms }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN TIMELINE SECTION -->
+    <div class="timeline-container glass">
+      <div class="timeline-header">
+        <h2><i class="fas fa-history text-primary-light"></i> Audit Sales Lifecycle</h2>
+        <span class="timeline-counter">{{ timelineEvents.length }} Lifecycle Logs Found</span>
+      </div>
+
+      <div class="lifecycle-timeline">
+        <div class="timeline-track-line"></div>
+
+        <div class="timeline-event-wrapper" *ngFor="let event of timelineEvents; let i = index">
+          
+          <!-- Left side: Timestamp -->
+          <div class="timeline-event-time">
+            <i class="far fa-clock mr-1"></i>
+            {{ formatDateTime(event.timestamp) }}
+          </div>
+
+          <!-- Center: Node Indicator -->
+          <div class="timeline-event-node" [ngClass]="getTimelineClass(event.status)">
+            <i class="fas" [ngClass]="event.icon"></i>
+          </div>
+
+          <!-- Right side: Event Card -->
+          <div class="timeline-event-card">
+            <div class="card-header-inner">
+              <h3 class="event-title">{{ event.title }}</h3>
+              <span class="badge" [ngClass]="'badge-' + event.status">
+                {{ event.status }}
+              </span>
+            </div>
+            
+            <p class="event-desc">{{ event.description }}</p>
+
+            <!-- Meta details if present (e.g. quote totals, order items count, invoice status) -->
+            <div class="event-meta-grid" *ngIf="event.meta && event.meta.length > 0">
+              <div class="meta-item" *ngFor="let item of event.meta">
+                <span class="meta-label">{{ item.label }}:</span>
+                <span class="meta-value">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-state-overlay" *ngIf="isLoading">
+  <div class="spinner-wrapper">
+    <div class="spinner-ring"></div>
+    <p>Reconstructing audit log history...</p>
+  </div>
+</div>
+
+<!-- Error State -->
+<div class="error-state-overlay" *ngIf="!isLoading && !payment">
+  <div class="error-box glass">
+    <i class="fas fa-circle-exclamation fa-4x text-danger mb-3"></i>
+    <h2>Transaction Log Not Found</h2>
+    <p>Could not locate the billing transaction. It might have been cleared or removed.</p>
+    <button class="btn-primary" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back to Transactions
+    </button>
+  </div>
+</div>

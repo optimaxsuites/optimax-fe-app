@@ -3,18 +3,19 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Invoice, InvoiceStatus } from '../../../../domain/sales/sales.dto';
+import { Invoice, InvoiceStatus, Payment, PaymentMethod, PaymentStatus } from '../../../../domain/sales/sales.dto';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -28,6 +29,22 @@ export class InvoiceDetailComponent implements OnInit {
   showPaymentModal = false;
   paymentAmount = 0;
   isDownloading = false;
+
+  invoicePayments: Payment[] = [];
+  paymentMethod: PaymentMethod = 'BANK_TRANSFER';
+  paymentReference = '';
+  paymentNotes = '';
+  paymentDate = new Date().toISOString().substring(0, 10);
+  isSavingPayment = false;
+
+  paymentMethodOptions: { value: PaymentMethod; label: string }[] = [
+    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+    { value: 'CARD', label: 'Credit/Debit Card' },
+    { value: 'CASH', label: 'Cash' },
+    { value: 'POS', label: 'POS Terminal' },
+    { value: 'MOBILE_MONEY', label: 'Mobile Money' },
+    { value: 'CHEQUE', label: 'Cheque' }
+  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -49,11 +66,85 @@ export class InvoiceDetailComponent implements OnInit {
     this.salesService.getInvoiceById(id).subscribe({
       next: (invoice: Invoice | null) => {
         this.invoice = invoice;
-        this.isLoading = false;
+        if (invoice) {
+          this.loadPaymentsForInvoice(invoice.id);
+        } else {
+          this.isLoading = false;
+        }
       },
       error: (err: any) => {
         console.error('Error loading invoice:', err);
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadPaymentsForInvoice(invoiceId: string): void {
+    this.salesService.getPayments({ invoiceId, size: 100 }).subscribe({
+      next: (res) => {
+        this.invoicePayments = res.data;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading invoice payments:', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  openPaymentModal(): void {
+    if (this.invoice) {
+      this.paymentAmount = this.invoice.balanceDue;
+      this.paymentMethod = 'BANK_TRANSFER';
+      this.paymentReference = '';
+      this.paymentNotes = '';
+      this.paymentDate = new Date().toISOString().substring(0, 10);
+      this.showPaymentModal = true;
+    }
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentModal = false;
+  }
+
+  savePayment(): void {
+    if (!this.invoice || this.paymentAmount <= 0) {
+      alert('Please enter a valid payment amount');
+      return;
+    }
+    
+    if (this.paymentAmount > this.invoice.balanceDue) {
+      if (!confirm(`The amount exceeds the invoice's balance due (${this.formatCurrency(this.invoice.balanceDue)}). Proceed?`)) {
+        return;
+      }
+    }
+
+    this.isSavingPayment = true;
+    
+    const payload: Partial<Payment> = {
+      invoiceId: this.invoice.id,
+      customerId: this.invoice.customerId,
+      customerName: this.invoice.customerName,
+      amount: this.paymentAmount,
+      currency: this.invoice.currency,
+      method: this.paymentMethod,
+      reference: this.paymentReference.trim() || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+      status: 'COMPLETED' as PaymentStatus,
+      paymentDate: new Date(this.paymentDate),
+      notes: this.paymentNotes.trim()
+    };
+
+    this.salesService.recordPayment(payload).subscribe({
+      next: (res) => {
+        this.isSavingPayment = false;
+        this.showPaymentModal = false;
+        alert(`Payment recorded successfully with transaction: ${res.paymentNumber}`);
+        this.loadInvoice(this.invoice!.id);
+      },
+      error: (err) => {
+        this.isSavingPayment = false;
+        console.error('Error recording payment:', err);
+        alert('Failed to record payment. Please try again.');
       }
     });
   }

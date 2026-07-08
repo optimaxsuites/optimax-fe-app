@@ -158,7 +158,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let invoice of invoices; let i = index" 
-                [class.overdue-row]="invoice.status === 'OVERDUE'">
+                [class.overdue-row]="isOverdue(invoice.dueDate) && invoice.balanceDue > 0">
               <td class="checkbox-col">
                 <input type="checkbox" [value]="invoice.id" (change)="toggleSelection(invoice.id, $event)"
                   [checked]="isSelected(invoice.id)">
@@ -173,9 +173,9 @@
                 </span>
               </td>
               <td>{{ formatDate(invoice.issueDate) }}</td>
-              <td class="due-date" [class.overdue]="isOverdue(invoice.dueDate) && invoice.status !== 'PAID'">
+              <td class="due-date" [class.overdue]="isOverdue(invoice.dueDate) && invoice.balanceDue > 0">
                 {{ formatDate(invoice.dueDate) }}
-                <span *ngIf="isOverdue(invoice.dueDate) && invoice.status !== 'PAID'" class="due-warning">
+                <span *ngIf="isOverdue(invoice.dueDate) && invoice.balanceDue > 0" class="due-warning">
                   ({{ getDaysOverdue(invoice.dueDate) }} days)
                 </span>
               </td>
