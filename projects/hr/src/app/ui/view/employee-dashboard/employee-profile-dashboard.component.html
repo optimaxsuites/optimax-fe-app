@@ -19,9 +19,10 @@
       <div class="ep-cover__body">
         <div class="ep-cover__avatar-wrap">
           <img [src]="employeeInView?.imageUrl?.changingThisBreaksApplicationSecurity || employeeInView?.imageUrl || employeeProfilePhotoUrl" class="ep-cover__avatar" alt="" />
-          <label *ngIf="isEditMode && canManageEmployees" class="ep-avatar-upload-label" title="Change photo">
-            <i class="fa-solid fa-camera"></i>
-            <input type="file" accept="image/png,image/jpeg" class="ep-avatar-upload-input" (change)="onProfilePhotoChange($event)" />
+          <label *ngIf="canManageEmployees" class="ep-avatar-upload-label" title="Change photo">
+            <i class="fa-solid fa-camera" *ngIf="!uploadingPhoto"></i>
+            <i class="fa-solid fa-spinner fa-spin" *ngIf="uploadingPhoto"></i>
+            <input type="file" accept="image/png,image/jpeg" class="ep-avatar-upload-input" (change)="uploadProfilePhoto($event)" [disabled]="uploadingPhoto" />
           </label>
         </div>
         <div class="ep-cover__identity">

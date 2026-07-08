@@ -968,7 +968,6 @@ handleDateClick(arg: DateClickArg) {
     this.viewEmployee = false;
     this.employeeInView = {};
     localStorage.removeItem('employeeInView');
-    window.dispatchEvent(new CustomEvent('employee-record-changed'));
   }
 
 

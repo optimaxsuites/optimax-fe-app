@@ -41,9 +41,11 @@
             </button>
           </mat-panel-description>
         </mat-expansion-panel-header>
-        <div style="font-size:13px;color:#374151;display:flex;flex-direction:column;gap:6px">
-          <p><strong>Code:</strong> {{ level.code }}</p>
-          <p><strong>Description:</strong> {{ level.description }}</p>
+        <div style="font-size:13px;color:#374151;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+          <p><strong>Code:</strong> {{ level.code || '—' }}</p>
+          <p><strong>Grade:</strong> {{ level.grade || '—' }}</p>
+          <p><strong>Position:</strong> {{ level.position || '—' }}</p>
+          <p><strong>Description:</strong> {{ level.description || '—' }}</p>
         </div>
       </mat-expansion-panel>
     </mat-accordion>
@@ -52,24 +54,33 @@
   <!-- Add / Edit Form -->
   <div *ngIf="showAddForm">
     <form [formGroup]="levelForm" (ngSubmit)="onSubmit()" class="sp-form-card">
-      <div class="sp-form-group">
-        <label for="level" class="sp-label">Level Name <span class="sp-req">*</span></label>
-        <input formControlName="level" id="level" class="sp-input" type="text" placeholder="e.g. Junior, Senior, Manager" />
-        <div *ngIf="levelForm.get('level')?.invalid && levelForm.get('level')?.touched" class="sp-error">Level name is required.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+        <div class="sp-form-group">
+          <label for="level" class="sp-label">Level Name <span class="sp-req">*</span></label>
+          <input formControlName="level" id="level" class="sp-input" type="text" placeholder="e.g. Junior, Senior, Manager" />
+          <div *ngIf="levelForm.get('level')?.invalid && levelForm.get('level')?.touched" class="sp-error">Level name is required.</div>
+        </div>
+        <div class="sp-form-group">
+          <label for="code" class="sp-label">Code <span class="sp-req">*</span></label>
+          <input formControlName="code" id="code" class="sp-input" type="text" placeholder="e.g. L1, L2, MGR" />
+          <div *ngIf="levelForm.get('code')?.invalid && levelForm.get('code')?.touched" class="sp-error">Code is required.</div>
+        </div>
+        <div class="sp-form-group">
+          <label for="grade" class="sp-label">Grade</label>
+          <input formControlName="grade" id="grade" class="sp-input" type="text" placeholder="e.g. GL3, Grade A, Band 5" />
+        </div>
+        <div class="sp-form-group">
+          <label for="position" class="sp-label">Position / Role Title</label>
+          <input formControlName="position" id="position" class="sp-input" type="text" placeholder="e.g. Software Engineer II, Accountant I" />
+        </div>
       </div>
       <div class="sp-form-group">
-        <label for="code" class="sp-label">Code <span class="sp-req">*</span></label>
-        <input formControlName="code" id="code" class="sp-input" type="text" placeholder="e.g. L1, L2, MGR" />
-        <div *ngIf="levelForm.get('code')?.invalid && levelForm.get('code')?.touched" class="sp-error">Code is required.</div>
-      </div>
-      <div class="sp-form-group">
-        <label for="Description" class="sp-label">Description <span class="sp-req">*</span></label>
+        <label for="Description" class="sp-label">Description</label>
         <textarea formControlName="description" id="Description" class="sp-input" style="min-height:80px;resize:vertical" placeholder="Brief description of this level"></textarea>
-        <div *ngIf="levelForm.get('description')?.invalid && levelForm.get('description')?.touched" class="sp-error">Description is required.</div>
       </div>
       <div class="sp-actions">
         <button type="button" class="sp-btn-cancel" (click)="toogleForm()">Cancel</button>
-        <button type="submit" class="sp-btn-submit" [disabled]="levelForm.invalid">Save Level</button>
+        <button type="submit" class="sp-btn-submit" [disabled]="!levelForm.get('level')?.value || !levelForm.get('code')?.value">Save Level</button>
       </div>
     </form>
   </div>
