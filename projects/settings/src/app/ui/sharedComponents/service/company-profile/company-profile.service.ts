@@ -41,7 +41,7 @@ export class CompanyProfileService {
       .get<any>(`${this.baseUrl}/x/api/v2/us/ur/get/company/profile/${userId}`)
       .pipe(
         switchMap(raw => {
-          const logoUrl: string | null = raw.logoUrl ?? raw.companyLogo ?? null;
+          const logoUrl: string | null = raw.logoUrl || raw.companyLogo || null;
           if (logoUrl) {
             return of({ ...raw, logoUrl } as CompanyProfile);
           }
@@ -49,7 +49,7 @@ export class CompanyProfileService {
           return this.http
             .get<any>(`${this.baseUrl}/x/api/v2/us/ur/get/user/primary/info/${userId}`)
             .pipe(
-              map(userInfo => ({ ...raw, logoUrl: userInfo?.companyLogo ?? null } as CompanyProfile)),
+              map(userInfo => ({ ...raw, logoUrl: userInfo?.companyLogo || userInfo?.logoUrl || null } as CompanyProfile)),
               catchError(() => of({ ...raw, logoUrl: null } as CompanyProfile))
             );
         }),

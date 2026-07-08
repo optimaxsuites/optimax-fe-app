@@ -15,7 +15,7 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { EmployeeNokComponent } from './employee-nok/employee-nok.component';
 import { EmployeeGuarantorComponent } from './employee-guarantor/employee-guarantor.component';
 import { EmployeeOffboardingComponent } from './employee-offboarding/employee-offboarding.component';
-import { EmploymentLetterComponent } from './employment-letter/employment-letter.component';
+import { HrLettersComponent } from './hr-letters/hr-letters.component';
 import { EmployeeService } from '../../service/employee.service';
 import { DataService } from '../../service/data.service';
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
@@ -39,11 +39,11 @@ export class EmployeeManagementComponent {
   private readonly minimumLoaderDurationMs = 900;
   
   tabsConfig: TabConfig[] = [
-    { name: 'Basic Information', component: EmployeeProfileDashboardComponent },
-    { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
-    { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
-    { name: 'Offboarding', component:  EmployeeOffboardingComponent, },
-    { name: 'Employment Letter', component: EmploymentLetterComponent },
+    { name: 'Basic Information', component: EmployeeProfileDashboardComponent, icon: 'fa-solid fa-user' },
+    { name: 'Next of Kin',       component: EmployeeNokComponent,              icon: 'fa-solid fa-people-arrows' },
+    { name: 'Guarantors',        component: EmployeeGuarantorComponent,         icon: 'fa-solid fa-handshake' },
+    { name: 'Offboarding',       component: EmployeeOffboardingComponent,       icon: 'fa-solid fa-door-open' },
+    { name: 'HR Letters',        component: HrLettersComponent,                 icon: 'fa-solid fa-envelope-open-text' },
   ];
   uniqueLevels: any;
   uniquePositions: any;
@@ -307,11 +307,14 @@ handleDateClick(arg: DateClickArg) {
     this.openImportDialog = false;
     this.openAddForm = true;
   }
-   ngOnInit() {
-   this.fetchEmployees()
-
-      
-  
+  ngOnInit() {
+    this.fetchEmployees();
+    window.addEventListener('employee-record-changed', () => {
+      this.fetchEmployees();
+      this.viewEmployee = false;
+      this.employeeInView = {};
+      localStorage.removeItem('employeeInView');
+    });
   }
 
   async getProfileImage(fileName: string){
@@ -606,9 +609,7 @@ handleDateClick(arg: DateClickArg) {
         const idKey = +employee.id;
         this.activatingEmployeeIds[idKey] = true;
         const payload = { ...employee, employeeStatus: 'ACTIVE', department: employee.department?.id ?? employee.department, level: employee.level?.id ?? employee.level };
-        const formData = new FormData();
-        formData.append('employee', JSON.stringify(payload));
-        this.employeeService.updateEmployee(formData, employee.id).pipe(
+        this.employeeService.updateEmployee(payload, employee.id).pipe(
           finalize(() => { delete this.activatingEmployeeIds[idKey]; })
         ).subscribe({
           next: () => {
@@ -619,6 +620,7 @@ handleDateClick(arg: DateClickArg) {
             }
             this.messageService.add({ severity: 'success', summary: 'Activated', detail: `${name} is now an active staff member.`, key: 'tl', life: 3000 });
             this.applyFilters();
+            this.dispatchWelcomeToActiveNotifications(employee, name);
           },
           error: (err) => {
             const msg = err?.error?.message || err?.message || 'Failed to activate employee.';
@@ -627,6 +629,108 @@ handleDateClick(arg: DateClickArg) {
         });
       }
     });
+  }
+
+  private dispatchWelcomeToActiveNotifications(employee: any, name: string) {
+    const profile = this.companyProfileService.get();
+    const companyName = profile?.companyName || 'The Company';
+    const logoUrl = (profile as any)?.logoUrl || '';
+    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const subject = `Welcome to ${companyName}! 🎉`;
+    const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
+
+    const sendTo: string[] = [];
+    if (employee?.email) sendTo.push(employee.email);
+    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
+
+    sendTo.forEach(email => {
+      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => {} });
+    });
+
+    this.employeeService.sendWelcomeEmail({
+      name,
+      email: employee?.email || '',
+      workEmail: employee?.workEmail || '',
+      jobTitle: employee?.jobTitle || '',
+      department: employee?.department?.name || employee?.department || '',
+      companyName,
+      event: 'JOINING_TO_ACTIVE',
+      timestamp: new Date().toISOString(),
+    }).subscribe({ error: () => {} });
+  }
+
+
+  private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {
+    const logo = d.logoUrl ? `<img src="${d.logoUrl}" alt="${d.companyName}" style="height:40px;max-width:160px;object-fit:contain;margin-bottom:12px;" />` : '';
+    const hrLine = d.hrEmail
+      ? `Reach us at <a href="mailto:${d.hrEmail}" style="color:#1b3358;text-decoration:none;">${d.hrEmail}</a>`
+      : 'Reach out to the HR Department';
+    return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+
+      <!-- Header banner -->
+      <tr>
+        <td style="background:linear-gradient(135deg,#1b3358 0%,#2d5a8e 100%);padding:44px 40px 36px;text-align:center;">
+          ${logo}
+          <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:72px;height:72px;line-height:72px;font-size:36px;margin-bottom:16px;">🎉</div>
+          <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Welcome to the Team!</h1>
+          <p style="margin:0;font-size:14px;color:#a8c5e8;">${d.companyName}</p>
+        </td>
+      </tr>
+
+      <!-- Body -->
+      <tr>
+        <td style="padding:40px 40px 32px;">
+          <p style="margin:0 0 20px;font-size:16px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
+          <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.8;">
+            We are absolutely thrilled to welcome you as a full member of the <strong>${d.companyName}</strong> family. Your journey with us officially begins today, and we couldn't be more excited to have you on board.
+          </p>
+          ${d.jobTitle ? `<p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.8;">You are joining us as <strong>${d.jobTitle}</strong>${d.department ? ` in the <strong>${d.department}</strong> department` : ''}, and we look forward to the amazing contributions you will bring.</p>` : ''}
+
+          <!-- Welcome checklist -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin:0 0 28px;">
+            <tr><td style="padding:24px 26px;">
+              <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your First Steps</p>
+              <table cellpadding="0" cellspacing="0" style="width:100%;">
+                <tr><td style="padding:6px 0;font-size:13px;color:#334155;"><span style="color:#10b981;font-weight:700;margin-right:8px;">✓</span> Access the staff portal with your existing credentials</td></tr>
+                <tr><td style="padding:6px 0;font-size:13px;color:#334155;"><span style="color:#10b981;font-weight:700;margin-right:8px;">✓</span> Review and complete your profile information</td></tr>
+                <tr><td style="padding:6px 0;font-size:13px;color:#334155;"><span style="color:#10b981;font-weight:700;margin-right:8px;">✓</span> Familiarise yourself with your team and workspace</td></tr>
+                <tr><td style="padding:6px 0;font-size:13px;color:#334155;"><span style="color:#10b981;font-weight:700;margin-right:8px;">✓</span> Attend the scheduled onboarding sessions with HR</td></tr>
+              </table>
+            </td></tr>
+          </table>
+
+          <p style="margin:0 0 8px;font-size:14px;color:#475569;line-height:1.8;">
+            Remember, every member of this organisation has a role to play in our collective success. We believe you are the right person for yours.
+          </p>
+          <p style="margin:0;font-size:14px;color:#475569;line-height:1.8;">
+            Once again, <strong>welcome aboard!</strong> We look forward to achieving great things together.
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
+          <p style="margin:0 0 8px;font-size:13px;color:#475569;line-height:1.6;">${hrLine}</p>
+          <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;"><strong>Human Resources Department</strong><br/>${d.companyName}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 40px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#cbd5e1;">This message was sent to inform you of your change in employment status. Please do not reply to this email.</p>
+        </td>
+      </tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
   }
 
   resendOnboarding(employee: any, event: Event) {
@@ -716,13 +820,12 @@ handleDateClick(arg: DateClickArg) {
     if (this.employeeInView?.id === employee.id) {
       this.employeeInView = { ...this.employeeInView, userId };
     }
-    const payload = new FormData();
-    payload.append('employee', JSON.stringify({
+    const payload = {
       ...employee,
       userId,
       department: employee.department?.id ?? employee.department,
       level: employee.level?.id ?? employee.level,
-    }));
+    };
     this.employeeService.updateEmployee(payload, employee.id).subscribe();
   }
 
@@ -730,8 +833,7 @@ handleDateClick(arg: DateClickArg) {
     const profile = this.companyProfileService.get();
     const companyName = profile?.companyName || 'The Company';
     const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
-    const expiry = this.addWorkingDays(new Date(), 5).getTime();
-    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1&exp=${expiry}`;
+    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
 
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
@@ -862,21 +964,10 @@ handleDateClick(arg: DateClickArg) {
     return Array.from({ length }, pick).join('');
   }
 
-  private addWorkingDays(start: Date, days: number): Date {
-    const result = new Date(start);
-    let added = 0;
-    while (added < days) {
-      result.setDate(result.getDate() + 1);
-      const day = result.getDay();
-      if (day !== 0 && day !== 6) added++;
-    }
-    return result;
-  }
-
-    closeViewEmployee() {
-  this.viewEmployee = false
-  this.employeeInView = {}
-  localStorage.removeItem('employeeInView');
+  closeViewEmployee() {
+    this.viewEmployee = false;
+    this.employeeInView = {};
+    localStorage.removeItem('employeeInView');
   }
 
 

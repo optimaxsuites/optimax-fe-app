@@ -30,8 +30,10 @@ export class LevelComponent {
     private messageService: MessageService  ) {
     this.levelForm = this.fb.group({
       level: ['', Validators.required],
-      description: ['', [Validators.required, Validators.min(0)]],
-     code: ['', Validators.required]
+      code: ['', Validators.required],
+      grade: [''],
+      position: [''],
+      description: [''],
     });
   }
   ngOnInit() {
@@ -55,8 +57,10 @@ export class LevelComponent {
       
       const newlevelStructure = {
         name: formValue.level,
-        description: formValue.description,
         code: formValue.code,
+        grade: formValue.grade || '',
+        position: formValue.position || '',
+        description: formValue.description || '',
       };
   
       if (this.isEditMode && this.editIndex !== null) {
@@ -97,7 +101,9 @@ export class LevelComponent {
     this.levelForm.patchValue({
       level: levelStructure.name,
       code: levelStructure.code,
-      description: levelStructure.description,
+      grade: levelStructure.grade || '',
+      position: levelStructure.position || '',
+      description: levelStructure.description || '',
     });
 
  

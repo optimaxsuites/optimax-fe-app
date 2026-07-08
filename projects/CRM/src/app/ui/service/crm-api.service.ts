@@ -274,6 +274,20 @@ export class CrmApiService {
     return this.http.post<void>(`${this.base()}/commission/entries/${id}/reject`, { reason }).pipe(catchError(this.err));
   }
 
+  // ── HR Payroll Integration ──────────────────────────────────
+  pushCommissionToPayroll(entry: { id: number; employeeId: number; amount: number; period: string; schemeName?: string }) {
+    const payload = {
+      employeeId: entry.employeeId,
+      bonusType: 'COMMISSION',
+      amount: entry.amount,
+      period: entry.period,
+      notes: `Commission: ${entry.schemeName || ''} — ${entry.period}`.trim(),
+      sourceId: entry.id,
+      sourceType: 'CRM_COMMISSION',
+    };
+    return this.http.post<any>(`${environment.apiBaseUrl}/x/api/v2/hr/employeePayrollBonuss`, payload).pipe(catchError(this.err));
+  }
+
   private err(e: any) {
     const msg = e?.error?.message || e?.message || 'An error occurred';
     return throwError(() => msg);

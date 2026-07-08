@@ -120,7 +120,6 @@ import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
 import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok/employee-nok.component';
 import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
-import { EmploymentLetterComponent } from './ui/view/employee-management/employment-letter/employment-letter.component';
 import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
 import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
 import { GuarantorConfirmationComponent } from './ui/view/employee-management/guarantor-confirmation/guarantor-confirmation.component';
@@ -250,6 +249,7 @@ import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-chan
 import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
 import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
 
 
 @NgModule({
@@ -258,18 +258,20 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     RecruitmentComponent,
     LeaveComponent,
     AttendanceComponent,
-    // EmployeeManagementComponent,
+    EmployeeManagementComponent,
     RecruitmentListComponent,
     RecruitmentFormComponent,
     CandidateComponent,
     ScheduledInterviewComponent,
     InterviewInviteComponent,
-    // OfferLetterComponent,
+    OfferLetterComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
     AddEmployeeFormComponent,
     // EmployeeOnboardingFormComponent,
-    // PreOnboardingFormComponent,
+    PreOnboardingFormComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -282,14 +284,13 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     MyAttendanceComponent,
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
-    // PayslipViewComponent,
+    PayslipViewComponent,
     AdminCreationFormComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,
     EmployeeGuarantorComponent,
     EmployeeOffboardingComponent,
-    // EmploymentLetterComponent,
     GoalComponent,
     MygoalComponent,
     TargetComponent,
@@ -362,7 +363,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
-    // EmployeeProfileDashboardComponent,
+    EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
     CooperativeMemberGroupDashboardComponent,
@@ -419,6 +420,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
+    HrLettersComponent,
     // LargeSideModalComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,

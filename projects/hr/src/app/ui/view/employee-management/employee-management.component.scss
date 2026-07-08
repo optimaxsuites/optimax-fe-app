@@ -588,110 +588,72 @@ p{
     }
 }
 
-/* ── Employee Profile Panel Header ───────────────────────────── */
+/* ── Mobile responsive ───────────────────────────────────────── */
+@media (max-width: 767px) {
+    .employee-management-shell {
+        @apply p-2;
+    }
 
-.ep-header {
-  @apply bg-white border-b border-slate-100 pb-0 mb-0;
+    .management-summary-grid {
+        @apply grid-cols-2 gap-2;
+    }
+
+    .management-summary-card {
+        @apply p-3;
+    }
+
+    .management-summary-value {
+        @apply text-xl;
+    }
+
+    .employee-toolbar {
+        @apply px-3 py-3;
+    }
+
+    .toolbar-badge {
+        display: none;
+    }
+
+    /* Cards: single column below sm breakpoint — Tailwind handles sm+;
+       this ensures xs (< 640px) is always 1 column */
+    .grid.gap-6.p-4 {
+        @apply grid-cols-1;
+    }
+
+    /* List view: hide secondary columns, show only name + actions */
+    .dir-list-header {
+        display: none;
+    }
+
+    .dir-list-row {
+        @apply flex-wrap gap-2 py-3;
+    }
+
+    .dir-list-col--dept,
+    .dir-list-col--role,
+    .dir-list-col--level,
+    .dir-list-col--type,
+    .dir-list-col--joined {
+        display: none;
+    }
+
+    .dir-list-col--name {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dir-list-col--actions {
+        width: auto;
+    }
+
+    .dir-list-action-btn,
+    .dir-list-view-btn {
+        opacity: 1 !important;
+    }
+
+    /* Pagination: compact */
+    .pagination-bar {
+        @apply gap-2 px-2 pb-4 text-xs;
+    }
 }
 
-.ep-topbar {
-  @apply flex items-center justify-between px-6 pt-5 pb-3;
-}
-
-.ep-eyebrow {
-  @apply text-xs font-semibold uppercase tracking-widest text-slate-400;
-}
-
-.ep-id-chip {
-  @apply text-xs font-mono bg-slate-100 text-slate-500 rounded px-1.5 py-0.5;
-}
-
-.ep-close-btn {
-  @apply flex items-center justify-center h-7 w-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition;
-}
-
-.ep-identity {
-  @apply flex items-start gap-5 px-6 pb-5;
-}
-
-.ep-avatar-wrap {
-  @apply relative flex-shrink-0;
-}
-
-.ep-avatar-img {
-  @apply h-20 w-20 rounded-2xl object-cover ring-4 ring-white shadow-md;
-}
-
-.ep-status-ring {
-  @apply absolute -bottom-1 -right-1 h-4 w-4 rounded-full ring-2 ring-white;
-  &--active    { @apply bg-emerald-500; }
-  &--joining   { @apply bg-yellow-400; }
-  &--probation { @apply bg-blue-400; }
-  &--left      { @apply bg-slate-400; }
-}
-
-.ep-identity-copy {
-  @apply flex flex-col gap-1 pt-1;
-}
-
-.ep-name {
-  @apply text-xl font-bold text-slate-900 leading-tight;
-}
-
-.ep-role {
-  @apply text-sm text-slate-500;
-}
-
-.ep-badges {
-  @apply flex flex-wrap items-center gap-2 mt-1;
-}
-
-.ep-dept-badge {
-  @apply inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 font-medium rounded-full px-2.5 py-1;
-}
-
-.ep-status-badge {
-  @apply inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-1 uppercase tracking-wide;
-  &--active    { @apply bg-emerald-50 text-emerald-700; }
-  &--joining   { @apply bg-yellow-50 text-yellow-700; }
-  &--probation { @apply bg-blue-50 text-blue-700; }
-  &--left      { @apply bg-slate-100 text-slate-500; }
-}
-
-.ep-stats-row {
-  @apply grid grid-cols-2 gap-px border-y border-slate-100 bg-slate-100 sm:grid-cols-4;
-}
-
-.ep-stat {
-  @apply flex flex-col gap-0.5 bg-white px-5 py-3;
-}
-
-.ep-stat-label {
-  @apply text-[10px] uppercase tracking-widest text-slate-400 font-medium;
-}
-
-.ep-stat-value {
-  @apply text-sm font-semibold text-slate-700 truncate;
-  &--email { @apply font-normal text-blue-600 text-xs; }
-}
-
-.ep-actions-row {
-  @apply flex flex-wrap items-center gap-2 px-6 py-3 bg-slate-50 border-t border-slate-100;
-}
-
-.ep-action-btn {
-  @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed;
-
-  &--activate {
-    @apply bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm;
-  }
-  &--resend {
-    @apply bg-blue-600 text-white hover:bg-blue-700 shadow-sm;
-  }
-  &--staffid {
-    @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm;
-  }
-  &--delete {
-    @apply bg-white text-red-600 border border-red-200 hover:bg-red-50 shadow-sm ml-auto;
-  }
-}
