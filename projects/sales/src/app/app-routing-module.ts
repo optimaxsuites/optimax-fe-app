@@ -262,11 +262,21 @@ export const routes: Routes = [
   {
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
+  },
+  {
+    path: 'reports/:uuid',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
+  {
+    path: 'reports',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
   }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
