@@ -290,6 +290,18 @@ export class QuoteDetailComponent implements OnInit {
     }
   }
 
+  goToQuotesList(): void {
+    const sessionStorageKey = 'dashboard-catalog-quotes-invoices-orders-customers-transactions';
+    sessionStorage.setItem(sessionStorageKey, 'Quotes');
+
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid) {
+      this.router.navigate(['/admin/sales/sales-hub', uuid]);
+    } else {
+      this.router.navigate(['/admin/sales/sales-hub']);
+    }
+  }
+
   editQuote(): void {
     if (this.edit.observed) {
       this.edit.emit(this.quote!.id);

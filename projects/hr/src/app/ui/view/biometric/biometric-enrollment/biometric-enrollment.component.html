@@ -1,0 +1,220 @@
+<div class="enrollment-container">
+  <div class="enrollment-header">
+    <h2>Biometric Fingerprint Enrollment</h2>
+    <p class="step-indicator">Step {{ getStepNumber() }}: {{ getStepDescription() }}</p>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <strong>Error:</strong> {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- Success Alert -->
+  <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+    <strong>Success!</strong> {{ successMessage }}
+    <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+  </div>
+
+  <form [formGroup]="enrollmentForm">
+    <!-- Step 1: Select Device -->
+    <div *ngIf="currentStep === 'select-device'" class="enrollment-step">
+      <div class="step-content">
+        <h4>Available Biometric Devices</h4>
+        <p class="text-muted">Select the device in your branch to enroll your fingerprint</p>
+
+        <div *ngIf="availableDevices.length === 0" class="alert alert-warning">
+          No active biometric devices are currently available.
+        </div>
+
+        <div class="devices-list">
+          <div *ngFor="let device of availableDevices"
+               class="device-card"
+               [class.selected]="selectedDevice?.id === device.id"
+               (click)="selectDevice(device)">
+            <div class="device-header">
+              <i class="fas fa-fingerprint"></i>
+              <span class="device-name">{{ device.name }}</span>
+              <span class="badge bg-success" *ngIf="device.isOnline">Online</span>
+            </div>
+            <div class="device-details">
+              <p><strong>Type:</strong> {{ device.deviceType }}</p>
+              <p><strong>Location:</strong> Branch {{ device.branchId }}</p>
+              <p><strong>Capacity:</strong> {{ device.currentTemplateCount }}/{{ device.maxStorageCapacity }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button type="button"
+                  class="btn btn-primary"
+                  (click)="selectDevice(selectedDevice!)"
+                  [disabled]="!canProceedToScan()"
+                  *ngIf="selectedDevice">
+            Next: Scan Fingerprint
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Scan Finger -->
+    <div *ngIf="currentStep === 'scan-finger'" class="enrollment-step">
+      <div class="step-content">
+        <h4>Scan Your Fingerprint</h4>
+        <p class="text-muted">Selected Device: <strong>{{ selectedDevice?.name }}</strong></p>
+
+        <div class="selected-finger-section">
+          <label class="form-label">Select Finger:</label>
+          <div class="finger-selection">
+            <button *ngFor="let finger of fingers"
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    [class.active]="selectedFinger === finger.id"
+                    (click)="selectFinger(finger.id)"
+                    [disabled]="isScanning">
+              {{ finger.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="scanning-section">
+          <div class="scan-visualization">
+            <div class="fingerprint-icon">
+              <i class="fas fa-fingerprint" [class.scanning]="isScanning"></i>
+            </div>
+            <p *ngIf="!isScanning && templateQuality === 0" class="text-muted">
+              Ready to scan. Click button below to start.
+            </p>
+            <p *ngIf="isScanning" class="text-info">
+              <i class="fas fa-spinner fa-spin"></i> Scanning in progress...
+            </p>
+            <p *ngIf="templateQuality > 0" class="text-success">
+              Quality: <strong>{{ templateQuality.toFixed(0) }}%</strong>
+            </p>
+          </div>
+
+          <div class="quality-bar" *ngIf="templateQuality > 0">
+            <div class="progress">
+              <div class="progress-bar"
+                   [style.width.%]="templateQuality"
+                   [class.bg-danger]="templateQuality < 50"
+                   [class.bg-warning]="templateQuality >= 50 && templateQuality < 80"
+                   [class.bg-success]="templateQuality >= 80">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button type="button"
+                  class="btn btn-primary"
+                  (click)="startScanning()"
+                  [disabled]="isScanning || templateQuality >= 70">
+            <i class="fas fa-hand-paper"></i> Start Scanning
+          </button>
+          <button type="button"
+                  class="btn btn-secondary"
+                  (click)="retryScanning()"
+                  *ngIf="templateQuality > 0 && templateQuality < 70"
+                  [disabled]="isScanning">
+            <i class="fas fa-redo"></i> Retry
+          </button>
+          <button type="button"
+                  class="btn btn-success"
+                  (click)="currentStep = 'confirm'"
+                  [disabled]="!canProceedToConfirm()"
+                  *ngIf="templateQuality >= 70">
+            <i class="fas fa-check"></i> Next: Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm -->
+    <div *ngIf="currentStep === 'confirm'" class="enrollment-step">
+      <div class="step-content">
+        <h4>Confirm Enrollment</h4>
+
+        <div class="confirmation-summary">
+          <div class="summary-card">
+            <h5>Enrollment Details</h5>
+            <ul class="list-unstyled">
+              <li><strong>Device:</strong> {{ selectedDevice?.name }}</li>
+              <li><strong>Finger:</strong> {{ getSelectedFingerLabel() }}</li>
+              <li><strong>Quality Score:</strong>
+                <span class="badge"
+                      [class.bg-success]="templateQuality >= 80"
+                      [class.bg-warning]="templateQuality < 80">
+                  {{ templateQuality.toFixed(0) }}/100
+                </span>
+              </li>
+              <li><strong>Status:</strong> <span class="badge bg-success">Ready to Enroll</span></li>
+            </ul>
+          </div>
+
+          <div class="form-group">
+            <label for="fallbackNote" class="form-label">Additional Notes (Optional)</label>
+            <textarea class="form-control"
+                      id="fallbackNote"
+                      formControlName="fallbackNote"
+                      rows="3"
+                      placeholder="Add any notes about this enrollment (e.g., scar, injury, etc.)"></textarea>
+          </div>
+        </div>
+
+        <div class="step-actions">
+          <button type="button"
+                  class="btn btn-secondary"
+                  (click)="currentStep = 'scan-finger'">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button type="button"
+                  class="btn btn-success"
+                  (click)="confirmEnrollment()"
+                  [disabled]="isSaving">
+            <span *ngIf="!isSaving">
+              <i class="fas fa-check"></i> Complete Enrollment
+            </span>
+            <span *ngIf="isSaving">
+              <i class="fas fa-spinner fa-spin"></i> Saving...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Complete -->
+    <div *ngIf="currentStep === 'complete'" class="enrollment-step">
+      <div class="step-content text-center">
+        <div class="success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h4>Enrollment Complete!</h4>
+        <p class="text-muted">Your fingerprint has been successfully enrolled on the biometric device.</p>
+
+        <div class="completion-details">
+          <p><strong>Device:</strong> {{ selectedDevice?.name }}</p>
+          <p><strong>Finger:</strong> {{ getSelectedFingerLabel() }}</p>
+          <p><strong>Quality:</strong> {{ templateQuality.toFixed(0) }}/100</p>
+        </div>
+
+        <p class="text-info mt-3">
+          <i class="fas fa-info-circle"></i> You can now use biometric check-in at any time!
+        </p>
+
+        <div class="step-actions">
+          <button type="button"
+                  class="btn btn-primary"
+                  (click)="completeEnrollment()">
+            <i class="fas fa-home"></i> Back to Home
+          </button>
+          <button type="button"
+                  class="btn btn-secondary"
+                  (click)="resetForm()">
+            <i class="fas fa-plus"></i> Enroll Another Finger
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

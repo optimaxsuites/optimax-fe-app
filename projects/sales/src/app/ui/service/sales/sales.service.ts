@@ -28,6 +28,7 @@ export class SalesService {
   private readonly PRODUCTS_KEY = 'sales_products';
   private readonly INVOICES_KEY = 'sales_invoices';
   private readonly ORDERS_KEY = 'sales_orders';
+  private readonly PAYMENTS_KEY = 'sales_payments';
 
   constructor() {
     this.initData();
@@ -183,6 +184,14 @@ export class SalesService {
           ],
           subtotal: 850000, taxAmount: 0, discountAmount: 0, totalAmount: 850000, amountPaid: 0, balanceDue: 850000,
           currency: 'NGN', status: 'SENT' as InvoiceStatus, issueDate: new Date('2026-06-09'), dueDate: new Date('2026-06-25'), notes: '', paymentTerms: 'Net 30'
+        },
+        {
+          id: '3', invoiceNumber: 'INV-003', orderId: 'ORD-003', customerId: 'CUST-003', customerName: 'Global Services NG',
+          items: [
+            { id: 'item-inv-3', productName: 'Printer - HP LaserJet', description: 'HP LaserJet printer', quantity: 2, unitPrice: 150000, total: 300000 }
+          ],
+          subtotal: 300000, taxAmount: 0, discountAmount: 0, totalAmount: 300000, amountPaid: 100000, balanceDue: 200000,
+          currency: 'NGN', status: 'SENT' as InvoiceStatus, issueDate: new Date('2026-06-08'), dueDate: new Date('2026-07-28'), notes: '', paymentTerms: 'Net 30'
         }
       ];
       localStorage.setItem(this.INVOICES_KEY, JSON.stringify(mockInvoices));
@@ -284,6 +293,55 @@ export class SalesService {
         }
       ];
       localStorage.setItem(this.ORDERS_KEY, JSON.stringify(mockOrders));
+    }
+
+    // Initialize Payments
+    if (!localStorage.getItem(this.PAYMENTS_KEY)) {
+      const mockPayments: Payment[] = [
+        {
+          id: 'PAY-001',
+          paymentNumber: 'PAY-001',
+          invoiceId: '1',
+          customerId: 'CUST-001',
+          customerName: 'Mama Nkechi Enterprises',
+          amount: 500000,
+          currency: 'NGN',
+          method: 'BANK_TRANSFER',
+          reference: 'TXN-BANK-1002381',
+          status: 'COMPLETED',
+          paymentDate: new Date('2026-06-15'),
+          notes: 'Invoice INV-001 fully paid'
+        },
+        {
+          id: 'PAY-002',
+          paymentNumber: 'PAY-002',
+          invoiceId: '3',
+          customerId: 'CUST-003',
+          customerName: 'Global Services NG',
+          amount: 100000,
+          currency: 'NGN',
+          method: 'CASH',
+          reference: 'TXN-CASH-8837190',
+          status: 'COMPLETED',
+          paymentDate: new Date('2026-06-28'),
+          notes: 'Partial payment on receipt'
+        },
+        {
+          id: 'PAY-003',
+          paymentNumber: 'PAY-003',
+          invoiceId: '2',
+          customerId: 'CUST-002',
+          customerName: 'Tech Solutions Ltd',
+          amount: 850000,
+          currency: 'NGN',
+          method: 'CARD',
+          reference: 'TXN-CARD-4482010',
+          status: 'FAILED',
+          paymentDate: new Date('2026-06-20'),
+          notes: 'Transaction declined by bank gateway'
+        }
+      ];
+      localStorage.setItem(this.PAYMENTS_KEY, JSON.stringify(mockPayments));
     }
   }
 
@@ -818,11 +876,110 @@ export class SalesService {
   // ============================================
 
   getPayments(filters: any): Observable<{ data: Payment[]; total: number }> {
-    return of({ data: [], total: 0 }).pipe(delay(300));
+    let payments: Payment[] = JSON.parse(localStorage.getItem(this.PAYMENTS_KEY) || '[]');
+    
+    // Map dates back to Date objects
+    payments = payments.map(p => ({
+      ...p,
+      paymentDate: new Date(p.paymentDate)
+    }));
+
+    if (filters && filters.invoiceId) {
+      payments = payments.filter(p => p.invoiceId === filters.invoiceId);
+    }
+
+    if (filters && filters.customerId) {
+      payments = payments.filter(p => p.customerId === filters.customerId);
+    }
+
+    if (filters && filters.status && filters.status !== 'ALL') {
+      payments = payments.filter(p => p.status === filters.status);
+    }
+
+    if (filters && filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      payments = payments.filter(p => 
+        p.paymentNumber.toLowerCase().includes(term) || 
+        p.customerName.toLowerCase().includes(term) ||
+        p.reference.toLowerCase().includes(term)
+      );
+    }
+
+    if (filters && filters.dateFrom) {
+      const from = new Date(filters.dateFrom);
+      payments = payments.filter(p => p.paymentDate >= from);
+    }
+    if (filters && filters.dateTo) {
+      const to = new Date(filters.dateTo);
+      to.setHours(23, 59, 59, 999);
+      payments = payments.filter(p => p.paymentDate <= to);
+    }
+
+    const total = payments.length;
+    const page = filters?.page || 0;
+    const size = filters?.size || 10;
+    const paginatedData = payments.slice(page * size, (page + 1) * size);
+
+    return of({ data: paginatedData, total }).pipe(delay(300));
   }
 
   recordPayment(data: Partial<Payment>): Observable<Payment> {
-    return of({} as Payment).pipe(delay(300));
+    const payments: Payment[] = JSON.parse(localStorage.getItem(this.PAYMENTS_KEY) || '[]');
+    
+    // Generate new payment
+    const newPayment: Payment = {
+      id: Math.random().toString(36).substr(2, 9),
+      paymentNumber: `PAY-${String(payments.length + 1).padStart(3, '0')}`,
+      invoiceId: data.invoiceId || '',
+      customerId: data.customerId || '',
+      customerName: data.customerName || '',
+      amount: data.amount || 0,
+      currency: data.currency || 'NGN',
+      method: data.method || 'CASH',
+      reference: data.reference || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+      status: data.status || 'COMPLETED',
+      paymentDate: data.paymentDate || new Date(),
+      notes: data.notes || ''
+    };
+
+    // Prepend new payment
+    payments.unshift(newPayment);
+    localStorage.setItem(this.PAYMENTS_KEY, JSON.stringify(payments));
+
+    // Update corresponding invoice
+    if (newPayment.invoiceId && newPayment.status === 'COMPLETED') {
+      const invoices: Invoice[] = JSON.parse(localStorage.getItem(this.INVOICES_KEY) || '[]');
+      const invoiceIndex = invoices.findIndex(i => i.id === newPayment.invoiceId);
+      
+      if (invoiceIndex !== -1) {
+        const invoice = invoices[invoiceIndex];
+        const newAmountPaid = (invoice.amountPaid || 0) + newPayment.amount;
+        const newBalanceDue = Math.max(0, invoice.totalAmount - newAmountPaid);
+        
+        invoices[invoiceIndex] = {
+          ...invoice,
+          amountPaid: newAmountPaid,
+          balanceDue: newBalanceDue,
+          paidAt: newBalanceDue === 0 ? newPayment.paymentDate : invoice.paidAt
+        };
+        
+        localStorage.setItem(this.INVOICES_KEY, JSON.stringify(invoices));
+      }
+    }
+
+    return of(newPayment).pipe(delay(300));
+  }
+
+  getPaymentById(id: string): Observable<Payment | null> {
+    const payments: Payment[] = JSON.parse(localStorage.getItem(this.PAYMENTS_KEY) || '[]');
+    const payment = payments.find(p => p.id === id || p.paymentNumber === id);
+    if (payment) {
+      return of({
+        ...payment,
+        paymentDate: new Date(payment.paymentDate)
+      }).pipe(delay(300));
+    }
+    return of(null).pipe(delay(300));
   }
 
   // ============================================

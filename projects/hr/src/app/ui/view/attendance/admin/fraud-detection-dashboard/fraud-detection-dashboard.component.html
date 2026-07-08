@@ -1,0 +1,170 @@
+<div class="fraud-dashboard-container">
+  <div class="dashboard-header">
+    <h2>Fraud Detection Dashboard</h2>
+    <button class="btn btn-primary" (click)="refreshDashboard()">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show">
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon danger">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <h4>{{ getPendingCount() }}</h4>
+        <p>Pending Review</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon danger-dark">
+        <i class="fas fa-exclamation-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h4>{{ getHighSeverityCount() }}</h4>
+        <p>High Severity</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h4>{{ dashboardStats.approved || 0 }}</h4>
+        <p>Approved Today</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <i class="fas fa-ban"></i>
+      </div>
+      <div class="stat-content">
+        <h4>{{ dashboardStats.rejected || 0 }}</h4>
+        <p>Rejected Today</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Filter by Severity:</label>
+      <select class="form-control" [(ngModel)]="filterBySeverity">
+        <option value="">All</option>
+        <option value="HIGH">High</option>
+        <option value="MEDIUM">Medium</option>
+        <option value="LOW">Low</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Filter by Type:</label>
+      <select class="form-control" [(ngModel)]="filterByType">
+        <option value="">All</option>
+        <option *ngFor="let type of flagTypes" [value]="type.id">{{ type.label }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading fraud detection data...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading" class="main-content">
+    <div class="flags-list">
+      <h3>Flagged Records</h3>
+
+      <div *ngIf="getFilteredFlags().length === 0" class="empty-state">
+        <i class="fas fa-check-circle"></i>
+        <p>No flagged records to review</p>
+      </div>
+
+      <div *ngFor="let flag of getFilteredFlags()"
+           class="flag-card"
+           [class.selected]="selectedFlag?.flagId === flag.flagId"
+           (click)="selectFlag(flag)">
+        <div class="flag-header">
+          <span class="badge" [class]="'badge-' + getSeverityBadgeClass(flag.severity)">
+            {{ flag.severity }}
+          </span>
+          <span class="flag-type">
+            <i [class]="'fas ' + getFlagTypeIcon(flag.flagType)"></i>
+            {{ getFlagTypeLabel(flag.flagType) }}
+          </span>
+          <span class="time-ago">{{ flag.detectedAt | date:'short' }}</span>
+        </div>
+
+        <div class="flag-body">
+          <p class="description">{{ flag.description }}</p>
+          <div class="flag-details">
+            <span class="detail">Employee ID: {{ flag.employeeId }}</span>
+            <span class="detail">Record ID: {{ flag.recordId }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="details-panel" *ngIf="selectedFlag">
+      <h4>Review Details</h4>
+
+      <div class="detail-section">
+        <h5>Flag Information</h5>
+        <div class="detail-item">
+          <span class="label">Flag ID:</span>
+          <span class="value">{{ selectedFlag.flagId }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Severity:</span>
+          <span class="value">
+            <span class="badge" [class]="'badge-' + getSeverityBadgeClass(selectedFlag.severity)">
+              {{ selectedFlag.severity }}
+            </span>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Type:</span>
+          <span class="value">{{ getFlagTypeLabel(selectedFlag.flagType) }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Description:</span>
+          <span class="value">{{ selectedFlag.description }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Detected:</span>
+          <span class="value">{{ selectedFlag.detectedAt | date:'medium' }}</span>
+        </div>
+      </div>
+
+      <div class="action-section">
+        <h5>Actions</h5>
+        <div class="button-group">
+          <button class="btn btn-success" (click)="approveFraudFlag(selectedFlag)">
+            <i class="fas fa-check"></i> Approve
+          </button>
+          <button class="btn btn-danger" (click)="rejectFraudFlag(selectedFlag, 'User confirmed legitimate')">
+            <i class="fas fa-times"></i> Reject
+          </button>
+          <button class="btn btn-warning" (click)="escalateFraudFlag(selectedFlag)">
+            <i class="fas fa-arrow-up"></i> Escalate
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

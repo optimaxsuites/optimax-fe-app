@@ -117,30 +117,14 @@
 
         <div class="status-filters">
           <span class="filter-label">Status:</span>
-          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'"
-            (click)="filters.status = 'ALL'; applyFilters()">
-            All
-          </button>
-          <button class="status-filter-btn pending" [class.active]="filters.status === 'PENDING'"
-            (click)="filters.status = 'PENDING'; applyFilters()">
-            Pending
-          </button>
-          <button class="status-filter-btn processing" [class.active]="filters.status === 'PROCESSING'"
-            (click)="filters.status = 'PROCESSING'; applyFilters()">
-            Processing
-          </button>
-          <button class="status-filter-btn shipped" [class.active]="filters.status === 'SHIPPED'"
-            (click)="filters.status = 'SHIPPED'; applyFilters()">
-            Shipped
-          </button>
-          <button class="status-filter-btn delivered" [class.active]="filters.status === 'DELIVERED'"
-            (click)="filters.status = 'DELIVERED'; applyFilters()">
-            Delivered
-          </button>
-          <button class="status-filter-btn cancelled" [class.active]="filters.status === 'CANCELLED'"
-            (click)="filters.status = 'CANCELLED'; applyFilters()">
-            Cancelled
-          </button>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="SHIPPED">Shipped</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
         </div>
 
         <div class="date-filters">

@@ -1285,3 +1285,26 @@ $radius-xl: 24px;
   backdrop-filter: none !important;
   padding: 2.5rem !important;
 }
+
+// Payment overview & ledger styles for invoice-detail
+.payment-overview {
+  background: rgba(220, 227, 236, 0.25);
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+.payment-ledger {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #dce3ec;
+    border-radius: 4px;
+  }
+}

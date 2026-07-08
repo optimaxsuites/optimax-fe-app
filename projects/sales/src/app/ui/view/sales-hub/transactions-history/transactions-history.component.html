@@ -1,1 +1,375 @@
-<p>transactions-history works!</p>
+<div class="transactions-container">
+  <div class="list-wrapper">
+
+    <!-- Header Hero Card -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="dashboard-badge">
+            <i class="fa-solid fa-money-bill"></i>
+            <span>Sales Hub • Transactions</span>
+          </div>
+          <h1>Financial Command Center</h1>
+          <p class="hero-subtitle">Track incoming revenue, record payments against invoices, and monitor customer billing accounts.</p>
+        </div>
+        <div class="hero-actions">
+          <button (click)="openRecordPaymentModal()" class="btn-primary-hero">
+            <i class="fas fa-plus"></i>
+            Record Payment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards Grid -->
+    <div class="stats-grid">
+      <div class="stat-card revenue">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-hand-holding-usd"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.totalCollected) }}</div>
+          <div class="stat-label">Total Revenue Collected</div>
+        </div>
+        <div class="stat-trend up">
+          <i class="fas fa-circle-check"></i>
+          <span>Settled</span>
+        </div>
+      </div>
+
+      <div class="stat-card pending">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.pending) }}</div>
+          <div class="stat-label">Pending Clearing</div>
+        </div>
+        <div class="stat-trend">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <span>Awaiting</span>
+        </div>
+      </div>
+
+      <div class="stat-card failed">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.failed) }}</div>
+          <div class="stat-label">Declined / Failed</div>
+        </div>
+        <div class="stat-trend down">
+          <i class="fas fa-circle-exclamation"></i>
+          <span>Failed</span>
+        </div>
+      </div>
+
+      <div class="stat-card refunded">
+        <div class="stat-icon-wrapper">
+          <i class="fas fa-undo"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.refunded) }}</div>
+          <div class="stat-label">Refunds Issued</div>
+        </div>
+        <div class="stat-trend refunded-trend">
+          <i class="fas fa-rotate-left"></i>
+          <span>Refunded</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs for Switching Views -->
+    <div class="sub-tabs-container">
+      <button class="sub-tab-btn" [class.active]="activeSubTab === 'payments'" (click)="activeSubTab = 'payments'">
+        <i class="fas fa-receipt"></i> Payments Log
+      </button>
+      <button class="sub-tab-btn" [class.active]="activeSubTab === 'billing'" (click)="activeSubTab = 'billing'">
+        <i class="fas fa-file-invoice-dollar"></i> Sales Billing Status
+      </button>
+    </div>
+
+    <!-- Filter Bar (Conditional controls depending on the active tab) -->
+    <div class="filter-bar">
+      <div class="filter-row">
+        <!-- Search Box -->
+        <div class="search-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()"
+            [placeholder]="activeSubTab === 'payments' ? 'Search by payment #, customer, reference...' : 'Search by invoice #, customer...'">
+        </div>
+
+        <!-- Status Filters (Only for Payments Log) -->
+        <div class="status-filters" *ngIf="activeSubTab === 'payments'">
+          <span class="filter-label">Status:</span>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option *ngFor="let opt of paymentStatusOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+
+        <!-- Date Range Filters -->
+        <div class="date-filters">
+          <input type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()" placeholder="From">
+          <span>→</span>
+          <input type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()" placeholder="To">
+        </div>
+
+        <button class="btn-reset" (click)="resetFilters()">
+          <i class="fas fa-undo-alt"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Fetching transaction records...</p>
+    </div>
+
+    <!-- MAIN TABLES -->
+    <div *ngIf="!isLoading" class="table-container">
+
+      <!-- View 1: Payments Log -->
+      <div *ngIf="activeSubTab === 'payments'" class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sn-col">#</th>
+              <th>Payment #</th>
+              <th>Date</th>
+              <th>Invoice ID</th>
+              <th>Customer</th>
+              <th class="text-right">Amount</th>
+              <th>Payment Method</th>
+              <th>Reference Code</th>
+              <th>Status</th>
+              <th class="actions-heading">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let payment of payments; let i = index">
+              <td class="sn-col">{{ (currentPage * pageSize) + i + 1 }}</td>
+              <td class="font-semibold text-primary-light">{{ payment.paymentNumber }}</td>
+              <td>{{ formatDate(payment.paymentDate) }}</td>
+              <td><span class="invoice-link">INV-{{ payment.invoiceId.substring(0, 3) }}</span></td>
+              <td>
+                <div class="customer-cell">
+                  <div class="avatar-sm">
+                    <span>{{ payment.customerName.charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <span class="customer-name">{{ payment.customerName }}</span>
+                </div>
+              </td>
+              <td class="text-right font-bold" [class.text-danger]="payment.status === 'FAILED'">
+                {{ formatCurrency(payment.amount, payment.currency) }}
+              </td>
+              <td>
+                <span class="method-badge">
+                  <i class="fas" [ngClass]="{
+                    'fa-university': payment.method === 'BANK_TRANSFER',
+                    'fa-credit-card': payment.method === 'CARD',
+                    'fa-money-bill-wave': payment.method === 'CASH',
+                    'fa-laptop': payment.method === 'POS',
+                    'fa-mobile-alt': payment.method === 'MOBILE_MONEY',
+                    'fa-money-check': payment.method === 'CHEQUE'
+                  }"></i>
+                  {{ payment.method.replace('_', ' ') }}
+                </span>
+              </td>
+              <td class="font-mono text-xs">{{ payment.reference }}</td>
+              <td>
+                <span class="status-badge" [class]="getPaymentStatusBadgeClass(payment.status)">
+                  {{ getPaymentStatusLabel(payment.status) }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <div class="actions-wrapper">
+                  <button class="action-btn view-btn" (click)="openPaymentDetail(payment.id)" title="View Lifecycle">
+                    <i class="fas fa-eye"></i> View
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="payments.length === 0">
+              <td colspan="10" class="no-records">
+                <i class="fas fa-receipt fa-3x"></i>
+                <p>No transaction payments logged matching the filters.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- View 2: Sales Billing Status -->
+      <div *ngIf="activeSubTab === 'billing'" class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sn-col">#</th>
+              <th>Invoice #</th>
+              <th>Customer</th>
+              <th>Due Date</th>
+              <th class="text-right">Total Amount</th>
+              <th class="text-right">Amount Paid</th>
+              <th class="text-right">Balance Due</th>
+              <th>Billing Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of invoices; let i = index">
+              <td class="sn-col">{{ i + 1 }}</td>
+              <td class="font-semibold text-primary-light">{{ invoice.invoiceNumber }}</td>
+              <td>
+                <div class="customer-cell">
+                  <div class="avatar-sm">
+                    <span>{{ invoice.customerName.charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <span class="customer-name">{{ invoice.customerName }}</span>
+                </div>
+              </td>
+              <td>{{ formatDate(invoice.dueDate) }}</td>
+              <td class="text-right font-semibold">{{ formatCurrency(invoice.totalAmount, invoice.currency) }}</td>
+              <td class="text-right text-success font-semibold">{{ formatCurrency(invoice.amountPaid, invoice.currency) }}</td>
+              <td class="text-right font-bold" [class.text-danger]="invoice.balanceDue > 0">
+                {{ formatCurrency(invoice.balanceDue, invoice.currency) }}
+              </td>
+              <td>
+                <span class="status-badge" [class]="getInvoiceStatusBadgeClass(invoice)">
+                  {{ getInvoiceStatusLabel(invoice) }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="invoices.length === 0">
+              <td colspan="8" class="no-records">
+                <i class="fas fa-file-invoice fa-3x"></i>
+                <p>No sales invoices found.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-footer" *ngIf="activeSubTab === 'payments' && totalPages > 1">
+        <div class="pagination-info">
+          Showing <span>{{ (currentPage * pageSize) + 1 }}</span> to
+          <span>{{ Math.min(((currentPage + 1) * pageSize), totalElements) }}</span> of
+          <span>{{ totalElements }}</span> transactions
+        </div>
+        <div class="pagination-controls">
+          <button class="pag-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <button *ngFor="let pageNum of getPageNumbers()"
+                  class="pag-btn page-num"
+                  [class.active]="pageNum === currentPage"
+                  (click)="onPageChange(pageNum)">
+            {{ pageNum + 1 }}
+          </button>
+          
+          <button class="pag-btn" [disabled]="currentPage === totalPages - 1" (click)="onPageChange(currentPage + 1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment Modal Overlay -->
+<app-modal *ngIf="showPaymentModal" header="Record Payment Transaction" (close)="closeRecordPaymentModal()">
+  <form (ngSubmit)="savePayment()" class="payment-modal-form">
+    
+    <div class="form-grid">
+      <!-- Select Invoice -->
+      <div class="form-group full-width">
+        <label class="form-label" for="invoiceSelect">Select Sales Invoice <span class="required">*</span></label>
+        <select id="invoiceSelect" class="form-control" name="invoiceId" [(ngModel)]="paymentForm.invoiceId" (change)="onInvoiceSelect($event)" required>
+          <option value="" disabled selected>-- Select an Outstanding Invoice --</option>
+          <ng-container *ngFor="let inv of invoices">
+            <option *ngIf="inv.balanceDue > 0 && inv.status !== 'CANCELLED'" [value]="inv.id">
+              {{ inv.invoiceNumber }} - {{ inv.customerName }} (Due: {{ formatCurrency(inv.balanceDue, inv.currency) }})
+            </option>
+          </ng-container>
+        </select>
+      </div>
+
+      <!-- Customer Detail (Auto-populated, Read Only) -->
+      <div class="form-group" *ngIf="selectedInvoiceForPayment">
+        <label class="form-label">Customer Account</label>
+        <div class="read-only-box">
+          <i class="fas fa-user text-muted mr-2"></i>
+          {{ selectedInvoiceForPayment.customerName }}
+        </div>
+      </div>
+
+      <!-- Currency Details (Auto-populated, Read Only) -->
+      <div class="form-group" *ngIf="selectedInvoiceForPayment">
+        <label class="form-label">Currency / Total</label>
+        <div class="read-only-box">
+          <i class="fas fa-wallet text-muted mr-2"></i>
+          {{ selectedInvoiceForPayment.currency }} (Total: {{ formatCurrency(selectedInvoiceForPayment.totalAmount, selectedInvoiceForPayment.currency) }})
+        </div>
+      </div>
+
+      <!-- Payment Date -->
+      <div class="form-group">
+        <label class="form-label" for="payDate">Payment Date <span class="required">*</span></label>
+        <input type="date" id="payDate" class="form-control" name="paymentDate" [(ngModel)]="paymentForm.paymentDate" required>
+      </div>
+
+      <!-- Amount -->
+      <div class="form-group">
+        <label class="form-label" for="payAmount">Amount Received <span class="required">*</span></label>
+        <div class="input-prefix-container">
+          <span class="input-prefix">{{ selectedInvoiceForPayment?.currency || 'NGN' }}</span>
+          <input type="number" id="payAmount" class="form-control with-prefix" name="amount" [(ngModel)]="paymentForm.amount" min="1" step="0.01" required>
+        </div>
+        <span class="form-hint" *ngIf="selectedInvoiceForPayment">
+          Outstanding Balance: {{ formatCurrency(selectedInvoiceForPayment.balanceDue, selectedInvoiceForPayment.currency) }}
+        </span>
+      </div>
+
+      <!-- Method -->
+      <div class="form-group">
+        <label class="form-label" for="payMethod">Payment Method <span class="required">*</span></label>
+        <select id="payMethod" class="form-control" name="method" [(ngModel)]="paymentForm.method" required>
+          <option *ngFor="let opt of paymentMethodOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+
+      <!-- Reference -->
+      <div class="form-group">
+        <label class="form-label" for="payRef">Reference / Transaction ID</label>
+        <input type="text" id="payRef" class="form-control" name="reference" [(ngModel)]="paymentForm.reference" placeholder="e.g. Bank slip transaction number, check number">
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group full-width">
+        <label class="form-label" for="payNotes">Internal Memo / Notes</label>
+        <textarea id="payNotes" class="form-control" name="notes" [(ngModel)]="paymentForm.notes" rows="3" placeholder="Log details regarding transfer, agent signature..."></textarea>
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div class="modal-actions-footer">
+      <button type="button" class="btn-secondary" (click)="closeRecordPaymentModal()" [disabled]="isSaving">
+        Cancel
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="isSaving || !paymentForm.invoiceId || paymentForm.amount <= 0">
+        <i class="fas" [class.fa-spinner]="isSaving" [class.fa-spin]="isSaving" [class.fa-save]="!isSaving"></i>
+        {{ isSaving ? 'Saving Record...' : 'Confirm Payment' }}
+      </button>
+    </div>
+
+  </form>
+</app-modal>
+
+<!-- Transaction History Lifecycle Detail Overlay -->
+<app-transaction-history-detail *ngIf="showPaymentDetail" [paymentId]="selectedPaymentId" (closed)="closePaymentDetail()"></app-transaction-history-detail>

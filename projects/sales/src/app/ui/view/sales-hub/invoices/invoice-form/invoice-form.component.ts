@@ -7,6 +7,8 @@ import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-invoice-form',
@@ -28,6 +30,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   isEditMode = false;
   invoiceId: string = '';
   quoteId: string = '';
+  generatedInvoiceNumber: string = '';
 
   // ============ WIZARD STATE ============
   currentStep: 1 | 2 | 3 = 1;
@@ -155,6 +158,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       this.loadInvoice();
     } else if (this.quoteId) {
       this.loadQuoteForInvoice();
+      this.currentStep = 3;
     } else {
       this.addLineItem();
     }
@@ -390,6 +394,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       next: (quote: Quote | null) => {
         if (quote) {
           this.populateFromQuote(quote);
+          this.validateStep2();
         }
         this.isLoading = false;
       },
@@ -401,13 +406,17 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private populateFromQuote(quote: Quote): void {
+    const defaultDueDate = new Date();
+    defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+
     this.invoiceForm.patchValue({
       customerId: quote.customerId,
       customerName: quote.customerName,
       currency: quote.currency,
       notes: quote.notes,
       terms: quote.terms,
-      paymentTerms: quote.terms || 'Net 30'
+      paymentTerms: quote.terms || 'Net 30',
+      dueDate: this.formatDateForInput(defaultDueDate)
     });
 
     // Add items from quote
@@ -915,13 +924,35 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   }
 
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
-    const content = `
-      INVOICE: ${invoice.invoiceNumber}
-      Customer: ${invoice.customerName}
-      Total: ${invoice.totalAmount} ${invoice.currency}
-      Template: ${this.selectedTemplate?.name || 'Standard'}
-    `;
-    return new Blob([content], { type: 'application/pdf' });
+    this.generatedInvoiceNumber = invoice.invoiceNumber;
+    
+    // Allow small delay for Angular to bind the new invoice number to the DOM
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const element = document.getElementById('invoice-preview-document');
+    if (!element) {
+      throw new Error('Preview document element not found');
+    }
+    
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+    
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210; // A4 size width in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    
+    const pdfBlob = pdf.output('blob');
+    
+    // Reset the generated invoice number
+    this.generatedInvoiceNumber = '';
+    
+    return pdfBlob;
   }
 
   private async sendInvoiceEmail(invoice: Invoice): Promise<void> {

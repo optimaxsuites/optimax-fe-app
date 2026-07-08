@@ -119,30 +119,14 @@
 
         <div class="status-filters">
           <span class="filter-label">Status:</span>
-          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'" 
-                  (click)="filters.status = 'ALL'; applyFilters()">
-            All
-          </button>
-          <button class="status-filter-btn draft" [class.active]="filters.status === 'DRAFT'" 
-                  (click)="filters.status = 'DRAFT'; applyFilters()">
-            Draft
-          </button>
-          <button class="status-filter-btn sent" [class.active]="filters.status === 'SENT'" 
-                  (click)="filters.status = 'SENT'; applyFilters()">
-            Sent
-          </button>
-          <button class="status-filter-btn accepted" [class.active]="filters.status === 'ACCEPTED'" 
-                  (click)="filters.status = 'ACCEPTED'; applyFilters()">
-            Accepted
-          </button>
-          <button class="status-filter-btn declined" [class.active]="filters.status === 'DECLINED'" 
-                  (click)="filters.status = 'DECLINED'; applyFilters()">
-            Declined
-          </button>
-          <button class="status-filter-btn expired" [class.active]="filters.status === 'EXPIRED'" 
-                  (click)="filters.status = 'EXPIRED'; applyFilters()">
-            Expired
-          </button>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option value="ALL">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="SENT">Sent</option>
+            <option value="ACCEPTED">Accepted</option>
+            <option value="DECLINED">Declined</option>
+            <option value="EXPIRED">Expired</option>
+          </select>
         </div>
 
         <div class="date-filters">
@@ -210,6 +194,10 @@
                 <div class="actions-wrapper">
                   <button class="action-btn view-btn" (click)="openQuoteDetail(quote.id)" title="View Details">
                     <i class="fas fa-eye"></i>
+                  </button>
+                  <button *ngIf="quote.status === 'CONVERTED'" class="action-btn generate-invoice-btn"
+                    (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
+                    <i class="fas fa-file-invoice-dollar"></i>
                   </button>
                   <button *ngIf="quote.status === 'DRAFT'" class="action-btn edit-btn"
                     (click)="openEditQuoteModal(quote.id)" title="Edit Quote">
