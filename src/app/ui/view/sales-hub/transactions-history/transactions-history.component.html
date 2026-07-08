@@ -106,12 +106,9 @@
         <!-- Status Filters (Only for Payments Log) -->
         <div class="status-filters" *ngIf="activeSubTab === 'payments'">
           <span class="filter-label">Status:</span>
-          <button *ngFor="let opt of paymentStatusOptions"
-                  class="status-filter-btn"
-                  [class.active]="filters.status === opt.value"
-                  (click)="filters.status = opt.value; applyFilters()">
-            {{ opt.label }}
-          </button>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option *ngFor="let opt of paymentStatusOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
         </div>
 
         <!-- Date Range Filters -->

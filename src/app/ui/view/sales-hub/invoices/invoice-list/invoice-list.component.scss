@@ -425,41 +425,28 @@ $radius-xl: 24px;
   }
 }
 
-.status-filter-btn {
-  padding: 0.35rem 0.9rem;
+.status-filter-select {
+  padding: 0.4rem 2rem 0.4rem 0.75rem;
   border: 2px solid $border-color;
-  border-radius: 20px;
-  background: transparent;
-  color: $text-secondary;
+  border-radius: 8px;
+  background: white;
+  color: $text-primary;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  outline: none;
   transition: all 0.25s ease;
-  
-  &:hover {
-    background: $primary-surface;
+  min-width: 140px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5a6e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+
+  &:focus, &:hover {
     border-color: $primary-mid;
-    color: $text-primary;
-    transform: translateY(-1px);
+    box-shadow: 0 0 0 3px rgba(26, 45, 74, 0.08);
   }
-  
-  &.active {
-    background: $primary-mid;
-    border-color: $primary-mid;
-    color: white;
-    box-shadow: 0 2px 8px rgba(26, 45, 74, 0.25);
-    
-    &:hover {
-      background: $primary-dark;
-      border-color: $primary-dark;
-    }
-  }
-  
-  &.draft.active { background: #64748b; border-color: #64748b; }
-  &.sent.active { background: #3b82f6; border-color: #3b82f6; }
-  &.paid.active { background: #10b981; border-color: #10b981; }
-  &.partial.active { background: #f59e0b; border-color: #f59e0b; }
-  &.overdue.active { background: #ef4444; border-color: #ef4444; }
 }
 
 .date-filters {

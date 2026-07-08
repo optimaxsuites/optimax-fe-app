@@ -112,22 +112,12 @@
 
         <div class="status-filters">
           <span class="filter-label">Status:</span>
-          <button class="status-filter-btn" [class.active]="filters.status === 'ALL'" 
-                  (click)="filters.status = 'ALL'; applyFilters()">
-            All
-          </button>
-          <button class="status-filter-btn active" [class.active]="filters.status === 'ACTIVE'" 
-                  (click)="filters.status = 'ACTIVE'; applyFilters()">
-            Active
-          </button>
-          <button class="status-filter-btn out-of-stock" [class.active]="filters.status === 'OUT_OF_STOCK'" 
-                  (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
-            Out of Stock
-          </button>
-          <button class="status-filter-btn discontinued" [class.active]="filters.status === 'DISCONTINUED'" 
-                  (click)="filters.status = 'DISCONTINUED'; applyFilters()">
-            Discontinued
-          </button>
+          <select class="status-filter-select" [(ngModel)]="filters.status" (change)="applyFilters()">
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="OUT_OF_STOCK">Out of Stock</option>
+            <option value="DISCONTINUED">Discontinued</option>
+          </select>
         </div>
 
         <div class="filter-group">

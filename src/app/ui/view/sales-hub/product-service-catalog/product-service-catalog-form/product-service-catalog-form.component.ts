@@ -49,6 +49,15 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   
   // For file upload
   attachmentFileName: string = '';
+
+  images: string[] = [];
+  demoImages = [
+    { name: 'Laptop', url: 'https://images.unsplash.com/photo-1496181130204-755241544e35?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Office Chair', url: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Standing Desk', url: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Printer', url: 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=400&q=80' },
+    { name: 'Tablet', url: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80' }
+  ];
   
   private destroy$ = new Subject<void>();
 
@@ -144,6 +153,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
             quantity: product.stockQuantity,
             measurementUnit: 'Each'
           });
+          this.images = product.images || [];
         }
         this.isLoading = false;
       },
@@ -175,7 +185,8 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       category: formData.category,
       taxRate: this.extractTaxRate(formData.taxes),
       currency: 'NGN',
-      status: formData.quantity > 0 ? 'ACTIVE' : 'OUT_OF_STOCK'
+      status: formData.quantity > 0 ? 'ACTIVE' : 'OUT_OF_STOCK',
+      images: this.images
     };
 
     const action = this.isEditMode 
@@ -316,5 +327,30 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
         alert(`Supplier "${trimmed}" already exists.`);
       }
     }
+  }
+
+  onImageSelected(event: any): void {
+    const files = event.target.files;
+    if (files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.images.push(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+
+  addImageUrl(url: string): void {
+    const trimmed = url ? url.trim() : '';
+    if (trimmed && !this.images.includes(trimmed)) {
+      this.images.push(trimmed);
+    }
+  }
+
+  removeImage(index: number): void {
+    this.images.splice(index, 1);
   }
 }

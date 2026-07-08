@@ -275,6 +275,52 @@
         <!-- RIGHT COLUMN -->
         <div class="form-column right-column">
           
+          <!-- Section: Product Images -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-images"></i>
+              </div>
+              <h3>Product Images</h3>
+            </div>
+            <div class="card-body">
+              <!-- Upload Dropzone -->
+              <div class="image-upload-dropzone" (click)="imageInput.click()">
+                <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                <p>Click to upload product images</p>
+                <span>Supports PNG, JPG, JPEG</span>
+              </div>
+              <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" multiple style="display: none;">
+
+              <!-- URL Input Group -->
+              <div class="image-url-input-group mt-3">
+                <input type="text" #urlInput class="form-control" placeholder="Or paste image URL...">
+                <button type="button" class="btn-add-url" (click)="addImageUrl(urlInput.value); urlInput.value=''">Add</button>
+              </div>
+
+              <!-- Demo Images Grid -->
+              <div class="demo-images-gallery mt-3">
+                <span class="gallery-title">Quick Add Demo Images:</span>
+                <div class="demo-images-list">
+                  <div class="demo-thumb-container" *ngFor="let demo of demoImages" (click)="addImageUrl(demo.url)" [title]="demo.name">
+                    <img [src]="demo.url" class="demo-thumb">
+                    <span class="demo-label">{{ demo.name }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image Previews Grid -->
+              <div class="images-preview-grid mt-3" *ngIf="images.length > 0">
+                <div class="image-preview-card" *ngFor="let img of images; let idx = index">
+                  <img [src]="img" class="preview-img">
+                  <button type="button" class="btn-remove-image" (click)="removeImage(idx)" title="Remove Image">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Section 6: Stock Movement & Pricing -->
           <div class="form-card glass">
             <div class="card-header">
