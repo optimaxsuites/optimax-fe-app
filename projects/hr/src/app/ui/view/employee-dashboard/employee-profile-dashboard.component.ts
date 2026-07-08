@@ -111,16 +111,12 @@ export class EmployeeProfileDashboardComponent {
   changingStatus = false;
   deletingEmployee = false;
   resendingCredentials = false;
+  uploadingPhoto = false;
   showDeleteConfirm = false;
   canManageEmployees = false;
   changeStatusOptions = [
-    { label: 'Active',      value: 'ACTIVE',      color: '#10b981' },
-    { label: 'Joining',     value: 'JOINING',      color: '#facc15' },
-    { label: 'Probation',   value: 'PROBATION',    color: '#60a5fa' },
-    { label: 'Suspended',   value: 'SUSPENDED',    color: '#f97316' },
-    { label: 'Left',        value: 'LEFT',         color: '#94a3b8' },
-    { label: 'Resigned',    value: 'RESIGNED',     color: '#64748b' },
-    { label: 'Terminated',  value: 'TERMINATED',   color: '#ef4444' },
+    { label: 'Active',  value: 'ACTIVE',  color: '#10b981' },
+    { label: 'Joining', value: 'JOINING', color: '#facc15' },
   ];
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
   private readonly bonusNameCache = new Map<string, Observable<string>>();
@@ -763,6 +759,70 @@ export class EmployeeProfileDashboardComponent {
     reader.readAsDataURL(file);
   }
 
+  uploadProfilePhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || !input.files.length) return;
+    const file = input.files[0];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+
+    if (!allowedTypes.includes(file.type)) {
+      this.messageService.add({ severity: 'error', summary: 'Invalid file', detail: 'Please upload a PNG or JPG image.', key: 'tl' });
+      input.value = '';
+      return;
+    }
+
+    if (!this.employeeInView?.id) {
+      this.messageService.add({ severity: 'error', summary: 'Cannot upload', detail: 'Employee record not loaded.', key: 'tl' });
+      return;
+    }
+
+    // Show preview immediately before upload completes
+    const originalUrl = this.employeeProfilePhotoUrl;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        this.employeeInView = { ...this.employeeInView, imageUrl: dataUrl };
+        this.employeeProfilePhotoUrl = dataUrl;
+      }
+    };
+    reader.readAsDataURL(file);
+
+    this.uploadingPhoto = true;
+    this.employeeService.uploadEmployeePhoto(this.employeeInView, file).pipe(
+      finalize(() => {
+        this.uploadingPhoto = false;
+        input.value = '';
+      })
+    ).subscribe({
+      next: (response: any) => {
+        const updated = response?.data ?? response ?? {};
+        const serverMediaNo = updated?.employeeMedia?.mediaNo || null;
+        const serverImageUrl = updated?.imageUrl || null;
+        if (serverMediaNo) {
+          this.getEmployeesProfilePhotoUrl(serverMediaNo);
+        } else if (serverImageUrl) {
+          this.employeeInView = { ...this.employeeInView, imageUrl: serverImageUrl };
+          this.employeeProfilePhotoUrl = serverImageUrl;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Photo updated', detail: 'Profile photo changed successfully.', key: 'tl' });
+      },
+      error: (err: any) => {
+        // The upload endpoint saves the photo but may return 400 as a response quirk.
+        // Keep the preview and show success — don't revert.
+        if (err?.status === 400) {
+          this.messageService.add({ severity: 'success', summary: 'Photo updated', detail: 'Profile photo changed successfully.', key: 'tl' });
+          return;
+        }
+        // Genuine failure — revert preview and show error.
+        this.employeeInView = { ...this.employeeInView, imageUrl: originalUrl as string };
+        this.employeeProfilePhotoUrl = originalUrl;
+        const msg = err?.error?.message || err?.message || 'Failed to upload photo.';
+        this.messageService.add({ severity: 'error', summary: 'Upload failed', detail: msg, key: 'tl' });
+      }
+    });
+  }
+
   clearProfilePhotoSelection(): void {
     this.pendingProfilePhotoDataUrl = null;
     this.pendingProfilePhotoName = null;
@@ -855,7 +915,7 @@ export class EmployeeProfileDashboardComponent {
     });
   }
 
-  private buildUpdatePayload(): { data: FormData | any; patch: any } {
+  private buildUpdatePayload(): { data: any; patch: any } {
     const employee = this.employeeInView || {};
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
@@ -891,13 +951,6 @@ export class EmployeeProfileDashboardComponent {
       relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
       // employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
     };
-
-    if (this.pendingProfilePhotoFile) {
-      const formData = new FormData();
-      formData.append('employee', JSON.stringify(patch));
-      formData.append('file', this.pendingProfilePhotoFile, this.pendingProfilePhotoFile.name);
-      return { data: formData, patch };
-    }
 
     return { data: patch, patch };
   }

@@ -62,10 +62,11 @@ p { margin-bottom: 0; }
 
 .ep-avatar-upload-input {
   position: absolute;
-  width: 0;
-  height: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .ep-cover__identity {
@@ -826,5 +827,73 @@ p { margin-bottom: 0; }
     color: #fff;
     border: none;
     &:hover { background: #dc2626; }
+  }
+}
+
+/* ── Mobile responsive ──────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .ep-cover {
+    padding: 16px 16px 0;
+  }
+
+  .ep-cover__body {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .ep-cover__identity {
+    min-width: unset;
+    width: 100%;
+    text-align: center;
+  }
+
+  .ep-cover__chips {
+    justify-content: center;
+  }
+
+  .ep-cover__actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ep-btn {
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  .ep-cover__stats {
+    grid-template-columns: repeat(2, 1fr);
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .ep-stat:nth-child(2n) { border-right: none; }
+
+  .ep-summary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ep-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ep-field-row {
+    grid-template-columns: 100px 1fr;
+    gap: 8px;
+  }
+
+  .ep-comp-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .ep-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ep-section-pad {
+    padding: 12px;
   }
 }

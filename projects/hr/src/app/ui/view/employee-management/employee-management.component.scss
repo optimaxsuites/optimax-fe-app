@@ -588,3 +588,72 @@ p{
     }
 }
 
+/* ── Mobile responsive ───────────────────────────────────────── */
+@media (max-width: 767px) {
+    .employee-management-shell {
+        @apply p-2;
+    }
+
+    .management-summary-grid {
+        @apply grid-cols-2 gap-2;
+    }
+
+    .management-summary-card {
+        @apply p-3;
+    }
+
+    .management-summary-value {
+        @apply text-xl;
+    }
+
+    .employee-toolbar {
+        @apply px-3 py-3;
+    }
+
+    .toolbar-badge {
+        display: none;
+    }
+
+    /* Cards: single column below sm breakpoint — Tailwind handles sm+;
+       this ensures xs (< 640px) is always 1 column */
+    .grid.gap-6.p-4 {
+        @apply grid-cols-1;
+    }
+
+    /* List view: hide secondary columns, show only name + actions */
+    .dir-list-header {
+        display: none;
+    }
+
+    .dir-list-row {
+        @apply flex-wrap gap-2 py-3;
+    }
+
+    .dir-list-col--dept,
+    .dir-list-col--role,
+    .dir-list-col--level,
+    .dir-list-col--type,
+    .dir-list-col--joined {
+        display: none;
+    }
+
+    .dir-list-col--name {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dir-list-col--actions {
+        width: auto;
+    }
+
+    .dir-list-action-btn,
+    .dir-list-view-btn {
+        opacity: 1 !important;
+    }
+
+    /* Pagination: compact */
+    .pagination-bar {
+        @apply gap-2 px-2 pb-4 text-xs;
+    }
+}
+
