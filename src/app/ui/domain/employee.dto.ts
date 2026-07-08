@@ -30,6 +30,8 @@ export interface employeeDTO {
   access?: AccessDTO;
   leave?: LeaveDTO[];
   profileImage?: File;
+  primaryBranchId?: number;
+  assignedBranches?: number[];
 }
 
 export interface NextOfKinDTO {
