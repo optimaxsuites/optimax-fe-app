@@ -1,4 +1,5 @@
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast position="top-right" key="tl"></p-toast>
 
 <div class="sp-shell">
 
@@ -10,289 +11,348 @@
     </div>
   </div>
 
-  <div class="sp-toolbar">
-    <p class="sp-section-label"><span *ngIf="showAddForm">{{ isEditMode ? 'Update' : 'New' }} </span>Salary Structures</p>
-    <button *ngIf="showAddForm" class="sp-btn-cancel" (click)="toogleForm()">
-      <i class="fas fa-times"></i> Cancel
-    </button>
-  </div>
-
-  <mat-accordion *ngIf="!showAddForm">
-    <mat-expansion-panel *ngFor="let level of levels; let i = index" #panel>
-      <mat-expansion-panel-header>
-        <mat-panel-title>{{ level.name }}</mat-panel-title>
-        <mat-panel-description *ngIf="getSalaryByLevelId(level.id)" class="action-buttons">
-          <button class="act-btn-edit" (click)="editSalary(level.id, i, $event)">
-            <i class="fas fa-pen"></i><span *ngIf="panel.expanded">Edit</span>
-          </button>
-          <button class="act-btn-del" (click)="confirmSalaryDelete(level.id, i, $event)">
-            <i class="fas fa-trash"></i><span *ngIf="panel.expanded">Delete</span>
-          </button>
-        </mat-panel-description>
-        <mat-panel-description *ngIf="!getSalaryByLevelId(level.id)" class="action-buttons">
-          <button class="act-btn-add" (click)="createNewStructure(level.id)">
-            <i class="fas fa-plus"></i> Create Structure
-          </button>
-        </mat-panel-description>
-      </mat-expansion-panel-header>
-
-      <div class="text-gray-600 flex flex-col gap-2" *ngIf="getSalaryByLevelId(level.id) as salary; else noSalary">
-        <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency: 'NGN' }}</p>
-        <div>
-          <p *ngIf="salary?.allowance?.length"><strong>Allowances:</strong></p>
-          <ul *ngIf="salary?.allowance?.length">
-            <li *ngFor="let allowance of salary.allowance">{{ getAllowanceName(allowance.allowanceTypeId) }}: {{ allowance.amount | currency: 'NGN' }}</li>
-          </ul>
-        </div>
-        <div>
-          <p *ngIf="salary?.deductions?.length"><strong>Deductions:</strong></p>
-          <ul *ngIf="salary?.deductions?.length">
-            <li *ngFor="let deduction of salary.deductions">{{ getDeductionName(deduction.deductionsTypeId) }}: {{ deduction.amount | currency: 'NGN' }}</li>
-          </ul>
-        </div>
-        <div>
-          <p *ngIf="salary?.bonus?.length"><strong>Bonuses:</strong></p>
-          <ul *ngIf="salary?.bonus?.length">
-            <li *ngFor="let bonus of salary.bonus">{{ getBonusName(bonus.bonusTypeId) }}: {{ bonus.amount | currency: 'NGN' }}</li>
-          </ul>
-        </div>
-        <div>
-          <p *ngIf="salary?.overtime?.length"><strong>Overtime:</strong></p>
-          <ul *ngIf="salary?.overtime?.length">
-            <li *ngFor="let ot of salary.overtime">{{ getOvertimeName(ot.overtimeTypeId) }}: {{ ot.rate | currency: 'NGN' }}</li>
-          </ul>
-        </div>
-      </div>
-      <ng-template #noSalary>
-        <p class="text-gray-500">No salary details available for this level.</p>
-      </ng-template>
-    </mat-expansion-panel>
-  </mat-accordion>
-
-
-  <div *ngIf="showAddForm">
-    <form [formGroup]="salaryForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
-
-      <div class="mb-4">
-        <label for="level" class="block text-[14px] font-medium capitalize">Level</label>
-        <input [value]="getLevelName(salaryForm.get('level')?.value)" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" readonly/>
-      </div>
-
-      <div class="mb-4">
-        <label for="baseSalary" class="block text-[14px] font-medium">Base Salary</label>
-        <input formControlName="baseSalary" id="baseSalary" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Base Salary" />
-      </div>
-
-      <fieldset [formGroup]="allowanceForm">
-        <legend class="text-[15px] font-medium">Allowances</legend>
-        <fieldset class="mt-2">
-          <div *ngIf="allowances.length > 0" class="mb-3">
-            <div *ngFor="let allowance of allowances; let i = index" class="pb-3">
-              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-                <p class="text-[14px]">{{ getAllowanceName(allowance.allowanceTypeId) }}</p>
-                <div class="flex gap-3 justify-center">
-                  <p class="text-[14px]">{{ allowance.amount | currency:'NGN' }}</p>
-                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeAllowance(i, allowance.id)"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex justify-between w-full gap-10">
-              <div class="w-1/2">
-                <label for="allowanceName" class="block text-[14px] font-medium">Name</label>
-                <div class="flex items-center">
-                  <ng-select [items]="availableAllowanceTypes" bindLabel="name" bindValue="id" placeholder="Select Allowance" formControlName="type" id="allowanceName" class="w-full mt-1 rounded-md"></ng-select>
-                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('allowance')">New</div>
-                </div>
-                <div *ngIf="isAllowanceTouched && allowanceForm.get('type')?.invalid" class="text-red-500">
-                  <small *ngIf="allowanceForm.get('type')?.errors?.['required']">Allowance name is required.</small>
-                </div>
-              </div>
-              <div class="w-1/2">
-                <label class="block text-[14px] font-medium" id="allowanceAccount">Amount</label>
-                <input formControlName="amount" (keydown.enter)="addAllowanceToTotal($event)" id="allowanceAccount" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Allowance Amount" />
-                <div *ngIf="isAllowanceTouched && allowanceForm.get('amount')?.invalid" class="text-red-500">
-                  <small *ngIf="allowanceForm.get('amount')?.errors?.['required']">Allowance amount is required.</small>
-                  <small *ngIf="allowanceForm.get('amount')?.errors?.['min']">Amount must be greater than 0.</small>
-                </div>
-              </div>
-            </div>
-            <div class="flex justify-between">
-              <button></button>
-              <button type="button" (click)="addAllowanceToTotal($event)" class="text-customGreen text-[12px]">+add</button>
-            </div>
-          </div>
-        </fieldset>
-      </fieldset>
-
-      <fieldset [formGroup]="deductionForm">
-        <legend class="text-[14px] font-medium">Deductions</legend>
-        <fieldset class="mt-2">
-          <div *ngIf="deductions.length > 0" class="mb-3">
-            <div *ngFor="let deduction of deductions; let i = index" class="pb-3">
-              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-                <p class="text-[14px]">{{ getDeductionName(deduction.deductionsTypeId) }}</p>
-                <div class="flex gap-3 justify-center">
-                  <p class="text-[14px]">{{ deduction.amount | currency:'NGN' }}</p>
-                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeDeduction(i, deduction.deductionsTypeId)"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex justify-between w-full gap-10">
-              <div class="w-1/2">
-                <label for="deductionName" class="block text-[14px] font-medium">Deduction Name</label>
-                <div class="flex items-center">
-                  <ng-select [items]="availableDeductionTypes" bindLabel="name" bindValue="id" placeholder="Select Deduction" formControlName="type" id="deducionName" class="w-full mt-1 rounded-md"></ng-select>
-                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('deduction')">New</div>
-                </div>
-                <div *ngIf="isDeductionTouched && deductionForm.get('type')?.invalid" class="text-red-500">
-                  <small *ngIf="deductionForm.get('type')?.errors?.['required']">Deduction name is required.</small>
-                </div>
-              </div>
-              <div class="w-1/2">
-                <label class="block text-[14px] font-medium" for="deductionAmount">Deduction Amount</label>
-                <input formControlName="amount" id="deductionAmount" (keydown.enter)="addDeductionToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Deduction Amount" />
-                <div *ngIf="isDeductionTouched && deductionForm.get('amount')?.invalid" class="text-red-500">
-                  <small *ngIf="deductionForm.get('amount')?.errors?.['required']">Allowance amount is required.</small>
-                  <small *ngIf="deductionForm.get('amount')?.errors?.['min']">Amount must be greater than 0.</small>
-                </div>
-              </div>
-            </div>
-            <div class="flex justify-between">
-              <button></button>
-              <button type="button" (click)="addDeductionToTotal($event)" class="text-customGreen text-[12px]">+add</button>
-            </div>
-          </div>
-        </fieldset>
-      </fieldset>
-
-      <fieldset [formGroup]="bonusForm">
-        <legend class="text-[15px] font-medium">Bonuses</legend>
-        <fieldset class="mt-2">
-          <div *ngIf="bonuses.length > 0" class="mb-3">
-            <div *ngFor="let bonus of bonuses; let i = index" class="pb-3">
-              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-                <p class="text-[14px]">{{ getBonusName(bonus.bonusTypeId) }}</p>
-                <div class="flex gap-3 justify-center">
-                  <p class="text-[14px]">{{ bonus.amount | currency:'NGN' }}</p>
-                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeBonus(i, bonus.bonusTypeId)"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex justify-between w-full gap-10">
-              <div class="w-1/2">
-                <label for="bonusName" class="block text-[14px] font-medium">Bonus Name</label>
-                <div class="flex items-center">
-                  <ng-select [items]="availableBonusesTypes" bindLabel="name" bindValue="id" placeholder="Select Bonus" id="bonusName" formControlName="type" class="w-full mt-1 rounded-md"></ng-select>
-                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('bonus')">New</div>
-                </div>
-                <div *ngIf="isBonusTouched && bonusForm.get('type')?.invalid" class="text-red-500">
-                  <small *ngIf="bonusForm.get('type')?.errors?.['required']">Bonus name is required.</small>
-                </div>
-              </div>
-              <div class="w-1/2">
-                <label for="bonusAmount" class="block text-[14px] font-medium">Bonus Amount</label>
-                <input formControlName="amount" id="bonusAmount" (keydown.enter)="addBonusToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Bonus Amount" />
-                <div *ngIf="isBonusTouched && bonusForm.get('amount')?.invalid" class="text-red-500">
-                  <small *ngIf="bonusForm.get('amount')?.errors?.['required']">Bonus amount is required.</small>
-                  <small *ngIf="bonusForm.get('amount')?.errors?.['min']">Bonus must be greater than 0.</small>
-                </div>
-              </div>
-            </div>
-            <div class="flex justify-between">
-              <button></button>
-              <button type="button" (click)="addBonusToTotal($event)" class="text-customGreen text-[12px]">+add</button>
-            </div>
-          </div>
-        </fieldset>
-      </fieldset>
-
-      <fieldset class="mb-4" [formGroup]="overtimeForm">
-        <legend class="text-[15px] font-medium">Overtime</legend>
-        <fieldset class="mt-2">
-          <div *ngIf="overtImes.length > 0" class="mb-3">
-            <div *ngFor="let overtime of overtImes; let i = index" class="pb-3">
-              <div class="flex justify-between items-center shadow-md rounded-md border border-gray-300 bg-white p-3">
-                <p class="text-[14px]">{{ getOvertimeName(overtime.overtimeTypeId) }}</p>
-                <p class="text-[14px]">{{ overtime.rate | currency:'NGN' }}</p>
-                <div class="flex gap-3 justify-center">
-                  <p class="text-[14px]">Max {{ overtime.maxHours }} hour(s)</p>
-                  <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm text-2xl pr-2" (click)="removeOvertime(i, overtime.overtimeTypeId)"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 gap-2">
-            <div class="flex justify-between w-full gap-6">
-              <div class="w-1/2">
-                <label for="overtimeName" class="block text-[14px] font-medium">Overtime Name</label>
-                <div class="flex items-center">
-                  <ng-select [items]="availableOverTimeTypes" bindLabel="name" bindValue="id" placeholder="Select overtime" id="overtimeName" formControlName="type" class="w-full mt-1 rounded-md"></ng-select>
-                  <div class="cursor-pointer text-[12px] border-r border-y p-2 bg-customBlue rounded-r-md text-white" (click)="openNewTypeForm('overtime')">New</div>
-                </div>
-              </div>
-              <div class="w-1/2">
-                <label for="overtimeAmount" class="block text-[14px] font-medium">Overtime Amount</label>
-                <input formControlName="amount" id="overtimeAmount" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Overtime Amount" />
-              </div>
-              <div class="w-1/2">
-                <label for="maxHour" class="block text-[14px] font-medium">Max Hours</label>
-                <input formControlName="maxHour" id="maxHour" (keydown.enter)="addOverTimeToTotal($event)" class="form-input p-1.5 w-full mt-1 border border-gray-300 rounded-md" type="number" placeholder="Max Hours" />
-              </div>
-            </div>
-            <div class="flex justify-between">
-              <button></button>
-              <button type="button" (click)="addOverTimeToTotal($event)" class="text-customGreen text-[12px]">+add</button>
-            </div>
-          </div>
-        </fieldset>
-      </fieldset>
-
-      <div class="text-right">
-        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="salaryForm.invalid">Submit</button>
-      </div>
-    </form>
-  </div>
-
-</div>
-
-
-<!-- New type modal (unchanged) -->
-<div class="w-[75vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center"
-     *ngIf="openTypeForm" (click)="openNewTypeForm('')">
-  <div class="bg-white w-1/2 text-customBlue p-4 rounded shadow-md" (click)="$event.stopPropagation()">
-    <div class="flex justify-between items-center px-2">
-      <p class="capitalize text-[18px]">Create new {{ typeForm }} type</p>
-      <p class="text-[22px] font-bold cursor-pointer" (click)="openNewTypeForm('')">x</p>
+  <!-- ── LIST VIEW ──────────────────────────────────────────── -->
+  <ng-container *ngIf="!showAddForm">
+    <div class="sp-toolbar">
+      <span class="sp-section-label">Salary Structures</span>
     </div>
-    <form [formGroup]="newTypeForm" class="p-3 flex gap-1 flex-col" (ngSubmit)="addNewType(typeForm, $event)">
-      <div class="mb-2">
-        <label for="name" class="block text-[14px] font-medium capitalize">Name <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input formControlName="name" id="name" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Name" />
-        <div *ngIf="newTypeForm.get('name')?.invalid && newTypeForm.get('name')?.touched" class="text-red-500 text-[14px]">Name is required.</div>
+
+    <div class="sp-sk-list" *ngIf="loading">
+      <div class="sp-sk-row" *ngFor="let i of [1,2,3]"></div>
+    </div>
+
+    <mat-accordion *ngIf="!loading">
+      <mat-expansion-panel *ngFor="let level of levels" #panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>{{ level.name }}</mat-panel-title>
+          <mat-panel-description class="action-buttons" *ngIf="getSalaryByLevelId(level.id) as salary">
+            <button class="act-btn-edit" (click)="openForEdit(salary, $event)">
+              <i class="fas fa-pen"></i><span *ngIf="panel.expanded"> Edit</span>
+            </button>
+            <button class="act-btn-del" (click)="confirmDelete(level.id, $event)">
+              <i class="fas fa-trash"></i><span *ngIf="panel.expanded"> Delete</span>
+            </button>
+          </mat-panel-description>
+          <mat-panel-description class="action-buttons" *ngIf="!getSalaryByLevelId(level.id)">
+            <button class="act-btn-add" (click)="openForCreate(level.id!)">
+              <i class="fas fa-plus"></i> Create Structure
+            </button>
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <ng-container *ngIf="getSalaryByLevelId(level.id) as salary; else noSalary">
+          <div class="sc-summary">
+            <div class="sc-summary-item">
+              <span class="sc-summary-label">Base Salary</span>
+              <span class="sc-summary-value">{{ salary.baseSalary | currency:'NGN':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="sc-summary-item" *ngIf="salary?.allowance?.length">
+              <span class="sc-summary-label">Allowances</span>
+              <span class="sc-summary-chips">
+                <span class="sc-chip sc-chip--green" *ngFor="let a of salary.allowance">
+                  {{ getAllowanceName(a.allowanceTypeId) }}: {{ a.amount | currency:'NGN':'symbol':'1.0-0' }}
+                </span>
+              </span>
+            </div>
+            <div class="sc-summary-item" *ngIf="salary?.deductions?.length">
+              <span class="sc-summary-label">Deductions</span>
+              <span class="sc-summary-chips">
+                <span class="sc-chip sc-chip--red" *ngFor="let d of salary.deductions">
+                  {{ getDeductionName(d.deductionsTypeId) }}: {{ d.amount | currency:'NGN':'symbol':'1.0-0' }}
+                </span>
+              </span>
+            </div>
+            <div class="sc-summary-item" *ngIf="salary?.bonus?.length">
+              <span class="sc-summary-label">Bonuses</span>
+              <span class="sc-summary-chips">
+                <span class="sc-chip sc-chip--blue" *ngFor="let b of salary.bonus">
+                  {{ getBonusName(b.bonusTypeId) }}: {{ b.amount | currency:'NGN':'symbol':'1.0-0' }}
+                </span>
+              </span>
+            </div>
+            <div class="sc-summary-item" *ngIf="salary?.overtime?.length">
+              <span class="sc-summary-label">Overtime</span>
+              <span class="sc-summary-chips">
+                <span class="sc-chip sc-chip--amber" *ngFor="let o of salary.overtime">
+                  {{ getOvertimeName(o.overtimeTypeId) }}: {{ o.rate | currency:'NGN':'symbol':'1.0-0' }}/hr
+                </span>
+              </span>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noSalary>
+          <p class="sc-no-data">No salary structure defined for this level.</p>
+        </ng-template>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </ng-container>
+
+  <!-- ── FORM VIEW ──────────────────────────────────────────── -->
+  <div *ngIf="showAddForm">
+    <div class="sp-toolbar">
+      <span class="sp-section-label">
+        {{ isEditMode ? 'Edit' : 'New' }} Salary Structure
+        <span class="sc-level-badge">{{ getLevelName(salaryForm.get('level')?.value) }}</span>
+      </span>
+      <button class="sp-btn-cancel" (click)="closeForm()">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+
+    <form [formGroup]="salaryForm" (ngSubmit)="onSubmit()" class="sc-form">
+
+      <!-- Base salary -->
+      <div class="sc-card sc-base-row">
+        <div class="sp-form-group">
+          <label class="sp-label">Level</label>
+          <input class="sp-input" type="text" [value]="getLevelName(salaryForm.get('level')?.value)" readonly />
+        </div>
+        <div class="sp-form-group">
+          <label class="sp-label">Base Salary (NGN) <span class="sp-req">*</span></label>
+          <input formControlName="baseSalary" class="sp-input" type="number" placeholder="e.g. 250000" min="0" />
+          <div *ngIf="salaryForm.get('baseSalary')?.invalid && salaryForm.get('baseSalary')?.touched" class="sp-error">
+            A valid base salary is required.
+          </div>
+        </div>
       </div>
-      <div class="mb-2" *ngIf="typeForm === 'allowance'">
-        <label for="code" class="block text-[14px] font-medium capitalize">Code</label>
-        <input formControlName="code" id="code" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Code" />
+
+      <!-- Allowances -->
+      <div class="sc-card">
+        <div class="sc-comp-head">
+          <div class="sc-comp-icon sc-comp-icon--green"><i class="fas fa-plus-circle"></i></div>
+          <span class="sc-comp-title">Allowances</span>
+          <span class="sc-badge" *ngIf="allowances.length">{{ allowances.length }}</span>
+          <button type="button" class="sc-btn-add-item" (click)="showAllowanceAdd = !showAllowanceAdd">
+            <i class="fas" [ngClass]="showAllowanceAdd ? 'fa-minus' : 'fa-plus'"></i>
+            {{ showAllowanceAdd ? 'Cancel' : 'Add Allowance' }}
+          </button>
+          <button type="button" class="sc-btn-new-type" (click)="openNewTypeForm('allowance')">+ New Type</button>
+        </div>
+
+        <div class="sc-items-list" *ngIf="allowances.length">
+          <ng-container *ngFor="let item of allowances; let i = index">
+
+            <!-- inline edit row -->
+            <div class="sc-item-row sc-item-row--editing" *ngIf="editingAllowanceIndex === i">
+              <span class="sc-item-name">{{ getAllowanceName(item.allowanceTypeId) }}</span>
+              <input [formControl]="editAllowanceAmount" class="sp-input sc-item-edit-input" type="number" placeholder="Amount" min="0" />
+              <div class="sc-item-edit-actions">
+                <button type="button" class="sc-item-save" (click)="saveEditAllowance(i, item)" title="Save">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button type="button" class="sc-item-cancel-edit" (click)="cancelEditAllowance()" title="Cancel">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- normal display row -->
+            <div class="sc-item-row" *ngIf="editingAllowanceIndex !== i">
+              <span class="sc-item-name">{{ getAllowanceName(item.allowanceTypeId) }}</span>
+              <span class="sc-item-amount">{{ item.amount | currency:'NGN':'symbol':'1.0-0' }}</span>
+              <button type="button" class="sc-item-edit" (click)="startEditAllowance(i, item)" title="Edit">
+                <i class="fas fa-pen"></i>
+              </button>
+              <button type="button" class="sc-item-del" (click)="removeAllowance(i, item.id)" title="Remove">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+
+          </ng-container>
+        </div>
+        <div class="sc-empty-items" *ngIf="!allowances.length && !showAllowanceAdd">No allowances added yet.</div>
+
+        <div class="sc-add-row" *ngIf="showAllowanceAdd" [formGroup]="allowanceForm">
+          <div class="sc-add-field">
+            <label class="sp-label">Type <span class="sp-req">*</span></label>
+            <ng-select [items]="availableAllowanceTypes" bindLabel="name" bindValue="id"
+              placeholder="Select allowance type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+            <div *ngIf="allowanceForm.get('type')?.invalid && allowanceForm.get('type')?.touched" class="sp-error">Type is required.</div>
+          </div>
+          <div class="sc-add-field">
+            <label class="sp-label">Amount <span class="sp-req">*</span></label>
+            <input formControlName="amount" class="sp-input" type="number" placeholder="0" min="1" />
+            <div *ngIf="allowanceForm.get('amount')?.invalid && allowanceForm.get('amount')?.touched" class="sp-error">Enter a valid amount.</div>
+          </div>
+          <button type="button" class="sc-btn-confirm" (click)="addAllowance()">
+            <i class="fas fa-check"></i> Add
+          </button>
+        </div>
       </div>
-      <div class="mb-2">
-        <label for="description" class="block text-[14px] font-medium">Description</label>
-        <textarea formControlName="description" id="Description" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" placeholder="Enter Description"></textarea>
+
+      <!-- Deductions -->
+      <div class="sc-card">
+        <div class="sc-comp-head">
+          <div class="sc-comp-icon sc-comp-icon--red"><i class="fas fa-minus-circle"></i></div>
+          <span class="sc-comp-title">Deductions</span>
+          <span class="sc-badge" *ngIf="deductions.length">{{ deductions.length }}</span>
+          <button type="button" class="sc-btn-add-item" (click)="showDeductionAdd = !showDeductionAdd">
+            <i class="fas" [ngClass]="showDeductionAdd ? 'fa-minus' : 'fa-plus'"></i>
+            {{ showDeductionAdd ? 'Cancel' : 'Add Deduction' }}
+          </button>
+          <button type="button" class="sc-btn-new-type" (click)="openNewTypeForm('deduction')">+ New Type</button>
+        </div>
+
+        <div class="sc-items-list" *ngIf="deductions.length">
+          <div class="sc-item-row" *ngFor="let item of deductions; let i = index">
+            <span class="sc-item-name">{{ getDeductionName(item.deductionsTypeId) }}</span>
+            <span class="sc-item-amount">{{ item.amount | currency:'NGN':'symbol':'1.0-0' }}</span>
+            <button type="button" class="sc-item-del" (click)="removeDeduction(i, item.id)" title="Remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="sc-empty-items" *ngIf="!deductions.length && !showDeductionAdd">No deductions added yet.</div>
+
+        <div class="sc-add-row" *ngIf="showDeductionAdd" [formGroup]="deductionForm">
+          <div class="sc-add-field">
+            <label class="sp-label">Type <span class="sp-req">*</span></label>
+            <ng-select [items]="availableDeductionTypes" bindLabel="name" bindValue="id"
+              placeholder="Select deduction type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+            <div *ngIf="deductionForm.get('type')?.invalid && deductionForm.get('type')?.touched" class="sp-error">Type is required.</div>
+          </div>
+          <div class="sc-add-field">
+            <label class="sp-label">Amount <span class="sp-req">*</span></label>
+            <input formControlName="amount" class="sp-input" type="number" placeholder="0" min="1" />
+            <div *ngIf="deductionForm.get('amount')?.invalid && deductionForm.get('amount')?.touched" class="sp-error">Enter a valid amount.</div>
+          </div>
+          <button type="button" class="sc-btn-confirm" (click)="addDeduction()">
+            <i class="fas fa-check"></i> Add
+          </button>
+        </div>
       </div>
-      <div class="mb-2 flex gap-2 items-center" *ngIf="typeForm === 'deduction'">
-        <input formControlName="isTax" id="isTax" class="form-input p-2 border border-gray-300 rounded-md" type="checkbox" />
-        <label for="isTax" class="block text-[14px] font-medium">Tax</label>
+
+      <!-- Bonuses -->
+      <div class="sc-card">
+        <div class="sc-comp-head">
+          <div class="sc-comp-icon sc-comp-icon--blue"><i class="fas fa-gift"></i></div>
+          <span class="sc-comp-title">Bonuses</span>
+          <span class="sc-badge" *ngIf="bonuses.length">{{ bonuses.length }}</span>
+          <button type="button" class="sc-btn-add-item" (click)="showBonusAdd = !showBonusAdd">
+            <i class="fas" [ngClass]="showBonusAdd ? 'fa-minus' : 'fa-plus'"></i>
+            {{ showBonusAdd ? 'Cancel' : 'Add Bonus' }}
+          </button>
+          <button type="button" class="sc-btn-new-type" (click)="openNewTypeForm('bonus')">+ New Type</button>
+        </div>
+
+        <div class="sc-items-list" *ngIf="bonuses.length">
+          <div class="sc-item-row" *ngFor="let item of bonuses; let i = index">
+            <span class="sc-item-name">{{ getBonusName(item.bonusTypeId) }}</span>
+            <span class="sc-item-amount">{{ item.amount | currency:'NGN':'symbol':'1.0-0' }}</span>
+            <button type="button" class="sc-item-del" (click)="removeBonus(i, item.id)" title="Remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="sc-empty-items" *ngIf="!bonuses.length && !showBonusAdd">No bonuses added yet.</div>
+
+        <div class="sc-add-row" *ngIf="showBonusAdd" [formGroup]="bonusForm">
+          <div class="sc-add-field">
+            <label class="sp-label">Type <span class="sp-req">*</span></label>
+            <ng-select [items]="availableBonusTypes" bindLabel="name" bindValue="id"
+              placeholder="Select bonus type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+            <div *ngIf="bonusForm.get('type')?.invalid && bonusForm.get('type')?.touched" class="sp-error">Type is required.</div>
+          </div>
+          <div class="sc-add-field">
+            <label class="sp-label">Amount <span class="sp-req">*</span></label>
+            <input formControlName="amount" class="sp-input" type="number" placeholder="0" min="1" />
+            <div *ngIf="bonusForm.get('amount')?.invalid && bonusForm.get('amount')?.touched" class="sp-error">Enter a valid amount.</div>
+          </div>
+          <button type="button" class="sc-btn-confirm" (click)="addBonus()">
+            <i class="fas fa-check"></i> Add
+          </button>
+        </div>
       </div>
-      <div class="text-right">
-        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="newTypeForm.invalid">Submit</button>
+
+      <!-- Overtime -->
+      <div class="sc-card">
+        <div class="sc-comp-head">
+          <div class="sc-comp-icon sc-comp-icon--amber"><i class="fas fa-clock"></i></div>
+          <span class="sc-comp-title">Overtime</span>
+          <span class="sc-badge" *ngIf="overtimes.length">{{ overtimes.length }}</span>
+          <button type="button" class="sc-btn-add-item" (click)="showOvertimeAdd = !showOvertimeAdd">
+            <i class="fas" [ngClass]="showOvertimeAdd ? 'fa-minus' : 'fa-plus'"></i>
+            {{ showOvertimeAdd ? 'Cancel' : 'Add Overtime' }}
+          </button>
+          <button type="button" class="sc-btn-new-type" (click)="openNewTypeForm('overtime')">+ New Type</button>
+        </div>
+
+        <div class="sc-items-list" *ngIf="overtimes.length">
+          <div class="sc-item-row" *ngFor="let item of overtimes; let i = index">
+            <span class="sc-item-name">{{ getOvertimeName(item.overtimeTypeId) }}</span>
+            <span class="sc-item-amount">{{ item.rate | currency:'NGN':'symbol':'1.0-0' }}/hr &nbsp;·&nbsp; max {{ item.maxHours }}h</span>
+            <button type="button" class="sc-item-del" (click)="removeOvertime(i, item.id)" title="Remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="sc-empty-items" *ngIf="!overtimes.length && !showOvertimeAdd">No overtime rules added yet.</div>
+
+        <div class="sc-add-row sc-add-row--3col" *ngIf="showOvertimeAdd" [formGroup]="overtimeForm">
+          <div class="sc-add-field">
+            <label class="sp-label">Type <span class="sp-req">*</span></label>
+            <ng-select [items]="availableOvertimeTypes" bindLabel="name" bindValue="id"
+              placeholder="Select overtime type" formControlName="type" class="sc-ng-select" appendTo="body"></ng-select>
+            <div *ngIf="overtimeForm.get('type')?.invalid && overtimeForm.get('type')?.touched" class="sp-error">Type is required.</div>
+          </div>
+          <div class="sc-add-field">
+            <label class="sp-label">Rate/hr <span class="sp-req">*</span></label>
+            <input formControlName="rate" class="sp-input" type="number" placeholder="0" min="1" />
+            <div *ngIf="overtimeForm.get('rate')?.invalid && overtimeForm.get('rate')?.touched" class="sp-error">Enter a valid rate.</div>
+          </div>
+          <div class="sc-add-field">
+            <label class="sp-label">Max Hours <span class="sp-req">*</span></label>
+            <input formControlName="maxHours" class="sp-input" type="number" placeholder="0" min="1" />
+            <div *ngIf="overtimeForm.get('maxHours')?.invalid && overtimeForm.get('maxHours')?.touched" class="sp-error">Enter max hours.</div>
+          </div>
+          <button type="button" class="sc-btn-confirm sc-btn-confirm--tall" (click)="addOvertime()">
+            <i class="fas fa-check"></i> Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="sp-actions">
+        <button type="button" class="sp-btn-cancel" (click)="closeForm()">Cancel</button>
+        <button type="submit" class="sp-btn-submit" [disabled]="salaryForm.invalid || saving">
+          <i class="fas fa-spinner fa-spin" *ngIf="saving"></i>
+          {{ saving ? 'Saving…' : (isEditMode ? 'Update Structure' : 'Save Structure') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<!-- New type modal -->
+<div class="sc-modal-overlay" *ngIf="openTypeForm" (click)="openNewTypeForm('')">
+  <div class="sc-modal" (click)="$event.stopPropagation()">
+    <div class="sc-modal-head">
+      <p class="sc-modal-title">Create new <strong>{{ typeFormContext }}</strong> type</p>
+      <button class="sc-modal-close" (click)="openNewTypeForm('')"><i class="fas fa-times"></i></button>
+    </div>
+    <form [formGroup]="newTypeForm" class="sc-modal-body" (ngSubmit)="addNewType($event)">
+      <div class="sp-form-group">
+        <label class="sp-label">Name <span class="sp-req">*</span></label>
+        <input formControlName="name" class="sp-input" type="text" placeholder="Enter name" />
+        <div *ngIf="newTypeForm.get('name')?.invalid && newTypeForm.get('name')?.touched" class="sp-error">Name is required.</div>
+      </div>
+      <div class="sp-form-group" *ngIf="typeFormContext === 'allowance'">
+        <label class="sp-label">Code</label>
+        <input formControlName="code" class="sp-input" type="text" placeholder="e.g. TRN, HRG" />
+      </div>
+      <div class="sp-form-group">
+        <label class="sp-label">Description</label>
+        <textarea formControlName="description" class="sp-input" style="min-height:72px;resize:vertical" placeholder="Optional description"></textarea>
+      </div>
+      <div class="sc-checkbox-row" *ngIf="typeFormContext === 'deduction'">
+        <input formControlName="isTax" id="isTax" type="checkbox" class="sc-checkbox" />
+        <label for="isTax" class="sp-label" style="margin:0">This is a tax deduction</label>
+      </div>
+      <div class="sp-actions">
+        <button type="button" class="sp-btn-cancel" (click)="openNewTypeForm('')">Cancel</button>
+        <button type="submit" class="sp-btn-submit" [disabled]="newTypeForm.invalid">Create Type</button>
       </div>
     </form>
   </div>
 </div>
-
-<p-toast position="top-right" key="tl" />

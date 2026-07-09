@@ -699,7 +699,22 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.updateEmployee(data, this.employeeInView.id).subscribe({
       next: (response) => {
         const updated = response?.data ?? response ?? {};
+        // Save photo state — updateEmployee endpoint does not carry media back
+        const savedImageUrl = this.employeeInView?.imageUrl;
+        const savedMedia = this.employeeInView?.employeeMedia;
+        const savedPhotoUrl = this.employeeProfilePhotoUrl;
+
         this.employeeInView = { ...this.employeeInView, ...updated, ...patch };
+
+        // Restore photo if the API response wiped it
+        if (!this.employeeInView?.imageUrl && savedImageUrl) {
+          this.employeeInView.imageUrl = savedImageUrl;
+        }
+        if (!this.employeeInView?.employeeMedia && savedMedia) {
+          this.employeeInView.employeeMedia = savedMedia;
+        }
+        this.employeeProfilePhotoUrl = savedPhotoUrl;
+
         this.originalProfilePhotoUrl =
           this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
         this.pendingProfilePhotoDataUrl = null;
