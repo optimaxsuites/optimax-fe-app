@@ -29,16 +29,16 @@ import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lp
 import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
 
 export const routes: Routes = [
-  // {
-  //   path: "",
-  //   redirectTo: 'commerce/requests',
-  //   pathMatch: 'full'
-  // },
   {
-    path: '',
-    redirectTo: 'sales-hub',
+    path: "",
+    redirectTo: 'commerce/requests',
     pathMatch: 'full'
   },
+  // {
+  //   path: '',
+  //   redirectTo: 'sales-hub',
+  //   pathMatch: 'full'
+  // },
 
   // --- Sales Hub ---
   {

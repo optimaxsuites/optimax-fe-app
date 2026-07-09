@@ -24,6 +24,8 @@ export interface Product {
   taxRate: number;
   images: string[];
   status: 'ACTIVE' | 'DISCONTINUED' | 'OUT_OF_STOCK';
+  variants?: any[];
+  isComboProduct?: boolean;
 }
 
 export interface Quote {
