@@ -49,50 +49,50 @@ export class LevelComponent {
  
 
   onSubmit() {
-    console.log('New Salary Structure:', this.levelForm.value);
-
     if (this.levelForm.valid) {
       const formValue = this.levelForm.value;
-  
-      
-      const newlevelStructure = {
+      const payload: LevelDTO = {
         name: formValue.level,
         code: formValue.code,
         grade: formValue.grade || '',
         position: formValue.position || '',
         description: formValue.description || '',
       };
-  
+
       if (this.isEditMode && this.editIndex !== null) {
-        this.levelStructure[this.editIndex] = {
-          id: this.levelStructure[this.editIndex].id,
-          ...newlevelStructure
-        };
-       const id = this.levelStructure[this.editIndex].id
-        
-      this.levelService.updateLevelById(id, newlevelStructure).subscribe(() => {
-       this.messageService.add({ severity: 'success', summary: 'Success', detail: "Level updated successfully!", key: 'tl', life: 3000  }); 
-       this.levelForm.reset();
-       this.isEditMode = false;
-      });
-
+        const id = this.levelStructure[this.editIndex].id;
+        this.levelService.updateLevelById(id, payload).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Level updated successfully!', key: 'tl', life: 3000 });
+            this.levelForm.reset();
+            this.isEditMode = false;
+            this.showAddForm = false;
+            this.refreshLevels();
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update level. Please try again.', key: 'tl', life: 4000 });
+          }
+        });
       } else {
-        this.levelStructure.push(newlevelStructure);
-      this.levelService.addLevel(newlevelStructure).subscribe(() => {
-       this.messageService.add({ severity: 'success', summary: 'Success', detail: "Leave added successfully!", key: 'tl', life: 3000  }); 
-       this.levelForm.reset();
-
-      });
+        this.levelService.addLevel(payload).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Level added successfully!', key: 'tl', life: 3000 });
+            this.levelForm.reset();
+            this.showAddForm = false;
+            this.refreshLevels();
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add level. Please try again.', key: 'tl', life: 4000 });
+          }
+        });
       }
-
-
-
-     
-  
-      console.log('New Salary Structure:', newlevelStructure);
-    } else {
-      console.error('Form is invalid');
     }
+  }
+
+  private refreshLevels() {
+    this.levelService.getAllLevels().subscribe(levels => {
+      this.levelStructure = levels;
+    });
   }
 
   populateForm(levelStructure: any, index: number) {
@@ -125,10 +125,14 @@ export class LevelComponent {
   }
 
   deleteSalary(level: LevelDTO, index:number, event: Event) {
-    this.levelStructure.splice(index, 1);
-    
-    this.levelService.deleteLevel(level.id).subscribe(() => {
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: "Leave deleted successfully!", key: 'tl', life: 3000  }); 
+    this.levelService.deleteLevel(level.id).subscribe({
+      next: () => {
+        this.levelStructure.splice(index, 1);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Level deleted successfully!', key: 'tl', life: 3000 });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete level. Please try again.', key: 'tl', life: 4000 });
+      }
     });
   }
 

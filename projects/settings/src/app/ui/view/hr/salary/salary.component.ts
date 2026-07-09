@@ -1,12 +1,11 @@
 
-import { Component } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { LevelService } from '../../../service/level.service';
 import { SalaryService } from '../../../service/salary.service';
-import { AllowanceDTO, AllowanceTypeDTO, BonusTypeDTO, DeductionsTypeDTO, OvertimeTypeDTO, SalaryDTO } from '../../../domain/salary.dto';
+import { AllowanceTypeDTO, BonusTypeDTO, DeductionsTypeDTO, OvertimeTypeDTO } from '../../../domain/salary.dto';
 import { LevelDTO } from '../../../domain/level.dto';
-
 
 @Component({
   selector: 'app-salary',
@@ -14,550 +13,517 @@ import { LevelDTO } from '../../../domain/level.dto';
   styleUrl: './salary.component.scss',
   providers: [MessageService, ConfirmationService],
 })
-export class SalaryComponent {
-  showAddForm: boolean = false 
-  isEditMode = false; 
-  editIndex: number | null = null
+export class SalaryComponent implements OnInit {
+  showAddForm = false;
+  isEditMode = false;
+  editSalaryId: number | null = null;
 
-salaryStructure: any[] = []
+  salaryStructure: any[] = [];
   salaryForm: FormGroup;
-  newTypeForm: FormGroup;
   allowanceForm: FormGroup;
   bonusForm: FormGroup;
   deductionForm: FormGroup;
   overtimeForm: FormGroup;
-  levels: LevelDTO[] = []
-  allowanceType: AllowanceTypeDTO[] = []
-  availableAllowanceTypes: AllowanceTypeDTO[] = [];
-  deductionType: DeductionsTypeDTO[] = []
-  availableDeductionTypes: DeductionsTypeDTO[] = [];
-  bonusType: BonusTypeDTO[] = []
-  availableBonusesTypes: BonusTypeDTO[] = [];
-  isAllowanceTouched = false;
-  isDeductionTouched = false;
-  isBonusTouched = false;
-  isOverTimeTouched = false
-  overtimeType: OvertimeTypeDTO[] = []
-  availableOverTimeTypes: OvertimeTypeDTO[] = []
-  openTypeForm:boolean = false
-  typeForm:string = ""
- allowances: {
-  id: number;
-  levelId: number;
-  allowanceTypeId: number,
-  amount: number
- }[] = []
- deductions: {
-  id: number;
-  levelId: number;
-  deductionsTypeId: number,
-  amount: number
- }[] = []
- bonuses: {
-  id: number;
-  levelId: number;
-  bonusTypeId: number,
-  amount: number
- }[] = []
- overtImes: {
-  id: number;
-  levelId: number;
-  overtimeTypeId: number,
-  rate: number,
-  maxHours: number
- }[] =[]
+  newTypeForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private confirmationService: ConfirmationService, private salaryService: SalaryService, private levelService: LevelService, 
-    private messageService: MessageService  ) {
+  levels: LevelDTO[] = [];
+  allowanceType: AllowanceTypeDTO[] = [];
+  deductionType: DeductionsTypeDTO[] = [];
+  bonusType: BonusTypeDTO[] = [];
+  overtimeType: OvertimeTypeDTO[] = [];
+
+  allowances: any[] = [];
+  deductions: any[] = [];
+  bonuses: any[] = [];
+  overtimes: any[] = [];
+
+  openTypeForm = false;
+  typeFormContext = '';
+  loading = false;
+  saving = false;
+
+  showAllowanceAdd = false;
+  showDeductionAdd = false;
+  showBonusAdd = false;
+  showOvertimeAdd = false;
+
+  editingAllowanceIndex: number | null = null;
+  editAllowanceAmount = new FormControl<number | null>(null, [Validators.required, Validators.min(0)]);
+
+  constructor(
+    private fb: FormBuilder,
+    private confirmationService: ConfirmationService,
+    private salaryService: SalaryService,
+    private levelService: LevelService,
+    private messageService: MessageService
+  ) {
     this.salaryForm = this.fb.group({
       level: [null, Validators.required],
       baseSalary: ['', [Validators.required, Validators.min(0)]],
     });
-
-    this.allowanceForm =this.fb.group({
-      type: [0, Validators.required],
-      amount: [0, [Validators.required, Validators.min(1)]]
-    }),
+    this.allowanceForm = this.fb.group({
+      type: [null, Validators.required],
+      amount: [null, [Validators.required, Validators.min(1)]],
+    });
     this.deductionForm = this.fb.group({
-      type: [0, Validators.required],
-      amount: [0, [Validators.required, Validators.min(1)]]
-    }),
+      type: [null, Validators.required],
+      amount: [null, [Validators.required, Validators.min(1)]],
+    });
     this.bonusForm = this.fb.group({
-      type: [0, Validators.required],
-      amount: [0, [Validators.required, Validators.min(1)]] 
-    }),
+      type: [null, Validators.required],
+      amount: [null, [Validators.required, Validators.min(1)]],
+    });
     this.overtimeForm = this.fb.group({
-      type: [0, Validators.required],
-      amount: [0, [Validators.required, Validators.min(1)]],
-      maxHour: [0, [Validators.required, Validators.min(1)]]
-    })
-
+      type: [null, Validators.required],
+      rate: [null, [Validators.required, Validators.min(1)]],
+      maxHours: [null, [Validators.required, Validators.min(1)]],
+    });
     this.newTypeForm = this.fb.group({
-      name: ['', [Validators.required]],
+      name: ['', Validators.required],
       description: [''],
       code: [''],
-      isTax: [false, []]
+      isTax: [false],
     });
   }
+
   ngOnInit() {
-    
-    this.levelService.getAllLevels().subscribe(data => {
-      this.levels = data
-    })
-
+    this.loading = true;
+    this.levelService.getAllLevels().subscribe(data => { this.levels = data; });
     this.salaryService.getAllSalaries().subscribe(data => {
-      this.salaryStructure = data.map((salary: any) => ({
-       ...salary,
-        // netSalary: function () {
-        //   const grossSalary = this.baseSalary + this.allowances.transportationAllowance + this.allowances.mealAllowance + (this.bonuses.internshipCompletionBonus || 0);
-        //   return grossSalary - (this.deductions.tax + (this.deductions.pension || 0));
-        // }
-      }));
-    })
-    this.salaryService.getAllAllowanceTypes().subscribe(data => {
-      this.allowanceType = data.sort((a: { name: string; }, b: { name: any; }) => a.name.localeCompare(b.name))
-      this.availableAllowanceTypes = [...this.allowanceType];
-    })
-    this.salaryService.getAllDeductionsTypes().subscribe(data => {
-      this.deductionType = data.sort((a: { name: string; }, b: { name: any; }) => a.name.localeCompare(b.name))
-      this.availableDeductionTypes = [...this.deductionType]
-    })
-    this.salaryService.getAllBonusTypes().subscribe(data => {
-      this.bonusType = data.sort((a: { name: string; }, b: { name: any; }) => a.name.localeCompare(b.name))
-      this.availableBonusesTypes = [...this.bonusType]
-    })
-    this.salaryService.getAllOverTimeTypes().subscribe(data => {
-      this.overtimeType = data.sort((a: { name: string; }, b: { name: any; }) => a.name.localeCompare(b.name))
-      this.availableOverTimeTypes = [...this.overtimeType]
-    })
-    
-  }
-  addAllowanceToTotal(event?: Event) {
-   if(event) {
-    const keyboardEvent = event as KeyboardEvent;
-    keyboardEvent.preventDefault();
-  }
-    const allowanceGroup = this.allowanceForm
-
-    // Check if the allowances form is valid
-    if (allowanceGroup.valid) {
-      const formValue = allowanceGroup.value;
-
-   
-
-      const newAllowance = {
-        levelId: this.salaryForm.value.level,
-        amount: formValue.amount,
-        allowanceTypeId: formValue.type
-      }
-      this.salaryService.addAllowance(newAllowance).subscribe((data) => {
-        this.allowances.push(data);
-      })
-      const selectedTypes = this.allowances.map(a => this.getAllowanceName(a.allowanceTypeId));
-      this.availableAllowanceTypes = this.availableAllowanceTypes.filter(
-        option => !selectedTypes.includes(option.name)
-      );
-      allowanceGroup.reset();
-      this.isAllowanceTouched = false; 
-    } else {
-      allowanceGroup.markAllAsTouched();
-      this.isAllowanceTouched = true; 
-    }
-
-  }
-
-  removeAllowance(index:number, id: number){
-    this.salaryService.deleteAllowance(id).subscribe(() => {
-      this.allowances.splice(index, 1)
-
-    })
-
-  }
-
-  addBonusToTotal(event? : Event) {
-    if(event) {
-      const keyboardEvent = event as KeyboardEvent;
-      keyboardEvent.preventDefault();
-    }
-    const bonusGroup = this.bonusForm
-
-    // Check if the allowances form is valid
-    if (bonusGroup.valid) {
-      const formValue = bonusGroup.value;
-
-      const newBonus = {
-        levelId: this.salaryForm.value.level,
-
-        bonusTypeId: formValue.type,
-        amount: formValue.amount,
-      };
-
-      this.salaryService.addBonus(newBonus).subscribe((data) => {
-        this.bonuses.push(data)
-      })
-      const selectedTypes = this.bonuses.map(a => this.getBonusName(a.bonusTypeId));
-      this.availableBonusesTypes = this.availableBonusesTypes.filter(
-        option => !selectedTypes.includes(option.name)
-      );
-      bonusGroup.reset();
-      this.isBonusTouched = false
-    } else {
-      bonusGroup.markAllAsTouched();
-      this.isBonusTouched = true
-
-    }
-
-  }
-
-  removeBonus(index:number, id: number){
-    this.salaryService.deleteBonus(id).subscribe(() =>{
-    this.bonuses.splice(index, 1)
-
-    })
-  }
-
-  addDeductionToTotal(event?: Event) {
-    if(event) {
-      const keyboardEvent = event as KeyboardEvent;
-      keyboardEvent.preventDefault();
-    }
-    const deductionGroup = this.deductionForm
-
-    // Check if the allowances form is valid
-    if (deductionGroup.valid) {
-      const formValue = deductionGroup.value;
-
-      const newDeduction ={
-        levelId: this.salaryForm.value.level,
-
-        deductionsTypeId: formValue.type,
-        amount: formValue.amount,
-      };
-
-      this.salaryService.addDeductions(newDeduction).subscribe(data => {
-        this.deductions.push(data)
-      })
-      const selectedTypes = this.deductions.map(a => this.getDeductionName(a.deductionsTypeId));
-      this.availableDeductionTypes = this.availableDeductionTypes.filter(
-        option => !selectedTypes.includes(option.name)
-      );
-      deductionGroup.reset();
-      this.isDeductionTouched = false;
-    } else {
-      deductionGroup.markAllAsTouched();
-      this.isDeductionTouched = true;
-
-    }
-
-  }
-
-  addOverTimeToTotal(event?: Event){
-    if(event) {
-      const keyboardEvent = event as KeyboardEvent;
-      keyboardEvent.preventDefault();
-    }
-    const overtimeGroup = this.overtimeForm
-
-    // Check if the allowances form is valid
-    if (overtimeGroup.valid) {
-      const formValue = overtimeGroup.value;
-
-     const newOvertime ={
-      levelId: this.salaryForm.value.level,
-
-
-        overtimeTypeId: formValue.type,
-        rate: formValue.amount,
-        maxHours: formValue.maxHour
-      }
-
-      this.salaryService.addOverTime(newOvertime).subscribe(data => {
-        this.overtImes.push(data)
-      })
-      const selectedTypes = this.overtImes.map(a => this.getOvertimeName(a.overtimeTypeId));
-      this.availableOverTimeTypes = this.availableOverTimeTypes.filter(
-        option => !selectedTypes.includes(option.name)
-      );
-      overtimeGroup.reset();
-      this.isOverTimeTouched = false;
-    } else {
-      overtimeGroup.markAllAsTouched();
-      this.isOverTimeTouched = true;
-    }
-  }
-
-  removeOvertime(index:number, id: number){
-    this.salaryService.deleteOvertime(id).subscribe(() => {
-      this.overtImes.splice(index, 1)
-
-    })
-  }
-
-  removeDeduction(index:number, id: number){
-    this.salaryService.deleteDeduction(id).subscribe(() => {
-      this.deductions.splice(index, 1)
-    })
-  }
-  getAllowanceName(id: number): string {
-    const allowance = this.allowanceType.find((item) => item.id === id);
-    return allowance ? allowance.name : 'Unknown';
-  }
-
-  getBonusName(id: number): string {
-    const allowance = this.bonusType.find((item) => item.id === id);
-    return allowance ? allowance.name : 'Unknown';
-  }
-
-  getDeductionName(id: number): string {
-    const deduction = this.deductionType.find((item) => item.id === id);
-    
-    return deduction ? deduction.name : 'Unknown';
-  }
-
-  getOvertimeName(id: number): string {
-    const deduction = this.overtimeType.find((item) => item.id === id);
-    return deduction ? deduction.name : 'Unknown';
-  }
-
-  openNewTypeForm(type: string){
-    this.typeForm = type
-    this.openTypeForm = !this.openTypeForm
-    this.newTypeForm.reset()
-  }
-
-  addNewType(type: string, event: Event){
-    event.preventDefault()
-    
-    const formValue = this.newTypeForm.value;
-    
-    if(type === 'allowance'){
-      const newType = {
-        name: formValue.name,
-        code: formValue.code,
-        description: formValue.description,
-      }
-
-      this.salaryService.addAllowanceType(newType).subscribe((data) => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `New allowance type added successfully!`, key: 'tl', life: 3000  }); 
-        this.allowanceType.push(data)
-        this.availableAllowanceTypes.push(data)
-        this.openNewTypeForm('')
-      })
-    } else if(type === 'deduction'){
-      const newType = {
-        name: formValue.name,
-        description: formValue.description,
-        isTax: formValue.isTax,
-      }
-
-      this.salaryService.addDeductionsType(newType).subscribe((data) => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `New deduction type added successfully!`, key: 'tl', life: 3000  }); 
-        this.deductionType.push(data)
-        this.availableDeductionTypes.push(data)
-        this.openNewTypeForm('')
-      })
-    }
-    else if(type === 'bonus'){
-      const newType = {
-        name: formValue.name,
-        description: formValue.description,
-      }
-
-      this.salaryService.addBonusType(newType).subscribe((data) => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `New bonus type added successfully!`, key: 'tl', life: 3000  }); 
-
-        this.bonusType.push(data)
-        this.availableBonusesTypes.push(data)
-        this.openNewTypeForm('')
-      })
-    }
-    else if(type === 'overtime'){
-      const newType = {
-        name: formValue.name,
-        description: formValue.description,
-      }
-
-      this.salaryService.addOverTimeType(newType).subscribe((data) => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `New overtime type added successfully!`, key: 'tl', life: 3000  }); 
-
-        this.overtimeType.push(data)
-        this.availableOverTimeTypes.push(data)
-        this.openNewTypeForm('')
-      })
-    }
-  }
-
-  onSubmit() {
-    console.log('New Salary Structure:', this.salaryForm.value);
-
-    if (this.allowanceForm.valid && !this.allowances.some(a => a.allowanceTypeId === this.allowanceForm.value.type)) {
-     this.addAllowanceToTotal()
-    }
-    if (this.bonusForm.valid && !this.bonuses.some(a => a.bonusTypeId === this.bonusForm.value.type)) {
-      this.addBonusToTotal()
-     }
-    if (this.deductionForm.valid && !this.deductions.some(a => a.deductionsTypeId === this.deductionForm.value.type)) {
-      this.addDeductionToTotal()
-     }
-    if (this.overtimeForm.valid && !this.overtImes.some(a => a.overtimeTypeId === this.overtimeForm.value.type)) {
-      this.addOverTimeToTotal()
-     } 
-
-    if (this.salaryForm.valid) {
-      const formValue = this.salaryForm.value;
- 
-      const newSalaryStructure = {
-        levelId: formValue.level,
-        baseSalary: formValue.baseSalary,
-        allowance: this.allowances,
-        deductions: this.deductions,
-        bonus: this.bonuses,
-        overtime: this.overtImes
-      };
-  
-      if (this.isEditMode && this.editIndex !== null) {
-        this.salaryService.addSalary({
-          id: this.editIndex,
-          ...newSalaryStructure
-        }).subscribe({
-         next : (data) => {
-          console.log(data)
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getSalaryByLevelId(data.levelId)} updated successfully!`, key: 'tl', life: 3000  }); 
-          this.toogleForm()
-          // this.salaryStructure[this.editIndex] = newSalaryStructure;
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: `Failed to update salary structure. Please try again.`,
-            key: 'tl',
-            life: 3000,
-          });
-          console.error('Error:', err);
-        }
-      })
-      } else {
-        this.salaryService.addSalary(newSalaryStructure).subscribe({
-          next: (data) => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getSalaryByLevelId(data.levelId)} added successfully!`, key: 'tl', life: 3000  }); 
-        this.isEditMode = false
-        this.salaryForm.reset();
-        this.allowances = []
-        this.bonuses= []
-        this.deductions = []
-        this.overtImes = []
-        this.toogleForm()
-          this.salaryStructure.push(data);
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: `Failed to add salary structure. Please try again.`,
-            key: 'tl',
-            life: 3000,
-          });
-          console.error('Error:', err);
-        }})
-      }
-  
-      console.log('New Salary Structure:', newSalaryStructure);
-    } else {
-      console.error('Form is invalid');
-    }
-  }
-
-  populateForm(salaryStructure: any, index: number) {
-    this.isEditMode = true;
-    this.editIndex = salaryStructure.id;
-    this.salaryForm.patchValue({
-      level: salaryStructure.levelId,
-      baseSalary: salaryStructure.baseSalary,
-     
+      this.salaryStructure = data;
+      this.loading = false;
     });
-    this.allowances = salaryStructure.allowance
-    this.deductions = salaryStructure.deductions
-    this.bonuses = salaryStructure.bonus
-    this.overtImes = salaryStructure.overtime
+    this.salaryService.getAllAllowanceTypes().subscribe(data => {
+      this.allowanceType = data.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    });
+    this.salaryService.getAllDeductionsTypes().subscribe(data => {
+      this.deductionType = data.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    });
+    this.salaryService.getAllBonusTypes().subscribe(data => {
+      this.bonusType = data.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    });
+    this.salaryService.getAllOverTimeTypes().subscribe(data => {
+      this.overtimeType = data.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    });
   }
 
-  toTitleCaseWithSpace(key: string): string {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase());
+  // --- Computed available types (excludes already-added items) ---
+  get availableAllowanceTypes(): AllowanceTypeDTO[] {
+    const usedIds = new Set(this.allowances.map(a => a.allowanceTypeId));
+    return this.allowanceType.filter(t => !usedIds.has(t.id));
   }
-  
-  editSalary(levelId: number|undefined, index:number, event: Event) {
-   
+
+  get availableDeductionTypes(): DeductionsTypeDTO[] {
+    const usedIds = new Set(this.deductions.map(d => d.deductionsTypeId));
+    return this.deductionType.filter(t => !usedIds.has(t.id));
+  }
+
+  get availableBonusTypes(): BonusTypeDTO[] {
+    const usedIds = new Set(this.bonuses.map(b => b.bonusTypeId));
+    return this.bonusType.filter(t => !usedIds.has(t.id));
+  }
+
+  get availableOvertimeTypes(): OvertimeTypeDTO[] {
+    const usedIds = new Set(this.overtimes.map(o => o.overtimeTypeId));
+    return this.overtimeType.filter(t => !usedIds.has(t.id));
+  }
+
+  // --- Name lookups ---
+  getAllowanceName(id: number): string {
+    return this.allowanceType.find(t => t.id === id)?.name ?? 'Unknown';
+  }
+  getDeductionName(id: number): string {
+    return this.deductionType.find(t => t.id === id)?.name ?? 'Unknown';
+  }
+  getBonusName(id: number): string {
+    return this.bonusType.find(t => t.id === id)?.name ?? 'Unknown';
+  }
+  getOvertimeName(id: number): string {
+    return this.overtimeType.find(t => t.id === id)?.name ?? 'Unknown';
+  }
+  getLevelName(levelId: number): string {
+    return this.levels.find(l => l.id === levelId)?.name ?? '';
+  }
+  getSalaryByLevelId(levelId: number | undefined): any {
+    return this.salaryStructure.find(s => s.levelId === levelId);
+  }
+
+  // --- Allowance CRUD ---
+  addAllowance() {
+    if (this.allowanceForm.invalid) {
+      this.allowanceForm.markAllAsTouched();
+      return;
+    }
+    const { type, amount } = this.allowanceForm.value;
+    const payload = { levelId: this.salaryForm.value.level, allowanceTypeId: type, amount };
+
+    if (this.isEditMode) {
+      this.salaryService.addAllowance(payload).subscribe({
+        next: (data) => {
+          this.allowances = [...this.allowances, data];
+          this.allowanceForm.reset();
+          this.showAllowanceAdd = false;
+          this.toast('success', 'Allowance added.');
+        },
+        error: () => this.toast('error', 'Failed to add allowance.'),
+      });
+    } else {
+      this.allowances = [...this.allowances, { ...payload, id: null }];
+      this.allowanceForm.reset();
+      this.showAllowanceAdd = false;
+    }
+  }
+
+  removeAllowance(index: number, id: number) {
+    if (this.isEditMode && id) {
+      this.salaryService.deleteAllowance(id).subscribe({
+        next: () => {
+          this.allowances = this.allowances.filter((_, i) => i !== index);
+          this.toast('success', 'Allowance removed.');
+        },
+        error: () => this.toast('error', 'Failed to remove allowance.'),
+      });
+    } else {
+      this.allowances = this.allowances.filter((_, i) => i !== index);
+    }
+  }
+
+  startEditAllowance(index: number, item: any) {
+    this.editingAllowanceIndex = index;
+    this.editAllowanceAmount.setValue(item.amount);
+    this.showAllowanceAdd = false;
+  }
+
+  cancelEditAllowance() {
+    this.editingAllowanceIndex = null;
+    this.editAllowanceAmount.reset();
+  }
+
+  saveEditAllowance(index: number, item: any) {
+    if (this.editAllowanceAmount.invalid) {
+      this.editAllowanceAmount.markAsTouched();
+      return;
+    }
+    const newAmount = this.editAllowanceAmount.value!;
+    const payload = { id: item.id, levelId: this.salaryForm.value.level, allowanceTypeId: item.allowanceTypeId, amount: newAmount };
+
+    if (this.isEditMode && item.id) {
+      this.salaryService.updateAllowance(item.id, payload).subscribe({
+        next: () => {
+          this.allowances = this.allowances.map((a, i) => i === index ? { ...a, amount: newAmount } : a);
+          this.cancelEditAllowance();
+          this.toast('success', 'Allowance updated.');
+        },
+        error: () => this.toast('error', 'Failed to update allowance.'),
+      });
+    } else {
+      this.allowances = this.allowances.map((a, i) => i === index ? { ...a, amount: newAmount } : a);
+      this.cancelEditAllowance();
+    }
+  }
+
+  // --- Deduction CRUD ---
+  addDeduction() {
+    if (this.deductionForm.invalid) {
+      this.deductionForm.markAllAsTouched();
+      return;
+    }
+    const { type, amount } = this.deductionForm.value;
+    const payload = { levelId: this.salaryForm.value.level, deductionsTypeId: type, amount };
+
+    if (this.isEditMode) {
+      this.salaryService.addDeductions(payload).subscribe({
+        next: (data) => {
+          this.deductions = [...this.deductions, data];
+          this.deductionForm.reset();
+          this.showDeductionAdd = false;
+          this.toast('success', 'Deduction added.');
+        },
+        error: () => this.toast('error', 'Failed to add deduction.'),
+      });
+    } else {
+      this.deductions = [...this.deductions, { ...payload, id: null }];
+      this.deductionForm.reset();
+      this.showDeductionAdd = false;
+    }
+  }
+
+  removeDeduction(index: number, id: number) {
+    if (this.isEditMode && id) {
+      this.salaryService.deleteDeduction(id).subscribe({
+        next: () => {
+          this.deductions = this.deductions.filter((_, i) => i !== index);
+          this.toast('success', 'Deduction removed.');
+        },
+        error: () => this.toast('error', 'Failed to remove deduction.'),
+      });
+    } else {
+      this.deductions = this.deductions.filter((_, i) => i !== index);
+    }
+  }
+
+  // --- Bonus CRUD ---
+  addBonus() {
+    if (this.bonusForm.invalid) {
+      this.bonusForm.markAllAsTouched();
+      return;
+    }
+    const { type, amount } = this.bonusForm.value;
+    const payload = { levelId: this.salaryForm.value.level, bonusTypeId: type, amount };
+
+    if (this.isEditMode) {
+      this.salaryService.addBonus(payload).subscribe({
+        next: (data) => {
+          this.bonuses = [...this.bonuses, data];
+          this.bonusForm.reset();
+          this.showBonusAdd = false;
+          this.toast('success', 'Bonus added.');
+        },
+        error: () => this.toast('error', 'Failed to add bonus.'),
+      });
+    } else {
+      this.bonuses = [...this.bonuses, { ...payload, id: null }];
+      this.bonusForm.reset();
+      this.showBonusAdd = false;
+    }
+  }
+
+  removeBonus(index: number, id: number) {
+    if (this.isEditMode && id) {
+      this.salaryService.deleteBonus(id).subscribe({
+        next: () => {
+          this.bonuses = this.bonuses.filter((_, i) => i !== index);
+          this.toast('success', 'Bonus removed.');
+        },
+        error: () => this.toast('error', 'Failed to remove bonus.'),
+      });
+    } else {
+      this.bonuses = this.bonuses.filter((_, i) => i !== index);
+    }
+  }
+
+  // --- Overtime CRUD ---
+  addOvertime() {
+    if (this.overtimeForm.invalid) {
+      this.overtimeForm.markAllAsTouched();
+      return;
+    }
+    const { type, rate, maxHours } = this.overtimeForm.value;
+    const payload = { levelId: this.salaryForm.value.level, overtimeTypeId: type, rate, maxHours };
+
+    if (this.isEditMode) {
+      this.salaryService.addOverTime(payload).subscribe({
+        next: (data) => {
+          this.overtimes = [...this.overtimes, data];
+          this.overtimeForm.reset();
+          this.showOvertimeAdd = false;
+          this.toast('success', 'Overtime added.');
+        },
+        error: () => this.toast('error', 'Failed to add overtime.'),
+      });
+    } else {
+      this.overtimes = [...this.overtimes, { ...payload, id: null }];
+      this.overtimeForm.reset();
+      this.showOvertimeAdd = false;
+    }
+  }
+
+  removeOvertime(index: number, id: number) {
+    if (this.isEditMode && id) {
+      this.salaryService.deleteOvertime(id).subscribe({
+        next: () => {
+          this.overtimes = this.overtimes.filter((_, i) => i !== index);
+          this.toast('success', 'Overtime removed.');
+        },
+        error: () => this.toast('error', 'Failed to remove overtime.'),
+      });
+    } else {
+      this.overtimes = this.overtimes.filter((_, i) => i !== index);
+    }
+  }
+
+  // --- Form submit ---
+  onSubmit() {
+    if (this.salaryForm.invalid) {
+      this.salaryForm.markAllAsTouched();
+      return;
+    }
+    const { level, baseSalary } = this.salaryForm.value;
+    const payload: any = {
+      levelId: level,
+      baseSalary,
+      allowance: this.allowances,
+      deductions: this.deductions,
+      bonus: this.bonuses,
+      overtime: this.overtimes,
+    };
+    this.saving = true;
+
+    if (this.isEditMode && this.editSalaryId !== null) {
+      this.salaryService.updateSalary(this.editSalaryId, { id: this.editSalaryId, ...payload }).subscribe({
+        next: () => {
+          this.toast('success', `Salary for ${this.getLevelName(level)} updated.`);
+          this.saving = false;
+          this.closeForm();
+          this.refreshSalaries();
+        },
+        error: () => {
+          this.toast('error', 'Failed to update salary structure.');
+          this.saving = false;
+        },
+      });
+    } else {
+      this.salaryService.addSalary(payload).subscribe({
+        next: () => {
+          this.toast('success', `Salary for ${this.getLevelName(level)} created.`);
+          this.saving = false;
+          this.closeForm();
+          this.refreshSalaries();
+        },
+        error: () => {
+          this.toast('error', 'Failed to create salary structure.');
+          this.saving = false;
+        },
+      });
+    }
+  }
+
+  // --- Form navigation ---
+  openForCreate(levelId: number) {
+    this.isEditMode = false;
+    this.editSalaryId = null;
+    this.clearArrays();
+    this.clearSubForms();
+    this.salaryForm.reset();
+    this.salaryForm.patchValue({ level: levelId });
+    this.resetAddToggles();
+    this.showAddForm = true;
+  }
+
+  openForEdit(salary: any, event: Event) {
     event.stopPropagation();
-    const salary = this.getSalaryByLevelId(levelId)
-    this.showAddForm = true
-    this.editIndex = index
-    this.populateForm(salary, index)
+    this.isEditMode = true;
+    this.editSalaryId = salary.id;
+    this.salaryForm.patchValue({ level: salary.levelId, baseSalary: salary.baseSalary });
+    this.allowances = [...(salary.allowance ?? [])];
+    this.deductions = [...(salary.deductions ?? [])];
+    this.bonuses = [...(salary.bonus ?? [])];
+    this.overtimes = [...(salary.overtime ?? [])];
+    this.clearSubForms();
+    this.resetAddToggles();
+    this.showAddForm = true;
   }
 
-  deleteSalary(salary: SalaryDTO, index:number, event: Event) {
-    this.salaryService.deleteSalry(salary.id).subscribe(() => {
-      // this.salaryStructure.splice(index, 1);
-      const salaryIndex = this.salaryStructure.findIndex(s => s.id === salary.id);
-      if (salaryIndex > -1) {
-        this.salaryStructure.splice(salaryIndex, 1);
-      }
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getSalaryByLevelId(salary.levelId)} cleared successfully!`, key: 'tl', life: 3000  }); 
-    })
-
+  closeForm() {
+    this.showAddForm = false;
+    this.isEditMode = false;
+    this.editSalaryId = null;
+    this.salaryForm.reset();
+    this.clearArrays();
+    this.clearSubForms();
+    this.resetAddToggles();
   }
 
-  confirmSalaryDelete(levelId: number|undefined, i: number , event: Event): void {
+  private refreshSalaries() {
+    this.salaryService.getAllSalaries().subscribe(data => {
+      this.salaryStructure = data;
+    });
+  }
+
+  private clearArrays() {
+    this.allowances = [];
+    this.deductions = [];
+    this.bonuses = [];
+    this.overtimes = [];
+    this.cancelEditAllowance();
+  }
+
+  private clearSubForms() {
+    this.allowanceForm.reset();
+    this.deductionForm.reset();
+    this.bonusForm.reset();
+    this.overtimeForm.reset();
+  }
+
+  private resetAddToggles() {
+    this.showAllowanceAdd = false;
+    this.showDeductionAdd = false;
+    this.showBonusAdd = false;
+    this.showOvertimeAdd = false;
+  }
+
+  // --- Delete salary ---
+  confirmDelete(levelId: number | undefined, event: Event) {
     event.stopPropagation();
-    const salary = this.getSalaryByLevelId(levelId)
+    const salary = this.getSalaryByLevelId(levelId);
+    if (!salary) return;
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to clearing of ${this.getLevelName(salary.levelId)}'s salary structure`,
-      header: `Delete Salary Structure - ${this.getLevelName(salary.levelId)}`,
+      message: `This will permanently remove the salary structure for ${this.getLevelName(salary.levelId)}.`,
+      header: `Delete Salary — ${this.getLevelName(salary.levelId)}`,
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass:"p-btn-danger p-button-text",
-      rejectButtonStyleClass:"p-btn-cancle p-button-text",
-      acceptIcon:"none",
-      rejectIcon:"none",
+      acceptButtonStyleClass: 'p-btn-danger p-button-text',
+      rejectButtonStyleClass: 'p-btn-cancel p-button-text',
+      acceptIcon: 'none',
+      rejectIcon: 'none',
       acceptLabel: 'Delete',
       rejectLabel: 'Cancel',
-      // styleClass: 'custom-confirm-dialog',
       accept: () => {
-        this.deleteSalary(salary, i , event);
+        this.salaryService.deleteSalry(salary.id).subscribe({
+          next: () => {
+            this.salaryStructure = this.salaryStructure.filter(s => s.id !== salary.id);
+            this.toast('success', `Salary for ${this.getLevelName(salary.levelId)} removed.`);
+          },
+          error: () => this.toast('error', 'Failed to delete salary structure.'),
+        });
       },
-      reject: () => {
-
-      }
     });
   }
 
-  toogleForm() {
-    
-    this.showAddForm = !this.showAddForm
-    if(this.showAddForm){
-      this.isEditMode = false
-      this.salaryForm.reset();
-      this.allowances = []
-      this.bonuses= []
-      this.deductions = []
-      this.overtImes = []
+  // --- New type forms ---
+  openNewTypeForm(type: string) {
+    this.typeFormContext = type;
+    this.openTypeForm = !!type;
+    this.newTypeForm.reset();
+  }
+
+  addNewType(event: Event) {
+    event.preventDefault();
+    if (this.newTypeForm.invalid) return;
+    const { name, code, description, isTax } = this.newTypeForm.value;
+
+    switch (this.typeFormContext) {
+      case 'allowance':
+        this.salaryService.addAllowanceType({ name, code, description } as any).subscribe(data => {
+          this.allowanceType = [...this.allowanceType, data].sort((a: any, b: any) => a.name.localeCompare(b.name));
+          this.toast('success', 'Allowance type created.');
+          this.openNewTypeForm('');
+        });
+        break;
+      case 'deduction':
+        this.salaryService.addDeductionsType({ name, description, isTax } as any).subscribe(data => {
+          this.deductionType = [...this.deductionType, data].sort((a: any, b: any) => a.name.localeCompare(b.name));
+          this.toast('success', 'Deduction type created.');
+          this.openNewTypeForm('');
+        });
+        break;
+      case 'bonus':
+        this.salaryService.addBonusType({ name, description } as any).subscribe(data => {
+          this.bonusType = [...this.bonusType, data].sort((a: any, b: any) => a.name.localeCompare(b.name));
+          this.toast('success', 'Bonus type created.');
+          this.openNewTypeForm('');
+        });
+        break;
+      case 'overtime':
+        this.salaryService.addOverTimeType({ name, description } as any).subscribe(data => {
+          this.overtimeType = [...this.overtimeType, data].sort((a: any, b: any) => a.name.localeCompare(b.name));
+          this.toast('success', 'Overtime type created.');
+          this.openNewTypeForm('');
+        });
+        break;
     }
   }
 
-  getSalaryByLevelId(levelId: number | undefined): any {
-    return this.salaryStructure.find((salary) => salary.levelId === levelId);
-  }
-
-  getLevelName(levelId: number): string {
-    const level = this.levels.find((lvl) => lvl.id === levelId);
-    return level ? level.name : '';
-  }
-
-  createNewStructure(levelId: number | undefined ){
-    this.toogleForm()
-    this.salaryForm.patchValue({
-      level: levelId
-    })
+  private toast(severity: 'success' | 'error', detail: string) {
+    this.messageService.add({ severity, summary: severity === 'success' ? 'Success' : 'Error', detail, key: 'tl', life: 3000 });
   }
 }
