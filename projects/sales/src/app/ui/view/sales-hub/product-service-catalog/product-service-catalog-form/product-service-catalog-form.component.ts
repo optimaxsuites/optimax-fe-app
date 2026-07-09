@@ -27,6 +27,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   productId: string = '';
   isLoading = false;
   isSubmitting = false;
+  variantModalForm!: FormGroup;
   
   // Mock data
   branches: string[] = ['Abuja', 'Lagos', 'Port Harcourt', 'Kano', 'Enugu'];
@@ -68,6 +69,19 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     private salesService: SalesService
   ) {
     this.productForm = this.createForm();
+    this.initVariantModalForm();
+  }
+
+  initVariantModalForm(): void {
+    this.variantModalForm = this.fb.group({
+      name: ['', Validators.required],
+      sku: [''],
+      price: [0, [Validators.required, Validators.min(0)]],
+      quantity: [0, [Validators.required, Validators.min(0)]],
+      color: [''],
+      size: [''],
+      material: ['']
+    });
   }
 
   ngOnInit(): void {
@@ -143,17 +157,38 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
     this.salesService.getProductById(this.productId).subscribe({
       next: (product: Product | null) => {
         if (product) {
+          const prod: any = product;
           this.productForm.patchValue({
-            name: product.name,
-            description: product.description,
-            category: product.category,
-            sku: product.sku,
-            costPrice: product.costPrice,
-            sellingPrice: product.unitPrice,
-            quantity: product.stockQuantity,
-            measurementUnit: 'Each'
+            name: prod.name,
+            description: prod.description,
+            category: prod.category,
+            sku: prod.sku,
+            costPrice: prod.costPrice,
+            sellingPrice: prod.unitPrice,
+            quantity: prod.stockQuantity,
+            measurementUnit: 'Each',
+            isComboProduct: prod.isComboProduct || false
           });
-          this.images = product.images || [];
+          this.images = prod.images || [];
+          this.showComboOptions = prod.isComboProduct || false;
+
+          this.variantsArray.clear();
+          if (prod.variants && Array.isArray(prod.variants)) {
+            prod.variants.forEach((v: any) => {
+              const variantGroup = this.fb.group({
+                name: [v.name, Validators.required],
+                sku: [v.sku],
+                price: [v.price, [Validators.required, Validators.min(0)]],
+                quantity: [v.quantity, [Validators.required, Validators.min(0)]],
+                attributes: this.fb.group({
+                  color: [v.attributes?.color || ''],
+                  size: [v.attributes?.size || ''],
+                  material: [v.attributes?.material || '']
+                })
+              });
+              this.variantsArray.push(variantGroup);
+            });
+          }
         }
         this.isLoading = false;
       },
@@ -168,7 +203,15 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.productForm.invalid) {
-      this.markAllAsTouched();
+      this.productForm.markAllAsTouched();
+      const invalidControls: string[] = [];
+      const controls = this.productForm.controls;
+      for (const name in controls) {
+        if (controls[name].invalid) {
+          invalidControls.push(name);
+        }
+      }
+      console.warn('Form is invalid. Invalid controls:', invalidControls);
       return;
     }
 
@@ -186,7 +229,9 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
       taxRate: this.extractTaxRate(formData.taxes),
       currency: 'NGN',
       status: formData.quantity > 0 ? 'ACTIVE' : 'OUT_OF_STOCK',
-      images: this.images
+      images: this.images,
+      variants: formData.variants || [],
+      isComboProduct: formData.isComboProduct || false
     };
 
     const action = this.isEditMode 
@@ -224,29 +269,80 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   }
 
   // Variant Management
-  addVariant(): void {
-    const variantGroup = this.fb.group({
-      name: ['', Validators.required],
-      sku: [''],
-      price: [0, [Validators.required, Validators.min(0)]],
-      quantity: [0, [Validators.required, Validators.min(0)]],
-      attributes: this.fb.group({
-        color: [''],
-        size: [''],
-        material: ['']
-      })
+  openVariantModal(): void {
+    this.currentVariantIndex = null;
+    this.variantModalForm.reset({
+      name: '',
+      sku: '',
+      price: 0,
+      quantity: 0,
+      color: '',
+      size: '',
+      material: ''
     });
-    this.variantsArray.push(variantGroup);
+    this.showVariantModal = true;
+  }
+
+  openEditVariantModal(index: number): void {
+    this.currentVariantIndex = index;
+    const variant = this.variantsArray.at(index);
+    this.variantModalForm.patchValue({
+      name: variant.get('name')?.value || '',
+      sku: variant.get('sku')?.value || '',
+      price: variant.get('price')?.value || 0,
+      quantity: variant.get('quantity')?.value || 0,
+      color: variant.get('attributes.color')?.value || '',
+      size: variant.get('attributes.size')?.value || '',
+      material: variant.get('attributes.material')?.value || ''
+    });
+    this.showVariantModal = true;
+  }
+
+  saveVariant(): void {
+    if (this.variantModalForm.invalid) {
+      this.variantModalForm.markAllAsTouched();
+      return;
+    }
+
+    const formValues = this.variantModalForm.value;
+    const variantData = {
+      name: formValues.name,
+      sku: formValues.sku || `VAR-${Date.now()}`,
+      price: formValues.price,
+      quantity: formValues.quantity,
+      attributes: {
+        color: formValues.color,
+        size: formValues.size,
+        material: formValues.material
+      }
+    };
+
+    if (this.currentVariantIndex !== null) {
+      // Editing an existing variant
+      const variantGroup = this.variantsArray.at(this.currentVariantIndex);
+      variantGroup.patchValue(variantData);
+    } else {
+      // Creating a new variant
+      const variantGroup = this.fb.group({
+        name: [variantData.name, Validators.required],
+        sku: [variantData.sku],
+        price: [variantData.price, [Validators.required, Validators.min(0)]],
+        quantity: [variantData.quantity, [Validators.required, Validators.min(0)]],
+        attributes: this.fb.group({
+          color: [variantData.attributes.color],
+          size: [variantData.attributes.size],
+          material: [variantData.attributes.material]
+        })
+      });
+      this.variantsArray.push(variantGroup);
+    }
+
     this.showVariantModal = false;
+    this.currentVariantIndex = null;
   }
 
   removeVariant(index: number): void {
     this.variantsArray.removeAt(index);
-  }
-
-  editVariant(index: number): void {
-    this.currentVariantIndex = index;
-    this.showVariantModal = true;
   }
 
   // File Upload
