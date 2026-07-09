@@ -1,159 +1,79 @@
-<div class="modal-backdrop" (click)="cancel()" (keydown.escape)="cancel()"></div>
+<div class="modal-backdrop" (click)="cancel()"></div>
 
-<div class="modal-container">
-  <div class="modal-card">
-    <!-- Modal Header -->
-    <div class="modal-header">
-      <div class="header-content">
-        <h2>New Correction Request</h2>
-        <p>Submit a correction for missing or incorrect attendance records</p>
+<div class="modal-card">
+  <div class="modal-header">
+    <h3>New Correction Request</h3>
+    <button type="button" class="close-btn" (click)="cancel()">x</button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Employee ID</label>
+        <input type="text" formControlName="employeeId" />
       </div>
-      <button type="button" class="close-btn" (click)="cancel()" (keydown.enter)="cancel()" title="Close" tabindex="0">
-        <i class="fas fa-times"></i>
-      </button>
+
+      <div class="form-group">
+        <label>Employee Name</label>
+        <input type="text" formControlName="employeeName" />
+      </div>
     </div>
 
-    <!-- Form Content -->
-    <form [formGroup]="form" (ngSubmit)="submit()" class="correction-form">
-      <!-- Employee Info Section -->
-      <div class="form-section">
-        <h4 class="section-title">Employee Information</h4>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="employeeId">Employee ID</label>
-            <input
-              id="employeeId"
-              type="text"
-              formControlName="employeeId"
-              placeholder="Your ID"
-              readonly />
-          </div>
+    <div class="form-group">
+      <label>Department</label>
+      <input type="text" formControlName="department" />
+    </div>
 
-          <div class="form-group">
-            <label for="employeeName">Employee Name</label>
-            <input
-              id="employeeName"
-              type="text"
-              formControlName="employeeName"
-              placeholder="Your name"
-              readonly />
-          </div>
-        </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" formControlName="date" />
+    </div>
 
-        <div class="form-group">
-          <label for="department">Department</label>
-          <input
-            id="department"
-            type="text"
-            formControlName="department"
-            placeholder="Your department"
-            readonly />
-        </div>
+    <div class="form-group">
+      <label>Issue Type</label>
+      <select formControlName="issueType">
+        <option value="" disabled>Select issue type</option>
+        <option *ngFor="let type of issueTypes" [value]="type.value">
+          {{ type.label }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Requested Clock In</label>
+        <input type="time" formControlName="requestedClockIn" />
       </div>
 
-      <!-- Issue Details Section -->
-      <div class="form-section">
-        <h4 class="section-title">Issue Details</h4>
-
-        <div class="form-group">
-          <label for="date">Date <span class="required">*</span></label>
-          <input
-            id="date"
-            type="date"
-            formControlName="date"
-            [class.error]="form.get('date')?.invalid && form.get('date')?.touched" />
-          <span class="error-msg" *ngIf="form.get('date')?.invalid && form.get('date')?.touched">
-            Please select a date
-          </span>
-        </div>
-
-        <div class="form-group">
-          <label for="issueType">Issue Type <span class="required">*</span></label>
-          <select
-            id="issueType"
-            formControlName="issueType"
-            [class.error]="form.get('issueType')?.invalid && form.get('issueType')?.touched">
-            <option value="" disabled>Select issue type</option>
-            <option *ngFor="let type of issueTypes" [value]="type.value">
-              {{ type.label }}
-            </option>
-          </select>
-          <span class="error-msg" *ngIf="form.get('issueType')?.invalid && form.get('issueType')?.touched">
-            Please select an issue type
-          </span>
-        </div>
+      <div class="form-group">
+        <label>Requested Clock Out</label>
+        <input type="time" formControlName="requestedClockOut" />
       </div>
+    </div>
 
-      <!-- Time Details Section -->
-      <div class="form-section">
-        <h4 class="section-title">Requested Time</h4>
-        <p class="section-hint">Leave blank if not applicable</p>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea
+        rows="3"
+        formControlName="description"
+        placeholder="Explain the missing punch or incorrect time">
+      </textarea>
+    </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="requestedClockIn">Clock In Time</label>
-            <div class="time-input-wrapper">
-              <i class="fas fa-sign-in-alt"></i>
-              <input
-                id="requestedClockIn"
-                type="time"
-                formControlName="requestedClockIn" />
-            </div>
-          </div>
+    <div class="form-group">
+      <label>Evidence</label>
+      <textarea
+        rows="3"
+        formControlName="evidence"
+        placeholder="Add supporting details, document references, or manager notes">
+      </textarea>
+    </div>
 
-          <div class="form-group">
-            <label for="requestedClockOut">Clock Out Time</label>
-            <div class="time-input-wrapper">
-              <i class="fas fa-sign-out-alt"></i>
-              <input
-                id="requestedClockOut"
-                type="time"
-                formControlName="requestedClockOut" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Description Section -->
-      <div class="form-section">
-        <h4 class="section-title">Description <span class="required">*</span></h4>
-        <div class="form-group">
-          <textarea
-            formControlName="description"
-            placeholder="Explain the missing punch or incorrect time. Be specific and concise."
-            rows="4"
-            [class.error]="form.get('description')?.invalid && form.get('description')?.touched">
-          </textarea>
-          <span class="error-msg" *ngIf="form.get('description')?.invalid && form.get('description')?.touched">
-            Please provide a description
-          </span>
-          <span class="char-count">{{ form.get('description')?.value?.length || 0 }}/500</span>
-        </div>
-      </div>
-
-      <!-- Evidence Section -->
-      <div class="form-section">
-        <h4 class="section-title">Supporting Evidence</h4>
-        <p class="section-hint">Add details that support your correction request (optional)</p>
-        <div class="form-group">
-          <textarea
-            formControlName="evidence"
-            placeholder="Add supporting details, document references, manager notes, or any additional information..."
-            rows="4">
-          </textarea>
-          <span class="char-count">{{ form.get('evidence')?.value?.length || 0 }}/1000</span>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" (click)="cancel()">
-          <i class="fas fa-times"></i> Cancel
-        </button>
-        <button type="submit" class="btn-submit" [disabled]="form.invalid">
-          <i class="fas fa-paper-plane"></i> Submit Request
-        </button>
-      </div>
-    </form>
-  </div>
+    <div class="actions">
+      <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
+      <button type="submit" class="submit-btn" [disabled]="form.invalid">
+        Submit Request
+      </button>
+    </div>
+  </form>
 </div>

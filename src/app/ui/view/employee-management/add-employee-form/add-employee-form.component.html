@@ -1,5 +1,41 @@
 
-<div class="table-item">
+<ng-container *ngIf="!admin">
+  <header class="ob-header">
+    <div class="ob-header__inner">
+      <div class="ob-header__logo-wrap">
+        <img *ngIf="obLogoUrl" [src]="obLogoUrl" alt="Company logo" class="ob-header__logo" />
+        <div *ngIf="!obLogoUrl" class="ob-header__logo-placeholder">
+          {{ (obCompanyName || 'O').charAt(0).toUpperCase() }}
+        </div>
+      </div>
+      <div class="ob-header__titles">
+        <span class="ob-header__company">{{ obCompanyName }}</span>
+        <span class="ob-header__subtitle">Staff Onboarding Portal</span>
+      </div>
+    </div>
+  </header>
+  <div class="ob-welcome">
+    <p class="ob-welcome__text">
+      Welcome! Please complete all sections below to finish setting up your employee profile.
+      Your information is securely stored and only accessible to authorised HR personnel.
+    </p>
+  </div>
+</ng-container>
+
+<div *ngIf="isExpired" class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-6">
+  <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+    </svg>
+  </div>
+  <h2 class="text-2xl font-bold text-gray-800">Onboarding Link Expired</h2>
+  <p class="text-gray-500 max-w-sm">This onboarding link is no longer valid. It expired 5 working days after it was generated. Please contact your HR department to request a new link.</p>
+  <div class="mt-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+    <strong>HR Department</strong> — reach out for a fresh onboarding invitation.
+  </div>
+</div>
+
+<div *ngIf="!isExpired" class="table-item">
 
 
   <div class="flex justify-between gap-5 items-center relative">
@@ -420,6 +456,17 @@
   <p-toast key="tl"></p-toast>
 </div>
 
+<footer class="ob-footer" *ngIf="!admin">
+  <div class="ob-footer__inner">
+    <span class="ob-footer__company" *ngIf="obCompanyName">{{ obCompanyName }}</span>
+    <span class="ob-footer__sep" *ngIf="obCompanyName">·</span>
+    <span class="ob-footer__note">For assistance, contact the HR department.</span>
+    <span class="ob-footer__sep">·</span>
+    <span class="ob-footer__year">&copy; {{ year }}</span>
+  </div>
+</footer>
+
+<!-- Branded footer for employee self-onboarding -->
 <!-- <div *ngIf="formErrors.length > 0" class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded absolute top-0 right-0">
   <h4 class="font-bold mb-2">Please fix the following errors:</h4>
   <ul class="list-disc list-inside">

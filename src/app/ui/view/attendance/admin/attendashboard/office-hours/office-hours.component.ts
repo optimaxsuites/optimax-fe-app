@@ -96,10 +96,11 @@ export class OfficeHoursComponent implements OnInit{
   },
   { validators: officeHoursValidator });
 
-  // FETCH FROM BACKEND (with delay to ensure token is ready)
-  setTimeout(() => {
-    this.officeHoursService.fetchCurrentOfficeHours()
-    .subscribe({
+
+
+  // FETCH FROM BACKEND
+  this.officeHoursService.fetchCurrentOfficeHours()
+  .subscribe({
 
     next: (res) => {
 
@@ -147,8 +148,7 @@ export class OfficeHoursComponent implements OnInit{
       console.warn('No office hours yet:', err);
     }
 
-    });
-  }, 100);
+  });
 
 }
 

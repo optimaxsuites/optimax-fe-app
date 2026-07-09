@@ -1,73 +1,376 @@
-<div class="drawer-stack">
-  <section class="drawer-summary-grid">
-    <article class="drawer-summary-card">
-      <span class="drawer-summary-label">Offboarding status</span>
-      <strong class="drawer-summary-value">{{ offboardingStatus }}</strong>
-    </article>
-    <article class="drawer-summary-card">
-      <span class="drawer-summary-label">Employment end date</span>
-      <strong class="drawer-summary-value">{{ employeeInView?.employmentEndDate || '-' }}</strong>
-    </article>
-  </section>
+<div class="ob-shell">
 
-  <section class="drawer-card">
-    <div class="drawer-card-header">
-      <div>
-        <p class="drawer-card-eyebrow">Exit readiness</p>
-        <h3>Offboarding checklist</h3>
+  <!-- ── HR context note ───────────────────────────────────────────────────── -->
+  <div class="ob-context-note">
+    <i class="fas fa-user-tie"></i>
+    <span><strong>HR Managed Workflow</strong> — HR completes this section to track and close the exit process. The printable Exit Form (Documents tab) is given to the employee to sign during the exit interview.</span>
+  </div>
+
+  <!-- ── Stage progress bar ───────────────────────────────────────────────── -->
+  <div class="ob-pipeline">
+    <ng-container *ngFor="let s of stages; let i = index; let last = last">
+      <div class="pipe-step" [ngClass]="stageStatus(s.key)">
+        <div class="pipe-dot">
+          <i class="fas" [class.fa-check]="stageStatus(s.key)==='done'"
+             [class]="stageStatus(s.key)!=='done' ? 'fas '+s.icon : 'fas fa-check'"></i>
+        </div>
+        <span class="pipe-label">{{ s.label }}</span>
       </div>
-      <span class="drawer-badge">{{ offboardingStatus }}</span>
-    </div>
+      <div *ngIf="!last" class="pipe-line" [class.done]="stageStatus(s.key)==='done'"></div>
+    </ng-container>
+  </div>
 
-    <div class="drawer-checklist">
-      <div class="check-item">
-        <span class="check-dot"></span>
-        <div>
-          <strong>Access and assets</strong>
-          <p>System access revocation, device recovery, and account closure coordination.</p>
+  <!-- ── Access-revoked banner ─────────────────────────────────────────────── -->
+  <div *ngIf="isAccessRevoked" class="revoked-banner">
+    <i class="fas fa-ban"></i>
+    <div>
+      <strong>System access has been revoked for this employee.</strong>
+      <span>All module access is disabled as of {{ ob.completedDate || ob.initiatedDate || 'today' }}.</span>
+    </div>
+  </div>
+
+  <!-- ── Summary cards ─────────────────────────────────────────────────────── -->
+  <div class="ob-summary-grid">
+    <div class="ob-summary-card">
+      <span class="ob-summary-label">Status</span>
+      <strong class="ob-summary-value" [ngClass]="{
+        'text-slate-400': ob.stage==='not_started',
+        'text-blue-600': ob.stage==='initiated'||ob.stage==='handover',
+        'text-amber-600': ob.stage==='assets',
+        'text-red-600': ob.stage==='access_revoked',
+        'text-green-600': ob.stage==='completed'
+      }">{{ ob.stage | splitAndTitleCase }}</strong>
+    </div>
+    <div class="ob-summary-card">
+      <span class="ob-summary-label">Last Working Day</span>
+      <strong class="ob-summary-value">{{ ob.lastWorkingDay || '-' }}</strong>
+    </div>
+    <div class="ob-summary-card">
+      <span class="ob-summary-label">Assets Returned</span>
+      <strong class="ob-summary-value">{{ assetsReturnedCount }} / {{ ob.assets.length }}</strong>
+    </div>
+    <div class="ob-summary-card">
+      <span class="ob-summary-label">Access Revoked</span>
+      <strong class="ob-summary-value">{{ systemsRevokedCount }} / {{ ob.systemAccess.length }}</strong>
+    </div>
+  </div>
+
+  <!-- ── Tab bar ───────────────────────────────────────────────────────────── -->
+  <div class="ob-tabs">
+    <button class="ob-tab" [class.active]="activeTab==='overview'"   (click)="activeTab='overview'">   <i class="fas fa-info-circle"></i> Overview</button>
+    <button class="ob-tab" [class.active]="activeTab==='handover'"   (click)="activeTab='handover'">   <i class="fas fa-exchange-alt"></i> Handover</button>
+    <button class="ob-tab" [class.active]="activeTab==='assets'"     (click)="activeTab='assets'">     <i class="fas fa-box-open"></i> Assets</button>
+    <button class="ob-tab" [class.active]="activeTab==='access'"     (click)="activeTab='access'">     <i class="fas fa-user-slash"></i> Access</button>
+    <button class="ob-tab" [class.active]="activeTab==='documents'"  (click)="activeTab='documents'">  <i class="fas fa-file-alt"></i> Documents</button>
+  </div>
+
+  <div class="ob-body">
+
+    <!-- ══ OVERVIEW ══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="activeTab==='overview'">
+
+      <!-- Initiate block (not started) -->
+      <div *ngIf="ob.stage==='not_started'" class="ob-card initiate-card">
+        <div class="initiate-icon"><i class="fas fa-door-open"></i></div>
+        <h3>Start Offboarding Workflow</h3>
+        <p>No offboarding has been initiated for <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong>. Begin the process to guide HR through handover, asset collection, and access revocation.</p>
+        <button class="btn-initiate" (click)="initiateOffboarding()">
+          <i class="fas fa-play-circle"></i> Initiate Offboarding
+        </button>
+      </div>
+
+      <!-- Details form (initiated+) -->
+      <div *ngIf="ob.stage!=='not_started'" class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-info-circle"></i> Exit Details</div>
+
+        <div class="ob-form-grid two">
+          <div class="ob-field">
+            <label>Last Working Day</label>
+            <input type="date" [(ngModel)]="ob.lastWorkingDay" (change)="saveData()" />
+          </div>
+          <div class="ob-field">
+            <label>HR Officer</label>
+            <input type="text" [(ngModel)]="ob.hrOfficer" (blur)="saveData()" placeholder="Name of HR handling exit" />
+          </div>
+        </div>
+
+        <div class="ob-field">
+          <label>Reason for Leaving</label>
+          <select [(ngModel)]="ob.exitReason" (change)="saveData()">
+            <option value="">-- Select reason --</option>
+            <option *ngFor="let r of exitReasons">{{ r }}</option>
+          </select>
+        </div>
+
+        <div class="ob-field">
+          <label>Additional Context</label>
+          <textarea [(ngModel)]="ob.exitReasonDetail" (blur)="saveData()" rows="3" placeholder="Additional details about the reason for leaving..."></textarea>
+        </div>
+
+        <div class="ob-field">
+          <label>Outstanding Loans / Advances (₦)</label>
+          <input type="text" [(ngModel)]="ob.outstandingLoans" (blur)="saveData()" placeholder="0.00" />
+        </div>
+
+        <div class="ob-form-grid two">
+          <div class="ob-field">
+            <label>Leave Balance (days)</label>
+            <input type="text" [(ngModel)]="ob.leaveBalance" (blur)="saveData()" />
+          </div>
+          <div class="ob-field">
+            <label>Final Pay Date</label>
+            <input type="date" [(ngModel)]="ob.finalPayDate" (change)="saveData()" />
+          </div>
+        </div>
+
+        <div class="ob-field exit-interview-row">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="ob.exitInterviewDone" (change)="saveData()" />
+            Exit interview conducted
+          </label>
+        </div>
+        <div class="ob-field" *ngIf="ob.exitInterviewDone">
+          <label>Exit Interview Notes</label>
+          <textarea [(ngModel)]="ob.exitInterviewNotes" (blur)="saveData()" rows="3" placeholder="Summary of exit interview..."></textarea>
         </div>
       </div>
-      <div class="check-item">
-        <span class="check-dot"></span>
-        <div>
-          <strong>HR documentation</strong>
-          <p>Exit interview notes, handover records, and final document acknowledgement.</p>
-        </div>
-      </div>
-      <div class="check-item">
-        <span class="check-dot"></span>
-        <div>
-          <strong>Payroll closure</strong>
-          <p>Final payroll, leave balance settlement, and statutory deductions review.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <section class="drawer-card">
-    <div class="drawer-card-header">
-      <div>
-        <p class="drawer-card-eyebrow">Employee context</p>
-        <h3>Profile summary</h3>
+      <!-- Workflow actions -->
+      <div *ngIf="ob.stage!=='not_started' && ob.stage!=='completed'" class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-tasks"></i> Workflow Actions</div>
+        <div class="workflow-actions">
+          <button *ngIf="ob.stage==='initiated'" class="btn-advance" (click)="advanceTo('handover')">
+            <i class="fas fa-exchange-alt"></i> Move to Handover
+          </button>
+          <button *ngIf="ob.stage==='handover'" class="btn-advance" (click)="advanceTo('assets')">
+            <i class="fas fa-box-open"></i> Move to Asset Collection
+          </button>
+          <button *ngIf="ob.stage==='assets'" class="btn-revoke" (click)="showConfirmRevoke=true">
+            <i class="fas fa-user-slash"></i> Revoke All Access
+          </button>
+          <button *ngIf="ob.stage==='access_revoked'" class="btn-complete" (click)="showConfirmComplete=true">
+            <i class="fas fa-check-circle"></i> Mark Offboarding Complete
+          </button>
+        </div>
+      </div>
+
+      <!-- Completed card -->
+      <div *ngIf="ob.stage==='completed'" class="ob-card completed-card">
+        <i class="fas fa-check-circle completed-icon"></i>
+        <h3>Offboarding Complete</h3>
+        <p>Completed on <strong>{{ ob.completedDate }}</strong>. All system access has been revoked and asset return is on record.</p>
+      </div>
+
+      <!-- Employee summary -->
+      <div class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-user"></i> Employee Summary</div>
+        <div class="ob-detail-grid">
+          <div class="ob-detail-item"><span>Name</span><strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong></div>
+          <div class="ob-detail-item"><span>Department</span><strong>{{ employeeInView?.department?.name || employeeInView?.department || '-' }}</strong></div>
+          <div class="ob-detail-item"><span>Job Title</span><strong>{{ employeeInView?.jobTitle || '-' }}</strong></div>
+          <div class="ob-detail-item"><span>Supervisor</span><strong>{{ employeeInView?.supervisor || '-' }}</strong></div>
+          <div class="ob-detail-item"><span>Employment Start</span><strong>{{ employeeInView?.hireDate || employeeInView?.employmentStartDate || '-' }}</strong></div>
+          <div class="ob-detail-item"><span>Initiated Date</span><strong>{{ ob.initiatedDate || '-' }}</strong></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ══ HANDOVER ══════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="activeTab==='handover'">
+      <div class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-exchange-alt"></i> Work Handover Log
+          <span class="ob-chip">{{ handoverDoneCount }} / {{ ob.handoverItems.length }} done</span>
+        </div>
+        <div class="handover-notice">
+          Document every responsibility, project, or file being transferred. Each item must be acknowledged by the receiving party before access is revoked.
+        </div>
+        <div class="handover-table-wrap">
+          <table class="ob-table">
+            <thead>
+              <tr>
+                <th style="width:32%">Responsibility / Project / File</th>
+                <th style="width:18%">Handed To</th>
+                <th style="width:16%">Status</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let h of ob.handoverItems">
+                <td><input class="cell-input" [(ngModel)]="h.responsibility" (blur)="saveData()" placeholder="e.g. Q3 client reports" /></td>
+                <td><input class="cell-input" [(ngModel)]="h.handedTo" (blur)="saveData()" placeholder="Name / team" /></td>
+                <td>
+                  <select class="cell-select" [(ngModel)]="h.status" (change)="saveData()">
+                    <option *ngFor="let st of handoverStatuses">{{ st }}</option>
+                  </select>
+                </td>
+                <td><input class="cell-input" [(ngModel)]="h.notes" (blur)="saveData()" placeholder="Any notes..." /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn-add-row" (click)="addHandoverRow()"><i class="fas fa-plus"></i> Add row</button>
+      </div>
+    </ng-container>
+
+    <!-- ══ ASSETS ════════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="activeTab==='assets'">
+      <div class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-box-open"></i> Company Asset Register
+          <span class="ob-chip">{{ assetsReturnedCount }} / {{ ob.assets.length }} returned</span>
+        </div>
+        <div class="handover-notice">
+          Mark each company asset as returned. Leave the description blank for asset types not applicable to this employee.
+        </div>
+        <div class="handover-table-wrap">
+          <table class="ob-table">
+            <thead>
+              <tr>
+                <th style="width:14%">Asset Type</th>
+                <th style="width:22%">Description / Model</th>
+                <th style="width:16%">Serial / ID</th>
+                <th style="width:12%">Date Issued</th>
+                <th style="width:12%">Condition</th>
+                <th style="width:10%">Returned</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of ob.assets" [class.returned-row]="a.returned">
+                <td>
+                  <input class="cell-input" [(ngModel)]="a.type" (blur)="saveData()" placeholder="Laptop..." />
+                </td>
+                <td><input class="cell-input" [(ngModel)]="a.description" (blur)="saveData()" placeholder="Model / details" /></td>
+                <td><input class="cell-input" [(ngModel)]="a.serialNumber" (blur)="saveData()" placeholder="SN / ID" /></td>
+                <td><input class="cell-input" type="date" [(ngModel)]="a.dateIssued" (change)="saveData()" /></td>
+                <td>
+                  <select class="cell-select" [(ngModel)]="a.condition" (change)="saveData()">
+                    <option value="">-- select --</option>
+                    <option>Good</option>
+                    <option>Fair</option>
+                    <option>Damaged</option>
+                    <option>Missing</option>
+                  </select>
+                </td>
+                <td class="center-cell">
+                  <label class="toggle-wrap">
+                    <input type="checkbox" [(ngModel)]="a.returned" (change)="saveData()" />
+                    <span class="toggle-pill-small" [class.on]="a.returned"></span>
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn-add-row" (click)="addAssetRow()"><i class="fas fa-plus"></i> Add asset</button>
+      </div>
+    </ng-container>
+
+    <!-- ══ ACCESS ════════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="activeTab==='access'">
+      <div class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-user-slash"></i> System Access Revocation
+          <span class="ob-chip" [class.chip-red]="!allAccessRevoked">{{ systemsRevokedCount }} / {{ ob.systemAccess.length }} revoked</span>
+        </div>
+        <div *ngIf="isAccessRevoked" class="revoked-inline-notice">
+          <i class="fas fa-check-circle"></i> All system access has been revoked for this employee.
+        </div>
+        <div class="handover-table-wrap">
+          <table class="ob-table">
+            <thead>
+              <tr>
+                <th style="width:26%">System</th>
+                <th style="width:26%">Username / Account</th>
+                <th style="width:16%">Revocation Date</th>
+                <th>Status</th>
+                <th style="width:14%">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of ob.systemAccess" [class.revoked-row]="s.revoked">
+                <td>{{ s.system }}</td>
+                <td><input class="cell-input" [(ngModel)]="s.username" (blur)="saveData()" placeholder="username / email" /></td>
+                <td>{{ s.revokedDate || '-' }}</td>
+                <td>
+                  <span class="status-badge" [class.badge-green]="s.revoked" [class.badge-amber]="!s.revoked">
+                    {{ s.revoked ? 'Revoked' : 'Active' }}
+                  </span>
+                </td>
+                <td>
+                  <button *ngIf="!s.revoked" class="btn-revoke-single" (click)="revokeSystem(s)">
+                    <i class="fas fa-ban"></i> Revoke
+                  </button>
+                  <span *ngIf="s.revoked" class="done-tick"><i class="fas fa-check"></i></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="access-footer-actions">
+          <button *ngIf="!allAccessRevoked" class="btn-revoke" (click)="showConfirmRevoke=true">
+            <i class="fas fa-user-slash"></i> Revoke All Access at Once
+          </button>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ══ DOCUMENTS ════════════════════════════════════════════════════════ -->
+    <ng-container *ngIf="activeTab==='documents'">
+      <div class="ob-card">
+        <div class="ob-card-head"><i class="fas fa-file-alt"></i> Offboarding Documents</div>
+
+        <div class="ob-doc-note">
+          <i class="fas fa-info-circle"></i>
+          <span>These are <strong>employee-facing</strong> documents. Print, hand to the employee to complete, collect the signed copy, and retain it on file.</span>
+        </div>
+
+        <div class="doc-grid">
+          <div class="doc-card">
+            <div class="doc-icon"><i class="fas fa-door-open"></i></div>
+            <div class="doc-body">
+              <div class="doc-title">Exit / Offboarding Form</div>
+              <div class="doc-desc">
+                <strong>Employee fills this form.</strong> Covers exit interview responses, reason for leaving, asset return acknowledgement, system access sign-off, and handover sign-off. Print → give to employee at exit interview → collect signed copy.
+              </div>
+            </div>
+            <button class="doc-btn" (click)="openOffboardingForm()"><i class="fas fa-print"></i> Print Form</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- ── Saved / saving toast ─────────────────────────────────────────────── -->
+  <div class="saved-toast" [class.visible]="saving || saved">
+    <i *ngIf="saving" class="fas fa-spinner fa-spin"></i>
+    <i *ngIf="!saving && saved" class="fas fa-check"></i>
+    {{ saving ? 'Saving…' : 'Saved' }}
+  </div>
+
+  <!-- ── Confirm Revoke Modal ─────────────────────────────────────────────── -->
+  <div *ngIf="showConfirmRevoke" class="ob-overlay" (click)="showConfirmRevoke=false">
+    <div class="ob-confirm" (click)="$event.stopPropagation()">
+      <i class="fas fa-exclamation-triangle confirm-icon warn"></i>
+      <h3>Revoke All System Access?</h3>
+      <p>This will mark all systems as revoked and move the workflow to <strong>Access Revoked</strong> stage. The employee will lose all application access. This action should only be done on or after the last working day.</p>
+      <div class="confirm-actions">
+        <button class="btn-ghost" (click)="showConfirmRevoke=false">Cancel</button>
+        <button class="btn-revoke" (click)="revokeAccess()"><i class="fas fa-user-slash"></i> Confirm Revocation</button>
       </div>
     </div>
-    <div class="drawer-detail-grid">
-      <div class="drawer-detail-item">
-        <span>Employee</span>
-        <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong>
-      </div>
-      <div class="drawer-detail-item">
-        <span>Department</span>
-        <strong>{{ employeeInView?.department?.name || employeeInView?.department || '-' }}</strong>
-      </div>
-      <div class="drawer-detail-item">
-        <span>Role</span>
-        <strong>{{ employeeInView?.jobTitle || '-' }}</strong>
-      </div>
-      <div class="drawer-detail-item">
-        <span>Supervisor</span>
-        <strong>{{ employeeInView?.supervisor || '-' }}</strong>
+  </div>
+
+  <!-- ── Confirm Complete Modal ───────────────────────────────────────────── -->
+  <div *ngIf="showConfirmComplete" class="ob-overlay" (click)="showConfirmComplete=false">
+    <div class="ob-confirm" (click)="$event.stopPropagation()">
+      <i class="fas fa-check-circle confirm-icon success"></i>
+      <h3>Mark Offboarding as Complete?</h3>
+      <p>This closes the offboarding record for <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong>. All access has been revoked and assets recorded. This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="btn-ghost" (click)="showConfirmComplete=false">Cancel</button>
+        <button class="btn-complete" (click)="completeOffboarding()"><i class="fas fa-check-circle"></i> Complete Offboarding</button>
       </div>
     </div>
-  </section>
+  </div>
+
 </div>

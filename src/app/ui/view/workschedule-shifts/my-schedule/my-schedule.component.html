@@ -9,23 +9,53 @@
     <button [class.active]="viewMode === 'table'" (click)="setView('table')">
       <i class="fa-solid fa-table"></i> Table
     </button>
-
-    <div *ngIf="batchSelected.size > 0" class="batch-actions">
-      <span class="batch-count">{{ batchSelected.size }} selected</span>
-      <button class="batch-btn clear" (click)="clearBatchSelection()">
-        <i class="fa-solid fa-x"></i> Clear
-      </button>
-    </div>
   </div>
 
   <!-- CALENDAR VIEW -->
-  <div *ngIf="viewMode === 'calendar'">
-    <div class="calendar-card">
-      <!-- FullCalendar Integration -->
-      <full-calendar [options]="calendarOptions"></full-calendar>
+  <div *ngIf="viewMode === 'calendar'" class="calendar-card">
+
+    <!-- HEADER -->
+    <div class="calendar-header">
+      <button class="nav-btn" (click)="prevMonth()">‹</button>
+      <span class="month-label">{{ monthLabel }}</span>
+      <button class="nav-btn" (click)="nextMonth()">›</button>
     </div>
 
-    <!-- DAY DETAILS -->
+    <!-- WEEKDAYS -->
+    <div class="weekday-row">
+      <div class="weekday-cell" *ngFor="let d of ['Sun','Mon','Tues','Wed','Thur','Fri','Sat']">
+        {{ d }}
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="calendar-grid">
+      <div
+        class="calendar-cell"
+        *ngFor="let day of calendarDays"
+        [class.other-month]="!day.inMonth"
+        [class.selected]="formatDateLocal(day.date) === selectedDate"
+        [class.has-schedule]="hasSchedule(day.date)"
+        (click)="selectDate(day)"
+      >
+        <span class="date-number">
+          {{ day.date.getDate() }}
+        </span>
+
+      <div
+        class="calendar-dots"
+        *ngIf="getDayShiftColors(day.date).length > 0"
+      >
+        <span
+          *ngFor="let color of getDayShiftColors(day.date)"
+          class="calendar-dot"
+          [style.background]="color"
+        ></span>
+      </div>
+      </div>
+    </div>
+
+        <!-- DAY DETAILS -->
     <div class="day-detail">
 
       <div class="day-detail-header">
@@ -93,6 +123,8 @@
 
   </div>
 
+  </div>
+
   <!-- TABLE VIEW -->
    <div *ngIf="viewMode === 'table'" class="table-view">
 
@@ -144,7 +176,6 @@
     </div>
 
   </div>
-
 
 </div>
   <!--<div *ngIf="viewMode === 'table'">

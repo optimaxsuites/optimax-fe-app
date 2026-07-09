@@ -1,0 +1,254 @@
+<div class="toolbar no-print">
+  <span class="toolbar-title">Pre-Onboarding Form — Print Preview</span>
+  <button class="btn-print" (click)="print()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9"/>
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+      <rect x="6" y="14" width="12" height="8"/>
+    </svg>
+    Print / Save as PDF
+  </button>
+</div>
+
+<div class="page">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-logo">
+      <ng-container *ngIf="companyProfile$ | async as cp">
+        <img [src]="cp.logoUrl || 'assets/logo.png'" [alt]="cp.companyName || 'Company Logo'" />
+      </ng-container>
+      <img *ngIf="!(companyProfile$ | async)" src="assets/logo.png" alt="Company Logo" />
+    </div>
+    <div class="header-center">
+      <div class="org-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
+      <div class="form-name">PRE-ONBOARDING INFORMATION FORM</div>
+      <div class="form-instruction">To be completed by the new employee and submitted to HR before resumption</div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-row">
+        <span class="meta-key">Form No.</span>
+        <div class="meta-line"></div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Date</span>
+        <div class="meta-line"></div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Staff ID</span>
+        <div class="meta-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- ── SECTION 1: Personal Information ────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">01</span><span class="s-label">Personal Information</span></div>
+
+    <div class="photo-anchor">
+
+      <div class="fields-area">
+        <div class="row-2">
+          <div class="field"><label>Surname</label><div class="line"></div></div>
+          <div class="field"><label>First Name</label><div class="line"></div></div>
+        </div>
+        <div class="row-3">
+          <div class="field"><label>Middle Name</label><div class="line"></div></div>
+          <div class="field">
+            <label>Date of Birth</label>
+            <div class="dob">
+              <div class="dbox"></div><div class="dbox"></div>
+              <span class="sep">/</span>
+              <div class="dbox"></div><div class="dbox"></div>
+              <span class="sep">/</span>
+              <div class="dbox"></div><div class="dbox"></div><div class="dbox"></div><div class="dbox"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <div class="checks">
+              <label class="chk"><span class="box"></span>Male</label>
+              <label class="chk"><span class="box"></span>Female</label>
+            </div>
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Marital Status</label>
+            <div class="checks">
+              <label class="chk"><span class="box"></span>Single</label>
+              <label class="chk"><span class="box"></span>Married</label>
+              <label class="chk"><span class="box"></span>Divorced</label>
+              <label class="chk"><span class="box"></span>Widowed</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Religion</label>
+            <div class="checks">
+              <label class="chk"><span class="box"></span>Christianity</label>
+              <label class="chk"><span class="box"></span>Islam</label>
+              <label class="chk"><span class="box"></span>Other</label>
+            </div>
+          </div>
+        </div>
+        <div class="row-3">
+          <div class="field"><label>Nationality</label><div class="line"></div></div>
+          <div class="field"><label>State of Origin</label><div class="line"></div></div>
+          <div class="field"><label>LGA of Origin</label><div class="line"></div></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Phone Number</label><div class="line"></div></div>
+          <div class="field"><label>Alternate Phone</label><div class="line"></div></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Email Address</label><div class="line"></div></div>
+          <div class="field"><label>Personal Email <span class="opt">(optional)</span></label><div class="line"></div></div>
+        </div>
+      </div>
+
+      <div class="photo-box">
+        <span>Passport<br>Photo<br><em>3.5 × 4.5 cm</em></span>
+      </div>
+
+    </div>
+
+    <div class="field full-w"><label>Residential Address</label><div class="line"></div><div class="line mt2"></div></div>
+    <div class="field full-w"><label>Permanent Address <span class="opt">(if different)</span></label><div class="line"></div><div class="line mt2"></div></div>
+  </div>
+
+  <!-- ── SECTION 2: Employment Details ──────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">02</span><span class="s-label">Employment Details</span></div>
+
+    <div class="row-2">
+      <div class="field"><label>Department</label><div class="line"></div></div>
+      <div class="field"><label>Job Title / Position</label><div class="line"></div></div>
+    </div>
+    <div class="row-3">
+      <div class="field">
+        <label>Employment Type</label>
+        <div class="checks">
+          <label class="chk"><span class="box"></span>Full-Time</label>
+          <label class="chk"><span class="box"></span>Part-Time</label>
+          <label class="chk"><span class="box"></span>Contract</label>
+        </div>
+      </div>
+      <div class="field"><label>Proposed Start Date</label><div class="line"></div></div>
+      <div class="field"><label>Branch / Location</label><div class="line"></div></div>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>Highest Qualification</label><div class="line"></div></div>
+      <div class="field"><label>Field of Study</label><div class="line"></div></div>
+    </div>
+  </div>
+
+  <!-- page break -->
+  <div class="pg-break"></div>
+
+  <!-- ── SECTION 3: Bank Information ───────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">03</span><span class="s-label">Bank Information</span></div>
+
+    <div class="row-2">
+      <div class="field"><label>Bank Name</label><div class="line"></div></div>
+      <div class="field"><label>Account Name</label><div class="line"></div></div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label>Account Number <span class="opt">(10 digits)</span></label>
+        <div class="digit-boxes">
+          <div class="dg" *ngFor="let i of ten"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>BVN <span class="opt">(11 digits)</span></label>
+        <div class="digit-boxes">
+          <div class="dg" *ngFor="let i of eleven"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: Next of Kin ─────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">04</span><span class="s-label">Next of Kin</span></div>
+
+    <div class="row-2">
+      <div class="field"><label>Full Name</label><div class="line"></div></div>
+      <div class="field"><label>Relationship</label><div class="line"></div></div>
+    </div>
+    <div class="row-2">
+      <div class="field"><label>Phone Number</label><div class="line"></div></div>
+      <div class="field"><label>Email Address</label><div class="line"></div></div>
+    </div>
+    <div class="field full-w"><label>Address</label><div class="line"></div></div>
+  </div>
+
+  <!-- ── SECTION 5: Guarantor ──────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">05</span><span class="s-label">Guarantor Information</span></div>
+    <p class="section-note">Provide details for two (2) guarantors. Each guarantor should be a person of verified identity and standing.</p>
+
+    <div class="row-g2">
+      <!-- G1 -->
+      <div class="g-block">
+        <div class="g-label">Guarantor 1</div>
+        <div class="field"><label>Full Name</label><div class="line"></div></div>
+        <div class="field"><label>Occupation</label><div class="line"></div></div>
+        <div class="field"><label>Relationship to Applicant</label><div class="line"></div></div>
+        <div class="field"><label>Phone Number</label><div class="line"></div></div>
+        <div class="field"><label>Email Address</label><div class="line"></div></div>
+        <div class="field"><label>Address</label><div class="line"></div><div class="line mt2"></div></div>
+      </div>
+      <!-- G2 -->
+      <div class="g-block">
+        <div class="g-label">Guarantor 2</div>
+        <div class="field"><label>Full Name</label><div class="line"></div></div>
+        <div class="field"><label>Occupation</label><div class="line"></div></div>
+        <div class="field"><label>Relationship to Applicant</label><div class="line"></div></div>
+        <div class="field"><label>Phone Number</label><div class="line"></div></div>
+        <div class="field"><label>Email Address</label><div class="line"></div></div>
+        <div class="field"><label>Address</label><div class="line"></div><div class="line mt2"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 6: Declaration ────────────────────────────────────── -->
+  <div class="section">
+    <div class="section-bar"><span class="s-num">06</span><span class="s-label">Declaration</span></div>
+
+    <p class="declaration">
+      I hereby declare that all information provided in this form is true, complete, and accurate to the best of my knowledge.
+      I understand that providing false or misleading information may result in disqualification or dismissal from employment.
+    </p>
+
+    <div class="sig-row">
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <label>Applicant's Signature</label>
+      </div>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <label>Date</label>
+      </div>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <label>HR Officer Signature</label>
+      </div>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <label>Date Received</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────────── -->
+  <div class="page-footer">
+    <span>STRICTLY CONFIDENTIAL — FOR HR USE ONLY</span>
+    <span>OptimaX Human Resources</span>
+  </div>
+
+</div>

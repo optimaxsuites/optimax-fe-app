@@ -19,8 +19,6 @@ export class ShiftListComponent implements OnInit{
   eveningCount = 0;
   nightCount = 0;
 
-  batchSelected: Set<string> = new Set();
-
   constructor(private shiftserviceService: ShiftserviceService) {}
 
   ngOnInit(): void {
@@ -95,34 +93,6 @@ editShift(shift: ShiftDTO) {
 
 closeForm() {
   this.showForm = false;
-}
-
-
-toggleBatchSelect(shiftId: string) {
-  if (this.batchSelected.has(shiftId)) {
-    this.batchSelected.delete(shiftId);
-  } else {
-    this.batchSelected.add(shiftId);
-  }
-}
-
-isBatchSelected(shiftId: string): boolean {
-  return this.batchSelected.has(shiftId);
-}
-
-clearBatchSelection() {
-  this.batchSelected.clear();
-}
-
-bulkDeleteShifts() {
-  if (this.batchSelected.size === 0) return;
-  const confirmed = confirm(`Delete ${this.batchSelected.size} shift(s)?`);
-  if (!confirmed) return;
-
-  this.batchSelected.forEach(shiftId => {
-    this.shiftserviceService.deleteShift(shiftId);
-  });
-  this.batchSelected.clear();
 }
 
 

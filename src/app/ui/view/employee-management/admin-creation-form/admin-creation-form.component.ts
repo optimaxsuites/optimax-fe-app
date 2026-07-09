@@ -1,4 +1,5 @@
-import { Component, OnInit , Input } from '@angular/core';
+import { Component, OnInit , Input, OnChanges, SimpleChanges } from '@angular/core';
+import { ImportedEmployeeData } from '../pre-onboarding-import/pre-onboarding-import.component';
 import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -12,6 +13,7 @@ import { MetadataService } from '../../../service/metadata.service';
 import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -19,13 +21,17 @@ import { ErrorMessageService } from '../../../shared-component/service/error-mes
   styleUrls: ['./admin-creation-form.component.scss'],
   providers: [MessageService]
 })
-export class AdminCreationFormComponent {
+export class AdminCreationFormComponent implements OnChanges {
 
   @Input() close: () => void = () => {};
-  @Input() admin: boolean = true
+  @Input() admin: boolean = true;
+  @Input() importData: ImportedEmployeeData | null = null;
 
   openInfoModal: boolean = false
-  basicForm!: FormGroup;      
+  submitted = false;
+  lastSubmittedName = '';
+  pendingCredentials: { name: string; username: string; password: string } | null = null;
+  basicForm!: FormGroup;
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
   leaveForm!: FormGroup
@@ -100,7 +106,8 @@ export class AdminCreationFormComponent {
     private authenticationService: AuthenticationService,
     private rolesService: RolesService,
     public navigationLink: NavigationLinksService,
-    private errorMessageService: ErrorMessageService
+    private errorMessageService: ErrorMessageService,
+    private companyProfileService: CompanyProfileService
   ) {  }
 
   ngOnInit(): void {
@@ -179,6 +186,38 @@ export class AdminCreationFormComponent {
     this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
     this.fetchRoles();
     this.updateSupervisorValidators();
+
+    if (this.importData) {
+      setTimeout(() => this.applyImportData(), 0);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['importData'] && this.importData && this.basicForm) {
+      this.applyImportData();
+    }
+  }
+
+  private applyImportData(): void {
+    if (!this.importData) return;
+    const d = this.importData;
+
+    // Match gender from loaded metadata
+    const genderId = this.gender.find(
+      g => g.name?.toLowerCase() === d.gender?.toLowerCase()
+    )?.id ?? '';
+
+    this.basicForm.patchValue({
+      firstName: d.firstName ?? '',
+      lastName: d.lastName ?? '',
+      email: d.email ?? '',
+      gender: genderId,
+      title: d.jobTitle ?? '',
+    });
+
+    if (d.startDate) {
+      this.employeeForm.patchValue({ startDate: d.startDate });
+    }
   }
 
   get metaTitle(): string {
@@ -493,10 +532,13 @@ private setProbationValidators(): void {
    
   }
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
-  const username = this.basicForm.get('firstName')?.value;
-  const email = this.basicForm.get('email')?.value || username;
+  const firstName = this.basicForm.get('firstName')?.value ?? '';
+  const lastName = this.basicForm.get('lastName')?.value ?? '';
+  const workEmail = this.basicForm.get('workemail')?.value ?? '';
+  const email = this.basicForm.get('email')?.value ?? '';
+  const username = workEmail || email;
   const password = this.generateRandomPassword();
-  const signupDetails = this.buildSignupDetails(username, password, email);
+  const signupDetails = this.buildSignupDetails(username, password, email, firstName, lastName);
 
   this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
     next: (userData) => {
@@ -587,34 +629,73 @@ private setProbationValidators(): void {
       life: 3000
     });
 
-    this.basicForm.reset();
-    this.guarantorForm.reset();
-    this.leaveForm.reset();
-    this.employeeForm.reset();
-    this.currentTab = 1;
+    this.submitted = true;
+    this.lastSubmittedName = `${data.firstName} ${data.lastName}`.trim();
 
-    const emailPayload: any = {
-      name: `${data.firstName} ${data.lastName}`,
-      email: data.email,
-      employeeId: data.id,
-      url: `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj?onboarding=1`
-    };
+    const profile = this.companyProfileService.get();
+    const companyName = profile?.companyName || 'The Company';
+    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const name = `${data.firstName} ${data.lastName}`.trim();
+    const url = `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj?onboarding=1`;
 
     if (options?.username && options?.password) {
-      emailPayload.username = options.username;
-      emailPayload.password = options.password;
+      this.pendingCredentials = { name, username: options.username, password: options.password };
     }
 
-    this.employeeService.sendWelcomeEmail(emailPayload).subscribe({
-      next: (res) => { console.log('Welcome email sent successfully:', res); },
-      error: (err) => {
-        console.log('Error sending welcome email:', err);
-      }
-    });
-
-    if (shouldRedirect) {
-      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+    if (options?.username && options?.password && data.email) {
+      const subject = `${companyName} — Your Onboarding Credentials`;
+      const htmlBody = this.buildOnboardingEmailHtml({ name, username: options.username, password: options.password, url, companyName, hrEmail });
+      this.employeeService.sendNotificationEmail(data.email, subject, htmlBody).subscribe({
+        next: () => { this.pendingCredentials = null; },
+        error: () => {}
+      });
     }
+  }
+
+  private buildOnboardingEmailHtml(d: { name: string; username: string; password: string; url: string; companyName: string; hrEmail: string }): string {
+    const hrLine = d.hrEmail
+      ? `Please contact the <strong>HR Department</strong> at <a href="mailto:${d.hrEmail}" style="color:#1e3a5f;text-decoration:none;">${d.hrEmail}</a> for any queries regarding your onboarding.`
+      : `Please contact the <strong>HR Department</strong> for any queries regarding your onboarding.`;
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+  <tr><td style="background:#1b3358;padding:36px 40px;text-align:center;">
+    <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#7aa7d4;text-transform:uppercase;">Human Resources</p>
+    <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;">${d.companyName}</h1>
+    <p style="margin:8px 0 0;font-size:13px;color:#a8c5e8;">Staff Onboarding</p>
+  </td></tr>
+  <tr><td style="padding:40px 40px 28px;">
+    <p style="margin:0 0 20px;font-size:15px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">We are delighted to welcome you to <strong>${d.companyName}</strong>. Please complete your onboarding by submitting the required documentation through the portal below.</p>
+    <p style="margin:0 0 8px;font-size:13px;color:#64748b;">You will be required to provide:</p>
+    <ul style="margin:0 0 24px;padding-left:20px;font-size:13px;color:#64748b;line-height:2;">
+      <li>Passport photograph / Valid ID</li><li>Guarantor information</li><li>Next-of-kin details</li><li>Bank account number</li><li>Any other requested personal information</li>
+    </ul>
+    <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr><td style="background:#1b3358;border-radius:6px;padding:13px 30px;">
+        <a href="${d.url}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.3px;">Begin Onboarding Process →</a>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px;">
+      <tr><td style="padding:22px 26px;">
+        <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Portal Credentials</p>
+        <table cellpadding="0" cellspacing="0">
+          <tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Username</td><td style="padding:5px 0;font-size:13px;color:#1e293b;font-weight:600;">${d.username}</td></tr>
+          <tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Password</td><td style="padding:5px 0;font-size:13px;color:#1e293b;font-family:monospace;font-weight:700;letter-spacing:1.5px;background:#f1f5f9;border-radius:4px;padding-left:8px;padding-right:8px;">${d.password}</td></tr>
+        </table>
+        <p style="margin:14px 0 0;font-size:11px;color:#94a3b8;">You will be prompted to change your password after your first login.</p>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;">If the button above does not work, copy and paste the link below into your browser:</p>
+    <p style="margin:0;font-size:12px;color:#3b82f6;word-break:break-all;">${d.url}</p>
+  </td></tr>
+  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
+    <p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.6;">${hrLine}</p>
+    <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">We look forward to a productive and rewarding journey together.<br/><strong>Human Resources Department</strong><br/>${d.companyName}</p>
+  </td></tr>
+  <tr><td style="padding:16px 40px;text-align:center;"><p style="margin:0;font-size:11px;color:#cbd5e1;">This is a system-generated message. Please do not reply to this email.</p></td></tr>
+</table></td></tr></table></body></html>`;
   }
 
   private resetSubmitLoading() {
@@ -622,26 +703,30 @@ private setProbationValidators(): void {
     this.submitContinueLoading = false;
   }
 
-  private buildSignupDetails(username: string, password: string, email: string) {
+  addAnother() {
+    this.submitted = false;
+    this.lastSubmittedName = '';
+    this.basicForm.reset();
+    this.guarantorForm.reset();
+    this.leaveForm.reset();
+    this.employeeForm.reset();
+    this.currentTab = 1;
+    this.selectedLeaves = [];
+    this.totalLeaveDays = 0;
+  }
+
+  private buildSignupDetails(username: string, password: string, email: string, firstName = '', lastName = '') {
     const business = sessionStorage.getItem('userPrimaryInfoRegData')
       ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}')
       : null;
 
     const businessInfo = {
-      fullname: business?.fullname || '',
+      fullname: `${firstName} ${lastName}`.trim(),
       username: username || '',
-      profileImage: business?.profileImage || '',
       email: email || '',
-      phoneNumber: business?.phoneNumber,
-      address: business?.address,
-      country: business?.country,
-      state: business?.state,
-      city: business?.city,
-      postalCode: business?.postalCode,
       industry: business?.industry,
       companyName: business?.companyName,
       clientType: business?.clientType,
-      bio: business?.bio,
       currency: business?.currency,
       language: business?.language,
       timeZone: business?.timeZone,
@@ -801,6 +886,12 @@ console.log(this.guarantorForm.value)
     }
   
     return '';
+  }
+
+  dismissCredentials() { this.pendingCredentials = null; }
+
+  copyToClipboard(value: string) {
+    navigator.clipboard.writeText(value).catch(() => {});
   }
 
   addLeave(){

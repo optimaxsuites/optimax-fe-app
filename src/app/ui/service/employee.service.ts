@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpContext } from '@angular/common/http';
-import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, tap, throwError, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, from, map, Observable, of, shareReplay, tap, throwError, switchMap } from 'rxjs';
 
 import { SUPPRESS_ERROR_TOAST } from '../shared-component/service/error-message/error-toast.interceptor';
 
@@ -44,6 +44,47 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  uploadEmployeePhoto(employee: any, file: File): Observable<any> {
+    const formData = new FormData();
+    // Send the full employee payload so the backend UPDATE doesn't violate NOT NULL constraints
+    const employeePayload = {
+      id: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      workEmail: employee.workEmail,
+      phone: employee.phone,
+      address: employee.address ?? null,
+      dob: employee.dob ?? null,
+      nin: employee.nin ?? null,
+      bvn: employee.bvn ?? null,
+      supervisor: employee.supervisor ?? null,
+      jobTitle: employee.jobTitle,
+      employeeStatus: employee.employeeStatus,
+      bankName: employee.bankName ?? null,
+      accountNumber: employee.accountNumber ?? null,
+      userId: employee.userId ?? employee.user?.id ?? employee.user?.userId ?? null,
+      departmentId: employee.department?.id ?? employee.departmentId ?? null,
+      levelId: employee.level?.id ?? employee.levelId ?? null,
+      genderId: employee.gender?.id ?? employee.genderId ?? null,
+      maritalStatusId: employee.maritalStatus?.id ?? employee.maritalStatusId ?? null,
+      religionId: employee.religion?.id ?? employee.religionId ?? null,
+      relationshipId: employee.relationship?.id ?? employee.relationshipId ?? null,
+      jobTypeId: employee.jobType?.id ?? employee.jobTypeId ?? null,
+      employementStartDate: employee.employementStartDate ?? employee.employmentStartDate ?? employee.hireDate ?? null,
+      employmentEndDate: employee.employmentEndDate ?? null,
+      onProbation: employee.onProbation ?? null,
+      probationStartDate: employee.probationStartDate ?? null,
+      probationEndDate: employee.probationEndDate ?? null,
+      appraisalDueDate: employee.appraisalDueDate ?? null,
+    };
+    formData.append('employee', new Blob([JSON.stringify(employeePayload)], { type: 'application/json' }));
+    formData.append('file', file, file.name);
+    return this.http
+      .post<any>(this.baseurl + `/x/api/v2/hr/employees`, formData)
+      .pipe(catchError(this.handleError));
+  }
+
   addBulkEmployee(data: {}[]): Observable<any>{
     return this.http
         .post<any>(
@@ -52,11 +93,31 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
-  sendWelcomeEmail(data: any): Observable<any>{
+  sendNotificationEmail(to: string, subject: string, htmlBody: string): Observable<any> {
     return this.http
-        .post<any>(
-             "https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac", data)
-        .pipe(catchError(this.handleError));
+      .post<any>(this.baseurl + '/x/api/v2/notification/send-email', {
+        to,
+        subject,
+        body: htmlBody,
+        html: true,
+      })
+      .pipe(catchError(this.handleError));
+  }
+
+  sendWelcomeEmail(data: any): Observable<any> {
+    const promise = fetch(
+      'https://automation.optimaxsuites.com/webhook/6d585766-d7f8-442f-89f0-64d9502d05ac',
+      {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    ).then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json().catch(() => ({}));
+    });
+    return from(promise);
   }
 
   getAllEmployee(force = false): Observable<any[]> {
@@ -343,6 +404,24 @@ export class EmployeeService {
     const context = new HttpContext().set(SUPPRESS_ERROR_TOAST, true);
     return this.http
       .post<any>(this.vettingWebhookUrl, {payload, data}, { context })
+      .pipe(catchError(this.handleError));
+  }
+
+  getOffboarding(employeeId: number | string): Observable<any> {
+    return this.http
+      .get<any>(this.baseurl + `/x/api/v2/hr/offboarding/employee/${employeeId}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  createOffboarding(data: any): Observable<any> {
+    return this.http
+      .post<any>(this.baseurl + `/x/api/v2/hr/offboarding`, data)
+      .pipe(catchError(this.handleError));
+  }
+
+  updateOffboarding(id: number | string, data: any): Observable<any> {
+    return this.http
+      .put<any>(this.baseurl + `/x/api/v2/hr/offboarding/${id}`, data)
       .pipe(catchError(this.handleError));
   }
 

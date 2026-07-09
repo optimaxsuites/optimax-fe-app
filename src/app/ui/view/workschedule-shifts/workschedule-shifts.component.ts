@@ -14,15 +14,15 @@ export class WorkscheduleShiftsComponent {
       { name: 'Shift Calendar',
         component: ShiftCalendarComponent
       },
-      { name: 'Shift List',
+      { name: 'Shift List', 
         component: ShiftListComponent
        },
        {
         name: 'My Schedule',
         component: MyScheduleComponent
        }
-
-
+       
+      
       // { name: 'Time Sheet', component: TimeSheetComponent }
     ];
 

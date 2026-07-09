@@ -3,6 +3,10 @@ import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
 import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
+import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-onboarding-form/pre-onboarding-form.component';
+import { PreOnboardingImportComponent } from './ui/view/employee-management/pre-onboarding-import/pre-onboarding-import.component';
+import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
+import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
 import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-modal.component';
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
@@ -10,8 +14,6 @@ import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
 ////primeng
@@ -252,6 +254,7 @@ import { EmployeeChangeRequestsDashboardComponent } from './ui/view/profile-chan
 import { EmployeeChangeRequestsSummaryComponent } from './ui/view/employee-dashboard/employee-change-requests-summary/employee-change-requests-summary.component';
 import { GuarantorChangeRequestComponent } from './ui/view/profile-change-requests/guarantor-change-request/guarantor-change-request.component';
 // import { ProfileChangeRequestsComponent } from './ui/view/profile-change-requests/profile-change-requests.component';
+import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-letters.component';
 
 
 @NgModule({
@@ -270,7 +273,10 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
     AddEmployeeFormComponent,
-    EmployeeOnboardingFormComponent,
+    // EmployeeOnboardingFormComponent,
+    PreOnboardingFormComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -389,7 +395,7 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     ShiftListComponent,
     ShiftFormComponent,
     ShiftAssignmentComponent,
-    ShiftCalendarComponent,
+    ShiftCalendarComponent, 
     CooperativeMembershipApplicationsComponent,
     LoanPurposeManagementComponent,
     AdHocComponent,
@@ -424,14 +430,13 @@ import { GuarantorChangeRequestComponent } from './ui/view/profile-change-reques
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
+    HrLettersComponent,
     // LargeSideModalComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
     AppHrRoutingModule,
-    BrowserModule,
-    BrowserAnimationsModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

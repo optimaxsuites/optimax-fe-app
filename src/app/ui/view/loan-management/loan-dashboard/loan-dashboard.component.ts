@@ -273,7 +273,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
       next: (employees) => {
         this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
         this.allLoans = this.enrichLoansWithEmployeeData(
-          applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
+          applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe') && !(loan.fullName ?? '').includes('Rolayo Awe'))
         );
         this.processLoadedData();
         this.isDataLoaded = true;
@@ -329,7 +329,7 @@ export class LoanDashboardComponent implements OnInit, OnDestroy {
         this.employeeService.getAllEmployee().pipe(catchError(() => of([]))).subscribe((employees) => {
           this.rebuildEmployeeLookup(Array.isArray(employees) ? employees : []);
           this.allLoans = this.enrichLoansWithEmployeeData(
-            applications.filter((loan) => !(loan.fullName ?? '').includes('John Doe') && !(loan.fullName ?? '').includes('Jane Doe'))
+            applications.filter((loan) => !(loan.fullName ?? '').includes('Rolayo Awe') && !(loan.fullName ?? '').includes('Rolayo Awe'))
           );
           this.processLoadedData();
           if (this.allLoans.length > 0 || !this.isInitialLoad) {

@@ -1,0 +1,402 @@
+// ─── Screen toolbar ─────────────────────────────────────────────────────────
+.toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 28px;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.toolbar-title {
+  font-weight: 500;
+  letter-spacing: .2px;
+}
+
+.btn-print {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  &:hover { background: #1d4ed8; }
+}
+
+// ─── A4 page ────────────────────────────────────────────────────────────────
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 56px auto 48px;
+  padding: 18mm 16mm 16mm;
+  background: #fff;
+  font-family: 'Arial', Helvetica, sans-serif;
+  font-size: 9.5pt;
+  color: #1a1a1a;
+  box-shadow: 0 4px 32px rgba(0,0,0,.14);
+  box-sizing: border-box;
+}
+
+// ─── Header ─────────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.header-logo {
+  flex-shrink: 0;
+  img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+}
+
+.org-name {
+  font-size: 15pt;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.form-name {
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: #1e3a8a;
+  margin-top: 2px;
+}
+
+.form-instruction {
+  font-size: 7.5pt;
+  color: #64748b;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.header-meta {
+  flex-shrink: 0;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-key {
+  font-size: 7.5pt;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #374151;
+}
+
+.meta-line {
+  flex: 1;
+  border-bottom: 1px solid #555;
+  min-width: 52px;
+}
+
+.rule {
+  border: none;
+  border-top: 2.5px solid #1e3a8a;
+  margin-bottom: 13px;
+}
+
+// ─── Sections ───────────────────────────────────────────────────────────────
+.section {
+  margin-bottom: 14px;
+}
+
+.section-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1e3a8a;
+  color: #fff;
+  padding: 4px 10px;
+  margin-bottom: 9px;
+  border-radius: 2px;
+}
+
+.s-num {
+  font-size: 8pt;
+  font-weight: 800;
+  background: rgba(255,255,255,.2);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: .5px;
+}
+
+.s-label {
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+.section-note {
+  font-size: 8pt;
+  color: #555;
+  font-style: italic;
+  border-left: 3px solid #1e3a8a;
+  padding-left: 8px;
+  margin: 0 0 8px;
+  background: #f0f5ff;
+  padding: 5px 8px;
+  border-radius: 0 3px 3px 0;
+}
+
+// ─── Field layouts ───────────────────────────────────────────────────────────
+.row-2, .row-3 {
+  display: grid;
+  gap: 8px 14px;
+  margin-bottom: 7px;
+}
+.row-2   { grid-template-columns: 1fr 1fr; }
+.row-3   { grid-template-columns: 1fr 1fr 1fr; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &.full-w { margin-bottom: 7px; }
+
+  label {
+    font-size: 7pt;
+    font-weight: 700;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+  }
+}
+
+.opt {
+  font-weight: 400;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.line {
+  border-bottom: 1px solid #374151;
+  height: 16px;
+  width: 100%;
+  &.mt2 { margin-top: 4px; }
+}
+
+// ─── Checkboxes ──────────────────────────────────────────────────────────────
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-start;
+  min-height: 16px;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8pt;
+  white-space: nowrap;
+}
+
+.box {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+// ─── DOB boxes ───────────────────────────────────────────────────────────────
+.dob {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+
+.dbox {
+  width: 16px;
+  height: 18px;
+  border: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.sep {
+  font-weight: 700;
+  font-size: 10pt;
+  padding: 0 1px;
+}
+
+// ─── Digit boxes (account / BVN) ─────────────────────────────────────────────
+.digit-boxes {
+  display: flex;
+  gap: 2px;
+  height: 20px;
+  align-items: center;
+}
+
+.dg {
+  width: 17px;
+  height: 22px;
+  border: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+// ─── Photo box ───────────────────────────────────────────────────────────────
+.photo-anchor {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fields-area { flex: 1; }
+
+.photo-box {
+  flex-shrink: 0;
+  width: 82px;
+  height: 102px;
+  border: 1.5px dashed #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 7pt;
+  color: #94a3b8;
+  background: #f8fafc;
+  line-height: 1.5;
+
+  em { font-size: 6.5pt; }
+}
+
+// ─── Guarantor two-column ────────────────────────────────────────────────────
+.row-g2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.g-block {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 8px 10px;
+
+  .field { margin-bottom: 6px; }
+}
+
+.g-label {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+// ─── Declaration ─────────────────────────────────────────────────────────────
+.declaration {
+  font-size: 8.5pt;
+  line-height: 1.65;
+  color: #374151;
+  margin-bottom: 14px;
+}
+
+.sig-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.sig-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 7pt;
+    color: #6b7280;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+  }
+}
+
+.sig-line {
+  border-bottom: 1.5px solid #374151;
+  height: 32px;
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────────
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 7px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 7pt;
+  color: #9ca3af;
+}
+
+// ─── Page break ──────────────────────────────────────────────────────────────
+.pg-break { display: none; }
+
+// ─── Print ───────────────────────────────────────────────────────────────────
+@media print {
+  .no-print { display: none !important; }
+
+  .page {
+    width: 100%;
+    margin: 0;
+    padding: 12mm 13mm;
+    box-shadow: none;
+    font-size: 9pt;
+  }
+
+  .pg-break {
+    display: block;
+    page-break-before: always;
+  }
+
+  .section-bar {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .photo-box { background: #fff; }
+
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+}

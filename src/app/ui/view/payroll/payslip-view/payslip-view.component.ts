@@ -1,4 +1,5 @@
 import { Component, Input  } from '@angular/core';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 
 @Component({
   selector: 'app-payslip-view',
@@ -7,6 +8,9 @@ import { Component, Input  } from '@angular/core';
 })
 export class PayslipViewComponent {
   @Input() payslip: any;
+  companyProfile$ = this.companyProfileService.companyProfile$;
+
+  constructor(private companyProfileService: CompanyProfileService) {}
   monthNames = [
     "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
   ];

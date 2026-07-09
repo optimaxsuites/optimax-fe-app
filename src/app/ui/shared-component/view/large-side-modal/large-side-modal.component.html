@@ -3,8 +3,13 @@
   class="modal-content"
   [style.transform]="'translate(' + dragOffset.x + 'px,' + dragOffset.y + 'px)'"
   (click)="$event.stopPropagation()">
-  <button type="button" class="drag-handle" (mousedown)="beginDrag($event)">
-    <span></span>
-  </button>
+  <div class="modal-topbar">
+    <button type="button" class="drag-handle" (mousedown)="beginDrag($event)">
+      <span></span>
+    </button>
+    <button type="button" class="modal-close-btn" (click)="closeModal()" title="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
   <ng-content></ng-content>
 </div>

@@ -16,6 +16,12 @@ export class MenuService {
         icon: 'fas fa-tachometer-alt'
       },
       {
+        label: 'My Dashboard',
+        route: this.navigationLink.getLink('employeeDashboardLink'),
+        roles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_JOINING'],
+        icon: 'fas fa-id-card'
+      },
+      {
         label: 'Employee Management',
         route: this.navigationLink.getLink('employeeManagementLink'),
         roles: ['ROLE_USER', 'ROLE_ADMIN'],

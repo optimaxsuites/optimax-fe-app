@@ -61,13 +61,17 @@ import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
 import { HrReportsComponent } from './ui/view/hr-reports/hr-reports.component';
+import { PreOnboardingFormComponent } from './ui/view/employee-management/pre-onboarding-form/pre-onboarding-form.component';
+import { OffboardingFormComponent } from './ui/view/employee-management/offboarding-form/offboarding-form.component';
+import { EmployeeUpdateFormComponent } from './ui/view/employee-management/employee-update-form/employee-update-form.component';
+import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 
 const DEFAULT_LOAN_ROUTE = 'loan/uu';
 
 const routes: Routes = [
   {
     path: 'user/onboarding/:id/:uuid',
-    component: AddEmployeeFormComponent,
+    component: EmployeeOnboardingFormComponent,
   },
   {
     path: 'guarantor/confirm/:token/:uuid',
@@ -456,12 +460,24 @@ const routes: Routes = [
     component: HrReportsComponent,
   },
   {
+    path: 'pre-onboarding-form/:uuid',
+    component: PreOnboardingFormComponent,
+  },
+  {
+    path: 'offboarding-form/:uuid',
+    component: OffboardingFormComponent,
+  },
+  {
+    path: 'employee-update-form/:uuid',
+    component: EmployeeUpdateFormComponent,
+  },
+  {
     path: '**',
     redirectTo: DEFAULT_LOAN_ROUTE,
   },
 ];
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

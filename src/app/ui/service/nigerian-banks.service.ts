@@ -37,7 +37,15 @@ export class NigerianBanksService {
     { code: '033', name: 'United Bank for Africa', abbreviation: 'UBA' },
     { code: '215', name: 'Unity Bank', abbreviation: 'UNITY' },
     { code: '035', name: 'Wema Bank', abbreviation: 'WEMA' },
-    { code: '057', name: 'Zenith Bank', abbreviation: 'ZENITHBANK' }
+    { code: '057', name: 'Zenith Bank', abbreviation: 'ZENITHBANK' },
+    { code: '305', name: 'OPay (OPay Digital Services)', abbreviation: 'OPAY' },
+    { code: '090405', name: 'Moniepoint Microfinance Bank', abbreviation: 'MONIEPOINT' },
+    { code: '090267', name: 'Kuda Microfinance Bank', abbreviation: 'KUDA' },
+    { code: '090083', name: 'PalmPay', abbreviation: 'PALMPAY' },
+    { code: '090110', name: 'VFD Microfinance Bank', abbreviation: 'VFD' },
+    { code: '090175', name: 'Rubies Microfinance Bank', abbreviation: 'RUBIES' },
+    { code: '000026', name: 'Taj Bank', abbreviation: 'TAJ' },
+    { code: '090325', name: 'Carbon (One Finance)', abbreviation: 'CARBON' },
   ];
 
   constructor() { }

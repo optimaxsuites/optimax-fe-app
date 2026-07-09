@@ -45,8 +45,6 @@ mapDistance: number | null = null;
 private mapInstance: L.Map | null = null;
  private officeHoursService = inject(OfficeHoursService);
 
-isLoading = false;
-
  private closingTimer: any;
 
 selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } | null = null;
@@ -59,12 +57,8 @@ selectedLocation: { recordId: AttendanceTableRecord['id']; type: 'in' | 'out' } 
   ngOnInit(): void {
       this.startClosingWatcher();
 
-      this.isLoading = true;
-
-      // Wait for token to be ready before making API calls (fixes 401 on initial load)
-      setTimeout(() => {
-        this.attendancetableService.fetchAllRecords();
-      }, 100);
+      //to load data fromAPI on init
+      this.attendancetableService.fetchAllRecords();
 
       this.attendancetableService.attendance$.subscribe(data => {
       //console.log('ATTENDANCE RECEIVED:', data);

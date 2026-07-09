@@ -2,11 +2,14 @@ import { Component, Input } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { v4 as uuidV4 } from "uuid"
+import { environment } from '../../../shared-component/environments/environment';
+import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
 
 interface Employee {
   id: number;
@@ -54,7 +57,10 @@ export class AddEmployeeFormComponent {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
+  readonly year = new Date().getFullYear();
   readonly maxProfilePhotoSizeInMb = 0.5;
+  obCompanyName = '';
+  obLogoUrl: string | null = null;
   readonly maxProfilePhotoSizeInBytes = this.maxProfilePhotoSizeInMb * 1024 * 1024;
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
@@ -100,6 +106,7 @@ export class AddEmployeeFormComponent {
 
   nigerianBanks = [
     "Access Bank",
+    "Carbon (One Finance)",
     "Citibank Nigeria",
     "Ecobank Nigeria",
     "Fidelity Bank",
@@ -109,12 +116,19 @@ export class AddEmployeeFormComponent {
     "Heritage Bank",
     "Jaiz Bank",
     "Keystone Bank",
+    "Kuda Microfinance Bank",
+    "Moniepoint Microfinance Bank",
+    "OPay (OPay Digital Services)",
+    "PalmPay",
     "Polaris Bank",
+    "Rubies Microfinance Bank",
     "Stanbic IBTC Bank",
     "Standard Chartered Bank",
     "Sterling Bank",
+    "Taj Bank",
     "Union Bank of Nigeria",
     "United Bank for Africa",
+    "VFD Microfinance Bank",
     "Wema Bank",
     "Zenith Bank"
   ];
@@ -128,17 +142,33 @@ export class AddEmployeeFormComponent {
   employeeId:number = 0
   employeeData: any;
   maxDate: string ="";
+  isExpired = false;
   constructor(
-    private fb: FormBuilder,  
+    private fb: FormBuilder,
     private metadataService: MetadataService,
     private messageService: MessageService,
-    private employeeService: EmployeeService, 
+    private employeeService: EmployeeService,
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService,
-    private router: Router
+    private router: Router,
+    private http: HttpClient,
+    private companyProfileService: CompanyProfileService
   ) {  }
 
   ngOnInit(): void {
+    if (!sessionStorage.getItem('userid')) {
+      this.admin = false;
+    }
+
+    const expParam = this.route.snapshot.queryParamMap.get('exp');
+    if (expParam) {
+      const expMs = Number(expParam);
+      if (!isNaN(expMs) && Date.now() > expMs) {
+        this.isExpired = true;
+        return;
+      }
+    }
+
     this.employeeId = parseFloat(this.route.snapshot.paramMap.get('id') as string);
     const today = new Date();
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
@@ -211,10 +241,28 @@ export class AddEmployeeFormComponent {
       next: (employee: any) => {
         this.employeeData = employee;
         this.applyEmployeeData(employee);
+        if (!this.admin) {
+          const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
+          if (userId) this.loadCompanyBranding(userId);
+        }
       }
-    })
+    });
+  }
 
-    console.log(this.employeeData)
+  private loadCompanyBranding(userId: number): void {
+    // Use the same in-memory source as the main-menu sidebar
+    const cached = this.companyProfileService.get();
+    if (cached?.companyName) this.obCompanyName = cached.companyName;
+    if (cached?.logoUrl) this.obLogoUrl = cached.logoUrl;
+
+    // If the service already has the logo, no need to fetch
+    if (this.obLogoUrl) return;
+
+    // Otherwise trigger a load (works for both authenticated and public-whitelisted calls)
+    this.companyProfileService.load(userId).subscribe(profile => {
+      if (profile?.companyName) this.obCompanyName = profile.companyName;
+      if (profile?.logoUrl) this.obLogoUrl = profile.logoUrl;
+    });
   }
 
   private applyEmployeeData(employee: any): void {
@@ -243,16 +291,24 @@ export class AddEmployeeFormComponent {
       nin: employee.nin
     });
 
-    const mediaNo = employee?.employeeMedia?.mediaNo;
-    const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
-    if (mediaNo) {
-      this.loadProfilePhoto(mediaNo);
-      this.basicForm.get('profilePhoto')?.setValue(mediaNo);
-    } else if (profileImage) {
-      this.imageURL = profileImage;
-      this.basicForm.get('profilePhoto')?.setValue(profileImage);
+    const opts = { emitModelToViewChange: false };
+    const savedPhoto = sessionStorage.getItem(`onboarding_photo_${this.employeeId}`);
+    if (savedPhoto) {
+      this.imageURL = savedPhoto;
+      this.basicForm.get('profilePhoto')?.setValue(savedPhoto, opts);
+      this.basicForm.get('profilePhoto')?.updateValueAndValidity();
+    } else {
+      const mediaNo = employee?.employeeMedia?.mediaNo;
+      const profileImage = employee?.profileImage || employee?.profilePhoto || employee?.imageUrl;
+      if (mediaNo) {
+        this.loadProfilePhoto(mediaNo);
+        this.basicForm.get('profilePhoto')?.setValue(mediaNo, opts);
+      } else if (profileImage) {
+        this.imageURL = profileImage;
+        this.basicForm.get('profilePhoto')?.setValue(profileImage, opts);
+      }
+      this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
-    this.basicForm.get('profilePhoto')?.updateValueAndValidity();
 
     const nextOfKin = employee?.nextOfKin || employee?.nextOfKins;
     if (Array.isArray(nextOfKin)) {
@@ -770,12 +826,13 @@ private buildEmployeeFormData(): FormData {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event: any) => {
-        
-          this.imageURL = event.target.result;
-         
+        this.imageURL = event.target.result;
+        if (this.employeeId) {
+          sessionStorage.setItem(`onboarding_photo_${this.employeeId}`, event.target.result);
+        }
       };
       reader.readAsDataURL(file);
-  }
+    }
   }
 
  
