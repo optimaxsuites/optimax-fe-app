@@ -203,6 +203,25 @@
         color: #ffffff;
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
       }
+
+      .revision-count-badge {
+        margin-left: 0.25rem;
+        padding: 0.05rem 0.4rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        background: rgba(37, 99, 235, 0.15);
+      }
+
+      &:hover .revision-count-badge {
+        background: rgba(255, 255, 255, 0.25);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     &.edit-btn-bar {

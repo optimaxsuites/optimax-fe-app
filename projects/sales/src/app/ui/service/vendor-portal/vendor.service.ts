@@ -7,6 +7,7 @@ import {
   QuotationItem,
   QuotationHistoryEntry,
   Lpo,
+  LpoItem,
   Invoice,
   Payment,
   VendorDocument,
@@ -25,6 +26,7 @@ import {
   TemplateDensity,
   MAX_REVISION_ROUNDS,
 } from '../../domain/vendor-portal/vendor.dto';
+import { STORAGE_KEYS, loadFromStorage, saveToStorage, clearAllStorage } from './local-store.util';
 
 // Pure helper — recomputes per-line totals and quotation totals from item
 // state. Exported so both the service (on save/resubmit) and the dashboard
@@ -82,15 +84,91 @@ export function isQuotationSubmittable(q: Quotation): boolean {
   );
 }
 
+const AVAILABILITY_LABEL: Record<ItemAvailability, string> = {
+  available: 'full qty',
+  partial: 'partial qty',
+  substitute: 'substitute',
+  unavailable: 'unavailable',
+};
+
+function fmtMoney(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${Math.round(amount).toLocaleString()}`;
+  }
+}
+
+// Builds the short, human-readable account of what changed between two
+// versions of the same quotation — e.g. "Gate Valve DN80: unit price
+// ₦165,000 → ₦150,000; Total ₦4,257,000 → ₦4,187,500." This is what turns a
+// bare "vendor resubmitted" log line into something a reviewer can actually
+// act on without re-reading every line item by hand. Used to fill in the
+// RESUBMITTED history entry's `note` — see resubmitQuotation() below.
+export function summarizeQuotationChanges(previous: Quotation, next: Quotation): string {
+  const parts: string[] = [];
+
+  for (const item of next.items) {
+    const before = previous.items.find((i) => i.rfqItemId === item.rfqItemId);
+    if (!before) {
+      parts.push(`${item.name}: added`);
+      continue;
+    }
+
+    const availabilityChanged = before.availability !== item.availability;
+    const qtyChanged = before.offeredQuantity !== item.offeredQuantity;
+    const priceChanged = before.unitPrice !== item.unitPrice;
+    if (!availabilityChanged && !qtyChanged && !priceChanged) continue;
+
+    if (availabilityChanged) {
+      parts.push(`${item.name}: ${AVAILABILITY_LABEL[before.availability]} → ${AVAILABILITY_LABEL[item.availability]}`);
+    } else if (item.availability === 'partial' && qtyChanged) {
+      parts.push(
+        `${item.name}: now offering ${item.offeredQuantity ?? 0} of ${item.quantity} (was ${before.offeredQuantity ?? 0})`,
+      );
+    } else if (priceChanged && item.unitPrice !== null) {
+      const wasText = before.unitPrice !== null ? fmtMoney(before.unitPrice, next.currency) : 'unpriced';
+      parts.push(`${item.name}: unit price ${wasText} → ${fmtMoney(item.unitPrice, next.currency)}`);
+    } else {
+      parts.push(`${item.name}: updated`);
+    }
+  }
+
+  if (previous.total !== next.total) {
+    parts.unshift(`Total ${fmtMoney(previous.total, previous.currency)} → ${fmtMoney(next.total, next.currency)}`);
+  }
+
+  return parts.length > 0 ? parts.join('; ') : 'Resubmitted with no changes to items.';
+}
+
 @Injectable({ providedIn: 'root' })
 export class VendorService {
-  private rfqs$$ = new BehaviorSubject<Rfq[]>(this.seedRfqs());
-  private quotations$$ = new BehaviorSubject<Quotation[]>(this.seedQuotations());
-  private lpos$$ = new BehaviorSubject<Lpo[]>(this.seedLpos());
-  private invoices$$ = new BehaviorSubject<Invoice[]>(this.seedInvoices());
-  private documents$$ = new BehaviorSubject<VendorDocument[]>(this.seedDocuments());
-  private profile$$ = new BehaviorSubject<VendorProfile>(this.seedProfile());
-  private templates$$ = new BehaviorSubject<DocumentTemplate[]>(this.seedTemplates());
+  // Seeded only the very first time this ever runs in a given browser; every
+  // run after that loads whatever was last persisted to localStorage
+  // instead (see local-store.util.ts for the shared-vs-vendor key layout,
+  // and the constructor below for the other half of this — writing changes
+  // back out).
+  private rfqs$$ = new BehaviorSubject<Rfq[]>(loadFromStorage(STORAGE_KEYS.RFQS, () => this.seedRfqs()));
+  private quotations$$ = new BehaviorSubject<Quotation[]>(
+    loadFromStorage(STORAGE_KEYS.QUOTATIONS, () => this.seedQuotations()),
+  );
+  private lpos$$ = new BehaviorSubject<Lpo[]>(loadFromStorage(STORAGE_KEYS.LPOS, () => this.seedLpos()));
+  private invoices$$ = new BehaviorSubject<Invoice[]>(
+    loadFromStorage(STORAGE_KEYS.INVOICES, () => this.seedInvoices()),
+  );
+  private documents$$ = new BehaviorSubject<VendorDocument[]>(
+    loadFromStorage(STORAGE_KEYS.DOCUMENTS, () => this.seedDocuments()),
+  );
+  private profile$$ = new BehaviorSubject<VendorProfile>(
+    loadFromStorage(STORAGE_KEYS.PROFILE, () => this.seedProfile()),
+  );
+  private templates$$ = new BehaviorSubject<DocumentTemplate[]>(
+    loadFromStorage(STORAGE_KEYS.TEMPLATES, () => this.seedTemplates()),
+  );
 
   readonly profile$ = this.profile$$.asObservable();
   readonly templates$ = this.templates$$.asObservable();
@@ -99,6 +177,73 @@ export class VendorService {
   readonly lpos$ = this.lpos$$.asObservable();
   readonly invoices$ = this.invoices$$.asObservable();
   readonly documents$ = this.documents$$.asObservable();
+
+  // Every mutator in this service ends in a `.next()` on one of the subjects
+  // above. Rather than remember to call a "save" function at each of those
+  // ~15 call sites, we persist centrally by subscribing to our own subjects
+  // once, here — so any future mutator gets durable storage for free just by
+  // following the existing `subject$$.next(...)` pattern.
+  constructor() {
+    this.rfqs$$.subscribe((v) => saveToStorage(STORAGE_KEYS.RFQS, v));
+    this.quotations$$.subscribe((v) => saveToStorage(STORAGE_KEYS.QUOTATIONS, v));
+    this.lpos$$.subscribe((v) => saveToStorage(STORAGE_KEYS.LPOS, v));
+    this.invoices$$.subscribe((v) => saveToStorage(STORAGE_KEYS.INVOICES, v));
+    this.documents$$.subscribe((v) => saveToStorage(STORAGE_KEYS.DOCUMENTS, v));
+    this.profile$$.subscribe((v) => saveToStorage(STORAGE_KEYS.PROFILE, v));
+    this.templates$$.subscribe((v) => saveToStorage(STORAGE_KEYS.TEMPLATES, v));
+  }
+
+  // ── Procurement ↔ vendor-portal bridge ──────────────────────────────────────
+  // The request-management (procurement) module and this portal are two
+  // different personas over the *same* simulated backend (see
+  // local-store.util.ts). These methods are the seam between them: procurement
+  // pushes RFQs in through upsertExternalRfq(), and reads Quotations back out
+  // through the snapshot getters below — see
+  // service/procurement/rfq-quotation-bridge.util.ts for the shape mapping.
+
+  /** Procurement creates/updates an RFQ and it should appear here, in this vendor's inbox. */
+  upsertExternalRfq(rfq: Rfq): void {
+    const existing = this.rfqs$$.getValue();
+    const idx = existing.findIndex((r) => r.id === rfq.id);
+    if (idx === -1) {
+      this.rfqs$$.next([rfq, ...existing]);
+      return;
+    }
+    // Preserve isRead — procurement re-syncing an RFQ (e.g. after a status
+    // change on its side) shouldn't un-read something the vendor already saw.
+    const updated = [...existing];
+    updated[idx] = { ...rfq, isRead: existing[idx].isRead };
+    this.rfqs$$.next(updated);
+  }
+
+  /** Synchronous snapshots for services (procurement) that need to read this
+   *  data inline rather than subscribing — always current, since they share
+   *  this same singleton instance. */
+  getRfqsSnapshot(): Rfq[] {
+    return this.rfqs$$.getValue();
+  }
+  getQuotationsSnapshot(): Quotation[] {
+    return this.quotations$$.getValue();
+  }
+  getLposSnapshot(): Lpo[] {
+    return this.lpos$$.getValue();
+  }
+
+  /** Buyer (procurement) opened this quotation for the first time. */
+  markQuotationViewedByCustomer(id: string): void {
+    const current = this.quotations$$.getValue().find((x) => x.id === id);
+    if (!current || current.history.some((h) => h.action === 'VIEWED')) return;
+    const entry: QuotationHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      version: current.version,
+      action: 'VIEWED',
+      actor: 'CUSTOMER',
+      timestamp: new Date(),
+    };
+    this.quotations$$.next(
+      this.quotations$$.getValue().map((x) => (x.id === id ? { ...x, history: [...x.history, entry] } : x)),
+    );
+  }
 
   // ── RFQ ──────────────────────────────────────────────────────────────────────
   getRfqs(): Observable<Rfq[]> {
@@ -148,6 +293,10 @@ export class VendorService {
       total: 0,
       currency: rfq.currency,
       notes: '',
+      vendorId: this.profile$$.getValue().id,
+      vendorName: this.profile$$.getValue().companyName,
+      vendorCode: this.profile$$.getValue().rcNumber,
+      vendorRating: 4.6,
       version: 1,
       revisionCount: 0,
       includeSignature: true,
@@ -238,8 +387,101 @@ export class VendorService {
     return { ok: true };
   }
 
+  /**
+   * Client-side action: accept a submitted quotation, closing the
+   * negotiation. Exposed here alongside requestRevision() for the same demo
+   * reason — see that method's doc comment.
+   *
+   * Exactly as a real procurement backend would, accepting immediately
+   * raises the LPO against the accepted terms, so the vendor can carry
+   * straight on into "receive LPO → create invoice" without a separate
+   * manual hand-off step.
+   */
+  acceptQuotation(quotationId: string, note?: string): { ok: boolean; reason?: string } {
+    const current = this.quotations$$.getValue().find((x) => x.id === quotationId);
+    if (!current) return { ok: false, reason: 'Quotation not found.' };
+    if (current.status !== 'sent') {
+      return { ok: false, reason: 'Only a submitted quotation awaiting a decision can be accepted.' };
+    }
+
+    const entry: QuotationHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      version: current.version,
+      action: 'ACCEPTED',
+      actor: 'CUSTOMER',
+      note,
+      total: current.total,
+      timestamp: new Date(),
+    };
+    const accepted: Quotation = { ...current, status: 'accepted', history: [...current.history, entry] };
+    this.quotations$$.next(this.quotations$$.getValue().map((x) => (x.id === quotationId ? accepted : x)));
+    // LPO generation is a separate, explicit step — see generateLpoForQuotation() below —
+    // rather than happening automatically the instant a quotation is accepted.
+    return { ok: true };
+  }
+
+  /**
+   * Explicit, separate step: raise the LPO against an accepted quotation.
+   * Idempotent — calling this again for a quotation that already has one
+   * just returns the existing Lpo rather than creating a duplicate.
+   */
+  generateLpoForQuotation(quotationId: string): { ok: boolean; lpo?: Lpo; reason?: string } {
+    const existing = this.lpos$$.getValue().find((l) => l.quotationId === quotationId);
+    if (existing) return { ok: true, lpo: existing };
+
+    const quotation = this.quotations$$.getValue().find((x) => x.id === quotationId);
+    if (!quotation) return { ok: false, reason: 'Quotation not found.' };
+    if (quotation.status !== 'accepted') {
+      return { ok: false, reason: 'Only an accepted quotation can have an LPO generated for it.' };
+    }
+
+    const lpo = this.buildLpoFromAcceptedQuotation(quotation);
+    this.lpos$$.next([lpo, ...this.lpos$$.getValue()]);
+    const entry: QuotationHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      version: quotation.version,
+      action: 'LPO_GENERATED',
+      actor: 'SYSTEM',
+      note: `LPO ${lpo.lpoNumber} generated.`,
+      timestamp: new Date(),
+    };
+    this.quotations$$.next(
+      this.quotations$$.getValue().map((x) => (x.id === quotationId ? { ...x, history: [...x.history, entry] } : x)),
+    );
+    return { ok: true, lpo };
+  }
+
+  /**
+   * Client-side action: reject a submitted quotation, closing the
+   * negotiation with no LPO. Exposed here for the same demo reason as
+   * requestRevision() and acceptQuotation() above.
+   */
+  rejectQuotation(quotationId: string, reason: string): { ok: boolean; reason?: string } {
+    const current = this.quotations$$.getValue().find((x) => x.id === quotationId);
+    if (!current) return { ok: false, reason: 'Quotation not found.' };
+    if (current.status !== 'sent') {
+      return { ok: false, reason: 'Only a submitted quotation awaiting a decision can be rejected.' };
+    }
+
+    const entry: QuotationHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      version: current.version,
+      action: 'REJECTED',
+      actor: 'CUSTOMER',
+      note: reason,
+      timestamp: new Date(),
+    };
+    this.quotations$$.next(
+      this.quotations$$.getValue().map((x) =>
+        x.id === quotationId ? { ...x, status: 'rejected' as const, history: [...x.history, entry] } : x,
+      ),
+    );
+    return { ok: true };
+  }
+
   /** Vendor's action: resubmit an updated quotation after a revision request. */
   resubmitQuotation(q: Quotation): void {
+    const previous = this.quotations$$.getValue().find((x) => x.id === q.id);
     const recalculated = computeQuotationTotals(q);
     const newVersion = recalculated.version + 1;
     const entry: QuotationHistoryEntry = {
@@ -248,6 +490,10 @@ export class VendorService {
       action: 'RESUBMITTED',
       actor: 'VENDOR',
       total: recalculated.total,
+      // Auto-generated account of what actually changed since the last
+      // round, so the log tells the reviewer what was done instead of just
+      // that something was — see summarizeQuotationChanges() above.
+      note: previous ? summarizeQuotationChanges(previous, recalculated) : undefined,
       timestamp: new Date(),
     };
     const updated: Quotation = {
@@ -587,6 +833,71 @@ export class VendorService {
       overallRating: 4.3,
       monthlyMetrics: months,
       topClients,
+    };
+  }
+
+  // ── Dev/demo tooling ─────────────────────────────────────────────────────────
+  /**
+   * Wipes every locally-persisted vendor-portal record and reloads the
+   * original demo dataset. Handy once you've been exercising the simulated
+   * negotiation flow for a while and want a clean slate — this is dev/demo
+   * tooling only, not something a real vendor backend would ever expose.
+   */
+  resetDemoData(): void {
+    clearAllStorage();
+    this.rfqs$$.next(this.seedRfqs());
+    this.quotations$$.next(this.seedQuotations());
+    this.lpos$$.next(this.seedLpos());
+    this.invoices$$.next(this.seedInvoices());
+    this.documents$$.next(this.seedDocuments());
+    this.profile$$.next(this.seedProfile());
+    this.templates$$.next(this.seedTemplates());
+  }
+
+  // Turns an accepted Quotation into the Lpo a procurement backend would
+  // issue against it — used by acceptQuotation() above. Items marked
+  // 'unavailable' were never priced and are dropped; 'partial'/'substitute'
+  // items carry over at the quantity the vendor actually offered rather than
+  // the quantity originally requested.
+  private buildLpoFromAcceptedQuotation(q: Quotation): Lpo {
+    const sourceRfq = this.rfqs$$.getValue().find((r) => r.id === q.rfqId);
+    const items: LpoItem[] = q.items
+      .filter((i) => i.availability !== 'unavailable' && i.unitPrice !== null)
+      .map((i) => {
+        const qty = i.offeredQuantity ?? i.quantity;
+        const isSubstitute = i.availability === 'substitute' && !!i.substituteDescription;
+        return {
+          id: `lpo-item-${i.rfqItemId}`,
+          name: isSubstitute ? `${i.name} (substitute)` : i.name,
+          description: isSubstitute ? (i.substituteDescription as string) : i.description,
+          quantity: qty,
+          unit: i.unit,
+          unitPrice: i.unitPrice as number,
+          totalPrice: i.totalPrice ?? (i.unitPrice as number) * qty,
+        };
+      });
+
+    return {
+      id: `lpo-${Date.now()}`,
+      lpoNumber: `LPO-${new Date().getFullYear()}-${String(this.lpos$$.getValue().length + 1).padStart(3, '0')}`,
+      quotationId: q.id,
+      quotationNumber: q.quotationNumber,
+      rfqNumber: q.rfqNumber,
+      clientName: q.clientName,
+      clientEmail: sourceRfq?.clientEmail,
+      issuedDate: new Date(),
+      // A real LPO would carry a client-specified delivery date; the RFQ
+      // doesn't capture one, so this demo defaults to two weeks out.
+      deliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      status: 'pending',
+      isRead: false,
+      items,
+      deliveryAddress: sourceRfq?.deliveryAddress ?? 'To be confirmed with client',
+      paymentTerms: sourceRfq?.paymentTerms ?? 'Net 30',
+      currency: q.currency,
+      subtotal: q.subtotal,
+      tax: q.tax,
+      total: q.total,
     };
   }
 
@@ -976,7 +1287,7 @@ export class VendorService {
     ];
   }
 
-  private seedLpos(): any[] {
+  private seedLpos(): Lpo[] {
     return [
       {
         id: 'lpo-001',
