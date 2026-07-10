@@ -169,24 +169,18 @@
                   <button class="action-btn view-btn" (click)="openInvoiceDetail(invoice.id)" title="View Details">
                     <i class="fas fa-eye"></i>
                   </button>
-                  <button *ngIf="invoice.status === 'DRAFT'" class="action-btn edit-btn"
+                  <button class="action-btn edit-btn" [disabled]="invoice.status !== 'DRAFT'"
                     (click)="openEditInvoiceModal(invoice.id)" title="Edit Invoice">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
-                  <button *ngIf="invoice.status !== 'CANCELLED'" class="action-btn delete-btn"
+                  <button class="action-btn reminder-btn" [disabled]="invoice.status !== 'SENT'"
+                    (click)="sendReminder(invoice)" title="Send Reminder">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                  <button class="action-btn delete-btn" [disabled]="invoice.status === 'CANCELLED'"
                     (click)="deleteInvoice(invoice)" title="Delete">
                     <i class="fas fa-trash-alt"></i>
                   </button>
-                  <div class="action-dropdown" *ngIf="invoice.status === 'SENT'">
-                    <button class="action-btn more-btn action-trigger" title="More Actions">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                      <button (click)="sendReminder(invoice)">
-                        <i class="fas fa-paper-plane"></i> Send Reminder
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </td>
             </tr>

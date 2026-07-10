@@ -196,26 +196,21 @@
                   <button class="action-btn view-btn" (click)="viewOrder(order.id)" title="View Details">
                     <i class="fas fa-eye"></i>
                   </button>
+                  <button class="action-btn process-btn" [disabled]="order.status !== 'PENDING'"
+                    (click)="processOrder(order)" title="Process Order">
+                    <i class="fas fa-cog"></i>
+                  </button>
+                  <button class="action-btn ship-btn" [disabled]="order.status !== 'PROCESSING' && order.status !== 'CONFIRMED'"
+                    (click)="shipOrder(order)" title="Ship Order">
+                    <i class="fas fa-shipping-fast"></i>
+                  </button>
+                  <button class="action-btn deliver-btn" [disabled]="order.status !== 'SHIPPED'"
+                    (click)="deliverOrder(order)" title="Mark Delivered">
+                    <i class="fas fa-check-circle"></i>
+                  </button>
                   <button class="action-btn delete-btn" (click)="deleteOrder(order)" title="Delete">
                     <i class="fas fa-trash-alt"></i>
                   </button>
-                  <div class="action-dropdown" *ngIf="order.status !== 'DELIVERED' && order.status !== 'CANCELLED'">
-                    <button class="action-btn more-btn action-trigger" title="More Actions">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                      <button *ngIf="order.status === 'PENDING'" (click)="processOrder(order)">
-                        <i class="fas fa-cog"></i> Process Order
-                      </button>
-                      <button *ngIf="order.status === 'PROCESSING' || order.status === 'CONFIRMED'"
-                        (click)="shipOrder(order)">
-                        <i class="fas fa-shipping-fast"></i> Ship Order
-                      </button>
-                      <button *ngIf="order.status === 'SHIPPED'" (click)="deliverOrder(order)">
-                        <i class="fas fa-check-circle"></i> Mark Delivered
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </td>
             </tr>

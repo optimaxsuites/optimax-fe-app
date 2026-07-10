@@ -13,16 +13,43 @@ import {
   OrderItem,
   RFQTemplateSection
 } from '../../domain/procurement-request/procurement.dto';
+import { PROCUREMENT_STORAGE_KEYS, loadFromStorage, saveToStorage } from './procurement-store.util';
+import { VendorService } from '../vendor-portal/vendor.service';
+import { procurementRequestToRfq, requestIsVendorVisible } from './rfq-quotation-bridge.util';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProcurementRequestService {
-  
-  private readonly STORAGE_KEY = 'procurement_requests';
-  private requests: ProcurementRequest[] = [];
 
-  private orders: MasterOrder[] = [
+  constructor(private vendorService: VendorService) { }
+
+  /**
+   * Mirrors this request into the shared vendor-portal store as an Rfq, so
+   * it shows up in the vendor's RFQ inbox — see rfq-quotation-bridge.util.ts.
+   * Runs whenever the request is newly vendor-visible (just sent out for
+   * quotes) or was already shared before (so status changes like
+   * cancellation still propagate instead of leaving a stale mirror behind).
+   */
+  private syncRfqMirror(request: ProcurementRequest): void {
+    const alreadyShared = this.vendorService.getRfqsSnapshot().some(r => r.id === request.id);
+    if (requestIsVendorVisible(request.status) || alreadyShared) {
+      this.vendorService.upsertExternalRfq(procurementRequestToRfq(request));
+    }
+  }
+
+  private requests: ProcurementRequest[] = loadFromStorage(
+    PROCUREMENT_STORAGE_KEYS.REQUESTS,
+    () => this.buildDefaultRequests(),
+  );
+
+  private orders: MasterOrder[] = loadFromStorage(
+    PROCUREMENT_STORAGE_KEYS.ORDERS,
+    () => this.buildDefaultOrders(),
+  );
+
+  private buildDefaultOrders(): MasterOrder[] {
+    return [
     {
       id: 'MO-001',
       customerId: 'CUST-101',
@@ -57,47 +84,11 @@ export class ProcurementRequestService {
       createdAt: new Date('2026-06-15'),
       updatedAt: new Date('2026-06-15')
     }
-  ];
-
-  constructor() {
-    this.initData();
+    ];
   }
 
-  private initData(): void {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.requests = parsed
-            .filter((r: any) => r && typeof r === 'object' && r.id)
-            .map((r: any) => ({
-              ...r,
-              deliveryDeadline: r.deliveryDeadline ? new Date(r.deliveryDeadline) : new Date(),
-              createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
-              updatedAt: r.updatedAt ? new Date(r.updatedAt) : new Date(),
-              cancelledAt: r.cancelledAt ? new Date(r.cancelledAt) : undefined,
-              items: (r.items || []).map((item: any) => ({
-                ...item,
-                serviceStartDate: item.serviceStartDate ? new Date(item.serviceStartDate) : undefined,
-                serviceEndDate: item.serviceEndDate ? new Date(item.serviceEndDate) : undefined
-              }))
-            }));
-        } else {
-          console.warn('Stored procurement requests is not an array, loading default requests in memory');
-          this.loadDefaultRequests(false);
-        }
-      } catch (e) {
-        console.error('Error parsing stored procurement requests:', e);
-        this.loadDefaultRequests(false);
-      }
-    } else {
-      this.loadDefaultRequests(true);
-    }
-  }
-
-  private loadDefaultRequests(save: boolean = true): void {
-    this.requests = [
+  private buildDefaultRequests(): ProcurementRequest[] {
+    return [
       {
         id: 'PR-001',
         customerId: 'CUST-101',
@@ -241,14 +232,14 @@ export class ProcurementRequestService {
         selectedQuotationId: 'q-pr005'
       }
     ];
-
-    if (save) {
-      this.saveToStorage();
-    }
   }
 
-  private saveToStorage(): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.requests));
+  private persistRequests(): void {
+    saveToStorage(PROCUREMENT_STORAGE_KEYS.REQUESTS, this.requests);
+  }
+
+  private persistOrders(): void {
+    saveToStorage(PROCUREMENT_STORAGE_KEYS.ORDERS, this.orders);
   }
 
   getRequests(filters: RequestFilters): Observable<PaginatedResponse<ProcurementRequest>> {
@@ -334,7 +325,8 @@ export class ProcurementRequestService {
     };
 
     this.requests.unshift(newRequest);
-    this.saveToStorage();
+    this.persistRequests();
+    this.syncRfqMirror(newRequest);
     return of(newRequest).pipe(delay(200));
   }
 
@@ -342,7 +334,8 @@ export class ProcurementRequestService {
     const idx = this.requests.findIndex(r => r.id === id);
     if (idx !== -1) {
       this.requests[idx] = { ...this.requests[idx], ...request, updatedAt: new Date() };
-      this.saveToStorage();
+      this.persistRequests();
+      this.syncRfqMirror(this.requests[idx]);
       return of(this.requests[idx]).pipe(delay(100));
     }
     throw new Error(`Request not found: ${id}`);
@@ -354,14 +347,15 @@ export class ProcurementRequestService {
       request.status = 'CANCELLED';
       request.cancellationReason = reason;
       request.cancelledAt = new Date();
-      this.saveToStorage();
+      this.persistRequests();
+      this.syncRfqMirror(request);
     }
     return of(undefined).pipe(delay(100));
   }
 
   deleteRequest(id: string): Observable<void> {
     this.requests = this.requests.filter(r => r.id !== id);
-    this.saveToStorage();
+    this.persistRequests();
     return of(undefined).pipe(delay(100));
   }
 

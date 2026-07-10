@@ -221,29 +221,29 @@ $radius-xl: 24px;
     .status-dot { background: #6b7280; }
   }
   &.status-sent {
-    background: rgba(59, 130, 246, 0.12) !important;
-    color: #1e40af !important;
-    .status-dot { background: #3b82f6; }
-  }
-  &.status-accepted {
-    background: rgba(46, 178, 112, 0.12) !important;
-    color: #1e7e4a !important;
-    .status-dot { background: #2EB270; }
-  }
-  &.status-declined {
-    background: rgba(220, 38, 38, 0.12) !important;
-    color: #991b1b !important;
-    .status-dot { background: #dc2626; }
-  }
-  &.status-expired {
     background: rgba(245, 158, 11, 0.12) !important;
-    color: #92400e !important;
+    color: #b45309 !important;
     .status-dot { background: #f59e0b; }
   }
+  &.status-accepted {
+    background: rgba(34, 197, 94, 0.12) !important;
+    color: #15803d !important;
+    .status-dot { background: #22c55e; }
+  }
+  &.status-declined {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #b91c1c !important;
+    .status-dot { background: #ef4444; }
+  }
+  &.status-expired {
+    background: rgba(194, 65, 12, 0.12) !important;
+    color: #9a3412 !important;
+    .status-dot { background: #c2410c; }
+  }
   &.status-converted {
-    background: rgba(139, 92, 246, 0.12) !important;
-    color: #6d28d9 !important;
-    .status-dot { background: #8b5cf6; }
+    background: rgba(234, 179, 8, 0.12) !important;
+    color: #a16207 !important;
+    .status-dot { background: #eab308; }
   }
 }
 
@@ -746,29 +746,29 @@ $radius-xl: 24px;
     .status-dot { background: #6b7280; }
   }
   &.status-sent {
-    background: rgba(59, 130, 246, 0.12) !important;
-    color: #1e40af !important;
-    .status-dot { background: #3b82f6; }
-  }
-  &.status-accepted {
-    background: rgba(46, 178, 112, 0.12) !important;
-    color: #1e7e4a !important;
-    .status-dot { background: #2EB270; }
-  }
-  &.status-declined {
-    background: rgba(220, 38, 38, 0.12) !important;
-    color: #991b1b !important;
-    .status-dot { background: #dc2626; }
-  }
-  &.status-expired {
     background: rgba(245, 158, 11, 0.12) !important;
-    color: #92400e !important;
+    color: #b45309 !important;
     .status-dot { background: #f59e0b; }
   }
+  &.status-accepted {
+    background: rgba(34, 197, 94, 0.12) !important;
+    color: #15803d !important;
+    .status-dot { background: #22c55e; }
+  }
+  &.status-declined {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #b91c1c !important;
+    .status-dot { background: #ef4444; }
+  }
+  &.status-expired {
+    background: rgba(194, 65, 12, 0.12) !important;
+    color: #9a3412 !important;
+    .status-dot { background: #c2410c; }
+  }
   &.status-converted {
-    background: rgba(139, 92, 246, 0.12) !important;
-    color: #6d28d9 !important;
-    .status-dot { background: #8b5cf6; }
+    background: rgba(234, 179, 8, 0.12) !important;
+    color: #a16207 !important;
+    .status-dot { background: #eab308; }
   }
 }
 

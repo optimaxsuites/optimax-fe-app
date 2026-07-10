@@ -195,28 +195,22 @@
                   <button class="action-btn view-btn" (click)="openQuoteDetail(quote.id)" title="View Details">
                     <i class="fas fa-eye"></i>
                   </button>
-                  <button *ngIf="quote.status === 'CONVERTED'" class="action-btn generate-invoice-btn"
-                    (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                  </button>
-                  <button *ngIf="quote.status === 'DRAFT'" class="action-btn edit-btn"
+                  <button class="action-btn edit-btn" [disabled]="quote.status !== 'DRAFT'"
                     (click)="openEditQuoteModal(quote.id)" title="Edit Quote">
                     <i class="fas fa-pencil-alt"></i>
                   </button>
-                  <button *ngIf="quote.status !== 'CONVERTED' && quote.status !== 'EXPIRED'"
-                    class="action-btn delete-btn" (click)="deleteQuote(quote)" title="Delete">
+                  <button class="action-btn send-btn" [disabled]="quote.status !== 'DRAFT'"
+                    (click)="sendQuote(quote)" title="Send to Customer">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                  <button class="action-btn generate-invoice-btn" [disabled]="quote.status !== 'CONVERTED'"
+                    (click)="openInvoiceModal(quote.id)" title="Generate Invoice">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                  </button>
+                  <button class="action-btn delete-btn" [disabled]="quote.status === 'CONVERTED' || quote.status === 'EXPIRED'"
+                    (click)="deleteQuote(quote)" title="Delete">
                     <i class="fas fa-trash-alt"></i>
                   </button>
-                                  <div class="action-dropdown" *ngIf="quote.status === 'DRAFT'">
-                    <button class="action-btn more-btn action-trigger" title="More Actions">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                      <button (click)="sendQuote(quote)">
-                        <i class="fas fa-paper-plane"></i> Send to Customer
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </td>
             </tr>
