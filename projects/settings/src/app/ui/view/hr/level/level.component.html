@@ -34,7 +34,7 @@
     <mat-accordion *ngIf="!showAddForm">
       <mat-expansion-panel *ngFor="let level of levelStructure; let i = index" #panel>
         <mat-expansion-panel-header>
-          <mat-panel-title>{{ level.name }}</mat-panel-title>
+          <mat-panel-title>{{ level.position || level.name }}</mat-panel-title>
           <mat-panel-description class="action-buttons">
             <button class="act-btn-edit" (click)="editSalary(level, i, $event)">
               <i class="fas fa-pen"></i><span *ngIf="panel.expanded">Edit</span>
