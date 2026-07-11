@@ -99,7 +99,7 @@ export class DataService {
 
   getAllLevels(){
     return this.http
-    .get<any>(this.baseurl + "/x/api/v2/hr/levels?page=1&size=1000")
+    .get<any>(this.baseurl + "/x/api/v2/hr/levels")
     .pipe(catchError(this.handleError));
   }
 
