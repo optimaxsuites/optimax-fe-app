@@ -4,9 +4,14 @@
 <div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
 
   <!-- Page header -->
-  <div class="mb-7">
-    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Dashboard</h1>
-    <p class="text-sm text-[#5a7380] mt-0.5">Overview of your active RFQs and quotations</p>
+  <div class="mb-7 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Dashboard</h1>
+      <p class="text-sm text-[#5a7380] mt-0.5">Overview of your active RFQs and quotations</p>
+    </div>
+    <button (click)="resetDemoData()"
+      title="Dev/demo tool — clears everything simulated in this browser's local storage and reloads the starting dataset"
+      class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-[#d5dee3] bg-white text-[#94a9b3] hover:border-red-300 hover:text-red-500 transition-colors">↺ Reset Demo Data</button>
   </div>
 
   <!-- ── Stats cards ─────────────────────────────────────── -->
@@ -433,9 +438,9 @@
 
     <!-- Footer -->
     <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center gap-2 justify-end flex-wrap sticky bottom-0">
-      <button *ngIf="selectedQuotation.status==='sent'" (click)="openSimulateRevision(selectedQuotation)"
+      <button *ngIf="selectedQuotation.status==='sent'" (click)="openSimulateDecision(selectedQuotation)"
         title="Stand-in for the client's own action until the client portal is wired to the same backend"
-        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-400 transition-colors">🧪 Simulate Client Revision Request</button>
+        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-orange-300 bg-orange-50 text-orange-700 hover:border-orange-400 transition-colors">🧪 Simulate Client Decision</button>
       <button *ngIf="selectedQuotation.status==='sent' || selectedQuotation.status==='revision_requested'" (click)="openWithdrawConfirm(selectedQuotation)"
         class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-red-500 hover:border-red-300 transition-colors">Withdraw</button>
       <button (click)="downloadQuotation(selectedQuotation, $event)" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download</button>
@@ -704,25 +709,32 @@
 
 
 <!-- ═══════════════════════════════════════════════════
-     SIMULATE CLIENT REVISION REQUEST MODAL (demo stand-in)
+     SIMULATE CLIENT DECISION MODAL (demo stand-in)
 ════════════════════════════════════════════════════ -->
-<ng-container *ngIf="showSimulateRevisionModal && quotationToSimulate">
-  <div class="fixed inset-0 z-[1200] flex items-center justify-center p-4" style="background:rgba(15,30,36,0.52)" (click)="cancelSimulateRevision()">
+<ng-container *ngIf="showSimulateDecisionModal && quotationToSimulate">
+  <div class="fixed inset-0 z-[1200] flex items-center justify-center p-4" style="background:rgba(15,30,36,0.52)" (click)="cancelSimulateDecision()">
     <div class="bg-white rounded-2xl shadow-2xl w-[440px] max-w-full p-8 modal-pop border-t-4 border-t-orange-400" (click)="$event.stopPropagation()">
       <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center mx-auto mb-4">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.57 2.64L21 8"/><polyline points="21 3 21 8 16 8"/></svg>
       </div>
-      <h3 class="text-base font-bold text-[#1a2c35] mb-1.5 text-center">Simulate Client Revision Request</h3>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-1.5 text-center">Simulate Client Decision</h3>
       <p class="text-xs text-[#94a9b3] leading-relaxed mb-4 text-center italic">
         Dev/demo tool — this stands in for the client's own action in request-management until both sides share one backend.
       </p>
-      <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">What is the client asking to change?</label>
-      <textarea [(ngModel)]="simulateRevisionNote" rows="3" placeholder="e.g. Can you match the full quantity on item 2? The price on item 4 is above our budget…"
+
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-[#f5f7f9] rounded-lg mb-4">
+        <button (click)="setSimulateDecisionType('accept')" [class]="simDecisionTabClass('accept')">Accept</button>
+        <button (click)="setSimulateDecisionType('revision')" [class]="simDecisionTabClass('revision')">Revise</button>
+        <button (click)="setSimulateDecisionType('reject')" [class]="simDecisionTabClass('reject')">Reject</button>
+      </div>
+
+      <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">{{ simDecisionNoteLabel() }}</label>
+      <textarea [(ngModel)]="simulateDecisionNote" rows="3" [placeholder]="simDecisionPlaceholder()"
         class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-y outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/10 font-sans mb-2"></textarea>
-      <p *ngIf="simulateRevisionError" class="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">{{ simulateRevisionError }}</p>
+      <p *ngIf="simulateDecisionError" class="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">{{ simulateDecisionError }}</p>
       <div class="flex gap-3 justify-center mt-4">
-        <button (click)="cancelSimulateRevision()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
-        <button (click)="executeSimulateRevision()" [disabled]="!simulateRevisionNote.trim()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Send Back for Revision</button>
+        <button (click)="cancelSimulateDecision()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="executeSimulateDecision()" [disabled]="!canExecuteSimulateDecision()" [class]="simDecisionCtaClass()">{{ simDecisionCtaLabel() }}</button>
       </div>
     </div>
   </div>

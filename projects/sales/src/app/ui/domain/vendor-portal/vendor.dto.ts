@@ -84,20 +84,30 @@ export interface QuotationItem {
 // One entry in a quotation's audit trail. Captures every step of the
 // back-and-forth so both sides can see the full negotiation history,
 // not just the current state.
+//
+// VIEWED / LPO_GENERATED / LPO_SENT / STATUS_CHANGED are buyer-side
+// (procurement) events — added so the request-management module can log
+// its own actions onto this same shared history array instead of keeping a
+// separate, disconnected log. actor: 'SYSTEM' covers automatic entries
+// (e.g. "declined because another quotation was accepted").
 export type QuotationHistoryAction =
   | 'CREATED'
   | 'SUBMITTED'
+  | 'VIEWED'
   | 'REVISION_REQUESTED'
   | 'RESUBMITTED'
   | 'ACCEPTED'
   | 'REJECTED'
-  | 'WITHDRAWN';
+  | 'WITHDRAWN'
+  | 'LPO_GENERATED'
+  | 'LPO_SENT'
+  | 'STATUS_CHANGED';
 
 export interface QuotationHistoryEntry {
   id: string;
   version: number;
   action: QuotationHistoryAction;
-  actor: 'VENDOR' | 'CUSTOMER';
+  actor: 'VENDOR' | 'CUSTOMER' | 'SYSTEM';
   note?: string;
   total?: number;
   timestamp: Date;
@@ -119,6 +129,13 @@ export interface Quotation {
   total: number;
   notes?: string;
   currency: string;
+  // Populated from VendorProfile at creation (see createQuotationFromRfq()) so
+  // the buyer side (request-management module) can identify who quoted
+  // without needing its own separate vendor record for the same company.
+  vendorId?: string;
+  vendorName?: string;
+  vendorCode?: string;
+  vendorRating?: number;
   // ── Negotiation / revision cycle ──────────────────────────────────────────
   version: number;                     // increments every time the vendor resubmits after a revision request
   revisionCount: number;               // how many times the client has sent this back so far

@@ -214,14 +214,14 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
   }
 
   acceptQuotation(quotationId: string): void {
-    if (confirm('Are you sure you want to accept this quotation? An LPO will be generated and sent to the vendor.')) {
+    if (confirm('Are you sure you want to accept this quotation? You\'ll generate and send the LPO as a separate step afterward.')) {
       this.isProcessing = true;
       this.quotationService.acceptQuotation(quotationId).subscribe({
         next: (response) => {
           this.isProcessing = false;
           this.closeQuotationDetail();
           this.loadRFQDetails(); // Refresh data
-          alert(`LPO #${response.lpoId} has been generated and sent to the vendor.`);
+          alert(response.message || 'Quotation accepted. You can now generate the LPO from the LPO preview screen.');
         },
         error: (err) => {
           this.isProcessing = false;

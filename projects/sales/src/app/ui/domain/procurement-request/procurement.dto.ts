@@ -205,6 +205,48 @@ export type VendorQuotationStatus =
   | 'LPO_SENT'          // Customer has sent the finalized LPO document to the vendor
   | 'REVIEW_REQUESTED'; // Customer requested changes or price adjustments, expecting a revised quote
 
+/**
+ * Ceiling on how many times the buyer (procurement) can send a vendor's
+ * quotation back for changes before the negotiation should be escalated,
+ * the vendor contacted directly, or the RFQ re-issued.
+ *
+ * Mirrors MAX_REVISION_ROUNDS in the vendor portal's vendor.dto.ts — kept as
+ * a separate constant (rather than a shared import) so the procurement and
+ * vendor-portal domains stay decoupled, but the value must be kept in sync
+ * with that file if it ever changes.
+ */
+export const MAX_QUOTATION_REVISIONS = 3;
+
+/**
+ * One entry in a quotation's audit trail. Captures every step of the
+ * negotiation — submission, revision requests, resubmissions,
+ * award/decline/withdrawal — so the procurement team can see the full
+ * back-and-forth instead of just the current status. Append-only: existing
+ * entries are never edited or removed.
+ */
+export type QuotationHistoryAction =
+  | 'CREATED'            // Quotation record was created (draft, not yet sent) — mirrors the shared vendor-side event
+  | 'SUBMITTED'          // Vendor submitted (or the demo simulated a submission of) this quotation
+  | 'VIEWED'             // Buyer opened/reviewed the quotation for the first time
+  | 'REVIEW_REQUESTED'   // Buyer sent the quotation back to the vendor for changes
+  | 'RESUBMITTED'        // Vendor resubmitted an updated quotation after a revision request
+  | 'ACCEPTED'           // Buyer accepted this quotation, triggering LPO generation
+  | 'DECLINED'           // Buyer declined this quotation, or it was auto-declined because another was accepted
+  | 'LPO_GENERATED'      // An LPO draft was generated from this accepted quotation
+  | 'LPO_SENT'           // The finalized LPO was sent to the vendor
+  | 'WITHDRAWN'          // The pending/unanswered quotation was cancelled/withdrawn
+  | 'STATUS_CHANGED';    // Catch-all for direct status updates not covered above
+
+export interface QuotationHistoryEntry {
+  id: string;
+  version: number;          // quotation version this entry applies to (see VendorQuotation.version)
+  action: QuotationHistoryAction;
+  actor: 'VENDOR' | 'CUSTOMER' | 'SYSTEM';
+  note?: string;             // free-text detail — revision instructions, decline reason, resubmission summary, etc.
+  amount?: number;           // totalAmount at the time of this entry, where relevant (submission/resubmission/acceptance)
+  timestamp: Date;
+}
+
 export interface VendorQuotation {
   id: string;
   rfqId: string;
@@ -229,6 +271,24 @@ export interface VendorQuotation {
   updatedAt: Date;
   expiresAt: Date;
   isViewed: boolean;
+  // ── Negotiation / revision cycle ──────────────────────────────────────────
+  // Optional (rather than required) so existing code that builds a
+  // VendorQuotation without these — seed data, mocks, partial updates —
+  // keeps compiling. QuotationManagementService normalizes every record to
+  // have concrete values (version ?? 1, revisionCount ?? 0, history ?? [])
+  // as soon as it loads them, so nothing downstream needs to special-case
+  // "missing" vs "zero".
+  version?: number;              // increments every time the vendor resubmits after a revision request
+  revisionCount?: number;        // how many times the buyer has sent this back so far — capped at MAX_QUOTATION_REVISIONS
+  revisionRequestedAt?: Date;    // when the currently-active revision request (if any) was raised
+  history?: QuotationHistoryEntry[];
+  // ── LPO ────────────────────────────────────────────────────────────────────
+  // Assigned exactly once, the first time an LPO is needed for this
+  // quotation (see QuotationManagementService.ensureLpoAssigned()) — never
+  // regenerated on a later visit, so the number on screen always matches
+  // what was actually sent to the vendor.
+  lpoNumber?: string;
+  lpoIssuedAt?: Date;
 }
 
 export interface QuotationItemDetail {

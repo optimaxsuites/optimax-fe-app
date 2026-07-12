@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
-import { VendorQuotation } from '../../../domain/procurement-request/procurement.dto';
+import { VendorQuotation, MAX_QUOTATION_REVISIONS } from '../../../domain/procurement-request/procurement.dto';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -28,6 +28,17 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   isDownloading = false;
 
   private destroy$ = new Subject<void>();
+
+  readonly maxQuotationRevisions = MAX_QUOTATION_REVISIONS;
+
+  /** How many more times this quotation can be sent back for revision. */
+  get revisionsRemaining(): number {
+    return Math.max(0, MAX_QUOTATION_REVISIONS - (this.quotation?.revisionCount ?? 0));
+  }
+
+  get canRequestChanges(): boolean {
+    return this.revisionsRemaining > 0;
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -438,7 +449,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.isProcessing = false;
         console.error('Error requesting changes:', err);
-        alert('Failed to request changes. Please try again.');
+        alert(err?.message || 'Failed to request changes. Please try again.');
       }
     });
   }
@@ -491,7 +502,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
           });
         }
         
-        alert(response.message || `LPO #${response.lpoId} has been generated and sent to ${this.quotation?.vendorName}.`);
+        alert(response.message || 'Quotation successfully accepted. Generate the LPO from the LPO preview screen.');
         this.loadQuotationDetail(); // Refresh
       },
       error: (err) => {

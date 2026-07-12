@@ -33,7 +33,6 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.quotationId = params.get('id');
       if (this.quotationId) {
-        this.generateLpoDetails();
         this.loadQuotationDetail();
       }
     });
@@ -47,6 +46,42 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   generateLpoDetails(): void {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     this.lpoNumber = `LPO-2026-${randomSuffix}`;
+    this.orderDate = new Date();
+  }
+
+  /**
+   * Resolves this quotation's LPO number/date — generating one only the
+   * first time it's needed (see QuotationManagementService.ensureLpoAssigned)
+   * — instead of inventing a new random number every time this page loads.
+   * This is the explicit, separate "generate the LPO" step: acceptance
+   * itself no longer creates one.
+   */
+  private resolveLpoNumber(quotation: VendorQuotation): void {
+    if (quotation.lpoNumber) {
+      this.lpoNumber = quotation.lpoNumber;
+      this.orderDate = quotation.lpoIssuedAt ?? new Date();
+      this.isLoading = false;
+      return;
+    }
+    this.quotationService.ensureLpoAssigned(quotation.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ({ lpoNumber, lpoIssuedAt }) => {
+        this.lpoNumber = lpoNumber;
+        this.orderDate = lpoIssuedAt;
+        if (this.quotation) {
+          this.quotation.lpoNumber = lpoNumber;
+          this.quotation.lpoIssuedAt = lpoIssuedAt;
+        }
+        this.isLoading = false;
+        // Now that an LPO number actually exists, reflect that in status.
+        if (this.quotation?.status === 'ACCEPTED') {
+          this.updateStatus('LPO_GENERATED');
+        }
+      },
+      error: () => {
+        this.generateLpoDetails(); // last resort — service unavailable
+        this.isLoading = false;
+      }
+    });
   }
 
   loadQuotationDetail(): void {
@@ -58,26 +93,23 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (data) => {
         this.quotation = data;
-        this.isLoading = false;
-        
-        // Auto-update status to LPO_GENERATED if status was ACCEPTED
-        if (data.status === 'ACCEPTED') {
-          this.updateStatus('LPO_GENERATED');
-        } else if (data.status === 'LPO_SENT') {
+        this.resolveLpoNumber(data);
+
+        if (data.status === 'LPO_SENT') {
           this.successMessage = 'LPO has been successfully sent to the vendor.';
         }
       },
       error: (err) => {
         console.error('Error loading quotation for LPO preview:', err);
-        this.isLoading = false;
         this.loadMockQuotation();
-        
+
         if (this.quotation) {
-          if (this.quotation.status === 'ACCEPTED') {
-            this.updateStatus('LPO_GENERATED');
-          } else if (this.quotation.status === 'LPO_SENT') {
+          this.resolveLpoNumber(this.quotation);
+          if (this.quotation.status === 'LPO_SENT') {
             this.successMessage = 'LPO has been successfully sent to the vendor.';
           }
+        } else {
+          this.isLoading = false;
         }
       }
     });

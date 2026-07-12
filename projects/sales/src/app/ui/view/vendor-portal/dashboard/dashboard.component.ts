@@ -65,11 +65,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   quotationToWithdraw: Quotation | null = null;
   withdrawReason = '';
 
-  // ── Simulate client revision request modal (demo stand-in — see method docs) ──
-  showSimulateRevisionModal = false;
+  // ── Simulate client decision modal (demo stand-in — see method docs) ─────────
+  showSimulateDecisionModal = false;
   quotationToSimulate: Quotation | null = null;
-  simulateRevisionNote = '';
-  simulateRevisionError: string | null = null;
+  simulateDecisionType: 'accept' | 'revision' | 'reject' = 'revision';
+  simulateDecisionNote = '';
+  simulateDecisionError: string | null = null;
 
   // ── RFQ columns
   // Each column has a formatter so resolveCell() always returns a value.
@@ -465,31 +466,112 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.refreshStats();
   }
 
-  // ── Simulate client revision request ─────────────────────────────────────────
-  // The real trigger for this lives on the client side (request-management
-  // module), which currently talks to a separate backend-backed quotation
-  // model. Until both sides share one API, this lets the vendor portal
-  // exercise and demo the full negotiation loop on its own mock data.
-  // Swap this out for a real inbound event once the two are wired together.
-  openSimulateRevision(q: Quotation): void {
+  // ── Simulate client decision ──────────────────────────────────────────────────
+  // The real trigger for these actions lives on the client side
+  // (request-management module), which currently talks to a separate
+  // backend-backed quotation model. Until both sides share one API, this
+  // lets the vendor portal exercise and demo the full negotiation loop —
+  // accept, request revision, or reject — against its own mock data.
+  // Swap this out for real inbound events once the two are wired together.
+  openSimulateDecision(q: Quotation): void {
     this.quotationToSimulate = q;
-    this.simulateRevisionNote = '';
-    this.simulateRevisionError = null;
-    this.showSimulateRevisionModal = true;
+    this.simulateDecisionType = 'revision';
+    this.simulateDecisionNote = '';
+    this.simulateDecisionError = null;
+    this.showSimulateDecisionModal = true;
   }
-  cancelSimulateRevision(): void {
-    this.showSimulateRevisionModal = false;
+  setSimulateDecisionType(type: 'accept' | 'revision' | 'reject'): void {
+    this.simulateDecisionType = type;
+    this.simulateDecisionError = null;
+  }
+  cancelSimulateDecision(): void {
+    this.showSimulateDecisionModal = false;
     this.quotationToSimulate = null;
   }
-  executeSimulateRevision(): void {
-    if (!this.quotationToSimulate || !this.simulateRevisionNote.trim()) return;
-    const result = this.vendorService.requestRevision(this.quotationToSimulate.id, this.simulateRevisionNote.trim());
+  canExecuteSimulateDecision(): boolean {
+    return this.simulateDecisionType === 'accept' || !!this.simulateDecisionNote.trim();
+  }
+  simDecisionNoteLabel(): string {
+    switch (this.simulateDecisionType) {
+      case 'accept':
+        return 'Note to vendor (optional)';
+      case 'reject':
+        return 'Why is the client rejecting this?';
+      default:
+        return 'What is the client asking to change?';
+    }
+  }
+  simDecisionPlaceholder(): string {
+    switch (this.simulateDecisionType) {
+      case 'accept':
+        return 'e.g. Looks good, please proceed.';
+      case 'reject':
+        return 'e.g. Going with another vendor on this one.';
+      default:
+        return 'e.g. Can you match the full quantity on item 2? The price on item 4 is above our budget…';
+    }
+  }
+  simDecisionCtaLabel(): string {
+    switch (this.simulateDecisionType) {
+      case 'accept':
+        return 'Accept Quotation';
+      case 'reject':
+        return 'Reject Quotation';
+      default:
+        return 'Send Back for Revision';
+    }
+  }
+  simDecisionTabClass(type: 'accept' | 'revision' | 'reject'): string {
+    const active = this.simulateDecisionType === type;
+    const activeColor = { accept: 'text-emerald-700', revision: 'text-orange-700', reject: 'text-red-700' }[type];
+    return `px-2 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+      active ? `bg-white shadow-sm ${activeColor}` : 'text-[#94a9b3] hover:text-[#5a7380]'
+    }`;
+  }
+  simDecisionCtaClass(): string {
+    const colorClass = {
+      accept: 'bg-emerald-500 hover:bg-emerald-600',
+      revision: 'bg-orange-500 hover:bg-orange-600',
+      reject: 'bg-red-500 hover:bg-red-600',
+    }[this.simulateDecisionType];
+    return `px-5 py-2.5 text-sm font-semibold rounded-xl text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${colorClass}`;
+  }
+  executeSimulateDecision(): void {
+    if (!this.quotationToSimulate || !this.canExecuteSimulateDecision()) return;
+    const note = this.simulateDecisionNote.trim();
+    const id = this.quotationToSimulate.id;
+    let result: { ok: boolean; reason?: string };
+    switch (this.simulateDecisionType) {
+      case 'accept':
+        result = this.vendorService.acceptQuotation(id, note || undefined);
+        break;
+      case 'reject':
+        result = this.vendorService.rejectQuotation(id, note);
+        break;
+      default:
+        result = this.vendorService.requestRevision(id, note);
+    }
     if (!result.ok) {
-      this.simulateRevisionError = result.reason ?? 'Could not request a revision on this quotation.';
+      this.simulateDecisionError = result.reason ?? 'Could not complete this action.';
       return;
     }
-    this.showSimulateRevisionModal = false;
+    this.showSimulateDecisionModal = false;
     this.quotationToSimulate = null;
+    this.closeQuotationPanel();
+    this.refreshStats();
+  }
+
+  // ── Reset demo data ───────────────────────────────────────────────────────────
+  // Dev/demo tooling only — clears everything this portal has persisted to
+  // localStorage and reloads the original seed dataset. See
+  // VendorService.resetDemoData().
+  resetDemoData(): void {
+    const confirmed = window.confirm(
+      "This clears every locally-simulated RFQ, quotation, LPO and invoice in this browser and reloads the starting demo dataset. This can't be undone. Continue?",
+    );
+    if (!confirmed) return;
+    this.vendorService.resetDemoData();
+    this.closeRfqPanel();
     this.closeQuotationPanel();
     this.refreshStats();
   }

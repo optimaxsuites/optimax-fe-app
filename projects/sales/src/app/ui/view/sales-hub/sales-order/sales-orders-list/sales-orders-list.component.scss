@@ -764,6 +764,15 @@ $radius-xl: 24px;
     color: #1a4b5c !important;
     transform: translateY(-2px);
   }
+
+  &:disabled {
+    background: rgba(148, 163, 184, 0.08) !important;
+    color: #94a3b8 !important;
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    transform: none !important;
+    pointer-events: none;
+  }
 }
 
 .action-dropdown {
