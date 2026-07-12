@@ -247,15 +247,55 @@ export class VendorService {
 
   // ── RFQ ──────────────────────────────────────────────────────────────────────
   getRfqs(): Observable<Rfq[]> {
+    this.loadRfqs();
     return this.rfqs$.pipe(
       map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
     );
   }
   markRfqAsRead(id: string): void {
     this.rfqs$$.next(this.rfqs$$.getValue().map((r) => (r.id === id ? { ...r, isRead: true } : r)));
+    this.markRfqAsReadInStorage(id);
   }
   rfqHasQuotation(rfqId: string): boolean {
     return this.quotations$$.getValue().some((q) => q.rfqId === rfqId);
+  }
+
+  loadRfqs(): void {
+    this.rfqs$$.next(this.seedRfqs());
+  }
+
+  private getConvertedRfqIds(): string[] {
+    try {
+      const stored = localStorage.getItem('vendor_converted_rfq_ids');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private markRfqAsConvertedInStorage(id: string): void {
+    const ids = this.getConvertedRfqIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      localStorage.setItem('vendor_converted_rfq_ids', JSON.stringify(ids));
+    }
+  }
+
+  private getReadRfqIds(): string[] {
+    try {
+      const stored = localStorage.getItem('vendor_read_rfq_ids');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private markRfqAsReadInStorage(id: string): void {
+    const ids = this.getReadRfqIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      localStorage.setItem('vendor_read_rfq_ids', JSON.stringify(ids));
+    }
   }
 
   // ── Quotation ─────────────────────────────────────────────────────────────────
@@ -308,6 +348,7 @@ export class VendorService {
     this.rfqs$$.next(
       this.rfqs$$.getValue().map((r) => (r.id === rfq.id ? { ...r, status: 'converted' } : r)),
     );
+    this.markRfqAsConvertedInStorage(rfq.id);
     return q;
   }
 
@@ -319,6 +360,7 @@ export class VendorService {
 
   /** First submission — draft becomes visible to the client. */
   sendQuotation(id: string): void {
+    let sentQuote: Quotation | undefined;
     this.quotations$$.next(
       this.quotations$$.getValue().map((q) => {
         if (q.id !== id) return q;
@@ -331,14 +373,66 @@ export class VendorService {
           total: recalculated.total,
           timestamp: new Date(),
         };
-        return {
+        sentQuote = {
           ...recalculated,
           status: 'sent' as const,
           sentDate: new Date(),
           history: [...recalculated.history, entry],
         };
+        return sentQuote;
       }),
     );
+    if (sentQuote) {
+      this.syncQuotationToBuyerPortal(sentQuote);
+    }
+  }
+
+  private syncQuotationToBuyerPortal(q: Quotation): void {
+    const vendorQuotation = {
+      id: q.id,
+      rfqId: q.rfqId,
+      rfqTitle: q.clientName + ' - ' + q.rfqNumber,
+      vendorId: 'v-custom',
+      vendorName: 'Apex Sourcing Solutions',
+      vendorCode: 'APX001',
+      vendorRating: 4.9,
+      vendorEmail: 'sales@apexsourcing.com',
+      vendorPhone: '+234-809-123-4567',
+      status: 'SUBMITTED',
+      items: q.items.map((item: any, idx: number) => ({
+        id: item.rfqItemId || `qi-${idx}`,
+        name: item.name,
+        description: item.description || '',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice || 0,
+        totalPrice: (item.unitPrice || 0) * item.quantity,
+        availability: item.availability === 'available' ? 'AVAILABLE' : 'UNAVAILABLE'
+      })),
+      totalAmount: q.total,
+      currency: q.currency,
+      deliveryTimeline: '7 business days',
+      validityDays: 14,
+      submittedAt: q.sentDate || new Date(),
+      updatedAt: new Date(),
+      expiresAt: q.validUntil,
+      isViewed: false,
+      termsAndConditions: q.notes || '',
+      notes: q.notes || ''
+    };
+
+    try {
+      const stored = localStorage.getItem('vendor_quotations_db_v3');
+      let currentList: any[] = [];
+      if (stored) {
+        currentList = JSON.parse(stored);
+      }
+      currentList = currentList.filter((x: any) => x.id !== vendorQuotation.id);
+      currentList.unshift(vendorQuotation);
+      localStorage.setItem('vendor_quotations_db_v3', JSON.stringify(currentList));
+      console.log('Quotation synced to buyer database successfully:', vendorQuotation.id);
+    } catch (e) {
+      console.error('Error syncing quotation to procurement db:', e);
+    }
   }
 
   // ── Negotiation / revision cycle ────────────────────────────────────────────
@@ -374,13 +468,13 @@ export class VendorService {
       this.quotations$$.getValue().map((x) =>
         x.id === quotationId
           ? {
-              ...x,
-              status: 'revision_requested' as const,
-              revisionRequestNote: note,
-              revisionRequestedAt: new Date(),
-              revisionCount: x.revisionCount + 1,
-              history: [...x.history, entry],
-            }
+            ...x,
+            status: 'revision_requested' as const,
+            revisionRequestNote: note,
+            revisionRequestedAt: new Date(),
+            revisionCount: x.revisionCount + 1,
+            history: [...x.history, entry],
+          }
           : x,
       ),
     );
@@ -505,6 +599,7 @@ export class VendorService {
       history: [...recalculated.history, entry],
     };
     this.quotations$$.next(this.quotations$$.getValue().map((x) => (x.id === q.id ? updated : x)));
+    this.syncQuotationToBuyerPortal(updated);
   }
 
   /** Vendor pulls back a quotation that hasn't been decided on yet. */
@@ -525,8 +620,13 @@ export class VendorService {
     );
   }
 
+  loadLpos(): void {
+    this.lpos$$.next(this.seedLpos());
+  }
+
   // ── LPO ──────────────────────────────────────────────────────────────────────
   getLpos(): Observable<Lpo[]> {
+    this.loadLpos();
     return this.lpos$.pipe(
       map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
     );
@@ -581,6 +681,40 @@ export class VendorService {
           );
         }
       }
+
+      // Sync to procurement request and transition status to PAYMENT_PENDING
+      const stored = localStorage.getItem('procurement_requests');
+      if (stored) {
+        try {
+          const requests = JSON.parse(stored);
+          const matchingRequest = requests.find((r: any) =>
+            invoice.lpoId!.includes(r.id) ||
+            `lpo-${r.id}` === invoice.lpoId ||
+            (invoice.lpoNumber && invoice.lpoNumber.includes(r.id.replace('PR-', '')))
+          );
+          if (matchingRequest) {
+            matchingRequest.status = 'PAYMENT_PENDING';
+            localStorage.setItem('procurement_requests', JSON.stringify(requests));
+            console.log('Procurement request status updated to PAYMENT_PENDING for invoice:', invoice.invoiceNumber);
+          }
+        } catch (e) {
+          console.error('Error updating procurement request status on invoice creation:', e);
+        }
+      }
+
+      // Save invoice to shared db
+      try {
+        const storedInvoices = localStorage.getItem('vendor_submitted_invoices_db');
+        let invoicesList: any[] = [];
+        if (storedInvoices) {
+          invoicesList = JSON.parse(storedInvoices);
+        }
+        invoicesList = invoicesList.filter((x: any) => x.id !== invoice.id);
+        invoicesList.unshift(invoice);
+        localStorage.setItem('vendor_submitted_invoices_db', JSON.stringify(invoicesList));
+      } catch (e) {
+        console.error('Error saving invoice to vendor_submitted_invoices_db:', e);
+      }
     }
     return invoice;
   }
@@ -602,13 +736,13 @@ export class VendorService {
     const avgPaymentDays =
       paid.length > 0
         ? Math.round(
-            paid.reduce((s, i) => {
-              const days = i.paidDate
-                ? (i.paidDate.getTime() - i.issuedDate.getTime()) / (1000 * 60 * 60 * 24)
-                : 0;
-              return s + days;
-            }, 0) / paid.length,
-          )
+          paid.reduce((s, i) => {
+            const days = i.paidDate
+              ? (i.paidDate.getTime() - i.issuedDate.getTime()) / (1000 * 60 * 60 * 24)
+              : 0;
+            return s + days;
+          }, 0) / paid.length,
+        )
         : 0;
 
     return of({
@@ -903,7 +1037,7 @@ export class VendorService {
 
   // ── Seed: RFQs ────────────────────────────────────────────────────────────────
   private seedRfqs(): Rfq[] {
-    return [
+    const staticRfqs: Rfq[] = [
       {
         id: 'rfq-001',
         rfqNumber: 'RFQ-2026-001',
@@ -1118,6 +1252,55 @@ export class VendorService {
         ],
       },
     ];
+
+    try {
+      const stored = localStorage.getItem('procurement_requests');
+      if (stored) {
+        const requests = JSON.parse(stored);
+        if (Array.isArray(requests)) {
+          const convertedIds = this.getConvertedRfqIds();
+          const readIds = this.getReadRfqIds();
+
+          const mappedRfqs: Rfq[] = requests
+            .filter((req: any) => req.status === 'APPROVED' || req.status === 'VENDORS_QUOTING')
+            .map((req: any) => {
+              const items = (req.items || []).map((item: any, idx: number) => ({
+                id: item.id || `item-${idx}`,
+                name: item.name,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit || 'pcs',
+                specifications: item.specifications || ''
+              }));
+
+              const rfqId = req.id;
+              const numericId = rfqId.replace('PR-', '');
+
+              return {
+                id: rfqId,
+                rfqNumber: `RFQ-2026-${numericId}`,
+                clientName: req.customerName || 'Internal Client',
+                clientEmail: 'procurement@' + (req.customerName || 'client').toLowerCase().replace(/\s+/g, '') + '.com',
+                issuedDate: new Date(req.createdAt || Date.now()),
+                dueDate: new Date(req.deliveryDeadline || Date.now()),
+                status: convertedIds.includes(rfqId) ? 'converted' : 'open',
+                isRead: readIds.includes(rfqId),
+                items,
+                clientInstructions: req.specialInstructions || req.description,
+                deliveryAddress: req.deliveryLocation,
+                paymentTerms: 'Net 30',
+                currency: req.currency || 'NGN',
+                category: req.procurementType === 'SERVICE' ? 'Professional Services' : 'Industrial Equipment',
+                totalEstimatedValue: req.totalBudget
+              };
+            });
+          return [...mappedRfqs, ...staticRfqs];
+        }
+      }
+    } catch (e) {
+      console.error('Error loading procurement requests in vendor portal:', e);
+    }
+    return staticRfqs;
   }
 
   private seedQuotations(): Quotation[] {
@@ -1287,8 +1470,8 @@ export class VendorService {
     ];
   }
 
-  private seedLpos(): Lpo[] {
-    return [
+  private seedLpos(): any[] {
+    const defaultLpos = [
       {
         id: 'lpo-001',
         lpoNumber: 'LPO-2026-001',
@@ -1510,6 +1693,25 @@ export class VendorService {
         ],
       },
     ];
+
+    try {
+      const stored = localStorage.getItem('vendor_lpos_db');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const parsedLpos = parsed.map(l => ({
+            ...l,
+            issuedDate: l.issuedDate ? new Date(l.issuedDate) : new Date(),
+            deliveryDate: l.deliveryDate ? new Date(l.deliveryDate) : new Date()
+          }));
+          const defaultFiltered = defaultLpos.filter(dl => !parsedLpos.some(pl => pl.id === dl.id));
+          return [...parsedLpos, ...defaultFiltered];
+        }
+      }
+    } catch (e) {
+      console.error('Error reading vendor_lpos_db:', e);
+    }
+    return defaultLpos;
   }
 
   private seedInvoices(): Invoice[] {

@@ -27,13 +27,19 @@ import { QuotationsDashboardComponent } from './ui/view/request-management/quota
 import { QuotationDetailComponent } from './ui/view/request-management/quotation-detail/quotation-detail.component';
 import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
 import { RequestForQuotationDraftsComponent } from './ui/view/request-management/request-for-quotation-drafts/request-for-quotation-drafts.component';
+import { ApprovalRfqDetailComponent } from './ui/view/request-management/approval-rfq-detail/approval-rfq-detail.component';
 
 export const routes: Routes = [
   {
     path: "",
-    redirectTo: 'commerce/requests',
+    redirectTo: 'vendor-portal/',
     pathMatch: 'full'
   },
+  // {
+  //   path: "",
+  //   redirectTo: 'commerce/requests',
+  //   pathMatch: 'full'
+  // },
   // {
   //   path: '',
   //   redirectTo: 'sales-hub',
@@ -260,13 +266,27 @@ export const routes: Routes = [
     component: RfqDetailWithQuotationsComponent
   },
   {
+    path: 'commerce/requests/approvals/:id',
+    component: ApprovalRfqDetailComponent
+  },
+  {
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
+  },
+  {
+    path: 'reports/:uuid',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
+  {
+    path: 'reports',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
   }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

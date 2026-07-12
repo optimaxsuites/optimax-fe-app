@@ -442,12 +442,18 @@ export class QuotationManagementService {
     ];
   }
 
+  private reloadFromStorage(): void {
+    this.quotations = this.normalizeAll(
+      loadFromStorage(PROCUREMENT_STORAGE_KEYS.QUOTATIONS, () => this.buildDefaultQuotations()),
+    );
+  }
+
   // Get all quotations for an RFQ
   getQuotationsForRFQ(rfqId: string): Observable<RFQWithQuotations> {
-    const matchingQuotes = [
-      ...this.quotations.filter(q => q.rfqId.toLowerCase() === rfqId.toLowerCase()),
-      ...this.getLiveQuotationsForRfq(rfqId),
-    ];
+    this.reloadFromStorage();
+    const matchingQuotes = this.quotations.filter(
+      q => q.rfqId.toLowerCase() === rfqId.toLowerCase()
+    );
 
     const responded = matchingQuotes.filter(
       q => ['SUBMITTED', 'ACCEPTED', 'DECLINED', 'LPO_GENERATED', 'LPO_SENT', 'REVIEW_REQUESTED'].includes(q.status)
@@ -503,14 +509,7 @@ export class QuotationManagementService {
 
   // Get detailed quotation by ID
   getQuotationDetail(quotationId: string): Observable<VendorQuotation> {
-    if (isLiveQuotationId(quotationId)) {
-      const live = this.findLiveQuotation(quotationId);
-      if (!live) {
-        return throwError(() => new Error(`Quotation not found: ${quotationId}`));
-      }
-      const hasLpo = this.vendorService.getLposSnapshot().some(l => l.quotationId === live.id);
-      return of(sharedQuotationToVendorQuotation(live, hasLpo)).pipe(delay(100));
-    }
+    this.reloadFromStorage();
     const found = this.quotations.find(q => q.id === quotationId);
     if (!found) {
       return throwError(() => new Error(`Quotation not found: ${quotationId}`));
@@ -727,6 +726,7 @@ export class QuotationManagementService {
 
   // Get all quotations dashboard
   getQuotationsDashboard(filters?: any): Observable<any> {
+    this.reloadFromStorage();
     return of({ quotations: [...this.quotations, ...this.getAllLiveQuotations()] }).pipe(delay(100));
   }
 

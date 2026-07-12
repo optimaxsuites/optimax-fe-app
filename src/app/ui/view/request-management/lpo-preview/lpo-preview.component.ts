@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { QuotationManagementService } from '../../../service/procurement/quotation-management.service';
+import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
 import { VendorQuotation } from '../../../domain/procurement-request/procurement.dto';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -26,7 +27,8 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private quotationService: QuotationManagementService
+    private quotationService: QuotationManagementService,
+    private procurementService: ProcurementRequestService
   ) {}
 
   ngOnInit(): void {
@@ -122,10 +124,26 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
     this.quotationService.updateQuotationStatus(this.quotation.id, status).subscribe({
       next: () => {
         console.log(`Quotation status updated successfully to ${status}`);
+        if (status === 'LPO_SENT') {
+          this.procurementService.updateRequest(this.quotation!.rfqId, {
+            status: 'LPO_ISSUED'
+          }).subscribe({
+            next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
+            error: (err) => console.error('Failed to update procurement request status:', err)
+          });
+        }
       },
       error: () => {
         // Mock fallback: do nothing, we already set it locally
         console.log(`Mock fallback: status updated locally to ${status}`);
+        if (status === 'LPO_SENT') {
+          this.procurementService.updateRequest(this.quotation!.rfqId, {
+            status: 'LPO_ISSUED'
+          }).subscribe({
+            next: () => console.log(`Procurement request ${this.quotation!.rfqId} status updated to LPO_ISSUED`),
+            error: (err) => console.error('Failed to update procurement request status:', err)
+          });
+        }
       }
     });
   }

@@ -191,30 +191,73 @@ export class DocumentationHistoryComponent implements OnInit {
       validityDays: 30
     };
 
-    this.mockInvoice = {
-      invoiceNumber: `INV-2026-${request.id.replace('PR-', '')}`,
-      orderId: request.id,
-      customerName: request.customerName,
-      items: request.items.map((item, idx) => ({
-        id: `inv-item-${idx}`,
-        productName: item.name,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: Math.round((request.totalBudget * 0.95) / item.quantity),
-        total: Math.round(request.totalBudget * 0.95)
-      })),
-      subtotal: totalQuoteAmount,
-      discountAmount: 0,
-      taxAmount: Math.round(totalQuoteAmount * 0.075),
-      totalAmount: Math.round(totalQuoteAmount * 1.075),
-      amountPaid: request.status === 'DELIVERED' ? Math.round(totalQuoteAmount * 1.075) : 0,
-      balanceDue: request.status === 'DELIVERED' ? 0 : Math.round(totalQuoteAmount * 1.075),
-      currency: request.currency,
-      status: request.status === 'DELIVERED' ? 'PAID' : 'SENT',
-      issueDate: new Date(request.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000),
-      dueDate: new Date(request.createdAt.getTime() + 19 * 24 * 60 * 60 * 1000),
-      paymentTerms: 'Net 14'
-    };
+    // Check if there is a real submitted invoice from the vendor portal
+    let realInvoice: any = null;
+    try {
+      const storedInvoices = localStorage.getItem('vendor_submitted_invoices_db');
+      if (storedInvoices) {
+        const list = JSON.parse(storedInvoices);
+        realInvoice = list.find((inv: any) => 
+          inv.lpoId === `lpo-${request.id}` || 
+          inv.lpoId === request.id ||
+          (inv.lpoNumber && inv.lpoNumber.includes(request.id.replace('PR-', '')))
+        );
+      }
+    } catch (e) {
+      console.error('Error loading real invoice from vendor portal:', e);
+    }
+
+    if (realInvoice) {
+      this.mockInvoice = {
+        invoiceNumber: realInvoice.invoiceNumber,
+        orderId: request.id,
+        customerName: request.customerName,
+        items: realInvoice.items.map((item: any, idx: number) => ({
+          id: item.id || `inv-item-${idx}`,
+          productName: item.name,
+          description: item.description || '',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.totalPrice
+        })),
+        subtotal: realInvoice.subtotal,
+        discountAmount: 0,
+        taxAmount: realInvoice.tax,
+        totalAmount: realInvoice.total,
+        amountPaid: realInvoice.status === 'paid' ? realInvoice.total : 0,
+        balanceDue: realInvoice.status === 'paid' ? 0 : realInvoice.total,
+        currency: realInvoice.currency,
+        status: realInvoice.status === 'paid' ? 'PAID' : 'SENT',
+        issueDate: new Date(realInvoice.issuedDate),
+        dueDate: new Date(realInvoice.dueDate),
+        paymentTerms: realInvoice.paymentTerms || 'Net 14'
+      };
+    } else {
+      this.mockInvoice = {
+        invoiceNumber: `INV-2026-${request.id.replace('PR-', '')}`,
+        orderId: request.id,
+        customerName: request.customerName,
+        items: request.items.map((item, idx) => ({
+          id: `inv-item-${idx}`,
+          productName: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: Math.round((request.totalBudget * 0.95) / item.quantity),
+          total: Math.round(request.totalBudget * 0.95)
+        })),
+        subtotal: totalQuoteAmount,
+        discountAmount: 0,
+        taxAmount: Math.round(totalQuoteAmount * 0.075),
+        totalAmount: Math.round(totalQuoteAmount * 1.075),
+        amountPaid: request.status === 'DELIVERED' ? Math.round(totalQuoteAmount * 1.075) : 0,
+        balanceDue: request.status === 'DELIVERED' ? 0 : Math.round(totalQuoteAmount * 1.075),
+        currency: request.currency,
+        status: request.status === 'DELIVERED' ? 'PAID' : 'SENT',
+        issueDate: new Date(request.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000),
+        dueDate: new Date(request.createdAt.getTime() + 19 * 24 * 60 * 60 * 1000),
+        paymentTerms: 'Net 14'
+      };
+    }
   }
 
   downloadCurrentDocPDF(): void {

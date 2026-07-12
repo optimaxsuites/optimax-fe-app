@@ -3,6 +3,7 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { RequestForQuotationListComponent } from './request-for-quotation-list/request-for-quotation-list.component';
 import { QuotationsDashboardComponent } from './quotations-dashboard/quotations-dashboard.component';
 import { DocumentationHistoryComponent } from './documentation-history/documentation-history.component';
+import { ApprovalInboxComponent } from './approval-inbox/approval-inbox.component';
 
 @Component({
   selector: 'app-request-management',
@@ -24,19 +25,14 @@ export class RequestManagementComponent {
       icon: 'fa-solid fa-file-invoice',
     },
     {
+      name: 'Approval Inbox',
+      component: ApprovalInboxComponent,
+      icon: 'fa-solid fa-inbox',
+    },
+    {
       name: 'Archives',
       component: DocumentationHistoryComponent,
       icon: 'fa-solid fa-box-archive',
-    },
-    // {
-    //   name: 'Approval Inbox',
-    //   component: ApprovalInboxComponent,
-    //   icon: 'fa-solid fa-inbox',
-    // },
-    // {
-    //   name: 'Sourcing',
-    //   component: SourcingComponent,
-    //   icon: 'fa-solid fa-inbox',
-    // }
+    }
   ];
 }
