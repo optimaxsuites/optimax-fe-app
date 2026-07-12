@@ -24,6 +24,7 @@ interface MentionProfileCard {
   userId: number;
   name: string;
   email?: string;
+  phone?: string;
   jobTitle?: string;
   department?: string;
   avatarUrl?: string;
@@ -97,6 +98,7 @@ export class MessageFeedComponent {
   @Output() attachmentDownload = new EventEmitter<{ attachment: any; event: Event }>();
   @Output() mentionActivated = new EventEmitter<number>();
   @Output() retryMessage = new EventEmitter<Message>();
+  @Output() authorClicked = new EventEmitter<number>();
 
   activeMentionProfile: MentionProfileCard | null = null;
   mentionCardPosition: { top: number; left: number } | null = null;
@@ -254,6 +256,33 @@ export class MessageFeedComponent {
     if (related?.closest('.mention-profile-card')) return;
     if (related?.closest('a.chat-mention')) return;
     this.closeMentionCard();
+  }
+
+  onAuthorEnter(event: MouseEvent, msg: Message): void {
+    if (!msg.senderUserId) return;
+    const profile = this.resolveMentionProfileCard({ userId: msg.senderUserId });
+    if (!profile) return;
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    this.activeMentionProfile = profile;
+    this.mentionCardPosition = {
+      top: rect.bottom + 8,
+      left: Math.min(rect.left, Math.max(16, window.innerWidth - 360)),
+    };
+  }
+
+  onAuthorLeave(event: MouseEvent): void {
+    const related = event.relatedTarget as HTMLElement | null;
+    if (related?.closest('.mention-profile-card')) return;
+    if (related?.closest('[data-author-card]')) return;
+    this.closeMentionCard();
+  }
+
+  onAuthorClick(event: Event, msg: Message): void {
+    event.stopPropagation();
+    if (!msg.senderUserId) return;
+    this.closeMentionCard();
+    this.authorClicked.emit(msg.senderUserId);
   }
 
   closeMentionCard(): void {

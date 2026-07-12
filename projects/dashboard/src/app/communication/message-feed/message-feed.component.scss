@@ -24,30 +24,31 @@
 .message-rich-html {
   user-select: text;
 
-  a.chat-link {
-    color: #2e6276;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  a.chat-mention {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.18rem;
-    padding: 0.05rem 0.4rem;
-    margin: 0 0.08rem;
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(14, 116, 144, 0.12), rgba(37, 99, 235, 0.14));
-    color: #155e75;
-    font-weight: 700;
-    text-decoration: none;
-    box-shadow: inset 0 0 0 1px rgba(14, 116, 144, 0.14);
-  }
-
   br + br {
     content: '';
   }
+}
+
+:host ::ng-deep .message-rich-html a.chat-link {
+  color: #2e6276;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+:host ::ng-deep .message-rich-html a.chat-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  padding: 0.06rem 0.55rem 0.06rem 0.4rem;
+  margin: 0 0.08rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(46, 98, 118, 0.13), rgba(14, 116, 144, 0.18));
+  color: #0e4f62;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px rgba(46, 98, 118, 0.22);
+  font-size: 0.95em;
 }
 
 .mention-profile-card {
@@ -67,11 +68,12 @@
 }
 
 .mention-profile-card__avatar {
+  position: relative;
   width: 3.25rem;
   height: 3.25rem;
   min-width: 3.25rem;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,34 +82,95 @@
   letter-spacing: 0.04em;
 
   img {
-    width: 100%;
-    height: 100%;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
     object-fit: cover;
   }
 }
 
+.mention-profile-card__status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #94a3b8;
+  border: 2px solid #fff;
+  &.online { background: #10b981; }
+}
+
 .mention-profile-card__copy {
   min-width: 0;
-  display: grid;
-  gap: 0.22rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
 
   strong {
     color: #0f172a;
-    font-size: 0.96rem;
+    font-size: 0.95rem;
+    font-weight: 700;
   }
+}
 
-  p {
-    margin: 0;
-    color: #475569;
-    font-size: 0.82rem;
-    overflow-wrap: anywhere;
-  }
+.mention-profile-card__role {
+  margin: 0;
+  color: #475569;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.mention-profile-card__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.1rem;
+}
+
+.mention-profile-card__contact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #334155;
+  text-decoration: none;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  transition: background 0.12s;
+  overflow-wrap: anywhere;
+
+  svg { flex-shrink: 0; color: #2e6276; }
+
+  &:hover { background: rgba(46, 98, 118, 0.07); color: #2e6276; }
+}
+
+.mention-profile-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
 
   small {
     color: #64748b;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 600;
   }
+}
+
+.mention-profile-card__view-btn {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2e6276;
+  background: rgba(46, 98, 118, 0.08);
+  border: none;
+  border-radius: 6px;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover { background: rgba(46, 98, 118, 0.16); }
 }
 
 .mention-profile-card__topline {

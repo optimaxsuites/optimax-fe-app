@@ -112,11 +112,17 @@
       <div *ngIf="msg.pinned" class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"></div>
 
       <!-- Avatar -->
-      <div class="flex-shrink-0 mt-0.5">
-        <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover" />
+      <div
+        class="flex-shrink-0 mt-0.5 cursor-pointer"
+        data-author-card
+        (mouseenter)="onAuthorEnter($event, msg)"
+        (mouseleave)="onAuthorLeave($event)"
+        (click)="onAuthorClick($event, msg)"
+      >
+        <img *ngIf="msg.avatarUrl" [src]="msg.avatarUrl" alt="" class="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#2e6276]/40 transition-all" />
         <div
           *ngIf="!msg.avatarUrl"
-          class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+          class="w-10 h-10 rounded-full flex items-center justify-center text-white text-[11px] font-bold hover:ring-2 hover:ring-white/30 transition-all"
           [style.background]="msg.avatarColor"
         >{{ msg.initials }}</div>
       </div>
@@ -124,7 +130,13 @@
       <div class="flex-1 min-w-0">
         <!-- Header row -->
         <div class="flex items-baseline gap-2.5 mb-1 flex-wrap">
-          <span class="text-[15px] font-medium text-gray-800">{{ msg.author }}</span>
+          <span
+            class="text-[15px] font-semibold text-gray-800 cursor-pointer hover:text-[#2e6276] hover:underline transition-colors"
+            data-author-card
+            (mouseenter)="onAuthorEnter($event, msg)"
+            (mouseleave)="onAuthorLeave($event)"
+            (click)="onAuthorClick($event, msg)"
+          >{{ msg.author }}</span>
           <span
             *ngIf="msg.role"
             class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide bg-gray-100 px-2 py-0.5 rounded-md"
@@ -631,17 +643,32 @@
   <div class="mention-profile-card__avatar" [style.background]="activeMentionProfile.online ? '#0f766e' : '#334155'">
     <img *ngIf="activeMentionProfile.avatarUrl" [src]="activeMentionProfile.avatarUrl" alt="" />
     <span *ngIf="!activeMentionProfile.avatarUrl">{{ activeMentionProfile.initials }}</span>
+    <span class="mention-profile-card__status-dot" [class.online]="activeMentionProfile.online"></span>
   </div>
   <div class="mention-profile-card__copy">
     <div class="mention-profile-card__topline">
       <strong>{{ activeMentionProfile.name }}</strong>
       <span [class.online]="activeMentionProfile.online">{{ activeMentionProfile.online ? 'Online' : 'Offline' }}</span>
     </div>
-    <p *ngIf="activeMentionProfile.jobTitle || activeMentionProfile.department">
+    <p *ngIf="activeMentionProfile.jobTitle || activeMentionProfile.department" class="mention-profile-card__role">
       {{ activeMentionProfile.jobTitle || 'Team member' }}<span *ngIf="activeMentionProfile.department"> · {{ activeMentionProfile.department }}</span>
     </p>
-    <p *ngIf="activeMentionProfile.email">{{ activeMentionProfile.email }}</p>
-    <small>{{ activeMentionProfile.lastSeenLabel }}</small>
+    <div class="mention-profile-card__contacts">
+      <a *ngIf="activeMentionProfile.phone" [href]="'tel:' + activeMentionProfile.phone" class="mention-profile-card__contact-row" (click)="$event.stopPropagation()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+        {{ activeMentionProfile.phone }}
+      </a>
+      <a *ngIf="activeMentionProfile.email" [href]="'mailto:' + activeMentionProfile.email" class="mention-profile-card__contact-row" (click)="$event.stopPropagation()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        {{ activeMentionProfile.email }}
+      </a>
+    </div>
+    <div class="mention-profile-card__footer">
+      <small>{{ activeMentionProfile.lastSeenLabel }}</small>
+      <button class="mention-profile-card__view-btn" (click)="authorClicked.emit(activeMentionProfile.userId); closeMentionCard()">
+        View profile →
+      </button>
+    </div>
   </div>
 </div>
 

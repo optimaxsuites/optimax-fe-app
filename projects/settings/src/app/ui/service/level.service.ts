@@ -16,7 +16,7 @@ export class LevelService {
   }
   getAllLevels(){
     return this.http
-    .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/levels")
+    .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/levels?page=1&size=500")
     .pipe(catchError(this.handleError));
   }
 

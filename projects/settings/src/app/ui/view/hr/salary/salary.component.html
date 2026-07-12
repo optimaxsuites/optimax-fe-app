@@ -24,7 +24,7 @@
     <mat-accordion *ngIf="!loading">
       <mat-expansion-panel *ngFor="let level of levels" #panel>
         <mat-expansion-panel-header>
-          <mat-panel-title>{{ level.name }}</mat-panel-title>
+          <mat-panel-title>{{ level.position || level.name }}</mat-panel-title>
           <mat-panel-description class="action-buttons" *ngIf="getSalaryByLevelId(level.id) as salary">
             <button class="act-btn-edit" (click)="openForEdit(salary, $event)">
               <i class="fas fa-pen"></i><span *ngIf="panel.expanded"> Edit</span>

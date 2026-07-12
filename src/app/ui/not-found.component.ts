@@ -1,13 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Location } from '@angular/common';
-
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-not-found',
   templateUrl: './not-found.component.html',
   styleUrl: './not-found.component.scss'
 })
-export class NotFoundComponent {
+export class NotFoundComponent implements OnInit, OnDestroy {
   searchQuery = '';
   quickLinks = [
       { title: 'Home', url: '/' },
@@ -17,62 +17,49 @@ export class NotFoundComponent {
       { title: 'Blog', url: '/blog' }
   ];
 
-  constructor(private location: Location) {}
+  private boundKeydown = this.handleKeydown.bind(this);
+
+  constructor(private location: Location, private router: Router) {}
 
   ngOnInit() {
-      // Auto-focus search input after component loads
-      setTimeout(() => {
-          const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-          if (searchInput) {
-              searchInput.focus();
-          }
-      }, 500);
-
-      // Add keyboard shortcuts
-      document.addEventListener('keydown', this.handleKeydown.bind(this));
+      document.addEventListener('keydown', this.boundKeydown);
   }
 
   ngOnDestroy() {
-      document.removeEventListener('keydown', this.handleKeydown.bind(this));
+      document.removeEventListener('keydown', this.boundKeydown);
   }
 
   handleKeydown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement;
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+
       if (event.key === 'Escape') {
           this.goBack();
       } else if (event.key === 'h' || event.key === 'H') {
-          if (!(event.target as HTMLElement).matches('input')) {
-              this.navigateHome();
-          }
+          this.navigateHome();
       }
   }
 
   performSearch() {
       if (this.searchQuery.trim()) {
-          // In a real Angular app, you would use Router to navigate to search results
-          console.log('Searching for:', this.searchQuery);
-          alert(`Searching for: \${this.searchQuery}\\n\\nIn a real Angular app, this would navigate to your search results page using Angular Router.`);
-          // Example: this.router.navigate(['/search'], { queryParams: { q: this.searchQuery } });
+          this.router.navigate(['/search'], { queryParams: { q: this.searchQuery } });
       }
   }
 
   navigateHome() {
-      // In a real Angular app: this.router.navigate(['/']);
-      console.log('Navigating to home');
-      alert('Navigating to homepage...\\n\\nIn a real Angular app, this would use Angular Router to navigate to your home route.');
+      this.router.navigate(['/']);
   }
 
   goBack() {
-  this.location.back();
-  } 
+      this.location.back();
+  }
 
   navigateTo(url: string) {
-      // In a real Angular app: this.router.navigate([url]);
-      console.log('Navigating to:', url);
-      alert(`Navigating to: \${url}\\n\\nIn a real Angular app, this would use Angular Router.`);
+      this.router.navigate([url]);
   }
 
   contactSupport() {
-      // In a real Angular app, this might open a modal or navigate to contact page
-      alert('Opening support contact...\\n\\nIn a real Angular app, this would open your support system or contact form.');
+      this.router.navigate(['/contact']);
   }
 }
