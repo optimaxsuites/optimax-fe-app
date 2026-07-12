@@ -26,7 +26,11 @@ export class AppHrComponent {
 
   ngOnInit(): void {
     this.checkScreenWidth();
-    this.userLoginAction();
+    if (this.authenticationService.isAuthenticated()) {
+      this.metadataService.fetchMetaData(true);
+    } else {
+      this.userLoginAction();
+    }
     this.exposeGlobalHelpers(); // Added by Eseto expose helper functions for console testing
 
     this.router.events.subscribe((event) => {

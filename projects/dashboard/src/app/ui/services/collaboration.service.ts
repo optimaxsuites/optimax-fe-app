@@ -145,6 +145,7 @@ export interface EmployeeProfile {
   fullname?: string;
   username?: string;
   email?: string;
+  phoneNumber?: string;
   profileImage?: string;
   userId?: number;
   accountVerified?: boolean | string;

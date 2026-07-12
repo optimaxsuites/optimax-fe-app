@@ -72,10 +72,12 @@ export class AuthenticationService {
   }
 
   userWithLogin(data: any): Observable<any> {
-    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
-
     return this.http
-        .post<any>(this.getBaseApiUrl() + `/x/api/v2/auth/esignin`, { eCode: data.eCode }, { withCredentials: true })
+        .post<any>(this.getBaseApiUrl() + `/x/api/v2/auth/esignin`, {
+          eCode: data.eCode,
+          clientId: data.clientId,
+          appVersion: data.appVersion,
+        }, { withCredentials: true })
         .pipe(catchError(this.handleError));
   }
 
