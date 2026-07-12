@@ -142,7 +142,8 @@ export class SalaryComponent implements OnInit {
     return this.overtimeType.find(t => t.id === id)?.name ?? 'Unknown';
   }
   getLevelName(levelId: number): string {
-    return this.levels.find(l => l.id === levelId)?.name ?? '';
+    const level = this.levels.find(l => l.id === levelId);
+    return level?.position || level?.name || '';
   }
   getSalaryByLevelId(levelId: number | undefined): any {
     return this.salaryStructure.find(s => s.levelId === levelId);
