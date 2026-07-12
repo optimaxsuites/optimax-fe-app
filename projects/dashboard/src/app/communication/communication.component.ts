@@ -258,6 +258,7 @@ interface MentionProfileCard {
   userId: number;
   name: string;
   email?: string;
+  phone?: string;
   jobTitle?: string;
   department?: string;
   avatarUrl?: string;
@@ -555,6 +556,7 @@ export class CommunicationComponent
   expandedFolderIds: Set<number> = new Set();
   copiedFileId: number | null = null;
   birthdayCardDismissed = true;
+  activeStaffProfile: MentionProfileCard | null = null;
   pendingShareDocTarget: { channelBackendId: number; folderId: number | null } | null = null;
   pendingShareFolderId: number | null = null;
   channelWorkspacePane: 'chat' | 'files' = 'chat';
@@ -7612,6 +7614,17 @@ export class CommunicationComponent
     this.clearThreadPendingAttachments();
   }
 
+  openStaffProfile(userId: number): void {
+    const profile = this.resolveMentionProfileCard({ userId });
+    this.activeStaffProfile = profile;
+    this.cdr.detectChanges();
+  }
+
+  closeStaffProfile(): void {
+    this.activeStaffProfile = null;
+    this.cdr.detectChanges();
+  }
+
   private getThreadSourceRoot(threadId: string): Message | null {
     for (const ch of this.channels) {
       const found = this.findMsgInTree(
@@ -9344,6 +9357,7 @@ export class CommunicationComponent
       userId,
       name,
       email: employee?.user?.email || employee?.email || this.userEmailCache[userId] || '',
+      phone: employee?.phoneNumber || '',
       jobTitle: employee?.jobTitle || '',
       department: employee?.department?.name || '',
       avatarUrl: (employee ? this.getEmpImageUrl(employee) : undefined) || this.userAvatarCache[userId],

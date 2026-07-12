@@ -315,7 +315,7 @@
     </div>
 
     <!-- Scrollable messages -->
-    <div class="thread-scroll flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin" (click)="onRenderedContentClick($event)">
+    <div #threadScrollEl class="thread-scroll flex-1 overflow-y-auto px-5 py-4 min-h-0" style="scrollbar-width: thin" (click)="onRenderedContentClick($event)">
 
       <!-- Root message -->
       <div class="thread-root-card flex gap-3.5 p-4 bg-white border border-gray-200 rounded-2xl mb-5">

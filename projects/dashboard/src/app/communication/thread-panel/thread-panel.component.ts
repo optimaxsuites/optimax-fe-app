@@ -4,6 +4,11 @@ import {
   Output,
   EventEmitter,
   ChangeDetectionStrategy,
+  ViewChild,
+  ElementRef,
+  SimpleChanges,
+  OnChanges,
+  AfterViewChecked,
 } from '@angular/core';
 import { Message } from '../communication.component';
 import { CollabMember, EmployeeProfile } from '../../ui/services/collaboration.service';
@@ -35,6 +40,7 @@ interface MentionProfileCard {
   userId: number;
   name: string;
   email?: string;
+  phone?: string;
   jobTitle?: string;
   department?: string;
   avatarUrl?: string;
@@ -49,7 +55,11 @@ interface MentionProfileCard {
   styleUrls: ['./thread-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ThreadPanelComponent {
+export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
+  @ViewChild('threadScrollEl') threadScrollEl?: ElementRef<HTMLElement>;
+
+  private shouldScrollReplies = false;
+
   private readonly urlRegex = /((https?:\/\/|www\.)[^\s<]+)/gi;
   private readonly mentionBoundaryAfterRegex = '(?=$|[\\s.,!?;:()\\[\\]{}"\'`])';
   readonly emojiChoices = [
@@ -251,6 +261,27 @@ export class ThreadPanelComponent {
     if (!files.length) return;
     this.threadFilesSelected.emit(files);
     input.value = '';
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      changes['activeThread'] &&
+      changes['activeThread'].currentValue?.id !== changes['activeThread'].previousValue?.id
+    ) {
+      this.shouldScrollReplies = true;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollReplies) {
+      this.shouldScrollReplies = false;
+      this.scrollRepliesToBottom();
+    }
+  }
+
+  private scrollRepliesToBottom(): void {
+    const el = this.threadScrollEl?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 
   onRenderedContentClick(event: Event): void {

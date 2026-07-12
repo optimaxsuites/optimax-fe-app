@@ -107,6 +107,7 @@ export class EmployeeProfileDashboardComponent {
   pendingProfilePhotoFile: File | null = null;
   private originalProfilePhotoUrl: SafeUrl | string | null = null;
 
+  salaryVisible = false;
   statusDropdownOpen = false;
   changingStatus = false;
   deletingEmployee = false;
@@ -127,7 +128,7 @@ export class EmployeeProfileDashboardComponent {
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
 
-  // companyProfile$ = this.companyProfileService.companyProfile$;
+  companyProfile$!: Observable<any>;
 
   constructor(
     private employeeService: EmployeeService,
@@ -140,6 +141,7 @@ export class EmployeeProfileDashboardComponent {
     private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
+    this.companyProfile$ = this.companyProfileService.companyProfile$;
     this.editForm = this.fb.group({
       phone: [''],
       email: ['', [Validators.email]],
@@ -461,54 +463,77 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private fetchEmployeeForCurrentUser(): void {
-    const selectedEmployee = localStorage.getItem('employeeInView');
-    if (selectedEmployee && this.isEmployeeManagementContext()) {
-      try {
-        const parsedEmployee = JSON.parse(selectedEmployee);
-        if (parsedEmployee) {
-          this.applyEmployeeView(parsedEmployee);
-          return;
+    // Admin context: the component is embedded inside the employee-management panel.
+    // Use the employee the admin selected and stored in localStorage.
+    if (this.isEmployeeManagementContext()) {
+      const selectedEmployee = localStorage.getItem('employeeInView');
+      if (selectedEmployee) {
+        try {
+          const parsedEmployee = JSON.parse(selectedEmployee);
+          if (parsedEmployee && parsedEmployee.id) {
+            this.applyEmployeeView(parsedEmployee);
+            return;
+          }
+        } catch {
+          localStorage.removeItem('employeeInView');
         }
-      } catch {
-        localStorage.removeItem('employeeInView');
       }
     }
 
-    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
-    if (storedUserId) {
-      this.applySessionEmployeeFallback(storedUserId);
-      const startedAt = this.startLoading();
-      this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
-        next: (data) => {
-          const employee = data?.data ?? data ?? null;
-          if (!employee) {
-            this.fetchEmployeeFromListFallback(storedUserId);
-            return;
-          }
-          this.applyEmployeeView(employee);
-        },
-        error: () => {
-          this.fetchEmployeeFromListFallback(storedUserId);
-        },
-        complete: () => {
-          this.finishLoading(startedAt);
-        },
+    // My Dashboard context: always load the profile for the currently logged-in user.
+    // Never fall back to showing a random employee — show empty state instead.
+    const storedUserId = this.resolveCurrentUserId();
+    if (!storedUserId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Session expired',
+        detail: 'Please log in again to view your dashboard.',
+        key: 'global',
       });
       return;
     }
 
-    this.fetchFirstEmployee();
+    // Reset to a clean state so no stale data from a prior navigation bleeds through.
+    this.employeeInView = null;
+    const startedAt = this.startLoading();
+    this.employeeService.getEmployeeByUserId(storedUserId).pipe(
+      finalize(() => this.finishLoading(startedAt))
+    ).subscribe({
+      next: (data) => {
+        const employee = data?.data ?? data ?? null;
+        if (!employee || !employee.id) {
+          this.fetchEmployeeFromListFallback(storedUserId);
+          return;
+        }
+        this.applyEmployeeView(employee);
+      },
+      error: () => {
+        this.fetchEmployeeFromListFallback(storedUserId);
+      },
+    });
+  }
+
+  private resolveCurrentUserId(): string | null {
+    const raw = sessionStorage.getItem('userid') || localStorage.getItem('userid') || '';
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined' || trimmed === '0') {
+      return null;
+    }
+    return trimmed;
   }
 
   private fetchEmployeeFromListFallback(userId: string): void {
+    if (!userId || userId.trim() === '' || userId === 'null' || userId === 'undefined') {
+      return;
+    }
+
     this.employeeService.getAllEmployee().subscribe({
       next: (employees) => {
         const employee =
-          employees.find((entry: any) =>
-            String(entry?.userId ?? '') === String(userId) ||
-            String(entry?.user?.userId ?? '') === String(userId) ||
-            String(entry?.user?.id ?? '') === String(userId)
-          ) ?? null;
+          employees.find((entry: any) => {
+            const entryUserId = entry?.userId ?? entry?.user?.userId ?? entry?.user?.id;
+            return entryUserId != null && String(entryUserId) === String(userId);
+          }) ?? null;
 
         if (employee) {
           this.applyEmployeeView(employee);
@@ -517,44 +542,10 @@ export class EmployeeProfileDashboardComponent {
 
         this.messageService.add({
           severity: 'warn',
-          summary: 'No employee',
-          detail: 'No employee record linked to this user.',
+          summary: 'No employee record',
+          detail: 'No employee record is linked to your account.',
           key: 'global',
         });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Load failed',
-          detail: 'Unable to fetch employee record for this user.',
-          key: 'global',
-        });
-      },
-    });
-  }
-
-  private isEmployeeManagementContext(): boolean {
-    return this.router.url.includes('/admin/hr/employee-management/');
-  }
-
-  private fetchFirstEmployee(): void {
-    const startedAt = this.startLoading();
-    this.employeeService.getAllEmployee().subscribe({
-      next: (employees) => {
-        const sortedEmployees = this.sortEmployeesLatest(employees);
-        const employee = sortedEmployees[0];
-
-        if (!employee) {
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'No employees',
-            detail: 'No employee records available yet.',
-            key: 'global',
-          });
-          return;
-        }
-
-        this.applyEmployeeView(employee);
       },
       error: () => {
         this.messageService.add({
@@ -564,10 +555,11 @@ export class EmployeeProfileDashboardComponent {
           key: 'global',
         });
       },
-      complete: () => {
-        this.finishLoading(startedAt);
-      },
     });
+  }
+
+  private isEmployeeManagementContext(): boolean {
+    return this.router.url.includes('/admin/hr/employee-management/');
   }
 
   private startLoading(): number {
@@ -642,7 +634,6 @@ export class EmployeeProfileDashboardComponent {
         '';
 
       this.employeeInView = {
-        ...(this.employeeInView || {}),
         firstName,
         lastName,
         userId: Number(userId),
@@ -653,7 +644,7 @@ export class EmployeeProfileDashboardComponent {
           username: parsed?.username || fullName,
           email: parsed?.email || '',
         },
-        imageUrl: fallbackImage || this.employeeInView?.imageUrl || '',
+        imageUrl: fallbackImage || '',
       };
 
       if (fallbackImage) {
@@ -699,21 +690,31 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.updateEmployee(data, this.employeeInView.id).subscribe({
       next: (response) => {
         const updated = response?.data ?? response ?? {};
-        // Save photo state — updateEmployee endpoint does not carry media back
-        const savedImageUrl = this.employeeInView?.imageUrl;
-        const savedMedia = this.employeeInView?.employeeMedia;
-        const savedPhotoUrl = this.employeeProfilePhotoUrl;
 
-        this.employeeInView = { ...this.employeeInView, ...updated, ...patch };
+        // Preserve photo — backend now returns employeeMedia but guard against empty responses
+        const prevImageUrl = this.employeeInView?.imageUrl;
+        const prevMedia = this.employeeInView?.employeeMedia;
+        const prevPhotoUrl = this.employeeProfilePhotoUrl;
 
-        // Restore photo if the API response wiped it
-        if (!this.employeeInView?.imageUrl && savedImageUrl) {
-          this.employeeInView.imageUrl = savedImageUrl;
+        // Merge: server response wins for all fields (now returns full nested objects)
+        this.employeeInView = { ...this.employeeInView, ...updated };
+
+        // Keep photo if server response didn't include it
+        if (!this.employeeInView?.imageUrl && prevImageUrl) {
+          this.employeeInView.imageUrl = prevImageUrl;
         }
-        if (!this.employeeInView?.employeeMedia && savedMedia) {
-          this.employeeInView.employeeMedia = savedMedia;
+        if (!this.employeeInView?.employeeMedia && prevMedia) {
+          this.employeeInView.employeeMedia = prevMedia;
         }
-        this.employeeProfilePhotoUrl = savedPhotoUrl;
+        if (!this.employeeInView?.imageUrl) {
+          this.employeeProfilePhotoUrl = prevPhotoUrl;
+        }
+
+        // Reload photo from media if server returned a fresh mediaNo
+        const mediaNo = this.employeeInView?.employeeMedia?.mediaNo;
+        if (mediaNo) {
+          this.getEmployeesProfilePhotoUrl(mediaNo);
+        }
 
         this.originalProfilePhotoUrl =
           this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
@@ -932,10 +933,9 @@ export class EmployeeProfileDashboardComponent {
 
   private buildUpdatePayload(): { data: any; patch: any } {
     const employee = this.employeeInView || {};
-    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
-      userId: employee.userId ?? employee.user?.userId ?? storedUserId ?? null,
+      userId: employee.userId ?? employee.user?.userId ?? null,
       firstName: this.editForm.get('firstName')?.value ?? employee.firstName,
       lastName: this.editForm.get('lastName')?.value ?? employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,
@@ -964,7 +964,7 @@ export class EmployeeProfileDashboardComponent {
       bvn: this.editForm.get('bvn')?.value ?? employee.bvn,
       jobTypeId: this.editForm.get('jobTypeId')?.value ?? employee.jobTypeId ?? employee.jobType?.id ?? null,
       relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
-      // employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
+      employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
     };
 
     return { data: patch, patch };

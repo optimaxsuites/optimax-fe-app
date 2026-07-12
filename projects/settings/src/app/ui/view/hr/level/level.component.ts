@@ -18,13 +18,37 @@ import { LevelDTO } from '../../../domain/level.dto';
   providers: [MessageService, ConfirmationService],
 })
 export class LevelComponent {
-  showAddForm: boolean = false 
-  isEditMode = false; 
+  showAddForm: boolean = false
+  isEditMode = false;
   editIndex: number | null = null
-  
+
   levelForm: FormGroup;
   levelStructure: LevelDTO[] = []
   loading: boolean = false
+
+  currentPage = 1;
+  readonly pageSize = 10;
+
+  get totalPages(): number {
+    return Math.ceil(this.levelStructure.length / this.pageSize);
+  }
+
+  get pagedLevels(): LevelDTO[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.levelStructure.slice(start, start + this.pageSize);
+  }
+
+  globalIndex(localIndex: number): number {
+    return (this.currentPage - 1) * this.pageSize + localIndex;
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
 
   constructor(private fb: FormBuilder, private confirmationService: ConfirmationService, private levelService: LevelService,
     private messageService: MessageService  ) {
@@ -39,14 +63,13 @@ export class LevelComponent {
   ngOnInit() {
     this.loading = true
     this.levelService.getAllLevels().subscribe(levels => {
-      this.levelStructure = levels
-    this.loading = false
-
+      this.levelStructure = this.sortByPosition(levels);
+      this.loading = false
    });
-  
+
   }
-  
- 
+
+
 
   onSubmit() {
     if (this.levelForm.valid) {
@@ -91,7 +114,18 @@ export class LevelComponent {
 
   private refreshLevels() {
     this.levelService.getAllLevels().subscribe(levels => {
-      this.levelStructure = levels;
+      this.levelStructure = this.sortByPosition(levels);
+    });
+  }
+
+  private sortByPosition(levels: LevelDTO[]): LevelDTO[] {
+    return [...levels].sort((a, b) => {
+      const pa = (a.position || '').toLowerCase();
+      const pb = (b.position || '').toLowerCase();
+      if (!pa && !pb) return 0;
+      if (!pa) return 1;
+      if (!pb) return -1;
+      return pa.localeCompare(pb);
     });
   }
 
@@ -106,7 +140,7 @@ export class LevelComponent {
       description: levelStructure.description || '',
     });
 
- 
+
 
   }
 
@@ -115,19 +149,23 @@ export class LevelComponent {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
   }
-  
-  editSalary(level: LevelDTO, index:number, event: Event) {
-   
+
+  editSalary(level: LevelDTO, localIndex: number, event: Event) {
     event.stopPropagation();
     this.showAddForm = true
-    this.editIndex = index
-    this.populateForm(level, index)
+    const globalIdx = this.globalIndex(localIndex);
+    this.editIndex = globalIdx;
+    this.populateForm(level, globalIdx);
   }
 
-  deleteSalary(level: LevelDTO, index:number, event: Event) {
+  deleteSalary(level: LevelDTO, localIndex: number, event: Event) {
+    const globalIdx = this.globalIndex(localIndex);
     this.levelService.deleteLevel(level.id).subscribe({
       next: () => {
-        this.levelStructure.splice(index, 1);
+        this.levelStructure.splice(globalIdx, 1);
+        if (this.currentPage > this.totalPages && this.currentPage > 1) {
+          this.currentPage--;
+        }
         this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Level deleted successfully!', key: 'tl', life: 3000 });
       },
       error: () => {
@@ -150,7 +188,6 @@ export class LevelComponent {
       rejectIcon:"none",
       acceptLabel: 'Delete',
       rejectLabel: 'Cancel',
-      // styleClass: 'custom-confirm-dialog',
       accept: () => {
         this.deleteSalary(level, i , event);
       },
@@ -161,9 +198,10 @@ export class LevelComponent {
   }
 
   toogleForm() {
-    
-    this.showAddForm = !this.showAddForm
-    if(this.isEditMode && this.showAddForm){
+    this.showAddForm = !this.showAddForm;
+    if (!this.showAddForm) {
+      this.isEditMode = false;
+      this.editIndex = null;
       this.levelForm.reset();
     }
   }
