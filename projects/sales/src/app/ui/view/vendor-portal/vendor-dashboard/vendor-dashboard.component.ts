@@ -28,6 +28,7 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
   constructor(private vendorService: VendorService) {}
 
   ngOnInit(): void {
+    this.vendorService.loadRfqs();
     // Load vendor summary stats
     this.vendorService
       .getVendorStats()

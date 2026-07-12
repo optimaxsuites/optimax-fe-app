@@ -1,16 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
-import { ApprovalService } from '../../service/approval-inbox/approval.service';
-import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats } from '../../domain/approval-inbox/approval-request.dto';
-import { ProcurementRequestService } from '../../service/procurement/procurement.service';
+import { ApprovalService } from '../../../service/approval-inbox/approval.service';
+import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats } from '../../../domain/approval-inbox/approval-request.dto';
+import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { RequestStatus } from '../../../domain/procurement-request/procurement.dto';
 
 @Component({
   selector: 'app-approval-inbox',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './approval-inbox.component.html',
   styleUrls: ['./approval-inbox.component.scss']
 })
@@ -24,6 +20,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   showRejectModal = false;
   approvalComments = '';
   currentApproverLevel = 1;
+  dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
   
   protected readonly Math = Math;
   
@@ -130,6 +127,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   }
 
   resetFilters(): void {
+    this.dateRange = 'month';
     this.filters = {
       status: 'IN_APPROVAL',
       urgency: 'ALL',
@@ -139,6 +137,24 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
       size: 10
     };
     this.loadApprovals();
+  }
+
+  changeDateRange(range: 'week' | 'month' | 'quarter' | 'year'): void {
+    this.dateRange = range;
+    const now = new Date();
+    const dateFrom = new Date();
+    if (range === 'week') {
+      dateFrom.setDate(now.getDate() - 7);
+    } else if (range === 'month') {
+      dateFrom.setMonth(now.getMonth() - 1);
+    } else if (range === 'quarter') {
+      dateFrom.setMonth(now.getMonth() - 3);
+    } else if (range === 'year') {
+      dateFrom.setFullYear(now.getFullYear() - 1);
+    }
+    this.filters.dateFrom = dateFrom;
+    this.filters.dateTo = now;
+    this.applyFilters();
   }
 
   onPageChange(page: number): void {
@@ -164,87 +180,75 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     this.showRejectModal = true;
   }
 
-confirmApprove(): void {
-  if (!this.selectedApproval) return;
-  
-  const levelToApprove = this.selectedApproval.currentLevel;
-  
-  this.approvalService.approveRequest(this.selectedApproval.id, levelToApprove, this.approvalComments)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (updated) => {
-        // ONLY update procurement request status if the approval process is FULLY completed (status === 'APPROVED')
-        if (updated.status === 'APPROVED') {
-          this.updateProcurementRequestStatus(updated.requestId, 'APPROVED', updated.requestType);
-        }
-        
-        this.showApprovalModal = false;
-        this.loadApprovals();
-        this.loadStats();
-      },
-      error: (error) => {
-        console.error('Error approving request:', error);
-      }
-    });
-}
-
-confirmReject(): void {
-  if (!this.selectedApproval) return;
-  
-  const levelToReject = this.selectedApproval.currentLevel;
-  
-  this.approvalService.rejectRequest(this.selectedApproval.id, levelToReject, this.approvalComments)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (updated) => {
-        // AFTER rejection, update the procurement request status
-        this.updateProcurementRequestStatus(updated.requestId, 'REJECTED', updated.requestType);
-        
-        this.showRejectModal = false;
-        this.loadApprovals();
-        this.loadStats();
-      },
-      error: (error) => {
-        console.error('Error rejecting request:', error);
-      }
-    });
-}
-
-private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
-  if (requestType === 'ORDER') {
-    this.procurementService.updateOrderStatus(requestId, status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED')
+  confirmApprove(): void {
+    if (!this.selectedApproval) return;
+    
+    const levelToApprove = this.selectedApproval.currentLevel;
+    
+    this.approvalService.approveRequest(this.selectedApproval.id, levelToApprove, this.approvalComments)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          if (status === 'APPROVED') {
-            console.log(`Master order ${requestId} approved and sent to vendors`);
-          } else {
-            console.log(`Master order ${requestId} rejected`);
+        next: (updated) => {
+          if (updated.status === 'APPROVED') {
+            this.updateProcurementRequestStatus(updated.requestId, 'APPROVED', updated.requestType);
           }
+          
+          this.showApprovalModal = false;
+          this.loadApprovals();
+          this.loadStats();
         },
-        error: (error: any) => {
-          console.error('Error updating order status:', error);
+        error: (error) => {
+          console.error('Error approving request:', error);
         }
       });
-  } else {
-    // Single requests (PROCUREMENT, SERVICE, etc.)
-    this.procurementService.updateRequestStatus(requestId, status === 'APPROVED' ? 'PENDING' : 'REJECTED' as any)
+  }
+
+  confirmReject(): void {
+    if (!this.selectedApproval) return;
+    
+    const levelToReject = this.selectedApproval.currentLevel;
+    
+    this.approvalService.rejectRequest(this.selectedApproval.id, levelToReject, this.approvalComments)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          if (status === 'APPROVED') {
-            // Send RFQ to vendors
-            this.procurementService.sendRFQToVendors(requestId).subscribe();
-          } else {
-            // Notify customer of rejection
-            this.procurementService.notifyCustomerOfRejection(requestId, this.approvalComments).subscribe();
+        next: (updated) => {
+          this.updateProcurementRequestStatus(updated.requestId, 'REJECTED', updated.requestType);
+          
+          this.showRejectModal = false;
+          this.loadApprovals();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('Error rejecting request:', error);
+        }
+      });
+  }
+
+  private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED', requestType: string): void {
+    if (requestType === 'ORDER') {
+      this.procurementService.updateOrderStatus(requestId, status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED')
+        .subscribe({
+          next: () => {
+            console.log(`Master order ${requestId} updated to ${status === 'APPROVED' ? 'PENDING_VENDOR_QUOTES' : 'CANCELLED'}`);
+          },
+          error: (error: any) => {
+            console.error('Error updating order status:', error);
           }
+        });
+    } else {
+      const nextStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+      this.procurementService.updateRequest(requestId, {
+        status: nextStatus as RequestStatus
+      }).subscribe({
+        next: () => {
+          console.log(`Procurement request ${requestId} updated to ${nextStatus}`);
         },
         error: (error: any) => {
           console.error('Error updating procurement status:', error);
         }
       });
+    }
   }
-}
-
 
   getStatusIcon(status: ApprovalStatus): string {
     const icons = {
@@ -332,7 +336,7 @@ private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | '
   getApprovalProgress(approval: ApprovalRequest): number {
     const total = approval.approvals.filter(a => a.required).length;
     const completed = approval.approvals.filter(a => a.status === 'APPROVED' && a.required).length;
-    return (completed / total) * 100;
+    return total > 0 ? (completed / total) * 100 : 0;
   }
 
   formatCurrency(amount: number, currency: string): string {
@@ -345,7 +349,7 @@ private updateProcurementRequestStatus(requestId: string, status: 'APPROVED' | '
     const diffMs = now.getTime() - new Date(date).getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     
-    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffHours < 24 && diffHours >= 0) return `${diffHours} hours ago`;
     return new Date(date).toLocaleDateString();
   }
 

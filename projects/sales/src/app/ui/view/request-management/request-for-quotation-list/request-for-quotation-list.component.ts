@@ -124,7 +124,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     'PAYMENT_CONFIRMED': 'status-chip status-payment-confirmed',
     'DELIVERY_IN_PROGRESS': 'status-chip status-delivery',
     'DELIVERED': 'status-chip status-delivered',
-    'CANCELLED': 'status-chip status-cancelled'
+    'CANCELLED': 'status-chip status-cancelled',
+    'APPROVED': 'status-chip status-approved'
   };
 
   isDeadlineSoon(deadline: Date | string | undefined): boolean {
@@ -188,6 +189,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   filterForm: FormGroup;
   statusOptions: { value: RequestStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: 'All Requests' },
+    { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
+    { value: 'APPROVED', label: 'Approved' },
     { value: 'PENDING', label: 'Pending' },
     { value: 'VENDORS_QUOTING', label: 'Vendors Quoting' },
     { value: 'VENDOR_SELECTED', label: 'Vendor Selected' },
@@ -485,7 +488,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'Payment Confirmed',
       'DELIVERY_IN_PROGRESS': 'Delivery in Progress',
       'DELIVERED': 'Delivered',
-      'CANCELLED': 'Cancelled'
+      'CANCELLED': 'Cancelled',
+      'APPROVED': 'Approved'
     };
 
     return labels[status] || status;
@@ -504,7 +508,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'px-2 py-1 text-xs font-medium rounded-full bg-teal-100 text-teal-800',
       'DELIVERY_IN_PROGRESS': 'px-2 py-1 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800',
       'DELIVERED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800',
-      'CANCELLED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800'
+      'CANCELLED': 'px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800',
+      'APPROVED': 'px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'
     };
     return classes[status] || classes['PENDING'];
   }
@@ -791,7 +796,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       'PAYMENT_CONFIRMED': 'payment-confirmed',
       'DELIVERY_IN_PROGRESS': 'delivery',
       'DELIVERED': 'delivered',
-      'CANCELLED': 'cancelled'
+      'CANCELLED': 'cancelled',
+      'APPROVED': 'approved'
     };
     return classes[status] || 'pending';
   }

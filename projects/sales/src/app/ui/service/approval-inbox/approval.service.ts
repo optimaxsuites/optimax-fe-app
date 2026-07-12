@@ -7,140 +7,148 @@ import { ApprovalRequest, ApprovalStatus, ApprovalFilters, ApprovalStats, Approv
 })
 export class ApprovalService {
 
-  private mockApprovals: ApprovalRequest[] = [
-    {
-      id: 'APR-001',
-      requestId: 'REQ-001',
-      requestType: 'PROCUREMENT',
-      requestTitle: 'Office Laptops - 15 units',
-      requesterId: 'EMP-001',
-      requesterName: 'Maryann Okonkwo',
-      requesterDepartment: 'IT Department',
-      createdAt: new Date('2026-06-05T09:00:00'),
-      submittedAt: new Date('2026-06-05T09:30:00'),
-      budget: 22500,
-      currency: 'NGN',
-      items: [
-        { id: '1', productName: 'Dell XPS Laptop', quantity: 15, budget: 22500 }
-      ],
-      currentLevel: 1,
-      status: 'IN_APPROVAL',
-      urgency: 'HIGH',
-      approvals: [
-        {
-          level: 1,
-          approverId: 'APP-001',
-          approverName: 'Manager',
-          approverRole: 'Manager',
-          status: 'PENDING',
-          required: true
+  private readonly STORAGE_KEY = 'approval_requests';
+  private mockApprovals: ApprovalRequest[] = [];
+
+  constructor() {
+    this.initData();
+  }
+
+  private initData(): void {
+    const stored = localStorage.getItem(this.STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          this.mockApprovals = parsed.map((a: any) => ({
+            ...a,
+            createdAt: a.createdAt ? new Date(a.createdAt) : new Date(),
+            submittedAt: a.submittedAt ? new Date(a.submittedAt) : new Date(),
+            comments: (a.comments || []).map((c: any) => ({ ...c, createdAt: c.createdAt ? new Date(c.createdAt) : new Date() })),
+            approvals: (a.approvals || []).map((app: any) => ({
+              ...app,
+              actionAt: app.actionAt ? new Date(app.actionAt) : undefined
+            }))
+          }));
+          return;
         }
-      ],
-      comments: [
-        {
-          id: 'C1',
-          userId: 'EMP-001',
-          userName: 'Saidat Abdulaziz',
-          userRole: 'Requester',
-          comment: 'Need these for the new accounting team starting next month',
-          createdAt: new Date('2026-06-05T09:30:00'),
-          isInternal: false
-        }
-      ]
-    },
-    {
-      id: 'APR-002',
-      requestId: 'ORD-001',
-      requestType: 'ORDER',
-      requestTitle: 'Multi-Item Order: Office Supplies + Furniture',
-      requesterId: 'EMP-002',
-      requesterName: 'Samuel Babatunde',
-      requesterDepartment: 'Operations',
-      createdAt: new Date('2026-06-06T10:00:00'),
-      submittedAt: new Date('2026-06-06T10:15:00'),
-      budget: 12500,
-      currency: 'NGN',
-      items: [
-        { id: '1', productName: 'Office Chairs', quantity: 20, budget: 5000 },
-        { id: '2', productName: 'Standing Desks', quantity: 10, budget: 7500 }
-      ],
-      currentLevel: 1,
-      status: 'IN_APPROVAL',
-      urgency: 'MEDIUM',
-      approvals: [
-        {
-          level: 1,
-          approverId: 'APP-001',
-          approverName: 'Manager',
-          approverRole: 'Manager',
-          status: 'PENDING',
-          required: true
-        }
-      ]
-    },
-    {
-      id: 'APR-003',
-      requestId: 'SRV-001',
-      requestType: 'SERVICE',
-      requestTitle: 'Website Development Service',
-      requesterId: 'EMP-003',
-      requesterName: 'Chukwudi Michael',
-      requesterDepartment: 'Marketing',
-      createdAt: new Date('2026-06-04T14:00:00'),
-      submittedAt: new Date('2026-06-04T14:20:00'),
-      budget: 50000,
-      currency: 'NGN',
-      items: [
-        { id: '1', productName: 'E-commerce Website Development', quantity: 1, budget: 50000 }
-      ],
-      currentLevel: 1,
-      status: 'APPROVED',
-      urgency: 'URGENT',
-      approvals: [
-        {
-          level: 1,
-          approverId: 'APP-001',
-          approverName: 'Manager',
-          approverRole: 'Manager',
-          status: 'APPROVED',
-          actionAt: new Date('2026-06-04T15:30:00'),
-          comments: 'Approved - aligns with Q3 marketing goals',
-          required: true
-        }
-      ]
-    },
-    {
-      id: 'APR-004',
-      requestId: 'REQ-004',
-      requestType: 'PROCUREMENT',
-      requestTitle: 'Network Equipment',
-      requesterId: 'EMP-001',
-      requesterName: 'John Ademola',
-      requesterDepartment: 'IT Department',
-      createdAt: new Date('2026-06-03T11:00:00'),
-      submittedAt: new Date('2026-06-03T11:30:00'),
-      budget: 8000,
-      currency: 'NGN',
-      items: [
-        { id: '1', productName: 'Cisco Switches', quantity: 4, budget: 8000 }
-      ],
-      currentLevel: 1,
-      status: 'REJECTED',
-      urgency: 'LOW',
-      approvals: [
-        {
-          level: 1,
-          approverId: 'APP-001',
-          approverName: 'Manager',
-          approverRole: 'Manager',
-          status: 'REJECTED',
-          actionAt: new Date('2026-06-04T10:00:00'),
-          comments: 'Budget not available for this quarter. Please resubmit in Q4.',
-          required: true
-        }
-      ]
+      } catch (e) {
+        console.error('Error parsing stored approvals:', e);
+      }
     }
-  ];
+    this.loadDefaultApprovals();
+  }
+
+  private saveToStorage(): void {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.mockApprovals));
+  }
+
+  private loadDefaultApprovals(): void {
+    this.mockApprovals = [
+      {
+        id: 'APR-001',
+        requestId: 'PR-001',
+        requestType: 'PROCUREMENT',
+        requestTitle: 'High-End Developer Laptops (M3 Max)',
+        requesterId: 'CUST-101',
+        requesterName: 'Maryann Okonkwo',
+        requesterDepartment: 'IT Department',
+        createdAt: new Date('2026-06-25T09:00:00'),
+        submittedAt: new Date('2026-06-25T09:30:00'),
+        budget: 15000000,
+        currency: 'NGN',
+        items: [
+          { id: 'item-1', productName: 'MacBook Pro 16"', quantity: 10, budget: 15000000 }
+        ],
+        currentLevel: 1,
+        status: 'IN_APPROVAL',
+        urgency: 'HIGH',
+        approvals: [
+          {
+            level: 1,
+            approverId: 'APP-001',
+            approverName: 'Manager',
+            approverRole: 'Manager',
+            status: 'PENDING',
+            required: true
+          }
+        ],
+        comments: [
+          {
+            id: 'C1',
+            userId: 'EMP-001',
+            userName: 'Maryann Okonkwo',
+            userRole: 'Requester',
+            comment: 'Need these for the new engineering team starting next month',
+            createdAt: new Date('2026-06-25T09:30:00'),
+            isInternal: false
+          }
+        ]
+      },
+      {
+        id: 'APR-002',
+        requestId: 'MO-001',
+        requestType: 'ORDER',
+        requestTitle: 'Q3 Corporate Facility Upgrades',
+        requesterId: 'CUST-101',
+        requesterName: 'Samuel Babatunde',
+        requesterDepartment: 'Operations',
+        createdAt: new Date('2026-06-15T10:00:00'),
+        submittedAt: new Date('2026-06-15T10:15:00'),
+        budget: 18500000,
+        currency: 'NGN',
+        items: [
+          { id: 'oi-1', productName: 'Premium Ergonomic Chairs', quantity: 50, budget: 10000000 },
+          { id: 'oi-2', productName: 'Modular Conference Tables', quantity: 5, budget: 8500000 }
+        ],
+        currentLevel: 1,
+        status: 'IN_APPROVAL',
+        urgency: 'MEDIUM',
+        approvals: [
+          {
+            level: 1,
+            approverId: 'APP-001',
+            approverName: 'Manager',
+            approverRole: 'Manager',
+            status: 'PENDING',
+            required: true
+          }
+        ]
+      },
+      {
+        id: 'APR-003',
+        requestId: 'PR-002',
+        requestType: 'SERVICE',
+        requestTitle: 'Janitorial & Corporate Cleaning Services',
+        requesterId: 'CUST-102',
+        requesterName: 'Chukwudi Michael',
+        requesterDepartment: 'Marketing',
+        createdAt: new Date('2026-06-20T14:00:00'),
+        submittedAt: new Date('2026-06-20T14:20:00'),
+        budget: 2400000,
+        currency: 'NGN',
+        items: [
+          { id: 'item-2', productName: 'Office Cleaning Services', quantity: 6, budget: 2400000 }
+        ],
+        currentLevel: 1,
+        status: 'APPROVED',
+        urgency: 'URGENT',
+        approvals: [
+          {
+            level: 1,
+            approverId: 'APP-001',
+            approverName: 'Manager',
+            approverRole: 'Manager',
+            status: 'APPROVED',
+            actionAt: new Date('2026-06-20T15:30:00'),
+            comments: 'Approved - aligns with Q3 facility plans',
+            required: true
+          }
+        ]
+      }
+    ];
+    this.saveToStorage();
+  }
 
   getApprovalRequests(filters: ApprovalFilters): Observable<{ data: ApprovalRequest[]; totalElements: number; totalPages: number }> {
     let filtered = [...this.mockApprovals];
@@ -218,6 +226,7 @@ export class ApprovalService {
       } else {
         request.status = 'APPROVED';
       }
+      this.saveToStorage();
     }
     return of(request!).pipe(delay(500));
   }
@@ -232,6 +241,7 @@ export class ApprovalService {
         currentApproval.comments = comments;
       }
       request.status = 'REJECTED';
+      this.saveToStorage();
     }
     return of(request!).pipe(delay(500));
   }
@@ -250,6 +260,7 @@ export class ApprovalService {
       };
       request.comments = request.comments || [];
       request.comments.push(newComment);
+      this.saveToStorage();
     }
     return of(request!).pipe(delay(300));
   }
@@ -288,6 +299,7 @@ createApprovalRequest(data: any): Observable<ApprovalRequest> {
   };
   
   this.mockApprovals.unshift(newApproval);
+  this.saveToStorage();
   
   // Send notification to first approver
   this.sendApprovalNotification(newApproval);

@@ -11,7 +11,8 @@ import {
   ProcurementType,
   RequestStatus,
   OrderItem,
-  RFQTemplateSection
+  RFQTemplateSection,
+  MasterOrderStatus
 } from '../../domain/procurement-request/procurement.dto';
 import { PROCUREMENT_STORAGE_KEYS, loadFromStorage, saveToStorage } from './procurement-store.util';
 import { VendorService } from '../vendor-portal/vendor.service';
@@ -458,5 +459,14 @@ export class ProcurementRequestService {
 
   getCategories(): Observable<string[]> {
     return of(['PRODUCT', 'SERVICE']);
+  }
+
+  updateOrderStatus(id: string, status: MasterOrderStatus): Observable<MasterOrder> {
+    const idx = this.orders.findIndex(o => o.id === id);
+    if (idx !== -1) {
+      this.orders[idx] = { ...this.orders[idx], status, updatedAt: new Date() };
+      return of(this.orders[idx]).pipe(delay(100));
+    }
+    return throwError(() => new Error(`Order not found: ${id}`));
   }
 }
