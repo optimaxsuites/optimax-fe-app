@@ -9,6 +9,7 @@ export interface Customer {
   totalSpent: number;
   totalOrders: number;
   status: 'ACTIVE' | 'INACTIVE' | 'BLACKLISTED';
+  notes?: string;
 }
 
 export interface Product {
