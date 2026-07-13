@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
@@ -20,10 +21,28 @@ export class App {
 
   constructor(
     private authenticationService: AuthenticationService,
+    private messageService: MessageService,
   ) {
     this.userLoginAction();
-     window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('online', () => this._isOffline.next(false));
     window.addEventListener('offline', () => this._isOffline.next(true));
+    
+    // Override window.alert to display PrimeNG toast messages instead
+    window.alert = (message: any) => {
+      const msgStr = message ? String(message) : '';
+      const isError = msgStr.toLowerCase().includes('fail') || 
+                      msgStr.toLowerCase().includes('error') || 
+                      msgStr.toLowerCase().includes('could not') ||
+                      msgStr.toLowerCase().includes('required') ||
+                      msgStr.toLowerCase().includes('please');
+      
+      this.messageService.add({
+        severity: isError ? 'error' : 'success',
+        summary: isError ? 'Error' : 'Success',
+        detail: msgStr,
+        life: 5000
+      });
+    };
   }
 
   ngOnInit(): void {

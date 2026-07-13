@@ -6,6 +6,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { Customer } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-customer-form',
@@ -40,6 +41,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private salesService: SalesService,
+    private messageService: MessageService,
     router: Router
   ) {
     this.router = router;
@@ -85,7 +87,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error loading customer:', error);
         this.isLoading = false;
-        alert('Failed to load customer. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load customer. Please try again.' });
       }
     });
   }
@@ -98,14 +100,14 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       address: customer.address,
       taxId: customer.taxId || '',
       status: customer.status,
-      notes: (customer as any).notes || ''
+      notes: customer.notes || ''
     });
   }
 
   onSubmit(): void {
     if (this.customerForm.invalid) {
       this.customerForm.markAllAsTouched();
-      alert('Please fill in all required fields');
+      this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'Please fill in all required fields' });
       return;
     }
 
@@ -119,9 +121,10 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       address: formValue.address,
       taxId: formValue.taxId || '',
       status: formValue.status,
-      createdAt: new Date(),
-      totalSpent: 0,
-      totalOrders: 0
+      notes: formValue.notes || '',
+      createdAt: this.isEditMode && this.customerStats ? this.customerStats.createdAt : new Date(),
+      totalSpent: this.isEditMode && this.customerStats ? this.customerStats.totalSpent : 0,
+      totalOrders: this.isEditMode && this.customerStats ? this.customerStats.totalOrders : 0
     };
 
     let request;
@@ -134,8 +137,11 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     request.subscribe({
       next: (response: Customer) => {
         this.isSubmitting = false;
-        alert(this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!');
-        const uuid = this.route.snapshot.paramMap.get('uuid');
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: this.isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!' });
+        let uuid = this.route.snapshot.paramMap.get('uuid');
+        if (uuid === 'edit') {
+          uuid = null;
+        }
         if (uuid) {
           this.router.navigate(['/admin/sales/customers', response.id, uuid]);
         } else {
@@ -145,13 +151,16 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       error: (error: any) => {
         console.error('Error saving customer:', error);
         this.isSubmitting = false;
-        alert('Failed to save customer. Please try again.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save customer. Please try again.' });
       }
     });
   }
 
   cancel(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {

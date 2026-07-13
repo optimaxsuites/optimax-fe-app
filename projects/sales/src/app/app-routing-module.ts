@@ -66,20 +66,20 @@ export const routes: Routes = [
     component: QuoteFormComponent
   },
   {
-    path: 'quotes/:id',
-    component: QuoteDetailComponent
-  },
-  {
-    path: 'quotes/:id/:uuid',
-    component: QuoteDetailComponent
-  },
-  {
     path: 'quotes/:id/edit',
     component: QuoteFormComponent
   },
   {
     path: 'quotes/:id/edit/:uuid',
     component: QuoteFormComponent
+  },
+  {
+    path: 'quotes/:id',
+    component: QuoteDetailComponent
+  },
+  {
+    path: 'quotes/:id/:uuid',
+    component: QuoteDetailComponent
   },
 
   // --- Invoices ---
@@ -92,20 +92,20 @@ export const routes: Routes = [
     component: InvoiceFormComponent
   },
   {
-    path: 'invoices/:id',
-    component: InvoiceDetailComponent
-  },
-  {
-    path: 'invoices/:id/:uuid',
-    component: InvoiceDetailComponent
-  },
-  {
     path: 'invoices/:id/edit',
     component: InvoiceFormComponent
   },
   {
     path: 'invoices/:id/edit/:uuid',
     component: InvoiceFormComponent
+  },
+  {
+    path: 'invoices/:id',
+    component: InvoiceDetailComponent
+  },
+  {
+    path: 'invoices/:id/:uuid',
+    component: InvoiceDetailComponent
   },
 
   // --- Customers ---
@@ -118,20 +118,20 @@ export const routes: Routes = [
     component: CustomerFormComponent
   },
   {
-    path: 'customers/:id',
-    component: CustomerDetailComponent
-  },
-  {
-    path: 'customers/:id/:uuid',
-    component: CustomerDetailComponent
-  },
-  {
     path: 'customers/:id/edit',
     component: CustomerFormComponent
   },
   {
     path: 'customers/:id/edit/:uuid',
     component: CustomerFormComponent
+  },
+  {
+    path: 'customers/:id',
+    component: CustomerDetailComponent
+  },
+  {
+    path: 'customers/:id/:uuid',
+    component: CustomerDetailComponent
   },
 
   // --- Products/Services Catalog ---
@@ -149,20 +149,20 @@ export const routes: Routes = [
     component: ProductServiceCatalogFormComponent
   },
   {
-    path: 'products/:id',
-    component: ProductServiceCatalogDetailComponent
-  },
-  {
-    path: 'products/:id/:uuid',
-    component: ProductServiceCatalogDetailComponent
-  },
-  {
     path: 'products/:id/edit',
     component: ProductServiceCatalogFormComponent
   },
   {
     path: 'products/:id/edit/:uuid',
     component: ProductServiceCatalogFormComponent
+  },
+  {
+    path: 'products/:id',
+    component: ProductServiceCatalogDetailComponent
+  },
+  {
+    path: 'products/:id/:uuid',
+    component: ProductServiceCatalogDetailComponent
   },
 
   // --- Sales Orders ---
