@@ -6,28 +6,34 @@
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
 
   button {
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background: #f5f5f5;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 13px;
     font-weight: 600;
-
-    &.active {
-      background:#2a834f;
-      color: white;
-      border-color: #166534;
-    }
+    color: #6b7280;
 
     &:hover {
-      background: #0e5d22;
+      border-color: #2a7a74;
+      background: #e6f4f3;
+      color: #2a7a74;
+    }
+
+    &.active {
+      background: #2a7a74;
+      color: white;
+      border-color: #2a7a74;
+      box-shadow: 0 2px 4px rgba(42, 122, 116, 0.15);
     }
   }
 }
@@ -429,4 +435,187 @@
   padding: 15px;
   text-align: center;
   color: #888;
+}
+
+/* BATCH ACTIONS */
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #2a7a74;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(42, 122, 116, 0.1);
+  margin-left: auto;
+
+  .batch-count {
+    font-weight: 700;
+    color: #2a7a74;
+    font-size: 13px;
+    padding-right: 8px;
+    border-right: 1px solid #2a7a74;
+  }
+
+  .batch-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f3f4f6;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    border: 1px solid #e5e7eb;
+
+    &:hover {
+      background: #e5e7eb;
+      border-color: #d1d5db;
+    }
+  }
+}
+
+/* TIMELINE VIEW */
+.timeline-view {
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-top: 1rem;
+
+  .timeline-container {
+    .timeline-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1.5rem;
+    }
+
+    .timeline-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      .timeline-header {
+        display: flex;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e5e7eb;
+
+        .time-labels {
+          display: flex;
+          gap: 0;
+          flex: 1;
+
+          .time-mark {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .timeline-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .empty-timeline {
+          padding: 40px 20px;
+          text-align: center;
+          color: #9ca3af;
+          font-size: 14px;
+        }
+
+        .timeline-shift {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          padding: 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          transition: all 0.2s;
+
+          &:hover {
+            background: #f9fafb;
+          }
+
+          &.selected {
+            background: #f0f9ff;
+            border-color: #2a7a74;
+          }
+
+          .shift-date {
+            min-width: 70px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #1a1a1a;
+            text-align: center;
+          }
+
+          .shift-bar-container {
+            flex: 1;
+            height: 36px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            min-width: 300px;
+
+            .shift-bar {
+              position: absolute;
+              height: 100%;
+              left: 0;
+              right: 0;
+              background: #3b82f6;
+              border-radius: 4px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 11px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s;
+
+              &:hover {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+              }
+
+              .bar-text {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
+                padding: 0 6px;
+              }
+
+              .check-icon {
+                display: none;
+                margin-left: 4px;
+                font-size: 10px;
+              }
+
+              &.selected .check-icon {
+                display: inline;
+              }
+            }
+          }
+
+          .shift-time {
+            min-width: 100px;
+            text-align: right;
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+  }
 }

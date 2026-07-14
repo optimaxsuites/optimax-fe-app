@@ -9,7 +9,7 @@ import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { v4 as uuidV4 } from "uuid"
 import { environment } from '../../../shared-component/environments/environment';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 
 interface Employee {
   id: number;

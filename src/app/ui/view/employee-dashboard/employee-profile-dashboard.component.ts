@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
 import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { DataService } from '../../service/data.service';

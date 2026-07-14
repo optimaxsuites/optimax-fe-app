@@ -147,7 +147,10 @@ export class PreOnboardingImportComponent {
 
     let pdfjs: any = (window as any).pdfjsLib;
     if (!pdfjs) {
-      try { pdfjs = await import('pdfjs-dist'); } catch { /* ignore */ }
+      try {
+        // @ts-ignore
+        pdfjs = await import('pdfjs-dist');
+      } catch { /* ignore */ }
     }
     if (!pdfjs) throw new Error('PDF library not available.');
 

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, switchMap, of } from 'rxjs';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
@@ -10,7 +10,7 @@ import { EmployeeService } from '../../../service/employee.service';
   styleUrl: './employee-onboarding-form.component.scss'
 })
 export class EmployeeOnboardingFormComponent implements OnInit {
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  get companyProfile$() { return this.companyProfileService.companyProfile$; }
   readonly year = new Date().getFullYear();
 
   constructor(
