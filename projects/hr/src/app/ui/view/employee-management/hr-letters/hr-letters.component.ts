@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 import { EmployeeService } from '../../../service/employee.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';

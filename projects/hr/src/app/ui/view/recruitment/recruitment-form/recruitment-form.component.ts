@@ -133,7 +133,7 @@ export class RecruitmentFormComponent {
   toggleSideModal(field?: JobPostingCustomFieldDTO, index?: number): void {
     this.openSideModal = true;
     if (!this.jobData.jobVacancyCustomFields) {
-      this.customFieldList = [...(this.jobData.jobVacancyCustomFields || [])]; 
+      this.customFieldList = [...((this.jobData.jobVacancyCustomFields || []) as JobPostingCustomFieldDTO[])];
     }
     if (field && index !== undefined) {
       this.customField = { ...field }; 

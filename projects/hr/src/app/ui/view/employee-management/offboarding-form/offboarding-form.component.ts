@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 
 @Component({
   selector: 'app-offboarding-form',
@@ -8,7 +8,7 @@ import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedCompon
 })
 export class OffboardingFormComponent {
   today = new Date().toLocaleDateString('en-GB');
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  get companyProfile$() { return this.companyProfileService.companyProfile$; }
 
   constructor(private companyProfileService: CompanyProfileService) {}
 

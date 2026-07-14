@@ -66,6 +66,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
@@ -105,8 +107,7 @@ import { AppraisalcycleComponent } from './ui/view/performance/appraisalcycle/ap
 import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
 import {
   HTTP_INTERCEPTORS,
-  provideHttpClient,
-  withInterceptorsFromDi,
+  HttpClientModule,
 } from '@angular/common/http';
 import { AttendanceSheetsComponent } from './ui/view/attendance/attendance-sheet/attendance-sheet.component';
 import { NotificationComponent } from './ui/view/attendance/notification/notification.component';
@@ -436,10 +437,13 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    HttpClientModule,
     TableModule,
     // RouterModule.forChild([], {
     //   bindToComponentInputs: true,
@@ -514,7 +518,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
       useValue: JWT_OPTIONS,
     },
     JwtHelperService,
-    provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
   ],

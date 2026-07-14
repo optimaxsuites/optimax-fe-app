@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
 import { ImportedEmployeeData } from './pre-onboarding-import/pre-onboarding-import.component';
 import { finalize } from 'rxjs';
@@ -283,8 +283,9 @@ handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
 }
 
-
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  get companyProfile$() {
+    return this.companyProfileService.companyProfile$;
+  }
 
   constructor(
     private messageService: MessageService,

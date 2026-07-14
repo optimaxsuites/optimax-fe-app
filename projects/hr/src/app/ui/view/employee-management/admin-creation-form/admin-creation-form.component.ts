@@ -13,7 +13,7 @@ import { MetadataService } from '../../../service/metadata.service';
 import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+import { CompanyProfileService } from '@services/company-profile/company-profile.service';
 
 @Component({
   selector: 'app-admin-creation-form',
