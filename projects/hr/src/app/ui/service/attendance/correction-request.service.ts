@@ -1,10 +1,8 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, timer } from 'rxjs';
 import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
-
-let cachedIpAddress: string | null = null;
 import {
   CorrectionRequestDTO,
   CorrectionApprovalDTO,
@@ -13,6 +11,8 @@ import {
   CorrectionStatus
 } from '../../domain/attendance/correction-workflow.dto';
 import { v4 as uuidv4 } from 'uuid';
+
+let cachedIpAddress: string | null = null;
 
 @Injectable({ providedIn: 'root' })
 export class CorrectionRequestService {
@@ -67,9 +67,7 @@ export class CorrectionRequestService {
         // Start SLA timer
         this.startSLATimer(savedRequest.id);
       }),
-      catchError((err) => {
-        console.error('Error submitting correction request:', err);
-        throw err;
+      catchError((err) => {throw err;
       })
     );
   }
@@ -149,9 +147,7 @@ export class CorrectionRequestService {
         this.notifyEmployee(updated.employeeId, 'CORRECTION_APPROVED',
           `Your correction request has been approved.`);
       }),
-      catchError((err) => {
-        console.error('Error approving correction:', err);
-        throw err;
+      catchError((err) => {throw err;
       })
     );
   }
@@ -203,9 +199,7 @@ export class CorrectionRequestService {
         this.notifyEmployee(updated.employeeId, 'CORRECTION_REJECTED',
           `Your correction request was rejected. Reason: ${rejectionReason}`);
       }),
-      catchError((err) => {
-        console.error('Error rejecting correction:', err);
-        throw err;
+      catchError((err) => {throw err;
       })
     );
   }
@@ -237,9 +231,7 @@ export class CorrectionRequestService {
         this.notifyHRAdmin('CORRECTION_ESCALATED',
           `Correction request ${requestId.substring(0, 8)}... escalated: ${reason}`);
       }),
-      catchError((err) => {
-        console.error('Error escalating correction:', err);
-        throw err;
+      catchError((err) => {throw err;
       })
     );
   }
@@ -355,12 +347,9 @@ export class CorrectionRequestService {
   }
 
   private notifyEmployee(employeeId: number, notificationType: string, message: string): void {
-    // Notification service would handle this
-    console.log(`Notifying employee ${employeeId}: ${notificationType} - ${message}`);
-  }
+    // Notification service would handle this}
 
   private notifyHRAdmin(notificationType: string, message: string): void {
-    // Notification service would handle this
-    console.log(`Notifying HR Admin: ${notificationType} - ${message}`);
-  }
+    // Notification service would handle this}
 }
+

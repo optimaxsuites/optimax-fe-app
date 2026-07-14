@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 
 @Component({
   selector: 'app-pre-onboarding-form',
@@ -9,9 +9,9 @@ import { CompanyProfileService } from '@services/company-profile/company-profile
 export class PreOnboardingFormComponent {
   readonly ten   = Array(10).fill(0);
   readonly eleven = Array(11).fill(0);
-  get companyProfile$() { return this.companyProfileService.companyProfile$; }
+  //   // get companyProfile$() { return this.companyProfileService.companyProfile$; }
 
-  constructor(private companyProfileService: CompanyProfileService) {}
+  constructor() {}
 
 
   print(): void {

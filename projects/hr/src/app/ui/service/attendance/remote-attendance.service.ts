@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
@@ -7,10 +7,24 @@ import {
   RemoteAttendanceMetadata,
   FraudDetectionFlags,
   FraudCheckResult,
-  CheckInPatternAnalysis,
-  NetworkType
+  CheckInPatternAnalysis
 } from '../../domain/attendance/remote-attendance.dto';
 import { v4 as uuidv4 } from 'uuid';
+
+type NetworkType = 'WIFI' | 'MOBILE' | 'ETHERNET' | 'UNKNOWN';
+
+const API_ENDPOINTS = {
+  VALIDATE_FRAUD: () => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/validate`,
+  FRAUD_FLAG: (recordId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${recordId}/fraud-flag`,
+  FRAUD_FLAG_REVIEW: (recordId: number, flagId: string) =>
+    `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${recordId}/fraud-flag/${flagId}/review`,
+  FRAUD_FLAGS_BY_RECORD: (recordId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/attendanceRecords/${recordId}/fraud-flags`,
+  PENDING_FRAUD_REVIEWS: () => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/pending`,
+  FRAUD_PATTERNS: (employeeId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/patterns/${employeeId}`,
+  FRAUD_DASHBOARD: () => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/dashboard`,
+  WHITELIST_EMPLOYEE: (employeeId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/whitelist/${employeeId}`,
+  BLACKLIST_EMPLOYEE: (employeeId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/fraud-detection/blacklist/${employeeId}`
+};
 
 @Injectable({ providedIn: 'root' })
 export class RemoteAttendanceService {
@@ -21,46 +35,6 @@ export class RemoteAttendanceService {
   fraudFlags$ = this.fraudFlagsSubject.asObservable();
 
   constructor(private http: HttpClient) {}
-
-  async captureDeviceFingerprint(): Promise<string> {
-    const cached = this.getDeviceFingerprintFromCache();
-    if (cached) {
-      return cached;
-    }
-
-    const fingerprint = await this.generateDeviceFingerprint();
-    this.cacheDeviceFingerprint(fingerprint);
-    return fingerprint;
-  }
-
-  private async generateDeviceFingerprint(): Promise<string> {
-    const components = {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      hardwareConcurrency: navigator.hardwareConcurrency || 0,
-      deviceMemory: (navigator as any).deviceMemory || 0,
-      maxTouchPoints: navigator.maxTouchPoints || 0,
-      vendor: navigator.vendor,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      timestamp: Date.now()
-    };
-
-    const componentString = JSON.stringify(components);
-    const buffer = new TextEncoder().encode(componentString);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  private getDeviceFingerprintFromCache(): string | null {
-    const cached = sessionStorage.getItem('device_fingerprint');
-    return cached || null;
-  }
-
-  private cacheDeviceFingerprint(fingerprint: string): void {
-    sessionStorage.setItem('device_fingerprint', fingerprint);
-  }
 
   async checkLocationPermission(): Promise<boolean> {
     if (!('geolocation' in navigator)) {
@@ -79,7 +53,6 @@ export class RemoteAttendanceService {
     const ipAddress = await this.getIpAddress();
     const networkInfo = await this.captureNetworkInfo();
     const vpnDetected = await this.detectVPN();
-    const deviceFingerprint = await this.captureDeviceFingerprint();
 
     let gpsCoordinates = undefined;
     let geoAddress = undefined;
@@ -97,14 +70,12 @@ export class RemoteAttendanceService {
           position.coords.latitude,
           position.coords.longitude
         );
-      } catch (err) {
-        console.warn('Could not get GPS location:', err);
-      }
+      } catch (err) {}
     }
 
     return {
       checkInSource: 'WEB',
-      deviceFingerprint,
+      deviceFingerprint: '', // removed fingerprint capture
       userAgent: navigator.userAgent,
       ipAddress,
       vpnDetected,
@@ -176,12 +147,9 @@ export class RemoteAttendanceService {
 
   validateRemoteCheckIn(metadata: RemoteAttendanceMetadata, employeeId: number, branchLatitude: number, branchLongitude: number): Observable<FraudCheckResult> {
     const body = { metadata, employeeId, branchLatitude, branchLongitude };
-    return this.http.post<FraudCheckResult>(
-      `${this.BASE}/fraud-detection/validate`,
-      body
-    ).pipe(
+    return this.http.post<FraudCheckResult>(API_ENDPOINTS.VALIDATE_FRAUD(), body).pipe(
       tap(result => {
-        if (result.flagged && result.flagged.length > 0) {
+        if (result.flagged?.length > 0) {
           this.fraudFlagsSubject.next([...this.fraudFlagsSubject.value, ...result.flagged]);
         }
       }),
@@ -212,18 +180,12 @@ export class RemoteAttendanceService {
       autoFlagged: true
     };
 
-    return this.http.post<FraudDetectionFlags>(
-      `${this.BASE}/attendanceRecords/${recordId}/fraud-flag`,
-      flag
-    ).pipe(
+    return this.http.post<FraudDetectionFlags>(API_ENDPOINTS.FRAUD_FLAG(recordId), flag).pipe(
       tap(savedFlag => {
         const current = this.fraudFlagsSubject.value;
         this.fraudFlagsSubject.next([...current, savedFlag]);
       }),
-      catchError((err) => {
-        console.error('Error flagging record:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
@@ -235,47 +197,37 @@ export class RemoteAttendanceService {
     notes?: string
   ): Observable<FraudDetectionFlags> {
     const body = { reviewedBy, action, notes };
-    return this.http.put<FraudDetectionFlags>(
-      `${this.BASE}/attendanceRecords/${recordId}/fraud-flag/${flagId}/review`,
-      body
-    ).pipe(
+    return this.http.put<FraudDetectionFlags>(API_ENDPOINTS.FRAUD_FLAG_REVIEW(recordId, flagId), body).pipe(
       tap(reviewed => {
         const current = this.fraudFlagsSubject.value;
         const updated = current.map(f => f.flagId === flagId ? reviewed : f);
         this.fraudFlagsSubject.next(updated);
       }),
-      catchError((err) => {
-        console.error('Error reviewing fraud flag:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
   getFraudFlagsByRecord(recordId: number): Observable<FraudDetectionFlags[]> {
-    return this.http.get<any>(
-      `${this.BASE}/attendanceRecords/${recordId}/fraud-flags`
-    ).pipe(
+    return this.http.get<any>(API_ENDPOINTS.FRAUD_FLAGS_BY_RECORD(recordId)).pipe(
       map(res => Array.isArray(res) ? res : (res?.flags ?? [])),
       catchError(() => of([]))
     );
   }
 
   getPendingFraudReviews(supervisorId?: number): Observable<FraudDetectionFlags[]> {
-    let url = `${this.BASE}/fraud-detection/pending`;
-    if (supervisorId) {
-      url += `?supervisorId=${supervisorId}`;
-    }
-    return this.http.get<any>(url)
-      .pipe(
-        map(res => Array.isArray(res) ? res : (res?.flags ?? [])),
-        catchError(() => of([]))
-      );
+    const url = supervisorId
+      ? `${API_ENDPOINTS.PENDING_FRAUD_REVIEWS()}?supervisorId=${supervisorId}`
+      : API_ENDPOINTS.PENDING_FRAUD_REVIEWS();
+
+    return this.http.get<any>(url).pipe(
+      map(res => Array.isArray(res) ? res : (res?.flags ?? [])),
+      catchError(() => of([]))
+    );
   }
 
   getCheckInPatterns(employeeId: number, days: number = 30): Observable<CheckInPatternAnalysis> {
-    return this.http.get<CheckInPatternAnalysis>(
-      `${this.BASE}/fraud-detection/patterns/${employeeId}?days=${days}`
-    ).pipe(
+    const url = `${API_ENDPOINTS.FRAUD_PATTERNS(employeeId)}?days=${days}`;
+    return this.http.get<CheckInPatternAnalysis>(url).pipe(
       catchError(() => of({
         employeeId,
         analysisStartDate: new Date().toISOString(),
@@ -288,7 +240,7 @@ export class RemoteAttendanceService {
   }
 
   getFraudDetectionDashboard(startDate?: string, endDate?: string): Observable<any> {
-    let url = `${this.BASE}/fraud-detection/dashboard`;
+    let url = API_ENDPOINTS.FRAUD_DASHBOARD();
     const params = [];
 
     if (startDate) params.push(`startDate=${startDate}`);
@@ -298,42 +250,29 @@ export class RemoteAttendanceService {
       url += '?' + params.join('&');
     }
 
-    return this.http.get<any>(url)
-      .pipe(
-        catchError(() => of({
-          totalFlags: 0,
-          pendingReview: 0,
-          approved: 0,
-          rejected: 0,
-          flagsByType: {},
-          topRiskEmployees: []
-        }))
-      );
+    return this.http.get<any>(url).pipe(
+      catchError(() => of({
+        totalFlags: 0,
+        pendingReview: 0,
+        approved: 0,
+        rejected: 0,
+        flagsByType: {},
+        topRiskEmployees: []
+      }))
+    );
   }
 
   whitelistEmployee(employeeId: number, reason?: string): Observable<void> {
     const body = { reason };
-    return this.http.post<void>(
-      `${this.BASE}/fraud-detection/whitelist/${employeeId}`,
-      body
-    ).pipe(
-      catchError((err) => {
-        console.error('Error whitelisting employee:', err);
-        throw err;
-      })
+    return this.http.post<void>(API_ENDPOINTS.WHITELIST_EMPLOYEE(employeeId), body).pipe(
+      catchError(err => { throw err; })
     );
   }
 
   blacklistEmployee(employeeId: number, reason: string): Observable<void> {
     const body = { reason };
-    return this.http.post<void>(
-      `${this.BASE}/fraud-detection/blacklist/${employeeId}`,
-      body
-    ).pipe(
-      catchError((err) => {
-        console.error('Error blacklisting employee:', err);
-        throw err;
-      })
+    return this.http.post<void>(API_ENDPOINTS.BLACKLIST_EMPLOYEE(employeeId), body).pipe(
+      catchError(err => { throw err; })
     );
   }
 
@@ -354,3 +293,4 @@ export class RemoteAttendanceService {
     return deg * (Math.PI / 180);
   }
 }
+

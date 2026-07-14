@@ -9,7 +9,7 @@ import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { v4 as uuidV4 } from "uuid"
 import { environment } from '../../../shared-component/environments/environment';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 
 interface Employee {
   id: number;
@@ -151,8 +151,7 @@ export class AddEmployeeFormComponent {
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService,
     private router: Router,
-    private http: HttpClient,
-    private companyProfileService: CompanyProfileService
+    private http: HttpClient
   ) {  }
 
   ngOnInit(): void {
@@ -189,7 +188,7 @@ export class AddEmployeeFormComponent {
       maritalStatus: [null, [Validators.required, Validators.min(1)]],
       religion: [null, [Validators.required,  Validators.min(1)]],
       address: [null, [Validators.required,  Validators.min(1)]],
-      profilePhoto: [null,[ Validators.required, this.imageFileValidator()]]
+      profilePhoto: [null, Validators.required]
     });
 
     this.employeeForm = this.fb.group({
@@ -250,19 +249,6 @@ export class AddEmployeeFormComponent {
   }
 
   private loadCompanyBranding(userId: number): void {
-    // Use the same in-memory source as the main-menu sidebar
-    const cached = this.companyProfileService.get();
-    if (cached?.companyName) this.obCompanyName = cached.companyName;
-    if (cached?.logoUrl) this.obLogoUrl = cached.logoUrl;
-
-    // If the service already has the logo, no need to fetch
-    if (this.obLogoUrl) return;
-
-    // Otherwise trigger a load (works for both authenticated and public-whitelisted calls)
-    this.companyProfileService.load(userId).subscribe(profile => {
-      if (profile?.companyName) this.obCompanyName = profile.companyName;
-      if (profile?.logoUrl) this.obLogoUrl = profile.logoUrl;
-    });
   }
 
   private applyEmployeeData(employee: any): void {

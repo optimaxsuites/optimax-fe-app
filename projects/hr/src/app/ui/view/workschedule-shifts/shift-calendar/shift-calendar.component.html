@@ -327,8 +327,8 @@
               [style.backgroundColor]="bar.color"
               [class.selected]="bar.isSelected"
               (click)="toggleBatchSelect(bar.schedule.id)"
-              [title]="row.employeeName + ' - ' + bar.shift.name">
-              <span class="bar-text">{{ bar.shift.name }}</span>
+              [title]="row.employeeName + ' - ' + (bar.shift?.name || 'Unknown Shift')">
+              <span class="bar-text">{{ bar.shift?.name || 'N/A' }}</span>
               <i class="fa-solid fa-check check-icon" *ngIf="bar.isSelected"></i>
             </div>
           </div>

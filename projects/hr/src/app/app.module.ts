@@ -11,7 +11,7 @@ import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -264,20 +264,13 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     RecruitmentComponent,
     LeaveComponent,
     AttendanceComponent,
-    EmployeeManagementComponent,
     RecruitmentListComponent,
     RecruitmentFormComponent,
     CandidateComponent,
     ScheduledInterviewComponent,
     InterviewInviteComponent,
-    OfferLetterComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
-    AddEmployeeFormComponent,
-    // EmployeeOnboardingFormComponent,
-    PreOnboardingFormComponent,
-    OffboardingFormComponent,
-    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -290,8 +283,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MyAttendanceComponent,
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
-    PayslipViewComponent,
-    AdminCreationFormComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,
@@ -374,7 +365,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
-    EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
     CooperativeMemberGroupDashboardComponent,
@@ -431,7 +421,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
-    HrLettersComponent,
     // LargeSideModalComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,
@@ -498,10 +487,8 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
-    LargeSideModalComponent,
-    FooterComponent,
-    EmployeeRelativesWidgetComponent,
   ],
+  schemas: [NO_ERRORS_SCHEMA],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ApplicantDTO, AttachmentDTO } from '../../../domain/applicant.dto';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 // import { ApplicantDTO, AttachmentDTO } from 'src/app/ui/hr/domain/applicant.dto';
 
 @Component({
@@ -18,9 +18,9 @@ export class OfferLetterComponent {
   processedTemplate?: string;
   offerSubject?: string;
   attachments?: AttachmentDTO[] = [];
-  get companyProfile$() { return this.companyProfileService.companyProfile$; }
+  //   // get companyProfile$() { return this.companyProfileService.companyProfile$; }
 
-  constructor(private companyProfileService: CompanyProfileService) {}
+  constructor() {}
 
 
 

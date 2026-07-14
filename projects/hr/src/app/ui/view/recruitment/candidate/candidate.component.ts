@@ -117,13 +117,16 @@ throw new Error('Method not implemented.');
 }
 
   viewState: 'job-grid' | 'applicant-list' | 'applicant-view' = 'job-grid';
-  
+
   allApplications: any[] = []; // Raw JobApplicationDTO[]
-  groupedJobs: any[] = []; 
+  groupedJobs: any[] = [];
   selectedJob: any = null;
   selectedCandidate: any = null;
   filteredApplicants: any[] = [];
   viewCandidateModal: boolean = false;
+  showCandidate: boolean = false;
+  showInterviewInvite: boolean = false;
+  viewModal: boolean = false;
 
   applicantColumns: TableColumn[] = [
     { header: 'First Name', field: 'firstname', sortable: true },

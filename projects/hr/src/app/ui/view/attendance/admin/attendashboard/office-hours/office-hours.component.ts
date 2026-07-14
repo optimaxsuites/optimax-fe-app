@@ -84,8 +84,6 @@ export class OfficeHoursComponent implements OnInit{
   ) {}
 
   ngOnInit() {
-
-  // CREATE FORM FIRST
   this.form = this.fb.group({
     openingTime: ['09:00'],
     closingTime: ['17:00'],
@@ -96,21 +94,9 @@ export class OfficeHoursComponent implements OnInit{
   },
   { validators: officeHoursValidator });
 
-
-
-  // FETCH FROM BACKEND
   this.officeHoursService.fetchCurrentOfficeHours()
   .subscribe({
-
     next: (res) => {
-
-      console.log('CURRENT OFFICE HOURS:', res);
-
-      if (!res || !res.openingTime) {
-        console.warn('Office hours data incomplete');
-        return;
-      }
-
       this.officeHoursService.officeHoursId = res.id;
 
       const formatTime = (time: any) => {
@@ -128,11 +114,9 @@ export class OfficeHoursComponent implements OnInit{
         companyLongitude: Number(res.companyLongitude) || 0
       };
 
-      // STORE COMPANY LOCATION
       this.companyLatitude = hours.companyLatitude;
       this.companyLongitude = hours.companyLongitude;
 
-      // PATCH FORM
       this.form.patchValue({
         openingTime: hours.openingTime,
         closingTime: hours.closingTime,
@@ -141,15 +125,11 @@ export class OfficeHoursComponent implements OnInit{
         lat: hours.companyLatitude,
         lng: hours.companyLongitude
       });
-
     },
-
     error: (err) => {
       console.warn('No office hours yet:', err);
     }
-
   });
-
 }
 
   /*ngOnInit() {
