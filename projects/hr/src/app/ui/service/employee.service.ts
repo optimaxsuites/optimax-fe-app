@@ -295,6 +295,24 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  getAllAllowanceTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/allowanceTypes?page=1&size=100')
+      .pipe(catchError(this.handleError));
+  }
+
+  getAllBonusTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/bonusTypes')
+      .pipe(catchError(this.handleError));
+  }
+
+  getAllDeductionTypes(): Observable<any[]> {
+    return this.http
+      .get<any>(this.baseurl + '/x/api/v2/hr/deductionsTypes')
+      .pipe(catchError(this.handleError));
+  }
+
   getAllowanceTypeById(id: number){
     return this.http
     .get<any>(

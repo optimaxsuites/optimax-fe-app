@@ -1,4 +1,5 @@
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
@@ -271,6 +272,15 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     InterviewInviteComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
+    AddEmployeeFormComponent,
+    EmployeeManagementComponent,
+    AdminCreationFormComponent,
+    EmployeeProfileDashboardComponent,
+    // EmployeeOnboardingFormComponent,
+    PreOnboardingFormComponent,
+    PreOnboardingImportComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -421,6 +431,8 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
+    HrLettersComponent,
+    UserProfileComponent,
     // LargeSideModalComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,

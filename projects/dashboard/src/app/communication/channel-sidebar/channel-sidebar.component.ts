@@ -54,6 +54,7 @@ export class ChannelSidebarComponent {
   @Input() soundEnabled = true;
   @Input() selectedRingtone = 'classic';
   @Input() ringtoneOptions: Array<{ value: string; label: string }> = [];
+  @Input() workspaceName = '';
   @Input() canCreateChannels = false;
   @Input() canDeactivateDmUsers = false;
   @Input() searchQuery = '';
@@ -75,6 +76,49 @@ export class ChannelSidebarComponent {
   @Output() searchExecuted = new EventEmitter<void>();
   @Output() searchClosed = new EventEmitter<void>();
   @Output() jumpTo = new EventEmitter<{ msg: any; channelId: string; channelName: string }>();
+
+  // ── DM hover card state ──────────────────────────────
+  hoveredDm: DmContact | null = null;
+  dmCardPos: { top: number; left: number } | null = null;
+  private _dmCardShowTimer: ReturnType<typeof setTimeout> | null = null;
+  private _dmCardHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  showDmCard(event: MouseEvent, dm: DmContact): void {
+    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
+    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this._dmCardShowTimer = setTimeout(() => {
+      this._dmCardShowTimer = null;
+      this.hoveredDm = dm;
+      this.dmCardPos = {
+        top: Math.min(rect.top, window.innerHeight - 260),
+        left: rect.right + 6,
+      };
+      this.cdr.markForCheck();
+    }, 2000);
+  }
+
+  keepDmCard(): void {
+    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
+    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
+  }
+
+  hideDmCard(): void {
+    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
+    this._dmCardHideTimer = setTimeout(() => {
+      this.hoveredDm = null;
+      this.dmCardPos = null;
+      this.cdr.markForCheck();
+    }, 200);
+  }
+
+  closeDmCard(): void {
+    if (this._dmCardShowTimer) { clearTimeout(this._dmCardShowTimer); this._dmCardShowTimer = null; }
+    if (this._dmCardHideTimer) { clearTimeout(this._dmCardHideTimer); this._dmCardHideTimer = null; }
+    this.hoveredDm = null;
+    this.dmCardPos = null;
+    this.cdr.markForCheck();
+  }
 
   // ── Birthday panel state ──────────────────────────────
   birthdaysPanelOpen = true;

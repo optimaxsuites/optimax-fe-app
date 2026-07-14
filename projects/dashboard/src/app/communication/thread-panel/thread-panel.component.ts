@@ -275,7 +275,7 @@ export class ThreadPanelComponent implements OnChanges, AfterViewChecked {
   ngAfterViewChecked(): void {
     if (this.shouldScrollReplies) {
       this.shouldScrollReplies = false;
-      this.scrollRepliesToBottom();
+      setTimeout(() => this.scrollRepliesToBottom(), 80);
     }
   }
 
