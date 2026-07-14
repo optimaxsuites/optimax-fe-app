@@ -240,13 +240,13 @@
                   <label class="subsection-label required">Quotation For</label>
                   <div class="form-group">
                     <div class="customer-select">
-                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($event)">
+                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($any($event.target).value)">
                         <option value="">Select a client...</option>
                         <option *ngFor="let customer of customers" [value]="customer.id">
                           {{ customer.name }}
                         </option>
                       </select>
-                      <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">
+                      <button type="button" class="btn-add-customer" (click)="openNewCustomerModal()">
                         <i class="fas fa-user-plus"></i> New Client
                       </button>
                     </div>
@@ -254,6 +254,16 @@
                   </div>
                   <div class="form-group">
                     <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
+                  </div>
+                  <!-- Customer Bank Selector -->
+                  <div class="form-group" style="margin-top: 0.5rem;" *ngIf="selectedCustomerBankAccounts && selectedCustomerBankAccounts.length > 0">
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.25rem; display: block;">Select Customer Bank Account</label>
+                    <select formControlName="selectedCustomerBankIndex" class="form-control" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
+                      <option [value]="-1">Do not display customer bank account</option>
+                      <option *ngFor="let account of selectedCustomerBankAccounts; let idx = index" [value]="idx">
+                        {{ account.bankName }} - {{ account.accountNumber }} ({{ account.accountName }})
+                      </option>
+                    </select>
                   </div>
                 </div>
 
@@ -605,6 +615,14 @@
                       <strong>{{ quoteForm.get('customerName')?.value || 'Emirates Airlines' }}</strong>
                       <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'Abuja, FCT, Nigeria' }}</p>
                       <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                      <!-- Customer Bank Account Details -->
+                      <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
+                        <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
+                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Bank: {{ quoteDataForTemplate.selectedCustomerBank.bankName }}</p>
+                        <p style="margin: 0; color: #4a5a6e;">Acc Name: {{ quoteDataForTemplate.selectedCustomerBank.accountName }}</p>
+                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Acc No: {{ quoteDataForTemplate.selectedCustomerBank.accountNumber }}</p>
+                        <p style="margin: 0; color: #4a5a6e;" *ngIf="quoteDataForTemplate.selectedCustomerBank.routingNumber">Sort Code: {{ quoteDataForTemplate.selectedCustomerBank.routingNumber }}</p>
+                      </div>
                     </div>
                     <div class="parties-box">
                       <h4 class="parties-heading">FROM</h4>
@@ -1238,14 +1256,107 @@
   </div>
 
   <!-- New Customer Modal -->
-  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="showNewCustomerModal = false">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="closeNewCustomerModal()">
+    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3><i class="fas fa-user-plus"></i> Add New Client</h3>
-        <button class="modal-close" (click)="showNewCustomerModal = false">×</button>
+        <button class="modal-close" (click)="closeNewCustomerModal()">×</button>
       </div>
-      <div class="modal-body">
-        <p>Quick add customer form would go here</p>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem; color: #334155;">
+        <form [formGroup]="quickCustomerForm" (ngSubmit)="onQuickCustomerSubmit()">
+          <!-- Personal Information Section -->
+          <h4 style="color: #BA9953; margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">CLIENT INFORMATION</h4>
+          
+          <div class="form-group">
+            <label class="form-label required">Full Name</label>
+            <input type="text" formControlName="name" class="form-control" [class.is-invalid]="isQuickFieldInvalid('name')" placeholder="e.g. Emirates Airlines">
+            <div class="form-error" *ngIf="isQuickFieldInvalid('name')">Name is required (min 2 chars)</div>
+          </div>
+
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group flex-1">
+              <label class="form-label required">Email Address</label>
+              <input type="email" formControlName="email" class="form-control" [class.is-invalid]="isQuickFieldInvalid('email')" placeholder="client@example.com">
+              <div class="form-error" *ngIf="isQuickFieldInvalid('email')">Valid email is required</div>
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label required">Phone Number</label>
+              <input type="tel" formControlName="phone" class="form-control" [class.is-invalid]="isQuickFieldInvalid('phone')" placeholder="e.g. +234 800 000 0000">
+              <div class="form-error" *ngIf="isQuickFieldInvalid('phone')">Valid phone is required</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.75rem;">
+            <label class="form-label required">Street Address</label>
+            <input type="text" formControlName="address" class="form-control" [class.is-invalid]="isQuickFieldInvalid('address')" placeholder="Enter client's address">
+            <div class="form-error" *ngIf="isQuickFieldInvalid('address')">Address is required (min 5 chars)</div>
+          </div>
+
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group flex-1">
+              <label class="form-label">Tax ID / VAT Number</label>
+              <input type="text" formControlName="taxId" class="form-control" placeholder="e.g. TAX-009 (Optional)">
+            </div>
+            <div class="form-group flex-1" style="display: flex; align-items: center; padding-top: 1.5rem;">
+              <label class="checkbox-container" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #475569;">
+                <input type="checkbox" formControlName="savePermanently" style="width: 16px; height: 16px; cursor: pointer;">
+                Save permanently to customer database
+              </label>
+            </div>
+          </div>
+
+          <!-- Bank Accounts Section -->
+          <div style="margin-top: 1.5rem; border-top: 1px solid #cbd5e1; padding-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h4 style="color: #BA9953; margin: 0; font-size: 0.95rem; font-weight: 700;">BANK ACCOUNTS</h4>
+              <button type="button" class="btn-add-item" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #1a2d4a; color: white;" (click)="addQuickCustomerBankAccount()">
+                <i class="fas fa-plus"></i> Add Bank Account
+              </button>
+            </div>
+
+            <div formArrayName="bankAccounts" class="bank-accounts-list">
+              <div *ngFor="let account of quickCustomerBankAccounts.controls; let idx = index" [formGroupName]="idx" class="bank-account-item-wrapper" style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; position: relative;">
+                <button type="button" class="btn-remove-item" style="position: absolute; top: 0.4rem; right: 0.4rem; background: transparent; border: none; color: #ff3b30; cursor: pointer; font-size: 0.8rem;" (click)="removeQuickCustomerBankAccount(idx)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+                <h5 style="margin: 0 0 0.5rem 0; color: #1a2d4a; font-size: 0.8rem; font-weight: 700;">Account #{{ idx + 1 }}</h5>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Bank Name</label>
+                    <input type="text" formControlName="bankName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Stanbic IBTC">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Account Name</label>
+                    <input type="text" formControlName="accountName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Corporate Account">
+                  </div>
+                </div>
+                <div class="form-row" style="margin-top: 0.5rem;">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Account Number</label>
+                    <input type="text" formControlName="accountNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. 0013604661">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Sort Code / Routing No</label>
+                    <input type="text" formControlName="routingNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="Optional">
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="quickCustomerBankAccounts.length === 0" style="text-align: center; color: #64748b; font-size: 0.8rem; font-style: italic; padding: 0.75rem 0;">
+                No bank accounts added for this customer yet.
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+            <button type="button" class="btn-secondary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-weight: 600;" (click)="closeNewCustomerModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: #2EB270; color: white; cursor: pointer; font-weight: 600;">
+              Save Client &amp; Proceed
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

@@ -4,7 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Product } from '../../../../domain/sales/sales.dto';
+import { Product, Category } from '../../../../domain/sales/sales.dto';
 
 @Component({
   selector: 'app-product-list',
@@ -52,8 +52,13 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
     totalValue: 0
   };
   
-  // Categories for filter
-  categories: string[] = ['ALL', 'Furniture', 'Electronics', 'Stationery', 'Apparel', 'Logistics'];
+  // Categories for filter (dynamically loaded)
+  categories: string[] = ['ALL'];
+  rawCategories: Category[] = [];
+  showCategoryModal = false;
+  newCategoryName = '';
+  newCategoryDesc = '';
+  editingCategory: Category | null = null;
   
   statusOptions: { value: string; label: string; color: string }[] = [
     { value: 'ALL', label: 'All Products', color: 'gray' },
@@ -71,7 +76,120 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadCategories();
     this.loadProducts();
+  }
+
+  loadCategories(): void {
+    this.salesService.getCategories().subscribe({
+      next: (cats) => {
+        this.rawCategories = cats;
+        this.categories = ['ALL', ...cats.map(c => c.name)];
+      }
+    });
+  }
+
+  openCategoryModal(): void {
+    this.showCategoryModal = true;
+    this.editingCategory = null;
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+  }
+
+  closeCategoryModal(): void {
+    this.showCategoryModal = false;
+    this.editingCategory = null;
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+  }
+
+  startEditCategory(cat: Category): void {
+    this.editingCategory = cat;
+    this.newCategoryName = cat.name;
+    this.newCategoryDesc = cat.description || '';
+  }
+
+  cancelEditCategory(): void {
+    this.editingCategory = null;
+    this.newCategoryName = '';
+    this.newCategoryDesc = '';
+  }
+
+  submitCategory(): void {
+    const trimmedName = this.newCategoryName.trim();
+    if (!trimmedName) {
+      alert('Please enter a category name');
+      return;
+    }
+
+    if (this.editingCategory) {
+      // Update Mode
+      const isDuplicate = this.rawCategories.some(
+        c => c.id !== this.editingCategory?.id && c.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (isDuplicate) {
+        alert('Another category already has this name');
+        return;
+      }
+
+      this.salesService.updateCategory(this.editingCategory.id, {
+        name: trimmedName,
+        description: this.newCategoryDesc.trim()
+      }).subscribe({
+        next: (updatedCats) => {
+          this.rawCategories = updatedCats;
+          this.categories = ['ALL', ...updatedCats.map(c => c.name)];
+          this.cancelEditCategory();
+          alert('Category updated successfully!');
+        },
+        error: (err) => {
+          console.error('Error updating category:', err);
+          alert('Failed to update category');
+        }
+      });
+    } else {
+      // Create Mode
+      if (this.rawCategories.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+        alert('Category already exists');
+        return;
+      }
+
+      this.salesService.createCategory({
+        name: trimmedName,
+        description: this.newCategoryDesc.trim()
+      }).subscribe({
+        next: (updatedCats) => {
+          this.rawCategories = updatedCats;
+          this.categories = ['ALL', ...updatedCats.map(c => c.name)];
+          this.newCategoryName = '';
+          this.newCategoryDesc = '';
+          alert('Category added successfully!');
+        },
+        error: (err) => {
+          console.error('Error adding category:', err);
+          alert('Failed to add category');
+        }
+      });
+    }
+  }
+
+  confirmDeleteCategory(id: string, name: string): void {
+    if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+      this.salesService.deleteCategory(id).subscribe({
+        next: (updatedCats) => {
+          this.rawCategories = updatedCats;
+          this.categories = ['ALL', ...updatedCats.map(c => c.name)];
+          if (this.editingCategory?.id === id) {
+            this.cancelEditCategory();
+          }
+          alert('Category deleted successfully!');
+        },
+        error: (err) => {
+          console.error('Error deleting category:', err);
+          alert('Failed to delete category');
+        }
+      });
+    }
   }
 
   ngOnDestroy(): void {

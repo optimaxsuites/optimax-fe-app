@@ -31,7 +31,7 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   
   // Mock data
   branches: string[] = ['Abuja', 'Lagos', 'Port Harcourt', 'Kano', 'Enugu'];
-  categories: string[] = ['Electronics', 'Furniture', 'Office Supplies', 'Food & Beverage', 'Services', 'Other'];
+  categories: string[] = [];
   taxOptions: string[] = ['VAT 7.5%', 'VAT 5%', 'No Tax', '0%'];
   discountOptions: string[] = ['No Discount', '5%', '10%', '15%', '20%', '25%', '50%'];
   measurementUnits: string[] = ['Each', 'Kg', 'g', 'L', 'mL', 'm', 'cm', 'Box', 'Pack', 'Carton'];
@@ -87,10 +87,19 @@ export class ProductServiceCatalogFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.productId = this.route.snapshot.paramMap.get('id') || '';
     this.isEditMode = !!this.productId;
+    this.loadCategories();
     
     if (this.isEditMode) {
       this.loadProduct();
     }
+  }
+
+  loadCategories(): void {
+    this.salesService.getCategories().subscribe({
+      next: (cats) => {
+        this.categories = cats.map(c => c.name);
+      }
+    });
   }
 
   ngOnDestroy(): void {

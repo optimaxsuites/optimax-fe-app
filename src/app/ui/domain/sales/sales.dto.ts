@@ -55,6 +55,7 @@ export interface Quote {
   notes?: string;
   terms?: string;
   logoUrl?: string;
+  selectedCustomerBank?: CustomerBankDetails;
 }
 
 export interface QuoteItem {
@@ -205,4 +206,10 @@ export interface TopProduct {
   productName: string;
   quantitySold: number;
   revenue: number;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
 }
