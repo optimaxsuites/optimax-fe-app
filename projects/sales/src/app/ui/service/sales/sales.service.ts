@@ -32,6 +32,29 @@ export class SalesService {
 
   constructor() {
     this.initData();
+    this.sanitizeCustomers();
+  }
+
+  private sanitizeCustomers(): void {
+    try {
+      const customersStr = localStorage.getItem(this.CUSTOMERS_KEY);
+      if (customersStr) {
+        let customers = JSON.parse(customersStr);
+        let changed = false;
+        customers = customers.map((c: any, index: number) => {
+          if (!c.id || c.id.trim() === '') {
+            c.id = `CUST-${String(index + 1).padStart(3, '0')}`;
+            changed = true;
+          }
+          return c;
+        });
+        if (changed) {
+          localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+        }
+      }
+    } catch (e) {
+      console.error('Error sanitizing customers:', e);
+    }
   }
 
   private initData(): void {

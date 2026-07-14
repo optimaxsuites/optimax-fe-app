@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
@@ -52,8 +52,26 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
       taxId: ['', [Validators.maxLength(50)]],
       status: ['ACTIVE', Validators.required],
-      notes: ['']
+      notes: [''],
+      bankAccounts: this.fb.array([])
     });
+  }
+
+  get bankAccounts(): FormArray {
+    return this.customerForm.get('bankAccounts') as FormArray;
+  }
+
+  addBankAccount(): void {
+    this.bankAccounts.push(this.fb.group({
+      bankName: ['', Validators.required],
+      accountName: ['', Validators.required],
+      accountNumber: ['', [Validators.required, Validators.pattern(/^[0-9a-zA-Z\s\-]+$/)]],
+      routingNumber: ['']
+    }));
+  }
+
+  removeBankAccount(index: number): void {
+    this.bankAccounts.removeAt(index);
   }
 
 
@@ -102,6 +120,21 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       status: customer.status,
       notes: customer.notes || ''
     });
+
+    const accounts = this.bankAccounts;
+    while (accounts.length) {
+      accounts.removeAt(0);
+    }
+    if (customer.bankAccounts) {
+      customer.bankAccounts.forEach(account => {
+        accounts.push(this.fb.group({
+          bankName: [account.bankName, Validators.required],
+          accountName: [account.accountName, Validators.required],
+          accountNumber: [account.accountNumber, [Validators.required, Validators.pattern(/^[0-9a-zA-Z\s\-]+$/)]],
+          routingNumber: [account.routingNumber || '']
+        }));
+      });
+    }
   }
 
   onSubmit(): void {
@@ -122,6 +155,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       taxId: formValue.taxId || '',
       status: formValue.status,
       notes: formValue.notes || '',
+      bankAccounts: formValue.bankAccounts || [],
       createdAt: this.isEditMode && this.customerStats ? this.customerStats.createdAt : new Date(),
       totalSpent: this.isEditMode && this.customerStats ? this.customerStats.totalSpent : 0,
       totalOrders: this.isEditMode && this.customerStats ? this.customerStats.totalOrders : 0

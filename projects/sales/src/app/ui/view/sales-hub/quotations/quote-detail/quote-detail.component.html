@@ -68,11 +68,14 @@
         <!-- Company & Billing Info -->
         <div class="info-card glass" id="quote-detail-sheet">
           <div class="card-body">
-            <div class="company-details">
-              <div>
-                <h2>ERP Sales Hub</h2>
-                <p>Lagos, Nigeria</p>
-                <p>sales&#64;erpsales.ng</p>
+            <div class="company-details" style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <img *ngIf="quote.logoUrl" [src]="quote.logoUrl" alt="Business Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
+                <div>
+                  <h2>Centrifuge Group</h2>
+                  <p>Abuja, Nigeria</p>
+                  <p>enquiries&#64;centrifugegroup.com</p>
+                </div>
               </div>
               <div class="quote-meta">
                 <h3>QUOTE</h3>

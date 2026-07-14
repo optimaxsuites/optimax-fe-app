@@ -212,7 +212,8 @@ export class SalesOrdersDetailComponent implements OnChanges, OnInit {
         notes: this.order.notes,
         paymentTerms: 'Net 30',
         issueDate: new Date(),
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Default 30 days due
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days due
+        logoUrl: this.order.logoUrl
       };
 
       this.salesService.createInvoice(invoiceData).subscribe({

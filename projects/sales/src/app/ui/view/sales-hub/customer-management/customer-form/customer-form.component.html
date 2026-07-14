@@ -122,6 +122,52 @@
             </div>
           </div>
 
+          <!-- Section 2.5: Customer Bank Accounts -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-university"></i>
+              </div>
+              <h3>Bank Accounts</h3>
+              <button type="button" class="btn-add-item" style="margin-left: auto;" (click)="addBankAccount()">
+                <i class="fas fa-plus"></i> Add Account
+              </button>
+            </div>
+            <div class="card-body">
+              <div formArrayName="bankAccounts" class="bank-accounts-list">
+                <div *ngFor="let account of bankAccounts.controls; let idx = index" [formGroupName]="idx" class="bank-account-item-wrapper" style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; position: relative;">
+                  <button type="button" class="btn-remove-item" style="position: absolute; top: 0.5rem; right: 0.5rem; background: transparent; border: none; color: #ff3b30; cursor: pointer; padding: 0.25rem; font-size: 0.9rem;" (click)="removeBankAccount(idx)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                  <h4 style="margin: 0 0 1rem 0; color: #BA9953; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Account #{{ idx + 1 }}</h4>
+                  <div class="form-row">
+                    <div class="form-group flex-1">
+                      <label class="form-label required">Bank Name</label>
+                      <input type="text" formControlName="bankName" class="form-control" placeholder="e.g. Stanbic IBTC">
+                    </div>
+                    <div class="form-group flex-1">
+                      <label class="form-label required">Account Name</label>
+                      <input type="text" formControlName="accountName" class="form-control" placeholder="e.g. Emirates Corporate">
+                    </div>
+                  </div>
+                  <div class="form-row" style="margin-top: 0.5rem;">
+                    <div class="form-group flex-1">
+                      <label class="form-label required">Account Number</label>
+                      <input type="text" formControlName="accountNumber" class="form-control" placeholder="e.g. 0013604661">
+                    </div>
+                    <div class="form-group flex-1">
+                      <label class="form-label">Routing Number / Sort Code</label>
+                      <input type="text" formControlName="routingNumber" class="form-control" placeholder="Optional">
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="bankAccounts.length === 0" class="no-accounts-msg" style="text-align: center; color: #64748b; padding: 1.5rem 0; font-size: 0.85rem; font-style: italic;">
+                  No bank accounts added yet. Click "Add Account" to configure one or more.
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- RIGHT COLUMN -->
