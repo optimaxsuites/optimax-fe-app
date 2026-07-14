@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { jsPDF } from 'jspdf';
@@ -56,7 +56,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       notes: this.invoiceForm.get('notes')?.value,
       terms: this.invoiceForm.get('terms')?.value,
       issueDate: this.invoiceForm.get('issueDate')?.value,
-      dueDate: this.invoiceForm.get('dueDate')?.value
+      dueDate: this.invoiceForm.get('dueDate')?.value,
+      logoUrl: this.logoUrl,
+      selectedCustomerBank: this.invoiceForm.get('selectedCustomerBankIndex')?.value >= 0 ?
+        this.selectedCustomerBankAccounts[this.invoiceForm.get('selectedCustomerBankIndex')?.value] :
+        (this.isEditMode ? (this.loadedInvoiceSelectedCustomerBank || null) : null)
     };
   }
 
@@ -75,6 +79,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   contactEmail = '';
   attachmentFileName = '';
   logoFileName = '';
+  logoUrl = '';
 
   // Shipping Details data bindings
   showShippingDetails = false;
@@ -89,6 +94,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   customers: Customer[] = [];
   products: Product[] = [];
   filteredProducts: Product[] = [];
+  selectedCustomerBankAccounts: CustomerBankDetails[] = [];
+  loadedInvoiceSelectedCustomerBank: CustomerBankDetails | null = null;
+  quickCustomerForm!: FormGroup;
 
   // UI State
   showNewCustomerModal = false;
@@ -138,7 +146,18 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       taxRate: [0],
       discountType: ['PERCENTAGE'],
       discountValue: [0],
-      isRecurring: [false]
+      isRecurring: [false],
+      selectedCustomerBankIndex: [-1]
+    });
+
+    this.quickCustomerForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required, Validators.pattern(/^[0-9+\-\s()]{7,20}$/)]],
+      address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
+      taxId: ['', [Validators.maxLength(50)]],
+      savePermanently: [true],
+      bankAccounts: this.fb.array([])
     });
   }
 
@@ -327,6 +346,27 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const customer = this.customers.find(c => c.id === customerId);
     if (customer) {
       this.invoiceForm.patchValue({ customerName: customer.name });
+      this.selectedCustomerBankAccounts = customer.bankAccounts || [];
+      if (this.selectedCustomerBankAccounts.length > 0) {
+        // If we loaded a bank, try to match it first
+        if (this.loadedInvoiceSelectedCustomerBank) {
+          const index = this.selectedCustomerBankAccounts.findIndex(
+            b => b.accountNumber === this.loadedInvoiceSelectedCustomerBank?.accountNumber && b.bankName === this.loadedInvoiceSelectedCustomerBank?.bankName
+          );
+          if (index >= 0) {
+            this.invoiceForm.patchValue({ selectedCustomerBankIndex: index });
+          } else {
+            this.invoiceForm.patchValue({ selectedCustomerBankIndex: 0 });
+          }
+        } else {
+          this.invoiceForm.patchValue({ selectedCustomerBankIndex: 0 });
+        }
+      } else {
+        this.invoiceForm.patchValue({ selectedCustomerBankIndex: -1 });
+      }
+    } else {
+      this.selectedCustomerBankAccounts = [];
+      this.invoiceForm.patchValue({ selectedCustomerBankIndex: -1 });
     }
   }
 
@@ -338,10 +378,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         const customerId = this.route.snapshot.queryParamMap.get('customerId');
         if (customerId) {
           this.invoiceForm.patchValue({ customerId: customerId });
-          const customer = this.customers.find(c => c.id === customerId);
-          if (customer) {
-            this.invoiceForm.patchValue({ customerName: customer.name });
-          }
+          this.onCustomerSelect(customerId);
         }
       },
       error: (error: any) => {
@@ -350,10 +387,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         const customerId = this.route.snapshot.queryParamMap.get('customerId');
         if (customerId) {
           this.invoiceForm.patchValue({ customerId: customerId });
-          const customer = this.customers.find(c => c.id === customerId);
-          if (customer) {
-            this.invoiceForm.patchValue({ customerName: customer.name });
-          }
+          this.onCustomerSelect(customerId);
         }
       }
     });
@@ -419,6 +453,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       dueDate: this.formatDateForInput(defaultDueDate)
     });
 
+    this.logoUrl = quote.logoUrl || '';
+    this.logoFileName = quote.logoUrl ? 'Saved Logo' : '';
+
     // Add items from quote
     quote.items.forEach((item: any) => {
       this.addLineItem();
@@ -438,6 +475,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   private populateForm(invoice: Invoice): void {
     this.quoteId = invoice.quoteId || '';
+    this.loadedInvoiceSelectedCustomerBank = invoice.selectedCustomerBank || null;
     this.invoiceForm.patchValue({
       customerId: invoice.customerId,
       customerName: invoice.customerName,
@@ -447,6 +485,10 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       notes: invoice.notes,
       paymentTerms: invoice.paymentTerms
     });
+    this.onCustomerSelect(invoice.customerId);
+
+    this.logoUrl = invoice.logoUrl || '';
+    this.logoFileName = invoice.logoUrl ? 'Saved Logo' : '';
 
     // Clear existing items
     while (this.items.length) {
@@ -514,6 +556,14 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       });
     }
 
+    const selectedBankIdx = formValue.selectedCustomerBankIndex;
+    let selectedCustomerBank: any = undefined;
+    if (selectedBankIdx !== undefined && selectedBankIdx !== null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      selectedCustomerBank = this.selectedCustomerBankAccounts[selectedBankIdx];
+    } else if (this.isEditMode && this.loadedInvoiceSelectedCustomerBank) {
+      selectedCustomerBank = this.loadedInvoiceSelectedCustomerBank;
+    }
+
     const invoiceData: Partial<Invoice> = {
       customerId: formValue.customerId,
       customerName: formValue.customerName,
@@ -530,7 +580,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       amountPaid: 0,
       balanceDue: this.grandTotal,
       status: (this.currentStep === 3 ? 'SENT' : 'DRAFT') as InvoiceStatus,
-      quoteId: this.quoteId || undefined
+      quoteId: this.quoteId || undefined,
+      logoUrl: this.logoUrl,
+      selectedCustomerBank: selectedCustomerBank
     };
 
     let request;
@@ -669,7 +721,11 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (file) {
       this.logoFileName = file.name;
-      alert(`Logo "${file.name}" uploaded successfully.`);
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.logoUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
     }
   }
 
@@ -987,5 +1043,88 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  // Quick Customer helpers & submit
+  get quickCustomerBankAccounts(): FormArray {
+    return this.quickCustomerForm.get('bankAccounts') as FormArray;
+  }
+
+  addQuickCustomerBankAccount(): void {
+    this.quickCustomerBankAccounts.push(this.fb.group({
+      bankName: ['', Validators.required],
+      accountName: ['', Validators.required],
+      accountNumber: ['', [Validators.required, Validators.pattern(/^[0-9a-zA-Z\s\-]+$/)]],
+      routingNumber: ['']
+    }));
+  }
+
+  removeQuickCustomerBankAccount(index: number): void {
+    this.quickCustomerBankAccounts.removeAt(index);
+  }
+
+  onQuickCustomerSubmit(): void {
+    if (this.quickCustomerForm.invalid) {
+      this.quickCustomerForm.markAllAsTouched();
+      alert('Please fill in all required fields in the quick-add client form');
+      return;
+    }
+
+    const val = this.quickCustomerForm.value;
+    const newCust: any = {
+      name: val.name,
+      email: val.email,
+      phone: val.phone,
+      address: val.address,
+      taxId: val.taxId || '',
+      status: 'ACTIVE',
+      bankAccounts: val.bankAccounts || [],
+      createdAt: new Date(),
+      totalSpent: 0,
+      totalOrders: 0
+    };
+
+    if (val.savePermanently) {
+      this.salesService.createCustomer(newCust).subscribe({
+        next: (savedCust) => {
+          this.customers = [...this.customers, savedCust];
+          this.showNewCustomerModal = false;
+          this.quickCustomerForm.reset({ savePermanently: true });
+          while (this.quickCustomerBankAccounts.length) {
+            this.quickCustomerBankAccounts.removeAt(0);
+          }
+          setTimeout(() => {
+            this.invoiceForm.patchValue({ customerId: savedCust.id });
+            this.onCustomerSelect(savedCust.id);
+          });
+        },
+        error: (err) => {
+          console.error('Error saving client permanently:', err);
+          alert('Failed to save client permanently. Please try again.');
+        }
+      });
+    } else {
+      // Temporary client (Invoice Only)
+      const tempId = `TEMP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const tempCust: Customer = {
+        ...newCust,
+        id: tempId
+      };
+      this.customers = [...this.customers, tempCust];
+      this.showNewCustomerModal = false;
+      this.quickCustomerForm.reset({ savePermanently: true });
+      while (this.quickCustomerBankAccounts.length) {
+        this.quickCustomerBankAccounts.removeAt(0);
+      }
+      setTimeout(() => {
+        this.invoiceForm.patchValue({ customerId: tempId });
+        this.onCustomerSelect(tempId);
+      });
+    }
+  }
+
+  isQuickFieldInvalid(fieldName: string): boolean {
+    const field = this.quickCustomerForm.get(fieldName);
+    return field ? (field.invalid && (field.dirty || field.touched)) : false;
   }
 }

@@ -2257,6 +2257,652 @@ $radius-xl: 24px;
   }
 }
 
+/* ============ EMIRATES PREMIUM TEMPLATE ============ */
+.paper-document-preview.emirates, .paper-document-preview.emirates-custbank {
+  border: 1px solid #dce3ec;
+  padding: 3rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Outfit', 'Inter', sans-serif;
+
+  .emirates-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .emirates-company-name {
+      font-size: 1.45rem;
+      color: #A32638;
+      font-weight: 800;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 0.03em;
+    }
+
+    .emirates-company-sub {
+      font-size: 0.85rem;
+      color: #4a5a6e;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .emirates-company-contact {
+      font-size: 0.85rem;
+      color: #7a8a9e;
+      margin: 0;
+    }
+  }
+
+  .emirates-divider {
+    height: 1px;
+    background: radial-gradient(circle, #BA9953 0%, rgba(220, 227, 236, 0.4) 100%);
+    margin: 1.5rem 0;
+  }
+
+  .emirates-title-block {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .emirates-title {
+      font-size: 1.6rem;
+      color: #A32638;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      margin: 0;
+    }
+  }
+
+  .emirates-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    background: #fdfbf7;
+    border: 1px solid rgba(186, 153, 83, 0.15);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .meta-item {
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      strong {
+        color: #BA9953;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+      }
+
+      span {
+        color: #1a2d4a;
+        font-weight: 600;
+      }
+
+      .status-badge {
+        font-weight: 700;
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        width: fit-content;
+        
+        &.unpaid {
+          background: #ffebe9;
+          color: #ff3b30;
+          border: 1px solid #ffc7c4;
+        }
+      }
+    }
+  }
+
+  .emirates-parties-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+
+    .parties-box {
+      .parties-heading {
+        font-size: 0.85rem;
+        color: #BA9953;
+        font-weight: 800;
+        border-bottom: 1.5px solid #BA9953;
+        padding-bottom: 0.35rem;
+        margin: 0 0 0.75rem 0;
+        letter-spacing: 0.05em;
+      }
+
+      strong {
+        display: block;
+        font-size: 1.05rem;
+        color: #1a2d4a;
+        margin-bottom: 0.35rem;
+      }
+
+      p {
+        margin: 0 0 0.2rem 0;
+        font-size: 0.85rem;
+        color: #4a5a6e;
+      }
+    }
+  }
+
+  .emirates-project-ref {
+    background: #f8fafc;
+    border-left: 3px solid #A32638;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+
+    p {
+      margin: 0 0 0.25rem 0;
+      color: #334155;
+
+      &:last-child {
+        margin: 0;
+      }
+    }
+  }
+
+  .emirates-table-wrapper {
+    margin-bottom: 1.5rem;
+
+    .emirates-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th {
+        background: #A32638;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.75rem;
+        border: 1px solid #A32638;
+      }
+
+      td {
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        font-size: 0.85rem;
+        color: #334155;
+
+        strong {
+          color: #0f1a2e;
+        }
+
+        .item-desc {
+          font-size: 0.75rem;
+          color: #64748b;
+          margin-top: 0.25rem;
+        }
+
+        &.empty-row {
+          text-align: center;
+          color: #94a3b8;
+          padding: 2rem;
+        }
+      }
+    }
+  }
+
+  .emirates-totals-section {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+
+    .word-amount {
+      background: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-size: 0.8rem;
+
+      strong {
+        color: #BA9953;
+        display: block;
+        margin-bottom: 0.25rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+      }
+
+      p {
+        margin: 0;
+        color: #44403c;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+    }
+
+    .totals-table {
+      width: 100%;
+      font-size: 0.85rem;
+
+      td {
+        padding: 0.4rem 0.5rem;
+        color: #4a5a6e;
+
+        &:last-child {
+          text-align: right;
+          font-weight: 600;
+          color: #0f1a2e;
+        }
+      }
+
+      .discount-neg {
+        color: #df2c2c !important;
+      }
+
+      .grand-total-row {
+        td {
+          border-top: 2px solid #BA9953;
+          font-weight: 800 !important;
+          font-size: 1rem;
+          color: #A32638 !important;
+          padding-top: 0.65rem;
+
+          &:last-child {
+            color: #A32638 !important;
+          }
+        }
+      }
+    }
+  }
+
+  .emirates-payment-details {
+    background: #fdfbf7;
+    border: 1px solid rgba(186, 153, 83, 0.15);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    font-size: 0.8rem;
+
+    .section-heading {
+      font-size: 0.8rem;
+      color: #A32638;
+      font-weight: 800;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 0.05em;
+    }
+
+    .payment-terms-text {
+      color: #57534e;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .bank-details-box {
+      background: #ffffff;
+      border: 1px solid #e7e5e4;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+
+      strong {
+        color: #BA9953;
+        font-size: 0.75rem;
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      p {
+        margin: 0 0 0.15rem 0;
+        color: #44403c;
+        font-weight: 600;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
+    }
+
+    .enquiries-text {
+      margin: 0;
+      color: #78716c;
+      font-style: italic;
+    }
+  }
+
+  .emirates-signatures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+
+    .sig-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-size: 0.8rem;
+
+      p {
+        margin: 0 0 0.5rem 0;
+      }
+
+      .sig-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1a2d4a;
+        margin-bottom: 0.15rem;
+      }
+
+      .sig-title {
+        color: #64748b;
+        margin-bottom: 1.5rem;
+      }
+
+      .sig-line {
+        border-top: 1px dashed #94a3b8;
+        padding-top: 0.5rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+      }
+
+      .sig-date {
+        color: #94a3b8;
+        margin: 0;
+      }
+
+      .acknowledgement-instructions {
+        color: #64748b;
+        margin-bottom: 1.25rem;
+        font-size: 0.75rem;
+        line-height: 1.3;
+      }
+
+      .sig-line-spaced {
+        margin-bottom: 0.65rem;
+        color: #64748b;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .emirates-footer {
+    text-align: center;
+    .thank-you {
+      font-size: 0.9rem;
+      color: #BA9953;
+      font-weight: 700;
+      margin: 0;
+    }
+  }
+}
+
+/* ============ 13TH COMMUNICATIONS MODERN TEMPLATE ============ */
+.paper-document-preview.thcomms {
+  border: 1px solid #e2e8f0;
+  padding: 3rem;
+  background: #ffffff;
+  color: #333333;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+
+  .thcomms-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #1B365D;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+
+    .header-left {
+      .thcomms-title {
+        font-size: 2.2rem;
+        color: #1B365D;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        margin: 0;
+      }
+    }
+
+    .header-right {
+      text-align: right;
+
+      .thcomms-company-name {
+        font-size: 1.15rem;
+        color: #1B365D;
+        font-weight: 800;
+        margin: 0 0 0.5rem 0;
+      }
+
+      p {
+        margin: 0 0 0.2rem 0;
+        font-size: 0.8rem;
+        color: #666666;
+      }
+    }
+  }
+
+  .thcomms-meta-parties {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 2rem;
+
+    .parties-left {
+      flex: 1;
+
+      .section-title {
+        font-size: 0.85rem;
+        color: #666666;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      strong {
+        font-size: 1.1rem;
+        color: #1b365d;
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      p {
+        margin: 0 0 0.2rem 0;
+        font-size: 0.85rem;
+        color: #555555;
+      }
+    }
+
+    .meta-right {
+      width: 45%;
+
+      .meta-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+
+        td {
+          padding: 0.35rem 0;
+          color: #555555;
+
+          &:last-child {
+            text-align: right;
+            color: #1b365d;
+            font-weight: 600;
+          }
+        }
+
+        .amount-due-row {
+          td {
+            border-top: 1px solid #1B365D;
+            border-bottom: 1.5px solid #1B365D;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+
+            strong {
+              color: #1B365D;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .thcomms-table-wrapper {
+    margin-bottom: 1.75rem;
+
+    .thcomms-table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th {
+        background: #1B365D;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid #1B365D;
+      }
+
+      td {
+        padding: 0.75rem 0.85rem;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.85rem;
+        color: #444444;
+
+        strong {
+          color: #111111;
+        }
+
+        .item-desc {
+          font-size: 0.75rem;
+          color: #777777;
+          margin-top: 0.2rem;
+        }
+
+        &.empty-row {
+          text-align: center;
+          color: #999999;
+          padding: 2rem;
+        }
+      }
+    }
+  }
+
+  .thcomms-totals-wrapper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+
+    .totals-col {
+      width: 50%;
+
+      .thcomms-totals-table {
+        width: 100%;
+        font-size: 0.85rem;
+
+        td {
+          padding: 0.35rem 0;
+          color: #555555;
+
+          &:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #111111;
+          }
+        }
+
+        .total-row {
+          td {
+            border-top: 1.5px solid #1B365D;
+            font-weight: 800;
+            color: #1B365D !important;
+            font-size: 1rem;
+            padding: 0.5rem 0;
+          }
+        }
+
+        .amount-due-row {
+          td {
+            background: #f1f5f9;
+            padding: 0.5rem;
+            font-weight: 800;
+            color: #1B365D !important;
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+  }
+
+  .thcomms-bottom {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2.5rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+    margin-bottom: 2rem;
+
+    .notes-item {
+      font-size: 0.8rem;
+      color: #666666;
+
+      .section-title {
+        font-size: 0.85rem;
+        color: #1b365d;
+        font-weight: 800;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.4;
+      }
+    }
+
+    .payment-details-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem;
+      font-size: 0.8rem;
+
+      .section-title {
+        font-size: 0.8rem;
+        color: #1b365d;
+        font-weight: 800;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+      }
+
+      strong {
+        display: block;
+        font-size: 0.9rem;
+        color: #333333;
+        margin-bottom: 0.25rem;
+      }
+
+      p {
+        margin: 0 0 0.15rem 0;
+        color: #555555;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .thcomms-footer {
+    text-align: center;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+
+    .appreciate-msg {
+      font-size: 0.85rem;
+      color: #666666;
+      font-weight: 600;
+      margin: 0;
+      font-style: italic;
+    }
+  }
+}
 
 /* Delivery Options Card in Sidebar */
 .delivery-options-column {
@@ -2415,6 +3061,56 @@ $radius-xl: 24px;
         cursor: not-allowed;
         box-shadow: none;
       }
+  }
+}
+
+/* ============ LOGO DROP ZONE ============ */
+.logo-drop-zone {
+  border: 2px dashed #dce3ec;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &:hover {
+    border-color: #2E6276;
+    background: rgba(46, 98, 118, 0.02);
+
+    .upload-icon {
+      color: #2E6276;
+      transform: translateY(-2px);
     }
   }
+
+  .upload-icon {
+    font-size: 2rem;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  span {
+    display: block;
+    font-size: 0.9rem;
+    color: #0f1a2e;
+    font-weight: 500;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .file-input-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
 }

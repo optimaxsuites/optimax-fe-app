@@ -220,7 +220,8 @@ export class QuoteDetailComponent implements OnInit {
             currency: updated.currency,
             status: 'PENDING',
             orderDate: new Date(),
-            notes: updated.notes
+            notes: updated.notes,
+            logoUrl: updated.logoUrl
           };
 
           this.salesService.createSalesOrder(orderData).subscribe({

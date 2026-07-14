@@ -10,6 +10,7 @@ import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/temp
 import { lastValueFrom } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-quote-form',
@@ -92,6 +93,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   // Template quotes
   selectedTemplate: QuoteTemplate | null = null;
+  logoFileName = '';
+  logoUrl = '';
 
   get quoteDataForTemplate(): any {
     return {
@@ -111,7 +114,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       notes: this.quoteForm.get('notes')?.value,
       terms: this.quoteForm.get('terms')?.value,
       validUntil: this.quoteForm.get('validUntil')?.value,
-      quoteDate: this.quoteForm.get('quoteDate')?.value
+      quoteDate: this.quoteForm.get('quoteDate')?.value,
+      logoUrl: this.logoUrl
     };
   }
   
@@ -606,6 +610,9 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       terms: quote.terms
     });
     
+    this.logoUrl = quote.logoUrl || '';
+    this.logoFileName = quote.logoUrl ? 'Saved Logo' : '';
+    
     // Clear existing items
     while (this.items.length) {
       this.items.removeAt(0);
@@ -632,6 +639,18 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
     const file = event.target.files?.[0];
     if (file) {
       this.attachmentFileName = file.name;
+    }
+  }
+
+  onLogoSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.logoFileName = file.name;
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.logoUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
     }
   }
 
@@ -703,7 +722,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       totalAmount: this.grandTotal,
       status: 'DRAFT' as QuoteStatus,
       createdAt: new Date(formValue.quoteDate),
-      expiresAt: new Date(formValue.validUntil)
+      expiresAt: new Date(formValue.validUntil),
+      logoUrl: this.logoUrl
     };
     
     let request;

@@ -5,7 +5,8 @@
       <div class="header-left">
         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
           <app-back-button (click)="onClose()"></app-back-button>
-          <span class="back-link" (click)="onClose()" style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Orders</span>
+          <span class="back-link" (click)="onClose()"
+            style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Orders</span>
         </div>
         <div class="title-section">
           <h1 class="detail-title">Order Details</h1>
@@ -21,13 +22,15 @@
           {{ getStatusLabel(order.status) }}
         </span>
         <div class="action-buttons">
-          <button *ngIf="!invoiceGenerated && order.status !== 'CANCELLED'" (click)="generateInvoice()" class="action-btn accept" style="background: #2EB270; color: white;">
+          <button *ngIf="!invoiceGenerated && order.status !== 'CANCELLED'" (click)="generateInvoice()"
+            class="action-btn accept" style="background: #2EB270; color: white;">
             <i class="fas fa-file-invoice-dollar"></i> Generate Invoice
           </button>
-          <button *ngIf="invoiceGenerated" (click)="viewInvoice()" class="action-btn download" style="background: rgba(46, 98, 118, 0.08); color: #2E6276; border: 1px solid rgba(46, 98, 118, 0.15);">
+          <button *ngIf="invoiceGenerated" (click)="viewInvoice()" class="action-btn download"
+            style="background: rgba(46, 98, 118, 0.08); color: #2E6276; border: 1px solid rgba(46, 98, 118, 0.15);">
             <i class="fas fa-eye"></i> View Invoice
           </button>
-          
+
           <button *ngIf="order.status === 'PENDING'" (click)="processOrder()" class="action-btn send">
             Process Order
           </button>
@@ -46,30 +49,41 @@
       <div>
         <div class="info-card">
           <div class="card-body">
-            <div class="company-details" style="margin-bottom: 2rem; display: flex; justify-content: space-between;">
-              <div>
-                <h2 style="color: #2E6276; margin: 0 0 0.5rem 0;">ERP Sales Hub</h2>
-                <p style="margin: 0; color: #64748b; font-size: 0.875rem;">Lagos, Nigeria</p>
-                <p style="margin: 0; color: #64748b; font-size: 0.875rem;">sales&#64;erpsales.ng</p>
+            <div class="company-details" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <img *ngIf="order.logoUrl" [src]="order.logoUrl" alt="Business Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
+                <div>
+                  <h2 style="color: #2E6276; margin: 0 0 0.5rem 0;">Centrifuge Group</h2>
+                  <p style="margin: 0; color: #64748b; font-size: 0.875rem;">Abuja, Nigeria</p>
+                  <p style="margin: 0; color: #64748b; font-size: 0.875rem;">enquiries&#64;centrifugegroup.com</p>
+                </div>
               </div>
               <div style="text-align: right;">
-                <h3 style="color: #64748b; margin: 0 0 0.5rem 0; font-size: 1.5rem; letter-spacing: 0.05em;">SALES ORDER</h3>
+                <h3 style="color: #64748b; margin: 0 0 0.5rem 0; font-size: 1.5rem; letter-spacing: 0.05em;">SALES ORDER
+                </h3>
                 <p style="margin: 0; font-size: 0.875rem;"><strong>Order #:</strong> {{ order.orderNumber }}</p>
                 <p style="margin: 0; font-size: 0.875rem;"><strong>Date:</strong> {{ formatDate(order.orderDate) }}</p>
-                <p style="margin: 0; font-size: 0.875rem;"><strong>Est. Delivery:</strong> {{ formatDate(order.expectedDeliveryDate) }}</p>
-                <p style="margin: 0; font-size: 0.875rem;" *ngIf="order.actualDeliveryDate"><strong>Delivered Date:</strong> {{ formatDate(order.actualDeliveryDate) }}</p>
+                <p style="margin: 0; font-size: 0.875rem;"><strong>Est. Delivery:</strong> {{
+                  formatDate(order.expectedDeliveryDate) }}</p>
+                <p style="margin: 0; font-size: 0.875rem;" *ngIf="order.actualDeliveryDate"><strong>Delivered
+                    Date:</strong> {{ formatDate(order.actualDeliveryDate) }}</p>
               </div>
             </div>
 
-            <div class="billing-details" style="margin-bottom: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="billing-details"
+              style="margin-bottom: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div>
-                <h4 style="color: #475569; margin: 0 0 0.5rem 0; font-size: 0.875rem; text-transform: uppercase;">Customer</h4>
+                <h4 style="color: #475569; margin: 0 0 0.5rem 0; font-size: 0.875rem; text-transform: uppercase;">
+                  Customer</h4>
                 <strong style="font-size: 1.125rem; color: #1e293b;">{{ order.customerName }}</strong>
-                <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.875rem;" *ngIf="order.customerId">Customer ID: {{ order.customerId }}</p>
+                <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.875rem;" *ngIf="order.customerId">Customer
+                  ID: {{ order.customerId }}</p>
               </div>
               <div>
-                <h4 style="color: #475569; margin: 0 0 0.5rem 0; font-size: 0.875rem; text-transform: uppercase;">Shipping Address</h4>
-                <p style="margin: 0; color: #1e293b; font-size: 0.875rem; line-height: 1.4;">{{ order.shippingAddress || 'No shipping address provided' }}</p>
+                <h4 style="color: #475569; margin: 0 0 0.5rem 0; font-size: 0.875rem; text-transform: uppercase;">
+                  Shipping Address</h4>
+                <p style="margin: 0; color: #1e293b; font-size: 0.875rem; line-height: 1.4;">{{ order.shippingAddress ||
+                  'No shipping address provided' }}</p>
               </div>
             </div>
 
@@ -94,14 +108,16 @@
                     <td class="text-right total">{{ formatCurrency(item.total) }}</td>
                   </tr>
                   <tr *ngIf="order.items.length === 0">
-                    <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">No items added to this order.</td>
+                    <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">No items added to this
+                      order.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <!-- Notes & Totals -->
-            <div style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+            <div
+              style="display: grid; grid-template-columns: 1fr 300px; gap: 2rem; margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
               <div>
                 <div *ngIf="order.notes" style="margin-bottom: 1rem;">
                   <h5 style="color: #475569; margin: 0 0 0.25rem 0; font-size: 0.875rem;">Notes</h5>
@@ -137,7 +153,8 @@
           <div class="card-header">
             <div class="card-icon">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
             <h3>Order Summary</h3>

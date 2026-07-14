@@ -1,3 +1,10 @@
+export interface CustomerBankDetails {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  routingNumber?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -10,6 +17,7 @@ export interface Customer {
   totalOrders: number;
   status: 'ACTIVE' | 'INACTIVE' | 'BLACKLISTED';
   notes?: string;
+  bankAccounts?: CustomerBankDetails[];
 }
 
 export interface Product {
@@ -46,6 +54,7 @@ export interface Quote {
   expiresAt: Date;
   notes?: string;
   terms?: string;
+  logoUrl?: string;
 }
 
 export interface QuoteItem {
@@ -80,6 +89,7 @@ export interface SalesOrder {
   actualDeliveryDate?: Date;
   notes?: string;
   shippingAddress?: string;  
+  logoUrl?: string;
 }
 
 export interface SalesOrderItem {
@@ -117,6 +127,8 @@ export interface Invoice {
   paidAt?: Date;
   notes?: string;
   paymentTerms: string;
+  logoUrl?: string;
+  selectedCustomerBank?: CustomerBankDetails;
 }
 
 export type InvoiceStatus = 'DRAFT' | 'SENT' | 'CANCELLED';

@@ -30,21 +30,21 @@ import { RequestForQuotationDraftsComponent } from './ui/view/request-management
 import { ApprovalRfqDetailComponent } from './ui/view/request-management/approval-rfq-detail/approval-rfq-detail.component';
 
 export const routes: Routes = [
-  {
-    path: "",
-    redirectTo: 'vendor-portal/',
-    pathMatch: 'full'
-  },
+  // {
+  //   path: "",
+  //   redirectTo: 'vendor-portal/',
+  //   pathMatch: 'full'
+  // },
   // {
   //   path: "",
   //   redirectTo: 'commerce/requests',
   //   pathMatch: 'full'
   // },
-  // {
-  //   path: '',
-  //   redirectTo: 'sales-hub',
-  //   pathMatch: 'full'
-  // },
+  {
+    path: '',
+    redirectTo: 'sales-hub',
+    pathMatch: 'full'
+  },
 
   // --- Sales Hub ---
   {
