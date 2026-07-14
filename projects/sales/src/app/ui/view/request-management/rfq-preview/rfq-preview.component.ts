@@ -4,6 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
 import { ProcurementRequestService } from '../../../service/procurement/procurement.service';
+import { ApprovalService } from '../../../service/approval-inbox/approval.service';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -24,7 +25,8 @@ export class RfqPreviewComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private procurementService: ProcurementRequestService
+    private procurementService: ProcurementRequestService,
+    private approvalService: ApprovalService
   ) {}
 
   ngOnInit(): void {
@@ -160,24 +162,67 @@ export class RfqPreviewComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.requestId) {
+    if (this.requestId && this.request) {
       this.isSubmitting = true;
       this.procurementService.updateRequest(this.requestId, {
-        status: 'VENDORS_QUOTING'
+        status: 'PENDING_APPROVAL'
       }).subscribe({
-        next: () => {
-          this.isSubmitting = false;
-          // Clear draft from localStorage if exists
-          localStorage.removeItem(`rfq_draft_${this.requestId}`);
-          this.router.navigate(['/admin/sales/commerce/requests']);
+        next: (updatedRequest) => {
+          this.createApprovalRequest(updatedRequest);
         },
         error: (err) => {
           console.error('Failed to submit request:', err);
           this.isSubmitting = false;
-          // Fallback: navigate anyway
           this.router.navigate(['/admin/sales/commerce/requests']);
         }
       });
     }
+  }
+
+  createApprovalRequest(req: ProcurementRequest): void {
+    const urgency = this.calculateUrgency(req.deliveryDeadline);
+    
+    const approvals = [{ level: 1, approverRole: 'Department Head', required: true }];
+
+    const approvalData = {
+      requestId: req.id,
+      requestType: req.procurementType === 'SERVICE' ? 'SERVICE' : 'PROCUREMENT',
+      requestTitle: req.title,
+      requesterId: req.customerId || 'CUST-101',
+      requesterName: req.customerName || 'HQ Corporate Operations',
+      requesterDepartment: 'Procurement',
+      budget: req.totalBudget,
+      currency: req.currency || 'NGN',
+      items: (req.items || []).map((item, idx) => ({
+        id: item.id || `item-${idx}`,
+        productName: item.name,
+        quantity: item.quantity,
+        budget: item.estimatedBudget
+      })),
+      urgency: urgency,
+      approvals: approvals
+    };
+
+    this.approvalService.createApprovalRequest(approvalData).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        localStorage.removeItem(`rfq_draft_${this.requestId}`);
+        this.router.navigate(['/admin/sales/commerce/requests']);
+      },
+      error: (err) => {
+        console.error('Failed to create approval request:', err);
+        this.isSubmitting = false;
+        this.router.navigate(['/admin/sales/commerce/requests']);
+      }
+    });
+  }
+
+  private calculateUrgency(deadline: Date | string): 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' {
+    if (!deadline) return 'MEDIUM';
+    const daysUntilDeadline = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    if (daysUntilDeadline <= 3) return 'URGENT';
+    if (daysUntilDeadline <= 7) return 'HIGH';
+    if (daysUntilDeadline <= 14) return 'MEDIUM';
+    return 'LOW';
   }
 }

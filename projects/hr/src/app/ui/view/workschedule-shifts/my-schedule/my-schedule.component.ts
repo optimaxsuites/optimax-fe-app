@@ -3,6 +3,9 @@ import { ScheduleserviceService } from '../../../service/workschedule-shift/sche
 import { ShiftserviceService } from '../../../service/workschedule-shift/shiftservice.service';
 import { ScheduleDTO } from '../../../domain/workschedule-shift/schedule.dto';
 import { ShiftDTO } from '../../../domain/workschedule-shift/shift.dto';
+import { CalendarOptions } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 @Component({
   selector: 'app-my-schedule',
@@ -16,23 +19,25 @@ export class MyScheduleComponent implements OnInit{
   selectedDate: string = this.formatDateLocal(new Date());
 
   viewMode: 'calendar' | 'table' = 'calendar';
+  batchSelected: Set<string> = new Set();
 
-  calendarDays: { date: Date; inMonth: boolean }[] = [];
+  // FullCalendar
+  calendarOptions!: CalendarOptions;
+
+  // Drag-to-select
+  dragStartDate: string | null = null;
+  dragEndDate: string | null = null;
+  isDragging = false;
+  selectedDates: Set<string> = new Set();
 
   constructor(
     private scheduleService: ScheduleserviceService,
-    private shiftService: ShiftserviceService
+    public shiftService: ShiftserviceService
   ) {}
 
   ngOnInit(): void {
-    this.buildCalendar();
+    this.initializeCalendarOptions();
 
-    //for real data
-    /*this.scheduleService.schedules$.subscribe(data => {
-      this.schedules = data.filter(
-        s => s.employeeId === this.currentEmployeeId
-      );
-    }); */
     this.scheduleService.schedules$
         .subscribe(data => {
 
@@ -43,7 +48,108 @@ export class MyScheduleComponent implements OnInit{
                 this.currentEmployeeId
             );
 
+          this.updateCalendarEvents();
         });
+  }
+
+  initializeCalendarOptions(): void {
+    this.calendarOptions = {
+      plugins: [dayGridPlugin, interactionPlugin],
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,dayGridWeek'
+      },
+      height: 'auto',
+      events: [],
+      dateClick: (arg: any) => this.onDateClick(arg),
+      eventClick: (arg: any) => this.onEventClick(arg),
+      eventDisplay: 'block',
+      displayEventTime: true,
+      eventTimeFormat: {
+        hour: '2-digit',
+        minute: '2-digit',
+        meridiem: 'short'
+      }
+    };
+  }
+
+  updateCalendarEvents(): void {
+    const events = this.schedules.map(schedule => {
+      const shift = this.shiftService.getShiftById(schedule.shiftId);
+
+      return {
+        id: schedule.id,
+        title: shift?.name || 'Shift',
+        date: schedule.date,
+        backgroundColor: shift?.color || '#3b82f6',
+        borderColor: this.batchSelected.has(schedule.id) ? '#fbbf24' : (shift?.color || '#3b82f6'),
+        extendedProps: {
+          scheduleId: schedule.id,
+          shiftId: schedule.shiftId,
+          schedule: schedule,
+          shift: shift
+        }
+      };
+    });
+
+    if (this.calendarOptions.events) {
+      this.calendarOptions.events = events;
+    }
+  }
+
+  onDateClick(arg: any): void {
+    this.selectedDate = this.formatDateLocal(arg.date);
+    this.selectedDates.clear();
+    this.selectedDates.add(this.selectedDate);
+  }
+
+  onEventClick(arg: any): void {
+    const scheduleId = arg.event.extendedProps['scheduleId'];
+    this.toggleBatchSelect(scheduleId);
+    this.updateCalendarEvents();
+  }
+
+  // Drag-to-select logic
+  startDateDrag(dateStr: string): void {
+    this.isDragging = true;
+    this.dragStartDate = dateStr;
+    this.dragEndDate = dateStr;
+    this.selectDateRange(new Date(dateStr + 'T00:00:00'), new Date(dateStr + 'T00:00:00'));
+  }
+
+  continueDateDrag(dateStr: string): void {
+    if (!this.isDragging || !this.dragStartDate) return;
+    this.dragEndDate = dateStr;
+    const start = new Date(this.dragStartDate + 'T00:00:00');
+    const end = new Date(this.dragEndDate + 'T00:00:00');
+    this.selectDateRange(
+      start > end ? end : start,
+      start > end ? start : end
+    );
+  }
+
+  endDateDrag(): void {
+    if (this.isDragging && this.selectedDates.size > 0) {
+      // Selection persists, user can see what they selected
+      this.isDragging = false;
+    } else {
+      this.isDragging = false;
+    }
+  }
+
+  selectDateRange(start: Date, end: Date): void {
+    this.selectedDates.clear();
+    const current = new Date(start);
+    while (current <= end) {
+      this.selectedDates.add(this.formatDateLocal(current));
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  isDateInSelection(dateStr: string): boolean {
+    return this.selectedDates.has(dateStr);
   }
 
   onDateChange(event: Event) {
@@ -55,6 +161,22 @@ export class MyScheduleComponent implements OnInit{
     this.viewMode = mode;
   }
 
+  toggleBatchSelect(scheduleId: string) {
+    if (this.batchSelected.has(scheduleId)) {
+      this.batchSelected.delete(scheduleId);
+    } else {
+      this.batchSelected.add(scheduleId);
+    }
+  }
+
+  isBatchSelected(scheduleId: string): boolean {
+    return this.batchSelected.has(scheduleId);
+  }
+
+  clearBatchSelection() {
+    this.batchSelected.clear();
+  }
+
   formatDateLocal(date: Date): string {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -62,51 +184,6 @@ export class MyScheduleComponent implements OnInit{
     return `${y}-${m}-${d}`;
   }
 
-  buildCalendar() {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-
-    this.calendarDays = [];
-
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      const d = new Date(year, month, -firstDay.getDay() + i + 1);
-      this.calendarDays.push({ date: d, inMonth: false });
-    }
-
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      this.calendarDays.push({ date: new Date(year, month, d), inMonth: true });
-    }
-
-    const remaining = 42 - this.calendarDays.length;
-    for (let i = 1; i <= remaining; i++) {
-      this.calendarDays.push({ date: new Date(year, month + 1, i), inMonth: false });
-    }
-  }
-
-  prevMonth() {
-    this.currentDate = new Date(
-      this.currentDate.getFullYear(),
-      this.currentDate.getMonth() - 1,
-      1
-    );
-    this.buildCalendar();
-  }
-
-  nextMonth() {
-    this.currentDate = new Date(
-      this.currentDate.getFullYear(),
-      this.currentDate.getMonth() + 1,
-      1
-    );
-    this.buildCalendar();
-  }
-
-  selectDate(day: any) {
-    this.selectedDate = this.formatDateLocal(day.date);
-  }
 
   get monthLabel(): string {
     return this.currentDate.toLocaleDateString('en-US', {

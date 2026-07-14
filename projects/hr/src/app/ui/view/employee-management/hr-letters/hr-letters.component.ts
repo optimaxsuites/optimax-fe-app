@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 import { EmployeeService } from '../../../service/employee.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -303,7 +303,7 @@ export class HrLettersComponent implements OnInit {
   private get toneStorageKey(): string { return 'hrLetterDefaultTone'; }
 
   constructor(
-    private companyProfileService: CompanyProfileService,
+    // // private companyProfileService: CompanyProfileService,
     private employeeService: EmployeeService,
   ) {}
 
@@ -321,14 +321,6 @@ export class HrLettersComponent implements OnInit {
         error: () => {}
       });
     }
-
-    const cached = this.companyProfileService.get();
-    if (cached) {
-      this.companyProfile = cached;
-    }
-    this.companyProfileService.companyProfile$.subscribe((profile: any) => {
-      if (profile) this.companyProfile = profile;
-    });
 
     const savedTone = localStorage.getItem(this.toneStorageKey) as LetterTone | null;
     if (savedTone && this.tones.find(t => t.key === savedTone)) this.selectedTone = savedTone;

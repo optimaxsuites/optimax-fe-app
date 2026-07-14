@@ -21,7 +21,8 @@
             {{ getStatusLabel(invoice.status) | titlecase }}
           </span>
         </div>
-        <button (click)="goToInvoicesList()" class="btn-save-header" style="background-color: #2E6276; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;">
+        <button (click)="goToInvoicesList()" class="btn-save-header"
+          style="background-color: #2E6276; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;">
           <i class="fas fa-list"></i> See Invoices
         </button>
         <button *ngIf="invoice.status === 'DRAFT'" (click)="editInvoice()" class="btn-save-header">
@@ -50,13 +51,15 @@
 
 
         <!-- Record Payment (if balance due is > 0 and status is not CANCELLED) -->
-        <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()" class="btn-action send" style="background-color: #137333; color: white;">
+        <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()"
+          class="btn-action send" style="background-color: #137333; color: white;">
           <i class="fas fa-plus"></i> Record Payment
         </button>
 
         <!-- Download PDF -->
         <button (click)="downloadPDF()" class="btn-action download" [disabled]="isDownloading">
-          <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+          <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading"
+            [class.fa-spin]="isDownloading"></i>
           {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
         </button>
 
@@ -74,18 +77,21 @@
 
     <!-- Main Content -->
     <div class="detail-grid">
-      
+
       <!-- Left Column: Invoice Content -->
       <div class="detail-main">
-        
+
         <!-- Company & Billing Info -->
         <div class="info-card glass" id="invoice-detail-sheet">
           <div class="card-body">
-            <div class="company-details">
-              <div>
-                <h2>ERP Sales Hub</h2>
-                <p>Lagos, Nigeria</p>
-                <p>sales&#64;erpsales.ng</p>
+            <div class="company-details" style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <img *ngIf="invoice.logoUrl" [src]="invoice.logoUrl" alt="Business Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;">
+                <div>
+                  <h2>Centrifuge Group</h2>
+                  <p>Abuja, Nigeria</p>
+                  <p>enquiries&#64;centrifugegroup.com</p>
+                </div>
               </div>
               <div class="invoice-meta">
                 <h3>INVOICE</h3>
@@ -166,7 +172,7 @@
 
       <!-- Right Column: Sidebar -->
       <div class="detail-sidebar">
-        
+
         <!-- Invoice Information -->
         <div class="info-card glass">
           <div class="card-header">
@@ -196,7 +202,8 @@
               </div>
               <div class="detail-row">
                 <span class="detail-label">Due Date</span>
-                <span class="detail-value" [class.overdue]="isOverdue(invoice.dueDate)">{{ formatDate(invoice.dueDate) }}</span>
+                <span class="detail-value" [class.overdue]="isOverdue(invoice.dueDate)">{{ formatDate(invoice.dueDate)
+                  }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Currency</span>
@@ -224,43 +231,55 @@
           </div>
           <div class="card-body">
             <div class="payment-overview">
-              <div class="overview-row" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem;">
+              <div class="overview-row"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem;">
                 <span class="label" style="color: #4a5a6e;">Total Amount:</span>
                 <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.totalAmount) }}</span>
               </div>
-              <div class="overview-row text-success" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #137333;">
+              <div class="overview-row text-success"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #137333;">
                 <span class="label">Paid to Date:</span>
                 <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.amountPaid) }}</span>
               </div>
-              <div class="overview-row text-danger" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #c5221f;">
+              <div class="overview-row text-danger"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #c5221f;">
                 <span class="label">Balance Due:</span>
                 <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.balanceDue) }}</span>
               </div>
             </div>
 
             <!-- List of recorded payments for this invoice -->
-            <div class="payment-ledger" *ngIf="invoicePayments.length > 0" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #dce3ec;">
-              <h4 style="font-size: 0.75rem; font-weight: 700; color: #7a8a9e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">Transaction History</h4>
-              <div class="ledger-item" *ngFor="let p of invoicePayments" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eef2f7;">
+            <div class="payment-ledger" *ngIf="invoicePayments.length > 0"
+              style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #dce3ec;">
+              <h4
+                style="font-size: 0.75rem; font-weight: 700; color: #7a8a9e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                Transaction History</h4>
+              <div class="ledger-item" *ngFor="let p of invoicePayments"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eef2f7;">
                 <div class="ledger-meta" style="display: flex; flex-direction: column;">
-                  <span class="payment-no" style="font-weight: 600; font-size: 0.85rem; color: #0f1a2e;">{{ p.paymentNumber }}</span>
-                  <span class="payment-date" style="font-size: 0.75rem; color: #7a8a9e;">{{ formatDate(p.paymentDate) }}</span>
+                  <span class="payment-no" style="font-weight: 600; font-size: 0.85rem; color: #0f1a2e;">{{
+                    p.paymentNumber }}</span>
+                  <span class="payment-date" style="font-size: 0.75rem; color: #7a8a9e;">{{ formatDate(p.paymentDate)
+                    }}</span>
                 </div>
                 <div class="ledger-amount" style="display: flex; flex-direction: column; text-align: right;">
-                  <span class="amount" style="font-weight: 700; font-size: 0.85rem; color: #137333;">{{ formatCurrency(p.amount) }}</span>
-                  <span class="method" style="font-size: 0.75rem; color: #7a8a9e;">via {{ p.method.replace('_', ' ') | titlecase }}</span>
+                  <span class="amount" style="font-weight: 700; font-size: 0.85rem; color: #137333;">{{
+                    formatCurrency(p.amount) }}</span>
+                  <span class="method" style="font-size: 0.75rem; color: #7a8a9e;">via {{ p.method.replace('_', ' ') |
+                    titlecase }}</span>
                 </div>
               </div>
             </div>
-            
-            <div class="no-payments-yet" *ngIf="invoicePayments.length === 0" style="margin-top: 0.75rem; font-size: 0.8rem; color: #7a8a9e;">
-              <p><i class="fas fa-info-circle" style="margin-right: 0.25rem;"></i> No payment transactions recorded yet.</p>
+
+            <div class="no-payments-yet" *ngIf="invoicePayments.length === 0"
+              style="margin-top: 0.75rem; font-size: 0.8rem; color: #7a8a9e;">
+              <p><i class="fas fa-info-circle" style="margin-right: 0.25rem;"></i> No payment transactions recorded yet.
+              </p>
             </div>
 
-            <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" 
-                    class="btn-view-customer" 
-                    style="background-color: #137333; color: white; margin-top: 1.25rem; width: 100%; display: flex; justify-content: center; gap: 0.5rem;"
-                    (click)="openPaymentModal()">
+            <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" class="btn-view-customer"
+              style="background-color: #137333; color: white; margin-top: 1.25rem; width: 100%; display: flex; justify-content: center; gap: 0.5rem;"
+              (click)="openPaymentModal()">
               <i class="fas fa-plus"></i> Record Payment
             </button>
           </div>
@@ -308,18 +327,21 @@
 
 
               <!-- Record Payment -->
-              <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()" class="btn-action-mobile send" style="background-color: #137333; color: white;">
+              <button *ngIf="invoice.balanceDue > 0 && invoice.status !== 'CANCELLED'" (click)="openPaymentModal()"
+                class="btn-action-mobile send" style="background-color: #137333; color: white;">
                 <i class="fas fa-plus"></i> Record Payment
               </button>
 
               <!-- Download PDF -->
               <button (click)="downloadPDF()" class="btn-action-mobile download" [disabled]="isDownloading">
-                <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+                <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading"
+                  [class.fa-spin]="isDownloading"></i>
                 {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
               </button>
 
               <!-- Cancel Invoice (any status except CANCELLED) -->
-              <button *ngIf="invoice.status !== 'CANCELLED'" (click)="cancelInvoice()" class="btn-action-mobile decline">
+              <button *ngIf="invoice.status !== 'CANCELLED'" (click)="cancelInvoice()"
+                class="btn-action-mobile decline">
                 <i class="fas fa-ban"></i> Cancel Invoice
               </button>
 
@@ -354,14 +376,16 @@
 </div>
 
 <!-- Record Payment Modal Overlay -->
-<app-modal *ngIf="showPaymentModal && invoice" header="Record Payment for {{ invoice.invoiceNumber }}" (close)="closePaymentModal()">
+<app-modal *ngIf="showPaymentModal && invoice" header="Record Payment for {{ invoice.invoiceNumber }}"
+  (close)="closePaymentModal()">
   <form (ngSubmit)="savePayment()" class="payment-modal-form" style="color: #0f1a2e; padding: 0.5rem;">
-    
+
     <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
       <!-- Customer (Read Only) -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
         <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Customer</label>
-        <div class="read-only-box" style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600;">
+        <div class="read-only-box"
+          style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600;">
           {{ invoice.customerName }}
         </div>
       </div>
@@ -369,33 +393,39 @@
       <!-- Balance Due (Read Only) -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
         <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Outstanding Balance</label>
-        <div class="read-only-box" style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600; color: #c5221f;">
+        <div class="read-only-box"
+          style="padding: 0.6rem 0.85rem; border: 1px solid #eef2f7; border-radius: 10px; background-color: #f8fafc; font-weight: 600; color: #c5221f;">
           {{ formatCurrency(invoice.balanceDue) }}
         </div>
       </div>
 
       <!-- Payment Date -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Date <span style="color: #c5221f;">*</span></label>
+        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Date <span
+            style="color: #c5221f;">*</span></label>
         <input type="date" class="form-control" name="paymentDate" [(ngModel)]="paymentDate" required
-               style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
+          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
       </div>
 
       <!-- Amount -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Amount Received <span style="color: #c5221f;">*</span></label>
+        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Amount Received <span
+            style="color: #c5221f;">*</span></label>
         <div style="position: relative; display: flex; align-items: center;">
-          <span style="position: absolute; left: 0.85rem; font-weight: 700; color: #7a8a9e; font-size: 0.85rem;">{{ invoice.currency }}</span>
-          <input type="number" class="form-control" name="paymentAmount" [(ngModel)]="paymentAmount" min="1" step="0.01" required
-                 style="padding: 0.6rem 0.85rem 0.6rem 2.75rem; border: 1.5px solid #dce3ec; border-radius: 10px; width: 100%;">
+          <span style="position: absolute; left: 0.85rem; font-weight: 700; color: #7a8a9e; font-size: 0.85rem;">{{
+            invoice.currency }}</span>
+          <input type="number" class="form-control" name="paymentAmount" [(ngModel)]="paymentAmount" min="1" step="0.01"
+            required
+            style="padding: 0.6rem 0.85rem 0.6rem 2.75rem; border: 1.5px solid #dce3ec; border-radius: 10px; width: 100%;">
         </div>
       </div>
 
       <!-- Method -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
-        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Method <span style="color: #c5221f;">*</span></label>
+        <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Payment Method <span
+            style="color: #c5221f;">*</span></label>
         <select class="form-control" name="paymentMethod" [(ngModel)]="paymentMethod" required
-                style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; background-color: white;">
+          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; background-color: white;">
           <option *ngFor="let opt of paymentMethodOptions" [value]="opt.value">{{ opt.label }}</option>
         </select>
       </div>
@@ -403,27 +433,31 @@
       <!-- Reference -->
       <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
         <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Reference / Txn ID</label>
-        <input type="text" class="form-control" name="paymentReference" [(ngModel)]="paymentReference" placeholder="e.g. Bank ref, check number"
-               style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
+        <input type="text" class="form-control" name="paymentReference" [(ngModel)]="paymentReference"
+          placeholder="e.g. Bank ref, check number"
+          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px;">
       </div>
 
       <!-- Notes -->
       <div class="form-group" style="grid-column: span 2; display: flex; flex-direction: column; gap: 0.35rem;">
         <label class="form-label" style="font-weight: 700; font-size: 0.85rem;">Notes</label>
-        <textarea class="form-control" name="paymentNotes" [(ngModel)]="paymentNotes" rows="2" placeholder="Internal memo regarding payment..."
-                  style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; resize: vertical;"></textarea>
+        <textarea class="form-control" name="paymentNotes" [(ngModel)]="paymentNotes" rows="2"
+          placeholder="Internal memo regarding payment..."
+          style="padding: 0.6rem 0.85rem; border: 1.5px solid #dce3ec; border-radius: 10px; resize: vertical;"></textarea>
       </div>
     </div>
 
     <!-- Actions -->
-    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid #eef2f7;">
+    <div
+      style="display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 1.25rem; border-top: 1px solid #eef2f7;">
       <button type="button" class="btn-secondary" (click)="closePaymentModal()" [disabled]="isSavingPayment"
-              style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: white; border: 1.5px solid #dce3ec; cursor: pointer; color: #4a5a6e;">
+        style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: white; border: 1.5px solid #dce3ec; cursor: pointer; color: #4a5a6e;">
         Cancel
       </button>
       <button type="submit" [disabled]="isSavingPayment || paymentAmount <= 0"
-              style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: #137333; border: 1.5px solid #137333; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
-        <i class="fas" [class.fa-spinner]="isSavingPayment" [class.fa-spin]="isSavingPayment" [class.fa-save]="!isSavingPayment"></i>
+        style="padding: 0.65rem 1.5rem; font-weight: 700; border-radius: 10px; background: #137333; border: 1.5px solid #137333; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+        <i class="fas" [class.fa-spinner]="isSavingPayment" [class.fa-spin]="isSavingPayment"
+          [class.fa-save]="!isSavingPayment"></i>
         {{ isSavingPayment ? 'Recording...' : 'Record Payment' }}
       </button>
     </div>

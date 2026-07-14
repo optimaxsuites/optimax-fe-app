@@ -42,7 +42,10 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   selectedCustomerDetail?: Customer;
 
   openCustomerModal(customer?: Customer): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (customer) {
       if (uuid) {
         this.router.navigate(['/admin/sales/customers', customer.id, 'edit', uuid]);
@@ -64,7 +67,10 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   openCustomerDetails(customer: Customer): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/customers', customer.id, uuid]);
     } else {

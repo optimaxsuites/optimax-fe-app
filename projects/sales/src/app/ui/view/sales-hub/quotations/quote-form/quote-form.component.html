@@ -240,13 +240,13 @@
                   <label class="subsection-label required">Quotation For</label>
                   <div class="form-group">
                     <div class="customer-select">
-                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($event)">
+                      <select formControlName="customerId" class="form-control" (change)="onCustomerSelect($any($event.target).value)">
                         <option value="">Select a client...</option>
                         <option *ngFor="let customer of customers" [value]="customer.id">
                           {{ customer.name }}
                         </option>
                       </select>
-                      <button type="button" class="btn-add-customer" (click)="showNewCustomerModal = true">
+                      <button type="button" class="btn-add-customer" (click)="openNewCustomerModal()">
                         <i class="fas fa-user-plus"></i> New Client
                       </button>
                     </div>
@@ -254,6 +254,16 @@
                   </div>
                   <div class="form-group">
                     <input type="text" formControlName="customerName" class="form-control" readonly placeholder="Client name will auto-fill">
+                  </div>
+                  <!-- Customer Bank Selector -->
+                  <div class="form-group" style="margin-top: 0.5rem;" *ngIf="selectedCustomerBankAccounts && selectedCustomerBankAccounts.length > 0">
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.25rem; display: block;">Select Customer Bank Account</label>
+                    <select formControlName="selectedCustomerBankIndex" class="form-control" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff;">
+                      <option [value]="-1">Do not display customer bank account</option>
+                      <option *ngFor="let account of selectedCustomerBankAccounts; let idx = index" [value]="idx">
+                        {{ account.bankName }} - {{ account.accountNumber }} ({{ account.accountName }})
+                      </option>
+                    </select>
                   </div>
                 </div>
 
@@ -558,135 +568,618 @@
 
             <!-- Paper Mockup Document -->
             <div id="quote-preview-document" class="paper-document-preview" [class]="selectedTemplate?.id || 'standard'">
-              <div class="doc-header">
-                <div class="doc-company-info">
-                  <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
-                    <i class="fas fa-building"></i>
+              
+              <!-- EMIRATES AIRLINES CUSTOM TEMPLATE WITH CUSTOMER BANK -->
+              <ng-container *ngIf="selectedTemplate?.id === 'emirates-custbank'">
+                <div class="emirates-template-wrapper">
+                  <!-- Centered Corporate Header -->
+                  <div class="emirates-header" style="text-align: center;">
+                    <div class="emirates-logo-container" style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
+                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
+                      <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
+                    </div>
+                    <h1 class="emirates-company-name">CENTRIFUGE INFORMATION TECHNOLOGY LIMITED</h1>
+                    <p class="emirates-company-sub">RC 834975 | Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                    <p class="emirates-company-contact">www.centrifugegroup.com | damilola&#64;centrifugegroup.com | Tel: +234 815 502 6555</p>
                   </div>
-                  <div>
-                    <h2 class="company-name">ERP Sales Hub</h2>
-                    <p class="company-address">Lagos, Nigeria</p>
-                    <p class="company-email">sales&#64;erpsales.ng</p>
-                  </div>
-                </div>
-                <div class="doc-meta-info">
-                  <h1 class="doc-title">QUOTATION</h1>
-                  <p><strong>Quote #:</strong> {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</p>
-                  <p><strong>Date:</strong> {{ quoteForm.get('quoteDate')?.value || today }}</p>
-                  <p><strong>Valid Till:</strong> {{ quoteForm.get('validUntil')?.value }}</p>
-                </div>
-              </div>
 
-              <!-- Parties Details -->
-              <div class="doc-parties">
-                <div class="parties-col" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
-                  <span class="parties-label">Quotation From:</span>
-                  <strong>Eseose Odion</strong>
-                  <p>Nigeria</p>
-                </div>
-                <div class="parties-col">
-                  <span class="parties-label">Quotation For:</span>
-                  <strong>{{ quoteForm.get('customerName')?.value || 'Client Name' }}</strong>
-                  <p *ngIf="quoteForm.get('customerId')?.value">ID: {{ quoteForm.get('customerId')?.value }}</p>
-                  <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && quoteDataForTemplate?.customerEmail">
-                    Email: {{ quoteDataForTemplate?.customerEmail }}
-                  </p>
-                </div>
-              </div>
+                  <div class="emirates-divider"></div>
 
-              <!-- Shipping Details (if added & enabled) -->
-              <div class="doc-shipping" *ngIf="showShippingDetails && selectedTemplate?.sections?.showShippingDetails !== false">
-                <h4 class="doc-section-title"><i class="fas fa-truck"></i> Shipping Information</h4>
-                <div class="shipping-grid">
-                  <div><strong>Address:</strong> {{ shippingAddress || 'N/A' }}</div>
-                  <div><strong>Method:</strong> {{ shippingMethod || 'N/A' }}</div>
-                  <div><strong>Est. Date:</strong> {{ shippingDate || 'N/A' }}</div>
+                  <!-- Centered Document Title -->
+                  <div class="emirates-title-block">
+                    <h2 class="emirates-title">QUOTATION</h2>
+                  </div>
+
+                  <!-- Metadata & Status Block -->
+                  <div class="emirates-meta-grid">
+                    <div class="meta-item">
+                      <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
+                    </div>
+                  </div>
+
+                  <div class="emirates-divider"></div>
+
+                  <!-- Parties Block -->
+                  <div class="emirates-parties-grid">
+                    <div class="parties-box">
+                      <h4 class="parties-heading">BILL TO</h4>
+                      <strong>{{ quoteForm.get('customerName')?.value || 'Emirates Airlines' }}</strong>
+                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'Abuja, FCT, Nigeria' }}</p>
+                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                      <!-- Customer Bank Account Details -->
+                      <div class="client-bank-subbox" *ngIf="quoteDataForTemplate?.selectedCustomerBank" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(186, 153, 83, 0.3); font-size: 0.8rem;">
+                        <p style="margin: 0; color: #BA9953; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Customer Bank Details</p>
+                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Bank: {{ quoteDataForTemplate.selectedCustomerBank.bankName }}</p>
+                        <p style="margin: 0; color: #4a5a6e;">Acc Name: {{ quoteDataForTemplate.selectedCustomerBank.accountName }}</p>
+                        <p style="margin: 0; color: #1a2d4a; font-weight: 600;">Acc No: {{ quoteDataForTemplate.selectedCustomerBank.accountNumber }}</p>
+                        <p style="margin: 0; color: #4a5a6e;" *ngIf="quoteDataForTemplate.selectedCustomerBank.routingNumber">Sort Code: {{ quoteDataForTemplate.selectedCustomerBank.routingNumber }}</p>
+                      </div>
+                    </div>
+                    <div class="parties-box">
+                      <h4 class="parties-heading">FROM</h4>
+                      <strong>Centrifuge Information Technology Limited</strong>
+                      <p>Suite 203, Jinifa Plaza</p>
+                      <p>Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                    </div>
+                  </div>
+
+                  <!-- Project Metadata -->
+                  <div class="emirates-project-ref">
+                    <p><strong>Project:</strong> Network Infrastructure Supply &amp; Installation</p>
+                    <p><strong>Ref:</strong> EMR-2026-002 | <strong>PO Reference:</strong> TBD</p>
+                  </div>
+
+                  <!-- Line Items Table -->
+                  <div class="emirates-table-wrapper">
+                    <table class="emirates-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 8%; text-align: center;">S/N</th>
+                          <th style="text-align: left;">DESCRIPTION</th>
+                          <th style="width: 10%; text-align: center;">QTY</th>
+                          <th style="width: 18%; text-align: right;">UNIT PRICE</th>
+                          <th style="width: 20%; text-align: right;">AMOUNT ({{ quoteForm.get('currency')?.value || 'NGN' }})</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let item of items.controls; let idx = index">
+                          <td style="text-align: center;">{{ idx + 1 }}</td>
+                          <td>
+                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                            <div class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
+                          </td>
+                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                        </tr>
+                        <tr *ngIf="items.length === 0">
+                          <td colspan="5" class="empty-row">No line items added.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Calculations and Word Amount -->
+                  <div class="emirates-totals-section">
+                    <div class="totals-col">
+                      <div class="word-amount" *ngIf="grandTotal > 0">
+                        <strong>Amount in Words:</strong>
+                        <p>{{ getTotalInWords(grandTotal) }}</p>
+                      </div>
+                    </div>
+                    <div class="totals-col">
+                      <table class="totals-table">
+                        <tr>
+                          <td>SUBTOTAL</td>
+                          <td>{{ formatCurrency(subtotal) }}</td>
+                        </tr>
+                        <tr *ngIf="discountAmount > 0">
+                          <td>DISCOUNT</td>
+                          <td class="discount-neg">-{{ formatCurrency(discountAmount) }}</td>
+                        </tr>
+                        <tr *ngIf="additionalCharges > 0">
+                          <td>ADDITIONAL CHARGES</td>
+                          <td>+{{ formatCurrency(additionalCharges) }}</td>
+                        </tr>
+                        <tr *ngIf="totalTax > 0">
+                          <td>VAT (7.5%)</td>
+                          <td>{{ formatCurrency(totalTax) }}</td>
+                        </tr>
+                        <tr class="grand-total-row">
+                          <td>TOTAL</td>
+                          <td>{{ formatCurrency(grandTotal) }}</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="emirates-divider"></div>
+
+                  <!-- Payment details & Bottom text -->
+                  <div class="emirates-payment-details">
+                    <h4 class="section-heading">PAYMENT TERMS &amp; DETAILS</h4>
+                    <p class="payment-terms-text">
+                      Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
+                    </p>
+                    <div class="bank-details-box">
+                      <strong>Bank Details:</strong>
+                      <p>Bank: Stanbic IBTC Bank Plc</p>
+                      <p>Account Name: Centrifuge Information Technology Ltd</p>
+                      <p>Account Number: 0013604661</p>
+                    </div>
+                    <p class="enquiries-text">For enquiries: damilola&#64;centrifugegroup.com | +234 815 502 6555</p>
+                  </div>
+
+                  <!-- Signatures Grid -->
+                  <div class="emirates-signatures-grid">
+                    <div class="sig-box">
+                      <p><strong>Authorised by:</strong></p>
+                      <p class="sig-name">Damilola Awe</p>
+                      <p class="sig-title">General Managing Director</p>
+                      <div class="sig-line">Signature: ___________________</div>
+                      <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
+                    </div>
+                    <div class="sig-box">
+                      <p><strong>Client Acknowledgement:</strong></p>
+                      <p class="acknowledgement-instructions">Please acknowledge receipt of service/installation in good condition.</p>
+                      <div class="sig-line-spaced">Name: ______________________</div>
+                      <div class="sig-line-spaced">Signature: ___________________</div>
+                      <div class="sig-line-spaced">Date: _______________________</div>
+                    </div>
+                  </div>
+
+                  <div class="emirates-footer">
+                    <p class="thank-you">Thank you for your business.</p>
+                  </div>
                 </div>
-              </div>
+              </ng-container>
 
-              <!-- Items Table -->
-              <div class="doc-items-table-wrapper">
-                <table class="doc-table">
-                  <thead>
-                    <tr>
-                      <th style="text-align: left;">Item</th>
-                      <th style="text-align: left;" *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
-                      <th style="text-align: right; width: 10%;">Qty</th>
-                      <th style="text-align: right; width: 15%;">Rate</th>
-                      <th style="text-align: right; width: 15%;">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of items.controls" class="doc-item-row">
-                      <td>
-                        <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
-                        <p class="doc-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
-                      </td>
-                      <td *ngIf="selectedTemplate?.sections?.showSKU !== false">
-                        {{ getProductSku(item.get('productId')?.value) }}
-                      </td>
-                      <td style="text-align: right;">{{ item.get('quantity')?.value }}</td>
-                      <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
-                      <td style="text-align: right;" class="doc-item-total">
-                        {{ formatCurrency(item.get('total')?.value || 0) }}
-                      </td>
-                    </tr>
-                    <tr *ngIf="items.length === 0">
-                      <td colspan="5" class="doc-empty-table">No line items added.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <!-- EMIRATES AIRLINES CUSTOM TEMPLATE -->
+              <ng-container *ngIf="selectedTemplate?.id === 'emirates'">
+                <div class="emirates-template-wrapper">
+                  <!-- Centered Corporate Header -->
+                  <div class="emirates-header" style="text-align: center;">
+                    <div class="emirates-logo-container" style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
+                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 55px; max-width: 160px; object-fit: contain;">
+                      <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 45px; height: 45px; border-radius: 50%; background: rgba(163, 38, 56, 0.08); color: #A32638; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;">C</div>
+                    </div>
+                    <h1 class="emirates-company-name">CENTRIFUGE INFORMATION TECHNOLOGY LIMITED</h1>
+                    <p class="emirates-company-sub">RC 834975 | Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                    <p class="emirates-company-contact">www.centrifugegroup.com | damilola&#64;centrifugegroup.com | Tel: +234 815 502 6555</p>
+                  </div>
 
-              <!-- Summary, Notes, Signature -->
-              <div class="doc-summary-notes-grid">
-                <!-- Notes and Terms -->
-                <div class="doc-notes-col">
-                  <div class="doc-notes-item" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
-                    <span class="doc-sub-label">Notes:</span>
-                    <p>{{ quoteForm.get('notes')?.value }}</p>
+                  <div class="emirates-divider"></div>
+
+                  <!-- Centered Document Title -->
+                  <div class="emirates-title-block">
+                    <h2 class="emirates-title">QUOTATION</h2>
                   </div>
-                  <div class="doc-notes-item" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
-                    <span class="doc-sub-label">Terms &amp; Conditions:</span>
-                    <p>{{ quoteForm.get('terms')?.value }}</p>
+
+                  <!-- Metadata & Status Block -->
+                  <div class="emirates-meta-grid">
+                    <div class="meta-item">
+                      <strong>Quote No:</strong> <span>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Quote Date:</strong> <span>{{ quoteForm.get('quoteDate')?.value || today }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Valid Until:</strong> <span>{{ quoteForm.get('validUntil')?.value }}</span>
+                    </div>
+                    <div class="meta-item">
+                      <strong>Status:</strong> <span class="status-badge unpaid">PENDING</span>
+                    </div>
                   </div>
-                  <div class="doc-notes-item" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
-                    <span class="doc-sub-label">Total in Words:</span>
-                    <p class="doc-words">{{ getTotalInWords(grandTotal) }}</p>
+
+                  <div class="emirates-divider"></div>
+
+                  <!-- Parties Block -->
+                  <div class="emirates-parties-grid">
+                    <div class="parties-box">
+                      <h4 class="parties-heading">BILL TO</h4>
+                      <strong>{{ quoteForm.get('customerName')?.value || 'Emirates Airlines' }}</strong>
+                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'Abuja, FCT, Nigeria' }}</p>
+                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                    </div>
+                    <div class="parties-box">
+                      <h4 class="parties-heading">FROM</h4>
+                      <strong>Centrifuge Information Technology Limited</strong>
+                      <p>Suite 203, Jinifa Plaza</p>
+                      <p>Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                    </div>
+                  </div>
+
+                  <!-- Project Metadata -->
+                  <div class="emirates-project-ref">
+                    <p><strong>Project:</strong> Network Infrastructure Supply &amp; Installation</p>
+                    <p><strong>Ref:</strong> EMR-2026-002 | <strong>PO Reference:</strong> TBD</p>
+                  </div>
+
+                  <!-- Line Items Table -->
+                  <div class="emirates-table-wrapper">
+                    <table class="emirates-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 8%; text-align: center;">S/N</th>
+                          <th style="text-align: left;">DESCRIPTION</th>
+                          <th style="width: 10%; text-align: center;">QTY</th>
+                          <th style="width: 18%; text-align: right;">UNIT PRICE</th>
+                          <th style="width: 20%; text-align: right;">AMOUNT ({{ quoteForm.get('currency')?.value || 'NGN' }})</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let item of items.controls; let idx = index">
+                          <td style="text-align: center;">{{ idx + 1 }}</td>
+                          <td>
+                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                            <div class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</div>
+                          </td>
+                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                        </tr>
+                        <tr *ngIf="items.length === 0">
+                          <td colspan="5" class="empty-row">No line items added.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Calculations and Word Amount -->
+                  <div class="emirates-totals-section">
+                    <div class="totals-col">
+                      <div class="word-amount" *ngIf="grandTotal > 0">
+                        <strong>Amount in Words:</strong>
+                        <p>{{ getTotalInWords(grandTotal) }}</p>
+                      </div>
+                    </div>
+                    <div class="totals-col">
+                      <table class="totals-table">
+                        <tr>
+                          <td>SUBTOTAL</td>
+                          <td>{{ formatCurrency(subtotal) }}</td>
+                        </tr>
+                        <tr *ngIf="discountAmount > 0">
+                          <td>DISCOUNT</td>
+                          <td class="discount-neg">-{{ formatCurrency(discountAmount) }}</td>
+                        </tr>
+                        <tr *ngIf="additionalCharges > 0">
+                          <td>ADDITIONAL CHARGES</td>
+                          <td>+{{ formatCurrency(additionalCharges) }}</td>
+                        </tr>
+                        <tr *ngIf="totalTax > 0">
+                          <td>VAT (7.5%)</td>
+                          <td>{{ formatCurrency(totalTax) }}</td>
+                        </tr>
+                        <tr class="grand-total-row">
+                          <td>TOTAL</td>
+                          <td>{{ formatCurrency(grandTotal) }}</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="emirates-divider"></div>
+
+                  <!-- Payment details & Bottom text -->
+                  <div class="emirates-payment-details">
+                    <h4 class="section-heading">PAYMENT TERMS &amp; DETAILS</h4>
+                    <p class="payment-terms-text">
+                      Payment terms: Net 25 days from invoice date (as per Purchase Order). All prices inclusive of VAT at 7.5% as per Nigerian tax regulations.
+                    </p>
+                    <div class="bank-details-box">
+                      <strong>Bank Details:</strong>
+                      <p>Bank: Stanbic IBTC Bank Plc</p>
+                      <p>Account Name: Centrifuge Information Technology Ltd</p>
+                      <p>Account Number: 0013604661</p>
+                    </div>
+                    <p class="enquiries-text">For enquiries: damilola&#64;centrifugegroup.com | +234 815 502 6555</p>
+                  </div>
+
+                  <!-- Signatures Grid -->
+                  <div class="emirates-signatures-grid">
+                    <div class="sig-box">
+                      <p><strong>Authorised by:</strong></p>
+                      <p class="sig-name">Damilola Awe</p>
+                      <p class="sig-title">General Managing Director</p>
+                      <div class="sig-line">Signature: ___________________</div>
+                      <p class="sig-date">Date: {{ quoteForm.get('quoteDate')?.value || today }}</p>
+                    </div>
+                    <div class="sig-box">
+                      <p><strong>Client Acknowledgement:</strong></p>
+                      <p class="acknowledgement-instructions">Please acknowledge receipt of service/installation in good condition.</p>
+                      <div class="sig-line-spaced">Name: ______________________</div>
+                      <div class="sig-line-spaced">Signature: ___________________</div>
+                      <div class="sig-line-spaced">Date: _______________________</div>
+                    </div>
+                  </div>
+
+                  <div class="emirates-footer">
+                    <p class="thank-you">Thank you for your business.</p>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- 13TH COMMUNICATIONS CUSTOM TEMPLATE -->
+              <ng-container *ngIf="selectedTemplate?.id === 'thcomms'">
+                <div class="thcomms-template-wrapper">
+                  <!-- Title left, Company Info right -->
+                  <div class="thcomms-header">
+                    <div class="header-left">
+                      <h1 class="thcomms-title">QUOTATION</h1>
+                    </div>
+                    <div class="header-right" style="text-align: right;">
+                      <div class="thcomms-logo-container" style="display: inline-block; margin-bottom: 0.5rem;">
+                        <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain; display: block; margin-left: auto;">
+                        <div class="company-logo-placeholder-circle" *ngIf="!logoUrl" style="width: 40px; height: 40px; border-radius: 4px; background: rgba(27, 54, 93, 0.08); color: #1B365D; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; margin-left: auto;">13</div>
+                      </div>
+                      <h2 class="thcomms-company-name">13TH COMMUNICATIONS LTD</h2>
+                      <p>Shop 10 Ecopie Plaza, Arad Road</p>
+                      <p>Kubwa</p>
+                      <p>Abuja – FCT., Federal Capital Territory</p>
+                      <p>Nigeria</p>
+                      <p>Tel: 8022254773</p>
+                      <p>Email/Web: 13thcomms.ng</p>
+                    </div>
+                  </div>
+
+                  <!-- Metadata Box and Parties -->
+                  <div class="thcomms-meta-parties">
+                    <div class="parties-left">
+                      <h3 class="section-title">BILL TO</h3>
+                      <strong>{{ quoteForm.get('customerName')?.value || 'Customer' }}</strong>
+                      <p>{{ quoteForm.get('customerId')?.value ? 'ID: ' + quoteForm.get('customerId')?.value : 'FCT, Nigeria' }}</p>
+                      <p *ngIf="quoteDataForTemplate?.customerEmail">{{ quoteDataForTemplate?.customerEmail }}</p>
+                    </div>
+                    <div class="meta-right">
+                      <table class="meta-table">
+                        <tr>
+                          <td><strong>Quotation Number:</strong></td>
+                          <td>{{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Quotation Date:</strong></td>
+                          <td>{{ quoteForm.get('quoteDate')?.value || today }}</td>
+                        </tr>
+                        <tr>
+                          <td><strong>Valid Until:</strong></td>
+                          <td>{{ quoteForm.get('validUntil')?.value || today }}</td>
+                        </tr>
+                        <tr class="amount-due-row">
+                          <td><strong>Total Amount ({{ quoteForm.get('currency')?.value || 'NGN' }}):</strong></td>
+                          <td><strong>{{ formatCurrency(grandTotal) }}</strong></td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Items Table -->
+                  <div class="thcomms-table-wrapper">
+                    <table class="thcomms-table">
+                      <thead>
+                        <tr>
+                          <th style="text-align: left;">Items</th>
+                          <th style="width: 10%; text-align: center;">Quantity</th>
+                          <th style="width: 20%; text-align: right;">Price</th>
+                          <th style="width: 20%; text-align: right;">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let item of items.controls">
+                          <td>
+                            <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                            <p class="item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
+                          </td>
+                          <td style="text-align: center;">{{ item.get('quantity')?.value }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                          <td style="text-align: right;">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+                        </tr>
+                        <tr *ngIf="items.length === 0">
+                          <td colspan="4" class="empty-row">No line items added.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Totals Block -->
+                  <div class="thcomms-totals-wrapper">
+                    <div class="totals-col">
+                      <!-- Empty for alignment -->
+                    </div>
+                    <div class="totals-col">
+                      <table class="thcomms-totals-table">
+                        <tr>
+                          <td>Subtotal:</td>
+                          <td>{{ formatCurrency(subtotal) }}</td>
+                        </tr>
+                        <tr *ngIf="discountAmount > 0">
+                          <td>Discount:</td>
+                          <td>-{{ formatCurrency(discountAmount) }}</td>
+                        </tr>
+                        <tr *ngIf="additionalCharges > 0">
+                          <td>Additional Charges:</td>
+                          <td>+{{ formatCurrency(additionalCharges) }}</td>
+                        </tr>
+                        <tr *ngIf="totalTax > 0">
+                          <td>VAT 7.5% (20588779-0001):</td>
+                          <td>{{ formatCurrency(totalTax) }}</td>
+                        </tr>
+                        <tr class="total-row">
+                          <td>Total:</td>
+                          <td>{{ formatCurrency(grandTotal) }}</td>
+                        </tr>
+                        <tr class="amount-due-row">
+                          <td>Total Amount ({{ quoteForm.get('currency')?.value || 'NGN' }}):</td>
+                          <td>{{ formatCurrency(grandTotal) }}</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Notes and Bank Info -->
+                  <div class="thcomms-bottom">
+                    <div class="notes-item">
+                      <h4 class="section-title">Notes / Terms</h4>
+                      <p *ngIf="quoteForm.get('notes')?.value">{{ quoteForm.get('notes')?.value }}</p>
+                      <p *ngIf="!quoteForm.get('notes')?.value">1] All prices net of VAT, WHT and other applicable taxes</p>
+                    </div>
+
+                    <div class="payment-details-box">
+                      <h4 class="section-title">Payment Details:</h4>
+                      <strong>13th Communications Ltd</strong>
+                      <p>Account Number: 5822787815</p>
+                      <p>Bank Name: MoniePoint</p>
+                    </div>
+                  </div>
+
+                  <div class="thcomms-footer">
+                    <p class="appreciate-msg">We appreciate your business with us.</p>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- EXISTING DEFAULT / STANDARD / COMPACT TEMPLATES -->
+              <ng-container *ngIf="selectedTemplate?.id !== 'emirates' && selectedTemplate?.id !== 'emirates-custbank' && selectedTemplate?.id !== 'thcomms'">
+                <div class="doc-header">
+                  <div class="doc-company-info">
+                    <div class="company-logo-placeholder" *ngIf="selectedTemplate?.sections?.showCompanyLogo !== false">
+                      <img [src]="logoUrl" *ngIf="logoUrl" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
+                      <i class="fas fa-building" *ngIf="!logoUrl"></i>
+                    </div>
+                    <div>
+                      <h2 class="company-name">Centrifuge Information Technology Limited</h2>
+                      <p class="company-address">Suite 203, Jinifa Plaza, Samuel Ademulegun Street, CBD, Abuja, Nigeria</p>
+                      <p class="company-email">Website: www.centrifugegroup.com | damilola&#64;centrifugegroup.com</p>
+                    </div>
+                  </div>
+                  <div class="doc-meta-info">
+                    <h1 class="doc-title">QUOTATION</h1>
+                    <p><strong>Quote #:</strong> {{ generatedQuoteNumber || (isEditMode ? quoteId : 'DRAFT') }}</p>
+                    <p><strong>Date:</strong> {{ quoteForm.get('quoteDate')?.value || today }}</p>
+                    <p><strong>Valid Till:</strong> {{ quoteForm.get('validUntil')?.value }}</p>
                   </div>
                 </div>
 
-                <!-- Calculations -->
-                <div class="doc-totals-col">
-                  <div class="doc-total-row">
-                    <span>Subtotal</span>
-                    <span>{{ formatCurrency(subtotal) }}</span>
+                <!-- Parties Details -->
+                <div class="doc-parties">
+                  <div class="parties-col" *ngIf="selectedTemplate?.sections?.showVendorInfo !== false">
+                    <span class="parties-label">Quotation From:</span>
+                    <strong>Eseose Odion</strong>
+                    <p>Nigeria</p>
                   </div>
-                  <div class="doc-total-row" *ngIf="discountAmount > 0">
-                    <span>Discount</span>
-                    <span class="doc-discount">-{{ formatCurrency(discountAmount) }}</span>
-                  </div>
-                  <div class="doc-total-row" *ngIf="additionalCharges > 0">
-                    <span>Additional Charges</span>
-                    <span>+{{ formatCurrency(additionalCharges) }}</span>
-                  </div>
-                  <div class="doc-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false">
-                    <span>Tax (7.5%)</span>
-                    <span>{{ formatCurrency(totalTax) }}</span>
-                  </div>
-                  <div class="doc-total-row grand-total">
-                    <span>Grand Total</span>
-                    <span>{{ formatCurrency(grandTotal) }}</span>
+                  <div class="parties-col">
+                    <span class="parties-label">Quotation For:</span>
+                    <strong>{{ quoteForm.get('customerName')?.value || 'Client Name' }}</strong>
+                    <p *ngIf="quoteForm.get('customerId')?.value">ID: {{ quoteForm.get('customerId')?.value }}</p>
+                    <p *ngIf="selectedTemplate?.sections?.showCustomerDetails !== false && quoteDataForTemplate?.customerEmail">
+                      Email: {{ quoteDataForTemplate?.customerEmail }}
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              <!-- Signature Area -->
-              <div class="doc-signature-block" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
-                <div class="signature-line"></div>
-                <p class="signature-title">Authorized Signature</p>
-                <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
-              </div>
+                <!-- Shipping Details (if added & enabled) -->
+                <div class="doc-shipping" *ngIf="showShippingDetails && selectedTemplate?.sections?.showShippingDetails !== false">
+                  <h4 class="doc-section-title"><i class="fas fa-truck"></i> Shipping Information</h4>
+                  <div class="shipping-grid">
+                    <div><strong>Address:</strong> {{ shippingAddress || 'N/A' }}</div>
+                    <div><strong>Method:</strong> {{ shippingMethod || 'N/A' }}</div>
+                    <div><strong>Est. Date:</strong> {{ shippingDate || 'N/A' }}</div>
+                  </div>
+                </div>
+
+                <!-- Items Table -->
+                <div class="doc-items-table-wrapper">
+                  <table class="doc-table">
+                    <thead>
+                      <tr>
+                        <th style="text-align: left;">Item</th>
+                        <th style="text-align: left;" *ngIf="selectedTemplate?.sections?.showSKU !== false">SKU</th>
+                        <th style="text-align: right; width: 10%;">Qty</th>
+                        <th style="text-align: right; width: 15%;">Rate</th>
+                        <th style="text-align: right; width: 15%;">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of items.controls" class="doc-item-row">
+                        <td>
+                          <strong>{{ item.get('productName')?.value || 'Unnamed Product' }}</strong>
+                          <p class="doc-item-desc" *ngIf="item.get('description')?.value">{{ item.get('description')?.value }}</p>
+                        </td>
+                        <td *ngIf="selectedTemplate?.sections?.showSKU !== false">
+                          {{ getProductSku(item.get('productId')?.value) }}
+                        </td>
+                        <td style="text-align: right;">{{ item.get('quantity')?.value }}</td>
+                        <td style="text-align: right;">{{ formatCurrency(item.get('unitPrice')?.value) }}</td>
+                        <td style="text-align: right;" class="doc-item-total">
+                          {{ formatCurrency(item.get('total')?.value || 0) }}
+                        </td>
+                      </tr>
+                      <tr *ngIf="items.length === 0">
+                        <td colspan="5" class="doc-empty-table">No line items added.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Summary, Notes, Signature -->
+                <div class="doc-summary-notes-grid">
+                  <!-- Notes and Terms -->
+                  <div class="doc-notes-col">
+                    <div class="doc-notes-item" *ngIf="quoteForm.get('notes')?.value && selectedTemplate?.sections?.showNotes !== false">
+                      <span class="doc-sub-label">Notes:</span>
+                      <p>{{ quoteForm.get('notes')?.value }}</p>
+                    </div>
+                    <div class="doc-notes-item" *ngIf="quoteForm.get('terms')?.value && selectedTemplate?.sections?.showTermsConditions !== false">
+                      <span class="doc-sub-label">Terms &amp; Conditions:</span>
+                      <p>{{ quoteForm.get('terms')?.value }}</p>
+                    </div>
+                    <div class="doc-notes-item" *ngIf="selectedTemplate?.sections?.showTotalInWords !== false">
+                      <span class="doc-sub-label">Total in Words:</span>
+                      <p class="doc-words">{{ getTotalInWords(grandTotal) }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Calculations -->
+                  <div class="doc-totals-col">
+                    <div class="doc-total-row">
+                      <span>Subtotal</span>
+                      <span>{{ formatCurrency(subtotal) }}</span>
+                    </div>
+                    <div class="doc-total-row" *ngIf="discountAmount > 0">
+                      <span>Discount</span>
+                      <span class="doc-discount">-{{ formatCurrency(discountAmount) }}</span>
+                    </div>
+                    <div class="doc-total-row" *ngIf="additionalCharges > 0">
+                      <span>Additional Charges</span>
+                      <span>+{{ formatCurrency(additionalCharges) }}</span>
+                    </div>
+                    <div class="doc-total-row" *ngIf="totalTax > 0 && selectedTemplate?.sections?.showTaxBreakdown !== false">
+                      <span>Tax (7.5%)</span>
+                      <span>{{ formatCurrency(totalTax) }}</span>
+                    </div>
+                    <div class="doc-total-row grand-total">
+                      <span>Grand Total</span>
+                      <span>{{ formatCurrency(grandTotal) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Signature Area -->
+                <div class="doc-signature-block" *ngIf="showSignature && selectedTemplate?.sections?.showSignature !== false">
+                  <div class="signature-line"></div>
+                  <p class="signature-title">Authorized Signature</p>
+                  <p class="signature-name" *ngIf="signatureText">{{ signatureText }}</p>
+                </div>
+              </ng-container>
             </div>
           </div>
 
@@ -763,14 +1256,107 @@
   </div>
 
   <!-- New Customer Modal -->
-  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="showNewCustomerModal = false">
-    <div class="modal-container" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="showNewCustomerModal" (click)="closeNewCustomerModal()">
+    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3><i class="fas fa-user-plus"></i> Add New Client</h3>
-        <button class="modal-close" (click)="showNewCustomerModal = false">×</button>
+        <button class="modal-close" (click)="closeNewCustomerModal()">×</button>
       </div>
-      <div class="modal-body">
-        <p>Quick add customer form would go here</p>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem; color: #334155;">
+        <form [formGroup]="quickCustomerForm" (ngSubmit)="onQuickCustomerSubmit()">
+          <!-- Personal Information Section -->
+          <h4 style="color: #BA9953; margin: 0 0 1rem 0; font-size: 0.95rem; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.25rem;">CLIENT INFORMATION</h4>
+          
+          <div class="form-group">
+            <label class="form-label required">Full Name</label>
+            <input type="text" formControlName="name" class="form-control" [class.is-invalid]="isQuickFieldInvalid('name')" placeholder="e.g. Emirates Airlines">
+            <div class="form-error" *ngIf="isQuickFieldInvalid('name')">Name is required (min 2 chars)</div>
+          </div>
+
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group flex-1">
+              <label class="form-label required">Email Address</label>
+              <input type="email" formControlName="email" class="form-control" [class.is-invalid]="isQuickFieldInvalid('email')" placeholder="client@example.com">
+              <div class="form-error" *ngIf="isQuickFieldInvalid('email')">Valid email is required</div>
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label required">Phone Number</label>
+              <input type="tel" formControlName="phone" class="form-control" [class.is-invalid]="isQuickFieldInvalid('phone')" placeholder="e.g. +234 800 000 0000">
+              <div class="form-error" *ngIf="isQuickFieldInvalid('phone')">Valid phone is required</div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.75rem;">
+            <label class="form-label required">Street Address</label>
+            <input type="text" formControlName="address" class="form-control" [class.is-invalid]="isQuickFieldInvalid('address')" placeholder="Enter client's address">
+            <div class="form-error" *ngIf="isQuickFieldInvalid('address')">Address is required (min 5 chars)</div>
+          </div>
+
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group flex-1">
+              <label class="form-label">Tax ID / VAT Number</label>
+              <input type="text" formControlName="taxId" class="form-control" placeholder="e.g. TAX-009 (Optional)">
+            </div>
+            <div class="form-group flex-1" style="display: flex; align-items: center; padding-top: 1.5rem;">
+              <label class="checkbox-container" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #475569;">
+                <input type="checkbox" formControlName="savePermanently" style="width: 16px; height: 16px; cursor: pointer;">
+                Save permanently to customer database
+              </label>
+            </div>
+          </div>
+
+          <!-- Bank Accounts Section -->
+          <div style="margin-top: 1.5rem; border-top: 1px solid #cbd5e1; padding-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h4 style="color: #BA9953; margin: 0; font-size: 0.95rem; font-weight: 700;">BANK ACCOUNTS</h4>
+              <button type="button" class="btn-add-item" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #1a2d4a; color: white;" (click)="addQuickCustomerBankAccount()">
+                <i class="fas fa-plus"></i> Add Bank Account
+              </button>
+            </div>
+
+            <div formArrayName="bankAccounts" class="bank-accounts-list">
+              <div *ngFor="let account of quickCustomerBankAccounts.controls; let idx = index" [formGroupName]="idx" class="bank-account-item-wrapper" style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; position: relative;">
+                <button type="button" class="btn-remove-item" style="position: absolute; top: 0.4rem; right: 0.4rem; background: transparent; border: none; color: #ff3b30; cursor: pointer; font-size: 0.8rem;" (click)="removeQuickCustomerBankAccount(idx)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+                <h5 style="margin: 0 0 0.5rem 0; color: #1a2d4a; font-size: 0.8rem; font-weight: 700;">Account #{{ idx + 1 }}</h5>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Bank Name</label>
+                    <input type="text" formControlName="bankName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Stanbic IBTC">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Account Name</label>
+                    <input type="text" formControlName="accountName" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. Corporate Account">
+                  </div>
+                </div>
+                <div class="form-row" style="margin-top: 0.5rem;">
+                  <div class="form-group flex-1">
+                    <label class="form-label required">Account Number</label>
+                    <input type="text" formControlName="accountNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="e.g. 0013604661">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label class="form-label">Sort Code / Routing No</label>
+                    <input type="text" formControlName="routingNumber" class="form-control" style="padding: 0.35rem 0.5rem; font-size: 0.85rem;" placeholder="Optional">
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="quickCustomerBankAccounts.length === 0" style="text-align: center; color: #64748b; font-size: 0.8rem; font-style: italic; padding: 0.75rem 0;">
+                No bank accounts added for this customer yet.
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+            <button type="button" class="btn-secondary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; font-weight: 600;" (click)="closeNewCustomerModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: none; background: #2EB270; color: white; cursor: pointer; font-weight: 600;">
+              Save Client &amp; Proceed
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

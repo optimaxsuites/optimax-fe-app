@@ -16,7 +16,8 @@ export type RequestStatus =
   | 'CANCELLED'           // The request has been cancelled/aborted by the procurement department
   | 'DRAFT'               // Draft request saved locally by the initiator before formal submission
   | 'PENDING_APPROVAL'    // Awaiting internal managerial approval or review board authorization
-  | 'REJECTED';           // Rejected by internal manager/approver during the review phase
+  | 'REJECTED'            // Rejected by internal manager/approver during the review phase
+  | 'APPROVED';           // Approved internally, ready to be sent to vendor portal
 
 
 

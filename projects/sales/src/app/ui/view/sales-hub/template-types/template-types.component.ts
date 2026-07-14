@@ -27,9 +27,9 @@ export interface QuoteTemplate {
     showVendorInfo: boolean;
     showCustomFields: boolean;
   };
-  layout: 'standard' | 'compact' | 'detailed' | 'minimal';
+  layout: 'standard' | 'compact' | 'detailed' | 'minimal' | 'emirates' | 'thcomms' | 'emirates-custbank';
   fontSize: 'small' | 'medium' | 'large';
-  colorTheme: 'professional' | 'modern' | 'classic' | 'minimal';
+  colorTheme: 'professional' | 'modern' | 'classic' | 'minimal' | 'emirates' | 'thcomms' | 'emirates-custbank';
 }
 
 @Component({
@@ -186,6 +186,90 @@ export class TemplateTypesComponent implements OnInit {
       layout: 'detailed',
       fontSize: 'large',
       colorTheme: 'modern'
+    },
+    {
+      id: 'emirates',
+      name: 'Emirates Corporate',
+      description: 'Elegant layout styled after Emirates Airlines invoices, featuring dual signature sections and structured project metadata',
+      sections: {
+        showCustomerDetails: true,
+        showCompanyLogo: true,
+        showTaxBreakdown: true,
+        showShippingDetails: false,
+        showPaymentTerms: true,
+        showNotes: true,
+        showTermsConditions: true,
+        showSignature: true,
+        showAttachments: false,
+        showItemImages: false,
+        showSKU: false,
+        showSerialNumbers: false,
+        showBatchDetails: false,
+        showSubtotalPerGroup: false,
+        showTotalInWords: true,
+        showCurrencySymbol: true,
+        showVendorInfo: true,
+        showCustomFields: false
+      },
+      layout: 'emirates',
+      fontSize: 'medium',
+      colorTheme: 'emirates'
+    },
+    {
+      id: 'emirates-custbank',
+      name: 'Emirates with Customer Bank',
+      description: 'Elegant Emirates Corporate layout including client bank account details in the invoice information',
+      sections: {
+        showCustomerDetails: true,
+        showCompanyLogo: true,
+        showTaxBreakdown: true,
+        showShippingDetails: false,
+        showPaymentTerms: true,
+        showNotes: true,
+        showTermsConditions: true,
+        showSignature: true,
+        showAttachments: false,
+        showItemImages: false,
+        showSKU: false,
+        showSerialNumbers: false,
+        showBatchDetails: false,
+        showSubtotalPerGroup: false,
+        showTotalInWords: true,
+        showCurrencySymbol: true,
+        showVendorInfo: true,
+        showCustomFields: false
+      },
+      layout: 'emirates-custbank',
+      fontSize: 'medium',
+      colorTheme: 'emirates-custbank'
+    },
+    {
+      id: 'thcomms',
+      name: '13th Comms Modern',
+      description: 'Clean modern template based on 13th Communications Ltd invoices with custom right-aligned header and clean billing metadata',
+      sections: {
+        showCustomerDetails: true,
+        showCompanyLogo: false,
+        showTaxBreakdown: true,
+        showShippingDetails: false,
+        showPaymentTerms: true,
+        showNotes: true,
+        showTermsConditions: true,
+        showSignature: false,
+        showAttachments: false,
+        showItemImages: false,
+        showSKU: false,
+        showSerialNumbers: false,
+        showBatchDetails: false,
+        showSubtotalPerGroup: false,
+        showTotalInWords: false,
+        showCurrencySymbol: true,
+        showVendorInfo: true,
+        showCustomFields: false
+      },
+      layout: 'thcomms',
+      fontSize: 'medium',
+      colorTheme: 'thcomms'
     }
   ];
 
@@ -233,7 +317,10 @@ export class TemplateTypesComponent implements OnInit {
       'minimal': '📝 Minimal Template',
       'detailed': '📊 Detailed Template',
       'compact': '📋 Compact Template',
-      'custom-client': '⭐ Premium Template'
+      'custom-client': '⭐ Premium Template',
+      'emirates': '✈️ Emirates Airlines Template',
+      'emirates-custbank': '✈️ Emirates (with Client Bank)',
+      'thcomms': '📡 13th Comms Template'
     };
     return previewMap[template.id] || '📄 Template Preview';
   }
@@ -270,7 +357,10 @@ export class TemplateTypesComponent implements OnInit {
       'minimal': 'fa-file',
       'detailed': 'fa-file-pdf',
       'compact': 'fa-file-contract',
-      'custom-client': 'fa-file-invoice'
+      'custom-client': 'fa-file-invoice',
+      'emirates': 'fa-plane',
+      'emirates-custbank': 'fa-plane-departure',
+      'thcomms': 'fa-broadcast-tower'
     };
     return icons[templateId] || 'fa-file';
   }
@@ -281,7 +371,10 @@ export class TemplateTypesComponent implements OnInit {
       'minimal': '#4a5a6e',
       'detailed': '#2a4a6a',
       'compact': '#3a6a8a',
-      'custom-client': '#2EB270'
+      'custom-client': '#2EB270',
+      'emirates': '#A32638',
+      'emirates-custbank': '#A32638',
+      'thcomms': '#1B365D'
     };
     return colors[templateId] || '#1a2d4a';
   }

@@ -1,5 +1,5 @@
 import { Component, Input  } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 
 @Component({
   selector: 'app-payslip-view',
@@ -8,9 +8,9 @@ import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedCompon
 })
 export class PayslipViewComponent {
   @Input() payslip: any;
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  //   // get companyProfile$() { return this.companyProfileService.companyProfile$; }
 
-  constructor(private companyProfileService: CompanyProfileService) {}
+  constructor() {}
   monthNames = [
     "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
   ];
@@ -39,7 +39,7 @@ export class PayslipViewComponent {
     return Object.values(allowances).reduce((total: number, value: any) => {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? total + parsed : total;
-    }, 0);
+    }, 0) as number;
   }
 
   get additionsTotal(): number {

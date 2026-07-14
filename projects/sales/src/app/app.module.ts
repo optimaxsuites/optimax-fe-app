@@ -84,6 +84,9 @@ import { QuotationsDashboardComponent } from './ui/view/request-management/quota
 import { QuotationDetailComponent } from './ui/view/request-management/quotation-detail/quotation-detail.component';
 import { LpoPreviewComponent } from './ui/view/request-management/lpo-preview/lpo-preview.component';
 import { RfqPreviewComponent } from './ui/view/request-management/rfq-preview/rfq-preview.component';
+import { ApprovalInboxComponent } from './ui/view/request-management/approval-inbox/approval-inbox.component';
+import { ApprovalRfqDetailComponent } from './ui/view/request-management/approval-rfq-detail/approval-rfq-detail.component';
+import { InvoicesComponent } from './ui/view/request-management/invoices/invoices.component';
 
 import { DocumentationHistoryComponent } from './ui/view/request-management/documentation-history/documentation-history.component';
 
@@ -133,6 +136,9 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     QuotationDetailComponent,
     LpoPreviewComponent,
     RfqPreviewComponent,
+    ApprovalInboxComponent,
+    ApprovalRfqDetailComponent,
+    InvoicesComponent,
     DocumentationHistoryComponent,
     DashboardComponent,
     FinanceComponent,

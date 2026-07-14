@@ -1,142 +1,8 @@
 <div class="remote-checkin-container">
-  <!-- Select Method Mode -->
-  <div *ngIf="currentMode === 'select-method'" class="checkin-card">
+  <!-- Location Capture Mode -->
+  <div *ngIf="currentMode === 'capture-location'" class="checkin-card">
     <h3>Remote Check-In</h3>
-    <p class="subtitle">Choose your preferred check-in method</p>
-
-    <div class="method-selection">
-      <!-- Biometric Method -->
-      <button class="method-card" *ngIf="fingerprintRegistered"
-              (click)="selectMethod('fingerprint')"
-              aria-label="Authenticate with fingerprint"
-              type="button">
-        <div class="method-icon">
-          <i class="fas fa-fingerprint"></i>
-        </div>
-        <h4>Fingerprint</h4>
-        <p>Fastest & Most Secure</p>
-        <p class="text-muted small">Use your registered fingerprint</p>
-      </button>
-
-      <!-- Register Fingerprint (if not registered) -->
-      <button class="method-card" *ngIf="!fingerprintRegistered"
-              (click)="currentMode = 'enroll-fingerprint'"
-              aria-label="Register your fingerprint for future clock-ins"
-              type="button">
-        <div class="method-icon opacity-75">
-          <i class="fas fa-fingerprint"></i>
-        </div>
-        <h4>Register Fingerprint</h4>
-        <p>One-time setup</p>
-        <p class="text-muted small">Register your fingerprint to clock in</p>
-      </button>
-
-      <!-- Web Method -->
-      <button class="method-card"
-              (click)="selectMethod('web')"
-              aria-label="Check in using web location capture"
-              type="button">
-        <div class="method-icon">
-          <i class="fas fa-globe"></i>
-        </div>
-        <h4>Web Check-In</h4>
-        <p>Location Capture</p>
-        <p class="text-muted small">Check-in from anywhere with location</p>
-      </button>
-    </div>
-  </div>
-
-  <!-- Enroll Fingerprint -->
-  <div *ngIf="currentMode === 'enroll-fingerprint'" class="checkin-card text-center">
-    <h3>Register Your Fingerprint</h3>
-    <p class="text-muted mb-4">One-time setup to enable fingerprint clock-in</p>
-
-    <div *ngIf="errorMessage" class="alert alert-danger">
-      {{ errorMessage }}
-    </div>
-
-    <div *ngIf="successMessage" class="alert alert-success">
-      {{ successMessage }}
-    </div>
-
-    <div class="fingerprint-section">
-      <div class="fingerprint-animation mb-4">
-        <i class="fas fa-fingerprint fa-5x"></i>
-      </div>
-      <p class="text-muted mb-4">Click the button below to register your fingerprint</p>
-      <p class="small text-secondary">
-        <i class="fas fa-info-circle"></i> Running on: {{ capacitorBiometric.getPlatformInfo() }}
-      </p>
-    </div>
-
-    <div class="action-buttons">
-      <button class="btn btn-secondary" (click)="goBack()" [disabled]="isLoading"
-              [title]="isLoading ? 'Please wait while registering' : 'Go back to check-in method selection'"
-              aria-label="Cancel and go back">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
-      <button class="btn btn-primary btn-lg" (click)="registerFingerprint()" [disabled]="isLoading"
-              [title]="isLoading ? 'Registration in progress...' : 'Start fingerprint registration process'"
-              aria-label="Start fingerprint registration"
-              [attr.aria-busy]="isLoading">
-        <span *ngIf="!isLoading">
-          <i class="fas fa-fingerprint"></i> Register Fingerprint
-        </span>
-        <span *ngIf="isLoading">
-          <i class="fas fa-spinner fa-spin"></i> Registering...
-        </span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Biometric Mode -->
-  <div *ngIf="currentMode === 'fingerprint'" class="checkin-card">
-    <h3>Biometric Check-In</h3>
-
-    <div *ngIf="errorMessage" class="alert alert-danger">
-      {{ errorMessage }}
-    </div>
-
-    <div class="fingerprint-section text-center">
-      <div class="fingerprint-animation mb-4">
-        <i class="fas fa-fingerprint fa-5x" [class.spinning]="isLoading"></i>
-      </div>
-
-      <div *ngIf="!isLoading">
-        <h5 class="mb-3">Ready to Authenticate</h5>
-        <p class="text-muted mb-4">Click the button below to use your fingerprint</p>
-        <p class="small text-muted">Your device's fingerprint sensor will verify your identity</p>
-      </div>
-
-      <div *ngIf="isLoading" class="py-4">
-        <p class="h6"><i class="fas fa-spinner fa-spin"></i> Waiting for fingerprint...</p>
-        <p class="text-muted small">Place your finger on the sensor when prompted</p>
-      </div>
-    </div>
-
-    <div class="action-buttons">
-      <button class="btn btn-secondary" (click)="goBack()" [disabled]="isLoading"
-              [title]="isLoading ? 'Please wait while authenticating' : 'Go back to check-in method selection'"
-              aria-label="Cancel authentication and go back">
-        <i class="fas fa-arrow-left"></i> Back
-      </button>
-      <button class="btn btn-success btn-lg" (click)="submitBiometricCheckIn()" [disabled]="isLoading"
-              [title]="isLoading ? 'Waiting for fingerprint authentication...' : 'Start fingerprint authentication to clock in'"
-              aria-label="Start fingerprint authentication"
-              [attr.aria-busy]="isLoading">
-        <span *ngIf="!isLoading">
-          <i class="fas fa-play"></i> Start Scanning
-        </span>
-        <span *ngIf="isLoading">
-          <i class="fas fa-spinner fa-spin"></i> Scan in progress...
-        </span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Web Mode -->
-  <div *ngIf="currentMode === 'web'" class="checkin-card">
-    <h3>Web Check-In</h3>
+    <p class="subtitle">Location-based attendance from anywhere</p>
 
     <div *ngIf="errorMessage" class="alert alert-danger">
       {{ errorMessage }}
@@ -144,25 +10,24 @@
 
     <div *ngIf="isLoading" class="loading-section">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading location...</span>
+        <span class="visually-hidden">Capturing location...</span>
       </div>
-      <p class="mt-3">Capturing your location...</p>
+      <p class="mt-3">Capturing your location and device information...</p>
     </div>
 
     <div *ngIf="!isLoading && currentLocation === null" class="web-section">
+      <div class="method-icon mb-4">
+        <i class="fas fa-location-dot"></i>
+      </div>
       <p class="instruction">We'll capture your current location for this check-in</p>
-      <p class="text-muted small">You can check in from anywhere: home, client site, etc.</p>
+      <p class="text-muted small">Location, IP address, and device information are recorded for fraud detection</p>
 
       <div class="action-buttons">
-        <button class="btn btn-secondary" (click)="goBack()"
-                aria-label="Cancel location capture and go back">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
-        <button class="btn btn-primary" (click)="loadLocationData()" [disabled]="isLoading"
+        <button class="btn btn-primary btn-lg" (click)="loadLocationData()" [disabled]="isLoading"
                 [title]="isLoading ? 'Capturing your location...' : 'Capture your current location for check-in'"
                 aria-label="Capture my current location"
                 [attr.aria-busy]="isLoading">
-          <i class="fas fa-map-marker-alt"></i> Capture Location
+          <i class="fas fa-map-marker-alt"></i> Capture Location & Check In
         </button>
       </div>
     </div>
@@ -197,9 +62,18 @@
         <span class="label">IP Address:</span>
         <span class="value text-monospace">{{ currentLocation?.ipAddress }}</span>
       </div>
+
+      <div class="summary-item" *ngIf="currentLocation?.vpnDetected !== undefined">
+        <span class="label">Security Status:</span>
+        <span class="value">
+          <span *ngIf="!currentLocation?.vpnDetected" class="badge bg-success">Clear</span>
+          <span *ngIf="currentLocation?.vpnDetected" class="badge bg-danger">VPN/Proxy Detected</span>
+        </span>
+      </div>
     </div>
 
-    <div *ngIf="getLocationWarnings().length > 0" class="alert alert-info">
+    <div *ngIf="getLocationWarnings().length > 0" class="alert alert-warning">
+      <strong>Security Check:</strong>
       <ul class="mb-0">
         <li *ngFor="let warning of getLocationWarnings()">{{ warning }}</li>
       </ul>
@@ -209,7 +83,7 @@
       <button class="btn btn-secondary" (click)="goBack()" [disabled]="isLoading">
         <i class="fas fa-arrow-left"></i> Back
       </button>
-      <button class="btn btn-success" (click)="submitWebCheckIn()" [disabled]="isLoading">
+      <button class="btn btn-success" (click)="submitCheckIn()" [disabled]="isLoading">
         <span *ngIf="!isLoading">
           <i class="fas fa-check"></i> Confirm Check-In
         </span>
@@ -231,7 +105,7 @@
     <div class="success-details bg-light p-4 rounded mb-4">
       <p class="mb-2"><strong>Employee:</strong> {{ employeeName }}</p>
       <p class="mb-2"><strong>Department:</strong> {{ department }}</p>
-      <p class="mb-0"><strong>Method:</strong> Fingerprint Authentication</p>
+      <p class="mb-0"><strong>Method:</strong> Remote Location-Based</p>
     </div>
 
     <button class="btn btn-primary btn-lg" (click)="resetAndClose()">

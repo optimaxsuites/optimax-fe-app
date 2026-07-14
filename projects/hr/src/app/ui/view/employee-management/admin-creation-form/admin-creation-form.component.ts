@@ -13,7 +13,7 @@ import { MetadataService } from '../../../service/metadata.service';
 import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -106,8 +106,7 @@ export class AdminCreationFormComponent implements OnChanges {
     private authenticationService: AuthenticationService,
     private rolesService: RolesService,
     public navigationLink: NavigationLinksService,
-    private errorMessageService: ErrorMessageService,
-    private companyProfileService: CompanyProfileService
+    private errorMessageService: ErrorMessageService
   ) {  }
 
   ngOnInit(): void {
@@ -608,9 +607,8 @@ private setProbationValidators(): void {
     this.submitted = true;
     this.lastSubmittedName = `${data.firstName} ${data.lastName}`.trim();
 
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const hrEmail = '';
     const name = `${data.firstName} ${data.lastName}`.trim();
     const url = `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj?onboarding=1`;
 

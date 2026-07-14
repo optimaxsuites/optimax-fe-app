@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 
 @Component({
   selector: 'app-employee-update-form',
@@ -9,9 +9,9 @@ import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedCompon
 export class EmployeeUpdateFormComponent {
 
   ten = Array(10).fill(0);
-  companyProfile$ = this.companyProfileService.companyProfile$;
+  //   // get companyProfile$() { return this.companyProfileService.companyProfile$; }
 
-  constructor(private companyProfileService: CompanyProfileService) {}
+  constructor() {}
 
   eleven = Array(11).fill(0);
   today = new Date().toLocaleDateString('en-GB');

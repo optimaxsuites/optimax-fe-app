@@ -96,7 +96,10 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   editCustomer(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/customers', this.customerId, 'edit', uuid]);
     } else {
@@ -105,13 +108,19 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   createQuote(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     const path = uuid ? ['/admin/sales/quotes/new', uuid] : ['/admin/sales/quotes/new'];
     this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
 
   createInvoice(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     const path = uuid ? ['/admin/sales/invoices/new', uuid] : ['/admin/sales/invoices/new'];
     this.router.navigate(path, { queryParams: { customerId: this.customerId } });
   }
@@ -123,7 +132,10 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   confirmDelete(): void {
     // Call service to delete customer
     alert(`Customer ${this.customer?.name} has been deleted`);
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
@@ -132,7 +144,10 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   viewOrder(orderId: string): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/orders', orderId, uuid]);
     } else {
@@ -141,7 +156,10 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
+    let uuid = this.route.snapshot.paramMap.get('uuid');
+    if (uuid === 'edit') {
+      uuid = null;
+    }
     if (uuid) {
       this.router.navigate(['/admin/sales/sales-hub', uuid]);
     } else {
@@ -229,7 +247,7 @@ export class CustomerDetailComponent implements OnInit, OnDestroy {
   }
 
   getCustomerNotes(): string | undefined {
-    return (this.customer as any)?.notes;
+    return this.customer?.notes;
   }
 
   viewOrderHistory(): void {

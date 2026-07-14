@@ -12,7 +12,7 @@ import { InviteModalComponent } from './ui/view/recruitment/invite-modal/invite-
 import { CooperativePatronageDistributionComponent } from './ui/view/loan-management/cooperative-patronage-distribution/cooperative-patronage-distribution.component';
 import { ProductivityWorkspaceComponent } from './ui/view/productivity/productivity-workspace.component';
 import { EmployeeRelativesWidgetComponent } from './ui/shared-component/employee-relatives-widget/employee-relatives-widget.component';
-import { NgModule } from '@angular/core';
+import { NgModule, NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 
@@ -67,6 +67,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
@@ -106,8 +108,7 @@ import { AppraisalcycleComponent } from './ui/view/performance/appraisalcycle/ap
 import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
 import {
   HTTP_INTERCEPTORS,
-  provideHttpClient,
-  withInterceptorsFromDi,
+  HttpClientModule,
 } from '@angular/common/http';
 import { AttendanceSheetsComponent } from './ui/view/attendance/attendance-sheet/attendance-sheet.component';
 import { NotificationComponent } from './ui/view/attendance/notification/notification.component';
@@ -264,16 +265,17 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     RecruitmentComponent,
     LeaveComponent,
     AttendanceComponent,
-    EmployeeManagementComponent,
     RecruitmentListComponent,
     RecruitmentFormComponent,
     CandidateComponent,
     ScheduledInterviewComponent,
     InterviewInviteComponent,
-    OfferLetterComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
     AddEmployeeFormComponent,
+    EmployeeManagementComponent,
+    AdminCreationFormComponent,
+    EmployeeProfileDashboardComponent,
     // EmployeeOnboardingFormComponent,
     PreOnboardingFormComponent,
     PreOnboardingImportComponent,
@@ -291,8 +293,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MyAttendanceComponent,
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
-    PayslipViewComponent,
-    AdminCreationFormComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,
     EmployeeNokComponent,
@@ -375,7 +375,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     CooperativeMembersComponent,
     CooperativeMemberDetailComponent,
     CooperativeMemberFormComponent,
-    EmployeeProfileDashboardComponent,
     CooperativeMemberDashboardComponent,
     CooperativeMemberLoansComponent,
     CooperativeMemberGroupDashboardComponent,
@@ -439,10 +438,13 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    HttpClientModule,
     TableModule,
     // RouterModule.forChild([], {
     //   bindToComponentInputs: true,
@@ -497,10 +499,8 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     MenuModule,
     AutoCompleteModule,
     CooperativeGracePeriodRequestFormModule,
-    LargeSideModalComponent,
-    FooterComponent,
-    EmployeeRelativesWidgetComponent,
   ],
+  schemas: [NO_ERRORS_SCHEMA],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
@@ -517,7 +517,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
       useValue: JWT_OPTIONS,
     },
     JwtHelperService,
-    provideHttpClient(withInterceptorsFromDi()),
     ConfirmationService,
     MessageService,
   ],

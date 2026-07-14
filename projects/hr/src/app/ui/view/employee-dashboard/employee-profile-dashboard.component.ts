@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
 import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { DataService } from '../../service/data.service';
@@ -108,7 +108,6 @@ export class EmployeeProfileDashboardComponent {
   pendingProfilePhotoFile: File | null = null;
   private originalProfilePhotoUrl: SafeUrl | string | null = null;
 
-  salaryVisible = false;
   statusDropdownOpen = false;
   changingStatus = false;
   deletingEmployee = false;
@@ -117,7 +116,7 @@ export class EmployeeProfileDashboardComponent {
   showDeleteConfirm = false;
   canManageEmployees = false;
   changeStatusOptions = [
-    { label: 'Active',  value: 'ACTIVE',  color: '#10b981' },
+    { label: 'Active', value: 'ACTIVE', color: '#10b981' },
     { label: 'Joining', value: 'JOINING', color: '#facc15' },
   ];
   private readonly allowanceNameCache = new Map<string, Observable<string>>();
@@ -129,7 +128,7 @@ export class EmployeeProfileDashboardComponent {
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
 
-  companyProfile$!: Observable<any>;
+  //   // companyProfile$ = this.companyProfileService.companyProfile$;
 
   constructor(
     private employeeService: EmployeeService,
@@ -139,10 +138,9 @@ export class EmployeeProfileDashboardComponent {
     private router: Router,
     private profileChangeRequestService: ProfileChangeRequestService,
     private dataService: DataService,
-    private companyProfileService: CompanyProfileService,
+    // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
-    this.companyProfile$ = this.companyProfileService.companyProfile$;
     this.editForm = this.fb.group({
       phone: [''],
       email: ['', [Validators.email]],
@@ -477,77 +475,54 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private fetchEmployeeForCurrentUser(): void {
-    // Admin context: the component is embedded inside the employee-management panel.
-    // Use the employee the admin selected and stored in localStorage.
-    if (this.isEmployeeManagementContext()) {
-      const selectedEmployee = localStorage.getItem('employeeInView');
-      if (selectedEmployee) {
-        try {
-          const parsedEmployee = JSON.parse(selectedEmployee);
-          if (parsedEmployee && parsedEmployee.id) {
-            this.applyEmployeeView(parsedEmployee);
-            return;
-          }
-        } catch {
-          localStorage.removeItem('employeeInView');
+    const selectedEmployee = localStorage.getItem('employeeInView');
+    if (selectedEmployee && this.isEmployeeManagementContext()) {
+      try {
+        const parsedEmployee = JSON.parse(selectedEmployee);
+        if (parsedEmployee) {
+          this.applyEmployeeView(parsedEmployee);
+          return;
         }
+      } catch {
+        localStorage.removeItem('employeeInView');
       }
     }
 
-    // My Dashboard context: always load the profile for the currently logged-in user.
-    // Never fall back to showing a random employee — show empty state instead.
-    const storedUserId = this.resolveCurrentUserId();
-    if (!storedUserId) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Session expired',
-        detail: 'Please log in again to view your dashboard.',
-        key: 'global',
+    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+    if (storedUserId) {
+      this.applySessionEmployeeFallback(storedUserId);
+      const startedAt = this.startLoading();
+      this.employeeService.getEmployeeByUserId(storedUserId).subscribe({
+        next: (data) => {
+          const employee = data?.data ?? data ?? null;
+          if (!employee) {
+            this.fetchEmployeeFromListFallback(storedUserId);
+            return;
+          }
+          this.applyEmployeeView(employee);
+        },
+        error: () => {
+          this.fetchEmployeeFromListFallback(storedUserId);
+        },
+        complete: () => {
+          this.finishLoading(startedAt);
+        },
       });
       return;
     }
 
-    // Reset to a clean state so no stale data from a prior navigation bleeds through.
-    this.employeeInView = null;
-    const startedAt = this.startLoading();
-    this.employeeService.getEmployeeByUserId(storedUserId).pipe(
-      finalize(() => this.finishLoading(startedAt))
-    ).subscribe({
-      next: (data) => {
-        const employee = data?.data ?? data ?? null;
-        if (!employee || !employee.id) {
-          this.fetchEmployeeFromListFallback(storedUserId);
-          return;
-        }
-        this.applyEmployeeView(employee);
-      },
-      error: () => {
-        this.fetchEmployeeFromListFallback(storedUserId);
-      },
-    });
-  }
-
-  private resolveCurrentUserId(): string | null {
-    const raw = sessionStorage.getItem('userid') || localStorage.getItem('userid') || '';
-    const trimmed = raw.trim();
-    if (!trimmed || trimmed === 'null' || trimmed === 'undefined' || trimmed === '0') {
-      return null;
-    }
-    return trimmed;
+    this.fetchFirstEmployee();
   }
 
   private fetchEmployeeFromListFallback(userId: string): void {
-    if (!userId || userId.trim() === '' || userId === 'null' || userId === 'undefined') {
-      return;
-    }
-
     this.employeeService.getAllEmployee().subscribe({
       next: (employees) => {
         const employee =
-          employees.find((entry: any) => {
-            const entryUserId = entry?.userId ?? entry?.user?.userId ?? entry?.user?.id;
-            return entryUserId != null && String(entryUserId) === String(userId);
-          }) ?? null;
+          employees.find((entry: any) =>
+            String(entry?.userId ?? '') === String(userId) ||
+            String(entry?.user?.userId ?? '') === String(userId) ||
+            String(entry?.user?.id ?? '') === String(userId)
+          ) ?? null;
 
         if (employee) {
           this.applyEmployeeView(employee);
@@ -556,10 +531,44 @@ export class EmployeeProfileDashboardComponent {
 
         this.messageService.add({
           severity: 'warn',
-          summary: 'No employee record',
-          detail: 'No employee record is linked to your account.',
+          summary: 'No employee',
+          detail: 'No employee record linked to this user.',
           key: 'global',
         });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Load failed',
+          detail: 'Unable to fetch employee record for this user.',
+          key: 'global',
+        });
+      },
+    });
+  }
+
+  private isEmployeeManagementContext(): boolean {
+    return this.router.url.includes('/admin/hr/employee-management/');
+  }
+
+  private fetchFirstEmployee(): void {
+    const startedAt = this.startLoading();
+    this.employeeService.getAllEmployee().subscribe({
+      next: (employees) => {
+        const sortedEmployees = this.sortEmployeesLatest(employees);
+        const employee = sortedEmployees[0];
+
+        if (!employee) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No employees',
+            detail: 'No employee records available yet.',
+            key: 'global',
+          });
+          return;
+        }
+
+        this.applyEmployeeView(employee);
       },
       error: () => {
         this.messageService.add({
@@ -569,11 +578,10 @@ export class EmployeeProfileDashboardComponent {
           key: 'global',
         });
       },
+      complete: () => {
+        this.finishLoading(startedAt);
+      },
     });
-  }
-
-  private isEmployeeManagementContext(): boolean {
-    return this.router.url.includes('/admin/hr/employee-management/');
   }
 
   private startLoading(): number {
@@ -648,6 +656,7 @@ export class EmployeeProfileDashboardComponent {
         '';
 
       this.employeeInView = {
+        ...(this.employeeInView || {}),
         firstName,
         lastName,
         userId: Number(userId),
@@ -658,7 +667,7 @@ export class EmployeeProfileDashboardComponent {
           username: parsed?.username || fullName,
           email: parsed?.email || '',
         },
-        imageUrl: fallbackImage || '',
+        imageUrl: fallbackImage || this.employeeInView?.imageUrl || '',
       };
 
       if (fallbackImage) {
@@ -704,32 +713,7 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.updateEmployee(data, this.employeeInView.id).subscribe({
       next: (response) => {
         const updated = response?.data ?? response ?? {};
-
-        // Preserve photo — backend now returns employeeMedia but guard against empty responses
-        const prevImageUrl = this.employeeInView?.imageUrl;
-        const prevMedia = this.employeeInView?.employeeMedia;
-        const prevPhotoUrl = this.employeeProfilePhotoUrl;
-
-        // Merge: server response wins for all fields (now returns full nested objects)
-        this.employeeInView = { ...this.employeeInView, ...updated };
-
-        // Keep photo if server response didn't include it
-        if (!this.employeeInView?.imageUrl && prevImageUrl) {
-          this.employeeInView.imageUrl = prevImageUrl;
-        }
-        if (!this.employeeInView?.employeeMedia && prevMedia) {
-          this.employeeInView.employeeMedia = prevMedia;
-        }
-        if (!this.employeeInView?.imageUrl) {
-          this.employeeProfilePhotoUrl = prevPhotoUrl;
-        }
-
-        // Reload photo from media if server returned a fresh mediaNo
-        const mediaNo = this.employeeInView?.employeeMedia?.mediaNo;
-        if (mediaNo) {
-          this.getEmployeesProfilePhotoUrl(mediaNo);
-        }
-
+        this.employeeInView = { ...this.employeeInView, ...updated, ...patch };
         this.originalProfilePhotoUrl =
           this.employeeInView?.imageUrl || this.employeeProfilePhotoUrl || null;
         this.pendingProfilePhotoDataUrl = null;
@@ -947,9 +931,10 @@ export class EmployeeProfileDashboardComponent {
 
   private buildUpdatePayload(): { data: any; patch: any } {
     const employee = this.employeeInView || {};
+    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
-      userId: employee.userId ?? employee.user?.userId ?? null,
+      userId: employee.userId ?? employee.user?.userId ?? storedUserId ?? null,
       firstName: this.editForm.get('firstName')?.value ?? employee.firstName,
       lastName: this.editForm.get('lastName')?.value ?? employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,
@@ -978,7 +963,7 @@ export class EmployeeProfileDashboardComponent {
       bvn: this.editForm.get('bvn')?.value ?? employee.bvn,
       jobTypeId: this.editForm.get('jobTypeId')?.value ?? employee.jobTypeId ?? employee.jobType?.id ?? null,
       relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
-      employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
+      // employeeMediaId: employee.employeeMediaId ?? employee.employeeMedia?.id ?? null,
     };
 
     return { data: patch, patch };
@@ -1120,35 +1105,35 @@ export class EmployeeProfileDashboardComponent {
 
   loadEmployeeRelatives(): void {
     if (!this.employeeInView?.id) return;
-          // this.nextOfKinList = this.employeeInView.nextOfKin || [];
+    // this.nextOfKinList = this.employeeInView.nextOfKin || [];
 
 
     this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
-        next: (res: any) => {
-          this.nextOfKinList = res;
-          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
-        },
-        error: () => {
-          this.nextOfKinList = [];
-        },
-      })
+      next: (res: any) => {
+        this.nextOfKinList = res;
+        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+      },
+      error: () => {
+        this.nextOfKinList = [];
+      },
+    })
 
     this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
-        next: (res: any) => {
-          this.guarantorList = res;
-          // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
-        },
-        error: () => {
-          this.guarantorList = [];
-        },
-      })
+      next: (res: any) => {
+        this.guarantorList = res;
+        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
+      },
+      error: () => {
+        this.guarantorList = [];
+      },
+    })
   }
 
   // NOK Change Request Methods
   openNokChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: NextOfKin): void {
     this.nokChangeType = changeType;
     this.selectedNokRecord = record || null;
-    
+
     if (changeType === 'add') {
       this.nokChangeHeader = 'Add Next of Kin';
     } else if (changeType === 'edit') {
@@ -1156,7 +1141,7 @@ export class EmployeeProfileDashboardComponent {
     } else if (changeType === 'delete') {
       this.nokChangeHeader = `Delete: ${record?.fullName || 'Next of Kin'}`;
     }
-    
+
     this.isNokChangeRequestOpen = true;
   }
 
@@ -1182,7 +1167,7 @@ export class EmployeeProfileDashboardComponent {
   openGuarantorChangeRequest(changeType: 'add' | 'edit' | 'delete', record?: Guarantor): void {
     this.guarantorChangeType = changeType;
     this.selectedGuarantorRecord = record || null;
-    
+
     if (changeType === 'add') {
       this.guarantorChangeHeader = 'Add Guarantor';
     } else if (changeType === 'edit') {
@@ -1190,7 +1175,7 @@ export class EmployeeProfileDashboardComponent {
     } else if (changeType === 'delete') {
       this.guarantorChangeHeader = `Delete: ${record?.fullName || 'Guarantor'}`;
     }
-    
+
     this.isGuarantorChangeRequestOpen = true;
   }
 
@@ -1354,9 +1339,8 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private dispatchOnboardingEmail(employee: any, name: string, username: string, password: string): void {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const hrEmail = '';
     const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
@@ -1379,8 +1363,7 @@ export class EmployeeProfileDashboardComponent {
     if (!e) return;
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
+    const companyName = 'The Company';
     const pageW = 210;
     const margin = 18;
     const colW = pageW - margin * 2;
@@ -1503,10 +1486,9 @@ export class EmployeeProfileDashboardComponent {
   // ── Welcome to Active notifications ───────────────────────────────────────
 
   private dispatchWelcomeToActiveNotifications(employee: any, name: string): void {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const logoUrl = (profile as any)?.logoUrl || '';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const logoUrl = '';
+    const hrEmail = '';
     const subject = `Welcome to ${companyName}! 🎉`;
     const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
 
@@ -1514,7 +1496,7 @@ export class EmployeeProfileDashboardComponent {
     if (employee?.email) sendTo.push(employee.email);
     if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
     sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => {} });
+      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => { } });
     });
 
     this.employeeService.sendWelcomeEmail({
@@ -1526,7 +1508,7 @@ export class EmployeeProfileDashboardComponent {
       companyName,
       event: 'JOINING_TO_ACTIVE',
       timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => {} });
+    }).subscribe({ error: () => { } });
   }
 
   private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {

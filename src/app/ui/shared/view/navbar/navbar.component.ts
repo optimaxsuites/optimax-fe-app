@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { Router } from '@angular/router';
 import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
 import {
@@ -9,6 +10,7 @@ import {
   HeaderProfileState,
   HeaderStateService,
 } from 'src/app/ui/shared/service/header-state.service';
+import { environment } from 'src/environments/environment.prod';
 
 // dami just modified this to sharpen the app header and keep profile/notification state in sync.
 @Component({
@@ -33,6 +35,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   unreadNotifications = 0;
   showUnreadNotificationsDialog = false;
   currentUserId = '';
+  companyName = 'OptimaX';
+  aiInsight = '';
+  aiLoading = true;
+  showAiPanel = false;
   private headerSub?: Subscription;
   private avatarListener = (e: Event) => {
     const url = (e as CustomEvent).detail?.avatarUrl || '';
@@ -42,6 +48,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
+    private http: HttpClient,
     private authenticationService: AuthenticationService,
     private headerStateService: HeaderStateService,
     private chatRealtimeNotifierService: ChatRealtimeNotifierService,
@@ -54,6 +61,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.syncProfileFromSession();
+    this.loadCompanyName();
+    this.loadAiInsight();
     window.addEventListener('optimax-avatar-updated', this.avatarListener);
     this.chatRealtimeNotifierService.start(this.resolveCollaborationRouteUuid());
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
@@ -143,6 +152,51 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   navigateToSettings(): void {
     this.router.navigate(['/admin/settings/general-settings', uuidV4()]);
+  }
+
+  private loadCompanyName(): void {
+    try {
+      const raw = sessionStorage.getItem('userPrimaryInfoRegData');
+      if (raw) {
+        const info = JSON.parse(raw);
+        this.companyName = info?.companyName || 'OptimaX';
+      }
+    } catch {}
+  }
+
+  private loadAiInsight(): void {
+    this.aiLoading = true;
+    try {
+      const raw = sessionStorage.getItem('userRegData');
+      const user = raw ? JSON.parse(raw) : {};
+      const role = user?.roles || user?.role || 'staff';
+      const hour = new Date().getHours();
+      const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+      const day = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+
+      const prompt = `You are a smart workplace assistant for ${this.companyName}. The user is a ${role} and it is ${timeOfDay} on ${day}. Generate exactly one short, specific, actionable workplace insight or nudge (10 words max) relevant to their role in an HR/ERP system. Reply with ONLY the insight text — no quotes, no intro phrases.`;
+
+      const token = sessionStorage.getItem('Token') || sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
+      const headers = new HttpHeaders({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` });
+
+      this.http.post<any>(
+        `${environment.apiBaseUrl}/x/api/v2/ai/agent/prompt`,
+        { prompt, mode: 'chat', responseFormat: 'text' },
+        { headers }
+      ).subscribe({
+        next: (res) => {
+          const text = (res?.response || res?.executiveSummary || '').replace(/[*#_`]/g, '').trim();
+          this.aiInsight = text.split(/[.\n]/)[0].trim();
+          this.aiLoading = false;
+        },
+        error: () => {
+          this.aiInsight = '';
+          this.aiLoading = false;
+        }
+      });
+    } catch {
+      this.aiLoading = false;
+    }
   }
 
   private syncProfileFromSession(): void {

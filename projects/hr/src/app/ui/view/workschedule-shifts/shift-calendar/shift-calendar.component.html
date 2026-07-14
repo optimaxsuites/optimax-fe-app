@@ -1,34 +1,88 @@
 <div class="calendar-container">
 
   <div class="view-toggle">
-    <button 
-      [class.active]="viewMode === 'calendar'" 
+    <button
+      [class.active]="viewMode === 'calendar'"
       (click)="setView('calendar')">
       <i class="fa-solid fa-calendar"></i>
       Calendar
     </button>
 
-    <button 
-      [class.active]="viewMode === 'table'" 
+    <button
+      [class.active]="viewMode === 'table'"
       (click)="setView('table')">
       <i class="fa-solid fa-table"></i>
       Table
     </button>
 
-    <button 
-      [class.active]="viewMode === 'summary'" 
+    <button
+      [class.active]="viewMode === 'gantt'"
+      (click)="setView('gantt')">
+      <i class="fa-solid fa-bars"></i>
+      Timeline
+    </button>
+
+    <button
+      [class.active]="viewMode === 'summary'"
       (click)="setView('summary')">
       <i class="fa-solid fa-chart-column"></i>
       Summary
     </button>
 
-    <button 
-      *ngIf="viewMode !== 'summary'" 
-      class="add-btn"         
-      (click)="openAssignment()" 
+    <button
+      *ngIf="viewMode !== 'summary' && viewMode !== 'gantt'"
+      class="add-btn"
+      (click)="openAssignment()"
       [disabled]="isSelectedDateLocked">
       + Assign Shift
     </button>
+
+    <div *ngIf="batchSelected.size > 0" class="batch-actions">
+      <span class="batch-count">{{ batchSelected.size }} selected</span>
+      <button class="batch-btn delete" (click)="bulkDeleteSchedules()">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+      <button class="batch-btn clear" (click)="clearBatchSelection()">
+        <i class="fa-solid fa-x"></i> Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTERS STATUS BANNER -->
+  <div *ngIf="selectedShiftType || selectedEmployee || searchQuery" class="filter-status-banner">
+    <i class="fa-solid fa-filter"></i>
+    <span>
+      Filters Active:
+      <strong *ngIf="selectedShiftType">{{ selectedShiftType }}</strong>
+      <strong *ngIf="selectedEmployee">{{ getEmployeeNameById(selectedEmployee) }}</strong>
+      <strong *ngIf="searchQuery">"{{ searchQuery }}"</strong>
+    </span>
+    <button (click)="clearFilters()" class="clear-filter-btn">
+      <i class="fa-solid fa-x"></i> Clear All
+    </button>
+  </div>
+
+  <!-- FILTERS -->
+  <div *ngIf="viewMode === 'table'" class="filters-bar">
+    <select [(ngModel)]="selectedShiftType" (ngModelChange)="applyFilters()" class="filter-select">
+      <option [value]="null">All Shifts</option>
+      <option *ngFor="let type of shiftTypes" [value]="type">{{ type }}</option>
+    </select>
+
+    <select [(ngModel)]="selectedEmployee" (ngModelChange)="applyFilters()" class="filter-select">
+      <option [value]="null">All Employees</option>
+      <option *ngFor="let emp of employees" [value]="emp.id">{{ emp.name }}</option>
+    </select>
+
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      (ngModelChange)="applyFilters()"
+      placeholder="Search employee..."
+      class="filter-input"
+    />
+
+    <button (click)="clearFilters()" class="filter-clear-btn">Clear Filters</button>
   </div>
   <div
     *ngIf="showDateWarning"
@@ -59,45 +113,9 @@
   </div>-->
 
   <div *ngIf="viewMode === 'calendar'">
-  <div class="calendar-card">
-
-    <div class="calendar-header">
-      <button class="nav-btn" (click)="prevMonth()">‹</button>
-      <span class="month-label">{{ monthLabel }}</span>
-      <button class="nav-btn" (click)="nextMonth()">›</button>
-    </div>
-
-    <!-- WEEKDAY HEADERS -->
-    <div class="weekday-grid">
-      <div class="weekday-cell" *ngFor="let day of weekdays">{{ day }}</div>
-    </div>
-
-    <!-- DATE GRID -->
-    <div class="date-grid">
-      <div
-        class="date-cell"
-        *ngFor="let day of calendarDays"
-        [class.other-month]="!day.inMonth"
-        [class.today]="isToday(day.date)"
-        [class.selected]="isSelected(day.date)"
-        [class.disabled]="isPastOrToday(day.date)"
-        (click)="selectDate(day)"
-      >
-      <span>
-        {{ day.date.getDate() }}
-      </span>
-      <div
-        class="calendar-dots"
-        *ngIf="getDayShiftColors(day.date).length > 0"
-      >
-        <span
-          *ngFor="let color of getDayShiftColors(day.date)"
-          class="calendar-dot"
-          [style.background]="color"
-        ></span>
-      </div>
-        
-      </div>
+    <div class="calendar-card">
+      <!-- FullCalendar Integration -->
+      <full-calendar [options]="calendarOptions"></full-calendar>
     </div>
 
     <div class="conflict-card" [class.all-clear]="conflicts.length === 0">
@@ -114,14 +132,15 @@
         <span>No schedule conflicts detected nyaa~</span>
       </div>
 
-      <div *ngIf="conflicts.length > 0" class="conflict-list"></div>
-      <div *ngFor="let conflict of conflicts" class="conflict-item">
-        <i class="fa-solid fa-clock conflict-icon"></i>
-        <div class="conflict-body">
-        <strong>{{ conflict.employeeName }}</strong>
-        <span>{{ conflict.message }}</span>
+      <div *ngIf="conflicts.length > 0" class="conflict-list">
+        <div *ngFor="let conflict of conflicts" class="conflict-item">
+          <i class="fa-solid fa-clock conflict-icon"></i>
+          <div class="conflict-body">
+            <strong>{{ conflict.employeeName }}</strong>
+            <span>{{ conflict.message }}</span>
+          </div>
+        </div>
       </div>
-    </div>
     </div>
 
      <div *ngIf="conflicts.length > 0" class="conflict-footer">
@@ -142,9 +161,16 @@
       </div>
 
       <!-- SHIFT GROUPS -->
-      <div class="shift-group" *ngFor="let group of dayShiftGroups">
+      <div class="shift-group" *ngFor="let group of dayShiftGroups" [class.selected]="isBatchSelected(group.schedule.id)">
 
-        <div class="shift-group-header">
+        <div class="shift-group-header" (click)="toggleBatchSelect(group.schedule.id)" style="cursor: pointer;">
+          <input
+            type="checkbox"
+            [checked]="isBatchSelected(group.schedule.id)"
+            (click)="$event.stopPropagation()"
+            (change)="toggleBatchSelect(group.schedule.id)"
+            class="shift-checkbox"
+          />
           <div class="shift-title">
             <span class="shift-color-dot" [style.background]="group.shift.color"></span>
             <strong>{{ group.shift.name }}</strong>
@@ -202,9 +228,8 @@
     </div>
 
   </div>
-</div>
 
-<div *ngIf="viewMode === 'table'" class="table-view">
+  <div *ngIf="viewMode === 'table'" class="table-view">
 
   <div class="top-bar">
     <div>
@@ -240,128 +265,236 @@
       Shifts for {{ selectedDateLabel }}
     </h3>
 
+  </div>
+</div>
+
+<div *ngIf="viewMode === 'gantt'" class="gantt-view">
+  <div class="gantt-controls">
+    <div class="control-group">
+      <button class="btn-sm" (click)="ganttPrevWeek()">← Prev</button>
+      <button class="btn-sm" (click)="ganttResetView()">Today</button>
+      <button class="btn-sm" (click)="ganttNextWeek()">Next →</button>
     </div>
+    <div class="control-group">
+      <button class="btn-sm" (click)="ganttZoomOut()">−</button>
+      <span class="zoom-level">{{ pixelsPerDay }}px/day</span>
+      <button class="btn-sm" (click)="ganttZoomIn()">+</button>
+    </div>
+    <div class="date-range">
+      {{ ganttStartDate | date: 'MMM d, yyyy' }} - {{ ganttEndDate | date: 'MMM d, yyyy' }}
+    </div>
+  </div>
+
+  <div class="gantt-container">
+    <div class="gantt-header">
+      <div class="employee-header">Employee</div>
+      <div class="timeline-header">
+        <div class="timeline-scale" [style.width.px]="ganttTimelineWidth">
+          <div class="day-headers">
+            <ng-container *ngFor="let i of getGanttDayArray()">
+              <div class="day-header" [style.width.px]="pixelsPerDay">
+                <div class="day-label">{{ getGanttDayOfWeek(i) }}</div>
+                <div class="date-label">{{ getGanttDateLabel(i) }}</div>
+              </div>
+            </ng-container>
+          </div>
+
+          <svg class="timeline-grid" [style.width.px]="ganttTimelineWidth" [attr.height]="ganttRows.length * 50 + 20">
+            <ng-container *ngFor="let i of getGanttDayArray()">
+              <line
+                [attr.x1]="i * pixelsPerDay"
+                [attr.y1]="0"
+                [attr.x2]="i * pixelsPerDay"
+                [attr.y2]="ganttRows.length * 50 + 20"
+                class="grid-line"
+              />
+            </ng-container>
+          </svg>
+        </div>
+      </div>
     </div>
 
+    <div class="gantt-body">
+      <div class="gantt-row" *ngFor="let row of ganttRows">
+        <div class="employee-name">{{ row.employeeName }}</div>
+        <div class="timeline-row" [style.height.px]="50">
+          <div class="bars-container" [style.width.px]="ganttTimelineWidth">
+            <div
+              class="gantt-bar"
+              *ngFor="let bar of row.bars"
+              [style.left.px]="bar.left"
+              [style.width.px]="bar.width"
+              [style.backgroundColor]="bar.color"
+              [class.selected]="bar.isSelected"
+              (click)="toggleBatchSelect(bar.schedule.id)"
+              [title]="row.employeeName + ' - ' + (bar.shift?.name || 'Unknown Shift')">
+              <span class="bar-text">{{ bar.shift?.name || 'N/A' }}</span>
+              <i class="fa-solid fa-check check-icon" *ngIf="bar.isSelected"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <div *ngIf="viewMode === 'summary'" class="summary-view">
+<div *ngIf="viewMode === 'summary'" class="summary-view">
 
-  <h2>Shift Summary</h2>
+  <!-- Header -->
+  <div class="summary-header">
+    <div class="header-content">
+      <h2><i class="fa-solid fa-chart-line"></i> Shift Overview</h2>
+      <p class="header-subtitle">Real-time scheduling analytics and team insights</p>
+    </div>
+    <div class="header-date">{{ monthLabel }}</div>
+  </div>
 
+  <!-- KPI Grid - Modern Cards -->
   <div class="kpi-grid">
 
-  <div class="kpi-card">
-
-    <div class="kpi-value">
-      {{ totalSchedules }}
+    <!-- Total Scheduled -->
+    <div class="kpi-card scheduled">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-calendar-check"></i>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ totalShifts }}</div>
+        <div class="kpi-label">Shifts Scheduled</div>
+        <div class="kpi-meta">Across all employees</div>
+      </div>
+      <div class="kpi-trend trending-up">
+        <i class="fa-solid fa-arrow-up"></i>
+      </div>
     </div>
 
-    <div class="kpi-label">
-      Scheduled
+    <!-- Total Employees -->
+    <div class="kpi-card team">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-people-group"></i>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ totalEmployees }}</div>
+        <div class="kpi-label">Team Members</div>
+        <div class="kpi-meta">Assigned shifts</div>
+      </div>
+      <div class="kpi-trend">
+        <i class="fa-solid fa-users"></i>
+      </div>
+    </div>
+
+    <!-- Conflicts -->
+    <div class="kpi-card conflicts" [class.has-conflicts]="conflicts.length > 0">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ conflicts.length }}</div>
+        <div class="kpi-label">Schedule Conflicts</div>
+        <div class="kpi-meta" [class.text-danger]="conflicts.length > 0">
+          {{ conflicts.length === 0 ? 'All clear' : 'Attention needed' }}
+        </div>
+      </div>
+      <div class="kpi-trend" [class.alert]="conflicts.length > 0">
+        <i class="fa-solid fa-exclamation"></i>
+      </div>
+    </div>
+
+    <!-- Open Slots -->
+    <div class="kpi-card openslots">
+      <div class="kpi-icon">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ totalOpenSlots }}</div>
+        <div class="kpi-label">Available Slots</div>
+        <div class="kpi-meta">Ready to fill</div>
+      </div>
+      <div class="kpi-trend">
+        <i class="fa-solid fa-door-open"></i>
+      </div>
     </div>
 
   </div>
 
-  <div class="kpi-card">
-
-    <div class="kpi-value">
-      {{ uniqueEmployees }}
+  <!-- Weekly Timeline -->
+  <div class="summary-card timeline-card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-calendar-week"></i>
+        <span>7-Day Forecast</span>
+      </div>
+      <div class="card-info">Shifts per day for the next week</div>
     </div>
 
-    <div class="kpi-label">
-      Employees
-    </div>
-
-  </div>
-
-  <div class="kpi-card warning">
-
-    <div class="kpi-value">
-      {{ conflicts.length }}
-    </div>
-
-    <div class="kpi-label">
-      Conflicts
-    </div>
-
-  </div>
-
-  <div class="kpi-card">
-
-    <div class="kpi-value">
-      {{ openSlots }}
-    </div>
-
-    <div class="kpi-label">
-      Open Slots
-    </div>
-
-  </div>
-
-</div>
-
-  <!-- Weekly Summary -->
-
-  <div class="summary-card">
-
-    <h3>Weekly Summary</h3>
-
-    <div class="weekly-summary">
-
+    <div class="weekly-timeline">
       <div
-        *ngFor="let day of weeklySummary"
-        class="week-card"
-        [class.selected]="selectedSummaryDate === day.date"
-        (click)="selectSummaryDate(day.date)">
+        *ngFor="let day of weeklySummary; let i = index"
+        class="timeline-bar-wrapper">
 
-        <strong>{{ day.date }}</strong>
+        <div class="timeline-bar"
+          [class.selected]="selectedSummaryDate === day.date"
+          [class.empty]="day.shifts === 0"
+          [style.height.%]="(day.shifts * 15) + 50"
+          (click)="selectSummaryDate(day.date)"
+          [title]="day.shifts + ' shift(s) on ' + day.date">
 
-        <div>
-          {{ day.shifts }} shifts
+          <div class="bar-content">
+            <span class="bar-value" *ngIf="day.shifts > 0">{{ day.shifts }}</span>
+          </div>
         </div>
 
+        <div class="timeline-label">
+          <div class="day-of-week">
+            {{ getDateOfWeek(day.date) }}
+          </div>
+          <div class="day-date">{{ day.date }}</div>
+        </div>
       </div>
-
     </div>
-
   </div>
 
-  <!-- Employee Summary -->
+  <!-- Employee Breakdown -->
+  <div class="summary-card employees-card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>Team Workload</span>
+      </div>
+      <div class="card-info">
+        For <span class="highlight-date">{{ selectedSummaryDate }}</span>
+      </div>
+    </div>
 
-  <div class="summary-card">
+    <div class="employees-list">
+      <div *ngIf="employeeSummary.length === 0" class="empty-state">
+        <i class="fa-solid fa-inbox"></i>
+        <p>No shifts scheduled for this date</p>
+      </div>
 
-    <h3>Employee Summary 
-      <span class="selected-day">
-        {{ selectedSummaryDate }}
-      </span>
-    </h3>
+      <div *ngFor="let emp of employeeSummary" class="employee-item">
+        <div class="emp-avatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
 
-    <table class="summary-table">
+        <div class="emp-info">
+          <div class="emp-name">{{ emp.employee }}</div>
+          <div class="emp-shifts">
+            <span class="shift-count">{{ emp.shifts }}</span>
+            <span class="shift-label">{{ emp.shifts === 1 ? 'shift' : 'shifts' }}</span>
+          </div>
+        </div>
 
-      <thead>
-        <tr>
-          <th>Employee</th>
-          <th>Total Shifts</th>
-        </tr>
-      </thead>
-
-      <tbody>
-
-        <tr *ngFor="let emp of employeeSummary">
-
-          <td>{{ emp.employee }}</td>
-
-          <td>{{ emp.shifts }}</td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
+        <div class="emp-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="(emp.shifts / 5) * 100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
+
 
 <!--<div *ngIf="viewMode === 'table'" class="table-view">
   <div class="table-controls">

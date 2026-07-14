@@ -1,6 +1,6 @@
 <!-- Toolbar (hidden on print) -->
 <div class="form-toolbar no-print">
-  <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="toolbar-logo" />
+  <img src="assets/logo.png" alt="Company Logo" class="toolbar-logo" />
   <span class="toolbar-title">Employee Record Update Form</span>
   <button (click)="print()" class="print-btn"><i class="fas fa-print"></i> Print Form</button>
 </div>
@@ -10,9 +10,9 @@
 
   <!-- Company header -->
   <div class="form-header">
-    <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="form-logo" />
+    <img src="assets/logo.png" alt="Company Logo" class="form-logo" />
     <div class="form-header-title">
-      <div class="company-name">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</div>
+      <div class="company-name">OptimaX</div>
       <div class="form-name">Employee Record Update Form</div>
       <div class="form-meta">Complete all sections that apply. Return to HR.</div>
     </div>

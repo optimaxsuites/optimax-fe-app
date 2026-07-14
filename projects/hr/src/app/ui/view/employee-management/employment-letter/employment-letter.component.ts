@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CompanyProfileService } from 'projects/settings/src/app/ui/sharedComponents/service/company-profile/company-profile.service';
+// import { CompanyProfileService }
 import { EmployeeService } from '../../../service/employee.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -17,7 +17,7 @@ export class EmploymentLetterComponent implements OnInit {
   today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
   constructor(
-    private companyProfileService: CompanyProfileService,
+    // private companyProfileService: CompanyProfileService,
     private employeeService: EmployeeService,
   ) {}
 
@@ -36,22 +36,6 @@ export class EmploymentLetterComponent implements OnInit {
         error: () => {}
       });
     }
-
-    const cached = this.companyProfileService.get();
-    if (cached) {
-      this.companyProfile = cached;
-    } else {
-      const userId = Number(sessionStorage.getItem('userid'));
-      if (userId) {
-        this.companyProfileService.load(userId).subscribe({
-          next: (profile: any) => { this.companyProfile = profile; },
-          error: () => {}
-        });
-      }
-    }
-    this.companyProfileService.companyProfile$.subscribe((profile: any) => {
-      if (profile) this.companyProfile = profile;
-    });
   }
 
   async generatePdf() {

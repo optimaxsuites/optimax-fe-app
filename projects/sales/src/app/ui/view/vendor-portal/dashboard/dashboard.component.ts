@@ -146,6 +146,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(private vendorService: VendorService) {}
 
   ngOnInit(): void {
+    this.vendorService.loadRfqs();
     this.vendorService
       .getRfqs()
       .pipe(takeUntil(this.destroy$))

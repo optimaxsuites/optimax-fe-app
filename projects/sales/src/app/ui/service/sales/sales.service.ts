@@ -10,6 +10,7 @@ import {
   InvoiceStatus,
   Customer, 
   Product,
+  Category,
   SalesOrder,
   OrderStatus,
   Payment,
@@ -29,9 +30,33 @@ export class SalesService {
   private readonly INVOICES_KEY = 'sales_invoices';
   private readonly ORDERS_KEY = 'sales_orders';
   private readonly PAYMENTS_KEY = 'sales_payments';
+  private readonly CATEGORIES_KEY = 'sales_categories';
 
   constructor() {
     this.initData();
+    this.sanitizeCustomers();
+  }
+
+  private sanitizeCustomers(): void {
+    try {
+      const customersStr = localStorage.getItem(this.CUSTOMERS_KEY);
+      if (customersStr) {
+        let customers = JSON.parse(customersStr);
+        let changed = false;
+        customers = customers.map((c: any, index: number) => {
+          if (!c.id || c.id.trim() === '') {
+            c.id = `CUST-${String(index + 1).padStart(3, '0')}`;
+            changed = true;
+          }
+          return c;
+        });
+        if (changed) {
+          localStorage.setItem(this.CUSTOMERS_KEY, JSON.stringify(customers));
+        }
+      }
+    } catch (e) {
+      console.error('Error sanitizing customers:', e);
+    }
   }
 
   private initData(): void {
@@ -56,7 +81,19 @@ export class SalesService {
         { id: 'PROD-004', name: 'Conference Table', sku: 'TBL-001', description: 'Large conference table', unitPrice: 250000, costPrice: 180000, currency: 'NGN', stockQuantity: 10, category: 'Furniture', taxRate: 7.5, images: [], status: 'ACTIVE' },
         { id: 'PROD-005', name: 'Printer - HP LaserJet', sku: 'PRN-001', description: 'HP LaserJet printer', unitPrice: 150000, costPrice: 120000, currency: 'NGN', stockQuantity: 25, category: 'Electronics', taxRate: 7.5, images: [], status: 'ACTIVE' }
       ];
-      localStorage.setItem(this.PRODUCTS_KEY, JSON.stringify(mockProducts));
+    }
+
+    // Initialize Categories
+    if (!localStorage.getItem(this.CATEGORIES_KEY)) {
+      const defaultCategories: Category[] = [
+        { id: 'CAT-001', name: 'Electronics', description: 'Gadgets, computing, and electronic systems' },
+        { id: 'CAT-002', name: 'Furniture', description: 'Office chairs, tables, and desks' },
+        { id: 'CAT-003', name: 'Accessories', description: 'Keyboard, mouse, cables, and minor peripherals' },
+        { id: 'CAT-004', name: 'Services', description: 'Consultation, deployment, and logistics services' },
+        { id: 'CAT-005', name: 'Office Supplies', description: 'Stationery, papers, and office tools' },
+        { id: 'CAT-006', name: 'Other', description: 'Miscellaneous inventory items' }
+      ];
+      localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(defaultCategories));
     }
 
     // Initialize Quotes
@@ -705,13 +742,70 @@ export class SalesService {
     
     if (filters?.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
-      filtered = products.filter((p: any) => 
+      filtered = filtered.filter((p: any) => 
         p.name.toLowerCase().includes(term) || 
         p.sku.toLowerCase().includes(term)
       );
     }
+
+    if (filters?.status && filters.status !== 'ALL') {
+      filtered = filtered.filter((p: any) => p.status === filters.status);
+    }
+
+    if (filters?.category && filters.category !== 'ALL') {
+      filtered = filtered.filter((p: any) => p.category === filters.category);
+    }
+
+    if (filters?.minPrice !== undefined && filters?.minPrice !== null && filters?.minPrice !== '') {
+      filtered = filtered.filter((p: any) => p.unitPrice >= Number(filters.minPrice));
+    }
+
+    if (filters?.maxPrice !== undefined && filters?.maxPrice !== null && filters?.maxPrice !== '') {
+      filtered = filtered.filter((p: any) => p.unitPrice <= Number(filters.maxPrice));
+    }
     
     return of({ data: filtered, total: filtered.length }).pipe(delay(300));
+  }
+
+  getCategories(): Observable<Category[]> {
+    const categories = JSON.parse(localStorage.getItem(this.CATEGORIES_KEY) || '[]');
+    return of(categories).pipe(delay(200));
+  }
+
+  createCategory(catData: Partial<Category>): Observable<Category[]> {
+    const categories = JSON.parse(localStorage.getItem(this.CATEGORIES_KEY) || '[]');
+    const name = (catData.name || '').trim();
+    if (name) {
+      const newCat: Category = {
+        id: `CAT-${String(categories.length + 1).padStart(3, '0')}`,
+        name: name,
+        description: catData.description || ''
+      };
+      categories.push(newCat);
+      localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(categories));
+    }
+    return of(categories).pipe(delay(200));
+  }
+
+  updateCategory(id: string, catData: Partial<Category>): Observable<Category[]> {
+    const categories: Category[] = JSON.parse(localStorage.getItem(this.CATEGORIES_KEY) || '[]');
+    const index = categories.findIndex(c => c.id === id);
+    if (index >= 0) {
+      categories[index] = {
+        ...categories[index],
+        name: (catData.name || categories[index].name).trim(),
+        description: catData.description !== undefined ? catData.description : categories[index].description
+      };
+      localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(categories));
+    }
+    return of(categories).pipe(delay(200));
+  }
+
+  deleteCategory(id: string): Observable<Category[]> {
+    let categories: Category[] = JSON.parse(localStorage.getItem(this.CATEGORIES_KEY) || '[]');
+    categories = categories.filter(c => c.id !== id);
+    localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(categories));
+    return of(categories).pipe(delay(200));
   }
 
   getProductById(id: string): Observable<Product | null> {
