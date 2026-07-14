@@ -1,18 +1,27 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../shared-component/environments/environment.prod';
-
-let cachedIpAddress: string | null = null;
 import {
   CrossBranchCheckInRequest,
   CrossBranchApprovalRequest,
   CrossBranchAdminOverride,
-  CrossBranchAuditQuery,
   AuditLogEntryDTO
 } from '../../domain/attendance/cross-branch-request.dto';
 import { v4 as uuidv4 } from 'uuid';
+
+const API_ENDPOINTS = {
+  REQUESTS: () => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests`,
+  REQUEST_APPROVE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/approve`,
+  REQUEST_REJECT: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/reject`,
+  REQUEST_OVERRIDE: (id: string) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/${id}/override`,
+  VALIDATE_PROXIMITY: (branchId: number) => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-requests/validate-proximity/${branchId}`,
+  AUDIT_LOG: () => `${environment.apiBaseUrl}/x/api/v2/hr/audit-log/cross-branch`,
+  COMPLIANCE_REPORT: () => `${environment.apiBaseUrl}/x/api/v2/hr/cross-branch-reports`
+};
+
+let cachedIpAddress: string | null = null;
 
 @Injectable({ providedIn: 'root' })
 export class CrossBranchAttendanceService {
@@ -39,10 +48,12 @@ export class CrossBranchAttendanceService {
     const request: Omit<CrossBranchCheckInRequest, 'id' | 'createdAt' | 'updatedAt'> = {
       employeeId,
       requestDate: new Date().toISOString().split('T')[0],
+      workDate: new Date().toISOString().split('T')[0],
       requestedBranchId,
       homeBranchId,
       approvalRequired: approvalType === 'PRE_APPROVAL',
       approvalType,
+      reason: '',
       supervisorId,
       supervisorApprovalStatus: 'PENDING',
       auditLog: [
@@ -64,19 +75,13 @@ export class CrossBranchAttendanceService {
 
     this.fetchIpAddressIfNeeded();
 
-    return this.http.post<CrossBranchCheckInRequest>(
-      `${this.BASE}/cross-branch-requests`,
-      request
-    ).pipe(
+    return this.http.post<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUESTS(), request).pipe(
       tap(newRequest => {
         const requests = this.requestsSubject.value;
         this.requestsSubject.next([...requests, newRequest]);
         this.addAuditLogEntry(newRequest.auditLog[0]);
       }),
-      catchError((err) => {
-        console.error('Error creating cross-branch request:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
@@ -97,22 +102,14 @@ export class CrossBranchAttendanceService {
 
     this.fetchIpAddressIfNeeded();
 
-    return this.http.put<CrossBranchCheckInRequest>(
-      `${this.BASE}/cross-branch-requests/${requestId}/approve`,
-      approvalRequest
-    ).pipe(
+    return this.http.put<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_APPROVE(requestId), approvalRequest).pipe(
       tap(updatedRequest => {
-        const requests = this.requestsSubject.value
-          .map(r => r.id === requestId ? updatedRequest : r);
+        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
         this.requestsSubject.next(requests);
 
         const auditEntry: AuditLogEntryDTO = {
           id: uuidv4(),
-          actor: {
-            id: supervisorId,
-            name: supervisorName,
-            role: 'SUPERVISOR'
-          },
+          actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
           action: 'APPROVED',
           timestamp: new Date().toISOString(),
           details: `Supervisor approved cross-branch check-in request. Note: ${note || 'None'}`,
@@ -121,10 +118,7 @@ export class CrossBranchAttendanceService {
         };
         this.addAuditLogEntry(auditEntry);
       }),
-      catchError((err) => {
-        console.error('Error approving cross-branch request:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
@@ -145,22 +139,14 @@ export class CrossBranchAttendanceService {
 
     this.fetchIpAddressIfNeeded();
 
-    return this.http.put<CrossBranchCheckInRequest>(
-      `${this.BASE}/cross-branch-requests/${requestId}/reject`,
-      rejectionRequest
-    ).pipe(
+    return this.http.put<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_REJECT(requestId), rejectionRequest).pipe(
       tap(updatedRequest => {
-        const requests = this.requestsSubject.value
-          .map(r => r.id === requestId ? updatedRequest : r);
+        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
         this.requestsSubject.next(requests);
 
         const auditEntry: AuditLogEntryDTO = {
           id: uuidv4(),
-          actor: {
-            id: supervisorId,
-            name: supervisorName,
-            role: 'SUPERVISOR'
-          },
+          actor: { id: supervisorId, name: supervisorName, role: 'SUPERVISOR' },
           action: 'REJECTED',
           timestamp: new Date().toISOString(),
           details: `Supervisor rejected cross-branch check-in request. Reason: ${reason}`,
@@ -169,17 +155,13 @@ export class CrossBranchAttendanceService {
         };
         this.addAuditLogEntry(auditEntry);
       }),
-      catchError((err) => {
-        console.error('Error rejecting cross-branch request:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
   getOutstandingRequests(supervisorId: number): Observable<CrossBranchCheckInRequest[]> {
-    return this.http.get<any>(
-      `${this.BASE}/cross-branch-requests?supervisorId=${supervisorId}&status=PENDING`
-    ).pipe(
+    const url = `${API_ENDPOINTS.REQUESTS()}?supervisorId=${supervisorId}&status=PENDING`;
+    return this.http.get<any>(url).pipe(
       map(res => Array.isArray(res) ? res : (res?.requests ?? [])),
       catchError(() => of([]))
     );
@@ -190,17 +172,15 @@ export class CrossBranchAttendanceService {
     startDate?: string,
     endDate?: string
   ): Observable<AuditLogEntryDTO[]> {
-    let url = `${this.BASE}/audit-log/cross-branch?employeeId=${employeeId}`;
-
+    let url = `${API_ENDPOINTS.AUDIT_LOG()}?employeeId=${employeeId}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
 
-    return this.http.get<any>(url)
-      .pipe(
-        map(res => Array.isArray(res) ? res : (res?.auditLog ?? [])),
-        tap(entries => this.auditLogSubject.next(entries)),
-        catchError(() => of([]))
-      );
+    return this.http.get<any>(url).pipe(
+      map(res => Array.isArray(res) ? res : (res?.auditLog ?? [])),
+      tap(entries => this.auditLogSubject.next(entries)),
+      catchError(() => of([]))
+    );
   }
 
   performAdminOverride(
@@ -221,22 +201,14 @@ export class CrossBranchAttendanceService {
 
     this.fetchIpAddressIfNeeded();
 
-    return this.http.post<CrossBranchCheckInRequest>(
-      `${this.BASE}/cross-branch-requests/${requestId}/override`,
-      overrideRequest
-    ).pipe(
+    return this.http.post<CrossBranchCheckInRequest>(API_ENDPOINTS.REQUEST_OVERRIDE(requestId), overrideRequest).pipe(
       tap(updatedRequest => {
-        const requests = this.requestsSubject.value
-          .map(r => r.id === requestId ? updatedRequest : r);
+        const requests = this.requestsSubject.value.map(r => r.id === requestId ? updatedRequest : r);
         this.requestsSubject.next(requests);
 
         const auditEntry: AuditLogEntryDTO = {
           id: uuidv4(),
-          actor: {
-            id: adminId,
-            name: adminName,
-            role: 'ADMIN'
-          },
+          actor: { id: adminId, name: adminName, role: 'ADMIN' },
           action: 'OVERRIDDEN',
           timestamp: new Date().toISOString(),
           details: `Admin override on cross-branch request. Action: ${action}. Reason: ${reason}`,
@@ -245,10 +217,7 @@ export class CrossBranchAttendanceService {
         };
         this.addAuditLogEntry(auditEntry);
       }),
-      catchError((err) => {
-        console.error('Error performing admin override:', err);
-        throw err;
-      })
+      catchError(err => { throw err; })
     );
   }
 
@@ -260,10 +229,7 @@ export class CrossBranchAttendanceService {
     maxDistanceKm: number = 10
   ): Observable<{ isWithinRadius: boolean; distance: number }> {
     const body = { lat, lng, maxDistanceKm };
-    return this.http.post<any>(
-      `${this.BASE}/cross-branch-requests/validate-proximity/${targetBranchId}`,
-      body
-    ).pipe(
+    return this.http.post<any>(API_ENDPOINTS.VALIDATE_PROXIMITY(targetBranchId), body).pipe(
       catchError(() => of({ isWithinRadius: false, distance: 999999 }))
     );
   }
@@ -273,22 +239,19 @@ export class CrossBranchAttendanceService {
     startDate?: string,
     endDate?: string
   ): Observable<CrossBranchCheckInRequest[]> {
-    let url = `${this.BASE}/cross-branch-requests?branchId=${branchId}`;
-
+    let url = `${API_ENDPOINTS.REQUESTS()}?branchId=${branchId}`;
     if (startDate) url += `&startDate=${startDate}`;
     if (endDate) url += `&endDate=${endDate}`;
 
-    return this.http.get<any>(url)
-      .pipe(
-        map(res => Array.isArray(res) ? res : (res?.requests ?? [])),
-        catchError(() => of([]))
-      );
+    return this.http.get<any>(url).pipe(
+      map(res => Array.isArray(res) ? res : (res?.requests ?? [])),
+      catchError(() => of([]))
+    );
   }
 
   generateComplianceReport(startDate: string, endDate: string): Observable<any> {
-    return this.http.get<any>(
-      `${this.BASE}/cross-branch-reports?startDate=${startDate}&endDate=${endDate}`
-    ).pipe(
+    const url = `${API_ENDPOINTS.COMPLIANCE_REPORT()}?startDate=${startDate}&endDate=${endDate}`;
+    return this.http.get<any>(url).pipe(
       catchError(() => of({ summary: {}, details: [] }))
     );
   }
@@ -321,3 +284,4 @@ export class CrossBranchAttendanceService {
       );
   }
 }
+

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 import { NavigationLinksService } from '../../shared-component/service/navigation-links/navigation-links.service';
 import { ImportedEmployeeData } from './pre-onboarding-import/pre-onboarding-import.component';
 import { finalize } from 'rxjs';
@@ -283,10 +283,6 @@ handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
 }
 
-  get companyProfile$() {
-    return this.companyProfileService.companyProfile$;
-  }
-
   constructor(
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
@@ -295,7 +291,7 @@ handleDateClick(arg: DateClickArg) {
     private sanitizer: DomSanitizer,
     private router: Router,
     private navLinks: NavigationLinksService,
-    private companyProfileService: CompanyProfileService,
+    // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {}
 
@@ -633,10 +629,9 @@ handleDateClick(arg: DateClickArg) {
   }
 
   private dispatchWelcomeToActiveNotifications(employee: any, name: string) {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const logoUrl = (profile as any)?.logoUrl || '';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const logoUrl = '';
+    const hrEmail = '';
     const subject = `Welcome to ${companyName}! 🎉`;
     const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
 
@@ -831,9 +826,8 @@ handleDateClick(arg: DateClickArg) {
   }
 
   private dispatchOnboardingEmail(employee: any, idKey: number, name: string, username: string, password: string) {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const hrEmail = '';
     const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
 
     const subject = `${companyName} — Your Onboarding Credentials`;

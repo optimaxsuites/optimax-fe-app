@@ -1,4 +1,3 @@
-<p-toast position="top-right" key="tl"></p-toast>
 <div class="employee-management-shell">
   <div *ngIf="loading" class="surface-loading-overlay">
     <div class="surface-loading-card">
@@ -466,7 +465,7 @@
   </div>
 </div>
 
-<p-confirmDialog></p-confirmDialog>
+<!-- p-confirmDialog removed -->
 
 <app-large-side-modal *ngIf="viewEmployee" (close)="closeViewEmployee()">
   <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>

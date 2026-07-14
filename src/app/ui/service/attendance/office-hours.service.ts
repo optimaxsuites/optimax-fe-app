@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { OfficeHours } from '../../domain/attendance/office-hours.dto';
 import { HttpClient } from '@angular/common/http';
@@ -52,51 +52,32 @@ export class OfficeHoursService {
     companyLatitude: hours.companyLatitude?.toString() ?? '',
 
     companyLongitude: hours.companyLongitude?.toString() ?? ''
-  };
-
-  console.log('OFFICE HOURS BODY:', body);
-
-  // UPDATE existing
-  if (this.officeHoursId) {
-
-    console.log('UPDATING OFFICE HOURS', this.officeHoursId);
-
-    this.http.put<any>(
+  };// UPDATE existing
+  if (this.officeHoursId) {this.http.put<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours/${this.officeHoursId}`,
       body
     ).subscribe({
-      next: (res) => {
-        console.log('Office hours updated:', res);
-
-        localStorage.setItem('officeHours', JSON.stringify(hours));
+      next: (res) => {localStorage.setItem('officeHours', JSON.stringify(hours));
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => console.error('Update failed:', err)
+      error: (err) => { console.error('Error updating office hours:', err); }
     });
 
   }
 
   // CREATE new
-  else {
-
-    console.log('CREATING OFFICE HOURS');
-
-    this.http.post<any>(
+  else {this.http.post<any>(
       `${environment.apiBaseUrl}/x/api/v2/hr/officeHours`,
       body
     ).subscribe({
-      next: (res) => {
-
-        console.log('Office hours created:', res);
-
-        this.officeHoursId = res.id;
+      next: (res) => {this.officeHoursId = res.id;
 
         localStorage.setItem('officeHours', JSON.stringify(hours));
 
         this.officeHoursSubject.next(hours);
       },
-      error: (err) => console.error('Create failed:', err)
+      error: (err) => { console.error('Error updating office hours:', err); }
     });
 
   }
@@ -191,3 +172,4 @@ fetchCurrentOfficeHours() {
 }
 
 }
+

@@ -4,7 +4,7 @@ import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
 import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import { DataService } from '../../service/data.service';
@@ -127,7 +127,7 @@ export class EmployeeProfileDashboardComponent {
   employeeProfilePhotoUrl: SafeUrl | string =
     'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
 
-  // companyProfile$ = this.companyProfileService.companyProfile$;
+  //   // companyProfile$ = this.companyProfileService.companyProfile$;
 
   constructor(
     private employeeService: EmployeeService,
@@ -137,7 +137,7 @@ export class EmployeeProfileDashboardComponent {
     private router: Router,
     private profileChangeRequestService: ProfileChangeRequestService,
     private dataService: DataService,
-    private companyProfileService: CompanyProfileService,
+    // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
   ) {
     this.editForm = this.fb.group({
@@ -1324,9 +1324,8 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private dispatchOnboardingEmail(employee: any, name: string, username: string, password: string): void {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const hrEmail = '';
     const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
@@ -1349,8 +1348,7 @@ export class EmployeeProfileDashboardComponent {
     if (!e) return;
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
+    const companyName = 'The Company';
     const pageW = 210;
     const margin = 18;
     const colW = pageW - margin * 2;
@@ -1473,10 +1471,9 @@ export class EmployeeProfileDashboardComponent {
   // ── Welcome to Active notifications ───────────────────────────────────────
 
   private dispatchWelcomeToActiveNotifications(employee: any, name: string): void {
-    const profile = this.companyProfileService.get();
-    const companyName = profile?.companyName || 'The Company';
-    const logoUrl = (profile as any)?.logoUrl || '';
-    const hrEmail = (profile as any)?.email || (profile as any)?.companyEmail || '';
+    const companyName = 'The Company';
+    const logoUrl = '';
+    const hrEmail = '';
     const subject = `Welcome to ${companyName}! 🎉`;
     const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
 

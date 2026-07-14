@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, switchMap, of } from 'rxjs';
-import { CompanyProfileService } from '@services/company-profile/company-profile.service';
+// // import { CompanyProfileService }
 import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
@@ -10,11 +10,11 @@ import { EmployeeService } from '../../../service/employee.service';
   styleUrl: './employee-onboarding-form.component.scss'
 })
 export class EmployeeOnboardingFormComponent implements OnInit {
-  get companyProfile$() { return this.companyProfileService.companyProfile$; }
+  //   // get companyProfile$() { return this.companyProfileService.companyProfile$; }
   readonly year = new Date().getFullYear();
 
   constructor(
-    private companyProfileService: CompanyProfileService,
+    // // private companyProfileService: CompanyProfileService,
     private employeeService: EmployeeService,
     private route: ActivatedRoute,
   ) {}
@@ -26,7 +26,7 @@ export class EmployeeOnboardingFormComponent implements OnInit {
         switchMap((employee: any) => {
           const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
           if (userId) {
-            return this.companyProfileService.load(+userId);
+  //             return this.companyProfileService.load(+userId);
           }
           return of(null);
         }),
