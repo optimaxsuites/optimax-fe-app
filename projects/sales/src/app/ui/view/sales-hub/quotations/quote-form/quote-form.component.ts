@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, F
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Customer, Product, Quote, QuoteStatus, QuoteItem } from '../../../../domain/sales/sales.dto';
+import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails } from '../../../../domain/sales/sales.dto';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
 import { lastValueFrom } from 'rxjs';
@@ -96,7 +96,19 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   logoFileName = '';
   logoUrl = '';
 
+  selectedCustomerBankAccounts: CustomerBankDetails[] = [];
+  loadedQuoteSelectedCustomerBank?: CustomerBankDetails;
+  quickCustomerForm!: FormGroup;
+
   get quoteDataForTemplate(): any {
+    const selectedBankIdx = this.quoteForm.get('selectedCustomerBankIndex')?.value;
+    let selectedCustomerBank: any = undefined;
+    if (selectedBankIdx !== undefined && selectedBankIdx !== null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      selectedCustomerBank = this.selectedCustomerBankAccounts[selectedBankIdx];
+    } else if (this.isEditMode && this.loadedQuoteSelectedCustomerBank) {
+      selectedCustomerBank = this.loadedQuoteSelectedCustomerBank;
+    }
+
     return {
       customerId: this.quoteForm.get('customerId')?.value,
       customerName: this.quoteForm.get('customerName')?.value,
@@ -115,7 +127,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       terms: this.quoteForm.get('terms')?.value,
       validUntil: this.quoteForm.get('validUntil')?.value,
       quoteDate: this.quoteForm.get('quoteDate')?.value,
-      logoUrl: this.logoUrl
+      logoUrl: this.logoUrl,
+      selectedCustomerBank: selectedCustomerBank
     };
   }
   
@@ -148,7 +161,18 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       currency: ['NGN', Validators.required],
       notes: [''],
       terms: [''],
-      items: this.fb.array([])
+      items: this.fb.array([]),
+      selectedCustomerBankIndex: [-1]
+    });
+
+    this.quickCustomerForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required, Validators.pattern(/^[0-9+\-\s()]{7,20}$/)]],
+      address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(255)]],
+      taxId: ['', [Validators.maxLength(50)]],
+      savePermanently: [true],
+      bankAccounts: this.fb.array([])
     });
   }
 
@@ -451,13 +475,30 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   // Customer selection
-  onCustomerSelect(event: any): void {
-    const customerId = event?.target?.value || event?.value || '';
-    if (!customerId) return;
-    
+  onCustomerSelect(customerId: string): void {
     const customer = this.customers.find(c => c.id === customerId);
     if (customer) {
       this.quoteForm.patchValue({ customerName: customer.name });
+      this.selectedCustomerBankAccounts = customer.bankAccounts || [];
+      if (this.selectedCustomerBankAccounts.length > 0) {
+        if (this.loadedQuoteSelectedCustomerBank) {
+          const index = this.selectedCustomerBankAccounts.findIndex(
+            b => b.accountNumber === this.loadedQuoteSelectedCustomerBank?.accountNumber && b.bankName === this.loadedQuoteSelectedCustomerBank?.bankName
+          );
+          if (index >= 0) {
+            this.quoteForm.patchValue({ selectedCustomerBankIndex: index });
+          } else {
+            this.quoteForm.patchValue({ selectedCustomerBankIndex: 0 });
+          }
+        } else {
+          this.quoteForm.patchValue({ selectedCustomerBankIndex: 0 });
+        }
+      } else {
+        this.quoteForm.patchValue({ selectedCustomerBankIndex: -1 });
+      }
+    } else {
+      this.selectedCustomerBankAccounts = [];
+      this.quoteForm.patchValue({ selectedCustomerBankIndex: -1 });
     }
   }
 
@@ -468,10 +509,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.customers = response.data;
         if (this.customerId) {
           this.quoteForm.patchValue({ customerId: this.customerId });
-          const customer = this.customers.find(c => c.id === this.customerId);
-          if (customer) {
-            this.quoteForm.patchValue({ customerName: customer.name });
-          }
+          this.onCustomerSelect(this.customerId);
         }
         this.checkAndAddProductFromParam();
       },
@@ -600,6 +638,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   private populateForm(quote: Quote): void {
+    this.loadedQuoteSelectedCustomerBank = quote.selectedCustomerBank;
     this.quoteForm.patchValue({
       customerId: quote.customerId,
       customerName: quote.customerName,
@@ -609,6 +648,7 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       notes: quote.notes,
       terms: quote.terms
     });
+    this.onCustomerSelect(quote.customerId);
     
     this.logoUrl = quote.logoUrl || '';
     this.logoFileName = quote.logoUrl ? 'Saved Logo' : '';
@@ -708,6 +748,14 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       });
     }
     
+    const selectedBankIdx = formValue.selectedCustomerBankIndex;
+    let selectedCustomerBank: any = undefined;
+    if (selectedBankIdx !== undefined && selectedBankIdx !== null && selectedBankIdx >= 0 && selectedBankIdx < this.selectedCustomerBankAccounts.length) {
+      selectedCustomerBank = this.selectedCustomerBankAccounts[selectedBankIdx];
+    } else if (this.isEditMode && this.loadedQuoteSelectedCustomerBank) {
+      selectedCustomerBank = this.loadedQuoteSelectedCustomerBank;
+    }
+
     const quoteData: Partial<Quote> = {
       customerId: formValue.customerId,
       customerName: formValue.customerName,
@@ -723,7 +771,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       status: 'DRAFT' as QuoteStatus,
       createdAt: new Date(formValue.quoteDate),
       expiresAt: new Date(formValue.validUntil),
-      logoUrl: this.logoUrl
+      logoUrl: this.logoUrl,
+      selectedCustomerBank: selectedCustomerBank
     };
     
     let request;
@@ -1018,5 +1067,100 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
       3: 'Template & Delivery'
     };
     return labels[step as keyof typeof labels] || '';
+  }
+
+  // Quick Client additions
+  openNewCustomerModal(): void {
+    this.showNewCustomerModal = true;
+  }
+
+  closeNewCustomerModal(): void {
+    this.showNewCustomerModal = false;
+    this.quickCustomerForm.reset({ savePermanently: true });
+    while (this.quickCustomerBankAccounts.length) {
+      this.quickCustomerBankAccounts.removeAt(0);
+    }
+  }
+
+  get quickCustomerBankAccounts(): FormArray {
+    return this.quickCustomerForm.get('bankAccounts') as FormArray;
+  }
+
+  addQuickCustomerBankAccount(): void {
+    this.quickCustomerBankAccounts.push(this.fb.group({
+      bankName: ['', Validators.required],
+      accountName: ['', Validators.required],
+      accountNumber: ['', [Validators.required, Validators.pattern(/^[0-9a-zA-Z\s\-]+$/)]],
+      routingNumber: ['']
+    }));
+  }
+
+  removeQuickCustomerBankAccount(index: number): void {
+    this.quickCustomerBankAccounts.removeAt(index);
+  }
+
+  onQuickCustomerSubmit(): void {
+    if (this.quickCustomerForm.invalid) {
+      this.quickCustomerForm.markAllAsTouched();
+      alert('Please fill in all required fields in the quick-add client form');
+      return;
+    }
+
+    const val = this.quickCustomerForm.value;
+    const newCust: any = {
+      name: val.name,
+      email: val.email,
+      phone: val.phone,
+      address: val.address,
+      taxId: val.taxId || '',
+      status: 'ACTIVE',
+      bankAccounts: val.bankAccounts || [],
+      createdAt: new Date(),
+      totalSpent: 0,
+      totalOrders: 0
+    };
+
+    if (val.savePermanently) {
+      this.salesService.createCustomer(newCust).subscribe({
+        next: (savedCust) => {
+          this.customers = [...this.customers, savedCust];
+          this.showNewCustomerModal = false;
+          this.quickCustomerForm.reset({ savePermanently: true });
+          while (this.quickCustomerBankAccounts.length) {
+            this.quickCustomerBankAccounts.removeAt(0);
+          }
+          setTimeout(() => {
+            this.quoteForm.patchValue({ customerId: savedCust.id });
+            this.onCustomerSelect(savedCust.id);
+          });
+        },
+        error: (err) => {
+          console.error('Error saving client permanently:', err);
+          alert('Failed to save client permanently. Please try again.');
+        }
+      });
+    } else {
+      // Temporary client
+      const tempId = `TEMP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const tempCust: Customer = {
+        ...newCust,
+        id: tempId
+      };
+      this.customers = [...this.customers, tempCust];
+      this.showNewCustomerModal = false;
+      this.quickCustomerForm.reset({ savePermanently: true });
+      while (this.quickCustomerBankAccounts.length) {
+        this.quickCustomerBankAccounts.removeAt(0);
+      }
+      setTimeout(() => {
+        this.quoteForm.patchValue({ customerId: tempId });
+        this.onCustomerSelect(tempId);
+      });
+    }
+  }
+
+  isQuickFieldInvalid(fieldName: string): boolean {
+    const field = this.quickCustomerForm.get(fieldName);
+    return field ? (field.invalid && (field.dirty || field.touched)) : false;
   }
 }

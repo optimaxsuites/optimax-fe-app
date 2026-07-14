@@ -1186,3 +1186,327 @@ $radius-xl: 24px;
     grid-template-columns: 1fr;
   }
 }
+
+/* Category Management Side Modal */
+.btn-secondary-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 2px solid $primary-mid;
+  color: $primary-mid;
+  border-radius: $radius-md;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: $shadow-sm;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(26, 45, 74, 0.05);
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.category-side-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.4s ease;
+
+  &.open {
+    visibility: visible;
+    opacity: 1;
+
+    .modal-panel {
+      transform: translateX(0);
+    }
+  }
+
+  .modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    background: rgba(15, 26, 46, 0.4);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.4s ease;
+  }
+
+  .modal-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 480px;
+    z-index: 2;
+    background: white;
+    box-shadow: -8px 0 32px rgba(15, 26, 46, 0.15);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid $border-light;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafbfc;
+
+    h3 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: $text-primary;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      i {
+        color: $primary-mid;
+      }
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      font-size: 1.25rem;
+      color: $text-muted;
+      cursor: pointer;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.25s ease;
+
+      &:hover {
+        background: #f1f5f9;
+        color: $text-primary;
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .create-category-card {
+    background: #f8fafc;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    padding: 1.5rem;
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $text-secondary;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group-row {
+      display: flex;
+      gap: 0.75rem;
+
+      .form-control {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 2px solid $border-color;
+        border-radius: $radius-sm;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.3s ease;
+
+        &:focus {
+          border-color: $primary-mid;
+          box-shadow: 0 0 0 3px rgba(26, 45, 74, 0.08);
+        }
+      }
+
+      .btn-submit-category {
+        padding: 0.75rem 1.5rem;
+        background: $primary-mid;
+        color: white;
+        border: none;
+        border-radius: $radius-sm;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.25s ease;
+
+        &:hover {
+          background: $primary-dark;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+
+  .categories-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid $border-light;
+      padding-bottom: 0.5rem;
+
+      h4 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: $text-primary;
+      }
+
+      .category-count-badge {
+        padding: 0.2rem 0.6rem;
+        background: $primary-surface;
+        color: $primary-mid;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .categories-scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    max-height: 320px;
+    padding-right: 0.25rem;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+  }
+
+  .create-category-card {
+    &.editing {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.02);
+    }
+
+    textarea.textarea {
+      min-height: 80px;
+      resize: vertical;
+      font-family: inherit;
+    }
+  }
+
+  .category-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border: 1.5px solid $border-light;
+    border-radius: $radius-sm;
+    transition: all 0.25s ease;
+
+    &:hover {
+      border-color: $border-color;
+      background: #f8fafc;
+      transform: translateX(4px);
+    }
+
+    &.active {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.04);
+      .item-icon-wrapper {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+      }
+    }
+
+    .item-icon-wrapper {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: rgba(26, 45, 74, 0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $primary-mid;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: $text-primary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .item-desc {
+      font-size: 0.8rem;
+      color: $text-secondary;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-delete-cat:hover {
+      background: rgba(239, 68, 68, 0.1) !important;
+      transform: scale(1.1);
+    }
+  }
+
+  .empty-categories {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: $text-muted;
+
+    i {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}

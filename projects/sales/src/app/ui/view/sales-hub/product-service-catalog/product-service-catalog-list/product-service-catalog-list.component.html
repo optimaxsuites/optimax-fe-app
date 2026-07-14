@@ -25,6 +25,10 @@
             <i class="fas fa-plus"></i>
             Add Product
           </button>
+          <button (click)="openCategoryModal()" class="btn-secondary-hero" style="margin-left: 0.75rem;">
+            <i class="fas fa-tags"></i>
+            Add Category
+          </button>
         </div>
       </div>
     </div>
@@ -361,6 +365,78 @@
             <button class="page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
               <i class="fas fa-angle-double-right"></i>
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Management Side Modal -->
+  <div class="category-side-modal" [class.open]="showCategoryModal">
+    <div class="modal-overlay" (click)="closeCategoryModal()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3><i class="fas fa-tags"></i> Manage Categories</h3>
+        <button class="btn-close" (click)="closeCategoryModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Create/Edit Category Form -->
+        <div class="create-category-card" [class.editing]="editingCategory">
+          <label class="form-label">{{ editingCategory ? 'Edit Category Name' : 'New Category Name' }}</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="e.g. Accessories, Furniture, Electronics..." 
+            [(ngModel)]="newCategoryName"
+            style="width: 100%; margin-bottom: 0.75rem;"
+          >
+          
+          <label class="form-label">Description (Optional)</label>
+          <textarea 
+            class="form-control textarea" 
+            placeholder="Describe what items are included in this category..." 
+            [(ngModel)]="newCategoryDesc"
+            style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"
+          ></textarea>
+
+          <div class="action-buttons-row" style="display: flex;">
+            <button class="btn-submit-category" (click)="submitCategory()" [style.background]="editingCategory ? '#10b981' : '#1a2d4a'">
+              <i class="fas" [class.fa-save]="editingCategory" [class.fa-plus]="!editingCategory"></i> 
+              {{ editingCategory ? 'Update Category' : 'Save Category' }}
+            </button>
+            <button class="btn-cancel-edit" *ngIf="editingCategory" (click)="cancelEditCategory()" style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Categories List -->
+        <div class="categories-list-wrapper">
+          <div class="list-header">
+            <h4>Existing Categories (Click to edit)</h4>
+            <span class="category-count-badge">{{ rawCategories.length }}</span>
+          </div>
+          
+          <div class="categories-scroll-area">
+            <div class="category-list-item" *ngFor="let cat of rawCategories; let i = index" (click)="startEditCategory(cat)" [class.active]="editingCategory?.id === cat.id" style="cursor: pointer; position: relative;">
+              <div class="item-icon-wrapper">
+                <i class="fas fa-tag"></i>
+              </div>
+              <div class="item-content" style="flex: 1;">
+                <div class="item-name" style="font-weight: 700;">{{ cat.name }}</div>
+                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;" *ngIf="cat.description">{{ cat.description }}</div>
+              </div>
+              <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteCategory(cat.id, cat.name)" style="background: transparent; border: none; color: #ef4444; font-size: 1.1rem; padding: 0.5rem; cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+            <div class="empty-categories" *ngIf="rawCategories.length === 0">
+              <i class="fas fa-folder-open"></i>
+              <p>No categories found. Add one above!</p>
+            </div>
           </div>
         </div>
       </div>
