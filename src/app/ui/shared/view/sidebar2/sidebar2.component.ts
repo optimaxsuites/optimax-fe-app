@@ -27,6 +27,7 @@ export class Sidebar2Component implements OnInit, OnDestroy {
 
   private subs = new Subscription();
   private currentPath = '';
+  private openStates = new Map<string, boolean>();
 marketplace : any =   {
   label: 'Marketplace',
   route: this.navigationLink.getLink('marketplaceLink'),
@@ -79,16 +80,12 @@ tenant: any = {
     this.subs.add(
       this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
         this.currentPath = this.stripUuid((e.urlAfterRedirects || e.url).split('?')[0]);
-        const latestToken = sessionStorage.getItem('Token');
-        if (latestToken) {
-          this.menuService.getRegisterApps();
-        }
         this.updateActiveState();
       })
     );
   }
 
-  ngOnDestroy(): void { this.subs.unsubscribe(); }
+  ngOnDestroy(): void { this.subs.unsubscribe(); this.openStates.clear(); }
 
   private stripUuid(url: string): string {
     return url.replace(UUID_RE, '');
@@ -103,8 +100,14 @@ tenant: any = {
   private applyOpenState(items: MenuItem[]): void {
     items.forEach(item => {
       if (item.submenu) {
-        const shouldBeOpen = item.submenu.some(sub => this.isSubItemActive(sub.route));
-        if (shouldBeOpen) item.open = true;
+        const key = item.code ?? item.label ?? '';
+        const activeByRoute = item.submenu.some(sub => this.isSubItemActive(sub.route));
+        if (activeByRoute) {
+          item.open = true;
+          this.openStates.set(key, true);
+        } else {
+          item.open = this.openStates.get(key) ?? false;
+        }
       }
     });
   }
@@ -124,9 +127,11 @@ tenant: any = {
       items.forEach(menuItem => {
         if (menuItem.submenu) {
           menuItem.open = false;
+          this.openStates.set(menuItem.code ?? menuItem.label ?? '', false);
         }
       });
-      item.open = willOpen; // Toggle the 'open' property to show/hide submenu
+      item.open = willOpen;
+      this.openStates.set(item.code ?? item.label ?? '', willOpen);
     }
   }
   onSearch(value: string): void {

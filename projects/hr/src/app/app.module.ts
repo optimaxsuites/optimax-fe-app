@@ -67,8 +67,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
@@ -438,8 +436,6 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,

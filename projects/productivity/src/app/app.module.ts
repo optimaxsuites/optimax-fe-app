@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { BrowserModule } from '@angular/platform-browser';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -26,7 +25,7 @@ import { ProductivityComponent } from './ui/view/productivity/productivity.compo
     ProductivityAssessmentPageComponent,
     ProductivitySupervisorPageComponent,
   ],
-  imports: [BrowserModule, CommonModule, FormsModule, HttpClientModule, DragDropModule, AppRoutingModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, DragDropModule, AppRoutingModule],
   providers: [],
   bootstrap: [AppComponent],
 })
