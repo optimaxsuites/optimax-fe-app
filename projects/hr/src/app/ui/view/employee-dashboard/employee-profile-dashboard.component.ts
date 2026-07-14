@@ -59,6 +59,7 @@ export class EmployeeProfileDashboardComponent {
   levels: any[] = [];
   genders: any[] = [];
   jobTypes: any[] = [];
+  employees: any[] = [];
   isStaffIdOpen = false;
   staffIdQrDataUrl = '';
   staffIdBarcodeDataUrl = '';
@@ -174,6 +175,19 @@ export class EmployeeProfileDashboardComponent {
     this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = d, error: () => {} });
     this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => {} });
     this.dataService.getJobType().subscribe({ next: (d: any[]) => this.jobTypes = d, error: () => {} });
+    this.employeeService.getAllEmployee().subscribe({ next: (e: any[]) => this.employees = e, error: () => {} });
+  }
+
+  get jobTitleOptions(): string[] {
+    return this.levels
+      .map(l => l.position || l.name)
+      .filter(Boolean);
+  }
+
+  get supervisorOptions(): string[] {
+    return this.employees
+      .map(e => `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim())
+      .filter(Boolean);
   }
 
   private resolveCanManageEmployees(): boolean {
@@ -1282,6 +1296,7 @@ export class EmployeeProfileDashboardComponent {
     if (!this.employeeInView || this.resendingCredentials) return;
     const employee = this.employeeInView;
     const email = employee?.workEmail || employee?.email || '';
+    console.log("Got username "+email);
     if (!email) {
       this.messageService.add({ severity: 'warn', summary: 'Cannot Resend', detail: 'No email address found on this employee record.', key: 'tl', life: 5000 });
       return;

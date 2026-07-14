@@ -1,0 +1,243 @@
+<p-toast key="up" position="top-right"></p-toast>
+
+<div class="up-shell">
+
+  <!-- ── Sidebar ───────────────────────────────────────────────── -->
+  <aside class="up-sidebar">
+    <!-- Avatar block -->
+    <div class="up-avatar-block">
+      <div class="up-avatar-wrap">
+        <img *ngIf="avatarUrl" [src]="avatarUrl" class="up-avatar-img" alt="Profile" />
+        <div *ngIf="!avatarUrl" class="up-avatar-initials">{{ avatarInitials }}</div>
+        <label class="up-avatar-overlay" title="Change photo">
+          <input type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
+          <i class="fa-solid fa-camera"></i>
+        </label>
+      </div>
+      <p class="up-avatar-name">{{ profileForm.get('fullName')?.value || username }}</p>
+      <p class="up-avatar-role">{{ role }}</p>
+      <button *ngIf="avatarUrl" class="up-avatar-remove" (click)="removeAvatar()">Remove photo</button>
+    </div>
+
+    <!-- Nav links -->
+    <nav class="up-nav">
+      <button class="up-nav-item" [class.up-nav-item--active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+        <i class="fa-solid fa-user"></i> Profile
+      </button>
+      <button class="up-nav-item" [class.up-nav-item--active]="activeTab === 'security'" (click)="activeTab = 'security'">
+        <i class="fa-solid fa-shield-halved"></i> Security
+      </button>
+      <button class="up-nav-item" [class.up-nav-item--active]="activeTab === 'account'" (click)="activeTab = 'account'">
+        <i class="fa-solid fa-id-card"></i> Account Details
+      </button>
+      <button class="up-nav-item" [class.up-nav-item--active]="activeTab === 'activity'" (click)="activeTab = 'activity'">
+        <i class="fa-solid fa-clock-rotate-left"></i> Login Activity
+      </button>
+    </nav>
+  </aside>
+
+  <!-- ── Main content ───────────────────────────────────────────── -->
+  <main class="up-main">
+
+    <!-- ═══ PROFILE ═══════════════════════════════════════════════ -->
+    <section *ngIf="activeTab === 'profile'" class="up-section">
+      <div class="up-section-head">
+        <h2 class="up-section-title">Personal Information</h2>
+        <p class="up-section-sub">Update your name, email, and contact details.</p>
+      </div>
+
+      <form [formGroup]="profileForm" class="up-form" (ngSubmit)="saveProfile()">
+        <div class="up-form-group">
+          <label class="up-label">Full Name</label>
+          <input class="up-input" formControlName="fullName" type="text" placeholder="Your full name" />
+        </div>
+        <div class="up-form-group">
+          <label class="up-label">Email Address</label>
+          <input class="up-input" formControlName="email" type="email" placeholder="your@email.com" />
+          <span class="up-field-note">Used for notifications and password recovery.</span>
+        </div>
+        <div class="up-form-group">
+          <label class="up-label">Phone Number</label>
+          <input class="up-input" formControlName="phone" type="tel" placeholder="+234 800 000 0000" />
+        </div>
+        <div class="up-form-group">
+          <label class="up-label">Username <span class="up-badge">Read-only</span></label>
+          <input class="up-input up-input--readonly" formControlName="username" type="text" />
+        </div>
+        <div class="up-form-actions">
+          <button type="submit" class="up-btn up-btn--primary" [disabled]="savingProfile || profileForm.invalid">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {{ savingProfile ? 'Saving…' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ═══ SECURITY ══════════════════════════════════════════════ -->
+    <section *ngIf="activeTab === 'security'" class="up-section">
+      <div class="up-section-head">
+        <h2 class="up-section-title">Change Password</h2>
+        <p class="up-section-sub">Choose a strong password you don't use anywhere else.</p>
+      </div>
+
+      <form [formGroup]="passwordForm" class="up-form" (ngSubmit)="changePassword()">
+        <div class="up-form-group">
+          <label class="up-label">Current Password</label>
+          <div class="up-pw-wrap">
+            <input class="up-input" formControlName="currentPassword" [type]="showCurrentPw ? 'text' : 'password'" placeholder="Current password" />
+            <button type="button" class="up-pw-eye" (click)="showCurrentPw = !showCurrentPw">
+              <i class="fa-solid" [class.fa-eye]="!showCurrentPw" [class.fa-eye-slash]="showCurrentPw"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="up-form-group">
+          <label class="up-label">New Password</label>
+          <div class="up-pw-wrap">
+            <input class="up-input" formControlName="newPassword" [type]="showNewPw ? 'text' : 'password'" placeholder="Minimum 8 characters" />
+            <button type="button" class="up-pw-eye" (click)="showNewPw = !showNewPw">
+              <i class="fa-solid" [class.fa-eye]="!showNewPw" [class.fa-eye-slash]="showNewPw"></i>
+            </button>
+          </div>
+          <!-- Strength meter -->
+          <div class="up-strength-bar" *ngIf="passwordForm.get('newPassword')?.value">
+            <div class="up-strength-fill" [style.width.%]="passwordStrength.pct" [style.background]="passwordStrength.color"></div>
+          </div>
+          <span class="up-strength-label" *ngIf="passwordForm.get('newPassword')?.value"
+            [style.color]="passwordStrength.color">{{ passwordStrength.label }}</span>
+        </div>
+
+        <div class="up-form-group">
+          <label class="up-label">Confirm New Password</label>
+          <div class="up-pw-wrap">
+            <input class="up-input" formControlName="confirmPassword" [type]="showConfirmPw ? 'text' : 'password'" placeholder="Re-enter new password" />
+            <button type="button" class="up-pw-eye" (click)="showConfirmPw = !showConfirmPw">
+              <i class="fa-solid" [class.fa-eye]="!showConfirmPw" [class.fa-eye-slash]="showConfirmPw"></i>
+            </button>
+          </div>
+          <span class="up-field-error" *ngIf="passwordForm.errors?.['mismatch'] && passwordForm.get('confirmPassword')?.dirty">
+            Passwords do not match.
+          </span>
+        </div>
+
+        <div class="up-pw-tips">
+          <p class="up-pw-tips-title">Password must:</p>
+          <ul>
+            <li [class.met]="(passwordForm.get('newPassword')?.value?.length ?? 0) >= 8">Be at least 8 characters</li>
+            <li [class.met]="pwHasUpper(passwordForm.get('newPassword')?.value ?? '')">Contain an uppercase letter</li>
+            <li [class.met]="pwHasNumber(passwordForm.get('newPassword')?.value ?? '')">Contain a number</li>
+            <li [class.met]="pwHasSpecial(passwordForm.get('newPassword')?.value ?? '')">Contain a special character</li>
+          </ul>
+        </div>
+
+        <div class="up-form-actions">
+          <button type="submit" class="up-btn up-btn--primary" [disabled]="savingPassword || passwordForm.invalid || !!passwordForm.errors?.['mismatch']">
+            <i class="fa-solid fa-lock"></i>
+            {{ savingPassword ? 'Updating…' : 'Update Password' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ═══ ACCOUNT DETAILS ═══════════════════════════════════════ -->
+    <section *ngIf="activeTab === 'account'" class="up-section">
+      <div class="up-section-head">
+        <h2 class="up-section-title">Account Details</h2>
+        <p class="up-section-sub">Your account information and system access details.</p>
+      </div>
+
+      <div class="up-details-grid">
+        <div class="up-detail-card">
+          <i class="fa-solid fa-fingerprint up-detail-icon"></i>
+          <div>
+            <p class="up-detail-label">Account ID</p>
+            <p class="up-detail-value">{{ accountId }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-at up-detail-icon"></i>
+          <div>
+            <p class="up-detail-label">Username</p>
+            <p class="up-detail-value">{{ username }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-envelope up-detail-icon"></i>
+          <div>
+            <p class="up-detail-label">Email</p>
+            <p class="up-detail-value">{{ userData.email || '—' }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-shield up-detail-icon up-detail-icon--purple"></i>
+          <div>
+            <p class="up-detail-label">Role</p>
+            <p class="up-detail-value">{{ role }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-calendar-plus up-detail-icon up-detail-icon--green"></i>
+          <div>
+            <p class="up-detail-label">Member Since</p>
+            <p class="up-detail-value">{{ memberSince }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-circle-check up-detail-icon up-detail-icon--green"></i>
+          <div>
+            <p class="up-detail-label">Account Status</p>
+            <p class="up-detail-value"><span class="up-status-badge up-status-badge--active">Active</span></p>
+          </div>
+        </div>
+        <div class="up-detail-card" *ngIf="userData.tenantId || userData.organizationId">
+          <i class="fa-solid fa-building up-detail-icon up-detail-icon--amber"></i>
+          <div>
+            <p class="up-detail-label">Organisation ID</p>
+            <p class="up-detail-value">{{ userData.tenantId || userData.organizationId }}</p>
+          </div>
+        </div>
+        <div class="up-detail-card">
+          <i class="fa-solid fa-globe up-detail-icon"></i>
+          <div>
+            <p class="up-detail-label">Platform</p>
+            <p class="up-detail-value">OptimaX HR Suite</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ LOGIN ACTIVITY ════════════════════════════════════════ -->
+    <section *ngIf="activeTab === 'activity'" class="up-section">
+      <div class="up-section-head">
+        <h2 class="up-section-title">Login Activity</h2>
+        <p class="up-section-sub">Recent sessions recorded for this account on this device.</p>
+      </div>
+
+      <div class="up-activity-list">
+        <div class="up-activity-item" *ngFor="let item of loginActivities">
+          <div class="up-activity-icon" [class.up-activity-icon--current]="item.status === 'current'">
+            <i class="fa-solid" [class.fa-desktop]="item.device === 'Desktop'"
+               [class.fa-mobile-screen]="item.device === 'Mobile'"
+               [class.fa-tablet-screen-button]="item.device === 'Tablet'"></i>
+          </div>
+          <div class="up-activity-info">
+            <p class="up-activity-main">{{ item.browser }} · {{ item.device }}
+              <span *ngIf="item.status === 'current'" class="up-activity-current-badge">Current session</span>
+            </p>
+            <p class="up-activity-time">{{ formatActivity(item.timestamp) }}</p>
+          </div>
+          <div class="up-activity-status">
+            <span class="up-activity-dot" [class.up-activity-dot--success]="item.status === 'success'"
+              [class.up-activity-dot--current]="item.status === 'current'"></span>
+            <span class="up-activity-label">{{ item.status === 'current' ? 'Active' : 'Signed in' }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="!loginActivities.length" class="up-activity-empty">
+          No login activity recorded yet.
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>

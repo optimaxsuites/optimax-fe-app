@@ -107,6 +107,7 @@
         'opacity-40': msg.deleting
       }"
       (click)="deleteDismissed.emit()"
+      (dblclick)="threadOpened.emit({ msg, event: $event })"
     >
       <!-- Pinned indicator -->
       <div *ngIf="msg.pinned" class="absolute left-0 top-2 bottom-2 w-[3px] bg-amber-400 rounded-r"></div>
@@ -505,15 +506,17 @@
               </svg>
               {{ msg.likeCount || '' }}
             </button>
-            <div class="flex items-center gap-1 ml-1">
+            <div class="flex items-center gap-1 ml-1 flex-wrap">
               <button
                 type="button"
                 *ngFor="let reaction of reactionOptions"
                 (click)="likeToggled.emit({ msg, event: $event, reactionCode: reaction.code })"
-                class="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-[14px]"
+                class="reaction-picker-btn flex items-center gap-0.5 rounded-full px-1.5 py-0.5 hover:bg-gray-100 transition-colors text-[14px]"
+                [class.reaction-active]="msg.reactionCounts && msg.reactionCounts[reaction.code]"
                 [title]="reaction.label"
               >
-                {{ reaction.emoji }}
+                <span>{{ reaction.emoji }}</span>
+                <span *ngIf="msg.reactionCounts && msg.reactionCounts[reaction.code]" class="text-[10px] font-semibold text-gray-600 leading-none ml-0.5">{{ msg.reactionCounts[reaction.code] }}</span>
               </button>
             </div>
 
@@ -701,4 +704,7 @@
   .action-btn.action-liked { color: #f43f5e; font-weight: 600; }
   .action-btn.action-pinned { color: #f59e0b; font-weight: 600; }
   .action-btn.action-danger:hover { background: #fef2f2; color: #dc2626; }
+  .reaction-picker-btn { height: 28px; min-width: 28px; }
+  .reaction-picker-btn.reaction-active { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .reaction-picker-btn.reaction-active:hover { background: #dbeafe; }
 </style>

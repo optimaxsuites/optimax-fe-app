@@ -750,7 +750,7 @@ handleDateClick(arg: DateClickArg) {
   private executeResendOnboarding(employee: any) {
     const resolvedUserId = employee?.userId ?? employee?.user?.id ?? employee?.user?.userId;
     const email = employee?.workEmail || employee?.email || '';
-    const username = email;
+    const username = email.split('@')[0] || email;
     const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim();
     const idKey = +employee.id;
     const newPassword = this.generateRandomPassword();
@@ -760,52 +760,41 @@ handleDateClick(arg: DateClickArg) {
         this.messageService.add({ severity: 'warn', summary: 'Cannot Resend', detail: 'No email address found on this employee record.', key: 'tl', life: 5000 });
         return;
       }
-      // No userId cached — try creating account; if username taken, look up existing user
+      // Check if username exists first before attempting to create
       this.resendingOnboardingIds[idKey] = true;
-      const signupPayload = this.buildOnboardingSignupPayload(username, newPassword, email, employee.firstName, employee.lastName);
-      this.authenticationService.userRegistrationByAdmin(signupPayload).subscribe({
-        next: (userData) => {
-          this.linkUserIdToEmployee(employee, userData?.id);
-          this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword);
+      this.authenticationService.getRegDataByUsername(username).subscribe({
+        next: (userData: any) => {
+          const existingUserId = userData?.id ?? userData?.userId;
+          if (existingUserId) this.linkUserIdToEmployee(employee, existingUserId);
+          this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
+            next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
+            error: (e) => {
+              delete this.resendingOnboardingIds[idKey];
+              this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.message || 'Failed to reset password.', key: 'tl', life: 4000 });
+            }
+          });
         },
-        error: (err) => {
-          const code = err?.error?.code;
-          if (code === '1001' || err?.status === 400) {
-            // Account already exists — look it up by username then reset password
-            this.authenticationService.getRegDataByUsername(username).subscribe({
-              next: (userData: any) => {
-                const existingUserId = userData?.id ?? userData?.userId;
-                if (!existingUserId) {
-                  delete this.resendingOnboardingIds[idKey];
-                  this.messageService.add({ severity: 'error', summary: 'Lookup Failed', detail: 'Account exists but could not retrieve user ID. Contact support.', key: 'tl', life: 6000 });
-                  return;
-                }
-                this.linkUserIdToEmployee(employee, existingUserId);
-                this.authenticationService.resetPasswordByAdmin(username, newPassword).subscribe({
-                  next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
-                  error: (e) => {
-                    delete this.resendingOnboardingIds[idKey];
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.message || 'Failed to reset password.', key: 'tl', life: 4000 });
-                  }
-                });
-              },
-              error: () => {
-                delete this.resendingOnboardingIds[idKey];
-                this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
-              }
-            });
-          } else {
-            delete this.resendingOnboardingIds[idKey];
-            this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
-          }
+        error: () => {
+          // Username not found — create the account
+          const signupPayload = this.buildOnboardingSignupPayload(username, newPassword, email, employee.firstName, employee.lastName);
+          this.authenticationService.userRegistrationByAdmin(signupPayload).subscribe({
+            next: (newUserData) => {
+              this.linkUserIdToEmployee(employee, newUserData?.id);
+              this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword);
+            },
+            error: (err) => {
+              delete this.resendingOnboardingIds[idKey];
+              this.messageService.add({ severity: 'error', summary: 'Account Creation Failed', detail: err?.error?.message || 'Failed to create user account.', key: 'tl', life: 6000 });
+            }
+          });
         }
       });
       return;
     }
 
-    // User account exists — just reset password and resend
+    // User account exists — reset password and resend
     this.resendingOnboardingIds[idKey] = true;
-    this.authenticationService.resetPasswordByAdmin(username, newPassword).subscribe({
+    this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
       next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
       error: (err) => {
         delete this.resendingOnboardingIds[idKey];

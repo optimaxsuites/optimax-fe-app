@@ -17,20 +17,14 @@ export class UserInfoService {
   }
 
 
-    token = sessionStorage.getItem("Token");
-
-
-
-  
-
   saveBasicInfo(data: any){
-    // console.log(this.token)
-    // const headers = new HttpHeaders({
-    //   'Content-Type': 'application/json',
-    //   'Authorization': `Bearer ${this.token}`
-    // });
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
     return this.http
-    .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/create/user/primary/info", data)
+    .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/create/user/primary/info", data, { headers })
     .pipe(catchError(this.handleError));
   }
 

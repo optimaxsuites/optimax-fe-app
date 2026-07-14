@@ -126,7 +126,10 @@
           </div>
         </div>
         <p-divider></p-divider>
-        <button type="button" class="panel-action" routerLink="/settings">
+        <button type="button" class="panel-action" (click)="navigateToProfile(); profilePanel.hide()">
+          <i class="pi pi-user"></i><span>My Profile</span>
+        </button>
+        <button type="button" class="panel-action" (click)="navigateToSettings(); profilePanel.hide()">
           <i class="pi pi-cog"></i><span>Settings</span>
         </button>
         <button type="button" class="panel-action panel-action--danger" (click)="logout()">

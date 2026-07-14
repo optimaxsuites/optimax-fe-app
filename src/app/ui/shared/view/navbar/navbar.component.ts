@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
+import { v4 as uuidV4 } from 'uuid';
 import { Subscription } from 'rxjs';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { ChatRealtimeNotifierService } from 'src/app/ui/shared/service/chat-realtime-notifier.service';
@@ -33,6 +34,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showUnreadNotificationsDialog = false;
   currentUserId = '';
   private headerSub?: Subscription;
+  private avatarListener = (e: Event) => {
+    const url = (e as CustomEvent).detail?.avatarUrl || '';
+    this.headerProfile = { ...this.headerProfile, imageUrl: url };
+    this.headerStateService.setProfile(this.headerProfile);
+  };
 
   constructor(
     private router: Router,
@@ -48,6 +54,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
 
     this.syncProfileFromSession();
+    window.addEventListener('optimax-avatar-updated', this.avatarListener);
     this.chatRealtimeNotifierService.start(this.resolveCollaborationRouteUuid());
     this.headerSub = this.headerStateService.view$.subscribe((state) => {
       this.notifications = state.notifications;
@@ -64,6 +71,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.headerSub?.unsubscribe();
     this.chatRealtimeNotifierService.stop();
+    window.removeEventListener('optimax-avatar-updated', this.avatarListener);
   }
 
   onToggleSidebar(): void {
@@ -128,11 +136,22 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.authenticationService.logout();
   }
 
+  navigateToProfile(): void {
+    const uuid = this.resolveCollaborationRouteUuid();
+    this.router.navigate(['/admin/dashboard/user-profile', uuid]);
+  }
+
+  navigateToSettings(): void {
+    this.router.navigate(['/admin/settings/general-settings', uuidV4()]);
+  }
+
   private syncProfileFromSession(): void {
     try {
       const raw = sessionStorage.getItem('userRegData');
       if (!raw) return;
       const user = JSON.parse(raw);
+      let primary: any = {};
+      try { primary = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
       const displayName =
         user?.fullname || user?.name || user?.username || 'OptimaX User';
       this.currentUserId = String(user?.userId || user?.id || sessionStorage.getItem('userid') || '');
@@ -143,6 +162,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
         .map((part: string) => part[0]?.toUpperCase() || '')
         .join('') || 'OU';
       const imageUrl =
+        primary?.profileImage ||
+        localStorage.getItem('userProfileAvatar') ||
         user?.profileImage ||
         user?.imageUrl ||
         user?.avatarUrl ||

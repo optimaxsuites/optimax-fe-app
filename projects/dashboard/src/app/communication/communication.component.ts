@@ -56,6 +56,7 @@ export interface Message {
   liked: boolean;
   likeCount: number;
   likeReactionId?: number;
+  reactionCounts?: Record<string, number>;
   pinned: boolean;
   pinnedAt?: number;
   createdAt: Date;
@@ -169,6 +170,7 @@ export interface DmContact {
   avatarColor: string;
   avatarUrl?: string;
   email?: string;
+  phone?: string;
   accountVerified?: boolean | string;
   accountState?: string;
   jobTitle?: string;
@@ -681,6 +683,7 @@ export class CommunicationComponent
   conversationAccessMessage = '';
   soundEnabled = true;
   selectedRingtone = 'classic';
+  workspaceName = '';
   readonly ringtoneOptions = [
     { value: 'classic', label: 'Classic ping' },
     { value: 'soft', label: 'Soft chime' },
@@ -768,6 +771,13 @@ export class CommunicationComponent
 
   ngOnInit() {
     this.selectedRingtone = localStorage.getItem('optimax_message_ringtone') || 'classic';
+    try {
+      const raw = sessionStorage.getItem('userPrimaryInfoRegData') || localStorage.getItem('userPrimaryInfoRegData');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        this.workspaceName = parsed?.companyName || parsed?.businessName || parsed?.orgName || '';
+      }
+    } catch { /* ignore */ }
     this.restoreSeenFeedNotificationIds();
     this.workspaceMode =
       sessionStorage.getItem('optimax_workspace_mode') === 'chat'
@@ -4122,6 +4132,7 @@ export class CommunicationComponent
               accountState: e.accountState || e.user?.accountState || '',
               jobTitle: e.jobTitle,
               department: e.department?.name,
+              phone: e.phoneNumber || '',
               online: false,
               dob: e.dob,
             };
@@ -6475,6 +6486,11 @@ export class CommunicationComponent
         (s, c) => s + (reactionCount.get(`${m.id}|${c}`) ?? 0),
         0,
       );
+      const perReaction: Record<string, number> = {};
+      for (const code of LIKE_CODES) {
+        const cnt = reactionCount.get(`${m.id}|${code}`) ?? 0;
+        if (cnt > 0) perReaction[code] = cnt;
+      }
       const author =
         this.userDirectory[m.senderUserId] || `User ${m.senderUserId}`;
       const attList = attMap.get(m.id) || [];
@@ -6491,6 +6507,7 @@ export class CommunicationComponent
         replies: (children.get(m.id) ?? []).map((c) => toLocal(c)),
         liked: likedByMe.has(m.id),
         likeCount: totalLikes,
+        reactionCounts: perReaction,
         likeReactionId: likeRxId.get(m.id),
         pinned: false,
         createdAt: new Date(),
