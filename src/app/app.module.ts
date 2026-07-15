@@ -113,6 +113,7 @@ import { CustomerFormComponent } from './ui/view/sales-hub/customer-management/c
 import { VendorRegistrationComponent } from './ui/view/vendor-portal/vendor-registration/vendor-registration.component';
 import { TemplateTypesComponent } from './ui/view/sales-hub/template-types/template-types.component';
 import {VendorDashboardComponent} from './ui/view/vendor-portal/vendor-dashboard/vendor-dashboard.component';
+import { NgApexchartsModule } from 'ng-apexcharts';
 import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/vendor-profile.component';
 
 
@@ -209,6 +210,7 @@ import {VendorProfileComponent} from './ui/view/vendor-portal/vendor-profile/ven
     PasswordModule,
     ButtonModule,
     NgSelectModule,
+    NgApexchartsModule,
     ButtonComponent,
     ProfileCardComponent,
     ProfileInfoComponent,

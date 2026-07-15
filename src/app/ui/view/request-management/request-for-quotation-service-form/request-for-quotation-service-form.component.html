@@ -50,7 +50,7 @@
       </div>
 
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group full-width">
           <label for="serviceCategory">Service Category <span class="required">*</span></label>
           <select 
             id="serviceCategory" 
@@ -62,42 +62,6 @@
           </select>
           <small class="error-message" *ngIf="serviceForm.get('serviceCategory')?.invalid && serviceForm.get('serviceCategory')?.touched">
             {{ getFormErrorMessage('serviceCategory') }}
-          </small>
-        </div>
-
-        <div class="form-group">
-          <label for="currency">Currency <span class="required">*</span></label>
-          <select id="currency" formControlName="currency" class="form-control">
-            <option *ngFor="let currency of currencies" [value]="currency">{{ currency }}</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="deliveryLocation">Service Location <span class="required">*</span></label>
-          <input 
-            id="deliveryLocation" 
-            type="text" 
-            formControlName="deliveryLocation" 
-            placeholder="Where will the service be delivered?"
-            class="form-control"
-            [class.error]="serviceForm.get('deliveryLocation')?.invalid && serviceForm.get('deliveryLocation')?.touched">
-          <small class="error-message" *ngIf="serviceForm.get('deliveryLocation')?.invalid && serviceForm.get('deliveryLocation')?.touched">
-            {{ getFormErrorMessage('deliveryLocation') }}
-          </small>
-        </div>
-
-        <div class="form-group">
-          <label for="deliveryDeadline">Project Deadline <span class="required">*</span></label>
-          <input 
-            id="deliveryDeadline" 
-            type="date" 
-            formControlName="deliveryDeadline" 
-            class="form-control"
-            [class.error]="serviceForm.get('deliveryDeadline')?.invalid && serviceForm.get('deliveryDeadline')?.touched">
-          <small class="error-message" *ngIf="serviceForm.get('deliveryDeadline')?.invalid && serviceForm.get('deliveryDeadline')?.touched">
-            {{ getFormErrorMessage('deliveryDeadline') }}
           </small>
         </div>
       </div>
@@ -212,6 +176,46 @@
                   [class.error]="item.get('serviceDuration')?.invalid && item.get('serviceDuration')?.touched">
                 <small class="error-message" *ngIf="item.get('serviceDuration')?.invalid && item.get('serviceDuration')?.touched">
                   {{ getItemErrorMessage(i, 'serviceDuration') }}
+                </small>
+              </div>
+            </div>
+
+            <!-- Service Specific Delivery and Financial Details -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Currency <span class="required">*</span></label>
+                <select formControlName="currency" class="form-control">
+                  <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Delivery Mode</label>
+                <select formControlName="deliveryMode" class="form-control">
+                  <option value="STANDARD">Standard Delivery</option>
+                  <option value="EXPRESS">Express Delivery</option>
+                  <option value="SAME_DAY">Same Day Delivery</option>
+                  <option value="PICKUP">Pickup</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Service Location <span class="required">*</span></label>
+                <input type="text" formControlName="deliveryLocation" placeholder="Where will the service be delivered?" class="form-control"
+                  [class.error]="item.get('deliveryLocation')?.invalid && item.get('deliveryLocation')?.touched">
+                <small class="error-message" *ngIf="item.get('deliveryLocation')?.invalid && item.get('deliveryLocation')?.touched">
+                  Service location is required
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label>Project Deadline <span class="required">*</span></label>
+                <input type="date" formControlName="deliveryDeadline" class="form-control"
+                  [class.error]="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
+                <small class="error-message" *ngIf="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
+                  Project deadline is required
                 </small>
               </div>
             </div>

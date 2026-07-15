@@ -48,6 +48,10 @@ export interface RequestItem {
   estimatedBudget: number;
   attachments: Attachment[];
   specifications?: Record<string, any>;
+  currency?: string;
+  deliveryMode?: string;
+  deliveryDeadline?: Date;
+  deliveryLocation?: string;
   // Service specific
   serviceDuration?: string;
   serviceStartDate?: Date;

@@ -24,6 +24,7 @@ export interface ApprovalItem {
   productName: string;
   quantity: number;
   budget: number;
+  currency?: string;
 }
 
 export interface ApprovalLevel {

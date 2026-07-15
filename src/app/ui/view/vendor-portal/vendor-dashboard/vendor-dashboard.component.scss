@@ -21,6 +21,11 @@
   &-rejected  { background: #fef2f2; color: #dc2626; }
   &-revision_requested { background: #fff7ed; color: #ea580c; }
   &-withdrawn { background: #f3f4f6; color: #6b7280; }
+
+  // LPO / order statuses
+  &-pending    { background: #fffbeb; color: #d97706; }
+  &-fulfilled  { background: #f0fdf4; color: #16a34a; }
+  &-cancelled  { background: #f3f4f6; color: #6b7280; }
 }
 
 // ── Deadline urgency dot ───────────────────────────────────────────────────────

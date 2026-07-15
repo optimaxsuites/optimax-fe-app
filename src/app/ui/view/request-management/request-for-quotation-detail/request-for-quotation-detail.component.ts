@@ -82,10 +82,11 @@ export class RequestForQuotationDetailComponent implements OnInit {
     return status.replace(/_/g, ' ');
   }
 
-  formatBudget(value: number): string {
+  formatBudget(value: number, currency?: string): string {
+    const curr = currency || this.request?.currency || 'NGN';
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
-      currency: this.request?.currency || 'NGN' 
+      currency: curr 
     }).format(value || 0);
   }
 

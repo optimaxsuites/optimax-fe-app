@@ -70,7 +70,7 @@
                       </div>
                     </td>
                     <td class="text-center">{{ item.quantity }}</td>
-                    <td class="text-right budget-col">{{ formatCurrency(item.budget, approval.currency) }}</td>
+                    <td class="text-right budget-col">{{ formatCurrency(item.budget, item.currency || approval.currency) }}</td>
                   </tr>
                   <!-- Table Total Row -->
                   <tr class="total-row">

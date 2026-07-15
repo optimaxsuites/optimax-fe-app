@@ -78,9 +78,11 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
 
   @ViewChild('previewRef')    previewRef!:    ElementRef<HTMLDivElement>;
   @ViewChild('signatureCanvas') signatureCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('logoFileInput') logoFileInput!: ElementRef<HTMLInputElement>;
   isDownloading   = false;
   showSignaturePad = false;
   isDrawing        = false;
+  logoUploadError: string | null = null;
 
   // Your signature is a profile-level asset (like your logo) — draw it once
   // here, then decide per-document whether to attach it when you create a
@@ -106,6 +108,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
   templateForm = {
     name:              '',
     baseStyle:         'classic' as TemplateBaseStyle,
+    logoUrl:           undefined as string | undefined,
     logoPosition:      'left'    as LogoPosition,
     accentColor:       '#224957',
     density:           'detailed' as TemplateDensity,
@@ -334,6 +337,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.templateForm = {
       name:              template.name,
       baseStyle:         template.baseStyle,
+      logoUrl:           template.logoUrl,
       logoPosition:      template.logoPosition,
       accentColor:       template.accentColor,
       density:           template.density,
@@ -341,6 +345,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       showBankDetails:   template.showBankDetails,
       notesDefault:      template.notesDefault || '',
     };
+    this.logoUploadError = null;
   }
 
   startNewTemplate(): void {
@@ -348,6 +353,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.templateForm = {
       name:              'New Template',
       baseStyle:         'classic',
+      logoUrl:           undefined,
       logoPosition:      'left',
       accentColor:       '#224957',
       density:           'detailed',
@@ -355,6 +361,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       showBankDetails:   this.templateDocType === 'invoice',
       notesDefault:      '',
     };
+    this.logoUploadError = null;
   }
 
   saveTemplate(): void {
@@ -365,6 +372,7 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
       docType:           this.templateDocType,
       isActive:          this.editingTemplate?.isActive ?? false,
       baseStyle:         this.templateForm.baseStyle,
+      logoUrl:           this.templateForm.logoUrl,
       logoPosition:      this.templateForm.logoPosition,
       accentColor:       this.templateForm.accentColor,
       density:           this.templateForm.density,
@@ -387,6 +395,48 @@ export class VendorProfileComponent implements OnInit, OnDestroy {
     this.vendorService.deleteTemplate(template.id);
     if (this.editingTemplate?.id === template.id) { this.editingTemplate = null; }
     this.loadTemplates();
+  }
+
+  // ── Logo upload ───────────────────────────────────────────────────────────────
+  // Stored as a data URL directly on the template (same approach as the
+  // signature pad below) — no backend upload endpoint needed for this demo,
+  // and it travels with the template when saved/exported.
+  triggerLogoUpload(): void {
+    this.logoFileInput?.nativeElement.click();
+  }
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.logoUploadError = null;
+
+    if (!file.type.startsWith('image/')) {
+      this.logoUploadError = 'Please choose an image file (PNG, JPG, SVG or WebP).';
+      input.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.logoUploadError = 'Image is too large — please choose a file under 2MB.';
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.templateForm.logoUrl = reader.result as string;
+    };
+    reader.onerror = () => {
+      this.logoUploadError = 'Could not read that file — please try again.';
+    };
+    reader.readAsDataURL(file);
+    input.value = ''; // allow re-selecting the same file later
+  }
+
+  removeLogo(): void {
+    this.templateForm.logoUrl = undefined;
+    this.logoUploadError = null;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

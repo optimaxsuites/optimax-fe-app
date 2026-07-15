@@ -20,7 +20,7 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
   showRejectModal = false;
   commentsText = '';
   newCommentText = '';
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -28,7 +28,7 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     private approvalService: ApprovalService,
     private procurementService: ProcurementRequestService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.approvalId = this.route.snapshot.paramMap.get('id');
@@ -89,9 +89,9 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
 
   confirmApprove(): void {
     if (!this.approval) return;
-    
+
     const levelToApprove = this.approval.currentLevel;
-    
+
     this.approvalService.approveRequest(this.approval.id, levelToApprove, this.commentsText)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -110,9 +110,9 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
 
   confirmReject(): void {
     if (!this.approval) return;
-    
+
     const levelToReject = this.approval.currentLevel;
-    
+
     this.approvalService.rejectRequest(this.approval.id, levelToReject, this.commentsText)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -155,7 +155,7 @@ export class ApprovalRfqDetailComponent implements OnInit, OnDestroy {
 
   addComment(): void {
     if (!this.approval || !this.newCommentText.trim()) return;
-    
+
     this.approvalService.addComment(this.approval.id, this.newCommentText, true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({

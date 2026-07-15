@@ -112,10 +112,19 @@
                         </div>
                       </div>
                     </td>
-                    <td class="description">{{ item.description }}</td>
+                    <td class="description">
+                      <div>{{ item.description }}</div>
+                      <div class="item-meta-details" style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                        <span *ngIf="item.deliveryLocation"><i class="fas fa-map-marker-alt"></i> Location: {{ item.deliveryLocation }}</span>
+                        <span *ngIf="item.deliveryLocation && item.deliveryDeadline" style="margin: 0 0.5rem;">|</span>
+                        <span *ngIf="item.deliveryDeadline"><i class="fas fa-calendar-alt"></i> Deadline: {{ formatDate(item.deliveryDeadline) }}</span>
+                        <span *ngIf="(item.deliveryLocation || item.deliveryDeadline) && item.deliveryMode" style="margin: 0 0.5rem;">|</span>
+                        <span *ngIf="item.deliveryMode"><i class="fas fa-shipping-fast"></i> Mode: {{ item.deliveryMode }}</span>
+                      </div>
+                    </td>
                     <td class="text-right font-semibold">{{ item.quantity }}</td>
                     <td class="text-right">{{ item.unit }}</td>
-                    <td class="text-right font-semibold text-teal-600">{{ formatBudget(item.estimatedBudget) }}</td>
+                    <td class="text-right font-semibold text-teal-600">{{ formatBudget(item.estimatedBudget, item.currency) }}</td>
                   </tr>
                 </tbody>
               </table>
