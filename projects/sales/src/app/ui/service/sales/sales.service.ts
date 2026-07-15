@@ -83,9 +83,44 @@ export class SalesService {
       ];
     }
 
-    // Initialize Categories
-    if (!localStorage.getItem(this.CATEGORIES_KEY)) {
-      const defaultCategories: Category[] = [
+    // Initialize & Migrate Categories
+    const storedCats = localStorage.getItem(this.CATEGORIES_KEY);
+    let categories: Category[] = [];
+    let needsSave = false;
+
+    if (storedCats) {
+      try {
+        const parsed = JSON.parse(storedCats);
+        if (Array.isArray(parsed)) {
+          const needsMigration = parsed.some(c => typeof c === 'string' || (c && typeof c === 'object' && !c.id));
+          if (needsMigration) {
+            categories = parsed.map((c: any, idx: number) => {
+              if (typeof c === 'string') {
+                return {
+                  id: `CAT-${String(idx + 1).padStart(3, '0')}`,
+                  name: c,
+                  description: `Legacy ${c} category`
+                };
+              } else {
+                return {
+                  id: c.id || `CAT-${String(idx + 1).padStart(3, '0')}`,
+                  name: c.name || '',
+                  description: c.description || ''
+                };
+              }
+            });
+            needsSave = true;
+          } else {
+            categories = parsed;
+          }
+        }
+      } catch (e) {
+        categories = [];
+      }
+    }
+
+    if (categories.length === 0) {
+      categories = [
         { id: 'CAT-001', name: 'Electronics', description: 'Gadgets, computing, and electronic systems' },
         { id: 'CAT-002', name: 'Furniture', description: 'Office chairs, tables, and desks' },
         { id: 'CAT-003', name: 'Accessories', description: 'Keyboard, mouse, cables, and minor peripherals' },
@@ -93,7 +128,11 @@ export class SalesService {
         { id: 'CAT-005', name: 'Office Supplies', description: 'Stationery, papers, and office tools' },
         { id: 'CAT-006', name: 'Other', description: 'Miscellaneous inventory items' }
       ];
-      localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(defaultCategories));
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      localStorage.setItem(this.CATEGORIES_KEY, JSON.stringify(categories));
     }
 
     // Initialize Quotes
@@ -776,8 +815,15 @@ export class SalesService {
     const categories = JSON.parse(localStorage.getItem(this.CATEGORIES_KEY) || '[]');
     const name = (catData.name || '').trim();
     if (name) {
+      const ids = categories.map((c: any) => {
+        const num = parseInt(c.id?.replace('CAT-', ''), 10);
+        return isNaN(num) ? 0 : num;
+      });
+      const maxId = ids.length > 0 ? Math.max(...ids) : 0;
+      const newId = `CAT-${String(maxId + 1).padStart(3, '0')}`;
+
       const newCat: Category = {
-        id: `CAT-${String(categories.length + 1).padStart(3, '0')}`,
+        id: newId,
         name: name,
         description: catData.description || ''
       };

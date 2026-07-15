@@ -383,6 +383,28 @@
       </div>
 
       <div class="modal-body">
+        <!-- View Category Details Card -->
+        <div class="view-category-details-card" *ngIf="viewingCategoryDetails" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
+          <button style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;" (click)="closeCategoryDetails()">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4 style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Category Details
+          </h4>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Category ID</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingCategoryDetails.id }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
+            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{ viewingCategoryDetails.name }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Description</span>
+            <span style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{ viewingCategoryDetails.description || 'No description provided.' }}</span>
+          </div>
+        </div>
+
         <!-- Create/Edit Category Form -->
         <div class="create-category-card" [class.editing]="editingCategory">
           <label class="form-label">{{ editingCategory ? 'Edit Category Name' : 'New Category Name' }}</label>
@@ -401,7 +423,7 @@
             [(ngModel)]="newCategoryDesc"
             style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"
           ></textarea>
-
+ 
           <div class="action-buttons-row" style="display: flex;">
             <button class="btn-submit-category" (click)="submitCategory()" [style.background]="editingCategory ? '#10b981' : '#1a2d4a'">
               <i class="fas" [class.fa-save]="editingCategory" [class.fa-plus]="!editingCategory"></i> 
@@ -412,26 +434,34 @@
             </button>
           </div>
         </div>
-
+ 
         <!-- Existing Categories List -->
         <div class="categories-list-wrapper">
           <div class="list-header">
-            <h4>Existing Categories (Click to edit)</h4>
+            <h4>Existing Categories</h4>
             <span class="category-count-badge">{{ rawCategories.length }}</span>
           </div>
           
           <div class="categories-scroll-area">
-            <div class="category-list-item" *ngFor="let cat of rawCategories; let i = index" (click)="startEditCategory(cat)" [class.active]="editingCategory?.id === cat.id" style="cursor: pointer; position: relative;">
+            <div class="category-list-item" *ngFor="let cat of rawCategories; let i = index" (click)="startViewCategory(cat)" [class.active]="(editingCategory && cat.id && editingCategory.id === cat.id) || (viewingCategoryDetails && cat.id && viewingCategoryDetails.id === cat.id)" style="cursor: pointer; position: relative;">
               <div class="item-icon-wrapper">
                 <i class="fas fa-tag"></i>
               </div>
               <div class="item-content" style="flex: 1;">
-                <div class="item-name" style="font-weight: 700;">{{ cat.name }}</div>
+                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">{{ cat.name }}</div>
                 <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;" *ngIf="cat.description">{{ cat.description }}</div>
               </div>
-              <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteCategory(cat.id, cat.name)" style="background: transparent; border: none; color: #ef4444; font-size: 1.1rem; padding: 0.5rem; cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
+                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewCategory(cat)" title="View Details" style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditCategory(cat)" title="Edit Category" style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteCategory(cat.id, cat.name)" title="Delete Category" style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
             </div>
             <div class="empty-categories" *ngIf="rawCategories.length === 0">
               <i class="fas fa-folder-open"></i>

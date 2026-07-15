@@ -110,11 +110,11 @@ export class RfqPreviewComponent implements OnInit {
     }));
   }
 
-  formatBudget(value: number): string {
-    const currency = this.request?.currency || 'NGN';
+  formatBudget(value: number, currency?: string): string {
+    const curr = currency || this.request?.currency || 'NGN';
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
-      currency: currency 
+      currency: curr 
     }).format(value || 0);
   }
 
@@ -197,7 +197,8 @@ export class RfqPreviewComponent implements OnInit {
         id: item.id || `item-${idx}`,
         productName: item.name,
         quantity: item.quantity,
-        budget: item.estimatedBudget
+        budget: item.estimatedBudget,
+        currency: item.currency || req.currency || 'NGN'
       })),
       urgency: urgency,
       approvals: approvals

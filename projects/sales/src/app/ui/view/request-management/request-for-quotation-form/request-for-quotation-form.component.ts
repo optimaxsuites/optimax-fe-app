@@ -33,10 +33,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
     this.productForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.required, Validators.minLength(20)]],
-      deliveryLocation: ['', Validators.required],
-      deliveryDeadline: ['', Validators.required],
-      deliveryMode: ['STANDARD'],
-      currency: ['NGN', Validators.required],
       items: this.fb.array([]),
       specialInstructions: ['']
     });
@@ -115,6 +111,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
                 unit: item.unit,
                 estimatedBudget: item.estimatedBudget,
                 unitPrice: item.unitPrice,
+                currency: item.currency || req.currency || 'NGN',
+                deliveryMode: item.deliveryMode || req.deliveryMode || 'STANDARD',
+                deliveryDeadline: item.deliveryDeadline ? new Date(item.deliveryDeadline).toISOString().substring(0, 10) : (req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : ''),
+                deliveryLocation: item.deliveryLocation || req.deliveryLocation || '',
                 specifications: {
                   brand: specs?.brand || '',
                   model: specs?.model || '',
@@ -133,10 +133,6 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
           this.productForm.patchValue({
             title: req.title,
             description: req.description,
-            deliveryLocation: req.deliveryLocation,
-            deliveryDeadline: req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : '',
-            currency: req.currency || 'NGN',
-            deliveryMode: req.deliveryMode || 'STANDARD',
             specialInstructions: req.specialInstructions || ''
           });
         } else {
@@ -170,6 +166,10 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
       unit: ['Pieces', Validators.required],
       estimatedBudget: [0, [Validators.required, Validators.min(0)]],
       unitPrice: [0, [Validators.min(0)]],
+      currency: ['NGN', Validators.required],
+      deliveryMode: ['STANDARD', Validators.required],
+      deliveryDeadline: ['', Validators.required],
+      deliveryLocation: ['', Validators.required],
       specifications: this.fb.group({
         brand: [''],
         model: [''],
@@ -243,47 +243,63 @@ export class RequestForQuotationFormComponent implements OnChanges, OnInit {
   }
 
   onNext(): void {
-  if (this.productForm.valid) {
-    const formValue = this.productForm.value;
-    formValue.totalBudget = this.getTotalBudget();
-    formValue.procurementType = 'PRODUCT';
-    
-    const requestId = this.requestId || uuidV4();
-    
-    if (this.isEditMode && this.requestId) {
-      this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
-        next: (req) => {
-          this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
-        },
-        error: (err) => {
-          console.error('Failed to update request', err);
-          this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
-        }
-      });
+    if (this.productForm.valid) {
+      const formValue = this.productForm.value;
+      formValue.totalBudget = this.getTotalBudget();
+      formValue.procurementType = 'PRODUCT';
+      
+      const firstItem = formValue.items && formValue.items[0];
+      if (firstItem) {
+        formValue.currency = firstItem.currency || 'NGN';
+        formValue.deliveryMode = firstItem.deliveryMode || 'STANDARD';
+        formValue.deliveryLocation = firstItem.deliveryLocation || '';
+        formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
+      }
+
+      const requestId = this.requestId || uuidV4();
+      
+      if (this.isEditMode && this.requestId) {
+        this.procurementRequestService.updateRequest(this.requestId, formValue).subscribe({
+          next: (req) => {
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
+          },
+          error: (err) => {
+            console.error('Failed to update request', err);
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
+          }
+        });
+      } else {
+        this.procurementRequestService.createRequest({
+          ...formValue,
+          id: requestId
+        }).subscribe({
+          next: (req) => {
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
+          },
+          error: (err) => {
+            console.error('Failed to create request', err);
+            this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
+          }
+        });
+      }
     } else {
-      this.procurementRequestService.createRequest({
-        ...formValue,
-        id: requestId
-      }).subscribe({
-        next: (req) => {
-          this.router.navigate(['/admin/sales/commerce/requests/new/product', req.id, 'template']);
-        },
-        error: (err) => {
-          console.error('Failed to create request', err);
-          this.router.navigate(['/admin/sales/commerce/requests/new/product', requestId, 'template']);
-        }
-      });
+      this.markFormGroupTouched(this.productForm);
     }
-  } else {
-    this.markFormGroupTouched(this.productForm);
   }
-}
 
   saveDraft(): void {
     const formValue = this.productForm.value;
     formValue.totalBudget = this.getTotalBudget();
     formValue.procurementType = 'PRODUCT';
     formValue.status = 'DRAFT';
+
+    const firstItem = formValue.items && formValue.items[0];
+    if (firstItem) {
+      formValue.currency = firstItem.currency || 'NGN';
+      formValue.deliveryMode = firstItem.deliveryMode || 'STANDARD';
+      formValue.deliveryLocation = firstItem.deliveryLocation || '';
+      formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
+    }
 
     if (!formValue.title || !formValue.title.trim()) {
       formValue.title = `Draft Product Request - ${new Date().toLocaleDateString()}`;

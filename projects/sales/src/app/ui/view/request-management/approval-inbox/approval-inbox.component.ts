@@ -11,7 +11,7 @@ import { RequestStatus } from '../../../domain/procurement-request/procurement.d
   styleUrls: ['./approval-inbox.component.scss']
 })
 export class ApprovalInboxComponent implements OnInit, OnDestroy {
-  
+
   approvals: ApprovalRequest[] = [];
   stats: ApprovalStats | null = null;
   isLoading = true;
@@ -21,9 +21,9 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   approvalComments = '';
   currentApproverLevel = 1;
   dateRange: 'week' | 'month' | 'quarter' | 'year' = 'month';
-  
+
   protected readonly Math = Math;
-  
+
   // Filters
   filters: ApprovalFilters = {
     status: 'IN_APPROVAL',
@@ -33,7 +33,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     page: 0,
     size: 10
   };
-  
+
   statusOptions: { value: ApprovalStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: 'All Status' },
     { value: 'PENDING', label: 'Pending Submission' },
@@ -42,7 +42,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     { value: 'REJECTED', label: 'Rejected' },
     { value: 'EXPIRED', label: 'Expired' }
   ];
-  
+
   urgencyOptions = [
     { value: 'ALL', label: 'All Urgency' },
     { value: 'LOW', label: 'Low', class: 'urgency-low' },
@@ -50,21 +50,21 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     { value: 'HIGH', label: 'High', class: 'urgency-high' },
     { value: 'URGENT', label: 'Urgent', class: 'urgency-urgent' }
   ];
-  
+
   departments: string[] = [];
-  
+
   // Pagination
   currentPage = 0;
   pageSize = 10;
   totalElements = 0;
   totalPages = 0;
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private approvalService: ApprovalService,
     private procurementService: ProcurementRequestService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadApprovals();
@@ -182,9 +182,9 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
 
   confirmApprove(): void {
     if (!this.selectedApproval) return;
-    
+
     const levelToApprove = this.selectedApproval.currentLevel;
-    
+
     this.approvalService.approveRequest(this.selectedApproval.id, levelToApprove, this.approvalComments)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -192,7 +192,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
           if (updated.status === 'APPROVED') {
             this.updateProcurementRequestStatus(updated.requestId, 'APPROVED', updated.requestType);
           }
-          
+
           this.showApprovalModal = false;
           this.loadApprovals();
           this.loadStats();
@@ -205,15 +205,15 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
 
   confirmReject(): void {
     if (!this.selectedApproval) return;
-    
+
     const levelToReject = this.selectedApproval.currentLevel;
-    
+
     this.approvalService.rejectRequest(this.selectedApproval.id, levelToReject, this.approvalComments)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (updated) => {
           this.updateProcurementRequestStatus(updated.requestId, 'REJECTED', updated.requestType);
-          
+
           this.showRejectModal = false;
           this.loadApprovals();
           this.loadStats();
@@ -348,7 +348,7 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     const now = new Date();
     const diffMs = now.getTime() - new Date(date).getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
+
     if (diffHours < 24 && diffHours >= 0) return `${diffHours} hours ago`;
     return new Date(date).toLocaleDateString();
   }
@@ -357,11 +357,11 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible);
-    
+
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);
     }
-    
+
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
 }

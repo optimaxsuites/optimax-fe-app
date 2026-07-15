@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 import { VendorDashboardComponent } from './vendor-dashboard.component';
 
@@ -8,6 +9,7 @@ describe('VendorDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      imports: [NgApexchartsModule],
       declarations: [VendorDashboardComponent]
     })
     .compileComponents();

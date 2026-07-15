@@ -2,6 +2,19 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { take, takeUntil } from 'rxjs/operators';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexXAxis,
+  ApexYAxis,
+  ApexDataLabels,
+  ApexStroke,
+  ApexLegend,
+  ApexGrid,
+  ApexTooltip,
+  ApexNonAxisChartSeries,
+  ApexPlotOptions,
+} from 'ng-apexcharts';
 
 import { VendorService } from '../../../service/vendor-portal/vendor.service';
 import {
@@ -9,7 +22,39 @@ import {
   PerformanceStats,
   Quotation,
   Rfq,
+  Lpo,
+  LpoStatus,
+  MonthlyMetric,
 } from '../../../domain/vendor-portal/vendor.dto';
+
+// ── Chart option shapes ──────────────────────────────────────────────────────
+// Same ApexCharts config pattern used elsewhere in the app (see
+// shared-component/customer-fulfilment) — kept as plain option bags so the
+// template can bind each piece straight to <apx-chart>.
+export type TrendChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  colors: string[];
+  stroke: ApexStroke;
+  dataLabels: ApexDataLabels;
+  legend: ApexLegend;
+  grid: ApexGrid;
+  tooltip: ApexTooltip;
+};
+
+export type PipelineChartOptions = {
+  series: ApexNonAxisChartSeries;
+  chart: ApexChart;
+  labels: string[];
+  colors: string[];
+  stroke: ApexStroke;
+  dataLabels: ApexDataLabels;
+  legend: ApexLegend;
+  plotOptions: ApexPlotOptions;
+  tooltip: ApexTooltip;
+};
 
 @Component({
   selector: 'app-vendor-dashboard',
@@ -24,22 +69,37 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
 
   upcomingRfqs: Rfq[] = [];
   recentQuotations: Quotation[] = [];
+  recentLpos: Lpo[] = [];
+
+  // Which table the quick-access panel is showing — lets a vendor check
+  // recent orders or quotations right from the dashboard, without switching tabs.
+  quickAccessView: 'orders' | 'quotations' = 'orders';
+
+  trendChart: Partial<TrendChartOptions> = {};
+  pipelineChart: Partial<PipelineChartOptions> = {};
 
   constructor(private vendorService: VendorService) {}
 
   ngOnInit(): void {
     this.vendorService.loadRfqs();
+
     // Load vendor summary stats
     this.vendorService
       .getVendorStats()
       .pipe(take(1))
-      .subscribe((s) => (this.stats = s));
+      .subscribe((s) => {
+        this.stats = s;
+        this.buildPipelineChart(s);
+      });
 
     // Load performance stats (win rate, revenue, rating)
     this.vendorService
       .getPerformanceStats()
       .pipe(take(1))
-      .subscribe((p) => (this.perfStats = p));
+      .subscribe((p) => {
+        this.perfStats = p;
+        this.buildTrendChart(p.monthlyMetrics);
+      });
 
     // Load RFQs — show those closing soonest
     this.vendorService
@@ -62,6 +122,16 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
           .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
           .slice(0, 5);
       });
+
+    // Load LPOs (accepted orders) — most recent first. Powers the quick-access
+    // "Orders" table so a vendor can see what's just come in without leaving
+    // the dashboard.
+    this.vendorService
+      .getLpos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((list) => {
+        this.recentLpos = list.slice(0, 5);
+      });
   }
 
   ngOnDestroy(): void {
@@ -75,6 +145,10 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
   navigateTo(tab: 'rfq' | 'quotation' | 'lpo'): void {
     // Replace with your actual tab-switch logic / router.navigate
     console.log('Navigate to:', tab);
+  }
+
+  setQuickAccessView(view: 'orders' | 'quotations'): void {
+    this.quickAccessView = view;
   }
 
   // ── Deadline helpers ──────────────────────────────────────────────────────────
@@ -138,6 +212,29 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
     return map[status] ?? 'badge';
   }
 
+  // ── LPO / order badge ─────────────────────────────────────────────────────────
+  lpoBadge(status: LpoStatus | string): string {
+    const map: Record<string, string> = {
+      pending:   'badge badge-pending',
+      accepted:  'badge badge-accepted',
+      fulfilled: 'badge badge-fulfilled',
+      rejected:  'badge badge-rejected',
+      cancelled: 'badge badge-cancelled',
+    };
+    return map[status] ?? 'badge';
+  }
+
+  lpoStatusLabel(status: LpoStatus | string): string {
+    const map: Record<string, string> = {
+      pending:   'Pending',
+      accepted:  'Accepted',
+      fulfilled: 'Fulfilled',
+      rejected:  'Rejected',
+      cancelled: 'Cancelled',
+    };
+    return map[status] ?? status;
+  }
+
   // ── Formatting helpers ────────────────────────────────────────────────────────
   fmtDate(d: Date | undefined): string {
     if (!d) return '—';
@@ -169,5 +266,116 @@ export class VendorDashboardComponent implements OnInit, OnDestroy {
   winRateOffset(rate: number): number {
     const circumference = 2 * Math.PI * 26;
     return circumference - (rate / 100) * circumference;
+  }
+
+  // ── Client initials (top-clients avatar) ──────────────────────────────────────
+  initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join('');
+  }
+
+  // ── Chart builders ────────────────────────────────────────────────────────────
+  private buildTrendChart(metrics: MonthlyMetric[]): void {
+    this.trendChart = {
+      series: [
+        { name: 'RFQs Received', data: metrics.map((m) => m.rfqs) },
+        { name: 'Quoted',        data: metrics.map((m) => m.quoted) },
+        { name: 'Won',           data: metrics.map((m) => m.won) },
+      ],
+      chart: {
+        type: 'line',
+        height: 272,
+        toolbar: { show: false },
+        zoom: { enabled: false },
+        fontFamily: 'inherit',
+      },
+      colors: ['#c9dde8', '#224957', '#16a34a'],
+      stroke: { curve: 'smooth', width: [2, 2, 3] },
+      dataLabels: { enabled: false },
+      xaxis: {
+        categories: metrics.map((m) => m.month.split(' ')[0]),
+        axisBorder: { show: false },
+        axisTicks:  { show: false },
+        labels: { style: { colors: '#9ab0bb', fontSize: '11px', fontFamily: 'inherit' } },
+      },
+      yaxis: {
+        labels: { style: { colors: '#9ab0bb', fontSize: '11px', fontFamily: 'inherit' } },
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        fontSize: '11px',
+        fontFamily: 'inherit',
+        labels: { colors: '#5a7380' },
+      },
+      grid: {
+        borderColor: '#f0f4f8',
+        strokeDashArray: 4,
+        yaxis: { lines: { show: true } },
+        xaxis: { lines: { show: false } },
+        padding: { left: 8, right: 8, top: 0, bottom: 0 },
+      },
+      tooltip: {
+        theme: 'light',
+        y: { formatter: (v: number) => `${v}` },
+      },
+    };
+  }
+
+  private buildPipelineChart(stats: VendorStats): void {
+    const other = Math.max(
+      0,
+      stats.totalQuotations -
+        stats.draftQuotations -
+        stats.sentQuotations -
+        stats.acceptedQuotations -
+        stats.revisionRequestedQuotations,
+    );
+    this.pipelineChart = {
+      series: [
+        stats.draftQuotations,
+        stats.sentQuotations,
+        stats.revisionRequestedQuotations,
+        stats.acceptedQuotations,
+        other,
+      ],
+      chart: { type: 'donut', height: 272, fontFamily: 'inherit' },
+      labels: ['Draft', 'Sent', 'Needs Revision', 'Accepted', 'Rejected / Other'],
+      colors: ['#d97706', '#2563eb', '#ea580c', '#16a34a', '#c9dde8'],
+      stroke: { show: true, width: 2, colors: ['#ffffff'] },
+      dataLabels: { enabled: false },
+      legend: {
+        position: 'bottom',
+        fontSize: '11px',
+        fontFamily: 'inherit',
+        labels: { colors: '#5a7380' },
+        itemMargin: { horizontal: 8, vertical: 3 },
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '72%',
+            labels: {
+              show: true,
+              name:  { show: true, fontSize: '11px', color: '#9ab0bb', offsetY: 20 },
+              value: { show: true, fontSize: '22px', fontWeight: 700, color: '#1a2c35', offsetY: -16 },
+              total: {
+                show: true,
+                showAlways: true,
+                label: 'Win Rate',
+                fontSize: '11px',
+                color: '#9ab0bb',
+                formatter: () => `${stats.conversionRate}%`,
+              },
+            },
+          },
+        },
+      },
+      tooltip: { theme: 'light' },
+    };
   }
 }

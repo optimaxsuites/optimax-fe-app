@@ -549,12 +549,34 @@
         <!-- Logo upload -->
         <div class="mb-5">
           <label class="field-label">Logo</label>
-          <button type="button"
-            class="w-full px-3 py-4 border-2 border-dashed border-[#e6edf2] rounded-xl text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex items-center justify-center gap-2">
+          <input #logoFileInput type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            class="hidden" (change)="onLogoSelected($event)" />
+
+          <div *ngIf="!templateForm.logoUrl"
+            (click)="triggerLogoUpload()"
+            class="w-full px-3 py-4 border-2 border-dashed border-[#e6edf2] rounded-xl text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex items-center justify-center gap-2 cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <span>Upload logo</span>
-          </button>
-          <p class="text-[10px] text-[#9ab0bb] mt-1.5">PNG or SVG, transparent background recommended</p>
+          </div>
+
+          <div *ngIf="templateForm.logoUrl" class="flex items-center gap-3 p-2.5 border border-[#e6edf2] rounded-xl bg-[#f8fafb]">
+            <div class="w-14 h-14 rounded-lg bg-white border border-[#e6edf2] flex items-center justify-center overflow-hidden shrink-0">
+              <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Logo preview" />
+            </div>
+            <div class="flex-1 flex gap-2">
+              <button type="button" (click)="triggerLogoUpload()"
+                class="flex-1 px-3 py-2 border border-[#e6edf2] bg-white text-[#1a2c35] text-xs font-semibold rounded-lg hover:bg-[#f0f6f9] transition-colors">
+                Change
+              </button>
+              <button type="button" (click)="removeLogo()"
+                class="px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-xs font-semibold rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <p *ngIf="logoUploadError" class="text-[10px] text-red-500 mt-1.5">{{ logoUploadError }}</p>
+          <p *ngIf="!logoUploadError" class="text-[10px] text-[#9ab0bb] mt-1.5">PNG, SVG or WebP, under 2MB — transparent background recommended</p>
         </div>
 
         <!-- Logo position (only for classic / bold / modern) -->
@@ -717,45 +739,51 @@
           </button>
         </div>
 
-        <!-- ══ CLASSIC preview ══ -->
+        <!-- ══ CLASSIC preview ══ — clean letterhead, ruled table ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'classic'"
           class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
 
           <!-- Letterhead -->
-          <div class="px-8 pt-8 pb-5 border-b-2" [style.border-color]="templateForm.accentColor">
-            <div class="flex items-start justify-between">
-              <!-- Logo side -->
-              <div class="flex flex-col gap-1">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
-                  [style.background-color]="templateForm.accentColor">
-                  {{ profile?.companyName?.charAt(0) || 'A' }}
-                </div>
+          <div class="px-7 pt-7 pb-5 border-b-2" [style.border-color]="templateForm.accentColor">
+            <div class="flex items-start gap-6"
+              [class.justify-between]="templateForm.logoPosition !== 'center'"
+              [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
+              [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.items-center]="templateForm.logoPosition === 'center'">
+
+              <!-- Logo + company -->
+              <div class="flex flex-col gap-1" [class.items-center]="templateForm.logoPosition === 'center'">
+                <ng-container *ngIf="templateForm.logoUrl; else classicInitial">
+                  <img [src]="templateForm.logoUrl" class="h-11 max-w-[150px] object-contain mb-1"
+                    [class.mx-auto]="templateForm.logoPosition === 'center'" alt="Company logo" />
+                </ng-container>
+                <ng-template #classicInitial>
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    [style.background-color]="templateForm.accentColor">
+                    {{ profile?.companyName?.charAt(0) || 'A' }}
+                  </div>
+                </ng-template>
                 <p class="text-sm font-bold text-[#1a2c35] mt-1">{{ profile?.companyName }}</p>
                 <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
                 <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
               </div>
+
               <!-- Doc type + meta -->
-              <div class="text-right">
-                <p class="text-2xl font-bold tracking-tight" [style.color]="templateForm.accentColor">
-                  {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+              <div [class.text-right]="templateForm.logoPosition !== 'center'" [class.text-center]="templateForm.logoPosition === 'center'">
+                <p class="text-[26px] leading-none font-bold tracking-tight" [style.color]="templateForm.accentColor">
+                  {{ docLabel() }}
                 </p>
-                <div class="mt-2 text-[10px] text-[#5a7380] space-y-0.5">
+                <div class="mt-2.5 text-[10px] text-[#5a7380] space-y-0.5">
                   <p><span class="text-[#9ab0bb]">No: </span>{{ previewSample.docNumber }}</p>
                   <p><span class="text-[#9ab0bb]">Date: </span>{{ previewSample.date }}</p>
-                  <p><span class="text-[#9ab0bb]">Due: </span>{{ previewSample.dueDate }}</p>
+                  <p><span class="text-[#9ab0bb]">{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: </span>{{ previewSample.dueDate }}</p>
+                  <p *ngIf="templateDocType === 'invoice'"><span class="text-[#9ab0bb]">PO Ref: </span>{{ previewSample.poReference }}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Bill-to -->
-          <div class="px-8 py-4 border-b border-[#f0f4f8]">
-            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Bill To</p>
-            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
-            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
-          </div>
-
-          <!-- Line items -->
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
           <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
           <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
           <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
@@ -764,45 +792,53 @@
         </div>
 
 
-        <!-- ══ BOLD preview ══ -->
+        <!-- ══ BOLD preview ══ — full-width accent header bar ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'bold'"
           class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
 
-          <!-- Full-width accent header -->
-          <div class="px-8 py-5" [style.background-color]="templateForm.accentColor">
-            <div class="flex items-center justify-between">
+          <!-- Full-width accent header, with a quiet geometric echo instead of a busy texture -->
+          <div class="px-7 py-6 relative overflow-hidden" [style.background-color]="templateForm.accentColor">
+            <div class="absolute -right-8 -top-12 w-36 h-36 rounded-full bg-white/[0.06] pointer-events-none"></div>
+            <div class="absolute right-14 -bottom-16 w-28 h-28 rounded-full bg-white/[0.06] pointer-events-none"></div>
+
+            <div class="relative flex items-start gap-6"
+              [class.justify-between]="templateForm.logoPosition !== 'center'"
+              [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
+              [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.items-center]="templateForm.logoPosition === 'center'">
+
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm">
-                  {{ profile?.companyName?.charAt(0) || 'A' }}
-                </div>
+                <ng-container *ngIf="templateForm.logoUrl; else boldInitial">
+                  <div class="w-11 h-11 rounded-lg bg-white/95 flex items-center justify-center overflow-hidden shrink-0 p-1">
+                    <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
+                  </div>
+                </ng-container>
+                <ng-template #boldInitial>
+                  <div class="w-11 h-11 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-base shrink-0">
+                    {{ profile?.companyName?.charAt(0) || 'A' }}
+                  </div>
+                </ng-template>
                 <div>
                   <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
                   <p class="text-white/70 text-[10px]">{{ profile?.address }}</p>
                 </div>
               </div>
-              <p class="text-white font-black text-xl tracking-widest opacity-90">
-                {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
-              </p>
+
+              <p class="text-white font-black text-2xl tracking-[0.15em] opacity-95">{{ docLabel() }}</p>
             </div>
           </div>
 
-          <!-- Summary bar -->
-          <div class="px-8 py-3 bg-[#1a2c35] flex items-center justify-between">
-            <div class="text-[10px] text-white/60 space-x-4">
+          <!-- Dark summary strip — the total, up front -->
+          <div class="px-7 py-3 bg-[#1a2c35] flex items-center justify-between flex-wrap gap-2">
+            <div class="text-[10px] text-white/60 flex flex-wrap gap-x-4 gap-y-1">
               <span>No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></span>
               <span>Date: <span class="text-white font-medium">{{ previewSample.date }}</span></span>
-              <span>Due: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
+              <span>{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
             </div>
             <p class="text-white font-bold text-sm">{{ fmtCurrency(previewSample.total) }}</p>
           </div>
 
-          <!-- Bill-to -->
-          <div class="px-8 py-4 border-b border-[#f0f4f8]">
-            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Bill To</p>
-            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
-            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
-          </div>
-
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
           <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
           <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
           <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
@@ -811,51 +847,50 @@
         </div>
 
 
-        <!-- ══ SIDEBAR preview ══ -->
+        <!-- ══ SIDEBAR preview ══ — rotated doc label on left edge ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'sidebar'"
           class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root flex">
 
-          <!-- Vertical label -->
-          <div class="w-8 shrink-0 flex flex-col items-center justify-start py-6 gap-2"
-            [style.background-color]="templateForm.accentColor">
-            <div class="w-5 h-5 rounded bg-white/20 flex items-center justify-center text-white font-bold text-[9px]">
-              {{ profile?.companyName?.charAt(0) || 'A' }}
-            </div>
-            <p class="text-white font-black text-[9px] tracking-widest whitespace-nowrap"
+          <!-- Vertical rail -->
+          <div class="w-11 shrink-0 flex flex-col items-center justify-between py-6" [style.background-color]="templateForm.accentColor">
+            <ng-container *ngIf="templateForm.logoUrl; else sidebarInitial">
+              <div class="w-7 h-7 rounded bg-white/90 flex items-center justify-center overflow-hidden p-0.5 shrink-0">
+                <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
+              </div>
+            </ng-container>
+            <ng-template #sidebarInitial>
+              <div class="w-7 h-7 rounded bg-white/20 flex items-center justify-center text-white font-bold text-[11px] shrink-0">
+                {{ profile?.companyName?.charAt(0) || 'A' }}
+              </div>
+            </ng-template>
+
+            <p class="text-white font-black text-[11px] tracking-[0.2em] whitespace-nowrap"
               style="writing-mode:vertical-rl;transform:rotate(180deg)">
-              {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+              {{ docLabel() }} · {{ previewSample.docNumber }}
             </p>
+
+            <span class="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0"></span>
           </div>
 
           <!-- Main body -->
-          <div class="flex-1 flex flex-col">
+          <div class="flex-1 flex flex-col min-w-0">
 
-            <!-- Header -->
-            <div class="px-6 pt-6 pb-4 border-b border-[#f0f4f8]">
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
-                  <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
-                  <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
-                </div>
-                <div class="text-right text-[10px] text-[#5a7380] space-y-0.5">
-                  <p class="font-semibold text-[#1a2c35]">{{ previewSample.docNumber }}</p>
-                  <p>{{ previewSample.date }}</p>
-                  <p class="font-medium" [style.color]="templateForm.accentColor">Due {{ previewSample.dueDate }}</p>
-                </div>
+            <div class="px-7 pt-7 pb-4 border-b border-[#f0f4f8] flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
+              </div>
+              <div class="text-right text-[10px] text-[#5a7380] space-y-0.5 shrink-0">
+                <p class="font-semibold text-[#1a2c35]">{{ previewSample.docNumber }}</p>
+                <p>Date: {{ previewSample.date }}</p>
+                <p class="font-medium" [style.color]="templateForm.accentColor">
+                  {{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }} {{ previewSample.dueDate }}
+                </p>
               </div>
             </div>
 
-            <!-- Bill-to -->
-            <div class="px-6 py-3 border-b border-[#f0f4f8]">
-              <div class="flex gap-1.5 items-center mb-1">
-                <div class="w-1 h-3 rounded-full" [style.background-color]="templateForm.accentColor"></div>
-                <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest">Bill To</p>
-              </div>
-              <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
-              <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
-            </div>
-
+            <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
             <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
             <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
             <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
@@ -865,43 +900,53 @@
         </div>
 
 
-        <!-- ══ MODERN preview ══ -->
+        <!-- ══ MODERN preview ══ — two-tone header, label boxes ══ -->
         <div #previewRef *ngIf="templateForm.baseStyle === 'modern'"
           class="bg-white rounded-2xl shadow-sm border border-[#e6edf2] overflow-hidden preview-root">
 
-          <!-- Split header -->
-          <div class="flex">
-            <div class="w-1/2 px-8 py-6 flex flex-col justify-between" [style.background-color]="templateForm.accentColor">
-              <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm mb-2">
-                {{ profile?.companyName?.charAt(0) || 'A' }}
-              </div>
-              <div>
-                <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
-                <p class="text-white/70 text-[10px]">{{ profile?.city }}, {{ profile?.state }}</p>
-              </div>
+          <!-- Two-tone header: tinted "from" panel + dark meta panel -->
+          <div class="flex flex-col sm:flex-row" [class.sm:flex-row-reverse]="templateForm.logoPosition === 'right'">
+            <div class="flex-1 px-7 py-5" [style.background-color]="templateForm.accentColor + '14'">
+              <ng-container *ngIf="templateForm.logoUrl; else modernInitial">
+                <img [src]="templateForm.logoUrl" class="h-9 max-w-[130px] object-contain mb-2" alt="Company logo" />
+              </ng-container>
+              <ng-template #modernInitial>
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm mb-2"
+                  [style.background-color]="templateForm.accentColor">
+                  {{ profile?.companyName?.charAt(0) || 'A' }}
+                </div>
+              </ng-template>
+              <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
+              <p class="text-[10px] text-[#5a7380] mt-0.5">{{ profile?.address }}, {{ profile?.city }}</p>
+              <p class="text-[10px] text-[#5a7380]">{{ profile?.email }}</p>
             </div>
-            <div class="w-1/2 bg-[#1a2c35] px-8 py-6 flex flex-col justify-between">
-              <p class="text-white font-black text-lg tracking-widest">
-                {{ templateDocType === 'invoice' ? 'INVOICE' : 'QUOTATION' }}
+            <div class="flex-1 px-7 py-5 bg-[#1a2c35] flex flex-col justify-center items-start sm:items-end text-left sm:text-right">
+              <p class="text-white font-bold text-lg tracking-wide mb-1.5">{{ docLabel() }}</p>
+              <p class="text-white/50 text-[10px]">No. <span class="text-white/90 font-medium">{{ previewSample.docNumber }}</span></p>
+              <p class="text-white/50 text-[10px]">Date <span class="text-white/90 font-medium">{{ previewSample.date }}</span></p>
+              <p class="text-white/50 text-[10px]">
+                {{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}
+                <span class="text-white/90 font-medium">{{ previewSample.dueDate }}</span>
               </p>
-              <div class="text-[10px] space-y-0.5">
-                <p class="text-white/50">No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></p>
-                <p class="text-white/50">Date: <span class="text-white font-medium">{{ previewSample.date }}</span></p>
-                <p class="text-white/50">Due: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></p>
-              </div>
             </div>
           </div>
 
-          <!-- Bill-to label box -->
-          <div class="px-8 py-4 border-b border-[#f0f4f8]">
-            <div class="inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest text-white mb-2"
-              [style.background-color]="templateForm.accentColor">Bill To</div>
-            <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
-            <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+
+          <!-- Modern's signature moment: a statement-style total instead of a plain rule-off row -->
+          <div class="mx-7 mb-3 px-5 py-4 rounded-xl flex items-center justify-between gap-3 flex-wrap"
+            [style.background-color]="templateForm.accentColor">
+            <span class="text-white/80 text-[11px] font-bold uppercase tracking-widest">
+              {{ templateDocType === 'invoice' ? 'Amount Due' : 'Quotation Total' }}
+            </span>
+            <span class="text-white text-xl font-bold">{{ fmtCurrency(previewSample.total) }}</span>
+          </div>
+          <div *ngIf="templateForm.density === 'detailed'" class="px-7 pb-3 -mt-1 flex justify-end gap-6 text-[11px] text-[#5a7380]">
+            <span>Subtotal <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.subtotal) }}</strong></span>
+            <span>Tax <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.tax) }}</strong></span>
           </div>
 
-          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
-          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
           <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
           <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
           <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
@@ -915,46 +960,70 @@
 
 
     <!-- ── Shared preview sub-templates ── -->
+    <!-- Reused by all four base styles so the item table, totals, bank details,
+         signature and footer stay structurally consistent — only the letterhead
+         above them changes. A couple of them still read templateForm.baseStyle
+         to vary the item-table header treatment (filled for Bold/Modern, ruled
+         for Classic/Sidebar) without forking the whole block per style. -->
+
+    <ng-template #billToBlock>
+      <div class="px-7 py-3.5 border-b border-[#f0f4f8]">
+        <div class="flex gap-1.5 items-center mb-1">
+          <span class="w-1 h-3 rounded-full" [style.background-color]="templateForm.accentColor"></span>
+          <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest">{{ templateDocType === 'invoice' ? 'Bill To' : 'Quote For' }}</p>
+        </div>
+        <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+        <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+      </div>
+    </ng-template>
 
     <ng-template #itemsTable>
-      <div *ngIf="templateForm.density === 'detailed'" class="px-6 pt-3 pb-1">
-        <div class="grid grid-cols-12 text-[9px] font-bold uppercase tracking-widest text-[#9ab0bb] pb-2 border-b"
+      <div *ngIf="templateForm.density === 'detailed'" class="px-7 pt-4 pb-1">
+        <div class="grid grid-cols-12 text-[9px] font-bold uppercase tracking-widest py-2 px-3 rounded-lg mb-0.5"
+          [class.text-white]="templateForm.baseStyle === 'bold' || templateForm.baseStyle === 'modern'"
+          [class.text-[#9ab0bb]]="templateForm.baseStyle === 'classic' || templateForm.baseStyle === 'sidebar'"
+          [class.border-b]="templateForm.baseStyle === 'classic' || templateForm.baseStyle === 'sidebar'"
+          [style.background-color]="(templateForm.baseStyle === 'bold' || templateForm.baseStyle === 'modern') ? templateForm.accentColor : 'transparent'"
           [style.border-color]="templateForm.accentColor + '40'">
           <span class="col-span-6">Description</span>
           <span class="col-span-2 text-center">Qty</span>
           <span class="col-span-2 text-right">Unit Price</span>
-          <span class="col-span-2 text-right">Total</span>
+          <span class="col-span-2 text-right">Amount</span>
         </div>
-        <div *ngFor="let item of previewSample.items; let last = last"
-          class="grid grid-cols-12 text-[11px] py-2"
-          [class.border-b]="!last" [class.border-[#f0f4f8]]="!last">
-          <span class="col-span-6 text-[#1a2c35]">{{ item.name }}</span>
+        <div *ngFor="let item of previewSample.items; let odd = odd; let last = last"
+          class="grid grid-cols-12 text-[11px] py-2.5 px-3"
+          [class.bg-[#fafbfc]]="odd" [class.border-b]="!last" [class.border-[#f5f7f9]]="!last">
+          <span class="col-span-6 text-[#1a2c35] font-medium">{{ item.name }}</span>
           <span class="col-span-2 text-center text-[#5a7380]">{{ item.qty }}</span>
           <span class="col-span-2 text-right text-[#5a7380]">{{ fmtCurrency(item.unitPrice) }}</span>
-          <span class="col-span-2 text-right font-medium text-[#1a2c35]">{{ fmtCurrency(item.total) }}</span>
+          <span class="col-span-2 text-right font-semibold text-[#1a2c35]">{{ fmtCurrency(item.total) }}</span>
         </div>
       </div>
     </ng-template>
 
     <ng-template #totalsBlock>
-      <div class="px-6 pt-3 pb-4 flex flex-col items-end gap-1 text-[11px]">
-        <div *ngIf="templateForm.density==='detailed'" class="flex gap-6">
-          <span class="text-[#5a7380]">Subtotal</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.subtotal) }}</span>
-        </div>
-        <div *ngIf="templateForm.density==='detailed'" class="flex gap-6">
-          <span class="text-[#5a7380]">Tax (7.5%)</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.tax) }}</span>
-        </div>
-        <div class="flex gap-6 font-bold text-sm pt-1.5 border-t border-[#e6edf2] mt-1" [style.color]="templateForm.accentColor">
-          <span>Total</span><span class="w-24 text-right">{{ fmtCurrency(previewSample.total) }}</span>
+      <div class="px-7 pt-3 pb-4 flex justify-end">
+        <div class="w-full max-w-[230px]">
+          <div *ngIf="templateForm.density==='detailed'" class="flex justify-between text-[11px] text-[#5a7380] py-1">
+            <span>Subtotal</span><span>{{ fmtCurrency(previewSample.subtotal) }}</span>
+          </div>
+          <div *ngIf="templateForm.density==='detailed'" class="flex justify-between text-[11px] text-[#5a7380] py-1">
+            <span>Tax (7.5%)</span><span>{{ fmtCurrency(previewSample.tax) }}</span>
+          </div>
+          <div class="flex justify-between items-center mt-1.5 px-3.5 py-2.5 rounded-lg"
+            [style.background-color]="templateForm.accentColor + '12'">
+            <span class="text-xs font-bold uppercase tracking-wide" [style.color]="templateForm.accentColor">Total</span>
+            <span class="text-base font-bold" [style.color]="templateForm.accentColor">{{ fmtCurrency(previewSample.total) }}</span>
+          </div>
         </div>
       </div>
     </ng-template>
 
     <ng-template #bankBlock>
       <div *ngIf="templateForm.showBankDetails && profile"
-        class="px-6 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
-        <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Payment Details</p>
-        <div class="flex gap-6 text-[10px]">
+        class="px-7 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
+        <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1.5">Payment Details</p>
+        <div class="flex gap-6 text-[10px] flex-wrap">
           <div><p class="text-[#9ab0bb]">Bank</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p></div>
           <div><p class="text-[#9ab0bb]">Account</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p></div>
           <div><p class="text-[#9ab0bb]">Number</p><p class="font-medium text-[#1a2c35] font-mono">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p></div>
@@ -963,15 +1032,15 @@
     </ng-template>
 
     <ng-template #signatureBlock>
-      <div class="px-6 py-4 border-t border-[#f0f4f8]">
-        <div class="flex items-end justify-between">
-          <div *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">
+      <div class="px-7 py-4 border-t border-[#f0f4f8]">
+        <div class="flex items-end justify-between gap-4">
+          <div *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380] min-w-0">
             <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Notes</p>
             <p>{{ templateForm.notesDefault || 'All amounts in NGN unless otherwise stated.' }}</p>
           </div>
-          <div class="text-right">
+          <div class="text-right shrink-0 ml-auto">
             <div class="h-10 w-32 border-b border-[#1a2c35] mb-1 flex items-end justify-center overflow-hidden">
-              <img *ngIf="savedSignatureDataUrl" [src]="savedSignatureDataUrl" class="max-h-9 object-contain" />
+              <img *ngIf="savedSignatureDataUrl" [src]="savedSignatureDataUrl" class="max-h-9 object-contain" alt="Signature" />
             </div>
             <p class="text-[9px] text-[#9ab0bb]">Authorised Signature</p>
             <p class="text-[10px] font-medium text-[#1a2c35]">{{ profile?.contactPersonName }}</p>
@@ -981,7 +1050,7 @@
     </ng-template>
 
     <ng-template #footerBlock>
-      <div *ngIf="templateForm.footerText" class="px-6 py-3 border-t-4 text-center" [style.border-color]="templateForm.accentColor">
+      <div *ngIf="templateForm.footerText" class="px-7 py-3.5 border-t-4 text-center" [style.border-color]="templateForm.accentColor">
         <p class="text-[10px] text-[#9ab0bb] italic">{{ templateForm.footerText }}</p>
       </div>
     </ng-template>
