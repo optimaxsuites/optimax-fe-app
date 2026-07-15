@@ -131,11 +131,12 @@ export class BugTrackerComponent implements OnInit {
 
   get filteredDmUsers(): UserItem[] {
     const q = this.userSearch.toLowerCase();
+    const list = this.dmUsers.filter(u => u.fullname || u.email);
     return q
-      ? this.dmUsers.filter(u =>
+      ? list.filter(u =>
           (u.fullname || '').toLowerCase().includes(q) ||
           (u.email || '').toLowerCase().includes(q))
-      : this.dmUsers;
+      : list;
   }
 
   get selectedChannelCount(): number { return this.channels.filter(c => c.selected).length; }
@@ -401,19 +402,24 @@ export class BugTrackerComponent implements OnInit {
           .sort((a: ChannelItem, b: ChannelItem) => a.name.localeCompare(b.name));
 
         this.dmUsers = (users || [])
-          .map((u: any) => ({
-            id: u.id || u.userId || 0,
-            userId: u.userId || u.id,
-            fullname: u.fullname || u.username || '',
-            email: u.email || '',
-            selected: false,
-          }))
-          .filter((u: UserItem) => u.email)
+          .map((u: any) => {
+            const fn = String(u?.firstName || u?.firstname || '').trim();
+            const ln = String(u?.lastName || u?.lastname || '').trim();
+            const fullName = (fn || ln) ? `${fn} ${ln}`.trim() : String(u?.fullname || u?.username || u?.name || '').trim();
+            return {
+              id: Number(u?.id || u?.userId || 0),
+              userId: Number(u?.userId || u?.id || 0),
+              fullname: fullName,
+              email: String(u?.email || u?.emailAddress || ''),
+              selected: false,
+            };
+          })
+          .filter((u: UserItem) => u.id && (u.fullname || u.email))
           .sort((a: UserItem, b: UserItem) => (a.fullname || '').localeCompare(b.fullname || ''));
 
         this.shareLoading = false;
       },
-      error: () => { this.shareLoading = false; }
+      error: () => { this.shareLoading = false; this.toast('error', 'Failed to load contacts. Check your connection.'); }
     });
   }
 
@@ -456,8 +462,8 @@ export class BugTrackerComponent implements OnInit {
           ? selectedChannels.map(c =>
               this.api.postIssueCardMessage(c.id, senderUserId, issue))
           : selectedUsers.map(u =>
-              this.api.getOrCreateDmChannel(senderUserId, u.userId!)
-                .pipe(switchMap(channel => this.api.postIssueCardMessage(channel.id ?? channel.channelId, senderUserId, issue)))
+              this.api.getOrCreateDmChannel(senderUserId, u.userId ?? u.id)
+                .pipe(switchMap((channel: any) => this.api.postIssueCardMessage(channel.id ?? channel.channelId, senderUserId, issue)))
             );
 
         forkJoin(msgCalls.length ? msgCalls : [this.api.getShares(id)]).subscribe({
@@ -467,11 +473,23 @@ export class BugTrackerComponent implements OnInit {
         this.shareSubmitting = false;
         this.showShareDialog = false;
         const count = shareCalls.length;
-        this.toast('success', this.shareTab === 'CHANNEL'
+        const successMsg = this.shareTab === 'CHANNEL'
           ? `Issue shared to ${count} channel${count > 1 ? 's' : ''}`
-          : `Issue shared with ${count} person${count > 1 ? 's' : ''}`);
+          : `Issue shared with ${count} person${count > 1 ? 's' : ''}`;
+        this.toast('success', successMsg);
+
+        // Push bell notification to sender's header
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('optimax-notification', {
+            detail: { title: `Bug #${id} shared`, body: successMsg, category: 'module' }
+          }));
+        }
       },
-      error: (err) => { this.toast('error', err); this.shareSubmitting = false; }
+      error: (err) => {
+        const msg = typeof err === 'string' ? err : 'Share failed. The server may not support this operation yet.';
+        this.toast('error', msg);
+        this.shareSubmitting = false;
+      }
     });
   }
 
