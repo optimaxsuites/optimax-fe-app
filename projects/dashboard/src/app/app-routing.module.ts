@@ -10,6 +10,7 @@ import { CommunicationComponent } from './communication/communication.component'
 import { FeedComponent } from './feed/feed.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { MeetingsAppointmentsComponent } from './meetings-appointments/meetings-appointments.component';
+import { DashUserProfileComponent } from './user-profile/user-profile.component';
 
 // damilola worked on this: communications and tasks now have separate dashboard routes.
 const routes: Routes = [
@@ -52,6 +53,10 @@ const routes: Routes = [
   {
     path: 'tasks-routines/:uuid',
     component: FeedComponent
+  },
+  {
+    path: 'user-profile/:uuid',
+    component: DashUserProfileComponent
   },
   {
     path: ':uuid',

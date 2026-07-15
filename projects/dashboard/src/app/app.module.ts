@@ -76,6 +76,7 @@ import { CallModalComponent } from './communication/call-modal/call-modal.compon
 import { FeedComponent } from './feed/feed.component';
 import { EmployeeRelativesWidgetComponent } from './hr-dashboard/employee-relatives-widget/employee-relatives-widget.component';
 import { MeetingsAppointmentsComponent } from './meetings-appointments/meetings-appointments.component';
+import { DashUserProfileComponent } from './user-profile/user-profile.component';
 
 @NgModule({
   declarations: [
@@ -107,6 +108,7 @@ import { MeetingsAppointmentsComponent } from './meetings-appointments/meetings-
     CallModalComponent,
     FeedComponent,
     MeetingsAppointmentsComponent,
+    DashUserProfileComponent,
   ],
   imports: [
     MarkdownModule.forRoot(),

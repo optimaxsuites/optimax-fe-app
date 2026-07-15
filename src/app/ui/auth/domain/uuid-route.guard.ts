@@ -24,16 +24,17 @@ export class UuidGuard implements CanActivate {
     return fromUrl || null;
   }
 
-  canActivate(route: ActivatedRouteSnapshot): boolean {
+  canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
     const uuid = this.getUuidFromRoute(route);
-    console.log(uuid);
+    if (uuid && this.uuidRegex.test(uuid)) return true;
 
-    if (!uuid || !this.uuidRegex.test(uuid)) {
-      this.router.navigate(['/404']);
-      return false;
-    }
+    // When lazy-loading, firstChild is not yet available — extract UUID from the full destination URL
+    const segments = (state.url || '').split(/[/?#]/);
+    const fromFullUrl = segments.find(s => this.uuidRegex.test(s));
+    if (fromFullUrl) return true;
 
-    return true;
+    this.router.navigate(['/404']);
+    return false;
   }
 }
 

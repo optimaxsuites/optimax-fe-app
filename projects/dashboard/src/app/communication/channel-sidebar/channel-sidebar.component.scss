@@ -1,3 +1,139 @@
+.dm-profile-card {
+  position: fixed;
+  z-index: 9999;
+  width: 240px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13);
+  overflow: hidden;
+  pointer-events: all;
+
+  .dm-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 10px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e8f4f8 100%);
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .dm-card-avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .dm-card-avatar-img,
+  .dm-card-avatar-initials {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .dm-card-avatar-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .dm-card-status-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #d1d5db;
+
+    &.online {
+      background: #34d399;
+    }
+  }
+
+  .dm-card-identity {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .dm-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dm-card-status-label {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+
+  .dm-card-body {
+    padding: 10px 14px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dm-card-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+    min-width: 0;
+
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .dm-card-row-icon {
+    font-size: 12px;
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+
+  .dm-card-footer {
+    padding: 8px 14px 12px;
+  }
+
+  .dm-card-msg-btn {
+    width: 100%;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: none;
+    background: #2e6276;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s;
+
+    &:hover {
+      background: #245060;
+    }
+
+    i {
+      font-size: 13px;
+    }
+  }
+}
+
 .birthday-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

@@ -1,0 +1,181 @@
+<p-toast></p-toast>
+
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">My Profile</h1>
+
+    <!-- Stats row -->
+    <div class="flex gap-4 mb-6">
+      <div class="stat-card">
+        <span class="stat-value">
+          <ng-container *ngIf="!loadingPosts">{{ postCount ?? 0 }}</ng-container>
+          <span *ngIf="loadingPosts" class="stat-skeleton"></span>
+        </span>
+        <span class="stat-label">Posts Published</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ accountId }}</span>
+        <span class="stat-label">Account ID</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value capitalize">{{ role }}</span>
+        <span class="stat-label">Role</span>
+      </div>
+    </div>
+
+    <!-- Tab Nav -->
+    <div class="flex gap-1 mb-6 border-b border-gray-200">
+      <button type="button" class="tab-btn" [class.tab-btn--active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+        <i class="pi pi-user mr-2"></i>Profile
+      </button>
+      <button type="button" class="tab-btn" [class.tab-btn--active]="activeTab === 'security'" (click)="activeTab = 'security'">
+        <i class="pi pi-lock mr-2"></i>Security
+      </button>
+    </div>
+
+    <!-- ── Profile Tab ─────────────────────────────────────────────── -->
+    <div *ngIf="activeTab === 'profile'">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+
+        <div *ngIf="loadingProfile" class="flex justify-center py-12">
+          <i class="pi pi-spin pi-spinner text-3xl text-green-700"></i>
+        </div>
+
+        <div *ngIf="!loadingProfile" class="flex flex-col md:flex-row gap-10">
+
+          <!-- Avatar Column -->
+          <div class="flex flex-col items-center gap-4 md:w-48 flex-shrink-0">
+            <div class="avatar-wrap">
+              <div class="avatar-circle">
+                <img *ngIf="avatarUrl" [src]="avatarUrl" alt="Profile photo" class="avatar-img" />
+                <span *ngIf="!avatarUrl" class="avatar-initials">{{ initials }}</span>
+              </div>
+              <label class="avatar-overlay" [class.avatar-overlay--uploading]="uploadingAvatar">
+                <input type="file" accept="image/*" class="hidden" (change)="onAvatarFileChange($event)" />
+                <i class="pi" [class.pi-camera]="!uploadingAvatar" [class.pi-spin]="uploadingAvatar" [class.pi-spinner]="uploadingAvatar"></i>
+                <span *ngIf="!uploadingAvatar">Change photo</span>
+                <span *ngIf="uploadingAvatar">Saving…</span>
+              </label>
+            </div>
+            <p class="text-xs text-gray-400 text-center">Hover avatar to upload.<br/>JPG or PNG.</p>
+            <div class="text-center mt-1">
+              <p class="font-semibold text-gray-800 text-sm">{{ displayName }}</p>
+              <p class="text-xs text-gray-500">&#64;{{ username }}</p>
+            </div>
+          </div>
+
+          <!-- Form Column -->
+          <div class="flex-1">
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="flex flex-col gap-5">
+
+              <!-- Full Name (read-only) -->
+              <div class="form-field">
+                <label class="field-label">Full Name <!--span class="text-gray-400 font-normal">(read-only)</span--></label>
+                <div class="field-readonly">{{ displayName }}</div>
+              </div>
+
+              <!-- Nickname (editable) -->
+              <div class="form-field">
+                <label class="field-label">Nickname</label>
+                <input type="text" formControlName="nickname" class="field-input" placeholder="e.g. Dami" />
+              </div>
+
+              <!-- Email (read-only) -->
+              <div class="form-field">
+                <label class="field-label">Email <!--span class="text-gray-400 font-normal">(read-only)</span--></label>
+                <div class="field-readonly">{{ email }}</div>
+              </div>
+
+              <!-- Username (read-only) -->
+              <div class="form-field">
+                <label class="field-label">Username <!--span class="text-gray-400 font-normal">(read-only)</span--></label>
+                <div class="field-readonly">{{ username }}</div>
+              </div>
+
+              <!-- Phone (editable) -->
+              <div class="form-field">
+                <label class="field-label">Phone Number</label>
+                <input type="tel" formControlName="phone" class="field-input" placeholder="e.g. +234 800 000 0000" />
+              </div>
+
+              <!-- Bio (editable) -->
+              <div class="form-field">
+                <label class="field-label">Bio</label>
+                <textarea formControlName="bio" class="field-input field-textarea" rows="3" placeholder="A short bio about yourself"></textarea>
+              </div>
+
+              <div class="flex items-center gap-3 pt-1">
+                <button
+                  type="submit"
+                  class="px-6 py-2.5 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  [disabled]="savingProfile"
+                >
+                  <i *ngIf="savingProfile" class="pi pi-spin pi-spinner"></i>
+                  {{ savingProfile ? 'Saving…' : 'Save Profile' }}
+                </button>
+                <span *ngIf="!savingProfile" class="text-xs text-gray-400">Nickname, phone and bio can be edited.</span>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Security Tab ────────────────────────────────────────────── -->
+    <div *ngIf="activeTab === 'security'">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-lg">
+        <h2 class="text-lg font-semibold text-gray-800 mb-1">Change Password</h2>
+        <p class="text-sm text-gray-500 mb-6">Use a strong password with at least 8 characters.</p>
+
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="flex flex-col gap-5">
+
+          <div class="pw-field">
+            <label class="field-label mb-1">Current Password</label>
+            <div class="pw-input-wrap">
+              <input [type]="showCurrentPw ? 'text' : 'password'" formControlName="currentPassword" class="pw-input" placeholder="Enter current password" />
+              <button type="button" class="pw-toggle" (click)="showCurrentPw = !showCurrentPw">
+                <i class="pi" [class.pi-eye]="!showCurrentPw" [class.pi-eye-slash]="showCurrentPw"></i>
+              </button>
+            </div>
+            <span *ngIf="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched" class="text-xs text-red-500 mt-1">Required.</span>
+          </div>
+
+          <div class="pw-field">
+            <label class="field-label mb-1">New Password</label>
+            <div class="pw-input-wrap">
+              <input [type]="showNewPw ? 'text' : 'password'" formControlName="newPassword" class="pw-input" placeholder="At least 8 characters" />
+              <button type="button" class="pw-toggle" (click)="showNewPw = !showNewPw">
+                <i class="pi" [class.pi-eye]="!showNewPw" [class.pi-eye-slash]="showNewPw"></i>
+              </button>
+            </div>
+            <span *ngIf="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched" class="text-xs text-red-500 mt-1">Minimum 8 characters.</span>
+          </div>
+
+          <div class="pw-field">
+            <label class="field-label mb-1">Confirm New Password</label>
+            <div class="pw-input-wrap">
+              <input [type]="showConfirmPw ? 'text' : 'password'" formControlName="confirmPassword" class="pw-input" placeholder="Re-enter new password" />
+              <button type="button" class="pw-toggle" (click)="showConfirmPw = !showConfirmPw">
+                <i class="pi" [class.pi-eye]="!showConfirmPw" [class.pi-eye-slash]="showConfirmPw"></i>
+              </button>
+            </div>
+            <span *ngIf="passwordForm.get('confirmPassword')?.invalid && passwordForm.get('confirmPassword')?.touched" class="text-xs text-red-500 mt-1">Required.</span>
+          </div>
+
+          <button
+            type="submit"
+            class="mt-2 px-6 py-2.5 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 transition-colors disabled:opacity-50 self-start flex items-center gap-2"
+            [disabled]="savingPassword"
+          >
+            <i *ngIf="savingPassword" class="pi pi-spin pi-spinner"></i>
+            {{ savingPassword ? 'Updating…' : 'Update Password' }}
+          </button>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>

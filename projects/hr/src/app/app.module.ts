@@ -1,4 +1,5 @@
 import { HrSettingsComponent } from './ui/view/settings/hr-settings.component';
+import { UserProfileComponent } from './ui/view/user-profile/user-profile.component';
 import { HrAnalyticsDashboardComponent } from './ui/view/analytics/hr-analytics-dashboard.component';
 import { OvertimeManagementComponent } from './ui/view/overtime/overtime-management.component';
 import { OrgChartComponent } from './ui/view/org-chart/org-chart.component';
@@ -66,8 +67,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { CommonModule } from '@angular/common';
 import { RecruitmentComponent } from './ui/view/recruitment/recruitment.component';
 import { LeaveComponent } from './ui/view/leave/leave.component';
@@ -271,6 +270,15 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     InterviewInviteComponent,
     AppointmentLetterComponent,
     InterviewScoreSheetComponent,
+    AddEmployeeFormComponent,
+    EmployeeManagementComponent,
+    AdminCreationFormComponent,
+    EmployeeProfileDashboardComponent,
+    // EmployeeOnboardingFormComponent,
+    PreOnboardingFormComponent,
+    PreOnboardingImportComponent,
+    OffboardingFormComponent,
+    EmployeeUpdateFormComponent,
     LeaveUsageComponent,
     LeaveRequestComponent,
     LeavePlanComponent,
@@ -421,13 +429,13 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     OvertimeManagementComponent,
     OrgChartComponent,
     HrReportsComponent,
-    // LargeSideModalComponent,
+    HrLettersComponent,
+    UserProfileComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    LargeSideModalComponent,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,

@@ -160,7 +160,7 @@
       <div class="ep-summary-card ep-summary-card--dark">
         <i class="fa-solid fa-briefcase ep-summary-icon"></i>
         <span class="ep-summary-label">Current role</span>
-        <strong class="ep-summary-value">{{ employeeInView?.jobTitle || 'Role pending' }}</strong>
+        <strong class="ep-summary-value">{{ employeeInView?.level?.position || employeeInView?.jobTitle || 'Role pending' }}</strong>
         <span class="ep-summary-meta">{{ employeeInView?.department?.name || employeeInView?.department || '—' }}</span>
       </div>
       <div class="ep-summary-card">
@@ -250,7 +250,7 @@
           <div class="ep-field-row">
             <label class="ep-field-label">Job Title</label>
             <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.jobTitle || '—' }}</span>
-            <input *ngIf="isEditMode" formControlName="jobTitle" type="text" class="ep-input" placeholder="Job title" />
+            <ng-select *ngIf="isEditMode" [items]="jobTitleOptions" formControlName="jobTitle" placeholder="Select job title" class="ep-select"></ng-select>
           </div>
 
           <div class="ep-field-row">
@@ -274,7 +274,7 @@
           <div class="ep-field-row">
             <label class="ep-field-label">Supervisor</label>
             <span *ngIf="!isEditMode" class="ep-field-value">{{ employeeInView?.supervisor || '—' }}</span>
-            <input *ngIf="isEditMode" formControlName="supervisor" type="text" class="ep-input" placeholder="Supervisor name" />
+            <ng-select *ngIf="isEditMode" [items]="supervisorOptions" formControlName="supervisor" placeholder="Select supervisor" class="ep-select"></ng-select>
           </div>
 
           <div class="ep-field-row">
