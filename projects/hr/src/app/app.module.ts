@@ -431,11 +431,11 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     HrReportsComponent,
     HrLettersComponent,
     UserProfileComponent,
-    // LargeSideModalComponent,
     // FooterComponent,
     // EmployeeRelativesWidgetComponent,
   ],
   imports: [
+    LargeSideModalComponent,
     AppHrRoutingModule,
     CommonModule,
     FormsModule,
