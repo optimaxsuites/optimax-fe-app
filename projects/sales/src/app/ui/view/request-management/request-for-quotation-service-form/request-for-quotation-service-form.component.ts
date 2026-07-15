@@ -48,9 +48,6 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       title: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.required, Validators.minLength(20)]],
       serviceCategory: ['', Validators.required],
-      deliveryLocation: ['', Validators.required],
-      deliveryDeadline: ['', Validators.required],
-      currency: ['NGN', Validators.required],
       items: this.fb.array([]),
       specialInstructions: ['']
     });
@@ -150,6 +147,10 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
           serviceCategory: item.serviceCategory || '',
           quantity: item.quantity || 1,
           estimatedBudget: item.estimatedBudget || 0,
+          currency: item.currency || req.currency || 'NGN',
+          deliveryMode: item.deliveryMode || req.deliveryMode || 'STANDARD',
+          deliveryDeadline: item.deliveryDeadline ? new Date(item.deliveryDeadline).toISOString().substring(0, 10) : (req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : ''),
+          deliveryLocation: item.deliveryLocation || req.deliveryLocation || '',
           experienceLevel: item.experienceLevel || '',
           serviceDuration: item.serviceDuration || '',
           serviceStartDate: item.serviceStartDate ? new Date(item.serviceStartDate).toISOString().substring(0, 10) : '',
@@ -168,9 +169,6 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       title: req.title || '',
       description: req.description || '',
       serviceCategory: req.serviceCategory || '',
-      deliveryLocation: req.deliveryLocation || '',
-      deliveryDeadline: req.deliveryDeadline ? new Date(req.deliveryDeadline).toISOString().substring(0, 10) : '',
-      currency: req.currency || 'NGN',
       specialInstructions: req.specialInstructions || ''
     });
   }
@@ -187,6 +185,10 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       serviceCategory: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
       estimatedBudget: [0, [Validators.required, Validators.min(0)]],
+      currency: ['NGN', Validators.required],
+      deliveryMode: ['STANDARD', Validators.required],
+      deliveryDeadline: ['', Validators.required],
+      deliveryLocation: ['', Validators.required],
       experienceLevel: ['', Validators.required],
       serviceDuration: ['', Validators.required],
       serviceStartDate: ['', Validators.required],
@@ -258,6 +260,14 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
       formValue.totalBudget = this.getTotalBudget();
       formValue.procurementType = 'SERVICE';
       
+      const firstItem = formValue.items && formValue.items[0];
+      if (firstItem) {
+        formValue.currency = firstItem.currency || 'NGN';
+        formValue.deliveryMode = firstItem.deliveryMode || 'STANDARD';
+        formValue.deliveryLocation = firstItem.deliveryLocation || '';
+        formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
+      }
+
       const requestId = this.requestId || uuidV4();
       
       if (this.isEditMode && this.requestId) {
@@ -295,6 +305,14 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
     formValue.totalBudget = this.getTotalBudget();
     formValue.procurementType = 'SERVICE';
     formValue.status = 'DRAFT';
+
+    const firstItem = formValue.items && formValue.items[0];
+    if (firstItem) {
+      formValue.currency = firstItem.currency || 'NGN';
+      formValue.deliveryMode = firstItem.deliveryMode || 'STANDARD';
+      formValue.deliveryLocation = firstItem.deliveryLocation || '';
+      formValue.deliveryDeadline = firstItem.deliveryDeadline ? new Date(firstItem.deliveryDeadline) : new Date();
+    }
 
     if (!formValue.title || !formValue.title.trim()) {
       formValue.title = `Draft Service Request - ${new Date().toLocaleDateString()}`;

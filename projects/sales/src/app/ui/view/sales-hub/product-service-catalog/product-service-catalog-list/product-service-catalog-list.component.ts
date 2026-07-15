@@ -59,6 +59,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   newCategoryName = '';
   newCategoryDesc = '';
   editingCategory: Category | null = null;
+  viewingCategoryDetails: Category | null = null;
   
   statusOptions: { value: string; label: string; color: string }[] = [
     { value: 'ALL', label: 'All Products', color: 'gray' },
@@ -92,6 +93,7 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   openCategoryModal(): void {
     this.showCategoryModal = true;
     this.editingCategory = null;
+    this.viewingCategoryDetails = null;
     this.newCategoryName = '';
     this.newCategoryDesc = '';
   }
@@ -99,14 +101,25 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
   closeCategoryModal(): void {
     this.showCategoryModal = false;
     this.editingCategory = null;
+    this.viewingCategoryDetails = null;
     this.newCategoryName = '';
     this.newCategoryDesc = '';
   }
 
   startEditCategory(cat: Category): void {
     this.editingCategory = cat;
+    this.viewingCategoryDetails = null;
     this.newCategoryName = cat.name;
     this.newCategoryDesc = cat.description || '';
+  }
+
+  startViewCategory(cat: Category): void {
+    this.viewingCategoryDetails = cat;
+    this.editingCategory = null;
+  }
+
+  closeCategoryDetails(): void {
+    this.viewingCategoryDetails = null;
   }
 
   cancelEditCategory(): void {
@@ -181,6 +194,9 @@ export class ProductServiceCatalogListComponent implements OnInit, OnDestroy {
           this.categories = ['ALL', ...updatedCats.map(c => c.name)];
           if (this.editingCategory?.id === id) {
             this.cancelEditCategory();
+          }
+          if (this.viewingCategoryDetails?.id === id) {
+            this.viewingCategoryDetails = null;
           }
           alert('Category deleted successfully!');
         },

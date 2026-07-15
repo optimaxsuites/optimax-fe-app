@@ -270,6 +270,10 @@ export const routes: Routes = [
     component: ApprovalRfqDetailComponent
   },
   {
+    path: 'vendor-portal',
+    component: VendorPortalComponent
+  },
+  {
     path: 'vendor-portal/:uuid',
     component: VendorPortalComponent
   },
