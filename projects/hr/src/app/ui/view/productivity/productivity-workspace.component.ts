@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { Subscription, forkJoin, of } from 'rxjs';
-import { timeout, catchError } from 'rxjs/operators';
+import { timeout, catchError, switchMap } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import * as XLSX from 'xlsx';
@@ -872,6 +872,10 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
   availableChannels: Array<{ id: number; name: string; channelCode: string; channelType: string; status: string }> = [];
   channelsLoading = false;
   channelUnreadCounts: Record<number, number> = {};
+  dmUserList: Array<{ id: number; fullName: string; email: string }> = [];
+
+  // ── Kanban overdue filter ──────────────────────────────────────────────────
+  hideOverdue = true;
 
   private loadChannelUnread(): void {
     try { this.channelUnreadCounts = JSON.parse(localStorage.getItem('hr_ch_unread') || '{}'); } catch {}
@@ -986,6 +990,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
               supervisor: '',
             })).filter(u => !!u.fullName);
             this.patchSubmissionsFromUsers(mapped);
+            this.dmUserList = users
+              .map((u: any) => ({
+                id: Number(u?.id || 0),
+                fullName: (`${u?.firstName || u?.firstname || ''} ${u?.lastName || u?.lastname || ''}`).trim() || String(u?.username || u?.name || '').trim(),
+                email: String(u?.email || ''),
+              }))
+              .filter(u => u.id > 0 && !!u.fullName);
           }
         },
         error: () => {},
@@ -1379,7 +1390,13 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     });
   }
 
-  columnTasks(status: TaskStatus): BoardTask[] { return this.filteredBoard.filter(t => t.status === status); }
+  columnTasks(status: TaskStatus): BoardTask[] {
+    return this.filteredBoard.filter(t => t.status === status && (!this.hideOverdue || !this.isTaskOverdue(t)));
+  }
+
+  get overdueTasks(): BoardTask[] {
+    return this.filteredBoard.filter(t => this.isTaskOverdue(t));
+  }
   colId(status: TaskStatus): string { return `hr-col-${status.replace(/\s/g, '-')}`; }
   connectedTo(status: TaskStatus): string[] { return this.statuses.filter(s => s !== status).map(s => this.colId(s)); }
 
@@ -2101,6 +2118,41 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
     this.shareChannelId = null;
   }
 
+  private sendShareDm(recipientName: string, task: BoardTask | null, note: string, label: string): void {
+    const myUserId = Number(sessionStorage.getItem('userid') || sessionStorage.getItem('userId') || 0);
+    if (!myUserId) { this.showToast('Unable to resolve your user account. Please re-login.', 'error'); return; }
+    const match = this.dmUserList.find(u =>
+      u.fullName.toLowerCase() === recipientName.toLowerCase() ||
+      u.fullName.toLowerCase().includes(recipientName.toLowerCase()) ||
+      recipientName.toLowerCase().includes(u.fullName.toLowerCase())
+    );
+    if (!match) {
+      this.showToast(`User "${recipientName}" not found in system. Ensure they have a login account.`, 'warn');
+      return;
+    }
+    this.subscription.add(
+      this.workTaskApi.getOrCreateDmChannel(myUserId, match.id).pipe(
+        switchMap(channel => {
+          const channelId = channel.id ?? channel.channelId;
+          return this.workTaskApi.sendChannelMessage(channelId, note);
+        })
+      ).subscribe({
+        next: () => {
+          this.showToast(`${label} sent to ${recipientName}`, 'success');
+          if (task) {
+            this.notifService.add(`Task shared with ${recipientName}`, `"${task.title}" sent to ${recipientName}`, recipientName, task.id);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('optimax-notification', {
+                detail: { title: `Task shared: ${task.title}`, body: `Update delivered to ${recipientName} via DM`, category: 'module' }
+              }));
+            }
+          }
+        },
+        error: () => this.showToast(`Failed to deliver message to ${recipientName}. Check connection.`, 'error'),
+      })
+    );
+  }
+
   submitShare(): void {
     if (!this.shareNote.trim()) { this.showToast('Please enter a message to share.', 'warn'); return; }
 
@@ -2113,20 +2165,29 @@ export class ProductivityWorkspaceComponent implements OnInit, OnDestroy {
         this.workTaskApi.sendChannelMessage(this.shareChannelId, this.shareNote).subscribe({
           next: () => {
             this.showToast(`Task update posted to #${ch?.name || 'channel'}`, 'success');
-            if (task) this.notifService.add(`Shared to #${ch?.name || 'channel'}`, `"${task.title}" was shared`, ch?.name || 'channel', task.id);
+            if (task) {
+              this.notifService.add(`Shared to #${ch?.name || 'channel'}`, `"${task.title}" was shared`, ch?.name || 'channel', task.id);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('optimax-notification', {
+                  detail: { title: `Shared to #${ch?.name || 'channel'}`, body: `"${task.title}" was posted`, category: 'module' }
+                }));
+              }
+            }
             this.incrementChannelUnread(this.shareChannelId!);
           },
           error: () => this.showToast('Failed to post to channel. Check connection.', 'error'),
         })
       );
     } else if (this.shareTarget === 'supervisor') {
+      const supervisorName = this.shareChannelOrUser || (task?.team || '');
+      if (!supervisorName) { this.showToast('Supervisor name is required.', 'warn'); return; }
       this.showShareModal = false;
-      this.showToast(`Update sent to ${this.shareChannelOrUser || 'supervisor'}`, 'success');
-      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared with supervisor`, `"${task.title}" shared to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
+      this.sendShareDm(supervisorName, task, this.shareNote, 'Supervisor update');
     } else {
+      const recipientName = this.shareChannelOrUser;
+      if (!recipientName) { this.showToast('Please select a recipient.', 'warn'); return; }
       this.showShareModal = false;
-      this.showToast(`Message sent to ${this.shareChannelOrUser || 'user'}`, 'success');
-      if (task && this.shareChannelOrUser) this.notifService.add(`Task shared`, `"${task.title}" sent to ${this.shareChannelOrUser}`, this.shareChannelOrUser, task.id);
+      this.sendShareDm(recipientName, task, this.shareNote, 'Task update');
     }
     this.shareNote = '';
     this.shareChannelId = null;

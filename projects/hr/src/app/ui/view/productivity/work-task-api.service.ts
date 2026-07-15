@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 export type WorkTaskStatus = 'TO_DO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
@@ -431,6 +431,36 @@ export class WorkTaskApiService {
       { channelId, senderUserId: userId, content, messageType: 'TEXT' },
       { headers })
       .pipe(catchError(this.handleError));
+  }
+
+  getOrCreateDmChannel(senderUserId: number, recipientUserId: number): Observable<any> {
+    const uid1 = Math.min(senderUserId, recipientUserId);
+    const uid2 = Math.max(senderUserId, recipientUserId);
+    const dmName = `dm-${uid1}-${uid2}`;
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') || sessionStorage.getItem('accessToken') || '';
+    const tenantId = sessionStorage.getItem('tenantId') || 'default';
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}`, 'X-Tenant-ID': tenantId, 'Content-Type': 'application/json' });
+    return this.http.get<any[]>('https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel', { headers }).pipe(
+      switchMap(channels => {
+        const existing = (channels || []).find((c: any) => c.name === dmName);
+        if (existing) return of(existing);
+        return this.http.post<any>(
+          'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel',
+          { name: dmName, channelType: 'PRIVATE', createdBy: senderUserId, description: `DM between ${uid1} and ${uid2}` },
+          { headers }
+        ).pipe(
+          switchMap(channel => {
+            const channelId = channel.id ?? channel.channelId;
+            return this.http.post<any>(
+              'https://be.optimaxsuites.com/x/api/v2/ai/collab/chat/channel-member',
+              { channelId, userId: recipientUserId, role: 'MEMBER' },
+              { headers }
+            ).pipe(catchError(() => of(null)), map(() => channel));
+          })
+        );
+      }),
+      catchError(this.handleError)
+    );
   }
 
   createCollabFeedPost(channelId: number, body: string): Observable<any> {
