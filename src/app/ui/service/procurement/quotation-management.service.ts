@@ -474,7 +474,12 @@ export class QuotationManagementService {
   // Get all quotations for an RFQ
   getQuotationsForRFQ(rfqId: string): Observable<RFQWithQuotations> {
     this.reloadFromStorage();
-    const matchingQuotes = this.quotations.filter(
+    // Merge in live vendor-submitted quotations (from the shared vendor-portal
+    // store), not just procurement's own local/demo quotations — otherwise a
+    // real quotation the vendor submitted never appears here, "accepting" it
+    // silently operates on local mock data instead of the shared record, and
+    // the LPO generated from it never reaches the vendor portal.
+    const matchingQuotes = [...this.quotations, ...this.getLiveQuotationsForRfq(rfqId)].filter(
       q => q.rfqId.toLowerCase() === rfqId.toLowerCase()
     );
 

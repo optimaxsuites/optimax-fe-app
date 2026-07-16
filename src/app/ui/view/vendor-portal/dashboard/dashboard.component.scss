@@ -41,53 +41,65 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.22rem 0.6rem;
+  padding: 0.28rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: capitalize;
   white-space: nowrap;
+  line-height: 1.3;
+  border: 1px solid transparent;
 
   &-open {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
   }
   &-converted {
-    background: #f0fdf4;
-    color: #16a34a;
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
   }
   &-expired {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
   }
   &-closed {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: #e5e7eb;
+    color: #374151;
+    border-color: #d1d5db;
   }
   &-draft {
-    background: #fffbeb;
-    color: #d97706;
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
   }
   &-sent {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
   }
   &-accepted {
-    background: #f0fdf4;
-    color: #16a34a;
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
   }
   &-rejected {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
   }
   &-revision_requested {
-    background: #fff7ed;
-    color: #ea580c;
+    background: #ffedd5;
+    color: #c2410c;
+    border-color: #fed7aa;
   }
   &-withdrawn {
-    background: #f3f4f6;
-    color: #6b7280;
+    background: #e5e7eb;
+    color: #374151;
+    border-color: #d1d5db;
   }
 }
 
@@ -95,25 +107,29 @@
 .item-tag {
   display: inline-flex;
   align-items: center;
-  padding: 0.1rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 9999px;
-  font-size: 0.63rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
+  border: 1px solid transparent;
 
   &-partial {
-    background: #fffbeb;
-    color: #d97706;
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
   }
   &-substitute {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
   }
   &-unavailable {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
   }
 }
 

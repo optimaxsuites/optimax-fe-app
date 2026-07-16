@@ -169,7 +169,7 @@
                 <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-amber-500 shrink-0 ring-2 ring-amber-100"></span>
                 <div>
                   <p class="font-semibold text-[#1a2c35] text-sm">{{ row.lpoNumber }}</p>
-                  <p *ngIf="row.quotationNumber" class="text-[10px] text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
+                  <p *ngIf="row.quotationNumber" class="text-xs text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
                 </div>
               </div>
             </td>
@@ -177,7 +177,7 @@
             <!-- 2. Client + RFQ ref -->
             <td>
               <p class="text-sm text-[#1a2c35]">{{ row.clientName }}</p>
-              <p *ngIf="row.rfqNumber" class="text-[10px] text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
+              <p *ngIf="row.rfqNumber" class="text-xs text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
             </td>
 
             <!-- 3. Delivery date -->
@@ -213,7 +213,7 @@
             <!-- 1. Invoice No. + LPO ref -->
             <td class="app-table-main-col">
               <p class="font-semibold text-[#1a2c35] text-sm">{{ row.invoiceNumber }}</p>
-              <p *ngIf="row.lpoNumber" class="text-[10px] text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
+              <p *ngIf="row.lpoNumber" class="text-xs text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
             </td>
 
             <!-- 2. Client -->
@@ -259,10 +259,10 @@
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
           <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
             <span [ngClass]="lpoBadge(selectedLpo.status)">{{ selectedLpo.status }}</span>
           </div>
-          <p class="text-xs text-[#5a7380]">
+          <p class="text-sm text-[#5a7380]">
             {{ selectedLpo.clientName }}<span *ngIf="selectedLpo.clientEmail"> · {{ selectedLpo.clientEmail }}</span>
           </p>
         </div>
@@ -273,7 +273,7 @@
       <!-- Where this sits in the pipeline -->
       <div class="flex items-center gap-1.5 mb-3">
         <ng-container *ngFor="let s of lpoLifecycleStages(selectedLpo); let last = last">
-          <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
             [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
             [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
             [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
@@ -281,13 +281,13 @@
           <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
         </ng-container>
       </div>
-      <p class="text-xs text-[#5a7380] mb-3" *ngIf="selectedLpo.quotationNumber || selectedLpo.rfqNumber">
+      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedLpo.quotationNumber || selectedLpo.rfqNumber">
         Raised from
         <strong class="text-[#1a2c35]" *ngIf="selectedLpo.quotationNumber">Quotation {{ selectedLpo.quotationNumber }}</strong>
         <span *ngIf="selectedLpo.quotationNumber && selectedLpo.rfqNumber"> · </span>
         <strong class="text-[#1a2c35]" *ngIf="selectedLpo.rfqNumber">RFQ {{ selectedLpo.rfqNumber }}</strong>
       </p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.issuedDate) }}</strong></span>
         <span [class.text-red-600]="isExpired(selectedLpo.deliveryDate)"
               [class.text-amber-600]="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"
@@ -316,24 +316,24 @@
 
       <!-- Special conditions -->
       <div *ngIf="selectedLpo.specialConditions">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Special Conditions</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Special Conditions</h3>
         <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedLpo.specialConditions }}</div>
       </div>
 
       <!-- Delivery info -->
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Delivery Details</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Delivery Details</h3>
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2 flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Delivery Address</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Delivery Address</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.deliveryAddress }}</span>
           </div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Payment Terms</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Payment Terms</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</span>
           </div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Currency</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Currency</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.currency }}</span>
           </div>
         </div>
@@ -341,28 +341,28 @@
 
       <!-- Items -->
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
         <div class="flex flex-col gap-2">
           <div *ngFor="let item of selectedLpo.items; let i = index"
-            class="border border-[#e6edf2] rounded-xl p-3.5 flex items-center gap-3">
+            class="border border-[#e6edf2] rounded-xl p-4 flex items-center gap-3">
             <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-[#1a2c35]">{{ item.name }}</p>
-              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.description }}</p>
-              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
+              <p class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
             </div>
-            <span class="text-sm font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
+            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Totals -->
       <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
-        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
           <span class="text-[#1a2c35]">Total</span>
-          <span class="text-base text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
+          <span class="text-lg text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
         </div>
       </div>
 
@@ -426,10 +426,10 @@
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
           <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedInvoice.invoiceNumber }}</h2>
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedInvoice.invoiceNumber }}</h2>
             <span [ngClass]="invoiceBadge(selectedInvoice.status)">{{ selectedInvoice.status }}</span>
           </div>
-          <p class="text-xs text-[#5a7380]">
+          <p class="text-sm text-[#5a7380]">
             {{ selectedInvoice.clientName }}<span *ngIf="selectedInvoice.clientEmail"> · {{ selectedInvoice.clientEmail }}</span>
           </p>
         </div>
@@ -439,20 +439,20 @@
       </div>
       <div class="flex items-center gap-1.5 mb-3">
         <ng-container *ngFor="let s of invoiceLifecycleStages(selectedInvoice); let last = last">
-          <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
             [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
             [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
             [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
           <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
         </ng-container>
       </div>
-      <p class="text-xs text-[#5a7380] mb-3" *ngIf="selectedInvoice.lpoNumber || selectedInvoice.quotationNumber">
+      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedInvoice.lpoNumber || selectedInvoice.quotationNumber">
         Billed from
         <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.lpoNumber">LPO {{ selectedInvoice.lpoNumber }}</strong>
         <span *ngIf="selectedInvoice.lpoNumber && selectedInvoice.quotationNumber"> · </span>
         <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.quotationNumber">Quotation {{ selectedInvoice.quotationNumber }}</strong>
       </p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5a7380]">
         <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedInvoice.issuedDate) }}</strong></span>
         <span [class.text-red-500]="selectedInvoice.status==='overdue'">Due <strong>{{ fmtDate(selectedInvoice.dueDate) }}</strong></span>
         <span *ngIf="selectedInvoice.paidDate">Paid <strong class="text-green-600">{{ fmtDate(selectedInvoice.paidDate) }}</strong></span>
@@ -464,7 +464,7 @@
 
       <!-- Payment progress bar -->
       <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4">
-        <div class="flex justify-between text-xs text-[#5a7380] mb-2">
+        <div class="flex justify-between text-sm text-[#5a7380] mb-2">
           <span>Payment progress</span>
           <span><strong class="text-[#1a2c35]">{{ paymentProgress(selectedInvoice) }}%</strong> paid</span>
         </div>
@@ -475,7 +475,7 @@
             [class.bg-amber-400]="selectedInvoice.status!=='paid' && paymentProgress(selectedInvoice)>0"
             [class.bg-[#e6edf2]]="paymentProgress(selectedInvoice)===0"></div>
         </div>
-        <div class="flex justify-between text-xs mt-2">
+        <div class="flex justify-between text-sm mt-2">
           <span class="text-green-600 font-medium">Paid: {{ fmtCurrency(selectedInvoice.amountPaid, selectedInvoice.currency) }}</span>
           <span *ngIf="selectedInvoice.amountOutstanding > 0" class="text-amber-600 font-medium">Outstanding: {{ fmtCurrency(selectedInvoice.amountOutstanding, selectedInvoice.currency) }}</span>
         </div>
@@ -483,42 +483,42 @@
 
       <!-- Line items -->
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Line Items</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Line Items</h3>
         <div class="flex flex-col gap-2">
           <div *ngFor="let item of selectedInvoice.items"
-            class="flex items-start justify-between gap-3 border border-[#e6edf2] rounded-xl p-3.5">
+            class="flex items-start justify-between gap-3 border border-[#e6edf2] rounded-xl p-4">
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-[#1a2c35]">{{ item.description }}</p>
-              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
             </div>
-            <span class="text-sm font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
+            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Totals -->
       <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
-        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
-          <span>Total</span><span class="text-[#224957] text-base">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <span>Total</span><span class="text-[#224957] text-lg">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span>
         </div>
       </div>
 
       <!-- Bank details -->
       <div *ngIf="selectedInvoice.bankDetails">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Payment Details</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Payment Details</h3>
         <div class="border border-[#e6edf2] rounded-xl p-4 grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Bank</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Bank</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.bankName }}</span>
           </div>
           <div class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Account Name</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Name</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.accountName }}</span>
           </div>
           <div class="flex flex-col gap-0.5 col-span-2">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Account Number</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Number</span>
             <span class="text-sm text-[#1a2c35] font-medium font-mono tracking-wider">{{ selectedInvoice.bankDetails.accountNumber }}</span>
           </div>
         </div>
@@ -526,7 +526,7 @@
 
       <!-- Notes -->
       <div *ngIf="selectedInvoice.notes">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Notes</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes</h3>
         <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedInvoice.notes }}</p>
       </div>
 
@@ -556,8 +556,8 @@
       <!-- Head -->
       <div class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#eef2f6]">
         <div>
-          <h2 class="text-base font-bold text-[#1a2c35]">{{ invoiceForm.invoiceNumber }}</h2>
-          <p class="text-xs text-[#5a7380] mt-0.5">
+          <h2 class="text-lg font-bold text-[#1a2c35]">{{ invoiceForm.invoiceNumber }}</h2>
+          <p class="text-sm text-[#5a7380] mt-0.5">
             New invoice<span *ngIf="invoiceForm.lpoNumber"> · From LPO {{ invoiceForm.lpoNumber }}</span>
           </p>
         </div>
@@ -568,7 +568,7 @@
 
       <div *ngIf="sourceLpo" class="flex items-start gap-2.5 mx-6 mt-4 px-4 py-3 bg-[#e8f2f7] border border-[#c4dce8] rounded-xl">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[#224957] shrink-0 mt-0.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <p class="text-xs text-[#224957] leading-relaxed">
+        <p class="text-sm text-[#224957] leading-relaxed">
           Raised against <strong>{{ sourceLpo.lpoNumber }}</strong>. Description and unit price are locked to the LPO; quantity can be reduced for a partial/staged delivery.
           <span *ngIf="excludedFullyInvoicedCount > 0"> {{ excludedFullyInvoicedCount }} item{{ excludedFullyInvoicedCount > 1 ? 's' : '' }} already fully invoiced and left off this draft.</span>
         </p>
@@ -580,14 +580,14 @@
         <!-- Client + Due date row -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Client Name <span class="text-red-500">*</span></label>
+            <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Client Name <span class="text-red-500">*</span></label>
             <input type="text" [(ngModel)]="invoiceForm.clientName" placeholder="Client name"
               class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none transition-all focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10"
               [class.border-red-400]="invoiceFormErrors['clientName']" [class.border-[#e6edf2]]="!invoiceFormErrors['clientName']" />
             <p *ngIf="invoiceFormErrors['clientName']" class="text-xs text-red-500 mt-1">{{ invoiceFormErrors['clientName'] }}</p>
           </div>
           <div>
-            <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Due Date</label>
+            <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Due Date</label>
             <input type="date" [(ngModel)]="invoiceForm.dueDate"
               class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10" />
           </div>
@@ -596,7 +596,7 @@
         <!-- Line items -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold text-[#5a7380] uppercase tracking-wide">Line Items <span class="text-red-500">*</span></label>
+            <label class="text-xs font-semibold text-[#5a7380] uppercase tracking-wide">Line Items <span class="text-red-500">*</span></label>
             <button (click)="addInvoiceItem()"
               class="flex items-center gap-1 text-xs font-semibold text-[#224957] hover:text-[#2d6478] transition-colors">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -607,7 +607,7 @@
 
           <div class="flex flex-col gap-2">
             <div *ngFor="let item of invoiceForm.items; let i = index"
-              class="border rounded-xl p-3.5 flex gap-3 items-start"
+              class="border rounded-xl p-4 flex gap-3 items-start"
               [class.border-[#e6edf2]]="!isLockedItem(item)"
               [class.border-[#c4dce8]]="isLockedItem(item)"
               [class.bg-[#f9fcfd]]="isLockedItem(item)">
@@ -616,11 +616,11 @@
                   <input *ngIf="!isLockedItem(item)" type="text" [(ngModel)]="item.description" placeholder="Description"
                     class="flex-1 border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none focus:border-[#224957]" />
                   <p *ngIf="isLockedItem(item)" class="flex-1 text-sm font-medium text-[#1a2c35] px-1 py-1">{{ item.description }}</p>
-                  <span *ngIf="isLockedItem(item)" class="shrink-0 text-[9px] font-bold uppercase tracking-wide text-[#224957] bg-[#e8f2f7] px-1.5 py-0.5 rounded">From LPO</span>
+                  <span *ngIf="isLockedItem(item)" class="shrink-0 text-xs font-bold uppercase tracking-wide text-[#224957] bg-[#e8f2f7] px-1.5 py-0.5 rounded">From LPO</span>
                 </div>
                 <div class="flex gap-2">
                   <div class="flex-1">
-                    <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide block mb-1">
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">
                       Qty <span *ngIf="isLockedItem(item)">(max {{ maxQtyForItem(item) }})</span>
                     </span>
                     <input type="number" [value]="item.quantity" (change)="updateItemQty(item, $any($event.target).value)"
@@ -628,12 +628,12 @@
                       min="1" [attr.max]="maxQtyForItem(item)" />
                   </div>
                   <div class="flex-1">
-                    <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide block mb-1">Unit</span>
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">Unit</span>
                     <input type="text" [(ngModel)]="item.unit" placeholder="pcs" [disabled]="isLockedItem(item)"
                       class="w-full border border-[#e6edf2] rounded-lg px-3 py-1.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none focus:border-[#224957] disabled:opacity-70 disabled:cursor-not-allowed" />
                   </div>
                   <div class="flex-1">
-                    <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide block mb-1">Unit Price</span>
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">Unit Price</span>
                     <input type="text" inputmode="decimal" [value]="fmtNumber(item.unitPrice)" (change)="updateItemPrice(item, $any($event.target).value)"
                       [disabled]="isLockedItem(item)"
                       class="w-full border border-[#e6edf2] rounded-lg px-3 py-1.5 text-sm font-semibold text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] disabled:opacity-70 disabled:cursor-not-allowed" />
@@ -659,8 +659,8 @@
         <div class="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#e6edf2] bg-[#f9fafb]">
           <div class="min-w-0">
             <p class="text-sm font-medium text-[#1a2c35]">Include my signature</p>
-            <p class="text-[10px] text-[#9ab0bb]" *ngIf="profile?.signatureDataUrl">Uses the signature saved in your profile</p>
-            <p class="text-[10px] text-amber-600" *ngIf="!profile?.signatureDataUrl">No saved signature yet — set one up in Profile → Your Signature</p>
+            <p class="text-xs text-[#9ab0bb]" *ngIf="profile?.signatureDataUrl">Uses the signature saved in your profile</p>
+            <p class="text-xs text-amber-600" *ngIf="!profile?.signatureDataUrl">No saved signature yet — set one up in Profile → Your Signature</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <img *ngIf="profile?.signatureDataUrl" [src]="profile?.signatureDataUrl" class="h-7 object-contain" />
@@ -674,7 +674,7 @@
 
         <!-- Notes -->
         <div>
-          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Notes</label>
+          <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Notes</label>
           <textarea [(ngModel)]="invoiceForm.notes" rows="2" placeholder="Payment instructions, additional notes…"
             class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] resize-none outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans"></textarea>
         </div>
@@ -684,17 +684,17 @@
       <!-- Footer with totals + actions -->
       <div class="flex items-end justify-between gap-4 px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] rounded-b-2xl flex-wrap">
         <div class="flex flex-col gap-1 min-w-[200px]">
-          <div class="flex justify-between gap-8 text-xs text-[#5a7380]">
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]">
             <span>Subtotal</span>
             <span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(invoiceForm.subtotal || 0, invoiceForm.currency || 'NGN') }}</span>
           </div>
-          <div class="flex justify-between gap-8 text-xs text-[#5a7380]">
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]">
             <span>VAT (7.5%)</span>
             <span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(invoiceForm.tax || 0, invoiceForm.currency || 'NGN') }}</span>
           </div>
-          <div class="flex justify-between gap-8 text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <div class="flex justify-between gap-8 text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
             <span class="text-[#1a2c35]">Total</span>
-            <span class="text-base text-[#224957]">{{ fmtCurrency(invoiceForm.total || 0, invoiceForm.currency || 'NGN') }}</span>
+            <span class="text-lg text-[#224957]">{{ fmtCurrency(invoiceForm.total || 0, invoiceForm.currency || 'NGN') }}</span>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -747,12 +747,12 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-[#1a2c35]">Reject LPO</h3>
-            <p class="text-xs text-[#5a7380]">{{ lpoToReject.lpoNumber }} · {{ lpoToReject.clientName }}</p>
+            <p class="text-sm text-[#5a7380]">{{ lpoToReject.lpoNumber }} · {{ lpoToReject.clientName }}</p>
           </div>
         </div>
       </div>
       <div class="px-6 py-5">
-        <label class="block text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Reason for rejection <span class="text-red-500">*</span></label>
+        <label class="block text-xs font-bold uppercase tracking-[0.05em] text-[#5a7380] mb-1.5">Reason for rejection <span class="text-red-500">*</span></label>
         <textarea [(ngModel)]="rejectionReason" (input)="rejectionError = false" rows="4"
           placeholder="Explain why you are rejecting this LPO — this will be visible to the client…"
           class="w-full border rounded-xl px-4 py-3 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-none outline-none transition-all font-sans"
