@@ -253,7 +253,7 @@ export class VendorService {
   getRfqs(): Observable<Rfq[]> {
     this.loadRfqs();
     return this.rfqs$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
   markRfqAsRead(id: string): void {
@@ -310,7 +310,7 @@ export class VendorService {
   getQuotations(): Observable<Quotation[]> {
     this.loadQuotations();
     return this.quotations$.pipe(
-      map((l) => [...l].sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())),
     );
   }
   createQuotationFromRfq(rfq: Rfq): Quotation {
@@ -642,7 +642,7 @@ export class VendorService {
   getLpos(): Observable<Lpo[]> {
     this.loadLpos();
     return this.lpos$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
   markLpoAsRead(id: string): void {
@@ -736,7 +736,7 @@ export class VendorService {
   // ── Finance ───────────────────────────────────────────────────────────────────
   getInvoices(): Observable<Invoice[]> {
     return this.invoices$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
 
@@ -752,7 +752,7 @@ export class VendorService {
         ? Math.round(
           paid.reduce((s, i) => {
             const days = i.paidDate
-              ? (i.paidDate.getTime() - i.issuedDate.getTime()) / (1000 * 60 * 60 * 24)
+              ? (new Date(i.paidDate).getTime() - new Date(i.issuedDate).getTime()) / (1000 * 60 * 60 * 24)
               : 0;
             return s + days;
           }, 0) / paid.length,
@@ -776,7 +776,7 @@ export class VendorService {
   // ── Documents ─────────────────────────────────────────────────────────────────
   getDocuments(): Observable<VendorDocument[]> {
     return this.documents$.pipe(
-      map((l) => [...l].sort((a, b) => b.uploadedDate.getTime() - a.uploadedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime())),
     );
   }
 

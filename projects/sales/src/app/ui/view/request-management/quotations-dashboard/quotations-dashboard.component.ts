@@ -541,7 +541,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewQuotationDetail(quotationId: string): void {
-    this.router.navigate(['/commerce/quotations', quotationId]);
+    this.router.navigate(['/admin/sales/commerce/quotations', quotationId]);
   }
 
   getStatusBadgeClass(status: string): string {
