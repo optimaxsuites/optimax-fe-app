@@ -221,12 +221,15 @@ export class VendorService {
    *  data inline rather than subscribing — always current, since they share
    *  this same singleton instance. */
   getRfqsSnapshot(): Rfq[] {
+    this.loadRfqs();
     return this.rfqs$$.getValue();
   }
   getQuotationsSnapshot(): Quotation[] {
+    this.loadQuotations();
     return this.quotations$$.getValue();
   }
   getLposSnapshot(): Lpo[] {
+    this.loadLpos();
     return this.lpos$$.getValue();
   }
 
