@@ -509,7 +509,7 @@ export class LpoPreviewComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/commerce/quotations', this.quotationId]);
+    this.router.navigate(['/admin/sales/commerce/quotations', this.quotationId]);
   }
 
   formatCurrency(amount: number): string {
