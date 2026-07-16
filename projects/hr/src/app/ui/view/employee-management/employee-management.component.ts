@@ -629,9 +629,11 @@ handleDateClick(arg: DateClickArg) {
   }
 
   private dispatchWelcomeToActiveNotifications(employee: any, name: string) {
-    const companyName = 'The Company';
-    const logoUrl = '';
-    const hrEmail = '';
+    let business: any = {};
+    try { business = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
+    const companyName = business?.companyName || 'The Company';
+    const logoUrl = business?.logoUrl || '';
+    const hrEmail = business?.contactEmail || business?.email || '';
     const subject = `Welcome to ${companyName}! 🎉`;
     const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
 
@@ -763,7 +765,7 @@ handleDateClick(arg: DateClickArg) {
           const existingUserId = userData?.id ?? userData?.userId;
           if (existingUserId) this.linkUserIdToEmployee(employee, existingUserId);
           this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
-            next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
+            next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email),
             error: (e) => {
               delete this.resendingOnboardingIds[idKey];
               this.messageService.add({ severity: 'error', summary: 'Error', detail: e?.error?.message || 'Failed to reset password.', key: 'tl', life: 4000 });
@@ -776,7 +778,7 @@ handleDateClick(arg: DateClickArg) {
           this.authenticationService.userRegistrationByAdmin(signupPayload).subscribe({
             next: (newUserData) => {
               this.linkUserIdToEmployee(employee, newUserData?.id);
-              this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword);
+              this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email);
             },
             error: (err) => {
               delete this.resendingOnboardingIds[idKey];
@@ -791,7 +793,7 @@ handleDateClick(arg: DateClickArg) {
     // User account exists — reset password and resend
     this.resendingOnboardingIds[idKey] = true;
     this.authenticationService.resetPasswordByAdmin(email, newPassword).subscribe({
-      next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword),
+      next: () => this.dispatchOnboardingEmail(employee, idKey, name, username, newPassword, email),
       error: (err) => {
         delete this.resendingOnboardingIds[idKey];
         const msg = err?.error?.message || err?.message || 'Failed to reset password.';
@@ -814,14 +816,17 @@ handleDateClick(arg: DateClickArg) {
     this.employeeService.updateEmployee(payload, employee.id).subscribe();
   }
 
-  private dispatchOnboardingEmail(employee: any, idKey: number, name: string, username: string, password: string) {
-    const companyName = 'The Company';
-    const hrEmail = '';
+  private dispatchOnboardingEmail(employee: any, idKey: number, name: string, username: string, password: string, resolvedEmail?: string) {
+    let business: any = {};
+    try { business = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
+    const companyName = business?.companyName || 'The Company';
+    const hrEmail = business?.contactEmail || business?.email || '';
+    const toEmail = resolvedEmail || employee?.workEmail || employee?.email || '';
     const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
 
     const subject = `${companyName} — Your Onboarding Credentials`;
     const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
-    this.employeeService.sendNotificationEmail(employee.email, subject, htmlBody).subscribe({
+    this.employeeService.sendNotificationEmail(toEmail, subject, htmlBody).subscribe({
       next: () => {
         delete this.resendingOnboardingIds[idKey];
         this.resendCredentials = null;

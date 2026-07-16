@@ -15,21 +15,56 @@
       <span class="ai-chip__icon"><i class="pi pi-sparkles"></i></span>
       <span *ngIf="aiLoading" class="ai-chip__shimmer"></span>
       <span *ngIf="!aiLoading && aiInsight" class="ai-chip__text">{{ aiInsight }}</span>
-      <span *ngIf="!aiLoading && !aiInsight" class="ai-chip__text ai-chip__text--muted">AI insights</span>
+      <span *ngIf="!aiLoading && !aiInsight" class="ai-chip__text ai-chip__text--muted">AI Assistant</span>
     </button>
 
     <p-overlayPanel #aiPanel styleClass="ai-insight-overlay">
       <div class="aip">
+
+        <!-- Header -->
         <div class="aip__header">
-          <i class="pi pi-sparkles aip__icon"></i>
-          <span class="aip__title">AI Insight</span>
-          <span class="aip__badge">{{ companyName }}</span>
+          <div class="aip__header-left">
+            <span class="aip__header-icon-wrap"><i class="pi pi-sparkles"></i></span>
+            <div>
+              <div class="aip__title">AI Workplace Assistant</div>
+              <div class="aip__subtitle">Contextual intelligence for {{ companyName }}</div>
+            </div>
+          </div>
+          <span class="aip__model-badge">Groq</span>
         </div>
-        <p class="aip__body" *ngIf="aiInsight">{{ aiInsight }}</p>
-        <p class="aip__body aip__body--muted" *ngIf="!aiInsight && !aiLoading">No insight available right now.</p>
+
+        <!-- Loading state -->
+        <div class="aip__loading" *ngIf="aiLoading">
+          <div class="aip__loading-bar"></div>
+          <span class="aip__loading-label">Generating insight…</span>
+        </div>
+
+        <!-- Insight body -->
+        <ng-container *ngIf="!aiLoading">
+          <div class="aip__insight-card" *ngIf="aiInsight">
+            <span class="aip__category-icon">{{ aiInsightIcon }}</span>
+            <p class="aip__body">{{ aiInsight }}</p>
+          </div>
+          <div class="aip__empty" *ngIf="!aiInsight">
+            <i class="pi pi-info-circle aip__empty-icon"></i>
+            <p class="aip__empty-text">No insight available.<br><small>Check connection to AI service.</small></p>
+          </div>
+        </ng-container>
+
+        <!-- Footer -->
         <div class="aip__footer">
-          <span class="aip__note"><i class="pi pi-refresh"></i> Refreshes every session</span>
+          <div class="aip__footer-left">
+            <span class="aip__powered">
+              <i class="fas fa-bolt" style="font-size:9px;margin-right:3px;color:#f59e0b"></i>
+              Powered by Groq · {{ aiModel }}
+            </span>
+            <span class="aip__timestamp" *ngIf="aiInsightTime">{{ aiInsightTime }}</span>
+          </div>
+          <button type="button" class="aip__refresh-btn" [disabled]="aiLoading" (click)="refreshAiInsight(); $event.stopPropagation()" title="Refresh insight">
+            <i class="pi pi-refresh" [class.pi-spin]="aiLoading"></i>
+          </button>
         </div>
+
       </div>
     </p-overlayPanel>
   </div>

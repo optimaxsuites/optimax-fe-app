@@ -39,6 +39,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   aiInsight = '';
   aiLoading = true;
   showAiPanel = false;
+  aiModel = 'llama-4-scout';
+  aiInsightTime = '';
+  aiInsightIcon = '💡';
   private headerSub?: Subscription;
   private avatarListener = (e: Event) => {
     const url = (e as CustomEvent).detail?.avatarUrl || '';
@@ -164,8 +167,41 @@ export class NavbarComponent implements OnInit, OnDestroy {
     } catch {}
   }
 
+  refreshAiInsight(): void {
+    sessionStorage.removeItem('optimax_ai_insight');
+    this.loadAiInsight();
+  }
+
+  private pickInsightIcon(text: string): string {
+    const t = text.toLowerCase();
+    if (/payroll|salary|pay|remit/.test(t)) return '💰';
+    if (/leave|absence|holiday/.test(t)) return '🏖️';
+    if (/recruit|hire|candidate|applicant/.test(t)) return '🎯';
+    if (/task|deadline|overdue/.test(t)) return '⏰';
+    if (/team|collaborate|meeting/.test(t)) return '👥';
+    if (/report|analytic|review/.test(t)) return '📊';
+    if (/train|skill|learn/.test(t)) return '📚';
+    if (/approve|pending|action/.test(t)) return '✅';
+    return '💡';
+  }
+
   private loadAiInsight(): void {
+    // Use cached insight within the same session unless explicitly refreshed
+    const cached = sessionStorage.getItem('optimax_ai_insight');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        this.aiInsight = parsed.text || '';
+        this.aiModel = parsed.model || 'llama-4-scout';
+        this.aiInsightTime = parsed.time || '';
+        this.aiInsightIcon = this.pickInsightIcon(this.aiInsight);
+        this.aiLoading = false;
+        return;
+      } catch {}
+    }
+
     this.aiLoading = true;
+    this.aiInsight = '';
     try {
       const raw = sessionStorage.getItem('userRegData');
       const user = raw ? JSON.parse(raw) : {};
@@ -186,8 +222,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
       ).subscribe({
         next: (res) => {
           const text = (res?.response || res?.executiveSummary || '').replace(/[*#_`]/g, '').trim();
-          this.aiInsight = text.split(/[.\n]/)[0].trim();
+          const insight = text.split(/[.\n]/)[0].trim();
+          const modelUsed = res?.model || 'llama-4-scout';
+          const now = new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+          this.aiInsight = insight;
+          this.aiModel = modelUsed.includes('8b') ? 'llama-3.1-8b' : modelUsed.includes('scout') ? 'llama-4-scout' : modelUsed;
+          this.aiInsightTime = `Generated at ${now}`;
+          this.aiInsightIcon = this.pickInsightIcon(insight);
           this.aiLoading = false;
+          try {
+            sessionStorage.setItem('optimax_ai_insight', JSON.stringify({
+              text: insight, model: this.aiModel, time: this.aiInsightTime
+            }));
+          } catch {}
         },
         error: () => {
           this.aiInsight = '';
