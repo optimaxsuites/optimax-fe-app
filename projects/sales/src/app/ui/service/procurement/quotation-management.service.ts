@@ -11,6 +11,7 @@ import {
   QuotationHistoryEntry,
   QuotationHistoryAction,
   MAX_QUOTATION_REVISIONS,
+  ProcurementRequest,
 } from '../../domain/procurement-request/procurement.dto';
 import { PROCUREMENT_STORAGE_KEYS, loadFromStorage, saveToStorage } from './procurement-store.util';
 import { VendorService } from '../vendor-portal/vendor.service';
@@ -31,11 +32,11 @@ export class QuotationManagementService {
   // history are always concrete values, whether it just arrived from
   // long-untouched legacy storage or is brand new seed data — see
   // normalizeQuotation() below.
-  private quotations: VendorQuotation[] = this.normalizeAll(
-    loadFromStorage(PROCUREMENT_STORAGE_KEYS.QUOTATIONS, () => this.buildDefaultQuotations()),
-  );
+  private quotations: VendorQuotation[] = [];
 
-  constructor(private http: HttpClient, private vendorService: VendorService) { }
+  constructor(private http: HttpClient, private vendorService: VendorService) {
+    this.reloadFromStorage();
+  }
 
   /**
    * Quotations that actually came from the connected vendor portal (as
@@ -46,16 +47,18 @@ export class QuotationManagementService {
    */
   private getLiveQuotationsForRfq(rfqId: string): VendorQuotation[] {
     const lpos = this.vendorService.getLposSnapshot();
+    const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
     return this.vendorService.getQuotationsSnapshot()
       .filter(q => q.rfqId === rfqId && q.status !== 'draft')
-      .map(q => sharedQuotationToVendorQuotation(q, lpos.some(l => l.quotationId === q.id)));
+      .map(q => sharedQuotationToVendorQuotation(q, lpos.some(l => l.quotationId === q.id), undefined, requests));
   }
 
   private getAllLiveQuotations(): VendorQuotation[] {
     const lpos = this.vendorService.getLposSnapshot();
+    const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
     return this.vendorService.getQuotationsSnapshot()
       .filter(q => q.status !== 'draft')
-      .map(q => sharedQuotationToVendorQuotation(q, lpos.some(l => l.quotationId === q.id)));
+      .map(q => sharedQuotationToVendorQuotation(q, lpos.some(l => l.quotationId === q.id), undefined, requests));
   }
 
   private findLiveQuotation(quotationId: string) {
@@ -443,9 +446,29 @@ export class QuotationManagementService {
   }
 
   private reloadFromStorage(): void {
-    this.quotations = this.normalizeAll(
-      loadFromStorage(PROCUREMENT_STORAGE_KEYS.QUOTATIONS, () => this.buildDefaultQuotations()),
+    const rawQuotations = loadFromStorage<VendorQuotation[]>(
+      PROCUREMENT_STORAGE_KEYS.QUOTATIONS,
+      () => this.buildDefaultQuotations(),
     );
+    const requests = loadFromStorage<ProcurementRequest[]>(
+      PROCUREMENT_STORAGE_KEYS.REQUESTS,
+      () => [],
+    );
+
+    this.quotations = this.normalizeAll(rawQuotations).map((q) => {
+      const match = requests.find((r) => r.id === q.rfqId);
+      if (match) {
+        const mappedItems = q.items.map((item) => {
+          const origItem = match.items.find((i) => i.id === item.id);
+          return {
+            ...item,
+            name: origItem ? origItem.name : item.name,
+          };
+        });
+        return { ...q, rfqTitle: match.title, items: mappedItems };
+      }
+      return q;
+    });
   }
 
   // Get all quotations for an RFQ
@@ -509,6 +532,16 @@ export class QuotationManagementService {
 
   // Get detailed quotation by ID
   getQuotationDetail(quotationId: string): Observable<VendorQuotation> {
+    if (isLiveQuotationId(quotationId)) {
+      const realId = fromLiveId(quotationId);
+      const liveQ = this.vendorService.getQuotationsSnapshot().find(q => q.id === realId);
+      if (liveQ) {
+        const lpos = this.vendorService.getLposSnapshot();
+        const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
+        const mapped = sharedQuotationToVendorQuotation(liveQ, lpos.some(l => l.quotationId === liveQ.id), undefined, requests);
+        return of(mapped).pipe(delay(100));
+      }
+    }
     this.reloadFromStorage();
     const found = this.quotations.find(q => q.id === quotationId);
     if (!found) {
@@ -525,6 +558,25 @@ export class QuotationManagementService {
       if (!result.ok) {
         return throwError(() => new Error(result.reason ?? 'Unable to accept this quotation.'));
       }
+
+      // Update the procurement request in storage!
+      const liveQ = this.vendorService.getQuotationsSnapshot().find(q => q.id === realId);
+      if (liveQ) {
+        const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
+        const reqIdx = requests.findIndex(r => r.id === liveQ.rfqId);
+        if (reqIdx !== -1) {
+          requests[reqIdx] = {
+            ...requests[reqIdx],
+            status: 'VENDOR_SELECTED',
+            selectedQuotationId: quotationId,
+            selectedVendorId: liveQ.vendorId || '',
+            selectedVendorName: liveQ.vendorName || '',
+            updatedAt: new Date()
+          };
+          saveToStorage(PROCUREMENT_STORAGE_KEYS.REQUESTS, requests);
+        }
+      }
+
       return of({ message: 'Quotation successfully accepted.' }).pipe(delay(100));
     }
 
@@ -785,7 +837,8 @@ export class QuotationManagementService {
         return throwError(() => new Error(`Quotation not found: ${quotationId}`));
       }
       const hasLpo = this.vendorService.getLposSnapshot().some(l => l.quotationId === live.id);
-      return of(sharedQuotationToVendorQuotation(live, hasLpo).history ?? []).pipe(delay(50));
+      const requests = loadFromStorage<ProcurementRequest[]>(PROCUREMENT_STORAGE_KEYS.REQUESTS, () => []);
+      return of(sharedQuotationToVendorQuotation(live, hasLpo, undefined, requests).history ?? []).pipe(delay(50));
     }
     const found = this.quotations.find(q => q.id === quotationId);
     if (!found) {

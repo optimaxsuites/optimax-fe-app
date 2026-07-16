@@ -66,6 +66,7 @@ export function fromLiveId(liveId: string): string {
 // / REJECTED / a request cancelled before ever being sent) has no business
 // on the vendor's side yet.
 const VENDOR_VISIBLE_STATUSES: ReadonlySet<RequestStatus> = new Set<RequestStatus>([
+  'APPROVED',
   'VENDORS_QUOTING',
   'VENDOR_SELECTED',
   'LPO_ISSUED',
@@ -84,11 +85,11 @@ function mapRequestStatusToRfqStatus(req: ProcurementRequest): RfqStatus {
   if (
     req.rfqExpiryDate &&
     new Date(req.rfqExpiryDate).getTime() < Date.now() &&
-    req.status === 'VENDORS_QUOTING'
+    (req.status === 'VENDORS_QUOTING' || req.status === 'APPROVED')
   ) {
     return 'expired';
   }
-  if (req.status === 'VENDORS_QUOTING') return 'open';
+  if (req.status === 'VENDORS_QUOTING' || req.status === 'APPROVED') return 'open';
   // VENDOR_SELECTED and everything after it means a quotation was accepted.
   return 'converted';
 }
@@ -188,31 +189,36 @@ export function sharedQuotationToVendorQuotation(
   q: Quotation,
   hasLpo: boolean,
   rfqTitle?: string,
+  requests: ProcurementRequest[] = [],
 ): VendorQuotation {
   const declineEntry = [...q.history].reverse().find((h) => h.action === 'REJECTED');
   const lastEntry = q.history[q.history.length - 1];
+  const matchingRequest = requests.find((r) => r.id === q.rfqId);
 
   return {
     id: toLiveId(q.id),
     rfqId: q.rfqId,
-    rfqTitle: rfqTitle ?? q.rfqNumber,
+    rfqTitle: rfqTitle ?? (matchingRequest ? matchingRequest.title : q.rfqNumber),
     vendorId: q.vendorId ?? 'vendor-001',
     vendorName: q.vendorName ?? 'Connected Vendor',
     vendorCode: q.vendorCode ?? 'VEN-LIVE',
     vendorRating: q.vendorRating ?? 4.5,
     status: mapSharedStatus(q, hasLpo),
-    items: q.items.map((item) => ({
-      id: item.rfqItemId,
-      name: item.name,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice ?? 0,
-      totalPrice: item.totalPrice ?? 0,
-      availability: ITEM_AVAILABILITY_TO_PROCUREMENT[item.availability],
-      alternativeProduct: item.substituteDescription ?? undefined,
-      availableQuantity: item.offeredQuantity ?? undefined,
-      notes: item.exceptionNote ?? undefined,
-    })),
+    items: q.items.map((item) => {
+      const origItem = matchingRequest?.items.find((i) => i.id === item.rfqItemId);
+      return {
+        id: item.rfqItemId,
+        name: origItem ? origItem.name : item.name,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice ?? 0,
+        totalPrice: item.totalPrice ?? 0,
+        availability: ITEM_AVAILABILITY_TO_PROCUREMENT[item.availability],
+        alternativeProduct: item.substituteDescription ?? undefined,
+        availableQuantity: item.offeredQuantity ?? undefined,
+        notes: item.exceptionNote ?? undefined,
+      };
+    }),
     totalAmount: q.total,
     currency: q.currency,
     deliveryTimeline: 'Per vendor terms',
