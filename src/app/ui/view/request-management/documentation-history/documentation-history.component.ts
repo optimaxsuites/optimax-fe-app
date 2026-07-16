@@ -3,6 +3,8 @@ import { ProcurementRequestService } from '../../../service/procurement/procurem
 import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { STORAGE_KEYS, loadFromStorage } from '../../../service/vendor-portal/local-store.util';
+import { PROCUREMENT_STORAGE_KEYS } from '../../../service/procurement/procurement-store.util';
 
 @Component({
   selector: 'app-documentation-history',
@@ -150,54 +152,142 @@ export class DocumentationHistoryComponent implements OnInit {
     const vendorName = request.selectedVendorName || 'Apex Tech Distributors';
     const vendorCode = request.selectedVendorId || 'VND-001';
 
-    const quoteItems = request.items.map((item, idx) => ({
-      id: `qi-${idx}`,
-      name: item.name,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: Math.round((request.totalBudget * 0.95) / item.quantity),
-      totalPrice: Math.round(request.totalBudget * 0.95)
-    }));
+    // 1. Try to load the real accepted quotation
+    const localQuotes = loadFromStorage<any[]>(PROCUREMENT_STORAGE_KEYS.QUOTATIONS, () => []);
+    const sharedQuotes = loadFromStorage<any[]>(STORAGE_KEYS.QUOTATIONS, () => []);
+    const allQuotes = [...localQuotes, ...sharedQuotes];
 
-    const totalQuoteAmount = quoteItems.reduce((acc, curr) => acc + curr.totalPrice, 0);
+    const realQuote = allQuotes.find(q => 
+      (request.selectedQuotationId && (q.id === request.selectedQuotationId || q.id === request.selectedQuotationId.replace('live:', ''))) ||
+      (q.rfqId === request.id && ['ACCEPTED', 'LPO_GENERATED', 'LPO_SENT', 'accepted'].includes(q.status))
+    );
 
-    this.mockQuotation = {
-      id: `QT-${request.id.replace('PR-', '')}`,
-      vendorName: vendorName,
-      vendorCode: vendorCode,
-      vendorRating: 4.8,
-      vendorEmail: 'sales@apextech.example',
-      vendorPhone: '+234 803 123 4567',
-      items: quoteItems,
-      totalAmount: totalQuoteAmount,
-      currency: request.currency,
-      deliveryTimeline: '5-7 business days',
-      validityDays: 30,
-      notes: 'Price includes full shipping and delivery charges.'
-    };
+    let quoteItems: any[] = [];
+    if (realQuote) {
+      quoteItems = (realQuote.items || []).map((item: any) => {
+        const origItem = request.items.find(ri => ri.id === item.rfqItemId);
+        const name = origItem ? origItem.name : (item.name || item.productName || '');
+        const unitPrice = item.unitPrice || 0;
+        const quantity = item.quantity || 0;
+        const totalPrice = item.totalPrice || (unitPrice * quantity);
+        return {
+          id: item.id || item.rfqItemId,
+          name: name,
+          description: item.description || '',
+          quantity: quantity,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice
+        };
+      });
 
-    this.mockLpo = {
-      lpoNumber: `LPO-2026-${request.id.replace('PR-', '')}`,
-      orderDate: new Date(request.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000),
-      vendorName: vendorName,
-      vendorCode: vendorCode,
-      vendorRating: 4.8,
-      vendorEmail: 'sales@apextech.example',
-      vendorPhone: '+234 803 123 4567',
-      items: quoteItems,
-      totalAmount: totalQuoteAmount,
-      currency: request.currency,
-      deliveryTimeline: '5-7 business days',
-      validityDays: 30
-    };
+      this.mockQuotation = {
+        id: realQuote.quotationNumber || realQuote.id,
+        vendorName: realQuote.vendorName || vendorName,
+        vendorCode: realQuote.vendorCode || vendorCode,
+        vendorRating: realQuote.vendorRating || 4.8,
+        vendorEmail: realQuote.vendorEmail || 'sales@apextech.example',
+        vendorPhone: realQuote.vendorPhone || '+234 803 123 4567',
+        items: quoteItems,
+        totalAmount: realQuote.total || realQuote.totalAmount || 0,
+        currency: realQuote.currency || request.currency,
+        deliveryTimeline: realQuote.deliveryTimeline || '5-7 business days',
+        validityDays: realQuote.validityDays || 30,
+        notes: realQuote.notes || 'Price includes full shipping and delivery charges.'
+      };
+    } else {
+      quoteItems = request.items.map((item, idx) => {
+        const itemBudget = item.estimatedBudget || Math.round(request.totalBudget / request.items.length);
+        return {
+          id: `qi-${idx}`,
+          name: item.name,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: Math.round((itemBudget * 0.95) / item.quantity),
+          totalPrice: Math.round(itemBudget * 0.95)
+        };
+      });
 
-    // Check if there is a real submitted invoice from the vendor portal
+      const totalQuoteAmount = quoteItems.reduce((acc, curr) => acc + curr.totalPrice, 0);
+
+      this.mockQuotation = {
+        id: `QT-${request.id.replace('PR-', '')}`,
+        vendorName: vendorName,
+        vendorCode: vendorCode,
+        vendorRating: 4.8,
+        vendorEmail: 'sales@apextech.example',
+        vendorPhone: '+234 803 123 4567',
+        items: quoteItems,
+        totalAmount: totalQuoteAmount,
+        currency: request.currency,
+        deliveryTimeline: '5-7 business days',
+        validityDays: 30,
+        notes: 'Price includes full shipping and delivery charges.'
+      };
+    }
+
+    const totalQuoteAmount = this.mockQuotation.totalAmount;
+
+    // 2. Try to load the real generated LPO
+    const lpos = loadFromStorage<any[]>(STORAGE_KEYS.LPOS, () => []);
+    const realLpo = lpos.find(l => 
+      (realQuote && (l.quotationId === realQuote.id || l.quotationId === realQuote.id.replace('live:', ''))) ||
+      l.rfqNumber === request.id
+    );
+
+    if (realLpo) {
+      const lpoItems = (realLpo.items || []).map((item: any) => {
+        const rfqItemId = item.id.replace('lpo-item-', '');
+        const origItem = request.items.find(ri => ri.id === rfqItemId);
+        const name = origItem ? origItem.name : (item.name || '');
+        return {
+          id: item.id,
+          name: name,
+          description: item.description || '',
+          quantity: item.quantity || 0,
+          unitPrice: item.unitPrice || 0,
+          totalPrice: item.totalPrice || (item.unitPrice * item.quantity)
+        };
+      });
+
+      this.mockLpo = {
+        lpoNumber: realLpo.lpoNumber,
+        orderDate: new Date(realLpo.issuedDate),
+        vendorName: realLpo.vendorName || this.mockQuotation.vendorName,
+        vendorCode: realLpo.vendorCode || this.mockQuotation.vendorCode,
+        vendorRating: realLpo.vendorRating || this.mockQuotation.vendorRating,
+        vendorEmail: realLpo.vendorEmail || this.mockQuotation.vendorEmail,
+        vendorPhone: realLpo.vendorPhone || this.mockQuotation.vendorPhone,
+        items: lpoItems,
+        totalAmount: realLpo.total || 0,
+        currency: realLpo.currency || request.currency,
+        deliveryTimeline: realLpo.deliveryTimeline || '5-7 business days',
+        validityDays: realLpo.validityDays || 30
+      };
+    } else {
+      this.mockLpo = {
+        lpoNumber: `LPO-2026-${request.id.replace('PR-', '')}`,
+        orderDate: new Date(request.createdAt.getTime() + 2 * 24 * 60 * 60 * 1000),
+        vendorName: vendorName,
+        vendorCode: vendorCode,
+        vendorRating: 4.8,
+        vendorEmail: 'sales@apextech.example',
+        vendorPhone: '+234 803 123 4567',
+        items: quoteItems,
+        totalAmount: totalQuoteAmount,
+        currency: request.currency,
+        deliveryTimeline: '5-7 business days',
+        validityDays: 30
+      };
+    }
+
+    // 3. Try to load the real submitted invoice
     let realInvoice: any = null;
     try {
-      const storedInvoices = localStorage.getItem('vendor_submitted_invoices_db');
+      const storedInvoices = localStorage.getItem('vendor_submitted_invoices_db') || localStorage.getItem(STORAGE_KEYS.INVOICES);
       if (storedInvoices) {
         const list = JSON.parse(storedInvoices);
         realInvoice = list.find((inv: any) => 
+          (realLpo && (inv.lpoId === realLpo.id || inv.lpoNumber === realLpo.lpoNumber)) ||
           inv.lpoId === `lpo-${request.id}` || 
           inv.lpoId === request.id ||
           (inv.lpoNumber && inv.lpoNumber.includes(request.id.replace('PR-', '')))
@@ -208,18 +298,39 @@ export class DocumentationHistoryComponent implements OnInit {
     }
 
     if (realInvoice) {
+      // Align items to request.items for correct parallel indexing in HTML
+      const alignedItems = request.items.map((ri: any) => {
+        const invItem = realInvoice.items.find((item: any) => 
+          item.lpoItemId && (
+            item.lpoItemId.endsWith(ri.id) || 
+            item.lpoItemId.replace('lpo-item-', '').replace('item-', '') === ri.id.replace('item-', '')
+          )
+        );
+        if (invItem) {
+          const origItem = request.items.find(x => x.id === ri.id);
+          const name = origItem ? origItem.name : (invItem.name || invItem.description || '');
+          return {
+            id: invItem.id,
+            name: name,
+            description: invItem.description || '',
+            quantity: invItem.quantity,
+            unitPrice: invItem.unitPrice,
+            totalPrice: invItem.totalPrice || (invItem.unitPrice * invItem.quantity),
+            total: invItem.totalPrice || (invItem.unitPrice * invItem.quantity)
+          };
+        }
+        return {
+          unitPrice: ri.estimatedBudget / ri.quantity,
+          totalPrice: ri.estimatedBudget,
+          total: ri.estimatedBudget
+        };
+      });
+
       this.mockInvoice = {
         invoiceNumber: realInvoice.invoiceNumber,
         orderId: request.id,
         customerName: request.customerName,
-        items: realInvoice.items.map((item: any, idx: number) => ({
-          id: item.id || `inv-item-${idx}`,
-          productName: item.name,
-          description: item.description || '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.totalPrice
-        })),
+        items: alignedItems,
         subtotal: realInvoice.subtotal,
         discountAmount: 0,
         taxAmount: realInvoice.tax,
@@ -242,8 +353,9 @@ export class DocumentationHistoryComponent implements OnInit {
           productName: item.name,
           description: item.description,
           quantity: item.quantity,
-          unitPrice: Math.round((request.totalBudget * 0.95) / item.quantity),
-          total: Math.round(request.totalBudget * 0.95)
+          unitPrice: Math.round((item.estimatedBudget || (request.totalBudget / request.items.length)) / item.quantity),
+          totalPrice: item.estimatedBudget || Math.round(request.totalBudget / request.items.length),
+          total: item.estimatedBudget || Math.round(request.totalBudget / request.items.length)
         })),
         subtotal: totalQuoteAmount,
         discountAmount: 0,

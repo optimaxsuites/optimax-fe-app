@@ -38,8 +38,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
   totalElements = 0;
   totalPages = 0;
 
-  sortField = 'rfqId';
-  sortAsc = true;
+  sortField = 'mostRecent';
+  sortAsc = false;
 
   statusOptions = [
     { value: 'ALL', label: 'All Requests' },
@@ -109,6 +109,13 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
     const groups: RFQGroup[] = [];
     groupsMap.forEach((list, rfqId) => {
+      // Sort individual quotation responses within the group by submittedAt descending (most recent first)
+      list.sort((a, b) => {
+        const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+        const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
       const rfqTitle = list[0]?.rfqTitle || 'Request for Quotation';
       const respondedCount = list.filter(q => q.status === 'SUBMITTED' || q.status === 'ACCEPTED' || q.status === 'DECLINED' || q.status === 'LPO_GENERATED' || q.status === 'LPO_SENT' || q.status === 'REVIEW_REQUESTED').length;
       groups.push({
@@ -408,6 +415,12 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     // Sort
     if (this.sortField) {
       filtered.sort((a, b) => {
+        if (this.sortField === 'mostRecent') {
+          const maxA = Math.max(...a.quotes.map(q => q.submittedAt ? new Date(q.submittedAt).getTime() : 0), 0);
+          const maxB = Math.max(...b.quotes.map(q => q.submittedAt ? new Date(q.submittedAt).getTime() : 0), 0);
+          return this.sortAsc ? maxA - maxB : maxB - maxA;
+        }
+
         let valA: any;
         let valB: any;
 

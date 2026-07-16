@@ -235,6 +235,13 @@ export class ProcurementRequestService {
     ];
   }
 
+  private reloadRequests(): void {
+    this.requests = loadFromStorage(
+      PROCUREMENT_STORAGE_KEYS.REQUESTS,
+      () => this.buildDefaultRequests(),
+    );
+  }
+
   private persistRequests(): void {
     saveToStorage(PROCUREMENT_STORAGE_KEYS.REQUESTS, this.requests);
   }
@@ -244,6 +251,7 @@ export class ProcurementRequestService {
   }
 
   getRequests(filters: RequestFilters): Observable<PaginatedResponse<ProcurementRequest>> {
+    this.reloadRequests();
     let filtered = [...this.requests];
 
     if (filters.status && filters.status !== 'ALL') {
@@ -277,6 +285,7 @@ export class ProcurementRequestService {
   }
 
   getRequest(id: string): Observable<ProcurementRequest> {
+    this.reloadRequests();
     const request = this.requests.find(r => r.id === id);
     if (!request) {
       return throwError(() => new Error(`Request not found: ${id}`));
