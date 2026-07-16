@@ -229,16 +229,16 @@
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
           <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedRfq.rfqNumber }}</h2>
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedRfq.rfqNumber }}</h2>
             <span [ngClass]="rfqBadge(selectedRfq.status)">{{ selectedRfq.status }}</span>
           </div>
-          <p class="text-xs text-[#5a7380]">{{ selectedRfq.clientName }}<span *ngIf="selectedRfq.clientEmail"> · {{ selectedRfq.clientEmail }}</span></p>
+          <p class="text-sm text-[#5a7380]">{{ selectedRfq.clientName }}<span *ngIf="selectedRfq.clientEmail"> · {{ selectedRfq.clientEmail }}</span></p>
         </div>
         <button (click)="closeRfqPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedRfq.issuedDate) }}</strong></span>
         <span [class.text-red-600]="isExpired(selectedRfq.dueDate)" [class.text-amber-600]="!isExpired(selectedRfq.dueDate)&&isDueSoon(selectedRfq.dueDate)" [class.text-[#5a7380]]="!isExpired(selectedRfq.dueDate)&&!isDueSoon(selectedRfq.dueDate)">
           Due <strong>{{ fmtDate(selectedRfq.dueDate) }}</strong>
@@ -253,43 +253,43 @@
     <!-- Body -->
     <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
       <div *ngIf="selectedRfq.clientInstructions">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Client Instructions</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Client Instructions</h3>
         <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedRfq.clientInstructions }}</div>
       </div>
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Details</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Details</h3>
         <div class="grid grid-cols-2 gap-3">
           <div *ngIf="selectedRfq.deliveryAddress" class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Delivery Address</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Delivery Address</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedRfq.deliveryAddress }}</span>
           </div>
           <div *ngIf="selectedRfq.totalEstimatedValue" class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Estimated Budget</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Estimated Budget</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ fmtCurrency(selectedRfq.totalEstimatedValue, selectedRfq.currency) }}</span>
           </div>
           <div *ngIf="selectedRfq.category" class="flex flex-col gap-0.5">
-            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Category</span>
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Category</span>
             <span class="text-sm text-[#1a2c35] font-medium">{{ selectedRfq.category }}</span>
           </div>
         </div>
       </div>
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Requested Items ({{ selectedRfq.items.length }})</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Requested Items ({{ selectedRfq.items.length }})</h3>
         <div class="flex flex-col gap-2.5">
           <div *ngFor="let item of selectedRfq.items; let i = index" class="border border-[#e6edf2] rounded-xl overflow-hidden shrink-0">
-            <div class="p-3.5 flex items-start gap-3">
+            <div class="p-4 flex items-start gap-3">
               <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{{ i+1 }}</span>
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-semibold text-[#1a2c35]">{{ item.name }}</h4>
-                <p class="text-xs text-[#5a7380] mt-0.5">{{ item.description }}</p>
-                <p *ngIf="item.specifications" class="text-xs text-[#5a7380] mt-1.5 bg-[#f5f7f9] rounded-lg px-2.5 py-1.5"><strong class="text-[#1a2c35]">Spec:</strong> {{ item.specifications }}</p>
+                <h4 class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</h4>
+                <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
+                <p *ngIf="item.specifications" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong class="text-[#224957]">Spec:</strong> {{ item.specifications }}</p>
               </div>
-              <span class="shrink-0 text-xs font-semibold bg-[#e8f2f7] text-[#224957] px-2.5 py-1 rounded-lg whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
+              <span class="shrink-0 text-sm font-semibold bg-[#e8f2f7] text-[#224957] px-2.5 py-1 rounded-lg whitespace-nowrap">{{ item.quantity }} {{ item.unit }}</span>
             </div>
             <div *ngIf="item.referenceImages?.length" class="flex gap-2 flex-wrap px-3.5 py-2.5 border-t border-[#eef2f6] bg-[#f5f7f9]">
               <div *ngFor="let img of item.referenceImages" class="flex flex-col gap-1">
                 <img [src]="img.url" [alt]="img.label||'Reference'" class="w-14 h-10 object-cover rounded-lg border border-[#e6edf2]" />
-                <span class="text-[9px] text-[#5a7380]">{{ img.label||'Reference' }}</span>
+                <span class="text-xs text-[#5a7380]">{{ img.label||'Reference' }}</span>
               </div>
             </div>
           </div>
@@ -299,8 +299,8 @@
 
     <!-- Footer -->
     <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-between gap-3 flex-wrap sticky bottom-0">
-      <span class="text-xs text-green-600 font-medium" *ngIf="rfqHasQuotation(selectedRfq.id)">✓ Quotation already created</span>
-      <span class="text-xs text-[#5a7380]" *ngIf="selectedRfq.status==='expired'">This RFQ has expired</span>
+      <span class="text-sm text-green-600 font-medium" *ngIf="rfqHasQuotation(selectedRfq.id)">✓ Quotation already created</span>
+      <span class="text-sm text-[#5a7380]" *ngIf="selectedRfq.status==='expired'">This RFQ has expired</span>
       <div class="flex items-center gap-2 ml-auto">
         <button (click)="downloadRfq(selectedRfq, $event)" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download RFQ</button>
         <button *ngIf="selectedRfq.status==='open' && !rfqHasQuotation(selectedRfq.id)" (click)="openConvertModal(selectedRfq)" class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">Convert to Quotation →</button>
@@ -323,11 +323,11 @@
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
           <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedQuotation.quotationNumber }}</h2>
-            <span class="text-[10px] font-semibold text-[#94a9b3]" *ngIf="selectedQuotation.version > 1">v{{ selectedQuotation.version }}</span>
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedQuotation.quotationNumber }}</h2>
+            <span class="text-xs font-semibold text-[#94a9b3]" *ngIf="selectedQuotation.version > 1">v{{ selectedQuotation.version }}</span>
             <span [ngClass]="quotBadge(selectedQuotation.status)">{{ quotStatusLabel(selectedQuotation.status) }}</span>
           </div>
-          <p class="text-xs text-[#5a7380]">
+          <p class="text-sm text-[#5a7380]">
             {{ selectedQuotation.clientName }} · RFQ ref:
             <button (click)="viewRfqFromQuotation(selectedQuotation)" class="text-[#224957] font-semibold underline decoration-dotted hover:text-[#2d6478]">{{ selectedQuotation.rfqNumber }}</button>
           </p>
@@ -338,7 +338,7 @@
       </div>
       <div class="flex items-center gap-1.5 mb-3">
         <ng-container *ngFor="let s of quotationLifecycleStages(selectedQuotation); let last = last">
-          <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
             [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
             [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
             [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
@@ -346,7 +346,7 @@
           <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
         </ng-container>
       </div>
-      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5a7380]">
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5a7380]">
         <span>Created <strong class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.createdDate) }}</strong></span>
         <span *ngIf="selectedQuotation.sentDate">Sent <strong class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.sentDate) }}</strong></span>
         <span>Valid until <strong [class.text-red-600]="isExpired(selectedQuotation.validUntil)" class="text-[#1a2c35]">{{ fmtDate(selectedQuotation.validUntil) }}</strong></span>
@@ -362,59 +362,59 @@
         <div class="flex-1 min-w-0">
           <p class="text-xs font-bold text-orange-800 uppercase tracking-wide mb-1">Client requested changes</p>
           <p class="text-sm text-orange-900 leading-relaxed">{{ selectedQuotation.revisionRequestNote }}</p>
-          <p class="text-[11px] text-orange-600 mt-1.5">{{ fmtDateTime(selectedQuotation.revisionRequestedAt) }} · Revision {{ selectedQuotation.revisionCount }} of {{ MAX_REVISION_ROUNDS }}</p>
+          <p class="text-xs text-orange-600 mt-1.5">{{ fmtDateTime(selectedQuotation.revisionRequestedAt) }} · Revision {{ selectedQuotation.revisionCount }} of {{ MAX_REVISION_ROUNDS }}</p>
         </div>
       </div>
 
       <div>
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Items ({{ selectedQuotation.items.length }})</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Items ({{ selectedQuotation.items.length }})</h3>
         <div class="flex flex-col gap-2">
           <div *ngFor="let item of selectedQuotation.items; trackBy: trackByRfqItemId"
-            class="border border-[#e6edf2] rounded-xl p-3.5"
+            class="border border-[#e6edf2] rounded-xl p-4"
             [class.opacity-60]="item.availability==='unavailable'">
             <div class="flex items-center gap-3">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <p class="text-sm font-semibold text-[#1a2c35] truncate">{{ item.name }}</p>
+                  <p class="text-base font-semibold text-[#1a2c35] truncate">{{ item.name }}</p>
                   <span *ngIf="item.availability!=='available'" [ngClass]="'item-tag item-tag-'+item.availability">{{ itemAvailabilityLabel(item.availability) }}</span>
                 </div>
-                <p class="text-xs text-[#5a7380] mt-0.5">
+                <p class="text-sm text-[#5a7380] mt-1">
                   <ng-container *ngIf="item.availability==='partial'">Offering <strong class="text-[#1a2c35]">{{ item.offeredQuantity }}</strong> of {{ item.quantity }} {{ item.unit }} requested</ng-container>
                   <ng-container *ngIf="item.availability!=='partial'">{{ item.quantity }} {{ item.unit }}</ng-container>
                 </p>
               </div>
               <div class="text-right shrink-0">
                 <ng-container *ngIf="item.availability!=='unavailable' && item.unitPrice !== null">
-                  <p class="text-xs text-[#5a7380]">{{ fmtCurrency(item.unitPrice, selectedQuotation.currency) }} / {{ item.unit }}</p>
-                  <p class="text-sm font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice!, selectedQuotation.currency) }}</p>
+                  <p class="text-sm text-[#5a7380]">{{ fmtCurrency(item.unitPrice, selectedQuotation.currency) }} / {{ item.unit }}</p>
+                  <p class="text-base font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice!, selectedQuotation.currency) }}</p>
                 </ng-container>
-                <span *ngIf="item.availability==='unavailable'" class="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Unavailable</span>
-                <span *ngIf="item.availability!=='unavailable' && item.unitPrice===null" class="text-xs text-[#94a9b3]">Not priced yet</span>
+                <span *ngIf="item.availability==='unavailable'" class="text-sm font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Unavailable</span>
+                <span *ngIf="item.availability!=='unavailable' && item.unitPrice===null" class="text-sm text-[#94a9b3]">Not priced yet</span>
               </div>
             </div>
-            <p *ngIf="item.availability==='substitute' && item.substituteDescription" class="text-xs text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-2.5 py-1.5"><strong>Offering instead:</strong> {{ item.substituteDescription }}</p>
-            <p *ngIf="(item.availability==='partial' || item.availability==='unavailable') && item.exceptionNote" class="text-xs text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-2.5 py-1.5"><strong>Note:</strong> {{ item.exceptionNote }}</p>
+            <p *ngIf="item.availability==='substitute' && item.substituteDescription" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong>Offering instead:</strong> {{ item.substituteDescription }}</p>
+            <p *ngIf="(item.availability==='partial' || item.availability==='unavailable') && item.exceptionNote" class="text-sm text-[#1a2c35] mt-2 bg-[#f5f7f9] rounded-lg px-3 py-2"><strong>Note:</strong> {{ item.exceptionNote }}</p>
           </div>
         </div>
       </div>
       <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.subtotal, selectedQuotation.currency) }}</span></div>
-        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.tax, selectedQuotation.currency) }}</span></div>
-        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-[#224957] text-base">{{ fmtCurrency(selectedQuotation.total, selectedQuotation.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.subtotal, selectedQuotation.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedQuotation.tax, selectedQuotation.currency) }}</span></div>
+        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-[#224957] text-lg">{{ fmtCurrency(selectedQuotation.total, selectedQuotation.currency) }}</span></div>
       </div>
       <div *ngIf="selectedQuotation.notes">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Notes</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes</h3>
         <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedQuotation.notes }}</p>
       </div>
 
       <!-- Negotiation history -->
       <div *ngIf="selectedQuotation.history.length">
-        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">History</h3>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">History</h3>
         <div class="flex flex-col gap-2.5">
           <div *ngFor="let h of selectedQuotation.history" class="flex gap-2.5">
             <span class="w-2 h-2 rounded-full mt-1.5 shrink-0" [class.bg-[#224957]]="h.actor==='VENDOR'" [class.bg-orange-500]="h.actor==='CUSTOMER'"></span>
             <div class="flex-1 min-w-0">
-              <p class="text-xs text-[#1a2c35]">
+              <p class="text-sm text-[#1a2c35]">
                 <strong>{{ h.actor==='VENDOR' ? 'You' : selectedQuotation.clientName }}</strong>
                 <span class="text-[#5a7380]">
                   <ng-container [ngSwitch]="h.action">
@@ -428,8 +428,8 @@
                   </ng-container>
                 </span>
               </p>
-              <p *ngIf="h.note" class="text-xs text-[#5a7380] mt-0.5 italic">"{{ h.note }}"</p>
-              <p class="text-[10px] text-[#94a9b3] mt-0.5">{{ fmtDateTime(h.timestamp) }}</p>
+              <p *ngIf="h.note" class="text-sm text-[#5a7380] mt-0.5 italic">"{{ h.note }}"</p>
+              <p class="text-xs text-[#94a9b3] mt-0.5">{{ fmtDateTime(h.timestamp) }}</p>
             </div>
           </div>
         </div>
@@ -465,18 +465,18 @@
       <div class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#eef2f6]">
         <div>
           <div class="flex items-center gap-2 mb-0.5">
-            <h2 class="text-base font-bold text-[#1a2c35]">{{ editingQuotation.quotationNumber }}</h2>
-            <span class="text-[10px] font-semibold text-[#94a9b3]" *ngIf="editingQuotation.version > 1">v{{ editingQuotation.version }}</span>
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ editingQuotation.quotationNumber }}</h2>
+            <span class="text-xs font-semibold text-[#94a9b3]" *ngIf="editingQuotation.version > 1">v{{ editingQuotation.version }}</span>
             <span [ngClass]="quotBadge(editingQuotation.status)">{{ quotStatusLabel(editingQuotation.status) }}</span>
           </div>
-          <p class="text-xs text-[#5a7380]">{{ isQuotationReadOnly ? 'Viewing' : 'Editing' }} · {{ editingQuotation.clientName }} · RFQ: {{ editingQuotation.rfqNumber }}</p>
+          <p class="text-sm text-[#5a7380]">{{ isQuotationReadOnly ? 'Viewing' : 'Editing' }} · {{ editingQuotation.clientName }} · RFQ: {{ editingQuotation.rfqNumber }}</p>
         </div>
         <button (click)="closeQuotationModal()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
-      <div *ngIf="isQuotationReadOnly" class="flex items-center gap-2 mx-6 mt-4 px-4 py-2.5 bg-[#e8f2f7] border border-[#c4dce8] rounded-xl text-xs text-[#224957] font-medium">
+      <div *ngIf="isQuotationReadOnly" class="flex items-center gap-2 mx-6 mt-4 px-4 py-2.5 bg-[#e8f2f7] border border-[#c4dce8] rounded-xl text-sm text-[#224957] font-medium">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         This quotation has been sent and is read-only.
       </div>
@@ -501,9 +501,9 @@
           <div class="p-4" [class.bg-white]="item.availability!=='unavailable'" [class.bg-red-50]="item.availability==='unavailable'">
             <div class="flex items-start justify-between gap-3 mb-3">
               <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-semibold text-[#1a2c35]">{{ item.name }}</h4>
-                <p class="text-xs text-[#5a7380] mt-0.5">{{ item.description }}</p>
-                <p class="text-xs text-[#5a7380] mt-1">Requested: <strong class="text-[#1a2c35]">{{ item.quantity }} {{ item.unit }}</strong></p>
+                <h4 class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</h4>
+                <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
+                <p class="text-sm text-[#5a7380] mt-1">Requested: <strong class="text-[#1a2c35]">{{ item.quantity }} {{ item.unit }}</strong></p>
               </div>
             </div>
 
@@ -533,7 +533,7 @@
             <div class="grid grid-cols-2 gap-3">
               <!-- Unit price — shown for anything that isn't fully unavailable -->
               <div *ngIf="item.availability!=='unavailable'" class="flex flex-col gap-1">
-                <span class="text-[10px] font-bold text-[#5a7380] uppercase tracking-wide">Unit Price ({{ editingQuotation.currency }})</span>
+                <span class="text-xs font-bold text-[#5a7380] uppercase tracking-wide">Unit Price ({{ editingQuotation.currency }})</span>
                 <div class="flex items-center border border-[#e6edf2] rounded-lg overflow-hidden bg-[#f5f7f9] focus-within:border-[#224957] focus-within:ring-2 focus-within:ring-[#224957]/10 transition-all">
                   <span class="px-3 py-2.5 text-xs font-semibold text-[#5a7380] bg-[#eef2f6] border-r border-[#e6edf2] select-none">{{ editingQuotation.currency }}</span>
                   <input type="text" inputmode="decimal"
@@ -549,7 +549,7 @@
 
               <!-- Offered quantity — only for partial -->
               <div *ngIf="item.availability==='partial'" class="flex flex-col gap-1">
-                <span class="text-[10px] font-bold text-[#5a7380] uppercase tracking-wide">Qty you can supply</span>
+                <span class="text-xs font-bold text-[#5a7380] uppercase tracking-wide">Qty you can supply</span>
                 <div class="flex items-center border border-[#e6edf2] rounded-lg overflow-hidden bg-[#f5f7f9] focus-within:border-[#224957] focus-within:ring-2 focus-within:ring-[#224957]/10 transition-all">
                   <input type="text" inputmode="numeric"
                     class="flex-1 w-0 min-w-0 px-3 py-2.5 text-base font-semibold text-[#1a2c35] bg-transparent outline-none placeholder-[#94a9b3]"
@@ -563,7 +563,7 @@
 
               <!-- Offered quantity — optional for substitute -->
               <div *ngIf="item.availability==='substitute'" class="flex flex-col gap-1">
-                <span class="text-[10px] font-bold text-[#5a7380] uppercase tracking-wide">Qty offered (optional)</span>
+                <span class="text-xs font-bold text-[#5a7380] uppercase tracking-wide">Qty offered (optional)</span>
                 <div class="flex items-center border border-[#e6edf2] rounded-lg overflow-hidden bg-[#f5f7f9] focus-within:border-[#224957] focus-within:ring-2 focus-within:ring-[#224957]/10 transition-all">
                   <input type="text" inputmode="numeric"
                     class="flex-1 w-0 min-w-0 px-3 py-2.5 text-base font-semibold text-[#1a2c35] bg-transparent outline-none placeholder-[#94a9b3]"
@@ -578,13 +578,13 @@
 
             <!-- Line total -->
             <div *ngIf="item.totalPrice !== null" class="flex items-center justify-between mt-2.5">
-              <span class="text-[10px] text-[#5a7380]">Line total</span>
+              <span class="text-xs text-[#5a7380]">Line total</span>
               <span class="text-sm font-bold text-[#224957]">{{ fmtCurrency(item.totalPrice, editingQuotation.currency) }}</span>
             </div>
 
             <!-- Substitute description — required for substitute -->
             <div *ngIf="item.availability==='substitute'" class="mt-3">
-              <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1">What are you offering instead? <span class="text-red-500">*</span></label>
+              <label class="block text-xs font-bold uppercase tracking-wide text-[#5a7380] mb-1">What are you offering instead? <span class="text-red-500">*</span></label>
               <textarea [(ngModel)]="item.substituteDescription" [disabled]="isQuotationReadOnly"
                 placeholder="Describe the alternative item/spec and why it's an equivalent…" rows="2"
                 class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-y outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60 disabled:cursor-not-allowed font-sans"></textarea>
@@ -592,7 +592,7 @@
 
             <!-- Exception note — required for partial / unavailable -->
             <div *ngIf="item.availability==='partial' || item.availability==='unavailable'" class="mt-3">
-              <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1">
+              <label class="block text-xs font-bold uppercase tracking-wide text-[#5a7380] mb-1">
                 {{ item.availability==='unavailable' ? 'Reason it\'s unavailable' : 'Why only a partial quantity?' }} <span class="text-red-500">*</span>
               </label>
               <textarea [(ngModel)]="item.exceptionNote" [disabled]="isQuotationReadOnly"
@@ -603,7 +603,7 @@
         </div>
 
         <div class="mt-1">
-          <label class="block text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Notes / Additional Comments</label>
+          <label class="block text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes / Additional Comments</label>
           <textarea [(ngModel)]="editingQuotation.notes" [disabled]="isQuotationReadOnly"
             placeholder="Add notes, delivery terms, or any information for the client…" rows="3"
             class="w-full border border-[#e6edf2] rounded-xl px-4 py-3 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-y outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 disabled:opacity-60 disabled:cursor-not-allowed font-sans"></textarea>
@@ -613,8 +613,8 @@
         <div *ngIf="!isQuotationReadOnly" class="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#e6edf2] bg-[#f9fafb]">
           <div class="min-w-0">
             <p class="text-sm font-medium text-[#1a2c35]">Include my signature</p>
-            <p class="text-[10px] text-[#9ab0bb]" *ngIf="profile?.signatureDataUrl">Uses the signature saved in your profile</p>
-            <p class="text-[10px] text-amber-600" *ngIf="!profile?.signatureDataUrl">No saved signature yet — set one up in Profile → Your Signature</p>
+            <p class="text-xs text-[#9ab0bb]" *ngIf="profile?.signatureDataUrl">Uses the signature saved in your profile</p>
+            <p class="text-xs text-amber-600" *ngIf="!profile?.signatureDataUrl">No saved signature yet — set one up in Profile → Your Signature</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <img *ngIf="profile?.signatureDataUrl" [src]="profile?.signatureDataUrl" class="h-7 object-contain" />
@@ -626,7 +626,7 @@
           </div>
         </div>
         <div *ngIf="isQuotationReadOnly && editingQuotation.includeSignature && profile?.signatureDataUrl" class="flex items-center gap-2 p-3 rounded-xl border border-[#e6edf2]">
-          <span class="text-xs text-[#5a7380]">Signed:</span>
+          <span class="text-sm text-[#5a7380]">Signed:</span>
           <img [src]="profile?.signatureDataUrl" class="h-6 object-contain" />
         </div>
       </div>
@@ -634,9 +634,9 @@
       <!-- Footer -->
       <div class="flex items-end justify-between gap-4 px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] rounded-b-2xl flex-wrap">
         <div class="flex flex-col gap-1 min-w-[200px]">
-          <div class="flex justify-between gap-8 text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(editingQuotation.subtotal, editingQuotation.currency) }}</span></div>
-          <div class="flex justify-between gap-8 text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(editingQuotation.tax, editingQuotation.currency) }}</span></div>
-          <div class="flex justify-between gap-8 text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-base text-[#224957]">{{ fmtCurrency(editingQuotation.total, editingQuotation.currency) }}</span></div>
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(editingQuotation.subtotal, editingQuotation.currency) }}</span></div>
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(editingQuotation.tax, editingQuotation.currency) }}</span></div>
+          <div class="flex justify-between gap-8 text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-lg text-[#224957]">{{ fmtCurrency(editingQuotation.total, editingQuotation.currency) }}</span></div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button (click)="downloadQuotation(editingQuotation, $event)" class="px-3 py-2 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">↓ Download</button>
@@ -696,7 +696,7 @@
         <strong class="text-[#1a2c35]">{{ quotationToWithdraw.quotationNumber }}</strong> will be pulled back from
         <strong class="text-[#1a2c35]">{{ quotationToWithdraw.clientName }}</strong>. This can't be undone.
       </p>
-      <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">Reason (optional)</label>
+      <label class="block text-xs font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">Reason (optional)</label>
       <textarea [(ngModel)]="withdrawReason" rows="2" placeholder="e.g. Stock situation changed, pricing needs review…"
         class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-y outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans mb-6"></textarea>
       <div class="flex gap-3 justify-center">
@@ -728,7 +728,7 @@
         <button (click)="setSimulateDecisionType('reject')" [class]="simDecisionTabClass('reject')">Reject</button>
       </div>
 
-      <label class="block text-[10px] font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">{{ simDecisionNoteLabel() }}</label>
+      <label class="block text-xs font-bold uppercase tracking-wide text-[#5a7380] mb-1.5">{{ simDecisionNoteLabel() }}</label>
       <textarea [(ngModel)]="simulateDecisionNote" rows="3" [placeholder]="simDecisionPlaceholder()"
         class="w-full border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-y outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/10 font-sans mb-2"></textarea>
       <p *ngIf="simulateDecisionError" class="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">{{ simulateDecisionError }}</p>

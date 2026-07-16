@@ -671,17 +671,17 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
 
   generateLPO(): void {
     if (this.quotation) {
-      this.router.navigate(['/commerce/quotations', this.quotation.id, 'generate-lpo']);
+      this.router.navigate(['/admin/sales/commerce/quotations', this.quotation.id, 'generate-lpo']);
     }
   }
 
   goBack(): void {
-    this.router.navigate(['/commerce/quotations']);
+    this.router.navigate(['/admin/sales/commerce/quotations']);
   }
 
   goToRFQ(): void {
     if (this.quotation?.rfqId) {
-      this.router.navigate(['/commerce/requests', this.quotation.rfqId]);
+      this.router.navigate(['/admin/sales/commerce/requests', this.quotation.rfqId]);
     }
   }
 

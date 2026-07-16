@@ -27,6 +27,7 @@ import {
   MAX_REVISION_ROUNDS,
 } from '../../domain/vendor-portal/vendor.dto';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage, clearAllStorage } from './local-store.util';
+import { PROCUREMENT_STORAGE_KEYS } from '../procurement/procurement-store.util';
 
 // Pure helper — recomputes per-line totals and quotation totals from item
 // state. Exported so both the service (on save/resubmit) and the dashboard
@@ -220,12 +221,15 @@ export class VendorService {
    *  data inline rather than subscribing — always current, since they share
    *  this same singleton instance. */
   getRfqsSnapshot(): Rfq[] {
+    this.loadRfqs();
     return this.rfqs$$.getValue();
   }
   getQuotationsSnapshot(): Quotation[] {
+    this.loadQuotations();
     return this.quotations$$.getValue();
   }
   getLposSnapshot(): Lpo[] {
+    this.loadLpos();
     return this.lpos$$.getValue();
   }
 
@@ -249,7 +253,7 @@ export class VendorService {
   getRfqs(): Observable<Rfq[]> {
     this.loadRfqs();
     return this.rfqs$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
   markRfqAsRead(id: string): void {
@@ -261,7 +265,7 @@ export class VendorService {
   }
 
   loadRfqs(): void {
-    this.rfqs$$.next(this.seedRfqs());
+    this.rfqs$$.next(loadFromStorage(STORAGE_KEYS.RFQS, () => this.seedRfqs()));
   }
 
   private getConvertedRfqIds(): string[] {
@@ -298,10 +302,15 @@ export class VendorService {
     }
   }
 
+  loadQuotations(): void {
+    this.quotations$$.next(loadFromStorage(STORAGE_KEYS.QUOTATIONS, () => this.seedQuotations()));
+  }
+
   // ── Quotation ─────────────────────────────────────────────────────────────────
   getQuotations(): Observable<Quotation[]> {
+    this.loadQuotations();
     return this.quotations$.pipe(
-      map((l) => [...l].sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())),
     );
   }
   createQuotationFromRfq(rfq: Rfq): Quotation {
@@ -421,14 +430,14 @@ export class VendorService {
     };
 
     try {
-      const stored = localStorage.getItem('vendor_quotations_db_v3');
+      const stored = localStorage.getItem(PROCUREMENT_STORAGE_KEYS.QUOTATIONS);
       let currentList: any[] = [];
       if (stored) {
         currentList = JSON.parse(stored);
       }
       currentList = currentList.filter((x: any) => x.id !== vendorQuotation.id);
       currentList.unshift(vendorQuotation);
-      localStorage.setItem('vendor_quotations_db_v3', JSON.stringify(currentList));
+      localStorage.setItem(PROCUREMENT_STORAGE_KEYS.QUOTATIONS, JSON.stringify(currentList));
       console.log('Quotation synced to buyer database successfully:', vendorQuotation.id);
     } catch (e) {
       console.error('Error syncing quotation to procurement db:', e);
@@ -444,6 +453,7 @@ export class VendorService {
    * mock store until the two sides are wired to one API.
    */
   requestRevision(quotationId: string, note: string): { ok: boolean; reason?: string } {
+    this.loadQuotations();
     const current = this.quotations$$.getValue().find((x) => x.id === quotationId);
     if (!current) return { ok: false, reason: 'Quotation not found.' };
     if (current.status !== 'sent') {
@@ -492,6 +502,7 @@ export class VendorService {
    * manual hand-off step.
    */
   acceptQuotation(quotationId: string, note?: string): { ok: boolean; reason?: string } {
+    this.loadQuotations();
     const current = this.quotations$$.getValue().find((x) => x.id === quotationId);
     if (!current) return { ok: false, reason: 'Quotation not found.' };
     if (current.status !== 'sent') {
@@ -520,6 +531,8 @@ export class VendorService {
    * just returns the existing Lpo rather than creating a duplicate.
    */
   generateLpoForQuotation(quotationId: string): { ok: boolean; lpo?: Lpo; reason?: string } {
+    this.loadQuotations();
+    this.loadLpos();
     const existing = this.lpos$$.getValue().find((l) => l.quotationId === quotationId);
     if (existing) return { ok: true, lpo: existing };
 
@@ -551,6 +564,7 @@ export class VendorService {
    * requestRevision() and acceptQuotation() above.
    */
   rejectQuotation(quotationId: string, reason: string): { ok: boolean; reason?: string } {
+    this.loadQuotations();
     const current = this.quotations$$.getValue().find((x) => x.id === quotationId);
     if (!current) return { ok: false, reason: 'Quotation not found.' };
     if (current.status !== 'sent') {
@@ -621,14 +635,14 @@ export class VendorService {
   }
 
   loadLpos(): void {
-    this.lpos$$.next(this.seedLpos());
+    this.lpos$$.next(loadFromStorage(STORAGE_KEYS.LPOS, () => this.seedLpos()));
   }
 
   // ── LPO ──────────────────────────────────────────────────────────────────────
   getLpos(): Observable<Lpo[]> {
     this.loadLpos();
     return this.lpos$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
   markLpoAsRead(id: string): void {
@@ -683,7 +697,7 @@ export class VendorService {
       }
 
       // Sync to procurement request and transition status to PAYMENT_PENDING
-      const stored = localStorage.getItem('procurement_requests');
+      const stored = localStorage.getItem(PROCUREMENT_STORAGE_KEYS.REQUESTS);
       if (stored) {
         try {
           const requests = JSON.parse(stored);
@@ -694,7 +708,7 @@ export class VendorService {
           );
           if (matchingRequest) {
             matchingRequest.status = 'PAYMENT_PENDING';
-            localStorage.setItem('procurement_requests', JSON.stringify(requests));
+            localStorage.setItem(PROCUREMENT_STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
             console.log('Procurement request status updated to PAYMENT_PENDING for invoice:', invoice.invoiceNumber);
           }
         } catch (e) {
@@ -722,7 +736,7 @@ export class VendorService {
   // ── Finance ───────────────────────────────────────────────────────────────────
   getInvoices(): Observable<Invoice[]> {
     return this.invoices$.pipe(
-      map((l) => [...l].sort((a, b) => b.issuedDate.getTime() - a.issuedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.issuedDate).getTime() - new Date(a.issuedDate).getTime())),
     );
   }
 
@@ -738,7 +752,7 @@ export class VendorService {
         ? Math.round(
           paid.reduce((s, i) => {
             const days = i.paidDate
-              ? (i.paidDate.getTime() - i.issuedDate.getTime()) / (1000 * 60 * 60 * 24)
+              ? (new Date(i.paidDate).getTime() - new Date(i.issuedDate).getTime()) / (1000 * 60 * 60 * 24)
               : 0;
             return s + days;
           }, 0) / paid.length,
@@ -762,7 +776,7 @@ export class VendorService {
   // ── Documents ─────────────────────────────────────────────────────────────────
   getDocuments(): Observable<VendorDocument[]> {
     return this.documents$.pipe(
-      map((l) => [...l].sort((a, b) => b.uploadedDate.getTime() - a.uploadedDate.getTime())),
+      map((l) => [...l].sort((a, b) => new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime())),
     );
   }
 
@@ -1254,7 +1268,7 @@ export class VendorService {
     ];
 
     try {
-      const stored = localStorage.getItem('procurement_requests');
+      const stored = localStorage.getItem(PROCUREMENT_STORAGE_KEYS.REQUESTS);
       if (stored) {
         const requests = JSON.parse(stored);
         if (Array.isArray(requests)) {
