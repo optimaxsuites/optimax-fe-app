@@ -106,6 +106,9 @@
 
   .dm-card-footer {
     padding: 8px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .dm-card-msg-btn {
@@ -128,9 +131,32 @@
       background: #245060;
     }
 
-    i {
-      font-size: 13px;
+    i { font-size: 13px; }
+  }
+
+  .dm-card-profile-btn {
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+
+    &:hover {
+      background: #f0f9ff;
+      border-color: #7dd3fc;
+      color: #0369a1;
     }
+
+    i { font-size: 13px; }
   }
 }
 
@@ -148,4 +174,30 @@
 .birthday-cal-today {
   background: rgba(46, 98, 118, 0.1);
   border-radius: 50%;
+}
+
+.sidebar-section-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 10px;
+  cursor: ns-resize;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+
+  &:hover .sidebar-divider-grip,
+  &:active .sidebar-divider-grip {
+    background: #94a3b8;
+    width: 36px;
+  }
+}
+
+.sidebar-divider-grip {
+  display: block;
+  width: 28px;
+  height: 3px;
+  border-radius: 3px;
+  background: #d1d5db;
+  transition: all 0.15s;
 }

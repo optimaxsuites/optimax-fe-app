@@ -528,87 +528,23 @@
   margin-bottom: 0.35rem;
 }
 
-// ─── AI Insight Chip ─────────────────────────────────────────────────────────
-
-.ai-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 2.4rem;
-  padding: 0 0.9rem 0 0.75rem;
-  border-radius: 0.4rem;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1.5px solid #bae6fd;
-  border-left: 3px solid #0ea5e9;
-  color: #0369a1;
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 500;
-  max-width: 24rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  overflow: hidden;
-
-  &:hover {
-    border-color: #7dd3fc;
-    border-left-color: #0369a1;
-    box-shadow: 0 2px 8px rgba(3, 105, 161, 0.14);
-  }
-
-  &.ai-chip--loading {
-    pointer-events: none;
-  }
-}
-
-.ai-chip__icon {
-  flex-shrink: 0;
-  font-size: 0.82rem;
-  color: #0ea5e9;
-  animation: ai-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes ai-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
-.ai-chip__text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  &.ai-chip__text--muted { color: #94a3b8; font-style: italic; }
-}
-
-.ai-chip__shimmer {
-  display: block;
-  width: 10rem;
-  height: 0.75rem;
-  border-radius: 0.25rem;
-  background: linear-gradient(90deg, #e0f2fe 25%, #bae6fd 50%, #e0f2fe 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-// ─── AI Insight Overlay Panel ────────────────────────────────────────────────
-
-:host ::ng-deep .ai-insight-overlay {
-  margin-top: 0.55rem;
-
-  .p-overlaypanel-content {
-    padding: 0 !important;
-    border-radius: 1rem;
-    overflow: hidden;
-  }
-}
-
-// .aip styles are in global styles.scss — PrimeNG overlay teleports to body
 
 // ─── Responsive ──────────────────────────────────────────────────────────────
+
+.mobile-hamburger {
+  display: none;
+  font-size: 1.1rem;
+
+  &--open {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+  }
+}
+
+@media (max-width: 992px) {
+  .mobile-hamburger { display: flex; }
+}
 
 @media (max-width: 900px) {
   .app-header { flex-wrap: wrap; }
@@ -625,5 +561,4 @@
 
   .np { width: min(25rem, 95vw); }
 
-  .ai-chip { display: none; }
 }

@@ -146,8 +146,8 @@
         </button>
       </div>
     </div>
-    <!-- Channel list — scrollable, max-height so DMs always remain visible -->
-    <div class="px-2 overflow-y-auto sidebar-scroll flex-shrink-0" style="max-height: 220px">
+    <!-- Channel list — scrollable, height adjustable via drag handle -->
+    <div class="px-2 overflow-y-auto sidebar-scroll flex-shrink-0" [style.max-height.px]="channelSectionHeight">
       <div *ngIf="channelsLoading && !channels.length" class="mt-1 flex flex-col gap-1.5 px-1">
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
         <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-3/5"></div>
@@ -277,6 +277,15 @@
       <div class="mx-1 my-2 h-px bg-gray-100"></div>
     </div>
 
+    <!-- Draggable divider between channels and DMs -->
+    <div
+      class="sidebar-section-divider"
+      (mousedown)="startDividerDrag($event)"
+      title="Drag to resize"
+    >
+      <span class="sidebar-divider-grip"></span>
+    </div>
+
     <!-- Direct Messages — flex-1 so it always takes remaining space and scrolls independently -->
     <div class="px-2 flex-1 overflow-y-auto sidebar-scroll min-h-0">
       <div class="pl-2 pr-1 mb-1 mt-1 flex items-center justify-between gap-2 sticky top-0 bg-white z-10 py-1">
@@ -384,6 +393,9 @@
     <div class="dm-card-footer">
       <button class="dm-card-msg-btn" (click)="dmSelected.emit(hoveredDm.id); closeDmCard()">
         <i class="pi pi-comments"></i> Message
+      </button>
+      <button class="dm-card-profile-btn" (click)="viewProfile.emit(hoveredDm); closeDmCard()">
+        <i class="pi pi-user"></i> View Profile
       </button>
     </div>
   </div>

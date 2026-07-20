@@ -113,6 +113,7 @@ import { NotificationComponent } from './ui/view/attendance/notification/notific
 import { TimeSheetComponent } from './ui/view/attendance/time-sheet/time-sheet.component';
 import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-attendance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
+import { PayrollDashboardComponent } from './ui/view/payroll/payroll-dashboard/payroll-dashboard.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-view.component';
 import { GoalComponent } from './ui/view/performance/goal/goal.component';
@@ -290,6 +291,7 @@ import { HrLettersComponent } from './ui/view/employee-management/hr-letters/hr-
     TimeSheetComponent,
     MyAttendanceComponent,
     EmployeePayrollComponent,
+    PayrollDashboardComponent,
     EmployeePayslipListComponent,
     GuarantorConfirmationComponent,
     ViewEmployeeComponent,

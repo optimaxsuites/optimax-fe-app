@@ -76,6 +76,38 @@ export class ChannelSidebarComponent {
   @Output() searchExecuted = new EventEmitter<void>();
   @Output() searchClosed = new EventEmitter<void>();
   @Output() jumpTo = new EventEmitter<{ msg: any; channelId: string; channelName: string }>();
+  @Output() viewProfile = new EventEmitter<DmContact>();
+
+  // ── Draggable channel/DM divider ────────────────────
+  channelSectionHeight = 220;
+  private _dividerDragging = false;
+  private _dividerStartY = 0;
+  private _dividerStartH = 0;
+  private readonly _dividerMin = 80;
+  private readonly _dividerMax = 480;
+
+  startDividerDrag(event: MouseEvent): void {
+    event.preventDefault();
+    this._dividerDragging = true;
+    this._dividerStartY = event.clientY;
+    this._dividerStartH = this.channelSectionHeight;
+    const onMove = (e: MouseEvent) => {
+      if (!this._dividerDragging) return;
+      const delta = e.clientY - this._dividerStartY;
+      this.channelSectionHeight = Math.min(
+        this._dividerMax,
+        Math.max(this._dividerMin, this._dividerStartH + delta),
+      );
+      this.cdr.markForCheck();
+    };
+    const onUp = () => {
+      this._dividerDragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
 
   // ── DM hover card state ──────────────────────────────
   hoveredDm: DmContact | null = null;
@@ -109,7 +141,7 @@ export class ChannelSidebarComponent {
       this.hoveredDm = null;
       this.dmCardPos = null;
       this.cdr.markForCheck();
-    }, 200);
+    }, 600);
   }
 
   closeDmCard(): void {

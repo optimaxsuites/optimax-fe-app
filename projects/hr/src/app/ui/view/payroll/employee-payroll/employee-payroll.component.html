@@ -63,79 +63,83 @@
             </ng-template>
     </p-toolbar>
 
-    <div
-      *ngIf="approvalStages.length"
-      class="mx-3 mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-      <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p class="text-sm font-semibold text-slate-800">Approval Progress</p>
-          <p class="text-xs text-slate-500">Track the current stage and completed approvers.</p>
+    <!-- Approval Timeline -->
+    <div *ngIf="approvalStages.length" class="approval-timeline-box mx-3 mb-4">
+      <div class="atl-header">
+        <div class="atl-header-left">
+          <i class="fas fa-shield-alt atl-icon"></i>
+          <div>
+            <p class="atl-title">Approval Workflow</p>
+            <p class="atl-subtitle">Track each stage of the payroll approval chain</p>
+          </div>
         </div>
-        <span
-          class="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase"
-          [ngClass]="{
-            'border-emerald-200 bg-emerald-50 text-emerald-700': overallApprovalStatus === 'completed',
-            'border-blue-200 bg-blue-50 text-blue-700': overallApprovalStatus === 'current',
-            'border-slate-200 bg-white text-slate-700': overallApprovalStatus === 'pending'
-          }">
+        <span class="atl-badge"
+          [class.atl-badge--done]="overallApprovalStatus === 'completed'"
+          [class.atl-badge--active]="overallApprovalStatus === 'current'"
+          [class.atl-badge--pending]="overallApprovalStatus === 'pending'">
           {{ overallApprovalStatusLabel }}
         </span>
       </div>
 
-      <div class="grid gap-3 lg:grid-cols-3">
-        <div
-          *ngFor="let stage of approvalStages; let i = index"
-          class="rounded-lg border p-4 transition-all"
-          [ngClass]="{
-            'border-emerald-200 bg-emerald-50': getStageStatus(stage) === 'completed',
-            'border-blue-200 bg-blue-50': getStageStatus(stage) === 'current',
-            'border-slate-200 bg-white': getStageStatus(stage) === 'pending'
-          }">
-          <div class="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm font-semibold text-slate-800">
-                {{ stage?.name || ('Stage ' + (i + 1)) }}
-              </p>
-              <p class="text-xs text-slate-500">Order {{ stage?.orderIndex ?? (i + 1) }}</p>
+      <div class="atl-stages">
+        <div *ngFor="let stage of approvalStages; let i = index; let last = last" class="atl-step">
+
+          <!-- Connector line -->
+          <div class="atl-step-track">
+            <div class="atl-step-dot"
+              [class.atl-dot--done]="getStageStatus(stage) === 'completed'"
+              [class.atl-dot--active]="getStageStatus(stage) === 'current'"
+              [class.atl-dot--pending]="getStageStatus(stage) === 'pending'">
+              <i class="fas fa-check" *ngIf="getStageStatus(stage) === 'completed'"></i>
+              <i class="fas fa-spinner fa-spin" *ngIf="getStageStatus(stage) === 'current'"></i>
+              <span *ngIf="getStageStatus(stage) === 'pending'">{{ i + 1 }}</span>
             </div>
-            <span
-              class="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase"
-              [ngClass]="{
-                'bg-emerald-100 text-emerald-700': getStageStatus(stage) === 'completed',
-                'bg-blue-100 text-blue-700': getStageStatus(stage) === 'current',
-                'bg-slate-100 text-slate-600': getStageStatus(stage) === 'pending'
-              }">
-              {{ getStageStatusLabel(stage) }}
-            </span>
+            <div class="atl-connector" *ngIf="!last"
+              [class.atl-connector--done]="getStageStatus(stage) === 'completed'"></div>
           </div>
 
-          <div class="space-y-2 text-xs text-slate-600">
-            <p>
-              <span class="font-medium text-slate-700">Approver(s):</span>
+          <!-- Stage details card -->
+          <div class="atl-step-card"
+            [class.atl-card--done]="getStageStatus(stage) === 'completed'"
+            [class.atl-card--active]="getStageStatus(stage) === 'current'"
+            [class.atl-card--pending]="getStageStatus(stage) === 'pending'">
+
+            <div class="atl-card-head">
+              <span class="atl-stage-name">{{ stage?.name || ('Stage ' + (i + 1)) }}</span>
+              <span class="atl-stage-badge"
+                [class.atl-badge--done]="getStageStatus(stage) === 'completed'"
+                [class.atl-badge--active]="getStageStatus(stage) === 'current'"
+                [class.atl-badge--pending]="getStageStatus(stage) === 'pending'">
+                {{ getStageStatusLabel(stage) }}
+              </span>
+            </div>
+
+            <p class="atl-approver">
+              <i class="fas fa-user-check atl-meta-icon"></i>
               {{ getStageApproverNames(stage) }}
             </p>
-            <p *ngIf="getStageAction(stage) as stageAction">
-              <span class="font-medium text-slate-700">Last action:</span>
-              {{ stageAction?.actionType }} by {{ getUserDisplayName(stageAction?.actorUser) }}
+
+            <p *ngIf="getStageAction(stage) as act" class="atl-action">
+              <i class="fas fa-history atl-meta-icon"></i>
+              {{ act?.actionType }} by {{ getUserDisplayName(act?.actorUser) }}
             </p>
-            <p *ngIf="stage?.isDocumentRequired" class="text-amber-700">
-              Supporting document required during approval
-            </p>
-            <p *ngIf="stage?.requiresComment" class="text-sky-700">
-              Comment required for approval action
-            </p>
-            <div *ngIf="hasStageDocuments(stage)" class="pt-1">
-              <p class="font-medium text-slate-700">Attachments:</p>
-              <div class="mt-1 flex flex-wrap gap-2">
-                <a
-                  *ngFor="let document of getStageDocuments(stage)"
-                  [href]="getApprovalDocumentUrl(document.documentMediaNo)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-customBlue">
-                  {{ document.documentMediaNo }}
-                </a>
-              </div>
+
+            <div class="atl-flags">
+              <span *ngIf="stage?.isDocumentRequired" class="atl-flag atl-flag--warn">
+                <i class="fas fa-paperclip"></i> Doc required
+              </span>
+              <span *ngIf="stage?.requiresComment" class="atl-flag atl-flag--info">
+                <i class="fas fa-comment-dots"></i> Comment required
+              </span>
+            </div>
+
+            <div *ngIf="hasStageDocuments(stage)" class="atl-attachments">
+              <a *ngFor="let doc of getStageDocuments(stage)"
+                [href]="getApprovalDocumentUrl(doc.documentMediaNo)"
+                target="_blank" rel="noopener noreferrer"
+                class="atl-doc-link">
+                <i class="fas fa-file-alt"></i> {{ doc.documentMediaNo }}
+              </a>
             </div>
           </div>
         </div>

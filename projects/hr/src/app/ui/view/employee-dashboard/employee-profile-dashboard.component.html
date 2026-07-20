@@ -455,6 +455,58 @@
       </app-employee-relatives-widget>
     </div>
 
+    <!-- Recent Payslips -->
+    <div class="ep-section-pad">
+      <div class="ep-card ep-payslip-card">
+        <div class="ep-card__header">
+          <h3 class="ep-card__title"><i class="fa-solid fa-file-invoice-dollar"></i> Recent Payslips</h3>
+          <span class="ep-card__caption" *ngIf="!payslipsLoading">Last {{ recentPayslips.length }} processed</span>
+        </div>
+
+        <div *ngIf="payslipsLoading" class="ep-payslip-loading">
+          <i class="fas fa-spinner fa-spin"></i> Loading payslips…
+        </div>
+
+        <div *ngIf="!payslipsLoading && recentPayslips.length === 0" class="ep-payslip-empty">
+          <i class="fas fa-file-circle-xmark"></i>
+          <p>No payslips generated yet for this employee.</p>
+        </div>
+
+        <div *ngIf="!payslipsLoading && recentPayslips.length > 0" class="ep-payslip-list">
+          <div class="ep-payslip-row ep-payslip-row--head">
+            <span>Period</span>
+            <span>Gross Pay</span>
+            <span>Deductions</span>
+            <span>Net Pay</span>
+            <span>Status</span>
+            <span></span>
+          </div>
+          <div
+            *ngFor="let slip of recentPayslips"
+            class="ep-payslip-row"
+            (click)="openPayslipDetail(slip)">
+            <span class="ep-payslip-period">{{ payslipMonthNames[(slip.month || 1) - 1] }} {{ slip.year }}</span>
+            <span class="ep-payslip-amount">{{ fmtPayslipAmount(slip.grossPay ?? 0) }}</span>
+            <span class="ep-payslip-deduct">{{ fmtPayslipAmount(slip.totalDeductions ?? 0) }}</span>
+            <span class="ep-payslip-net">{{ fmtPayslipAmount(slip.netPayable ?? 0) }}</span>
+            <span>
+              <span class="ep-payslip-badge"
+                [class.ep-payslip-badge--green]="slip.runStatus === 'APPROVED' || slip.runStatus === 'COMPLETED'"
+                [class.ep-payslip-badge--amber]="slip.runStatus === 'PENDING' || slip.runStatus === 'DRAFT'"
+                [class.ep-payslip-badge--red]="slip.runStatus === 'REJECTED'">
+                {{ slip.runStatus || 'DRAFT' }}
+              </span>
+            </span>
+            <span>
+              <button class="ep-payslip-view-btn" (click)="openPayslipDetail(slip); $event.stopPropagation()">
+                <i class="fas fa-eye"></i> View
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <ng-template #emptyState>
@@ -465,6 +517,10 @@
   </ng-template>
 
 </div>
+
+<app-large-side-modal *ngIf="viewPayslip" (close)="viewPayslip = false">
+  <app-payslip-view [payslip]="activePayslip"></app-payslip-view>
+</app-large-side-modal>
 
 <!-- Delete confirmation dialog -->
 <div *ngIf="showDeleteConfirm" class="ep-confirm-backdrop">

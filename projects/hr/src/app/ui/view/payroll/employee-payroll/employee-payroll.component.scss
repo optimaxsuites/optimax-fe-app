@@ -122,3 +122,196 @@ ul{
 ::ng-deep .payroll-menu .p-menuitem-link {
     text-decoration: none !important;
 }
+
+// ── Approval Timeline ────────────────────────────────────────────────────────
+.approval-timeline-box {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.atl-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.atl-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.atl-icon {
+  font-size: 20px;
+  color: #2E6276;
+}
+
+.atl-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.atl-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.atl-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.atl-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.atl-step-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.atl-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  z-index: 1;
+
+  &.atl-dot--done    { background: #dcfce7; color: #16a34a; border-color: #16a34a; }
+  &.atl-dot--active  { background: #dbeafe; color: #2563eb; border-color: #2563eb; }
+  &.atl-dot--pending { background: #f1f5f9; color: #94a3b8; border-color: #cbd5e1; }
+}
+
+.atl-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 24px;
+  background: #e2e8f0;
+  margin: 4px 0;
+
+  &.atl-connector--done { background: #16a34a; }
+}
+
+.atl-step-card {
+  flex: 1;
+  border-radius: 0.75rem;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+  transition: box-shadow .15s;
+
+  &.atl-card--done    { background: #f0fdf4; border-color: #bbf7d0; }
+  &.atl-card--active  { background: #eff6ff; border-color: #bfdbfe; box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  &.atl-card--pending { background: #f8fafc; border-color: #e2e8f0; }
+}
+
+.atl-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.atl-stage-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.atl-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border: 1px solid transparent;
+
+  &.atl-badge--done    { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+  &.atl-badge--active  { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  &.atl-badge--pending { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+}
+
+.atl-stage-badge { @extend .atl-badge; }
+
+.atl-approver, .atl-action {
+  font-size: 12px;
+  color: #475569;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.atl-meta-icon {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.atl-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.atl-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &.atl-flag--warn { background: #fef9c3; color: #92400e; }
+  &.atl-flag--info { background: #e0f2fe; color: #0369a1; }
+}
+
+.atl-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+
+.atl-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #2E6276;
+  text-decoration: none;
+
+  &:hover { background: #f0f9ff; border-color: #7dd3fc; }
+}
